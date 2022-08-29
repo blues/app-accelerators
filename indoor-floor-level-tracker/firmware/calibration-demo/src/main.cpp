@@ -55,10 +55,17 @@ void setup() {
 
   serialDebugOut.println("BMP581 connected...");
 
+  /* Highest accuracy for stationary devices */
   bmp.setTemperatureOversampling(BMP5_OVERSAMPLING_8X);
   bmp.setPressureOversampling(BMP5_OVERSAMPLING_128X);
   bmp.setIIRFilterCoeff(BMP5_IIR_FILTER_COEFF_127);
   bmp.setOutputDataRate(BMP5_ODR_10_HZ);
+
+  /* Suggestions from Bosch for movement */
+  // bmp.setTemperatureOversampling(BMP5_OVERSAMPLING_2X);
+  // bmp.setPressureOversampling(BMP5_OVERSAMPLING_16X);
+  // bmp.setIIRFilterCoeff(BMP5_IIR_FILTER_COEFF_3);
+  // bmp.setOutputDataRate(BMP5_ODR_50_HZ);
 
   // Throw the first one away
   bmp.performReading();
