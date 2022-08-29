@@ -17,15 +17,18 @@ Notecard notecard;
 
 unsigned long startMillis;
 unsigned long currentMillis;
-const unsigned long period = 60000;
+const unsigned long period = 1000 * 300;
 
 uint8_t lastFloor = 0;
 float floorHeight = 4.2672; // Height in meters (14 ft)
-float seaLevelPressure = 991.29; // Starting Sea Level Pressure in HPa
+float seaLevelPressure = 986.60; // Starting Sea Level Pressure in HPa
 float firstFloorAltitude = 0;
 float firstFloorPressure = seaLevelPressure;
 
 bool setFirstFloor = false;
+
+// Forward declarations
+void captureAndSendReadings(void);
 
 Adafruit_SSD1306 display = Adafruit_SSD1306(128, 32, &Wire);
 Adafruit_BMP581 bmp;
@@ -53,9 +56,9 @@ void setup() {
   serialDebugOut.println("BMP581 connected...");
 
   bmp.setTemperatureOversampling(BMP5_OVERSAMPLING_8X);
-  bmp.setPressureOversampling(BMP5_OVERSAMPLING_64X);
+  bmp.setPressureOversampling(BMP5_OVERSAMPLING_128X);
   bmp.setIIRFilterCoeff(BMP5_IIR_FILTER_COEFF_127);
-  bmp.setOutputDataRate(BMP5_ODR_50_HZ);
+  bmp.setOutputDataRate(BMP5_ODR_10_HZ);
 
   // Throw the first one away
   bmp.performReading();
@@ -91,6 +94,7 @@ void setup() {
 
   delay(2000);
 
+  captureAndSendReadings();
   startMillis = millis();
 }
 
@@ -98,7 +102,14 @@ void loop() {
   currentMillis = millis();
 
   if (currentMillis - startMillis >= period) {
-    if (! bmp.performReading()) {
+    captureAndSendReadings();
+
+    startMillis = currentMillis;
+  }
+}
+
+void captureAndSendReadings() {
+  if (! bmp.performReading()) {
       Serial.println("Failed to perform reading :(");
       return;
     }
@@ -150,7 +161,4 @@ void loop() {
     JAddNumberToObject(body, "temp", temp);
     JAddItemToObject(req, "body", body);
     notecard.sendRequest(req);
-
-    startMillis = currentMillis;
-  }
 }
