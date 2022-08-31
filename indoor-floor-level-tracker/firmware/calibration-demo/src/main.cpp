@@ -30,6 +30,13 @@ struct environmentVariables {
   int noMovementThreshold;
 };
 
+struct sensorReadings {
+  float temp;
+  float pressure;
+  float altitude;
+  float floor;
+};
+
 bool setBaselineFloor = false;
 environmentVariables envVars;
 
@@ -37,8 +44,10 @@ Notecard notecard;
 
 // Forward declarations
 void fetchEnvironmentVariables(environmentVariables);
-bool pollEnvVars();
-void captureAndSendReadings(void);
+bool pollEnvVars(void);
+sensorReadings captureSensorReadings(void);
+void sendSensorReadings(sensorReadings);
+void displayReadings(sensorReadings);
 
 Adafruit_SSD1306 display = Adafruit_SSD1306(128, 32, &Wire);
 Adafruit_BMP581 bmp;
@@ -124,7 +133,11 @@ void setup() {
 
   delay(2000);
 
-  captureAndSendReadings();
+  if (!envVars.live) {
+    sensorReadings readings = captureSensorReadings();
+    displayReadings(readings);
+    sendSensorReadings(readings);
+  }
   startMs = millis();
 }
 
@@ -149,7 +162,9 @@ void loop() {
     currentMillis = millis();
 
     if (currentMillis - startMs >= period) {
-      captureAndSendReadings();
+      sensorReadings readings = captureSensorReadings();
+      displayReadings(readings);
+      sendSensorReadings(readings);
 
       startMs = currentMillis;
     }
@@ -229,59 +244,72 @@ bool pollEnvVars() {
   return true;
 }
 
-void captureAndSendReadings() {
+sensorReadings captureSensorReadings() {
+  sensorReadings readings;
+
   if (!bmp.performReading()) {
-      serialDebugOut.println("Failed to perform reading from pressure sensor.");
-      return;
-    }
+    serialDebugOut.println("Failed to perform reading from pressure sensor.");
+  }
 
-    float temp = bmp.temperature;
-    float pressure = bmp.pressure / 100.0;
+  readings.temp = bmp.temperature;
+  readings.pressure = bmp.pressure / 100.0;
 
-    if (setBaselineFloor) {
-      envVars.baselineFloorPressure = pressure;
+  if (setBaselineFloor) {
+    envVars.baselineFloorPressure = readings.pressure;
 
-      setBaselineFloor = false;
-    }
+    setBaselineFloor = false;
+  }
 
-    float altitude = bmp.readAltitude(envVars.baselineFloorPressure);
-    int8_t floor = (altitude / envVars.floorHeight) + 1;
+  readings.altitude = bmp.readAltitude(envVars.baselineFloorPressure);
+  int8_t floor = (readings.altitude / envVars.floorHeight) + 1;
 
-    serialDebugOut.print("Temperature = ");
-    serialDebugOut.print(temp);
-    serialDebugOut.println(" *C");
+  envVars.currentFloor = floor;
+  readings.floor = floor;
 
-    serialDebugOut.print("Pressure = ");
-    serialDebugOut.print(pressure);
-    serialDebugOut.println(" hPa");
+  return readings;
+}
 
-    serialDebugOut.print("Approx. Altitude = ");
-    serialDebugOut.print(altitude);
-    serialDebugOut.println(" m");
-
-    serialDebugOut.print("Floor = ");
-    serialDebugOut.println(floor);
-
-    serialDebugOut.println();
-
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.print("Press. ");
-    display.println(pressure);
-    display.print("Alt.   ");
-    display.println(altitude);
-    display.print("Floor: ");
-    display.print(floor);
-    display.display();
-
-    J *req = notecard.newRequest("note.add");
+void sendSensorReadings(sensorReadings readings) {
+  J *req = notecard.newRequest("note.add");
+  if (req != NULL) {
     JAddBoolToObject(req, "sync", true);
     J *body = JCreateObject();
+    if (body != NULL) {
+      JAddNumberToObject(body, "floor", readings.floor);
+      JAddNumberToObject(body, "altitude", readings.altitude);
+      JAddNumberToObject(body, "pressure", readings.pressure);
+      JAddNumberToObject(body, "temp", readings.temp);
+      JAddItemToObject(req, "body", body);
+      notecard.sendRequest(req);
+    }
+  }
+}
 
-    JAddNumberToObject(body, "floor", floor);
-    JAddNumberToObject(body, "altitude", altitude);
-    JAddNumberToObject(body, "pressure", pressure);
-    JAddNumberToObject(body, "temp", temp);
-    JAddItemToObject(req, "body", body);
-    notecard.sendRequest(req);
+void displayReadings(sensorReadings readings) {
+  serialDebugOut.print("Temperature = ");
+  serialDebugOut.print(readings.temp);
+  serialDebugOut.println(" *C");
+
+  serialDebugOut.print("Pressure = ");
+  serialDebugOut.print(readings.pressure);
+  serialDebugOut.println(" hPa");
+
+  serialDebugOut.print("Approx. Altitude = ");
+  serialDebugOut.print(readings.altitude);
+  serialDebugOut.println(" m");
+
+  serialDebugOut.print("Floor = ");
+  serialDebugOut.println(readings.floor);
+
+  serialDebugOut.println();
+
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.print("Press. ");
+  display.println(readings.pressure);
+  display.print("Alt.   ");
+  display.println(readings.altitude);
+  display.print("Floor: ");
+  display.print(readings.floor);
+  display.display();
 }
