@@ -8,12 +8,16 @@
 #include "Adafruit_BMP581.h"
 
 #define serialDebugOut Serial
+// #define DEBUG_NOTECARD
 #define PRODUCT_UID "com.blues.nf1"
-#define ATTN_INPUT_PIN 5
-#define DEBUG true
+#define ENV_POLL_SECS	1
 
-unsigned long startMillis;
-unsigned long currentMillis;
+// Variables for Env Var polling
+static unsigned long nextPollMs = 0;
+static uint32_t lastModifiedTime = 0;
+// Variables for sensor reading period when not in live mode
+static unsigned long startMs;
+static unsigned long currentMillis;
 const unsigned long period = 1000 * 300;
 
 struct environmentVariables {
@@ -21,21 +25,18 @@ struct environmentVariables {
   double floorHeight;
   int baselineFloor;
   float baselineFloorPressure;
+  int currentFloor;
   int noMovementThreshold;
 };
 
 bool setBaselineFloor = false;
 environmentVariables envVars;
 
-// Set to true whenever ATTN interrupt occurs
-static bool attnInterruptOccurred;
-
 Notecard notecard;
 
 // Forward declarations
-void attnISR(void);
-void attnArm();
 void fetchEnvironmentVariables(environmentVariables);
+bool pollEnvVars();
 void captureAndSendReadings(void);
 
 Adafruit_SSD1306 display = Adafruit_SSD1306(128, 32, &Wire);
@@ -43,8 +44,10 @@ Adafruit_BMP581 bmp;
 
 void setup() {
   serialDebugOut.begin(115200);
+#ifdef DEBUG_NOTECARD
   notecard.setDebugOutputStream(serialDebugOut);
-  delay(2500);
+#endif
+  delay(500);
   serialDebugOut.println("Floor Level Detector");
   serialDebugOut.println("====================");
 
@@ -95,6 +98,7 @@ void setup() {
   J *req = notecard.newRequest("hub.set");
   JAddStringToObject(req, "product", PRODUCT_UID);
   JAddStringToObject(req, "mode", "continuous");
+  JAddBoolToObject(req, "sync", true);
   notecard.sendRequest(req);
 
   // Enable Outboard DFU
@@ -106,44 +110,36 @@ void setup() {
   // Check Environment Variables
   fetchEnvironmentVariables(envVars);
 
-  // Disarm ATTN To clear any previous state before rearming
-  req = notecard.newRequest("card.attn");
-  JAddStringToObject(req, "mode", "disarm,-env");
-  notecard.sendRequest(req);
-
-  // Configure ATTN to wait for a specific list of files
-  req = notecard.newRequest("card.attn");
-  JAddStringToObject(req, "mode", "arm,env");
-  notecard.sendRequest(req);
-
-  // Attach an interrupt pin
-  pinMode(ATTN_INPUT_PIN, INPUT);
-  attachInterrupt(digitalPinToInterrupt(ATTN_INPUT_PIN), attnISR, RISING);
-
-  // Arm the interrupt, so that we are notified whenever ATTN rises
-  attnArm();
-
   delay(2000);
 
   captureAndSendReadings();
-  startMillis = millis();
+  startMs = millis();
 }
 
 void loop() {
 
-  if (attnInterruptOccurred) {
+  if (pollEnvVars()) {
     fetchEnvironmentVariables(envVars);
 
-    attnArm();
+    serialDebugOut.println("Environment Variable Updates Received");
+
+    J *req = notecard.newRequest("note.add");
+    JAddStringToObject(req, "file", "notify.qo");
+    JAddBoolToObject(req, "sync", true);
+    J *body = JCreateObject();
+
+    JAddStringToObject(body, "message", "environment variable update received");
+    JAddItemToObject(req, "body", body);
+    notecard.sendRequest(req);
   }
 
   if (!envVars.live) {
     currentMillis = millis();
 
-    if (currentMillis - startMillis >= period) {
+    if (currentMillis - startMs >= period) {
       captureAndSendReadings();
 
-      startMillis = currentMillis;
+      startMs = currentMillis;
     }
   } else {
     // Behave differently if we are live
@@ -166,18 +162,21 @@ void fetchEnvironmentVariables(environmentVariables vars) {
           return;
       }
 
+      // Set the lastModifiedTime based on the return
+      lastModifiedTime = JGetNumber(rsp, "time");
+
       // Get the note's body
       J *body = JGetObject(rsp, "body");
       if (body != NULL) {
           vars.baselineFloor = atoi(JGetString(body, "baseline_floor"));
           vars.floorHeight = atof(JGetString(body, "floor_height"));
           vars.noMovementThreshold = atoi(JGetString(body, "no_movement_threshold"));
+
           char *liveStr = JGetString(body, "live");
+          bool isLive = false;
 
           if (liveStr == "true" || liveStr == "1") {
             vars.live = true;
-          } else {
-            vars.live = false;
           }
 
           serialDebugOut.printf("\nBaseline Floor: %d\n", vars.baselineFloor);
@@ -194,8 +193,32 @@ void fetchEnvironmentVariables(environmentVariables vars) {
   notecard.deleteResponse(rsp);
 }
 
+bool pollEnvVars() {
+  if (millis() < nextPollMs) {
+    return false;
+  }
+
+  nextPollMs = millis() + (ENV_POLL_SECS * 1000);
+
+  J *rsp = notecard.requestAndResponse(notecard.newRequest("env.modified"));
+
+	if (rsp == NULL) {
+		return false;
+	}
+
+	uint32_t modifiedTime = JGetInt(rsp, "time");
+  notecard.deleteResponse(rsp);
+	if (lastModifiedTime == modifiedTime) {
+		return false;
+	}
+
+	lastModifiedTime = modifiedTime;
+
+  return true;
+}
+
 void captureAndSendReadings() {
-  if (! bmp.performReading()) {
+  if (!bmp.performReading()) {
       serialDebugOut.println("Failed to perform reading from pressure sensor.");
       return;
     }
@@ -249,23 +272,4 @@ void captureAndSendReadings() {
     JAddNumberToObject(body, "temp", temp);
     JAddItemToObject(req, "body", body);
     notecard.sendRequest(req);
-}
-
-void attnISR()
-{
-    attnInterruptOccurred = true;
-}
-
-// Re-arm the ATTN interrupt
-void attnArm()
-{
-    // Make sure that we pick up the next RISING edge of the interrupt
-    attnInterruptOccurred = false;
-
-    // Set the ATTN pin low and reset to the previous state of waiting for
-    // Env var updates
-    J *req = notecard.newRequest("card.attn");
-    JAddStringToObject(req, "mode", "reset");
-    notecard.sendRequest(req);
-
 }
