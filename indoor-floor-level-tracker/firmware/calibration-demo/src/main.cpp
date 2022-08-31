@@ -1,12 +1,16 @@
 #include <Arduino.h>
 #include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
 #include <Notecard.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
 #include "Adafruit_BMP581.h"
 #include "metadata.h"
+
+// Uncomment to use a connected SSD1306 Display
+// #define USE_DISPLAY
+
+#ifdef USE_DISPLAY
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#endif
 
 #define serialDebugOut Serial
 // #define DEBUG_NOTECARD
@@ -49,7 +53,10 @@ sensorReadings captureSensorReadings(void);
 void sendSensorReadings(sensorReadings);
 void displayReadings(sensorReadings);
 
+#ifdef USE_DISPLAY
 Adafruit_SSD1306 display = Adafruit_SSD1306(128, 32, &Wire);
+#endif
+
 Adafruit_BMP581 bmp;
 
 void setup() {
@@ -64,9 +71,10 @@ void setup() {
   Wire.begin();
   notecard.begin();
 
+#ifdef USE_DISPLAY
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-
   serialDebugOut.println("OLED connected...");
+#endif
 
   if (!bmp.begin_I2C())
   {
@@ -91,6 +99,7 @@ void setup() {
   // Throw the first one away
   bmp.performReading();
 
+#ifdef USE_DISPLAY
   // Clear the display buffer.
   display.clearDisplay();
   display.display();
@@ -104,6 +113,7 @@ void setup() {
   display.println("Indoor Floor Level Tracker");
   display.setCursor(0,0);
   display.display();
+#endif
 
   J *req = notecard.newRequest("hub.set");
   if (req != NULL) {
@@ -303,6 +313,7 @@ void displayReadings(sensorReadings readings) {
 
   serialDebugOut.println();
 
+#ifdef USE_DISPLAY
   display.clearDisplay();
   display.setCursor(0, 0);
   display.print("Press. ");
@@ -312,4 +323,5 @@ void displayReadings(sensorReadings readings) {
   display.print("Floor: ");
   display.print(readings.floor);
   display.display();
+#endif
 }
