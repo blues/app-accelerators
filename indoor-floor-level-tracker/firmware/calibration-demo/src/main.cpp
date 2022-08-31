@@ -6,6 +6,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include "Adafruit_BMP581.h"
+#include "metadata.h"
 
 #define serialDebugOut Serial
 // #define DEBUG_NOTECARD
@@ -96,16 +97,27 @@ void setup() {
   display.display();
 
   J *req = notecard.newRequest("hub.set");
-  JAddStringToObject(req, "product", PRODUCT_UID);
-  JAddStringToObject(req, "mode", "continuous");
-  JAddBoolToObject(req, "sync", true);
-  notecard.sendRequest(req);
+  if (req != NULL) {
+    JAddStringToObject(req, "product", PRODUCT_UID);
+    JAddStringToObject(req, "mode", "continuous");
+    JAddBoolToObject(req, "sync", true);
+    notecard.sendRequest(req);
+  }
+
+  // Notify Notehub of the current firmware version
+  req = notecard.newRequest("dfu.status");
+  if (req != NULL) {
+    JAddStringToObject(req, "version", firmwareVersion());
+    notecard.sendRequest(req);
+  }
 
   // Enable Outboard DFU
   req = notecard.newRequest("card.dfu");
-  JAddStringToObject(req, "name", "stm32");
-  JAddBoolToObject(req, "on", true);
-  notecard.sendRequest(req);
+  if (req != NULL) {
+    JAddStringToObject(req, "name", "stm32");
+    JAddBoolToObject(req, "on", true);
+    notecard.sendRequest(req);
+  }
 
   // Check Environment Variables
   fetchEnvironmentVariables(envVars);
