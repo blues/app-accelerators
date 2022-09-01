@@ -1,0 +1,199 @@
+{
+  "successfulNotehubDeviceResponse": {
+    "uid": "dev:5678",
+    "serial_number": "9101112",
+    "provisioned": "2021-12-01T11:34:56Z",
+    "last_activity": "2021-12-14T07:47:29Z",
+    "contact": "Test User 1",
+    "product_uid": "net.test:app",
+    "fleet_uids": [],
+    "voltage": 3.8,
+    "temperature": 15
+  },
+  "exampleNotehubLocation1": {
+    "when": 1642795378,
+    "name": "Philadelphia, Pennsylvania",
+    "country": "US",
+    "timezone": "America/New_York",
+    "latitude": 40.020737,
+    "longitude": -75.152794
+  },
+  "exampleNotehubLocation2": {
+    "when": 1636969856,
+    "name": "Fujiyoshida",
+    "country": "JP",
+    "timezone": "Asia/Tokyo",
+    "latitude": 35.412762500000014,
+    "longitude": 138.884734375
+  },
+  "successfulNotehubLatestEventsResponse": {
+    "latest_events": [
+      {
+        "file": "203237463236500200320044#data.qo",
+        "captured": "2021-09-28T18:11:49Z",
+        "received": "2021-09-28T18:19:24Z",
+        "event_uid": "15228baf-2f53-4b1c-bed9-e79d6b985510",
+        "body": {
+          "count": 14,
+          "sensor": "1F Dining Room [87JFH688+2H]"
+        }
+      },
+      {
+        "file": "203237463236500200360012#data.qo",
+        "captured": "2021-09-28T18:10:38Z",
+        "received": "2021-09-28T18:19:25Z",
+        "event_uid": "38786bec-15ae-4ddb-98af-6109fd21cae7",
+        "body": {
+          "count": 17,
+          "sensor": "1F Kitchen [87JFH688+2H]"
+        }
+      },
+      {
+        "file": "123456a#air.qo",
+        "captured": "2021-11-30T20:30:19Z",
+        "received": "2021-11-30T20:30:45Z",
+        "event_uid": "1961a1cd-6c10-4f70-a242-291838f4f125",
+        "body": {
+          "humidity": 27.2,
+          "pressure": 101152,
+          "temperature": 22.6,
+          "voltage": 2.7
+        }
+      },
+      {
+        "file": "123456a#motion.qo",
+        "captured": "2021-11-30T14:31:24Z",
+        "received": "2021-11-30T14:31:42Z",
+        "event_uid": "55cfc7d3-2987-43b9-9fb7-33173edb5949",
+        "body": {
+          "count": 1,
+          "total": 281
+        }
+      },
+      {
+        "file": "456789b#air.qo",
+        "captured": "2021-10-01T18:52:41Z",
+        "received": "2021-10-01T19:07:13Z",
+        "event_uid": "8fd30b3b-766a-4a90-9dbc-9e0a21ae73bf",
+        "body": {
+          "humidity": 38.1,
+          "pressure": 101950,
+          "temperature": 24.3
+        }
+      },
+      {
+        "file": "456789b#motion.qo",
+        "captured": "2021-10-01T17:57:26Z",
+        "received": "2021-10-01T18:07:12Z",
+        "event_uid": "f3bbd770-40ee-4526-aeda-a560f069528a",
+        "body": {
+          "count": 3
+        }
+      },
+      {
+        "file": "_health.qo",
+        "captured": "2022-01-17T15:16:13Z",
+        "received": "2022-01-17T15:16:38Z",
+        "event_uid": "e649372a-2fec-45d9-bb3e-07063e236b6b",
+        "body": {
+          "text": "boot (brown-out & hard reset [13842])"
+        }
+      }
+    ]
+  },
+  "successfulNotehubEventResponse": {
+    "events": [
+      {
+        "uid": "7ae718af-dad1-4834-9e16-6bca7b3ebdda",
+        "device_uid": "dev:1234",
+        "file": "20323746323650050042000d#motion.qo",
+        "captured": "2022-02-05T16:05:55Z",
+        "received": "2022-02-05T16:06:05Z",
+        "body": { "count": 1, "total": 1164 },
+        "tower_location": null,
+        "gps_location": null
+      },
+      {
+        "uid": "52bbb7ff-c1ca-438f-8487-93d542552db6",
+        "device_uid": "dev:1234",
+        "file": "20323746323650050042000d#motion.qo",
+        "captured": "2022-02-05T16:06:10Z",
+        "received": "2022-02-05T16:06:26Z",
+        "body": { "count": 2, "total": 1166 },
+        "tower_location": null,
+        "gps_location": null
+      },
+      {
+        "uid": "74eab638-3256-4eea-8617-0d117a14133b",
+        "device_uid": "dev:1234",
+        "file": "456789b#motion.qo",
+        "captured": "2022-02-05T16:07:01Z",
+        "received": "2022-02-05T16:07:05Z",
+        "body": { "count": 1, "total": 1168 },
+        "tower_location": null,
+        "gps_location": null
+      },
+      {
+        "uid": "2cace884-5dc2-4653-b286-273ed41c85b5",
+        "device_uid": "dev:1234",
+        "file": "456789b#air.qo",
+        "captured": "2022-02-05T16:08:37Z",
+        "received": "2022-02-05T16:09:45Z",
+        "body": {
+          "humidity": 15.9921875,
+          "pressure": 98247.56,
+          "temperature": 21.703125,
+          "voltage": 3.222
+        },
+        "tower_location": null,
+        "gps_location": null
+      },
+      {
+        "uid": "ab525a4a-072a-4ce5-a126-09e5a037101d",
+        "device_uid": "dev:1234",
+        "file": "20323746323650050042000d#air.qo",
+        "captured": "2022-02-04T17:02:01Z",
+        "received": "2022-02-04T17:02:10Z",
+        "body": {
+          "humidity": 18.21875,
+          "pressure": 98283.82,
+          "temperature": 22.578125,
+          "voltage": 3.252
+        },
+        "tower_location": null,
+        "gps_location": null
+      }
+    ]
+  },
+  "successfulNotehubConfigResponse": {
+    "note": "20323746323650050028000a",
+    "body": { "loc": "TEST_LOCATION", "name": "TEST_NAME" },
+    "time": 1643309030
+  },
+  "successfulNotehubConfigResponse2": {
+    "note": "123456a",
+    "body": { "loc": "Kitchen", "name": "My Mocked config 1" },
+    "time": 164380907
+  },
+  "successfulNotehubConfigResponse3": {
+    "note": "123456a",
+    "time": 164380907
+  },
+  "notehubConfigNoteNotFound": {
+    "err": "'error getting note: {note-noexist} note not found: fjdsidiojfdsojf'"
+  },
+  "notehubConfigDeviceNotFound": {
+    "err": "'device not registered on this service: dev:fjdsoifjs {device-noexist}'"
+  },
+  "notehubConfigBadPermissions": {
+    "err": "'error getting note: {insufficient permissions}'"
+  },
+  "notehubEnvVarResponse": {
+    "environment_variables": {
+      "_fwc": "notecard-3.2.1.13982$20220204140835.bin",
+      "_fwc_retry": "1644259198",
+      "_sn": "tj-test",
+      "_tags": ""
+    }
+  }
+}
