@@ -1,0 +1,24 @@
+@import "_variables.scss";
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  // required to override default Ant Design component styling
+  padding: 0 64px !important;
+
+  .logo {
+    display: flex;
+    align-items: center;
+  }
+
+  .headerText {
+    color: #fff;
+    font-size: 15px;
+  }
+}
+
+@media screen and (max-width: $breakpoints-xs) {
+  .header {
+    padding: 0 20px !important;
+  }
+}

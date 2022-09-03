@@ -1,0 +1,142 @@
+@import "_variables.scss";
+
+.container {
+  .errorMessage {
+    text-align: center;
+    margin-top: 24px;
+  }
+
+  :global .ant-row:last-child {
+    padding-bottom: 24px;
+  }
+
+  :global .slick-slider {
+    min-height: calc(100vh - 200px);
+
+    :global .anticon {
+      stroke-width: 50;
+      stroke: $bw-color--brand4;
+    }
+
+    :global .anticon:hover {
+      stroke-width: 50;
+      stroke: $bw-color--blue2;
+    }
+
+    :global .anticon:active {
+      stroke-width: 50;
+      stroke: $bw-color--blue3;
+    }
+
+    :global .slick-dots-bottom {
+      bottom: -25px;
+    }
+  }
+
+  :global .slick-prev::before,
+  :global .slick-next::before {
+    display: none;
+  }
+
+  :global .slick-slide {
+    padding-left: 4px;
+  }
+
+  :global .slick-dots li button {
+    background: $bw-color--brand4;
+    opacity: 0.5;
+  }
+  :global .slick-dots li.slick-active button {
+    background: $bw-color--brand4;
+  }
+
+  :global .ant-carousel .slick-next,
+  :global .ant-carousel .slick-prev {
+    font-size: 20px;
+    z-index: 2;
+    color: $bw-color--brand4;
+    opacity: 0.5;
+    top: 50%;
+  }
+
+  :global .ant-carousel .slick-prev:focus,
+  :global .ant-carousel .slick-next:focus {
+    color: $bw-color--blue3;
+  }
+
+  :global .ant-carousel .slick-prev:hover,
+  :global .ant-carousel .slick-next:hover {
+    color: $bw-color--blue4;
+  }
+}
+
+.sectionTitle,
+.sectionSubTitle {
+  font-weight: 600;
+}
+
+.sectionTitle {
+  margin-bottom: 0;
+  font-size: 20px;
+  span {
+    display: inline-block;
+    margin-right: 3px;
+  }
+}
+
+.sectionSubTitle {
+  margin-top: 20px;
+  font-size: 18px;
+}
+
+.sectionSubHeader {
+  color: $bw-color--grey4;
+  font-size: 16px;
+}
+
+@media screen and (max-width: $breakpoints-lg) {
+  .container {
+    :global .ant-carousel .slick-next,
+    :global .ant-carousel .slick-prev {
+      top: 9%;
+    }
+  }
+}
+
+@media screen and (max-width: $breakpoints-md) {
+  .container {
+    :global .slick-slider {
+      min-height: calc(100vh - 305px);
+    }
+  }
+
+  .sectionTitle {
+    font-size: 22px;
+  }
+
+  .sectionSubTitle {
+    font-size: 20px;
+  }
+
+  .sectionSubHeader {
+    margin-top: -5px;
+    margin-bottom: 24px;
+  }
+}
+
+@media screen and (max-width: $breakpoints-sm) {
+  .container {
+    :global .ant-carousel .slick-next,
+    :global .ant-carousel .slick-prev {
+      top: 4%;
+    }
+
+    :global .ant-carousel .slick-next {
+      right: -19px;
+    }
+
+    :global .ant-carousel .slick-prev {
+      left: -19px;
+    }
+  }
+}
