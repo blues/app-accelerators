@@ -3,8 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { Layout } from "antd";
 import Logo from "../../../public/images/app_logo.svg";
-import styles from "../../styles/Header.module.scss";
 import config from "../../../Config";
+import styles from "../../styles/Header.module.scss";
 
 const HeaderComponent = () => {
   const { Header } = Layout;

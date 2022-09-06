@@ -1,15 +1,13 @@
-import { Alert, Button } from "antd";
+import { Alert } from "antd";
 import { NextRouter, useRouter } from "next/router";
+import { useQuery } from "react-query";
+import React from "react";
 import { presentNotifications as apiAppNotifications, removeNotification } from "../../api-client/notification";
-import { services } from "../../services/ServiceLocatorClient";
 import {
   AppNotification,
 } from "../presentation/notifications";
-import { useQuery } from "react-query";
-import React from "react";
-import styles from "../../styles/Home.module.scss";
-import notificationsStyles from "../../styles/Notifications.module.scss";
 import { getFormattedLastSeenDate } from "../presentation/uiHelpers";
+import notificationsStyles from "../../styles/Notifications.module.scss";
 
 
 function renderAppNotification(n: AppNotification, router: NextRouter) {
@@ -22,7 +20,7 @@ function renderAppNotification(n: AppNotification, router: NextRouter) {
       message={note}
       type="info"
       closable
-      onClose={async () => await removeNotification(n.id)}
+      onClose={async () => removeNotification(n.id)}
     />
   );
 }

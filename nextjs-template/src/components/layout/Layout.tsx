@@ -2,8 +2,9 @@ import { ReactNode } from "react";
 import { Layout } from "antd";
 import Header from "./Header";
 import Footer from "./Footer";
-import styles from "../../styles/Layout.module.scss";
+
 import { LoadingSpinner } from "./LoadingSpinner";
+import styles from "../../styles/Layout.module.scss";
 
 const LayoutComponent = ({
   children,
