@@ -14,10 +14,11 @@
 
 #define serialDebugOut Serial
 // Uncomment to view Note requests from the Host
-// #define DEBUG_NOTECARD
+#define DEBUG_NOTECARD
 
 #define PRODUCT_UID "com.blues.nf1"
-#define ENV_POLL_SECS	1
+// #define ENV_POLL_SECS	1
+#define ENV_POLL_SECS	60
 
 // Variables for Env Var polling
 static unsigned long nextPollMs = 0;
@@ -25,7 +26,8 @@ static uint32_t lastModifiedTime = 0;
 // Variables for sensor reading period when not in live mode
 static unsigned long startMs;
 static unsigned long currentMillis;
-const unsigned long period = 1000 * 300;
+// const unsigned long period = 1000 * 300;
+const unsigned long period = 1000 * 60;
 
 struct applicationState {
   bool live;
@@ -187,7 +189,7 @@ void loop() {
         sensorReadings readings = captureSensorReadings();
         displayReadings(readings);
         // Uncomment to send readings when not live
-        // sendSensorReadings(readings);
+        sendSensorReadings(readings);
       } else {
         serialDebugOut.println("Waiting for Environment Variables from the Notecard");
       }
