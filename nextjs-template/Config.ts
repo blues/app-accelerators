@@ -17,9 +17,6 @@ const env = {
   DATABASE_URL: process.env.DATABASE_URL,
   READ_ONLY: process.env.READ_ONLY,
   NOTEHUB_PROVIDER: process.env.NOTEHUB_PROVIDER,
-  NEXT_PUBLIC_PUBNUB_PUBLISH_KEY: process.env.NEXT_PUBLIC_PUBNUB_PUBLISH_KEY,
-  NEXT_PUBLIC_PUBNUB_SUBSCRIBE_KEY:
-    process.env.NEXT_PUBLIC_PUBNUB_SUBSCRIBE_KEY,
 };
 
 const optionalEnvVar = (varName: keyof typeof env, defaultValue: string) => {
@@ -76,12 +73,6 @@ const Config = {
   },
   get notehubProvider() {
     return Boolean(optionalEnvVar("NOTEHUB_PROVIDER", ""));
-  },
-  get pubnubPublishKey() {
-    return optionalEnvVar("NEXT_PUBLIC_PUBNUB_PUBLISH_KEY", "");
-  },
-  get pubnubSubscribeKey() {
-    return optionalEnvVar("NEXT_PUBLIC_PUBNUB_SUBSCRIBE_KEY", "");
   },
 };
 

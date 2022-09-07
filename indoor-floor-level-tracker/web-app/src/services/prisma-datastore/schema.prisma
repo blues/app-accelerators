@@ -1,0 +1,48 @@
+generator client {
+  provider        = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id         Int       @id @default(autoincrement())
+  createdAt  DateTime  @default(now()) @map("created_at")
+  projectUID String    @map("project_uid") @unique
+  name       String    @db.VarChar(50)
+  devices    Device[]
+
+  @@map("project")
+}
+
+model Device {
+  id                Int @id @default(autoincrement())
+
+  // unique device uid in notehub
+  deviceUID         String @unique @map("device_uid") @db.VarChar(64)
+
+  // device serial number (cached)
+  name              String? @db.VarChar(80) // cached
+  locationName      String? @db.VarChar(200) // cached
+  lastSeenAt        DateTime? @map("last_seen_at") // the last time an event was heard from this device
+
+  // the project the device belongs to
+  project           Project @relation(fields: [project_id], references: [id])
+  project_id        Int
+
+  pin               String?   @db.VarChar(20) // MAX_PIN_LENGTH
+
+  @@index([project_id])
+  @@index([deviceUID])
+  @@map("device")
+}
+
+model Notification {
+  id                  String        @db.Uuid @default(uuid()) @unique
+  type                String        @db.VarChar(50)
+  content             Json
+  when                DateTime
+  @@map("notification")
+}
