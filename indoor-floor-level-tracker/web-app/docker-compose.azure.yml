@@ -1,0 +1,24 @@
+# docker-compose.azure.yml
+# For deploying the Reference Web App site to the Microsoft Azure cloud.
+##
+# To learn more about docker on Azure see here:
+# https://www.docker.com/blog/how-to-deploy-containers-to-azure-aci-using-docker-cli-and-compose/
+
+version: "3.7"
+services:
+  referencewebeapp:
+    domainname: "${AZURE_SUBDOMAIN:?Please set AZURE_SUBDOMAIN}"
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    image: "${SITE_DOCKER_TAG:?Please set SITE_DOCKER_TAG}"
+  webeapp-https-reverse-proxy:
+    domainname: "${AZURE_SUBDOMAIN:?Please set AZURE_SUBDOMAIN}"
+    image: caddy
+    command: >-
+      caddy reverse-proxy
+      --from "${SITE_DNS:?Please set SITE_DNS}"
+      --to nf1ewebeapp:4000
+    ports:
+      - "80:80"
+      - "443:443"
