@@ -1,6 +1,6 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
-  "name": "Indoor Floo-level Tracker Reference Web App Development Dockerfile",
+  "name": "Indoor Floor-level Tracker Development Dockerfile",
 
   // Sets the run context to one level up instead of the .devcontainer folder.
   "context": "..",

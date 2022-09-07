@@ -5,13 +5,15 @@ import type { ColumnsType } from "antd/es/table";
 import { format } from "date-fns";
 import { usePubNub } from "pubnub-react";
 import { uniqBy } from "lodash";
+import { ClientDevice } from "../services/ClientModel";
 import { services } from "../services/ServiceLocatorServer";
-import { ERROR_MESSAGE, getErrorMessage } from "../constants/ui";
+import { getErrorMessage } from "../constants/ui";
 import { ERROR_CODES } from "../services/Errors";
 import Config from "../../Config";
 import styles from "../styles/Home.module.scss";
 
 type HomeData = {
+  deviceData: ClientDevice[];
   err?: string;
 };
 
@@ -29,8 +31,10 @@ interface DataType {
   temperature: number;
 }
 
-const Home: NextPage<HomeData> = ({ err }) => {
+const Home: NextPage<HomeData> = ({ devices, err }) => {
   const infoMessage = "Deploy message";
+
+  console.log(devices);
   let pubnub;
   if (pubnub) {
     pubnub = usePubNub();
@@ -83,6 +87,7 @@ const Home: NextPage<HomeData> = ({ err }) => {
     }
   }, [pubnub, channels]);
 
+  // todo move this table info into its own component
   const columns: ColumnsType<DataType> = [
     {
       title: "Best ID",
@@ -169,13 +174,15 @@ const Home: NextPage<HomeData> = ({ err }) => {
 export default Home;
 
 export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
+  let devices: ClientDevice[] = [];
   let err = "";
 
   try {
     const appService = services().getAppService();
+    devices = await appService.getDevicesByFleet();
 
     return {
-      props: { err },
+      props: { devices, err },
     };
   } catch (e) {
     err = getErrorMessage(
@@ -184,6 +191,6 @@ export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
   }
 
   return {
-    props: { err },
+    props: { devices, err },
   };
 };

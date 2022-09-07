@@ -1,9 +1,9 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {
-  DataProvider
-} from "../DataProvider";
+import { ClientDevice } from "../ClientModel";
+import { DataProvider } from "../DataProvider";
 import { Device, DeviceID, Project, ProjectID } from "../DomainModel";
+import NotehubDevice from "./models/NotehubDevice";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import { NotehubAccessor } from "./NotehubAccessor";
 
@@ -12,8 +12,18 @@ import { NotehubAccessor } from "./NotehubAccessor";
 export const getBestLocation = (object: NotehubLocationAlternatives) =>
   object.gps_location || object.triangulated_location || object.tower_location;
 
+export function notehubDeviceToIndoorTracker(device: NotehubDevice) {
+  return {
+    uid: device.uid,
+    name: device.serial_number,
+    lastActivity: device.last_activity,
+    ...(getBestLocation(device) && {
+      location: getBestLocation(device)?.name,
+    }),
+  };
+}
 
-  export default class NotehubDataProvider implements DataProvider {
+export default class NotehubDataProvider implements DataProvider {
   constructor(
     private readonly notehubAccessor: NotehubAccessor,
     private readonly projectID: ProjectID
@@ -23,8 +33,8 @@ export const getBestLocation = (object: NotehubLocationAlternatives) =>
     const project: Project = {
       id: this.projectID,
       name: "fixme",
-      description: "fixme"
-    }
+      description: "fixme",
+    };
     return project;
   }
 
@@ -34,6 +44,15 @@ export const getBestLocation = (object: NotehubLocationAlternatives) =>
 
   async getDevice(deviceID: DeviceID): Promise<Device | null> {
     throw new Error("Method not implemented.");
+  }
+
+  async getDevicesByFleet(): Promise<ClientDevice[]> {
+    const trackerDevices: ClientDevice[] = [];
+    const rawDevices = await this.notehubAccessor.getDevicesByFleet();
+    rawDevices.forEach((device) => {
+      trackerDevices.push(notehubDeviceToIndoorTracker(device));
+    });
+    return trackerDevices;
   }
 
   // eslint-disable-next-line class-methods-use-this

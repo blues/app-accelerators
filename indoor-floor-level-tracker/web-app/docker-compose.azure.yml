@@ -1,5 +1,5 @@
 # docker-compose.azure.yml
-# For deploying the Reference Web App site to the Microsoft Azure cloud.
+# For deploying the Indoor Floor-Level Tracker site to the Microsoft Azure cloud.
 ##
 # To learn more about docker on Azure see here:
 # https://www.docker.com/blog/how-to-deploy-containers-to-azure-aci-using-docker-cli-and-compose/

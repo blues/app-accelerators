@@ -24,6 +24,7 @@ interface NotehubAccessor {
     hubDeviceUID: string,
     envVars: NotehubEnvVars
   ) => Promise<boolean>;
+  getDevicesByFleet: () => Promise<NotehubDevice[]>;
 }
 
 export type { NotehubAccessor };

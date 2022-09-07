@@ -115,7 +115,7 @@ function configure_environment() {
 function main() {
   cd "$SCRIPT_DIR"
 
-  log "Reference Web App to the Cloud."
+  log "Indoor Floor-Level Tracker to the Cloud."
 
   configure_environment || {
     log "Error: Could not configure environment."

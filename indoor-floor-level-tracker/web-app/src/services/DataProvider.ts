@@ -1,3 +1,4 @@
+import { ClientDevice } from "./ClientModel";
 import { Project, Device, DeviceID } from "./DomainModel";
 
 export interface BulkImport {
@@ -8,7 +9,7 @@ export interface BulkImport {
 export interface DataProvider {
   getProject(): Promise<Project>;
   getDevices(): Promise<Device[]>;
-  getDevice(deviceID: DeviceID): Promise<Device|null>;
+  getDevice(deviceID: DeviceID): Promise<Device | null>;
   doBulkImport(): Promise<BulkImport>;
-
+  getDevicesByFleet(): Promise<ClientDevice[]>;
 }

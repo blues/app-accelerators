@@ -35,8 +35,8 @@ jobs:
         env:
           HUB_AUTH_TOKEN: ${{ secrets.HUB_AUTH_TOKEN }}
           HUB_BASE_URL: ${{ secrets.HUB_BASE_URL }}
-          HUB_PROJECTUID: ${{ secrets.HUB_PROJECTUID }}
-          TEST_DEVICE_ID: ${{ secrets.TEST_DEVICE_ID }}
+          HUB_PROJECT_UID: ${{ secrets.HUB_PROJECT_UID }}
+          HUB_FLEET_ID: ${{ secrets.HUB_FLEET_UID }}
           NOTEHUB_PROVIDER: 1
         run: yarn test:coverage
       - run: yarn lint
@@ -48,8 +48,8 @@ jobs:
         env:
           HUB_AUTH_TOKEN: ${{ secrets.HUB_AUTH_TOKEN }}
           HUB_BASE_URL: ${{ secrets.HUB_BASE_URL }}
-          HUB_PROJECTUID: ${{ secrets.HUB_PROJECTUID }}
-          TEST_DEVICE_ID: ${{ secrets.TEST_DEVICE_ID }}
+          HUB_PROJECT_UID: ${{ secrets.HUB_PROJECT_UID }}
+          HUB_FLEET_ID: ${{ secrets.HUB_FLEET_UID }}
           NOTEHUB_PROVIDER: 1
   docker-build:
     runs-on: ubuntu-latest

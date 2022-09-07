@@ -11,7 +11,8 @@ const env = {
   HUB_AUTH_TOKEN: process.env.HUB_AUTH_TOKEN,
   HUB_BASE_URL: process.env.HUB_BASE_URL,
   HUB_GUI_URL: process.env.HUB_GUI_URL,
-  HUB_PROJECTUID: process.env.HUB_PROJECTUID,
+  HUB_PROJECT_UID: process.env.HUB_PROJECT_UID,
+  HUB_FLEET_UID: process.env.HUB_FLEET_UID,
   NEXT_PUBLIC_BUILD_VERSION: process.env.NEXT_PUBLIC_BUILD_VERSION,
   NEXT_PUBLIC_COMPANY_NAME: process.env.NEXT_PUBLIC_COMPANY_NAME,
   DATABASE_URL: process.env.DATABASE_URL,
@@ -56,7 +57,10 @@ const Config = {
     return Boolean(optionalEnvVar("DEBUG_CONFIG", ""));
   },
   get hubProjectUID() {
-    return requiredEnvVar("HUB_PROJECTUID");
+    return requiredEnvVar("HUB_PROJECT_UID");
+  },
+  get hubFleetUID() {
+    return requiredEnvVar("HUB_FLEET_UID");
   },
   get hubAuthToken() {
     return requiredEnvVar("HUB_AUTH_TOKEN");

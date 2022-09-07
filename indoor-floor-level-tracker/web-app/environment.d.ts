@@ -5,8 +5,8 @@ declare global {
       HUB_AUTH_TOKEN: string;
       HUB_BASE_URL: string;
       HUB_GUI_URL: string;
-      HUB_PROJECTUID: string;
-      TEST_NODE_ID: string;
+      HUB_PROJECT_UID: string;
+      HUB_FLEET_UID: string;
     }
   }
 }

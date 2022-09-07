@@ -19,15 +19,36 @@ export default class AxiosHttpNotehubAccessor implements NotehubAccessor {
 
   hubProjectUID: string;
 
+  hubFleetUID: string;
+
   commonHeaders;
 
-  constructor(hubBaseURL: string, hubProjectUID: string, hubAuthToken: string) {
+  constructor(
+    hubBaseURL: string,
+    hubProjectUID: string,
+    hubAuthToken: string,
+    hubFleetUID: string
+  ) {
     this.hubBaseURL = hubBaseURL;
     this.hubProjectUID = hubProjectUID;
+    this.hubFleetUID = hubFleetUID;
     this.commonHeaders = {
       [HTTP_HEADER.CONTENT_TYPE]: HTTP_HEADER.CONTENT_TYPE_JSON,
       [HTTP_HEADER.SESSION_TOKEN]: hubAuthToken,
     };
+  }
+
+  async getDevicesByFleet() {
+    const endpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/fleets/${this.hubFleetUID}/devices`;
+    const resp = await axios.get<{
+      devices: NotehubDevice[];
+      has_more: boolean;
+    }>(endpoint, { headers: this.commonHeaders });
+    if (resp.data.has_more)
+      throw new Error(
+        `Response from ${endpoint} says has_more=${resp.data.has_more} but this function getDevicesByFleet() doesn't support fetching more yet.`
+      );
+    return resp.data.devices;
   }
 
   async getAllDevices(deviceUIDs: string[]) {
@@ -92,12 +113,11 @@ export default class AxiosHttpNotehubAccessor implements NotehubAccessor {
   }
 
   async getEvents(startDate?: string) {
-
     // Take the start date from the argument first, but fall back to the environment
     // variable.
     let events: NotehubEvent[] = [];
-    const startDateQuery = startDate ? `?startDate=${startDate}` : '';
-    const initialEndpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/events`+startDateQuery;
+    const startDateQuery = startDate ? `?startDate=${startDate}` : "";
+    const initialEndpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/events${startDateQuery}`;
     try {
       const resp: AxiosResponse<NotehubResponse> = await axios.get(
         initialEndpoint,
