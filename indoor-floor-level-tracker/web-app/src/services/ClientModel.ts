@@ -5,8 +5,9 @@ export interface ClientDevice {
   location?: string;
 }
 
-export interface Tracker {
+export interface ClientTracker {
   floor?: number | null;
+  uid?: string;
 }
 
 export interface TrackerConfig {
@@ -17,5 +18,5 @@ export interface TrackerConfig {
 
 export interface DeviceTracker {
   device: ClientDevice;
-  tracker: Tracker;
+  tracker: ClientTracker;
 }

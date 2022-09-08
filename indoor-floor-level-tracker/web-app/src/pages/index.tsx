@@ -5,7 +5,7 @@ import type { ColumnsType } from "antd/es/table";
 import { format } from "date-fns";
 import { usePubNub } from "pubnub-react";
 import { uniqBy } from "lodash";
-import { ClientDevice } from "../services/ClientModel";
+import { ClientDevice, ClientTracker } from "../services/ClientModel";
 import { services } from "../services/ServiceLocatorServer";
 import { getErrorMessage } from "../constants/ui";
 import { ERROR_CODES } from "../services/Errors";
@@ -17,6 +17,7 @@ type HomeData = {
   err?: string;
 };
 
+// todo move this table info into its own component
 // Notehub data.qo properties
 interface DataType {
   bestID: string;
@@ -155,6 +156,7 @@ const Home: NextPage<HomeData> = ({ devices, err }) => {
         />
       ) : (
         <>
+          {/* // todo move this table info into its own component */}
           <p>Device Data Table</p>
           {data ? (
             <Table
@@ -175,11 +177,18 @@ export default Home;
 
 export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
   let devices: ClientDevice[] = [];
+  let trackerData: ClientTracker[] = [];
   let err = "";
 
   try {
     const appService = services().getAppService();
+    // fetch devices
     devices = await appService.getDevicesByFleet();
+    // fetch latest events from each device to get altitude, floor, pressure, etc.
+    const deviceUIDs: string[] = devices.map((device) => device.uid);
+    trackerData = await appService.getLatestDeviceEvents(deviceUIDs);
+    console.log(trackerData);
+    // combine the device data with latest data
 
     return {
       props: { devices, err },

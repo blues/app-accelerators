@@ -1,9 +1,10 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { ClientDevice } from "../ClientModel";
+import { ClientDevice, ClientTracker } from "../ClientModel";
 import { DataProvider } from "../DataProvider";
 import { Device, DeviceID, Project, ProjectID } from "../DomainModel";
 import NotehubDevice from "./models/NotehubDevice";
+import NotehubLatestEvents from "./models/NotehubLatestEvents";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import { NotehubAccessor } from "./NotehubAccessor";
 
@@ -20,6 +21,17 @@ export function notehubDeviceToIndoorTracker(device: NotehubDevice) {
     ...(getBestLocation(device) && {
       location: getBestLocation(device)?.name,
     }),
+  };
+}
+
+export function filterLatestEventsData(
+  latestDeviceEvents: NotehubLatestEvents
+) {
+  const dataEvent = latestDeviceEvents.latest_events.filter(
+    (event) => event.file === "data.qo"
+  );
+  return {
+    ...dataEvent[0].body,
   };
 }
 
@@ -53,6 +65,14 @@ export default class NotehubDataProvider implements DataProvider {
       trackerDevices.push(notehubDeviceToIndoorTracker(device));
     });
     return trackerDevices;
+  }
+
+  async getLatestDeviceEvents(deviceID: string): Promise<ClientTracker[]> {
+    const trackerLatestEvents: ClientTracker[] = [];
+    const rawEvents = await this.notehubAccessor.getLatestEvents(deviceID);
+    const filteredEvents = filterLatestEventsData(rawEvents);
+    trackerLatestEvents.push({ uid: deviceID, ...filteredEvents });
+    return trackerLatestEvents;
   }
 
   // eslint-disable-next-line class-methods-use-this
