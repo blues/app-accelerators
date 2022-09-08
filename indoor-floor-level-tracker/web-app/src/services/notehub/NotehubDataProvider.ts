@@ -1,12 +1,16 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { ClientDevice, ClientTracker } from "../ClientModel";
+import { ClientDevice, DeviceTracker } from "../ClientModel";
 import { DataProvider } from "../DataProvider";
 import { Device, DeviceID, Project, ProjectID } from "../DomainModel";
 import NotehubDevice from "./models/NotehubDevice";
 import NotehubLatestEvents from "./models/NotehubLatestEvents";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import { NotehubAccessor } from "./NotehubAccessor";
+
+interface HasDeviceId {
+  deviceId: string;
+}
 
 // N.B.: Noteub defines 'best' location with more nuance than we do here (e.g
 // considering staleness). Also this algorthm is copy-pasted in a couple places.
@@ -30,7 +34,9 @@ export function filterLatestEventsData(
   const dataEvent = latestDeviceEvents.latest_events.filter(
     (event) => event.file === "data.qo"
   );
+  // add device uid for later identification of which events belong to which device
   return {
+    uid: latestDeviceEvents.uid,
     ...dataEvent[0].body,
   };
 }
@@ -58,21 +64,70 @@ export default class NotehubDataProvider implements DataProvider {
     throw new Error("Method not implemented.");
   }
 
-  async getDevicesByFleet(): Promise<ClientDevice[]> {
+  async getDeviceTrackerData(): Promise<DeviceTracker[]> {
     const trackerDevices: ClientDevice[] = [];
+    let deviceUIDs: string[] = [];
+
+    // get all the devices by fleet ID
     const rawDevices = await this.notehubAccessor.getDevicesByFleet();
     rawDevices.forEach((device) => {
       trackerDevices.push(notehubDeviceToIndoorTracker(device));
     });
-    return trackerDevices;
-  }
 
-  async getLatestDeviceEvents(deviceID: string): Promise<ClientTracker[]> {
-    const trackerLatestEvents: ClientTracker[] = [];
-    const rawEvents = await this.notehubAccessor.getLatestEvents(deviceID);
-    const filteredEvents = filterLatestEventsData(rawEvents);
-    trackerLatestEvents.push({ uid: deviceID, ...filteredEvents });
-    return trackerLatestEvents;
+    deviceUIDs = trackerDevices.map((device) => device.uid);
+
+    // get latest events for each device in fleet by device ID
+    const rawLatestEvents = await Promise.all(
+      deviceUIDs.map((deviceID) =>
+        this.notehubAccessor.getLatestEvents(deviceID)
+      )
+    );
+    // filter down to just latest data.qo event for each device
+    const filteredLatestEvents = rawLatestEvents.map((event) =>
+      filterLatestEventsData(event)
+    );
+
+    // concat the device info from fleet with latest device info
+    const combinedEventsDevices = trackerDevices.concat(filteredLatestEvents);
+
+    /* eslint-disable import/prefer-default-export */
+    const mergeObject = <CombinedEventObj>(
+      A: any,
+      B: any
+    ): CombinedEventObj => {
+      const res: any = {};
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, array-callback-return, @typescript-eslint/no-unsafe-assignment
+      Object.keys({ ...A, ...B }).map((key) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        res[key] = A[key] || B[key];
+      });
+      return res as CombinedEventObj;
+    };
+
+    // merge latest event objects with the same nodeId
+    // these are different readings from the same node
+    const reducer = <CombinedEventObj extends HasDeviceId>(
+      groups: Map<string, CombinedEventObj>,
+      event: CombinedEventObj
+    ) => {
+      // make id the map's key
+      const key = event.uid;
+      // fetch previous map values associated with that key
+      const previous = groups.get(key);
+      // combine the previous map event with new map event
+      const merged: CombinedEventObj = mergeObject(previous || {}, event);
+      // set the key and newly merged object as the value
+      groups.set(key, merged);
+      return groups;
+    };
+
+    const reducedEventsIterator = combinedEventsDevices
+      .reduce(reducer, new Map())
+      .values();
+
+    // transform the Map iterator obj into plain array
+    const deviceTrackerData = Array.from(reducedEventsIterator);
+    return deviceTrackerData;
   }
 
   // eslint-disable-next-line class-methods-use-this

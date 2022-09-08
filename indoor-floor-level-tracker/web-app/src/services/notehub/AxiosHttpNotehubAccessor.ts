@@ -106,6 +106,7 @@ export default class AxiosHttpNotehubAccessor implements NotehubAccessor {
     const endpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/devices/${hubDeviceUID}/latest`;
     try {
       const resp = await axios.get(endpoint, { headers: this.commonHeaders });
+      resp.data = { uid: hubDeviceUID, ...resp.data };
       return resp.data as NotehubLatestEvents;
     } catch (e) {
       throw this.errorWithCode(e);

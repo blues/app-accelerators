@@ -1,8 +1,7 @@
-import { flatten } from "lodash";
 import { DataProvider } from "./DataProvider";
 import { AttributeStore } from "./AttributeStore";
 import { AppEvent, AppEventHandler } from "./AppEvent";
-import { ClientDevice, ClientTracker } from "./ClientModel";
+import { DeviceTracker } from "./ClientModel";
 import { Project, Device, ProjectID, BulkDataImportStatus } from "./AppModel";
 import { IDBuilder } from "./IDBuilder";
 import { NotificationsStore, Notification } from "./NotificationsStore";
@@ -22,8 +21,8 @@ interface AppServiceInterface {
   performBulkDataImport(): Promise<BulkDataImportStatus>;
 
   getAppNotifications(): Promise<AppNotification[]>;
-  getDevicesByFleet: () => Promise<ClientDevice[]>;
-  getLatestDeviceEvents: (deviceUIDs: string[]) => Promise<ClientTracker[]>;
+
+  getDeviceTrackerData: () => Promise<DeviceTracker[]>;
 }
 
 export type { AppServiceInterface };
@@ -67,10 +66,6 @@ export default class AppService implements AppServiceInterface {
 
   async getDevice(deviceUID: string) {
     return this.dataProvider.getDevice(this.idBuilder.buildDeviceID(deviceUID));
-  }
-
-  async getDevicesByFleet() {
-    return this.dataProvider.getDevicesByFleet();
   }
 
   async handleEvent(event: AppEvent) {
@@ -123,12 +118,7 @@ export default class AppService implements AppServiceInterface {
     return null;
   }
 
-  async getLatestDeviceEvents(deviceUIDs: string[]) {
-    const latestDeviceEvents: ClientTracker[][] = await Promise.all(
-      deviceUIDs.map((deviceUID) =>
-        this.dataProvider.getLatestDeviceEvents(deviceUID)
-      )
-    );
-    return flatten(latestDeviceEvents);
+  async getDeviceTrackerData() {
+    return this.dataProvider.getDeviceTrackerData();
   }
 }

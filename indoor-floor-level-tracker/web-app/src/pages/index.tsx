@@ -1,41 +1,23 @@
 import { useEffect, useState, useRef } from "react";
 import { GetServerSideProps, NextPage } from "next";
-import { Alert, Table } from "antd";
-import type { ColumnsType } from "antd/es/table";
-import { format } from "date-fns";
+import { Alert } from "antd";
 import { usePubNub } from "pubnub-react";
 import { uniqBy } from "lodash";
-import { ClientDevice, ClientTracker } from "../services/ClientModel";
+import { DeviceTracker } from "../services/ClientModel";
 import { services } from "../services/ServiceLocatorServer";
 import { getErrorMessage } from "../constants/ui";
 import { ERROR_CODES } from "../services/Errors";
 import Config from "../../Config";
+import Table from "../components/elements/Table";
 import styles from "../styles/Home.module.scss";
 
 type HomeData = {
-  deviceData: ClientDevice[];
+  deviceTrackers: DeviceTracker[];
   err?: string;
 };
 
-// todo move this table info into its own component
-// Notehub data.qo properties
-interface DataType {
-  bestID: string;
-  deviceID: string;
-  latitude: number;
-  longitude: number;
-  location: string;
-  timestamp: number;
-  altitude: number;
-  floor: number;
-  pressure: number;
-  temperature: number;
-}
-
-const Home: NextPage<HomeData> = ({ devices, err }) => {
+const Home: NextPage<HomeData> = ({ deviceTrackers, err }) => {
   const infoMessage = "Deploy message";
-
-  console.log(devices);
   let pubnub;
   if (pubnub) {
     pubnub = usePubNub();
@@ -88,63 +70,6 @@ const Home: NextPage<HomeData> = ({ devices, err }) => {
     }
   }, [pubnub, channels]);
 
-  // todo move this table info into its own component
-  const columns: ColumnsType<DataType> = [
-    {
-      title: "Best ID",
-      dataIndex: "best_id",
-      key: "bestID",
-    },
-    {
-      title: "Device ID",
-      dataIndex: "device",
-      key: "deviceID",
-    },
-    {
-      title: "Latitude",
-      dataIndex: "best_lat",
-      key: "latitude",
-    },
-    {
-      title: "Longitude",
-      dataIndex: "best_lon",
-      key: "longitude",
-    },
-    {
-      title: "Location",
-      dataIndex: "best_location",
-      key: "location",
-    },
-    {
-      title: "Timestamp",
-      dataIndex: "when",
-      key: "timestamp",
-      render: (time) => (
-        <p>{format(new Date(time * 1000), "MM/dd HH:mm:ss a")}</p>
-      ),
-    },
-    {
-      title: "Altitude",
-      dataIndex: ["body", "altitude"],
-      key: "altitude",
-    },
-    {
-      title: "Floor",
-      dataIndex: ["body", "floor"],
-      key: "floor",
-    },
-    {
-      title: "Pressure",
-      dataIndex: ["body", "pressure"],
-      key: "pressure",
-    },
-    {
-      title: "Temperature (C)",
-      dataIndex: ["body", "temp"],
-      key: "temperature",
-    },
-  ];
-
   return (
     <div className={styles.container}>
       {err ? (
@@ -156,15 +81,7 @@ const Home: NextPage<HomeData> = ({ devices, err }) => {
         />
       ) : (
         <>
-          {/* // todo move this table info into its own component */}
-          <p>Device Data Table</p>
-          {data ? (
-            <Table
-              rowKey={(data) => data.deviceID}
-              columns={columns}
-              dataSource={data}
-            />
-          ) : null}
+          <Table data={deviceTrackers} />
           {Config.isBuildVersionSet() ? (
             <Alert description={infoMessage} type="info" closable />
           ) : null}
@@ -176,22 +93,16 @@ const Home: NextPage<HomeData> = ({ devices, err }) => {
 export default Home;
 
 export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
-  let devices: ClientDevice[] = [];
-  let trackerData: ClientTracker[] = [];
+  let deviceTrackers: DeviceTracker[] = [];
   let err = "";
 
   try {
     const appService = services().getAppService();
-    // fetch devices
-    devices = await appService.getDevicesByFleet();
-    // fetch latest events from each device to get altitude, floor, pressure, etc.
-    const deviceUIDs: string[] = devices.map((device) => device.uid);
-    trackerData = await appService.getLatestDeviceEvents(deviceUIDs);
-    console.log(trackerData);
-    // combine the device data with latest data
+    // fetch device tracker data
+    deviceTrackers = await appService.getDeviceTrackerData();
 
     return {
-      props: { devices, err },
+      props: { deviceTrackers, err },
     };
   } catch (e) {
     err = getErrorMessage(
@@ -200,6 +111,6 @@ export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
   }
 
   return {
-    props: { devices, err },
+    props: { deviceTrackers, err },
   };
 };
