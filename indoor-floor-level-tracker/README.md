@@ -3,7 +3,7 @@
 A highly accurate floor-level tracker for response teams at emergency events. To run
 this project yourself you’ll need to:
 
-* [Configure Notehub](#notehub-setup)
+* [Configure Notehub](#notehub-setup).
 * [Purchase the necessary hardware](#hardware).
 * [Flash the project’s firmware](#firmware).
 * [Run the project’s web application](#web-application).
@@ -108,14 +108,17 @@ and click the **Open "firmware"** button.
 With the firmware project open, you can now make any changes you’d like to the firmware
 source code, and then flash the firmware to your device.
 
+Complete the following steps to upload firmware in in PlatformIO.
+
+1. Connect your Swan to your computer using [these steps](https://dev.blues.io/quickstart/swan-quickstart/#programming-swan-platformio).
+
 > **NOTE**: The project’s default configuration assumes you’re using an
 [STLINK-V3MINI programmer and debugger](https://shop.blues.io/products/stlink-v3mini).
-If you’re not, [complete these steps](https://dev.blues.io/quickstart/swan-quickstart/#without-the-stlink-v3mini)
-so that you can upload firmware over DFU.
+If you’re not, make sure to open your `platformio.ini` file and change the `upload_protocol`
+to `dfu`.
 
-To upload firmware in PlatformIO, click the checkmark button that appears at the bottom
-of your Visual Studio Code window.
-
+2. Once you have everything connected, click the checkmark button that appears at the
+bottom of your Visual Studio Code window.
 ![Uploading firmware in PlatformIO](images/platformio-upload.png)
 
 Once the firmware is running on your device, you might additionally want to open a serial
@@ -124,9 +127,28 @@ at the bottom of your Visual Studio Code window.
 
 ![Opening a serial monitor in PlatformIO](images/platformio-serial-monitor.png)
 
-### Configuration
+The firmware has both an idle mode and a live mode, which you can control with your fleet’s
+`live` environment variable.
 
-TODO: Discuss common firmware variables you may want to tweak.
+When in idle mode (`live: false`) the firmware monitors for environment variable changes,
+but does not read from the sensor or send readings.
+
+When in live mode (`live: true`) the firmware constantly reads the pressure level on the
+BMP581 and immediately sends a note under the following conditions.
+
+* **The floor level changes.** If the firmware determines a device has changed floors, it
+sends a `floor.qo` note.
+* **The no-movement threshold has been surpassed.** If the firmware determines a device has
+not changed floors in the interval configured by the `no_movement_threshold` environment
+variable, it sends an `alarm.qo` note.
+
+Once you have the firmware running, you may want to change the fleet’s `live` environment
+variable to `true` to test floor changing and the alarm logic. You will likely also want
+to attach a LiPo battery to the Notecarrier-F so you take your hardware away from your
+computer for testing.
+
+When you are testing you can manually view events as they come in on Notehub, but it’s
+far easier to monitor your devices in this project’s web application.
 
 ## Web Application
 
