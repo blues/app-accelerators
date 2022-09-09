@@ -1,0 +1,10 @@
+.editInPlaceText {
+  display: inline-block;
+  margin-bottom: 5px;
+}
+.editInPlaceForm {
+  margin-bottom: 5px;
+  :global .ant-form-item {
+    margin-right: 10px;
+  }
+}
