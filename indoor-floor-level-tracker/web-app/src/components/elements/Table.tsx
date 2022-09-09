@@ -53,13 +53,7 @@ const TableComponent = ({ data }: TableData) => {
   return (
     <>
       <p>Device Data Table</p>
-      {data ? (
-        <Table
-          rowKey={(data) => data.device}
-          columns={columns}
-          dataSource={data}
-        />
-      ) : null}
+      {data ? <Table rowKey="uid" columns={columns} dataSource={data} /> : null}
     </>
   );
 };
