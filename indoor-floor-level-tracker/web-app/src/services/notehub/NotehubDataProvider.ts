@@ -1,15 +1,14 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable class-methods-use-this */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ClientDevice, DeviceTracker } from "../ClientModel";
 import { DataProvider } from "../DataProvider";
 import { Device, DeviceID, Project, ProjectID } from "../DomainModel";
 import NotehubDevice from "./models/NotehubDevice";
-import NotehubLatestEvents from "./models/NotehubLatestEvents";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import { NotehubAccessor } from "./NotehubAccessor";
 
 interface HasDeviceId {
-  deviceId: string;
+  uid: string;
 }
 
 // N.B.: Noteub defines 'best' location with more nuance than we do here (e.g
@@ -28,11 +27,9 @@ export function notehubDeviceToIndoorTracker(device: NotehubDevice) {
   };
 }
 
-export function filterLatestEventsData(
-  latestDeviceEvents: NotehubLatestEvents
-) {
+export function filterLatestEventsData(latestDeviceEvents: any) {
   const dataEvent = latestDeviceEvents.latest_events.filter(
-    (event) => event.file === "data.qo"
+    (event: { file: string }) => event.file === "data.qo"
   );
   // add device uid for later identification of which events belong to which device
   return {
@@ -67,6 +64,7 @@ export default class NotehubDataProvider implements DataProvider {
   async getDeviceTrackerData(): Promise<DeviceTracker[]> {
     const trackerDevices: ClientDevice[] = [];
     let deviceUIDs: string[] = [];
+    let deviceTrackerData: DeviceTracker[] = [];
 
     // get all the devices by fleet ID
     const rawDevices = await this.notehubAccessor.getDevicesByFleet();
@@ -104,8 +102,8 @@ export default class NotehubDataProvider implements DataProvider {
       return res as CombinedEventObj;
     };
 
-    // merge latest event objects with the same nodeId
-    // these are different readings from the same node
+    // merge latest event objects with the same device ID
+    // these are different readings from the same device
     const reducer = <CombinedEventObj extends HasDeviceId>(
       groups: Map<string, CombinedEventObj>,
       event: CombinedEventObj
@@ -126,7 +124,7 @@ export default class NotehubDataProvider implements DataProvider {
       .values();
 
     // transform the Map iterator obj into plain array
-    const deviceTrackerData = Array.from(reducedEventsIterator);
+    deviceTrackerData = Array.from(reducedEventsIterator);
     return deviceTrackerData;
   }
 

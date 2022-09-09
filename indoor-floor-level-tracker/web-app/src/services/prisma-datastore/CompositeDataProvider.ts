@@ -1,17 +1,10 @@
-import {
-  BulkImport,
-  DataProvider,
-} from "../DataProvider";
+import { BulkImport, DataProvider } from "../DataProvider";
 import NotehubDataProvider from "../notehub/NotehubDataProvider";
 import { PrismaDataProvider } from "./PrismaDataProvider";
-import {
-  Device,
-  DeviceID,
-  Project,
-  ProjectID,
-} from "../DomainModel";
+import { Device, DeviceID, Project, ProjectID } from "../DomainModel";
 import { NotehubAccessor } from "../notehub/NotehubAccessor";
 import { AppEventHandler } from "../AppEvent";
+import { DeviceTracker } from "../ClientModel";
 
 export default class CompositeDataProvider implements DataProvider {
   constructor(
@@ -41,4 +34,7 @@ export default class CompositeDataProvider implements DataProvider {
     return b;
   }
 
+  getDeviceTrackerData(): Promise<DeviceTracker[]> {
+    throw new Error("Method not implemented.");
+  }
 }

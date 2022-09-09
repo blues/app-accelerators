@@ -13,11 +13,11 @@ let mock: MockAdapter;
 const mockBaseURL = "http://example.io";
 const mockProjectUID = "app:1234";
 const mockDeviceUID = "dev:1234";
+const mockHubFleetUID = "fleet:1234";
 const mockHubHistoricalDataRecentMinutes = 1440;
 const mockedStartDate = sub(new Date(), {
   minutes: mockHubHistoricalDataRecentMinutes,
 });
-const mockedEpochTimeValue = Math.round(mockedStartDate.getTime() / 1000);
 
 const API_DEVICE_URL = `${mockBaseURL}/v1/projects/${mockProjectUID}/devices/${mockDeviceUID}`;
 const API_DEVICES_URL = `${mockBaseURL}/v1/projects/${mockProjectUID}/devices`;
@@ -29,6 +29,7 @@ const API_INITIAL_ALL_EVENTS_URL = `${mockBaseURL}/v1/projects/${mockProjectUID}
 const axiosHttpNotehubAccessorMock = new AxiosHttpNotehubAccessor(
   mockBaseURL,
   mockProjectUID,
+  mockHubFleetUID,
   ""
 );
 

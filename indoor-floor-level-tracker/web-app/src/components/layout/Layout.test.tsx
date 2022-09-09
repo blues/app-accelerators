@@ -9,7 +9,7 @@ describe("Layout component", () => {
     render(<Layout children={mockChildren} isLoading={false} />);
 
     expect(
-      screen.getByText("I'm an Indoor Floor-Level Tracker test")
+      screen.getByText("Hello, I'm an Indoor Floor-Level Tracker test")
     ).toBeInTheDocument();
   });
 });
