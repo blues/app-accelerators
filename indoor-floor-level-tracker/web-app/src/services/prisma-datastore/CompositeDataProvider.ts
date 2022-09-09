@@ -34,7 +34,8 @@ export default class CompositeDataProvider implements DataProvider {
     return b;
   }
 
-  getDeviceTrackerData(): Promise<DeviceTracker[]> {
-    throw new Error("Method not implemented.");
+  async getDeviceTrackerData(): Promise<DeviceTracker[]> {
+    console.log("Composite data provider first);
+    return this.prismaDataProvider.getDeviceTrackerData();
   }
 }

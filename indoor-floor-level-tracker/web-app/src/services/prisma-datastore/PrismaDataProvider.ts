@@ -47,7 +47,11 @@ async function manageDeviceImport(
  * Implements the DataProvider service using Prisma ORM.
  */
 export class PrismaDataProvider implements DataProvider {
-  constructor(private prisma: PrismaClient, private projectID: ProjectID) {}
+  constructor(
+    private prisma: PrismaClient,
+    private projectID: ProjectID,
+    private hubFleetUID: string
+  ) {}
 
   async getProject(): Promise<Project> {
     const project = await this.currentProject();
@@ -185,6 +189,14 @@ export class PrismaDataProvider implements DataProvider {
   }
 
   async getDeviceTrackerData(): Promise<DeviceTracker[]> {
-    throw new Error("Method not implemented.");
+    console.log("Prisma data provider getDeviceTrackerData", this.hubFleetUID);
+    const devices = await this.prisma.device.findMany({
+      where: {
+        fleet_id: this.hubFleetUID,
+      },
+    });
+    const temp = devices.map((device) => this.deviceFromPrismaDevice(device));
+    console.log("PRISMA INFO -----", temp);
+    return temp;
   }
 }

@@ -17,6 +17,14 @@ model Project {
   @@map("project")
 }
 
+model Fleet {
+  id          Int       @id @default(autoincrement())
+  fleetUID    String    @unique @map("fleet_uid") @db.VarChar(64)
+  devices     Device[]
+
+  @@map("fleet") 
+}
+
 model Device {
   id                Int @id @default(autoincrement())
 
@@ -32,11 +40,24 @@ model Device {
   project           Project @relation(fields: [project_id], references: [id])
   project_id        Int
 
+ // the fleet the device belongs to
+  fleet             Fleet @relation(fields: [fleet_id], references: [fleetUID])
+  fleet_id          String
+
   pin               String?   @db.VarChar(20) // MAX_PIN_LENGTH
 
   @@index([project_id])
+  @@index([fleet_id])
   @@index([deviceUID])
   @@map("device")
+}
+
+model Tracker {
+  deviceUID     String @unique @map("device_uid") @db.VarChar(64)
+  trackerData   Json
+
+  @@index([deviceUID])
+  @@map("tracker")
 }
 
 model Notification {

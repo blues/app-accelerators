@@ -80,7 +80,12 @@ class ServiceLocatorServer {
     }
     if (!this.prismaDataProvider) {
       const projectID = IDBuilder.buildProjectID(Config.hubProjectUID);
-      this.prismaDataProvider = new PrismaDataProvider(this.prisma, projectID);
+      const fleetID = Config.hubFleetUID;
+      this.prismaDataProvider = new PrismaDataProvider(
+        this.prisma,
+        projectID,
+        fleetID
+      );
     }
     return this.prismaDataProvider;
   }

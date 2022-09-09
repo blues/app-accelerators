@@ -1,8 +1,4 @@
-import {
-  PrismaClient,
-  Project,
-  Prisma,
-} from "@prisma/client";
+import { PrismaClient, Project, Prisma } from "@prisma/client";
 import Config from "../../../Config";
 
 const prisma = new PrismaClient();
@@ -29,8 +25,9 @@ const _health = {
   qo: "_health.qo",
 };
 
-
-
+const data = {
+  qo: "data.qo",
+};
 
 /**
  * Creates a new project.
@@ -46,7 +43,7 @@ async function createProject(prisma: PrismaClient, projectUID: string) {
   return project;
 }
 
-
+// todo create fleet with array of devices
 
 async function upsertProject({
   prisma,
