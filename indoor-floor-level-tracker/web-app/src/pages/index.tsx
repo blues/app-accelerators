@@ -9,7 +9,7 @@ import { services } from "../services/ServiceLocatorServer";
 import { getErrorMessage } from "../constants/ui";
 import { ERROR_CODES } from "../services/Errors";
 import Config from "../../Config";
-import Table from "../components/elements/Table";
+import Table, { TableProps } from "../components/elements/Table";
 import styles from "../styles/Home.module.scss";
 
 type HomeData = {
@@ -70,6 +70,52 @@ const Home: NextPage<HomeData> = ({ deviceTrackers, err }) => {
   //   }
   // }, [pubnub, channels]);
 
+  const tableInfo: TableProps = {
+    columns: [
+      {
+        title: "Device Name",
+        dataIndex: "name",
+        key: "name",
+      },
+      {
+        title: "Device ID",
+        dataIndex: "uid",
+        key: "uid",
+      },
+      {
+        title: "Location",
+        dataIndex: "location",
+        key: "location",
+      },
+      {
+        title: "Timestamp",
+        dataIndex: "lastActivity",
+        key: "lastActivity",
+      },
+      {
+        title: "Altitude",
+        dataIndex: "altitude",
+        key: "altitude",
+      },
+      {
+        title: "Floor",
+        dataIndex: "floor",
+        key: "floor",
+      },
+      {
+        title: "Pressure",
+        dataIndex: "pressure",
+        key: "pressure",
+      },
+      {
+        title: "Temperature",
+        dataIndex: "temp",
+        key: "temperature",
+      },
+    ],
+    data: deviceTrackers,
+  };
+
   return (
     <div className={styles.container}>
       {err ? (
@@ -81,7 +127,7 @@ const Home: NextPage<HomeData> = ({ deviceTrackers, err }) => {
         />
       ) : (
         <>
-          <Table data={deviceTrackers} />
+          <Table columns={tableInfo.columns} data={tableInfo.data} />
           {Config.isBuildVersionSet() ? (
             <Alert description={infoMessage} type="info" closable />
           ) : null}
