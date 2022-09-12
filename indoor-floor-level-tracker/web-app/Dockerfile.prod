@@ -1,0 +1,59 @@
+# You can build and run with:
+#   docker build . -t blues:reference-web-app &&
+#   docker run --rm -p 3000:3000 blues:reference-web-app
+
+# Sync with package.json volta config
+ARG NODE_VER=16.13.0
+
+##############################################
+# Install dependencies only when needed
+FROM debian:buster-slim AS deps
+# Install Volta which installs node and yarn automagically.
+# RUN apk add --no-cache curl bash openssl gcompat
+RUN apt-get update && apt-get install -y \
+  curl \
+  && rm -rf /var/lib/apt/lists/*
+RUN curl https://get.volta.sh | bash -s -- --skip-setup
+ENV VOLTA_HOME="/root/.volta"
+ENV PATH="${VOLTA_HOME}/bin:${PATH}"
+# Get App dependencies
+WORKDIR /app
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
+
+##############################################
+# Rebuild the source code only when needed
+FROM deps AS builder
+WORKDIR /app
+COPY . .
+# Build
+RUN yarn build && yarn install --production --ignore-scripts --prefer-offline
+
+##############################################
+# Production image, copy all the files and run next
+FROM node:${NODE_VER}-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV production
+
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
+
+COPY --from=builder /app/next.config.js ./
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+
+USER nextjs
+
+EXPOSE 4000
+
+ENV PORT 4000
+
+# Next.js collects completely anonymous telemetry data about general usage.
+# Learn more here: https://nextjs.org/telemetry
+# Uncomment the following line in case you want to disable telemetry.
+# ENV NEXT_TELEMETRY_DISABLED 1
+
+CMD ["node_modules/.bin/next", "start"]

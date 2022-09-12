@@ -1,0 +1,37 @@
+@import "_variables.scss";
+.footerWrapper {
+  .footerDivider {
+    margin: auto;
+    border: 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    width: clamp($page-content-xs, $page-content-md, calc(100vw - 20%));
+    z-index: 2;
+  }
+
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    /* css clamp takes in a min, preferred and mex value and "clamps" the value between an upper and lower bound:
+    reference docs: https://developer.mozilla.org/en-US/docs/Web/CSS/clamp()
+    this clamp keeps the footer from shrinking below 375px or growing wider than the width of the viewport minus 20% (for padding)
+    with a preferred width of 768px within those bounds */
+    width: clamp($page-content-xs, $page-content-md, calc(100vw - 20%));
+    margin: auto;
+    padding: 16px 0 64px 0;
+  }
+
+  /* this hides the disclosure widget triangle: https://stackoverflow.com/a/56649741 */
+  details > summary {
+    list-style: none;
+  }
+
+  details > summary::-webkit-details-marker {
+    display: none;
+  }
+}
+
+@media screen and (max-width: $breakpoints-sm) {
+  .footer span {
+    display: block;
+  }
+}

@@ -1,11 +1,10 @@
-import { useEffect, useRef } from "react";
 import { GetServerSideProps, NextPage } from "next";
+import { Alert } from "antd";
 import { services } from "../services/ServiceLocatorServer";
-import { ERROR_MESSAGE, getErrorMessage } from "../constants/ui";
+import { getErrorMessage } from "../constants/ui";
 import { ERROR_CODES } from "../services/Errors";
 import styles from "../styles/Home.module.scss";
 import Config from "../../Config";
-import { Alert } from "antd";
 
 type HomeData = {
   err?: string;
