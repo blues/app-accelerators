@@ -11,6 +11,7 @@ source ./dev.env.sh
 # To run a docker image with a clean database
 docker run --rm \
   -d `# detached` \
+  --net=host \
   --name $POSTGRES_CONTAINER \
   -p $POSTGRES_PORT:5432 \
   -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD \

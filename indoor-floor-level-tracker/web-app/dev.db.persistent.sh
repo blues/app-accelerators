@@ -11,6 +11,7 @@ source ./dev.env.sh
 # docker container with database stored on host OS filesystem so it persists
 docker run --rm \
   -d `# detached` \
+  --net=host \
   --name $POSTGRES_CONTAINER \
   -p $POSTGRES_PORT:5432 \
   -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
