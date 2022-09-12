@@ -12,7 +12,7 @@ interface HasDeviceId {
 }
 
 // N.B.: Noteub defines 'best' location with more nuance than we do here (e.g
-// considering staleness). Also this algorthm is copy-pasted in a couple places.
+// considering staleness). Also this algorithm is copy-pasted in a couple places.
 export const getBestLocation = (object: NotehubLocationAlternatives) =>
   object.gps_location || object.triangulated_location || object.tower_location;
 
@@ -36,6 +36,36 @@ export function filterLatestEventsData(latestDeviceEvents: any) {
     uid: latestDeviceEvents.uid,
     ...dataEvent[0].body,
   };
+}
+
+export function mergeObject<CombinedEventObj>(
+  A: any,
+  B: any
+): CombinedEventObj {
+  const res: any = {};
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, array-callback-return
+  Object.keys({ ...A, ...B }).map((key) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    res[key] = A[key] || B[key];
+  });
+  return res as CombinedEventObj;
+}
+
+// merge latest event objects with the same device ID
+// these are different readings from the same device
+export function reducer<CombinedEventObj extends HasDeviceId>(
+  groups: Map<string, CombinedEventObj>,
+  event: CombinedEventObj
+) {
+  // make id the map's key
+  const key = event.uid;
+  // fetch previous map values associated with that key
+  const previous = groups.get(key);
+  // combine the previous map event with new map event
+  const merged: CombinedEventObj = mergeObject(previous || {}, event);
+  // set the key and newly merged object as the value
+  groups.set(key, merged);
+  return groups;
 }
 
 export default class NotehubDataProvider implements DataProvider {
@@ -88,37 +118,7 @@ export default class NotehubDataProvider implements DataProvider {
     // concat the device info from fleet with latest device info
     const combinedEventsDevices = trackerDevices.concat(filteredLatestEvents);
 
-    /* eslint-disable import/prefer-default-export */
-    const mergeObject = <CombinedEventObj>(
-      A: any,
-      B: any
-    ): CombinedEventObj => {
-      const res: any = {};
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, array-callback-return, @typescript-eslint/no-unsafe-assignment
-      Object.keys({ ...A, ...B }).map((key) => {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        res[key] = A[key] || B[key];
-      });
-      return res as CombinedEventObj;
-    };
-
-    // merge latest event objects with the same device ID
-    // these are different readings from the same device
-    const reducer = <CombinedEventObj extends HasDeviceId>(
-      groups: Map<string, CombinedEventObj>,
-      event: CombinedEventObj
-    ) => {
-      // make id the map's key
-      const key = event.uid;
-      // fetch previous map values associated with that key
-      const previous = groups.get(key);
-      // combine the previous map event with new map event
-      const merged: CombinedEventObj = mergeObject(previous || {}, event);
-      // set the key and newly merged object as the value
-      groups.set(key, merged);
-      return groups;
-    };
-
+    // combine events with matching device IDs with helper functions defined above
     const reducedEventsIterator = combinedEventsDevices
       .reduce(reducer, new Map())
       .values();
