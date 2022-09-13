@@ -2,7 +2,8 @@ import { NotificationID } from "../../services/NotificationsStore";
 
 export interface UrlManager {
   notehubProject(hubGuiURL: string, hubProjectUID: string): string;
-  
+  getDeviceTrackerData(): string;
+
   bulkDataImport(): string;
   performBulkDataImportApi(): string;
 

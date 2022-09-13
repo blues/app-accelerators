@@ -11,14 +11,51 @@ import { ERROR_CODES } from "../services/Errors";
 import Config from "../../Config";
 import Table, { TableProps } from "../components/elements/Table";
 import styles from "../styles/Home.module.scss";
+import { useDeviceTrackerData } from "../api-client/devices";
+import { LoadingSpinner } from "../components/layout/LoadingSpinner";
 
-type HomeData = {
-  deviceTrackers: DeviceTracker[];
-  err?: string;
-};
+// type HomeData = {
+//   deviceTrackers: DeviceTracker[];
+//   err?: string;
+// };
 
-const Home: NextPage<HomeData> = ({ deviceTrackers, err }) => {
+const Home: NextPage = () => {
   const infoMessage = "Deploy message";
+  const [isLoading, setIsLoading] = useState(false);
+  const [trackers, setTrackers] = useState<DeviceTracker[]>();
+  const [err, setErr] = useState<string | undefined>(undefined);
+  const refetchInterval = 5000;
+
+  const {
+    isLoading: deviceTrackersLoading,
+    error: deviceTrackersError,
+    data: deviceTrackers,
+    refetch: deviceTrackersRefetch,
+  } = useDeviceTrackerData(refetchInterval);
+
+  useEffect(() => {
+    if (deviceTrackersError) {
+      setErr(
+        getErrorMessage(
+          e instanceof Error ? e.message : ERROR_CODES.INTERNAL_ERROR
+        )
+      );
+    }
+  }, [deviceTrackersError]);
+
+  useEffect(() => {
+    if (deviceTrackersLoading) {
+      setIsLoading(true);
+    }
+  }, [deviceTrackersLoading]);
+
+  useEffect(() => {
+    console.log("Client side device trackers", deviceTrackers);
+    if (deviceTrackers) {
+      setTrackers(deviceTrackers);
+    }
+  }, [deviceTrackers]);
+
   // let pubnub: any;
   // if (pubnub) {
   //   pubnub = usePubNub();
@@ -113,7 +150,7 @@ const Home: NextPage<HomeData> = ({ deviceTrackers, err }) => {
         key: "temperature",
       },
     ],
-    data: deviceTrackers,
+    data: trackers,
   };
 
   return (
@@ -126,37 +163,39 @@ const Home: NextPage<HomeData> = ({ deviceTrackers, err }) => {
           dangerouslySetInnerHTML={{ __html: err }}
         />
       ) : (
-        <>
-          <Table columns={tableInfo.columns} data={tableInfo.data} />
+        <LoadingSpinner isLoading={isLoading}>
+          {trackers && (
+            <Table columns={tableInfo.columns} data={tableInfo.data} />
+          )}
           {Config.isBuildVersionSet() ? (
             <Alert description={infoMessage} type="info" closable />
           ) : null}
-        </>
+        </LoadingSpinner>
       )}
     </div>
   );
 };
 export default Home;
 
-export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
-  let deviceTrackers: DeviceTracker[] = [];
-  let err = "";
+// export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
+//   let deviceTrackers: DeviceTracker[] = [];
+//   let err = "";
 
-  try {
-    const appService = services().getAppService();
-    // fetch device tracker data
-    deviceTrackers = await appService.getDeviceTrackerData();
+//   try {
+//     const appService = services().getAppService();
+//     // fetch device tracker data
+//     deviceTrackers = await appService.getDeviceTrackerData();
 
-    return {
-      props: { deviceTrackers, err },
-    };
-  } catch (e) {
-    err = getErrorMessage(
-      e instanceof Error ? e.message : ERROR_CODES.INTERNAL_ERROR
-    );
-  }
+//     return {
+//       props: { deviceTrackers, err },
+//     };
+//   } catch (e) {
+//     err = getErrorMessage(
+//       e instanceof Error ? e.message : ERROR_CODES.INTERNAL_ERROR
+//     );
+//   }
 
-  return {
-    props: { deviceTrackers, err },
-  };
-};
+//   return {
+//     props: { deviceTrackers, err },
+//   };
+// };

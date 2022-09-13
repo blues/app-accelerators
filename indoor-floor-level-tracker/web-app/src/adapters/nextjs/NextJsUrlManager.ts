@@ -3,7 +3,9 @@ import { NotificationID } from "../../services/NotificationsStore";
 export const NextJsUrlManager = {
   bulkDataImport: () => `/admin/bulk-data-import`,
   performBulkDataImportApi: () => `/api/admin/bulk-data-import`,
-  notehubProject: (notehubUrl: string, projectUID: string) => `${notehubUrl}/project/${projectUID}`,
+  notehubProject: (notehubUrl: string, projectUID: string) =>
+    `${notehubUrl}/project/${projectUID}`,
+  getDeviceTrackerData: () => `/api/deviceTrackers`,
 
   notifications: (...notificationIDs: NotificationID[]) => {
     return NextJsUrlManager.notificationsImpl(false, ...notificationIDs);
@@ -15,8 +17,7 @@ export const NextJsUrlManager = {
     if (notificationIDs.length) {
       if (!params) {
         params = "?";
-      }
-      else {
+      } else {
         params += "&";
       }
       // id=abc&id=def
@@ -27,7 +28,7 @@ export const NextJsUrlManager = {
 
   presentNotifications: function (...notificationIDs: string[]): string {
     return NextJsUrlManager.notificationsImpl(true, ...notificationIDs);
-  }
+  },
 };
 
 const DEFAULT = { NextJsUrlManager };
