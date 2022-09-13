@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable import/prefer-default-export */
-import Prisma, { PrismaClient } from "@prisma/client";
+import Prisma, { PrismaClient, Tracker } from "@prisma/client";
 import { ErrorWithCause } from "pony-cause";
 import { DataProvider, BulkImport } from "../DataProvider";
 import { ProjectID, DeviceID, Device, Project } from "../DomainModel";
@@ -14,7 +14,7 @@ import {
 import { NotehubAccessor } from "../notehub/NotehubAccessor";
 import { AppEventHandler } from "../AppEvent";
 import { appEventFromNotehubEvent } from "../notehub/AppEvents";
-import NotehubDataProvider from "../notehub/NotehubDataProvider";
+import NotehubDataProvider, { reducer } from "../notehub/NotehubDataProvider";
 import { deviceTransformUpsert } from "./importTransform";
 
 import IDBuilder from "../IDBuilder";
@@ -47,11 +47,7 @@ async function manageDeviceImport(
  * Implements the DataProvider service using Prisma ORM.
  */
 export class PrismaDataProvider implements DataProvider {
-  constructor(
-    private prisma: PrismaClient,
-    private projectID: ProjectID,
-    private hubFleetUID: string
-  ) {}
+  constructor(private prisma: PrismaClient, private projectID: ProjectID) {}
 
   async getProject(): Promise<Project> {
     const project = await this.currentProject();
@@ -189,14 +185,38 @@ export class PrismaDataProvider implements DataProvider {
   }
 
   async getDeviceTrackerData(): Promise<DeviceTracker[]> {
-    console.log("Prisma data provider getDeviceTrackerData", this.hubFleetUID);
+    const project = await this.currentProject();
+    // fetch all devices associated with project (potentially with fleet in future)
     const devices = await this.prisma.device.findMany({
       where: {
-        fleet_id: this.hubFleetUID,
+        project,
       },
     });
-    const temp = devices.map((device) => this.deviceFromPrismaDevice(device));
-    console.log("PRISMA INFO -----", temp);
-    return temp;
+
+    // fetch most recent tracker data for each device
+    const trackersData = await Promise.all(
+      devices.map((device) =>
+        this.prisma.tracker.findFirst({
+          where: {
+            deviceUID: { equals: device.deviceUID },
+          },
+          orderBy: [{ id: "desc" }],
+        })
+      )
+    );
+
+    // combine all devices and all tracker data into single array
+    const combinedDevicesTrackers = devices.concat(trackersData);
+    // merge that array down to single objects united by device ID
+    const reducedDevicesIterator = combinedDevicesTrackers
+      .reduce(reducer, new Map())
+      .values();
+    const simplifiedDeviceTrackers = Array.from(reducedDevicesIterator);
+    // wip to format device data before delivering to the UI
+    const formattedDeviceTracker = simplifiedDeviceTrackers.map((device) =>
+      this.deviceFromPrismaDevice(device)
+    );
+
+    return simplifiedDeviceTrackers;
   }
 }

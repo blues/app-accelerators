@@ -20,7 +20,7 @@ model Project {
 model Fleet {
   id          Int       @id @default(autoincrement())
   fleetUID    String    @unique @map("fleet_uid") @db.VarChar(64)
-  devices     Device[]
+  // devices     Device[]
 
   @@map("fleet") 
 }
@@ -32,7 +32,7 @@ model Device {
   deviceUID         String @unique @map("device_uid") @db.VarChar(64)
 
   // device serial number (cached)
-  name              String? @db.VarChar(80) // cached
+  name              String? @map("device_name") @db.VarChar(80) // cached
   locationName      String? @db.VarChar(200) // cached
   lastSeenAt        DateTime? @map("last_seen_at") // the last time an event was heard from this device
 
@@ -40,21 +40,22 @@ model Device {
   project           Project @relation(fields: [project_id], references: [id])
   project_id        Int
 
- // the fleet the device belongs to
-  fleet             Fleet @relation(fields: [fleet_id], references: [fleetUID])
-  fleet_id          String
+ // the fleet the device belongs to (fetch from nptehub upon app start up in future)
+  // fleet             Fleet? @relation(fields: [fleet_id], references: [fleetUID])
+  // fleet_id          String?
 
-  pin               String?   @db.VarChar(20) // MAX_PIN_LENGTH
+  // pin               String?   @db.VarChar(20) // MAX_PIN_LENGTH
 
   @@index([project_id])
-  @@index([fleet_id])
+  // @@index([fleet_id])
   @@index([deviceUID])
   @@map("device")
 }
 
 model Tracker {
-  deviceUID     String @unique @map("device_uid") @db.VarChar(64)
-  trackerData   Json
+  id            Int @id @default(autoincrement())
+  deviceUID     String @db.VarChar(64)
+  trackerData   Json?
 
   @@index([deviceUID])
   @@map("tracker")

@@ -10,6 +10,11 @@ export interface AppEvent {
   readonly projectUID: string;
 
   /**
+   * The fleetUID of the event
+   */
+  // readonly fleetUID: string;
+
+  /**
    * The simplified name of the event.
    */
   readonly eventName: string;

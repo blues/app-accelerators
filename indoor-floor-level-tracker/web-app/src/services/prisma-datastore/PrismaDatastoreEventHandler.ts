@@ -1,10 +1,5 @@
 /* eslint-disable prefer-rest-params */
-import {
-  PrismaClient,
-  Prisma,
-  Project,
-  Device
-} from "@prisma/client";
+import { PrismaClient, Prisma, Project, Device } from "@prisma/client";
 import { ErrorWithCause } from "pony-cause";
 import { serverLogError, serverLogInfo } from "../../pages/api/log";
 import NotehubLocation from "../notehub/models/NotehubLocation";
@@ -14,9 +9,7 @@ import { AppEvent, AppEventHandler } from "../AppEvent";
  * The "hidden" property that describes the property that bears the primary data item in the event.
  */
 
-export default class PrismaDatastoreEventHandler
-  implements AppEventHandler
-{
+export default class PrismaDatastoreEventHandler implements AppEventHandler {
   constructor(private prisma: PrismaClient) {}
 
   /**
@@ -44,14 +37,21 @@ export default class PrismaDatastoreEventHandler
       event.when
     );
 
+    const tracker = await this.insertTrackerData(
+      event.deviceUID,
+      event.eventBody
+    );
+
+    console.log("Tracker ", tracker);
   }
 
-
+  // todo add in fleet param in future
   /**
-   * Insert or update the gateway based on the unique device ID.  If the gateway exists but is in a different project,
+   * Insert or update the device based on the unique device ID.  If the device exists but is in a different project,
    * the project is updated.
    *
    * @param project
+  //  * @param fleet
    * @param deviceUID
    * @param name
    * @param lastSeenAt
@@ -60,6 +60,7 @@ export default class PrismaDatastoreEventHandler
    */
   private upsertDevice(
     project: Project,
+    // fleetUID: string,
     deviceUID: string,
     name: string | undefined,
     lastSeenAt: Date,
@@ -103,6 +104,32 @@ export default class PrismaDatastoreEventHandler
       });
   }
 
+  /**
+   * Insert the tracker JSON based on the unique device ID.
+   *
+   * @param deviceUID
+   * @param trackerData
+   * @returns
+   */
+  private insertTrackerData(deviceUID: string, trackerData: unknown) {
+    const args = arguments;
+
+    return this.prisma.tracker
+      .create({
+        data: {
+          deviceUID,
+          trackerData,
+        },
+      })
+      .catch((cause) => {
+        throw new ErrorWithCause(
+          `error inserting new tracker data for ${deviceUID} ${JSON.stringify(
+            args
+          )}`,
+          { cause }
+        );
+      });
+  }
 
   private async projectFromNaturalKey(projectUID: string) {
     const project = await this.prisma.project.findUnique({
