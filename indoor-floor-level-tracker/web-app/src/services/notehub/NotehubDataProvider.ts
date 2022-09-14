@@ -24,6 +24,7 @@ export function notehubDeviceToIndoorTracker(device: NotehubDevice) {
     ...(getBestLocation(device) && {
       location: getBestLocation(device)?.name,
     }),
+    voltage: device.voltage,
   };
 }
 

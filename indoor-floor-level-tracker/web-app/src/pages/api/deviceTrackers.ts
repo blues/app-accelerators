@@ -1,29 +1,47 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import type { NextApiRequest, NextApiResponse } from "next";
-import { HTTP_STATUS } from "../../constants/http";
+import { ReasonPhrases, StatusCodes } from "http-status-codes";
+import { ErrorWithCause } from "pony-cause";
+import { serverLogError } from "./log";
 import { services } from "../../services/ServiceLocatorServer";
+
+function validateMethod(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "GET") {
+    res.setHeader("Allow", ["GET"]);
+    res.status(StatusCodes.METHOD_NOT_ALLOWED);
+    res.json({ err: `Method ${req.method || "is undefined."} Not Allowed` });
+    return false;
+  }
+  return true;
+}
+
+async function performRequest() {
+  const app = services().getAppService();
+  try {
+    return await app.getDeviceTrackerData();
+  } catch (cause) {
+    throw new ErrorWithCause("Could not perform request", { cause });
+  }
+}
 
 export default async function deviceTrackersHandler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  if (!validateMethod(req, res)) {
+    return;
+  }
+
   try {
-    switch (req.method) {
-      case "GET":
-        {
-          const deviceTrackers = await services()
-            .getAppService()
-            .getDeviceTrackerData();
-          res.status(200).json({ deviceTrackers });
-        }
-        break;
-      default:
-        // Other methods not allowed at this route
-        res.status(405).json({ err: HTTP_STATUS.METHOD_NOT_ALLOWED });
-    }
-  } catch (e: any) {
-    if (e.err === HTTP_STATUS.INVALID_REQUEST) {
-      res.status(400).json(e);
-    }
+    const deviceTrackers = await performRequest();
+    res.status(StatusCodes.OK).json({ deviceTrackers });
+  } catch (cause) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR);
+    res.json({ err: ReasonPhrases.INTERNAL_SERVER_ERROR });
+    const e = new ErrorWithCause("Could not fetch device tracker data: ", {
+      cause,
+    });
+    serverLogError(e);
+    throw e;
   }
 }
