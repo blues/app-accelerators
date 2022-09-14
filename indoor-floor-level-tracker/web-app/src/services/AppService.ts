@@ -1,7 +1,7 @@
 import { DataProvider } from "./DataProvider";
 import { AttributeStore } from "./AttributeStore";
 import { AppEvent, AppEventHandler } from "./AppEvent";
-import { DeviceTracker } from "./ClientModel";
+import { DeviceTracker, TrackerConfig } from "./ClientModel";
 import { Project, Device, ProjectID, BulkDataImportStatus } from "./AppModel";
 import { IDBuilder } from "./IDBuilder";
 import { NotificationsStore, Notification } from "./NotificationsStore";
@@ -23,6 +23,11 @@ interface AppServiceInterface {
   getAppNotifications(): Promise<AppNotification[]>;
 
   getDeviceTrackerData: () => Promise<DeviceTracker[]>;
+  getTrackerConfig: () => Promise<TrackerConfig>;
+  setTrackerConfig: (
+    fleetUID: string,
+    trackerConfig: TrackerConfig
+  ) => Promise<void>;
 }
 
 export type { AppServiceInterface };
@@ -120,5 +125,16 @@ export default class AppService implements AppServiceInterface {
 
   async getDeviceTrackerData() {
     return this.dataProvider.getDeviceTrackerData();
+  }
+
+  async getTrackerConfig(): Promise<TrackerConfig> {
+    return this.dataProvider.getTrackerConfig();
+  }
+
+  async setTrackerConfig(fleetUID: string, trackerConfig: TrackerConfig) {
+    return this.attributeStore.updateTrackerConfig(
+      this.idBuilder.buildFleetID(fleetUID),
+      trackerConfig
+    );
   }
 }

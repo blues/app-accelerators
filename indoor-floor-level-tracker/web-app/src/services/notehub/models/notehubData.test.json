@@ -196,5 +196,16 @@
       "_sn": "tj-test",
       "_tags": ""
     }
+  },
+  "notehubEnvVarFleetResponse": {
+    "environment_variables": {
+      "baseline_floor": "1",
+      "floor_height": "1.234",
+      "live": "true",
+      "no_movement_threshold": "5"
+    }
+  },
+  "notehubEmptyEnvVarResponse": {
+    "environment_variables": {}
   }
 }

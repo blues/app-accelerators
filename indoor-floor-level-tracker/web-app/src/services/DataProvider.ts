@@ -1,4 +1,4 @@
-import { DeviceTracker } from "./ClientModel";
+import { DeviceTracker, TrackerConfig } from "./ClientModel";
 import { Project, Device, DeviceID } from "./DomainModel";
 
 export interface BulkImport {
@@ -12,4 +12,5 @@ export interface DataProvider {
   getDevice(deviceID: DeviceID): Promise<Device | null>;
   doBulkImport(): Promise<BulkImport>;
   getDeviceTrackerData(): Promise<DeviceTracker[]>;
+  getTrackerConfig(): Promise<TrackerConfig>;
 }
