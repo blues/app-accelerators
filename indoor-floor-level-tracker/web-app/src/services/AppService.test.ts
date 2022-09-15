@@ -4,16 +4,15 @@ import { AttributeStore } from "./AttributeStore";
 import { IDBuilder } from "./IDBuilder";
 import * as AppModel from "./AppModel";
 import { NotificationsStore } from "./NotificationsStore";
-import { Mock } from "moq.ts"
+import { Mock } from "moq.ts";
 import appServiceData from "./AppService.test.json";
 import { Device } from "./AppModel";
 
 const mockProjectUID = "app:123456";
-
+const mockFleetUID = "fleet:1234";
 const { mockedDeviceUID } = appServiceData;
 
 const mockedDeviceData = appServiceData.successfulDeviceDataResponse as Device;
-
 
 describe("App Service", () => {
   let dataProviderMock: DataProvider;
@@ -25,7 +24,7 @@ describe("App Service", () => {
       doBulkImport: jest.fn(),
       getProject: jest.fn(),
       getDevice: jest.fn().mockReturnValueOnce(mockedDeviceData),
-      getDevices: jest.fn()
+      getDevices: jest.fn(),
     };
     const mockEventHandler = {
       handleEvent: jest.fn(),
@@ -34,6 +33,9 @@ describe("App Service", () => {
       buildProjectID: (projectUID: string): AppModel.ProjectID => {
         return { projectUID, type: "ProjectID" };
       },
+      buildFleetID: (fleetUID: string): AppModel.FleetID => {
+        return { fleetUID, type: "FleetID" };
+      },
       buildDeviceID: function (deviceUID: string): AppModel.DeviceID {
         return { deviceUID, type: "DeviceID" };
       },
@@ -41,6 +43,7 @@ describe("App Service", () => {
     const notificationsStoreMock = new Mock<NotificationsStore>().object();
     appServiceMock = new AppService(
       mockProjectUID,
+      mockFleetUID,
       mockIDBuilder,
       dataProviderMock,
       mockEventHandler,

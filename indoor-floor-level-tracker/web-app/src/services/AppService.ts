@@ -1,12 +1,13 @@
 import { DataProvider } from "./DataProvider";
 import { AttributeStore } from "./AttributeStore";
 import { AppEvent, AppEventHandler } from "./AppEvent";
-import { DeviceTracker } from "./ClientModel";
+import { DeviceTracker, TrackerConfig } from "./ClientModel";
 import { Project, Device, ProjectID, BulkDataImportStatus } from "./AppModel";
 import { IDBuilder } from "./IDBuilder";
 import { NotificationsStore, Notification } from "./NotificationsStore";
 import { serverLogError } from "../pages/api/log";
 import { AppNotification } from "../components/presentation/notifications";
+import { FleetID } from "./DomainModel";
 
 // this class / interface combo passes data and functions to the service locator file
 interface AppServiceInterface {
@@ -23,15 +24,19 @@ interface AppServiceInterface {
   getAppNotifications(): Promise<AppNotification[]>;
 
   getDeviceTrackerData: () => Promise<DeviceTracker[]>;
+  getTrackerConfig: () => Promise<TrackerConfig>;
+  setTrackerConfig: (trackerConfig: TrackerConfig) => Promise<void>;
 }
 
 export type { AppServiceInterface };
 
 export default class AppService implements AppServiceInterface {
   private projectID: ProjectID;
+  private fleetID: FleetID;
 
   constructor(
     projectUID: string,
+    fleetUID: string,
     private readonly idBuilder: IDBuilder,
     private dataProvider: DataProvider,
     private appEventHandler: AppEventHandler,
@@ -39,6 +44,7 @@ export default class AppService implements AppServiceInterface {
     private notificationStore: NotificationsStore
   ) {
     this.projectID = this.idBuilder.buildProjectID(projectUID);
+    this.fleetID = this.idBuilder.buildFleetID(fleetUID);
   }
 
   async getEventCount(): Promise<number> {
@@ -120,5 +126,17 @@ export default class AppService implements AppServiceInterface {
 
   async getDeviceTrackerData() {
     return this.dataProvider.getDeviceTrackerData();
+  }
+
+  async getTrackerConfig(): Promise<TrackerConfig> {
+    return this.dataProvider.getTrackerConfig();
+  }
+
+  async setTrackerConfig(trackerConfig: TrackerConfig) {
+    const { fleetUID } = this.fleetID;
+    return this.attributeStore.updateTrackerConfig(
+      this.idBuilder.buildFleetID(fleetUID),
+      trackerConfig
+    );
   }
 }

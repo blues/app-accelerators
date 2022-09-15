@@ -15,6 +15,11 @@ export interface ProjectID {
   readonly projectUID: string;
 }
 
+export interface FleetID {
+  readonly type: "FleetID";
+  readonly fleetUID: string;
+}
+
 export interface Project {
   readonly id: ProjectID;
 
