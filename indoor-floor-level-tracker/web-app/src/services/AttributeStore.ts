@@ -1,4 +1,5 @@
-import { Device, DeviceID } from "./DomainModel";
+import { TrackerConfig } from "./ClientModel";
+import { Device, DeviceID, FleetID } from "./DomainModel";
 
 export interface AttributeStore {
   updateDeviceName: (deviceUID: DeviceID, name: string) => Promise<void>;
@@ -8,8 +9,10 @@ export interface AttributeStore {
    * @returns `null` if the device is not found, or the pin is incorrect, otherwise returns the
    * the deviceID.ß
    */
-  updateDevicePin: (
-    deviceID: DeviceID,
-    pin: string
-  ) => Promise<Device | null>;
+  updateDevicePin: (deviceID: DeviceID, pin: string) => Promise<Device | null>;
+
+  updateTrackerConfig: (
+    fleetUID: FleetID,
+    trackerConfig: TrackerConfig
+  ) => Promise<void>;
 }

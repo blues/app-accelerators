@@ -12,9 +12,10 @@ export interface ClientTracker {
 }
 
 export interface TrackerConfig {
-  live: boolean;
-  baseFloor?: number | null;
-  floorHeight?: number | null;
+  live?: boolean;
+  baseFloor?: number;
+  floorHeight?: number;
+  noMovementThreshold?: number;
 }
 
 export interface DeviceTracker {

@@ -12,6 +12,7 @@ import NotehubResponse from "./models/NotehubResponse";
 import NoteDeviceConfigBody from "./models/NoteDeviceConfigBody";
 import NotehubEnvVars from "./models/NotehubEnvVars";
 import { serverLogInfo } from "../../pages/api/log";
+import NotehubEnvVarsResponse from "./models/NotehubEnvVarsResponse";
 
 // this class directly interacts with Notehub via HTTP calls
 export default class AxiosHttpNotehubAccessor implements NotehubAccessor {
@@ -224,6 +225,33 @@ export default class AxiosHttpNotehubAccessor implements NotehubAccessor {
 
   async setEnvironmentVariables(hubDeviceUID: string, envVars: NotehubEnvVars) {
     const endpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/devices/${hubDeviceUID}/environment_variables`;
+    try {
+      await axios.put(
+        endpoint,
+        { environment_variables: envVars },
+        { headers: this.commonHeaders }
+      );
+    } catch (e) {
+      throw this.errorWithCode(e);
+    }
+    return true;
+  }
+
+  async getEnvironmentVariablesByFleet(fleetUID: string) {
+    const endpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/fleets/${fleetUID}/environment_variables`;
+    try {
+      const resp = await axios.get(endpoint, { headers: this.commonHeaders });
+      return resp.data as NotehubEnvVarsResponse;
+    } catch (e) {
+      throw this.errorWithCode(e);
+    }
+  }
+
+  async setEnvironmentVariablesByFleet(
+    fleetUID: string,
+    envVars: NotehubEnvVars
+  ) {
+    const endpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/fleets/${fleetUID}/environment_variables`;
     try {
       await axios.put(
         endpoint,

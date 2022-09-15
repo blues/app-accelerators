@@ -4,6 +4,7 @@ import NotehubEvent from "./models/NotehubEvent";
 import NotehubLatestEvents from "./models/NotehubLatestEvents";
 import NotehubDeviceConfig from "./models/NotehubDeviceConfig";
 import NoteDeviceConfigBody from "./models/NoteDeviceConfigBody";
+import NotehubEnvVarsResponse from "./models/NotehubEnvVarsResponse";
 
 // An interface for accessing Notehub APIs
 interface NotehubAccessor {
@@ -20,11 +21,18 @@ interface NotehubAccessor {
     note: string,
     body: NoteDeviceConfigBody
   ) => Promise<boolean>;
+  getEnvironmentVariablesByFleet: (
+    fleetUID: string
+  ) => Promise<NotehubEnvVarsResponse>;
   setEnvironmentVariables: (
     hubDeviceUID: string,
     envVars: NotehubEnvVars
   ) => Promise<boolean>;
   getDevicesByFleet: () => Promise<NotehubDevice[]>;
+  setEnvironmentVariablesByFleet: (
+    fleetUID: string,
+    envVars: NotehubEnvVars
+  ) => Promise<boolean>;
 }
 
 export type { NotehubAccessor };
