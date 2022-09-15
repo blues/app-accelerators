@@ -6,7 +6,6 @@ import { HTTP_STATUS } from "../../../constants/http";
 import { services } from "../../../services/ServiceLocatorServer";
 import { serverLogError } from "../log";
 import { TrackerConfig } from "../../../services/ClientModel";
-import Config from "../../../../Config";
 
 interface ValidRequest {
   trackerConfig: string;
@@ -43,7 +42,7 @@ async function performRequest({ trackerConfig }: ValidRequest) {
   const parsedTrackerConfig = JSON.parse(trackerConfig) as TrackerConfig;
 
   try {
-    await app.setTrackerConfig(Config.hubFleetUID, parsedTrackerConfig);
+    await app.setTrackerConfig(parsedTrackerConfig);
   } catch (cause) {
     throw new ErrorWithCause("Could not perform request", { cause });
   }

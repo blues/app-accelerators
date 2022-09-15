@@ -64,6 +64,7 @@ class ServiceLocatorServer {
     if (!this.appService) {
       this.appService = new AppService(
         Config.hubProjectUID,
+        Config.hubFleetUID,
         new SimpleIDBuilder(),
         this.getDataProvider(),
         this.getEventHandler(),

@@ -1,7 +1,3 @@
-// import IDBuilder from "../IDBuilder";
-import notehubData from "./models/notehubData.test.json"; // mocked data to do with Notehub portion of app goes here (i.e. devices and events)
-import NotehubEnvVarsResponse from "./models/NotehubEnvVarsResponse";
-// import { NotehubAccessor } from "./NotehubAccessor";
 import {
   environmentVariablesToTrackerConfig,
   trackerConfigToEnvironmentVariables,
@@ -56,33 +52,3 @@ describe("environment variable parsing", () => {
     });
   });
 });
-
-/*
-const mockProjectID = IDBuilder.buildProjectID("app:mockID");
-const mockFleetID = IDBuilder.buildFleetID("fleet:mockFleetID");
-
-describe("service functions", () => {
-  let notehubAccessorMock: NotehubAccessor;
-  let notehubDataProviderMock: NotehubDataProvider;
-
-  beforeEach(() => {
-    notehubAccessorMock = {
-      getDevice: jest.fn().mockResolvedValueOnce({}),
-      getDevices: jest.fn().mockResolvedValueOnce({}),
-      getLatestEvents: jest.fn().mockResolvedValueOnce({}),
-      getEvents: jest.fn().mockResolvedValueOnce({}),
-      getConfig: jest.fn().mockResolvedValueOnce({}),
-      setConfig: jest.fn().mockResolvedValueOnce({}),
-      setEnvironmentVariables: jest.fn().mockResolvedValueOnce({}),
-      getDevicesByFleet: jest.fn().mockResolvedValueOnce({}),
-      getEnvironmentVariablesByFleet: jest.fn().mockResolvedValueOnce({}),
-      setEnvironmentVariablesByFleet: jest.fn().mockResolvedValueOnce({}),
-    };
-    notehubDataProviderMock = new NotehubDataProvider(
-      notehubAccessorMock,
-      mockProjectID,
-      mockFleetID
-    );
-  });
-});
-*/

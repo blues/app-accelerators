@@ -7,6 +7,7 @@ import { IDBuilder } from "./IDBuilder";
 import { NotificationsStore, Notification } from "./NotificationsStore";
 import { serverLogError } from "../pages/api/log";
 import { AppNotification } from "../components/presentation/notifications";
+import { FleetID } from "./DomainModel";
 
 // this class / interface combo passes data and functions to the service locator file
 interface AppServiceInterface {
@@ -24,19 +25,18 @@ interface AppServiceInterface {
 
   getDeviceTrackerData: () => Promise<DeviceTracker[]>;
   getTrackerConfig: () => Promise<TrackerConfig>;
-  setTrackerConfig: (
-    fleetUID: string,
-    trackerConfig: TrackerConfig
-  ) => Promise<void>;
+  setTrackerConfig: (trackerConfig: TrackerConfig) => Promise<void>;
 }
 
 export type { AppServiceInterface };
 
 export default class AppService implements AppServiceInterface {
   private projectID: ProjectID;
+  private fleetID: FleetID;
 
   constructor(
     projectUID: string,
+    fleetUID: string,
     private readonly idBuilder: IDBuilder,
     private dataProvider: DataProvider,
     private appEventHandler: AppEventHandler,
@@ -44,6 +44,7 @@ export default class AppService implements AppServiceInterface {
     private notificationStore: NotificationsStore
   ) {
     this.projectID = this.idBuilder.buildProjectID(projectUID);
+    this.fleetID = this.idBuilder.buildFleetID(fleetUID);
   }
 
   async getEventCount(): Promise<number> {
@@ -131,7 +132,8 @@ export default class AppService implements AppServiceInterface {
     return this.dataProvider.getTrackerConfig();
   }
 
-  async setTrackerConfig(fleetUID: string, trackerConfig: TrackerConfig) {
+  async setTrackerConfig(trackerConfig: TrackerConfig) {
+    const { fleetUID } = this.fleetID;
     return this.attributeStore.updateTrackerConfig(
       this.idBuilder.buildFleetID(fleetUID),
       trackerConfig
