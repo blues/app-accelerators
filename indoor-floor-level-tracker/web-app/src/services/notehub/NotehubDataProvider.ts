@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable class-methods-use-this */
-import { env } from "process";
 import { ClientDevice, DeviceTracker, TrackerConfig } from "../ClientModel";
 import { DataProvider } from "../DataProvider";
 import { Device, DeviceID, FleetID, Project, ProjectID } from "../DomainModel";
@@ -126,7 +125,7 @@ export default class NotehubDataProvider implements DataProvider {
   async getDeviceTrackerData(): Promise<DeviceTracker[]> {
     const trackerDevices: ClientDevice[] = [];
     let deviceUIDs: string[] = [];
-    let deviceTrackerData: DeviceTracker[] = [];
+    let formattedDeviceTrackerData: DeviceTracker[] = [];
 
     // get all the devices by fleet ID
     const rawDevices = await this.notehubAccessor.getDevicesByFleet();
@@ -156,8 +155,19 @@ export default class NotehubDataProvider implements DataProvider {
       .values();
 
     // transform the Map iterator obj into plain array
-    deviceTrackerData = Array.from(reducedEventsIterator);
-    return deviceTrackerData;
+    const deviceTrackerData: any[] = Array.from(reducedEventsIterator);
+
+    // format the data to round the numbers to 2 decimal places
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    formattedDeviceTrackerData = deviceTrackerData.map((item) => ({
+      ...item,
+      altitude: Number(item.altitude).toFixed(2),
+      voltage: Number(item.voltage).toFixed(2),
+      pressure: Number(item.pressure).toFixed(2),
+      temp: Number(item.temp).toFixed(2),
+    }));
+
+    return formattedDeviceTrackerData;
   }
 
   async getTrackerConfig(): Promise<TrackerConfig> {

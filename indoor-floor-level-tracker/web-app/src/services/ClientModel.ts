@@ -8,6 +8,9 @@ export interface ClientDevice {
 
 export interface ClientTracker {
   floor?: number | null;
+  pressure?: number | null;
+  temperature?: number | null;
+  altitude?: number | null;
   uid?: string;
 }
 
