@@ -1,6 +1,7 @@
 import * as DomainModel from "./DomainModel";
 
 export type ProjectID = DomainModel.ProjectID;
+export type FleetID = DomainModel.FleetID;
 export type DeviceID = DomainModel.DeviceID;
 
 /**
@@ -8,7 +9,6 @@ export type DeviceID = DomainModel.DeviceID;
  */
 
 export interface Project extends DomainModel.Project {
-
   devices: Device[] | null; // null when devices are not required
 }
 
@@ -17,8 +17,7 @@ export interface Project extends DomainModel.Project {
  */
 export type AppDate = number;
 
-export interface Device extends DomainModel.Device {
-}
+export interface Device extends DomainModel.Device {}
 
 export interface ProjectDataSnapshot {
   when: AppDate;

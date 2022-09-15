@@ -64,6 +64,7 @@ class ServiceLocatorServer {
     if (!this.appService) {
       this.appService = new AppService(
         Config.hubProjectUID,
+        Config.hubFleetUID,
         new SimpleIDBuilder(),
         this.getDataProvider(),
         this.getEventHandler(),
@@ -88,9 +89,11 @@ class ServiceLocatorServer {
   private getDataProvider(): DataProvider {
     if (!this.dataProvider) {
       const projectID = IDBuilder.buildProjectID(Config.hubProjectUID);
+      const fleetID = IDBuilder.buildFleetID(Config.hubFleetUID);
       const notehubProvider = new NotehubDataProvider(
         this.getNotehubAccessor(),
-        projectID
+        projectID,
+        fleetID
       );
       if (this.prisma) {
         const dataStoreProvider = this.getPrismaDataProvider();

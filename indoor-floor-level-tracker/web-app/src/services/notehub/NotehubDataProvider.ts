@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable class-methods-use-this */
-import { ClientDevice, DeviceTracker } from "../ClientModel";
+import { env } from "process";
+import { ClientDevice, DeviceTracker, TrackerConfig } from "../ClientModel";
 import { DataProvider } from "../DataProvider";
-import { Device, DeviceID, Project, ProjectID } from "../DomainModel";
+import { Device, DeviceID, FleetID, Project, ProjectID } from "../DomainModel";
 import NotehubDevice from "./models/NotehubDevice";
+import NotehubEnvVars from "./models/NotehubEnvVars";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import { NotehubAccessor } from "./NotehubAccessor";
 
@@ -68,10 +70,39 @@ export function reducer<CombinedEventObj extends HasDeviceId>(
   return groups;
 }
 
+export function trackerConfigToEnvironmentVariables(
+  trackerConfig: TrackerConfig
+) {
+  const envVars = {} as NotehubEnvVars;
+  if (trackerConfig.baseFloor !== undefined) {
+    envVars.baseline_floor = String(trackerConfig.baseFloor);
+  }
+  if (trackerConfig.floorHeight !== undefined) {
+    envVars.floor_height = String(trackerConfig.floorHeight);
+  }
+  if (trackerConfig.live !== undefined) {
+    envVars.live = String(trackerConfig.live);
+  }
+  if (trackerConfig.noMovementThreshold !== undefined) {
+    envVars.no_movement_threshold = String(trackerConfig.noMovementThreshold);
+  }
+  return envVars;
+}
+
+export function environmentVariablesToTrackerConfig(envVars: NotehubEnvVars) {
+  return {
+    live: envVars.live === "true",
+    baseFloor: Number(envVars.baseline_floor) || 1,
+    floorHeight: Number(envVars.floor_height) || 4.2672,
+    noMovementThreshold: Number(envVars.no_movement_threshold) || 5,
+  } as TrackerConfig;
+}
+
 export default class NotehubDataProvider implements DataProvider {
   constructor(
     private readonly notehubAccessor: NotehubAccessor,
-    private readonly projectID: ProjectID
+    private readonly projectID: ProjectID,
+    private readonly fleetID: FleetID
   ) {}
 
   async getProject(): Promise<Project> {
@@ -126,6 +157,15 @@ export default class NotehubDataProvider implements DataProvider {
     // transform the Map iterator obj into plain array
     deviceTrackerData = Array.from(reducedEventsIterator);
     return deviceTrackerData;
+  }
+
+  async getTrackerConfig(): Promise<TrackerConfig> {
+    const envVarResponse =
+      await this.notehubAccessor.getEnvironmentVariablesByFleet(
+        this.fleetID.fleetUID
+      );
+    const envVars = envVarResponse.environment_variables;
+    return environmentVariablesToTrackerConfig(envVars);
   }
 
   // eslint-disable-next-line class-methods-use-this

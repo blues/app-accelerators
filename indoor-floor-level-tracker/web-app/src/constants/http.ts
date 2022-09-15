@@ -6,7 +6,7 @@ const HTTP_STATUS = {
   INVALID_REQUEST: "The request is not valid.",
   INVALID_DEVICE: "Invalid Device UID",
   INVALID_DEVICE_NAME: "Invalid Device name",
-
+  INVALID_TRACKER_CONFIG: "Invalid tracker configuration",
 };
 
 // HTTP headers
