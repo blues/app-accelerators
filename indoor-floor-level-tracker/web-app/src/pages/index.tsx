@@ -15,7 +15,7 @@ const Home: NextPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [trackers, setTrackers] = useState<DeviceTracker | undefined>();
   const [err, setErr] = useState<string | undefined>(undefined);
-  const refetchInterval = 5000;
+  const refetchInterval = 10000;
 
   const {
     isLoading: deviceTrackersLoading,
@@ -55,12 +55,12 @@ const Home: NextPage = () => {
         key: "name",
       },
       {
-        title: "Floor Level",
+        title: "Floor",
         dataIndex: "floor",
         key: "floor",
       },
       {
-        title: "Alarm Status",
+        title: "Alerts",
         dataIndex: "alarm",
         key: "alarm",
       },

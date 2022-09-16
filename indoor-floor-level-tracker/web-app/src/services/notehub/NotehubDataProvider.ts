@@ -1,6 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable class-methods-use-this */
-import { ClientDevice, DeviceTracker, TrackerConfig } from "../ClientModel";
+import { sub } from "date-fns";
+import { uniqBy } from "lodash";
+import {
+  ClientDevice,
+  ClientTracker,
+  DeviceTracker,
+  TrackerConfig,
+} from "../ClientModel";
 import { DataProvider } from "../DataProvider";
 import { Device, DeviceID, FleetID, Project, ProjectID } from "../DomainModel";
 import NotehubDevice from "./models/NotehubDevice";
@@ -98,6 +105,15 @@ export function environmentVariablesToTrackerConfig(envVars: NotehubEnvVars) {
   } as TrackerConfig;
 }
 
+export function convertMinutesToEpochTime(minutesToConvert: number) {
+  const date = new Date();
+  const rawEpochDate = sub(date, { minutes: minutesToConvert });
+  const formattedEpochDate = Math.round(
+    rawEpochDate.getTime() / 1000
+  ).toString();
+  return formattedEpochDate;
+}
+
 export default class NotehubDataProvider implements DataProvider {
   constructor(
     private readonly notehubAccessor: NotehubAccessor,
@@ -124,7 +140,6 @@ export default class NotehubDataProvider implements DataProvider {
 
   async getDeviceTrackerData(): Promise<DeviceTracker[]> {
     const trackerDevices: ClientDevice[] = [];
-    let deviceUIDs: string[] = [];
     let formattedDeviceTrackerData: DeviceTracker[] = [];
 
     // get all the devices by fleet ID
@@ -133,21 +148,26 @@ export default class NotehubDataProvider implements DataProvider {
       trackerDevices.push(notehubDeviceToIndoorTracker(device));
     });
 
-    deviceUIDs = trackerDevices.map((device) => device.uid);
+    // fetch events for the last 6 minutes from Notehub
+    const startDate = convertMinutesToEpochTime(6);
+    const rawEvents = await this.notehubAccessor.getEvents(startDate);
 
-    // get latest events for each device in fleet by device ID
-    const rawLatestEvents = await Promise.all(
-      deviceUIDs.map((deviceID) =>
-        this.notehubAccessor.getLatestEvents(deviceID)
-      )
-    );
-    // filter down to just latest data.qo event for each device
-    const filteredLatestEvents = rawLatestEvents.map((event) =>
-      filterLatestEventsData(event)
-    );
+    // filter down to only data.qo events and reverse the order to get the latest event first
+    const filteredEvents = rawEvents
+      .filter((event) => event.file === "data.qo")
+      .reverse();
+
+    // get unique events by device ID
+    const uniqueEvents = uniqBy(filteredEvents, "device_uid");
+
+    // pull out relevant device data from unique events
+    const mappedEvents: ClientTracker[] = uniqueEvents.map((event) => ({
+      ...event.body,
+      uid: event.device_uid,
+    }));
 
     // concat the device info from fleet with latest device info
-    const combinedEventsDevices = trackerDevices.concat(filteredLatestEvents);
+    const combinedEventsDevices = [...trackerDevices, ...mappedEvents];
 
     // combine events with matching device IDs with helper functions defined above
     const reducedEventsIterator = combinedEventsDevices
@@ -161,10 +181,12 @@ export default class NotehubDataProvider implements DataProvider {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     formattedDeviceTrackerData = deviceTrackerData.map((item) => ({
       ...item,
-      altitude: Number(item.altitude).toFixed(2),
-      voltage: Number(item.voltage).toFixed(2),
-      pressure: Number(item.pressure).toFixed(2),
-      temp: Number(item.temp).toFixed(2),
+      ...(item.altitude && { altitude: Number(item.altitude).toFixed(2) }),
+      voltage: `${Number(item.voltage).toFixed(2)}V`,
+      ...(item.pressure && {
+        pressure: `${Number(item.pressure).toFixed(2)} kPa`,
+      }),
+      ...(item.temp && { temp: `${Number(item.temp).toFixed(2)}C` }),
     }));
 
     return formattedDeviceTrackerData;

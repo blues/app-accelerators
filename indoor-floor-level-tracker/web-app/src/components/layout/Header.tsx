@@ -13,12 +13,13 @@ const HeaderComponent = () => {
       <Link href="/">
         <a data-testid="logo">
           {/* <Image src={Logo} height={70} width={100} alt="App Logo" /> */}
-          Indoor Floor-Level Tracker Logo Placeholder
+          Logo Placeholder
         </a>
       </Link>
-      <h1 data-testid="company-name" className={styles.headerText}>
+      <h1 className={styles.headerTitle}>Indoor Floor Level Tracker</h1>
+      <h2 data-testid="company-name" className={styles.headerText}>
         {config.companyName}
-      </h1>
+      </h2>
     </Header>
   );
 };
