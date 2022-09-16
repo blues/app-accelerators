@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { NextPage } from "next";
-import { Alert } from "antd";
+import { Alert, Switch } from "antd";
+import Card from "antd/lib/card/Card";
 import { DeviceTracker } from "../services/ClientModel";
 import { getErrorMessage } from "../constants/ui";
 import { ERROR_CODES } from "../services/Errors";
@@ -15,6 +16,7 @@ const Home: NextPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [trackers, setTrackers] = useState<DeviceTracker | undefined>();
   const [err, setErr] = useState<string | undefined>(undefined);
+  const [areTrackersLive, setAreTrackersLove];
   const refetchInterval = 10000;
 
   const {
@@ -46,6 +48,10 @@ const Home: NextPage = () => {
       setIsLoading(false);
     }
   }, [deviceTrackers]);
+
+  const toggleGoLive = (checked: boolean) => {
+    console.log(`switch to ${checked}`);
+  };
 
   const tableInfo: TableProps = {
     columns: [
@@ -94,12 +100,21 @@ const Home: NextPage = () => {
         />
       ) : (
         <LoadingSpinner isLoading={isLoading}>
-          {trackers && (
-            <Table columns={tableInfo.columns} data={tableInfo.data} />
-          )}
-          {Config.isBuildVersionSet() ? (
-            <Alert description={infoMessage} type="info" closable />
-          ) : null}
+          <div>
+            <Card title="Fleet Controls WIP">
+              <h3>Enable Live Track</h3>
+              <Switch
+                defaultChecked={areTrackersLive}
+                onChange={toggleGoLive}
+              />
+            </Card>
+            {trackers && (
+              <Table columns={tableInfo.columns} data={tableInfo.data} />
+            )}
+            {Config.isBuildVersionSet() ? (
+              <Alert description={infoMessage} type="info" closable />
+            ) : null}
+          </div>
         </LoadingSpinner>
       )}
     </div>
