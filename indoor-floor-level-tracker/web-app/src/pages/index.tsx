@@ -36,6 +36,11 @@ const Home: NextPage = () => {
         key: "floor",
       },
       {
+        title: "Alerts",
+        dataIndex: "alerts",
+        key: "alerts",
+      },
+      {
         title: "Last Seen",
         dataIndex: "lastActivity",
         key: "lastActivity",
