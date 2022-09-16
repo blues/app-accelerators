@@ -4,19 +4,19 @@ import { DeviceTracker } from "../services/ClientModel";
 import { getErrorMessage } from "../constants/ui";
 import Config from "../../Config";
 import Table, { TableProps } from "../components/elements/Table";
-import styles from "../styles/Home.module.scss";
 import { useDeviceTrackerData } from "../hooks/useDeviceTrackerData";
 import { LoadingSpinner } from "../components/layout/LoadingSpinner";
+import styles from "../styles/Home.module.scss";
 
 const Home: NextPage = () => {
   const infoMessage = "Deploy message";
-  const msRefetchInterval = 10000;
+  const MS_REFETCH_INTERVAL = 10000;
 
   const {
     isLoading: deviceTrackersLoading,
     error: deviceTrackersError,
     data: deviceTrackers,
-  } = useDeviceTrackerData(msRefetchInterval);
+  } = useDeviceTrackerData(MS_REFETCH_INTERVAL);
 
   const err =
     deviceTrackersError && getErrorMessage(deviceTrackersError.message);
@@ -26,7 +26,7 @@ const Home: NextPage = () => {
   const tableInfo: TableProps = {
     columns: [
       {
-        title: "Device Name",
+        title: "Responders",
         dataIndex: "name",
         key: "name",
       },
@@ -36,9 +36,9 @@ const Home: NextPage = () => {
         key: "floor",
       },
       {
-        title: "Alerts",
-        dataIndex: "alarm",
-        key: "alarm",
+        title: "Last Seen",
+        dataIndex: "lastActivity",
+        key: "lastActivity",
       },
       {
         title: "Pressure",
@@ -49,11 +49,6 @@ const Home: NextPage = () => {
         title: "Voltage",
         dataIndex: "voltage",
         key: "voltage",
-      },
-      {
-        title: "Last Seen",
-        dataIndex: "lastActivity",
-        key: "lastActivity",
       },
     ],
     data: trackers,
@@ -70,6 +65,7 @@ const Home: NextPage = () => {
         />
       ) : (
         <LoadingSpinner isLoading={deviceTrackersLoading}>
+          <h3 className={styles.sectionTitle}>Fleet Name</h3>
           {trackers && (
             <Table columns={tableInfo.columns} data={tableInfo.data} />
           )}

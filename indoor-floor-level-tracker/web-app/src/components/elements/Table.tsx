@@ -1,5 +1,6 @@
 import { Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import styles from "../../styles/Table.module.scss";
 
 // using object and any to make table more reusable / extensible
 export interface TableProps {
@@ -8,6 +9,13 @@ export interface TableProps {
 }
 
 const TableComponent = ({ columns, data }: TableProps) => (
-  <Table rowKey="uid" columns={columns} dataSource={data} pagination={false} />
+  <div className={styles.tableContainer}>
+    <Table
+      rowKey="uid"
+      columns={columns}
+      dataSource={data}
+      pagination={false}
+    />
+  </div>
 );
 export default TableComponent;
