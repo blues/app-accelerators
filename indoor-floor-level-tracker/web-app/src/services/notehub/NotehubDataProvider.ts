@@ -105,7 +105,7 @@ export function environmentVariablesToTrackerConfig(envVars: NotehubEnvVars) {
   } as TrackerConfig;
 }
 
-export function convertMinutesToEpochTime(minutesToConvert: number) {
+export function epochStringMinutesAgo(minutesToConvert: number) {
   const date = new Date();
   const rawEpochDate = sub(date, { minutes: minutesToConvert });
   const formattedEpochDate = Math.round(
@@ -149,7 +149,7 @@ export default class NotehubDataProvider implements DataProvider {
     });
 
     // fetch events for the last 6 minutes from Notehub
-    const startDate = convertMinutesToEpochTime(6);
+    const startDate = epochStringMinutesAgo(6);
     const rawEvents = await this.notehubAccessor.getEvents(startDate);
 
     // filter down to only data.qo events and reverse the order to get the latest event first

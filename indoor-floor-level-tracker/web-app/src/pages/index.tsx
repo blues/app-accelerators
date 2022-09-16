@@ -1,51 +1,27 @@
-import { useEffect, useState } from "react";
 import { NextPage } from "next";
 import { Alert } from "antd";
 import { DeviceTracker } from "../services/ClientModel";
 import { getErrorMessage } from "../constants/ui";
-import { ERROR_CODES } from "../services/Errors";
 import Config from "../../Config";
 import Table, { TableProps } from "../components/elements/Table";
 import styles from "../styles/Home.module.scss";
-import { useDeviceTrackerData } from "../api-client/devices";
+import { useDeviceTrackerData } from "../hooks/useDeviceTrackerData";
 import { LoadingSpinner } from "../components/layout/LoadingSpinner";
 
 const Home: NextPage = () => {
   const infoMessage = "Deploy message";
-  const [isLoading, setIsLoading] = useState(false);
-  const [trackers, setTrackers] = useState<DeviceTracker | undefined>();
-  const [err, setErr] = useState<string | undefined>(undefined);
-  const refetchInterval = 10000;
+  const msRefetchInterval = 10000;
 
   const {
     isLoading: deviceTrackersLoading,
     error: deviceTrackersError,
     data: deviceTrackers,
-    refetch: deviceTrackersRefetch,
-  } = useDeviceTrackerData(refetchInterval);
+  } = useDeviceTrackerData(msRefetchInterval);
 
-  useEffect(() => {
-    if (deviceTrackersError) {
-      setErr(
-        getErrorMessage(
-          e instanceof Error ? e.message : ERROR_CODES.INTERNAL_ERROR
-        )
-      );
-    }
-  }, [deviceTrackersError]);
+  const err =
+    deviceTrackersError && getErrorMessage(deviceTrackersError.message);
 
-  useEffect(() => {
-    if (deviceTrackersLoading) {
-      setIsLoading(true);
-    }
-  }, [deviceTrackersLoading]);
-
-  useEffect(() => {
-    if (deviceTrackers) {
-      setTrackers(deviceTrackers);
-      setIsLoading(false);
-    }
-  }, [deviceTrackers]);
+  const trackers: DeviceTracker[] | undefined = deviceTrackers;
 
   const tableInfo: TableProps = {
     columns: [
@@ -93,7 +69,7 @@ const Home: NextPage = () => {
           dangerouslySetInnerHTML={{ __html: err }}
         />
       ) : (
-        <LoadingSpinner isLoading={isLoading}>
+        <LoadingSpinner isLoading={deviceTrackersLoading}>
           {trackers && (
             <Table columns={tableInfo.columns} data={tableInfo.data} />
           )}

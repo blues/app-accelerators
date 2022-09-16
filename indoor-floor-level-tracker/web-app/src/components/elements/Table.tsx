@@ -4,19 +4,10 @@ import type { ColumnsType } from "antd/es/table";
 // using object and any to make table more reusable / extensible
 export interface TableProps {
   columns: ColumnsType<object>;
-  data: any;
+  data: object[] | undefined;
 }
 
 const TableComponent = ({ columns, data }: TableProps) => (
-  <>
-    {data ? (
-      <Table
-        rowKey="uid"
-        columns={columns}
-        dataSource={data}
-        pagination={false}
-      />
-    ) : null}
-  </>
+  <Table rowKey="uid" columns={columns} dataSource={data} pagination={false} />
 );
 export default TableComponent;
