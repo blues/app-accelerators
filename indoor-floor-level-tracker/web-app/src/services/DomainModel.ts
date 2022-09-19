@@ -44,6 +44,7 @@ export interface Device {
   name: string;
   locationName: string;
   lastSeenAt: string;
+  voltage: number;
   readonly id: DeviceID;
 }
 

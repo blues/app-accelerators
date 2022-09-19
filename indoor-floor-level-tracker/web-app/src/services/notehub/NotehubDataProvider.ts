@@ -1,11 +1,18 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable class-methods-use-this */
-import { env } from "process";
-import { ClientDevice, DeviceTracker, TrackerConfig } from "../ClientModel";
+import { sub, formatDistanceToNow, parseISO } from "date-fns";
+import { uniqBy } from "lodash";
+import {
+  ClientDevice,
+  ClientTracker,
+  DeviceTracker,
+  TrackerConfig,
+} from "../ClientModel";
 import { DataProvider } from "../DataProvider";
 import { Device, DeviceID, FleetID, Project, ProjectID } from "../DomainModel";
 import NotehubDevice from "./models/NotehubDevice";
 import NotehubEnvVars from "./models/NotehubEnvVars";
+import NotehubEvent from "./models/NotehubEvent";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import { NotehubAccessor } from "./NotehubAccessor";
 
@@ -26,18 +33,25 @@ export function notehubDeviceToIndoorTracker(device: NotehubDevice) {
     ...(getBestLocation(device) && {
       location: getBestLocation(device)?.name,
     }),
+    voltage: device.voltage,
   };
 }
 
-export function filterLatestEventsData(latestDeviceEvents: any) {
-  const dataEvent = latestDeviceEvents.latest_events.filter(
-    (event: { file: string }) => event.file === "data.qo"
-  );
-  // add device uid for later identification of which events belong to which device
-  return {
-    uid: latestDeviceEvents.uid,
-    ...dataEvent[0].body,
-  };
+export function filterEventsData(events: NotehubEvent[]) {
+  const dataEvent = events
+    .filter((event) => event.file === "data.qo")
+    .reverse();
+
+  return dataEvent;
+}
+
+export function extractRelevantEventBodyData(events: NotehubEvent[]) {
+  const relevantEventInfo = events.map((event) => ({
+    ...event.body,
+    uid: event.device_uid,
+  }));
+
+  return relevantEventInfo;
 }
 
 export function mergeObject<CombinedEventObj>(
@@ -70,6 +84,26 @@ export function reducer<CombinedEventObj extends HasDeviceId>(
   return groups;
 }
 
+export function formatDeviceTrackerData(deviceTrackerData: any[]) {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  const formattedDeviceTrackerData = deviceTrackerData.map((data) => ({
+    ...data,
+    lastActivity: formatDistanceToNow(parseISO(data.lastActivity), {
+      addSuffix: true,
+      includeSeconds: true,
+    }),
+    ...(data.altitude && { altitude: Number(data.altitude).toFixed(2) }),
+    voltage: `${Number(data.voltage).toFixed(2)}V`,
+    ...(data.pressure && {
+      pressure: `${Number(data.pressure).toFixed(2)} kPa`,
+    }),
+    ...(data.temp && { temp: `${Number(data.temp).toFixed(2)}C` }),
+  }));
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  return formattedDeviceTrackerData;
+}
+
 export function trackerConfigToEnvironmentVariables(
   trackerConfig: TrackerConfig
 ) {
@@ -98,6 +132,15 @@ export function environmentVariablesToTrackerConfig(envVars: NotehubEnvVars) {
   } as TrackerConfig;
 }
 
+export function epochStringMinutesAgo(minutesToConvert: number) {
+  const date = new Date();
+  const rawEpochDate = sub(date, { minutes: minutesToConvert });
+  const formattedEpochDate = Math.round(
+    rawEpochDate.getTime() / 1000
+  ).toString();
+  return formattedEpochDate;
+}
+
 export default class NotehubDataProvider implements DataProvider {
   constructor(
     private readonly notehubAccessor: NotehubAccessor,
@@ -122,32 +165,43 @@ export default class NotehubDataProvider implements DataProvider {
     throw new Error("Method not implemented.");
   }
 
+  async getDevicesByFleet(): Promise<NotehubDevice[]> {
+    const devicesByFleet = await this.notehubAccessor.getDevicesByFleet();
+    return devicesByFleet;
+  }
+
+  async getEvents(minutesFromNow: number): Promise<NotehubEvent[]> {
+    const epochDateMinutesAgo = epochStringMinutesAgo(minutesFromNow);
+    const events = await this.notehubAccessor.getEvents(epochDateMinutesAgo);
+    return events;
+  }
+
   async getDeviceTrackerData(): Promise<DeviceTracker[]> {
     const trackerDevices: ClientDevice[] = [];
-    let deviceUIDs: string[] = [];
-    let deviceTrackerData: DeviceTracker[] = [];
+    let formattedDeviceTrackerData: DeviceTracker[] = [];
 
     // get all the devices by fleet ID
-    const rawDevices = await this.notehubAccessor.getDevicesByFleet();
-    rawDevices.forEach((device) => {
+    const devicesByFleet = await this.getDevicesByFleet();
+    devicesByFleet.forEach((device) => {
       trackerDevices.push(notehubDeviceToIndoorTracker(device));
     });
 
-    deviceUIDs = trackerDevices.map((device) => device.uid);
+    // fetch events for the last X minutes from Notehub
+    const MINUTES_OF_NOTEHUB_DATA_TO_FETCH = 6;
+    const rawEvents = await this.getEvents(MINUTES_OF_NOTEHUB_DATA_TO_FETCH);
 
-    // get latest events for each device in fleet by device ID
-    const rawLatestEvents = await Promise.all(
-      deviceUIDs.map((deviceID) =>
-        this.notehubAccessor.getLatestEvents(deviceID)
-      )
-    );
-    // filter down to just latest data.qo event for each device
-    const filteredLatestEvents = rawLatestEvents.map((event) =>
-      filterLatestEventsData(event)
-    );
+    // filter down to only data.qo events and reverse the order to get the latest event first
+    const filteredEvents = filterEventsData(rawEvents);
+
+    // get unique events by device ID
+    const uniqueEvents = uniqBy(filteredEvents, "device_uid");
+
+    // pull out relevant device data from unique events
+    const mappedEvents: ClientTracker[] =
+      extractRelevantEventBodyData(uniqueEvents);
 
     // concat the device info from fleet with latest device info
-    const combinedEventsDevices = trackerDevices.concat(filteredLatestEvents);
+    const combinedEventsDevices = [...trackerDevices, ...mappedEvents];
 
     // combine events with matching device IDs with helper functions defined above
     const reducedEventsIterator = combinedEventsDevices
@@ -155,8 +209,12 @@ export default class NotehubDataProvider implements DataProvider {
       .values();
 
     // transform the Map iterator obj into plain array
-    deviceTrackerData = Array.from(reducedEventsIterator);
-    return deviceTrackerData;
+    const deviceTrackerData: any[] = Array.from(reducedEventsIterator);
+
+    // format the data to round the numbers to 2 decimal places
+    formattedDeviceTrackerData = formatDeviceTrackerData(deviceTrackerData);
+
+    return formattedDeviceTrackerData;
   }
 
   async getTrackerConfig(): Promise<TrackerConfig> {
