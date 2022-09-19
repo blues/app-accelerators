@@ -5,15 +5,14 @@ import { ErrorWithCause } from "pony-cause";
 import { HTTP_STATUS } from "../../../constants/http";
 import { services } from "../../../services/ServiceLocatorServer";
 import { serverLogError } from "../log";
-import { TrackerConfig } from "../../../services/ClientModel";
 
 interface ValidRequest {
-  trackerConfig: string;
+  trackerConfig: object;
 }
 
 function validateMethod(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", ["POST"]);
+  if (req.method !== "POST" && req.method !== "GET") {
+    res.setHeader("Allow", ["GET", "POST"]);
     res.status(StatusCodes.METHOD_NOT_ALLOWED);
     res.json({ err: `Method ${req.method || "is undefined."} Not Allowed` });
     return false;
@@ -28,7 +27,7 @@ function validateRequest(
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const trackerConfig = req.body;
 
-  if (typeof trackerConfig !== "string") {
+  if (typeof trackerConfig !== "object") {
     res.status(StatusCodes.BAD_REQUEST);
     res.json({ err: HTTP_STATUS.INVALID_TRACKER_CONFIG });
     return false;
@@ -37,14 +36,28 @@ function validateRequest(
   return { trackerConfig };
 }
 
-async function performRequest({ trackerConfig }: ValidRequest) {
+async function performGetRequest() {
+  console.log("calling get fleet tracker config");
   const app = services().getAppService();
-  const parsedTrackerConfig = JSON.parse(trackerConfig) as TrackerConfig;
+  try {
+    return await app.getTrackerConfig();
+  } catch (cause) {
+    throw new ErrorWithCause("Could not perform getTrackerConfig request", {
+      cause,
+    });
+  }
+}
+
+async function performPostRequest({ trackerConfig }: ValidRequest) {
+  console.log("calling set fleet tracker config");
+  const app = services().getAppService();
 
   try {
-    await app.setTrackerConfig(parsedTrackerConfig);
+    await app.setTrackerConfig(trackerConfig);
   } catch (cause) {
-    throw new ErrorWithCause("Could not perform request", { cause });
+    throw new ErrorWithCause("Could not update tracker configuration", {
+      cause,
+    });
   }
 }
 
@@ -55,18 +68,34 @@ export default async function trackerConfigHandler(
   if (!validateMethod(req, res)) {
     return;
   }
-  const validRequest = validateRequest(req, res);
-  if (!validRequest) {
-    return;
-  }
 
   try {
-    await performRequest(validRequest);
-    res.status(StatusCodes.OK).json({});
+    switch (req.method) {
+      case "GET":
+        {
+          const trackerConfigData = await performGetRequest();
+          res.status(200).json({ trackerConfigData });
+        }
+        break;
+      case "POST":
+        {
+          const validRequest = validateRequest(req, res);
+          if (!validRequest) {
+            return;
+          }
+
+          await performPostRequest(validRequest);
+          res.status(StatusCodes.OK).json({});
+        }
+        break;
+      default:
+        // Other methods not allowed at this route
+        res.status(405).json({ err: HTTP_STATUS.METHOD_NOT_ALLOWED });
+    }
   } catch (cause) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR);
     res.json({ err: ReasonPhrases.INTERNAL_SERVER_ERROR });
-    const e = new ErrorWithCause("Could not update tracker configuration", {
+    const e = new ErrorWithCause("Could not access tracker configuration", {
       cause,
     });
     serverLogError(e);

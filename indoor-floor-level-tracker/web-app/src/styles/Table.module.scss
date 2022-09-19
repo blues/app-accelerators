@@ -1,0 +1,21 @@
+@import "_variables.scss";
+
+.tableContainer {
+  :global .ant-table {
+    border: 1px solid $bw-color--grey3;
+  }
+
+  :global .ant-table-cell::before {
+    display: none;
+  }
+
+  :global .ant-table-thead > tr > th {
+    background-color: $bw-color--grey1;
+    border-bottom: 1px solid $bw-color--grey2;
+    font-weight: 600;
+  }
+
+  :global .ant-table-tbody > tr > td {
+    border-bottom: 1px solid $bw-color--grey2;
+  }
+}

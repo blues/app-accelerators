@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { Layout } from "antd";
 import Header from "./Header";
+import Sider from "./Sider";
 import Footer from "./Footer";
 
 import { LoadingSpinner } from "./LoadingSpinner";
@@ -17,12 +18,17 @@ const LayoutComponent = ({
   return (
     <Layout>
       <Header />
-      <LoadingSpinner isLoading={isLoading}>
-        <Content className={styles.mainContent}>
-          {children}
-        </Content>
-      </LoadingSpinner>
-      <Footer />
+      <Layout>
+        <Sider />
+        <div className={styles.mainContentWrapper}>
+          <LoadingSpinner isLoading={isLoading}>
+            <Layout>
+              <Content className={styles.mainContent}>{children}</Content>
+            </Layout>
+          </LoadingSpinner>
+          <Footer />
+        </div>
+      </Layout>
     </Layout>
   );
 };

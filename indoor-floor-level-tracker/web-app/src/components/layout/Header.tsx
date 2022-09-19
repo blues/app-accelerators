@@ -1,4 +1,3 @@
-import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Layout } from "antd";
@@ -13,7 +12,7 @@ const HeaderComponent = () => {
       <Link href="/">
         <a data-testid="logo">
           {/* <Image src={Logo} height={70} width={100} alt="App Logo" /> */}
-          Logo Placeholder
+          Logo
         </a>
       </Link>
       <h1 className={styles.headerTitle}>Indoor Floor Level Tracker</h1>

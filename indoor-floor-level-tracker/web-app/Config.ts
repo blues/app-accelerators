@@ -55,10 +55,7 @@ const Config = {
     return optionalEnvVar("NEXT_PUBLIC_BUILD_VERSION", "ver n/a");
   },
   get companyName() {
-    return optionalEnvVar(
-      "NEXT_PUBLIC_COMPANY_NAME",
-      "Blues Wireless NF1 Demo"
-    );
+    return optionalEnvVar("NEXT_PUBLIC_COMPANY_NAME", "Blues Wireless Demo");
   },
   get debugConfig() {
     return Boolean(optionalEnvVar("DEBUG_CONFIG", ""));

@@ -1,0 +1,30 @@
+@import "_variables.scss";
+
+.siderWrapper {
+  .siderHeader {
+    border-right: 2px solid $bw-color--grey0;
+    border-bottom: 1px solid $bw-color--grey1;
+  }
+
+  .siderTitle {
+    font-size: 20px;
+    font-weight: 600;
+    padding-left: 24px;
+    padding-bottom: 34px;
+    padding-top: 16px;
+    margin-bottom: 0;
+  }
+
+  :global .ant-menu-inline {
+    border-right: 2px solid $bw-color--grey0;
+  }
+
+  :global .ant-menu-item {
+    margin: 0 !important;
+    height: 50px !important;
+  }
+
+  :global .ant-menu-item-selected {
+    color: inherit;
+  }
+}
