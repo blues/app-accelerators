@@ -89,7 +89,6 @@ export function formatDeviceTrackerData(deviceTrackerData: any[]) {
   const formattedDeviceTrackerData = deviceTrackerData.map((data) => ({
     ...data,
     lastActivity: formatDistanceToNow(parseISO(data.lastActivity), {
-      addSuffix: true,
       includeSeconds: true,
     }),
     ...(data.altitude && { altitude: Number(data.altitude).toFixed(1) }),

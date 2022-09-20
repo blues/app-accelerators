@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { GetServerSideProps, NextPage } from "next";
 import Image from "next/image";
 import { Alert, Col, Row, Tooltip } from "antd";
@@ -46,7 +46,6 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const liveTrackEnabled: boolean | undefined = !!fleetTrackerConfig?.live;
 
   const toggleLiveTracking = async (checked: boolean) => {
-    console.log(`switch to ${checked}`);
     let isSuccessful = true;
     setIsLoading(true);
     try {
@@ -65,7 +64,7 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
         title: (
           <>
             <Image src={ResponderIcon} alt="person outline" />
-            Responders
+            <span style={{ marginLeft: "8px" }}>Responders</span>
           </>
         ),
         dataIndex: "name",
