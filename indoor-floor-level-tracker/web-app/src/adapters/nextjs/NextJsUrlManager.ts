@@ -6,6 +6,7 @@ export const NextJsUrlManager = {
   notehubProject: (notehubUrl: string, projectUID: string) =>
     `${notehubUrl}/project/${projectUID}`,
   getDeviceTrackerData: () => `/api/deviceTrackers`,
+  deviceNameUpdate: (deviceUID: string) => `/api/device/${deviceUID}/name`,
 
   notifications: (...notificationIDs: NotificationID[]) => {
     return NextJsUrlManager.notificationsImpl(false, ...notificationIDs);

@@ -2,12 +2,7 @@
 /* eslint-disable class-methods-use-this */
 import { sub, formatDistanceToNow, parseISO } from "date-fns";
 import { uniqBy } from "lodash";
-import {
-  ClientDevice,
-  ClientTracker,
-  DeviceTracker,
-  TrackerConfig,
-} from "../ClientModel";
+import { DeviceTracker, TrackerConfig } from "../ClientModel";
 import { DataProvider } from "../DataProvider";
 import { Device, DeviceID, FleetID, Project, ProjectID } from "../DomainModel";
 import NotehubDevice from "./models/NotehubDevice";
@@ -84,8 +79,7 @@ export function reducer<CombinedEventObj extends HasDeviceId>(
   return groups;
 }
 
-export function formatDeviceTrackerData(deviceTrackerData: any[]) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+export function formatDeviceTrackerData(deviceTrackerData: DeviceTracker[]) {
   const formattedDeviceTrackerData = deviceTrackerData.map((data) => ({
     ...data,
     lastActivity: formatDistanceToNow(parseISO(data.lastActivity), {
@@ -97,10 +91,11 @@ export function formatDeviceTrackerData(deviceTrackerData: any[]) {
     ...(data.pressure && {
       pressure: `${Number(data.pressure).toFixed(2)} kPa`,
     }),
-    ...(data.temp && { temp: `${Number(data.temp).toFixed(2)}C` }),
+    ...(data.temperature && {
+      temp: `${Number(data.temperature).toFixed(2)}C`,
+    }),
   }));
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return formattedDeviceTrackerData;
 }
 
@@ -177,7 +172,7 @@ export default class NotehubDataProvider implements DataProvider {
   }
 
   async getDeviceTrackerData(): Promise<DeviceTracker[]> {
-    const trackerDevices: ClientDevice[] = [];
+    const trackerDevices: DeviceTracker[] = [];
     let formattedDeviceTrackerData: DeviceTracker[] = [];
 
     // get all the devices by fleet ID
@@ -197,8 +192,7 @@ export default class NotehubDataProvider implements DataProvider {
     const uniqueEvents = uniqBy(filteredEvents, "device_uid");
 
     // pull out relevant device data from unique events
-    const mappedEvents: ClientTracker[] =
-      extractRelevantEventBodyData(uniqueEvents);
+    const mappedEvents: object[] = extractRelevantEventBodyData(uniqueEvents);
 
     // concat the device info from fleet with latest device info
     const combinedEventsDevices = [...trackerDevices, ...mappedEvents];

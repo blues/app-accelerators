@@ -17,4 +17,17 @@
   :global .ant-table-tbody > tr > td {
     border-bottom: 1px solid $bw-color--grey2;
   }
+
+  :global .ant-table-tbody .editable-button {
+    background: transparent;
+    border: 1px solid #00b9ff;
+    text-align: left;
+    border-radius: 5px;
+  }
+  :global .ant-table-tbody .editable-input,
+  :global .ant-table-tbody .editable-button {
+    padding: 0.25em 0.5em;
+    max-width: 100px;
+    width: 100px;
+  }
 }

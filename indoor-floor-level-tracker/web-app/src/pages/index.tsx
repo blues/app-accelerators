@@ -1,9 +1,13 @@
 import { NextPage } from "next";
+import { useRouter } from "next/router";
 import { Alert } from "antd";
+import { useState } from "react";
+import { useQueryClient } from "react-query";
+import { changeDeviceName } from "../api-client/devices";
 import { DeviceTracker } from "../services/ClientModel";
 import { getErrorMessage } from "../constants/ui";
 import Config from "../../Config";
-import Table, { TableProps } from "../components/elements/Table";
+import Table from "../components/elements/Table";
 import { useDeviceTrackerData } from "../hooks/useDeviceTrackerData";
 import { LoadingSpinner } from "../components/layout/LoadingSpinner";
 import styles from "../styles/Home.module.scss";
@@ -11,6 +15,13 @@ import styles from "../styles/Home.module.scss";
 const Home: NextPage = () => {
   const infoMessage = "Deploy message";
   const MS_REFETCH_INTERVAL = 10000;
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const queryClient = useQueryClient();
+
+  const router = useRouter();
+  const refreshData = async () => {
+    await router.replace(router.asPath);
+  };
 
   const {
     isLoading: deviceTrackersLoading,
@@ -23,40 +34,21 @@ const Home: NextPage = () => {
 
   const trackers: DeviceTracker[] | undefined = deviceTrackers;
 
-  const tableInfo: TableProps = {
-    columns: [
-      {
-        title: "Responders",
-        dataIndex: "name",
-        key: "name",
-      },
-      {
-        title: "Floor",
-        dataIndex: "floor",
-        key: "floor",
-      },
-      {
-        title: "Alerts",
-        dataIndex: "alerts",
-        key: "alerts",
-      },
-      {
-        title: "Last Seen",
-        dataIndex: "lastActivity",
-        key: "lastActivity",
-      },
-      {
-        title: "Pressure",
-        dataIndex: "pressure",
-        key: "pressure",
-      },
-      {
-        title: "Voltage",
-        dataIndex: "voltage",
-        key: "voltage",
-      },
-    ],
-    data: trackers,
+  const onTrackerNameChange = async (deviceUID: string, newName: string) => {
+    setIsLoading(true);
+    let isSuccessful = true;
+    try {
+      await changeDeviceName(deviceUID, newName);
+    } catch (e) {
+      isSuccessful = false;
+    }
+    // Clear the client-side cache so when we refresh the page
+    // it refetches data to get the updated name.
+    await queryClient.invalidateQueries();
+
+    setIsLoading(false);
+    await refreshData();
+    return isSuccessful;
   };
 
   return (
@@ -69,10 +61,10 @@ const Home: NextPage = () => {
           dangerouslySetInnerHTML={{ __html: err }}
         />
       ) : (
-        <LoadingSpinner isLoading={deviceTrackersLoading}>
+        <LoadingSpinner isLoading={isLoading || deviceTrackersLoading}>
           <h3 className={styles.sectionTitle}>Fleet Name</h3>
           {trackers && (
-            <Table columns={tableInfo.columns} data={tableInfo.data} />
+            <Table data={trackers} onNameChange={onTrackerNameChange} />
           )}
           {Config.isBuildVersionSet() ? (
             <Alert description={infoMessage} type="info" closable />
