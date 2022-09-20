@@ -3,9 +3,10 @@
 #include <Notecard.h>
 #include "Adafruit_BMP581.h"
 #include "metadata.h"
+#include <floor_tracker.h>
 
 // Uncomment to use a connected SSD1306 Display
-#define USE_DISPLAY
+// #define USE_DISPLAY
 
 #ifdef USE_DISPLAY
 #include <Adafruit_GFX.h>
@@ -18,43 +19,30 @@
 
 #define PRODUCT_UID "com.blues.nf1"
 #define ENV_POLL_SECS	1
+#define IDLE_UPDATE_PERIOD  (1000 * 60 * 5)
+#define LIVE_UPDATE_PERIOD  (1000 * 60 * 2)
+#define NO_MOVEMENT_THRESHOLD_SCALE_MS  (1000)   // No movement threshold given in seconds.
 
 // Variables for Env Var polling
 static unsigned long nextPollMs = 0;
 static uint32_t lastModifiedTime = 0;
 // Variables for sensor reading period when not in live mode
-static unsigned long startMs;
-static unsigned long currentMillis;
-const unsigned long period = 1000 * 300;
+static unsigned long lastUpdateMs;
+static unsigned long updatePeriod;
 
-struct applicationState {
-  bool live;
-  double floorHeight = 0;
-  int baselineFloor = 0;
-  float baselineFloorPressure = 0.0;
-  int noMovementThreshold = 0;
-  int lastFloor = 0;
-};
-
-struct sensorReadings {
-  float temp;
-  float pressure;
-  float altitude;
-  int currentFloor;
-  int lastFloor;
-};
 
 bool setBaselineFloor = false;
-applicationState state;
+applicationState state = {0};
 
 Notecard notecard;
 
 // Forward declarations
-void fetchEnvironmentVariables(applicationState);
+void fetchEnvironmentVariables(applicationState& state);
 bool pollEnvVars(void);
 sensorReadings captureSensorReadings(void);
-void sendSensorReadings(sensorReadings);
-void displayReadings(sensorReadings);
+void sendSensorReadings(const sensorReadings& readings, bool alarm=false);
+void displayReadings(const sensorReadings& readings);
+
 
 #ifdef USE_DISPLAY
 Adafruit_SSD1306 display = Adafruit_SSD1306(128, 32, &Wire);
@@ -155,8 +143,7 @@ void setup() {
         serialDebugOut.println("Waiting for Environment Variables from the Notecard");
       }
   }
-
-  startMs = millis();
+  lastUpdateMs = millis();
 }
 
 void loop() {
@@ -179,32 +166,49 @@ void loop() {
     }
   }
 
+  const uint32_t currentMillis = millis();
   if (!state.live) {
-    currentMillis = millis();
-
-    if (currentMillis - startMs >= period) {
+    if (currentMillis - lastUpdateMs >= updatePeriod) {
       if (state.floorHeight != 0.0 && state.baselineFloor != 0) {
         sensorReadings readings = captureSensorReadings();
         displayReadings(readings);
+        lastUpdateMs = currentMillis;
         // Uncomment to send readings when not live
         // sendSensorReadings(readings);
       } else {
         serialDebugOut.println("Waiting for Environment Variables from the Notecard");
       }
-
-
-      startMs = currentMillis;
     }
   } else {
     if (state.floorHeight != 0.0 && state.baselineFloor != 0) {
       sensorReadings readings = captureSensorReadings();
-
+      bool send = false;
+      bool alarm = false;
+      bool floorChange = false;
       if (readings.currentFloor != state.lastFloor) {
+        send = true;
+        floorChange = true;
+        state.alarmSent = false;
         serialDebugOut.println("New floor detected. Sending a Note.");
-
+      }
+      else if (!state.alarmSent && state.lastFloorChangeAt && state.lastFloorChangeAt<currentMillis && state.noMovementThreshold && ((currentMillis - state.lastFloorChangeAt)>(state.noMovementThreshold*NO_MOVEMENT_THRESHOLD_SCALE_MS))) {
+        serialDebugOut.println("No movement between floors detected. Sending a Note.");
+        send = true;
+        alarm = true;
+        state.alarmSent = true;
+      }
+      else if (currentMillis - lastUpdateMs >= updatePeriod) {
+        send = true;
+        serialDebugOut.println("Update period elapsed. Sending a Note.");
+      }
+      if (send) {
         displayReadings(readings);
-        sendSensorReadings(readings);
+        sendSensorReadings(readings, alarm);
+        lastUpdateMs = currentMillis;
+      }
+      if (floorChange) {
         state.lastFloor = readings.currentFloor;
+        state.lastFloorChangeAt = currentMillis;
       }
     } else {
       serialDebugOut.println("Waiting for Environment Variables from the Notecard");
@@ -212,7 +216,7 @@ void loop() {
   }
 }
 
-void fetchEnvironmentVariables(applicationState vars) {
+void fetchEnvironmentVariables(applicationState& vars) {
   J *req = NoteNewRequest("env.get");
 
   J *names = JAddArrayToObject(req, "names");
@@ -229,31 +233,37 @@ void fetchEnvironmentVariables(applicationState vars) {
       }
 
       // Set the lastModifiedTime based on the return
-      lastModifiedTime = JGetNumber(rsp, "time");
-
+      uint32_t modifiedTime = JGetNumber(rsp, "time");
+      if (modifiedTime) {
+        lastModifiedTime = modifiedTime;
+      }
       // Get the note's body
       J *body = JGetObject(rsp, "body");
       if (body != NULL) {
-          vars.baselineFloor = atoi(JGetString(body, "baseline_floor"));
+          int newBaselineFloor = atoi(JGetString(body, "baseline_floor"));
+          if (newBaselineFloor!=vars.baselineFloor) {
+            setBaselineFloor = true;
+          }
+          vars.baselineFloor = newBaselineFloor;
           vars.floorHeight = atof(JGetString(body, "floor_height"));
           vars.noMovementThreshold = atoi(JGetString(body, "no_movement_threshold"));
 
           char *liveStr = JGetString(body, "live");
-
-          if (strcmp(liveStr, "true") == 0 || strcmp(liveStr, "1") == 0) {
-            vars.live = true;
+          bool wasLive = vars.live;
+          vars.live = (strcmp(liveStr, "true") == 0 || strcmp(liveStr, "1") == 0);
+          if (vars.live && vars.live!=wasLive) {
+            // when the device becomes live, calibrate to the floor level given
+            setBaselineFloor = true;
           }
+          vars.alarmSent = false;
+          updatePeriod = state.live ? LIVE_UPDATE_PERIOD : IDLE_UPDATE_PERIOD;
 
           serialDebugOut.printf("\nBaseline Floor: %d\n", vars.baselineFloor);
           serialDebugOut.print("Floor Height: ");
           serialDebugOut.print(vars.floorHeight);
           serialDebugOut.printf("\nMovement Threshold: %d\n", vars.noMovementThreshold);
           serialDebugOut.printf("Live: %s\n\n", vars.live ? "true" : "false");
-
-          setBaselineFloor = true;
-          state = vars;
       }
-
   }
   notecard.deleteResponse(rsp);
 }
@@ -288,42 +298,55 @@ sensorReadings captureSensorReadings() {
   if (!bmp.performReading()) {
     serialDebugOut.println("Failed to perform reading from pressure sensor.");
   }
-
+  readings.readingTimestamp = millis();
   readings.temp = bmp.temperature;
   readings.pressure = bmp.pressure / 100.0;
 
   if (setBaselineFloor) {
     state.baselineFloorPressure = readings.pressure;
     state.lastFloor = readings.currentFloor;
-
+    state.lastFloorChangeAt = millis();
+    state.alarmSent = false;
     setBaselineFloor = false;
+    serialDebugOut.println("Setting baseline floor / pressure");
+    serialDebugOut.print("baseline floor: ");
+    serialDebugOut.println(state.baselineFloor);
+    serialDebugOut.print("baseline pressure:");
+    serialDebugOut.print(state.baselineFloorPressure);
+    serialDebugOut.println(" hPa");
   }
 
   readings.altitude = bmp.readAltitude(state.baselineFloorPressure);
-  int8_t floor = (readings.altitude / state.floorHeight) + 1;
+  int floor = ((readings.altitude / state.floorHeight) + 0.3) + state.baselineFloor;
 
   readings.currentFloor = floor;
 
   return readings;
 }
 
-void sendSensorReadings(sensorReadings readings) {
+void sendSensorReadings(const sensorReadings& readings, bool alarm) {
   J *req = notecard.newRequest("note.add");
   if (req != NULL) {
     JAddBoolToObject(req, "sync", true);
     J *body = JCreateObject();
     if (body != NULL) {
       JAddNumberToObject(body, "floor", readings.currentFloor);
+      JAddNumberToObject(body, "prevFloor", state.lastFloor);
+      JAddNumberToObject(body, "prevFloorChange", state.lastFloorChangeAt);
       JAddNumberToObject(body, "altitude", readings.altitude);
       JAddNumberToObject(body, "pressure", readings.pressure);
       JAddNumberToObject(body, "temp", readings.temp);
+      JAddNumberToObject(body, "direction", readings.currentFloor-state.lastFloor);
+      if (alarm) {
+        JAddStringToObject(body, "alarm", "no movement between floors");
+      }
       JAddItemToObject(req, "body", body);
       notecard.sendRequest(req);
     }
   }
 }
 
-void displayReadings(sensorReadings readings) {
+void displayReadings(const sensorReadings& readings) {
   serialDebugOut.print("Temperature = ");
   serialDebugOut.print(readings.temp);
   serialDebugOut.println(" *C");
@@ -335,6 +358,10 @@ void displayReadings(sensorReadings readings) {
   serialDebugOut.print("Approx. Altitude = ");
   serialDebugOut.print(readings.altitude);
   serialDebugOut.println(" m");
+
+  serialDebugOut.print("Prevoius Floor = ");
+  serialDebugOut.println(state.lastFloor);
+
 
   serialDebugOut.print("Floor = ");
   serialDebugOut.println(readings.currentFloor);
