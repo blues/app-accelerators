@@ -1,0 +1,16 @@
+@import "_variables.scss";
+
+.cardContainer {
+  border: 1px solid $bw-color--grey3;
+
+  p {
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  :global .ant-card-head,
+  :global .ant-card-body {
+    padding: 12px 15px;
+  }
+}

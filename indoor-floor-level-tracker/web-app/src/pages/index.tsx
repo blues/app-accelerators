@@ -1,18 +1,36 @@
-import { useState } from "react";
-import { NextPage } from "next";
-import { Alert, Card, Switch } from "antd";
-import { DeviceTracker } from "../services/ClientModel";
+import { useEffect, useState } from "react";
+import { GetServerSideProps, NextPage } from "next";
+import Image from "next/image";
+import { Alert, Col, Row, Tooltip } from "antd";
+import { useRouter } from "next/router";
+import ResponderIcon from "../components/elements/images/responder.svg";
+import { ERROR_CODES } from "../services/Errors";
+import { DeviceTracker, TrackerConfig } from "../services/ClientModel";
 import { getErrorMessage } from "../constants/ui";
 import Config from "../../Config";
 import Table, { TableProps } from "../components/elements/Table";
 import { useDeviceTrackerData } from "../hooks/useDeviceTrackerData";
+import { services } from "../services/ServiceLocatorServer";
+import { updateLiveTrackerStatus } from "../api-client/fleetVariables";
 import { LoadingSpinner } from "../components/layout/LoadingSpinner";
+import LiveTrackCard from "../components/elements/LiveTrackCard";
 import styles from "../styles/Home.module.scss";
 
-const Home: NextPage = () => {
+type HomeData = {
+  fleetTrackerConfig: TrackerConfig;
+  error: string;
+};
+
+const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const infoMessage = "Deploy message";
-  const [areTrackersLive, setAreTrackersLove] = useState<boolean>(false);
   const MS_REFETCH_INTERVAL = 10000;
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const router = useRouter();
+  // refresh the page
+  const refreshData = async () => {
+    await router.replace(router.asPath);
+  };
 
   const {
     isLoading: deviceTrackersLoading,
@@ -25,41 +43,64 @@ const Home: NextPage = () => {
 
   const trackers: DeviceTracker[] | undefined = deviceTrackers;
 
-  const toggleGoLive = (checked: boolean) => {
+  const liveTrackEnabled: boolean | undefined = !!fleetTrackerConfig?.live;
+
+  const toggleLiveTracking = async (checked: boolean) => {
     console.log(`switch to ${checked}`);
+    let isSuccessful = true;
+    setIsLoading(true);
+    try {
+      await updateLiveTrackerStatus(checked);
+    } catch (e) {
+      isSuccessful = false;
+    }
+    setIsLoading(false);
+    await refreshData();
+    return isSuccessful;
   };
 
   const tableInfo: TableProps = {
     columns: [
       {
-        title: "Responders",
+        title: (
+          <>
+            <Image src={ResponderIcon} alt="person outline" />
+            Responders
+          </>
+        ),
         dataIndex: "name",
         key: "name",
+        width: "20%",
+        ellipsis: { showTitle: false },
+        render: (name) => (
+          <Tooltip placement="topLeft" title={name}>
+            {name}
+          </Tooltip>
+        ),
       },
       {
         title: "Floor",
         dataIndex: "floor",
         key: "floor",
-      },
-      {
-        title: "Alerts",
-        dataIndex: "alerts",
-        key: "alerts",
+        width: "15%",
       },
       {
         title: "Last Seen",
         dataIndex: "lastActivity",
         key: "lastActivity",
+        width: "30%",
       },
       {
         title: "Pressure",
         dataIndex: "pressure",
         key: "pressure",
+        width: "20%",
       },
       {
         title: "Voltage",
         dataIndex: "voltage",
         key: "voltage",
+        width: "15%",
       },
     ],
     data: trackers,
@@ -72,22 +113,27 @@ const Home: NextPage = () => {
           className={styles.errorMessage}
           // life in the fast lane...
           // eslint-disable-next-line react/no-danger
-          dangerouslySetInnerHTML={{ __html: err }}
+          dangerouslySetInnerHTML={{ __html: err || error }}
         />
       ) : (
-        <LoadingSpinner isLoading={deviceTrackersLoading}>
+        <LoadingSpinner isLoading={isLoading || deviceTrackersLoading}>
           <div>
-            <Card title="Fleet Controls WIP">
-              <h3>Enable Live Track</h3>
-              <Switch
-                defaultChecked={areTrackersLive}
-                onChange={toggleGoLive}
-              />
-            </Card>
-            <h3 className={styles.sectionTitle}>Fleet Name</h3>
-            {trackers && (
-              <Table columns={tableInfo.columns} data={tableInfo.data} />
-            )}
+            <h3 className={styles.sectionTitle}>Fleet Controls</h3>
+            <Row>
+              <Col span={3}>
+                <LiveTrackCard
+                  liveTrackEnabled={liveTrackEnabled}
+                  toggleLiveTracking={toggleLiveTracking}
+                />
+              </Col>
+            </Row>
+            <Row>
+              <h3 className={styles.sectionTitle}>Fleet Name</h3>
+
+              {trackers && (
+                <Table columns={tableInfo.columns} data={tableInfo.data} />
+              )}
+            </Row>
             {Config.isBuildVersionSet() ? (
               <Alert description={infoMessage} type="info" closable />
             ) : null}
@@ -98,3 +144,25 @@ const Home: NextPage = () => {
   );
 };
 export default Home;
+
+export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
+  let fleetTrackerConfig: TrackerConfig = {};
+  let error = "";
+
+  try {
+    const appService = services().getAppService();
+    fleetTrackerConfig = await appService.getTrackerConfig();
+
+    return {
+      props: { fleetTrackerConfig, error },
+    };
+  } catch (e) {
+    error = getErrorMessage(
+      e instanceof Error ? e.message : ERROR_CODES.INTERNAL_ERROR
+    );
+  }
+
+  return {
+    props: { fleetTrackerConfig, error },
+  };
+};

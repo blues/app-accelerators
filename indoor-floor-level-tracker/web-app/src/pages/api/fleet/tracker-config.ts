@@ -11,8 +11,8 @@ interface ValidRequest {
 }
 
 function validateMethod(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST" && req.method !== "GET") {
-    res.setHeader("Allow", ["GET", "POST"]);
+  if (req.method !== "POST") {
+    res.setHeader("Allow", ["POST"]);
     res.status(StatusCodes.METHOD_NOT_ALLOWED);
     res.json({ err: `Method ${req.method || "is undefined."} Not Allowed` });
     return false;
@@ -36,20 +36,7 @@ function validateRequest(
   return { trackerConfig };
 }
 
-async function performGetRequest() {
-  console.log("calling get fleet tracker config");
-  const app = services().getAppService();
-  try {
-    return await app.getTrackerConfig();
-  } catch (cause) {
-    throw new ErrorWithCause("Could not perform getTrackerConfig request", {
-      cause,
-    });
-  }
-}
-
 async function performPostRequest({ trackerConfig }: ValidRequest) {
-  console.log("calling set fleet tracker config");
   const app = services().getAppService();
 
   try {
@@ -71,12 +58,6 @@ export default async function trackerConfigHandler(
 
   try {
     switch (req.method) {
-      case "GET":
-        {
-          const trackerConfigData = await performGetRequest();
-          res.status(200).json({ trackerConfigData });
-        }
-        break;
       case "POST":
         {
           const validRequest = validateRequest(req, res);

@@ -17,14 +17,12 @@ const LayoutComponent = ({
   const { Content } = Layout;
   return (
     <Layout>
-      <Header />
+      <Sider />
       <Layout>
-        <Sider />
+        <Header />
         <div className={styles.mainContentWrapper}>
           <LoadingSpinner isLoading={isLoading}>
-            <Layout>
-              <Content className={styles.mainContent}>{children}</Content>
-            </Layout>
+            <Content className={styles.mainContent}>{children}</Content>
           </LoadingSpinner>
           <Footer />
         </div>

@@ -6,7 +6,6 @@ export const NextJsUrlManager = {
   notehubProject: (notehubUrl: string, projectUID: string) =>
     `${notehubUrl}/project/${projectUID}`,
   getDeviceTrackerData: () => `/api/device-trackers`,
-  getFleetTrackerConfig: () => `/api/fleet/tracker-config`,
   setFleetTrackerConfig: () => `/api/fleet/tracker-config`,
 
   notifications: (...notificationIDs: NotificationID[]) =>

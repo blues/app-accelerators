@@ -4,15 +4,24 @@
   .siderHeader {
     border-right: 2px solid $bw-color--grey0;
     border-bottom: 1px solid $bw-color--grey1;
+
+    .siderTitleWrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 6px 0;
+
+      .siderTitle {
+        font-size: 14px;
+        font-weight: 600;
+        padding-left: 12px;
+        margin-top: 16px;
+      }
+    }
   }
 
-  .siderTitle {
-    font-size: 20px;
-    font-weight: 600;
-    padding-left: 24px;
-    padding-bottom: 34px;
-    padding-top: 16px;
-    margin-bottom: 0;
+  :global .ant-menu-title-content {
+    margin-left: 16px;
   }
 
   :global .ant-menu-inline {
