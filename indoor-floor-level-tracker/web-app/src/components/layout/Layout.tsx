@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { Layout } from "antd";
 import Header from "./Header";
 import Sider from "./Sider";
@@ -15,11 +15,17 @@ const LayoutComponent = ({
   isLoading: boolean;
 }) => {
   const { Content } = Layout;
+  const [collapsed, setCollapsed] = useState(false);
+
+  const toggleCollapse = (collapse: boolean) => {
+    setCollapsed(collapse);
+  };
+
   return (
     <Layout>
-      <Sider />
+      <Sider collapsed={collapsed} />
       <Layout>
-        <Header />
+        <Header collapsed={collapsed} toggleCollapse={toggleCollapse} />
         <div className={styles.mainContentWrapper}>
           <LoadingSpinner isLoading={isLoading}>
             <Content className={styles.mainContent}>{children}</Content>

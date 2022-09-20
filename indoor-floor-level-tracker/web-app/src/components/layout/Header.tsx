@@ -1,14 +1,24 @@
-import Image from "next/image";
+import { createElement } from "react";
+import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
 import { Layout } from "antd";
 import config from "../../../Config";
 import styles from "../../styles/Header.module.scss";
 
-const HeaderComponent = () => {
+const HeaderComponent = ({
+  collapsed,
+  toggleCollapse,
+}: {
+  collapsed: boolean;
+  toggleCollapse: (collpase: boolean) => void;
+}) => {
   const { Header } = Layout;
+
   return (
     <Header className={styles.header}>
-      {/* <Image src={Logo} height={70} width={100} alt="App Logo" /> */}
-      Menu collapser
+      {createElement(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
+        className: "trigger",
+        onClick: () => toggleCollapse(!collapsed),
+      })}
       <h1 className={styles.headerTitle}>Indoor Floor Level Tracker</h1>
       <h2 data-testid="company-name" className={styles.headerText}>
         {config.companyName}

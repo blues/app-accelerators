@@ -4,6 +4,9 @@
   .siderHeader {
     border-right: 2px solid $bw-color--grey0;
     border-bottom: 1px solid $bw-color--grey1;
+    height: $header-bar-height;
+    display: flex;
+    justify-content: center;
 
     .siderTitleWrapper {
       display: flex;
@@ -17,6 +20,10 @@
         padding-left: 12px;
         margin-top: 16px;
       }
+
+      .collapsed {
+        display: none !important;
+      }
     }
   }
 
@@ -26,6 +33,10 @@
 
   :global .ant-menu-inline {
     border-right: 2px solid $bw-color--grey0;
+  }
+
+  :global .ant-menu-inline-collapsed > .ant-menu-item {
+    padding-top: 8% !important;
   }
 
   :global .ant-menu-item {

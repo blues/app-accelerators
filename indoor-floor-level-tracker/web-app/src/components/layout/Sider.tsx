@@ -8,7 +8,7 @@ import OverviewIcon from "../elements/images/overview.svg";
 import SettingsIcon from "../elements/images/settings.svg";
 import styles from "../../styles/Sider.module.scss";
 
-const SiderComponent = () => {
+const SiderComponent = ({ collapsed }: { collapsed: boolean }) => {
   const { Sider } = Layout;
 
   type MenuItem = Required<MenuProps>["items"][number];
@@ -24,24 +24,49 @@ const SiderComponent = () => {
   }
 
   const menuItems: MenuItem[] = [
-    getItem("Overview", 1, Overview),
-    getItem("Settings", 2, Settings),
+    getItem(
+      <div className={`${collapsed ? `${styles.collapsed}` : ""}`}>
+        Overview
+      </div>,
+      "1",
+      Overview
+    ),
+    getItem(
+      <div className={`${collapsed ? `${styles.collapsed}` : ""}`}>
+        Settings
+      </div>,
+      "2",
+      Settings
+    ),
   ];
 
   return (
-    <Sider className={styles.siderWrapper} theme="light" width={180}>
+    <Sider
+      trigger={null}
+      collapsible
+      collapsed={collapsed}
+      className={styles.siderWrapper}
+      theme="light"
+      width={180}
+    >
       <div className={styles.siderHeader}>
         <Link href="/">
           <a className={styles.siderTitleWrapper} data-testid="logo">
             <Image src={LogoIcon} height={40} width={40} alt="Logo" />
-            <p className={styles.siderTitle}>Company Logo</p>
+            <p
+              className={`${styles.siderTitle} ${
+                collapsed ? `${styles.collapsed}` : ""
+              }`}
+            >
+              Company Logo
+            </p>
           </a>
         </Link>
       </div>
       <Menu
         mode="inline"
         defaultSelectedKeys={["1"]}
-        style={{ height: "100%" }}
+        style={{ height: "calc(100% - 64px)" }}
         items={menuItems}
       />
     </Sider>
