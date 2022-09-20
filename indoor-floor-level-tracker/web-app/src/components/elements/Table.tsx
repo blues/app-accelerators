@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Form, Input, InputRef, Table } from "antd";
+import type { ColumnsType } from "antd/es/table";
 import { DeviceTracker } from "../../services/ClientModel";
 import styles from "../../styles/Table.module.scss";
 
@@ -8,7 +9,6 @@ const columns = [
     title: "Responders",
     dataIndex: "name",
     key: "name",
-    editable: true,
   },
   {
     title: "Floor",
@@ -35,18 +35,18 @@ const columns = [
     dataIndex: "voltage",
     key: "voltage",
   },
-];
+] as ColumnsType<DeviceTracker>;
 
 interface EditableCellProps {
-  editable: boolean;
+  title: string;
   children: JSX.Element;
   record: DeviceTracker;
   onChange: (deviceUID: string, updatedName: string) => Promise<boolean>;
 }
 
 const EditableCell = ({
-  editable,
   children,
+  title,
   record,
   onChange,
 }: EditableCellProps) => {
@@ -63,7 +63,7 @@ const EditableCell = ({
     setEditing(!editing);
   };
   const save = () => {
-    const newName = form.getFieldValue("name");
+    const newName = form.getFieldValue("name") as string;
     if (newName.trim() === "") {
       return;
     }
@@ -73,18 +73,20 @@ const EditableCell = ({
       return;
     }
 
-    onChange(record.uid, newName)
-      .then(() => {
-        toggleEdit();
-      })
-      .catch(() => {
-        toggleEdit();
-      });
+    onChange(record.uid, newName).then(toggleEdit).catch(toggleEdit);
+  };
+  const onBlur = () => {
+    const newName = form.getFieldValue("name") as string;
+    if (newName.trim() === "") {
+      toggleEdit();
+      return;
+    }
+    save();
   };
 
   let childNode = children;
 
-  if (editable) {
+  if (title === "Responders") {
     childNode = editing ? (
       <Form form={form}>
         <Form.Item
@@ -102,7 +104,7 @@ const EditableCell = ({
         >
           <Input
             className="editable-input"
-            onBlur={save}
+            onBlur={onBlur}
             onPressEnter={save}
             ref={inputRef}
           />
@@ -118,39 +120,36 @@ const EditableCell = ({
   return <td>{childNode}</td>;
 };
 
-const tableComponents = {
-  body: {
-    cell: EditableCell,
-  },
-};
-
 interface TableProps {
   data: DeviceTracker[] | undefined;
   onNameChange: (deviceUID: string, updatedName: string) => Promise<boolean>;
 }
 
 const TableComponent = ({ data, onNameChange }: TableProps) => {
-  const editableColumns = columns.map((col) => {
-    console.log(col.key);
-    if (!col.editable) {
-      return col;
-    }
-
-    return {
-      ...col,
-      onCell: (record: DeviceTracker) => ({
-        record,
-        editable: col.editable,
-        onChange: onNameChange,
-      }),
-    };
-  });
+  const editableColumns = columns.map((col) => ({
+    ...col,
+    onCell: (record: DeviceTracker) => ({
+      record,
+      title: col.title,
+      onChange: onNameChange,
+    }),
+  }));
 
   return (
     <div className={styles.tableContainer}>
       <Table
-        components={tableComponents}
+        components={{
+          body: {
+            cell: EditableCell,
+          },
+        }}
         rowKey="uid"
+        // TypeScript does not like the custom properties being present on the column
+        // definitions, but they’re essential to Ant’s recommended way of allowing
+        // users to edit cell contents.
+        // https://ant.design/components/table/#components-table-demo-edit-cell
+        // https://github.com/ant-design/ant-design/issues/22451#issuecomment-714513684
+        // @ts-ignore
         columns={editableColumns}
         dataSource={data}
         pagination={false}
