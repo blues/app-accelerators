@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useQueryClient } from "react-query";
 import { changeDeviceName } from "../api-client/devices";
 import { DeviceTracker } from "../services/ClientModel";
-import { getErrorMessage } from "../constants/ui";
+import { ERROR_MESSAGE, getErrorMessage } from "../constants/ui";
 import Config from "../../Config";
 import Table from "../components/elements/Table";
 import { useDeviceTrackerData } from "../hooks/useDeviceTrackerData";
@@ -16,6 +16,8 @@ const Home: NextPage = () => {
   const infoMessage = "Deploy message";
   const MS_REFETCH_INTERVAL = 10000;
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isErred, setIsErred] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
   const queryClient = useQueryClient();
 
   const router = useRouter();
@@ -35,11 +37,15 @@ const Home: NextPage = () => {
   const trackers: DeviceTracker[] | undefined = deviceTrackers;
 
   const onTrackerNameChange = async (deviceUID: string, newName: string) => {
+    setIsErred(false);
+    setErrorMessage("");
     setIsLoading(true);
     let isSuccessful = true;
     try {
       await changeDeviceName(deviceUID, newName);
     } catch (e) {
+      setIsErred(true);
+      setErrorMessage(ERROR_MESSAGE.DEVICE_NAME_CHANGE_FAILED);
       isSuccessful = false;
     }
     // Clear the client-side cache so when we refresh the page
@@ -62,9 +68,12 @@ const Home: NextPage = () => {
         />
       ) : (
         <LoadingSpinner isLoading={isLoading || deviceTrackersLoading}>
-          <h3 className={styles.sectionTitle}>Fleet Name</h3>
+          {isErred && <Alert type="error" message={errorMessage} closable />}
           {trackers && (
-            <Table data={trackers} onNameChange={onTrackerNameChange} />
+            <>
+              <h3 className={styles.sectionTitle}>Fleet Name</h3>
+              <Table data={trackers} onNameChange={onTrackerNameChange} />
+            </>
           )}
           {Config.isBuildVersionSet() ? (
             <Alert description={infoMessage} type="info" closable />
