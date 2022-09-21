@@ -71,7 +71,7 @@ const Home: NextPage = () => {
           {isErred && <Alert type="error" message={errorMessage} closable />}
           {trackers && (
             <>
-              <h3 className={styles.sectionTitle}>Fleet Name</h3>
+              <h3 className={styles.sectionTitle}>My Fleet</h3>
               <Table data={trackers} onNameChange={onTrackerNameChange} />
             </>
           )}
