@@ -18,7 +18,8 @@ import NotehubDataProvider from "../notehub/NotehubDataProvider";
 import { deviceTransformUpsert } from "./importTransform";
 
 import IDBuilder from "../IDBuilder";
-import { DeviceTracker } from "../ClientModel";
+import { DeviceTracker, TrackerConfig } from "../ClientModel";
+import Config from "../../../Config";
 
 async function manageDeviceImport(
   bi: BulkImport,
@@ -71,13 +72,18 @@ export class PrismaDataProvider implements DataProvider {
       throw new Error("PrismaDataProvider needs a target for bulk data import");
 
     const project = await this.currentProject();
+    const fleetID = IDBuilder.buildFleetID(Config.hubFleetUID);
 
     // Some  details have to be fetched from the notehub api (because some
     // device details like name are only available in environment variables)
-    const notehubProvider = new NotehubDataProvider(source, {
-      type: "ProjectID",
-      projectUID: project.projectUID,
-    });
+    const notehubProvider = new NotehubDataProvider(
+      source,
+      {
+        type: "ProjectID",
+        projectUID: project.projectUID,
+      },
+      fleetID
+    );
     const devices = await notehubProvider.getDevices();
     for (const device of devices) {
       await manageDeviceImport(b, this.prisma, project, device);
@@ -181,10 +187,15 @@ export class PrismaDataProvider implements DataProvider {
       name: device.name || "",
       locationName: device.locationName || "",
       lastSeenAt: device.lastSeenAt?.toISOString() || "",
+      voltage: 0,
     };
   }
 
   async getDeviceTrackerData(): Promise<DeviceTracker[]> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getTrackerConfig(): Promise<TrackerConfig> {
     throw new Error("Method not implemented.");
   }
 }

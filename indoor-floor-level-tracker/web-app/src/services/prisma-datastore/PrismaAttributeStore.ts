@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { AttributeStore } from "../AttributeStore";
-import { Device, DeviceID } from "../DomainModel";
+import { TrackerConfig } from "../ClientModel";
+import { Device, DeviceID, FleetID } from "../DomainModel";
 import { PrismaDataProvider } from "./PrismaDataProvider";
 
 type HasPin = { pin: string | null };
@@ -26,7 +27,6 @@ export default class PrismaAttributeStore implements AttributeStore {
       },
     });
   }
-
 
   /**
    * Validates that the pin is correct. Either the device has a pin and the pin must match, or the pin is defined.
@@ -67,4 +67,11 @@ export default class PrismaAttributeStore implements AttributeStore {
     }
     return null;
   }
+
+  // updateTrackerConfig(
+  //   fleetUID: FleetID,
+  //   trackerConfig: TrackerConfig
+  // ): Promise<void> {
+  //   return Promise.resolve(void)
+  // }
 }
