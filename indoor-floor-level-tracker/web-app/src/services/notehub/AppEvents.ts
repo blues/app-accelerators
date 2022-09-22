@@ -1,5 +1,4 @@
 import { BasicAppEvent, AppEvent } from "../AppEvent";
-import NotehubEvent from "./models/NotehubEvent";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import NotehubRoutedEvent, {
   NotehubRoutedEventLocationFields,
@@ -10,7 +9,7 @@ export const _health = {
   SENSOR_PROVISION: "sensor-provision",
 };
 
-function eventError(msg: string, event: NotehubRoutedEvent | NotehubEvent) {
+function eventError(msg: string, _event: NotehubRoutedEvent) {
   return new Error(msg);
 }
 
@@ -78,7 +77,7 @@ export const bestLocation = (object: NotehubLocationAlternatives) =>
   object.gps_location || object.triangulated_location || object.tower_location;
 
 function bodyAugmentedWithMetadata(
-  event: NotehubEvent | NotehubRoutedEvent,
+  event: NotehubRoutedEvent,
   locations: NotehubLocationAlternatives
 ) {
   // eslint-disable-next-line prefer-destructuring
@@ -101,8 +100,8 @@ export function appEventFromNotehubRoutedEvent(
     throw eventError("device is not defined", event);
   }
 
-  if (!event.project.id) {
-    throw eventError("project.id is not defined", event);
+  if (!event.app) {
+    throw eventError("event.app is not defined", event);
   }
 
   const locations = locationAlternativesFromRoutedEvent(event);
@@ -110,7 +109,7 @@ export function appEventFromNotehubRoutedEvent(
   const body = bodyAugmentedWithMetadata(event, locations);
 
   return new BasicAppEvent(
-    event.project.id,
+    event.app,
     event.device,
     new Date(event.when * 1000),
     event.file,
@@ -119,27 +118,5 @@ export function appEventFromNotehubRoutedEvent(
     event.sn
   );
 }
-
-export function appEventFromNotehubEvent(
-  event: NotehubEvent,
-  projectUID: string
-): AppEvent {
-  if (!event.device_uid) {
-    throw eventError("device uid is not defined", event);
-  }
-
-  const location = bestLocation(event);
-  const body = bodyAugmentedWithMetadata(event, event);
-
-  return new BasicAppEvent(
-    projectUID,
-    event.device_uid,
-    new Date(event.captured),
-    event.file,
-    location,
-    body
-  );
-}
-
 
 export type { AppEvent };

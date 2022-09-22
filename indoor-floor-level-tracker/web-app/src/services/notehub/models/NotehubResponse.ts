@@ -1,7 +1,7 @@
-import NotehubEvent from "./NotehubEvent";
+import NotehubRoutedEvent from "./NotehubRoutedEvent";
 
 interface NotehubResponse {
-  events?: NotehubEvent[];
+  events?: NotehubRoutedEvent[];
   has_more?: boolean;
   through?: string;
 }
