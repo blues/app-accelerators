@@ -1,7 +1,7 @@
-import NotehubEvent from "./NotehubEvent";
+import NotehubRoutedEvent from "./NotehubRoutedEvent";
 
 interface NotehubLatestEvents {
-  latest_events: [NotehubEvent];
+  latest_events: [NotehubRoutedEvent];
 }
 
 export default NotehubLatestEvents;
