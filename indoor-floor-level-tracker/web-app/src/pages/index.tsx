@@ -6,7 +6,7 @@ import { useRouter } from "next/router";
 import ResponderIcon from "../components/elements/images/responder.svg";
 import { ERROR_CODES } from "../services/Errors";
 import { DeviceTracker, TrackerConfig } from "../services/ClientModel";
-import { getErrorMessage } from "../constants/ui";
+import { ERROR_MESSAGE, getErrorMessage } from "../constants/ui";
 import Config from "../../Config";
 import Table, { TableProps } from "../components/elements/Table";
 import { useDeviceTrackerData } from "../hooks/useDeviceTrackerData";
@@ -25,6 +25,8 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const infoMessage = "Deploy message";
   const MS_REFETCH_INTERVAL = 10000;
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isErred, setIsErred] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   const router = useRouter();
   // refresh the page
@@ -46,11 +48,15 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const liveTrackEnabled: boolean | undefined = !!fleetTrackerConfig?.live;
 
   const toggleLiveTracking = async (checked: boolean) => {
-    let isSuccessful = true;
+    setIsErred(false);
+    setErrorMessage("");
     setIsLoading(true);
+    let isSuccessful = true;
     try {
       await updateLiveTrackerStatus(checked);
     } catch (e) {
+      setIsErred(true);
+      setErrorMessage(ERROR_MESSAGE.UPDATE_FLEET_LIVE_STATUS_FAILED);
       isSuccessful = false;
     }
     setIsLoading(false);
@@ -117,6 +123,7 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
       ) : (
         <LoadingSpinner isLoading={isLoading || deviceTrackersLoading}>
           <div>
+            {isErred && <Alert type="error" message={errorMessage} closable />}
             <h3 className={styles.sectionTitle}>Fleet Controls</h3>
             <Row>
               <Col span={3}>
