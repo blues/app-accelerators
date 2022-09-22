@@ -12,8 +12,8 @@ import { DataProvider } from "../DataProvider";
 import { Device, DeviceID, FleetID, Project, ProjectID } from "../DomainModel";
 import NotehubDevice from "./models/NotehubDevice";
 import NotehubEnvVars from "./models/NotehubEnvVars";
-import NotehubEvent from "./models/NotehubEvent";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
+import NotehubRoutedEvent from "./models/NotehubRoutedEvent";
 import { NotehubAccessor } from "./NotehubAccessor";
 
 interface HasDeviceId {
@@ -37,7 +37,7 @@ export function notehubDeviceToIndoorTracker(device: NotehubDevice) {
   };
 }
 
-export function filterEventsData(events: NotehubEvent[]) {
+export function filterEventsData(events: NotehubRoutedEvent[]) {
   const dataEvent = events
     .filter((event) => event.file === "data.qo")
     .reverse();
@@ -45,10 +45,10 @@ export function filterEventsData(events: NotehubEvent[]) {
   return dataEvent;
 }
 
-export function extractRelevantEventBodyData(events: NotehubEvent[]) {
+export function extractRelevantEventBodyData(events: NotehubRoutedEvent[]) {
   const relevantEventInfo = events.map((event) => ({
     ...event.body,
-    uid: event.device_uid,
+    uid: event.device,
   }));
 
   return relevantEventInfo;
@@ -170,7 +170,7 @@ export default class NotehubDataProvider implements DataProvider {
     return devicesByFleet;
   }
 
-  async getEvents(minutesFromNow: number): Promise<NotehubEvent[]> {
+  async getEvents(minutesFromNow: number): Promise<NotehubRoutedEvent[]> {
     const epochDateMinutesAgo = epochStringMinutesAgo(minutesFromNow);
     const events = await this.notehubAccessor.getEvents(epochDateMinutesAgo);
     return events;
@@ -194,7 +194,7 @@ export default class NotehubDataProvider implements DataProvider {
     const filteredEvents = filterEventsData(rawEvents);
 
     // get unique events by device ID
-    const uniqueEvents = uniqBy(filteredEvents, "device_uid");
+    const uniqueEvents = uniqBy(filteredEvents, "device");
 
     // pull out relevant device data from unique events
     const mappedEvents: ClientTracker[] =
