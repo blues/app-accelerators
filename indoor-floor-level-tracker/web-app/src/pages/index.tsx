@@ -42,6 +42,20 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
     deviceTrackersError && getErrorMessage(deviceTrackersError.message);
 
   const trackers: DeviceTracker[] | undefined = deviceTrackers;
+  console.log(JSON.stringify(trackers));
+
+  const groupBy = (array: array, prop: string) =>
+    array.reduce((acc, obj) => {
+      const key = obj[prop];
+      if (!acc[key]) {
+        acc[key] = 1;
+      }
+      acc[key] + 1;
+      return acc;
+    }, {});
+
+  const respondersGroupedByFloor = groupBy(deviceTrackers, "floor");
+  console.log(respondersGroupedByFloor);
 
   const liveTrackEnabled: boolean | undefined = !!fleetTrackerConfig?.live;
 
@@ -103,6 +117,17 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
       },
     ],
     data: trackers,
+  };
+
+  const respondersTableInfo: TableProps = {
+    columns: [
+      {
+        title: "Responders Per Floor",
+        dataIndex: "floorNumber",
+        key: "floorNumber",
+      },
+    ],
+    data: null,
   };
 
   return (
