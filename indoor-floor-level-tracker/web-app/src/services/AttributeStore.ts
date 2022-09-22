@@ -11,7 +11,7 @@ export interface AttributeStore {
    */
   updateDevicePin: (deviceID: DeviceID, pin: string) => Promise<Device | null>;
 
-  updateTrackerConfig?: (
+  updateTrackerConfig: (
     fleetUID: FleetID,
     trackerConfig: TrackerConfig
   ) => Promise<void>;

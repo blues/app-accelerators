@@ -14,6 +14,10 @@ export default class CompositeDataProvider implements DataProvider {
     private prismaDataProvider: PrismaDataProvider
   ) {}
 
+  getTrackerConfig(): Promise<TrackerConfig> {
+    throw new Error("Method not implemented.");
+  }
+
   async getProject(): Promise<Project> {
     return this.prismaDataProvider.getProject();
   }
@@ -35,10 +39,6 @@ export default class CompositeDataProvider implements DataProvider {
   }
 
   getDeviceTrackerData(): Promise<DeviceTracker[]> {
-    throw new Error("Method not implemented.");
-  }
-
-  getTrackerConfig(): Promise<TrackerConfig> {
     throw new Error("Method not implemented.");
   }
 }

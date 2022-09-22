@@ -2,10 +2,8 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable import/prefer-default-export */
 import Prisma, { PrismaClient } from "@prisma/client";
-import { ErrorWithCause } from "pony-cause";
 import { DataProvider, BulkImport } from "../DataProvider";
 import { ProjectID, DeviceID, Device, Project } from "../DomainModel";
-import Mapper, { PrismaDomainModelMapper } from "./PrismaDomainModelMapper";
 import {
   serverLogError,
   serverLogInfo,
@@ -13,13 +11,10 @@ import {
 } from "../../pages/api/log";
 import { NotehubAccessor } from "../notehub/NotehubAccessor";
 import { AppEventHandler } from "../AppEvent";
-import { appEventFromNotehubEvent } from "../notehub/AppEvents";
 import NotehubDataProvider from "../notehub/NotehubDataProvider";
 import { deviceTransformUpsert } from "./importTransform";
-
-import IDBuilder from "../IDBuilder";
 import { DeviceTracker, TrackerConfig } from "../ClientModel";
-import Config from "../../../Config";
+import { appEventFromNotehubRoutedEvent } from "../notehub/AppEvents";
 
 async function manageDeviceImport(
   bi: BulkImport,
@@ -50,6 +45,10 @@ async function manageDeviceImport(
 export class PrismaDataProvider implements DataProvider {
   constructor(private prisma: PrismaClient, private projectID: ProjectID) {}
 
+  getTrackerConfig(): Promise<TrackerConfig> {
+    throw new Error("Method not implemented.");
+  }
+
   async getProject(): Promise<Project> {
     const project = await this.currentProject();
     return {
@@ -72,7 +71,6 @@ export class PrismaDataProvider implements DataProvider {
       throw new Error("PrismaDataProvider needs a target for bulk data import");
 
     const project = await this.currentProject();
-    const fleetID = IDBuilder.buildFleetID(Config.hubFleetUID);
 
     // Some  details have to be fetched from the notehub api (because some
     // device details like name are only available in environment variables)
@@ -82,7 +80,7 @@ export class PrismaDataProvider implements DataProvider {
         type: "ProjectID",
         projectUID: project.projectUID,
       },
-      fleetID
+      { type: "FleetID", fleetUID: "" }
     );
     const devices = await notehubProvider.getDevices();
     for (const device of devices) {
@@ -106,13 +104,13 @@ export class PrismaDataProvider implements DataProvider {
       i += 1;
       try {
         await target.handleEvent(
-          appEventFromNotehubEvent(event, project.projectUID),
+          appEventFromNotehubRoutedEvent(event),
           isHistorical
         );
         b.itemCount += 1;
       } catch (cause) {
         serverLogError(
-          `Error loading event ${event.uid}. Cause: ${String(cause)}`
+          `Error loading event ${event.event}. Cause: ${String(cause)}`
         );
         b.errorCount += 1;
       }
@@ -181,21 +179,10 @@ export class PrismaDataProvider implements DataProvider {
   }
 
   deviceFromPrismaDevice(device: Prisma.Device): Device {
-    return {
-      ...device,
-      id: IDBuilder.buildDeviceID(device.deviceUID),
-      name: device.name || "",
-      locationName: device.locationName || "",
-      lastSeenAt: device.lastSeenAt?.toISOString() || "",
-      voltage: 0,
-    };
-  }
-
-  async getDeviceTrackerData(): Promise<DeviceTracker[]> {
     throw new Error("Method not implemented.");
   }
 
-  async getTrackerConfig(): Promise<TrackerConfig> {
+  async getDeviceTrackerData(): Promise<DeviceTracker[]> {
     throw new Error("Method not implemented.");
   }
 }

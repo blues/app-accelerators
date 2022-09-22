@@ -17,6 +17,13 @@ export default class PrismaAttributeStore implements AttributeStore {
     private dataProvider: PrismaDataProvider
   ) {}
 
+  updateTrackerConfig: (
+    fleetUID: FleetID,
+    trackerConfig: TrackerConfig
+  ) => Promise<void> = () => {
+    throw new Error("not implemented");
+  };
+
   async updateDeviceName(deviceID: DeviceID, name: string): Promise<void> {
     await this.prisma.device.update({
       where: {
@@ -67,11 +74,4 @@ export default class PrismaAttributeStore implements AttributeStore {
     }
     return null;
   }
-
-  // updateTrackerConfig(
-  //   fleetUID: FleetID,
-  //   trackerConfig: TrackerConfig
-  // ): Promise<void> {
-  //   return Promise.resolve(void)
-  // }
 }

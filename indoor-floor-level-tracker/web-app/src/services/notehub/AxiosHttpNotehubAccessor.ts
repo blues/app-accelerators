@@ -7,12 +7,12 @@ import { getError, ERROR_CODES } from "../Errors";
 import NotehubLatestEvents from "./models/NotehubLatestEvents";
 import NotehubDeviceConfig from "./models/NotehubDeviceConfig";
 import NotehubErr from "./models/NotehubErr";
-import NotehubEvent from "./models/NotehubEvent";
 import NotehubResponse from "./models/NotehubResponse";
 import NoteDeviceConfigBody from "./models/NoteDeviceConfigBody";
 import NotehubEnvVars from "./models/NotehubEnvVars";
 import { serverLogInfo } from "../../pages/api/log";
 import NotehubEnvVarsResponse from "./models/NotehubEnvVarsResponse";
+import NotehubRoutedEvent from "./models/NotehubRoutedEvent";
 
 // this class directly interacts with Notehub via HTTP calls
 export default class AxiosHttpNotehubAccessor implements NotehubAccessor {
@@ -116,7 +116,7 @@ export default class AxiosHttpNotehubAccessor implements NotehubAccessor {
   async getEvents(startDate?: string) {
     // Take the start date from the argument first, but fall back to the environment
     // variable.
-    let events: NotehubEvent[] = [];
+    let events: NotehubRoutedEvent[] = [];
     const startDateQuery = startDate ? `?startDate=${startDate}` : "";
     const initialEndpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/events${startDateQuery}`;
     try {
