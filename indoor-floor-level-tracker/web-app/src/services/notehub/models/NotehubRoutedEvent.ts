@@ -35,17 +35,16 @@ export interface NotehubRoutedEventLocationFields {
 interface NotehubRoutedEvent
   extends SessionMetadata,
     NotehubRoutedEventLocationFields {
-  file: string;
-  when: number;
-  device: string;
-  note?: string;
-  body: object;
-  sn: string;
-
+  app: string; // notehub app/project uid
   best_id: string;
-  project: {
-    id: string;
-  };
+  body: object;
+  device: string; // device uid
+  event: string; // event uid
+  file: string;
+  note?: string;
+  received: number;
+  sn: string;
+  when: number;
 }
 
 export default NotehubRoutedEvent;
