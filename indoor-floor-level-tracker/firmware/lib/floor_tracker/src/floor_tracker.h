@@ -12,12 +12,14 @@ struct applicationState {
   int lastFloor;
   uint32_t lastFloorChangeAt;
   bool alarmSent;
+  bool baselineChanged;
 };
 
 struct sensorReadings {
   float temp;
   float pressure;
   float altitude;
-  int currentFloor;
+  float floor;
+  int currentFloor;   // floor as an integer value
   uint32_t readingTimestamp;
 };
