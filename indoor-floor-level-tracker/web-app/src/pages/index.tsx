@@ -31,15 +31,13 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
 
   const router = useRouter();
   // refresh the page
-  const refreshData = async () => {
-    await router.replace(router.asPath);
+  const refreshData = () => {
+    // eslint-disable-next-line no-void
+    void router.replace(router.asPath);
   };
 
-  const {
-    isLoading: deviceTrackersLoading,
-    error: deviceTrackersError,
-    data: deviceTrackers,
-  } = useDeviceTrackerData(MS_REFETCH_INTERVAL);
+  const { error: deviceTrackersError, data: deviceTrackers } =
+    useDeviceTrackerData(MS_REFETCH_INTERVAL);
 
   const err =
     deviceTrackersError && getErrorMessage(deviceTrackersError.message);
@@ -47,10 +45,10 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const trackers: DeviceTracker[] | undefined = deviceTrackers;
 
   useEffect(() => {
-    if (trackers !== undefined) {
-      setIsLiveTrackingEnabled(!!fleetTrackerConfig?.live);
+    if (fleetTrackerConfig && fleetTrackerConfig.live) {
+      setIsLiveTrackingEnabled(fleetTrackerConfig.live);
     }
-  }, [trackers]);
+  }, [fleetTrackerConfig]);
 
   useEffect(() => {
     refreshData();
@@ -113,29 +111,31 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
           dangerouslySetInnerHTML={{ __html: err || error }}
         />
       ) : (
-        <LoadingSpinner isLoading={isLoading || deviceTrackersLoading}>
+        <LoadingSpinner isLoading={isLoading}>
           <div>
             {isErrored && (
               <Alert type="error" message={errorMessage} closable />
             )}
-            <h3 className={styles.sectionTitle}>Fleet Controls</h3>
-            <Row>
-              <Col span={3}>
-                <LiveTrackCard
-                  setIsErrored={setIsErrored}
-                  setIsLoading={setIsLoading}
-                  setErrorMessage={setErrorMessage}
-                  isLiveTrackingEnabled={isLiveTrackingEnabled}
-                  setIsLiveTrackingEnabled={setIsLiveTrackingEnabled}
-                />
-              </Col>
-            </Row>
-            <Row>
-              <h3 className={styles.sectionTitle}>Fleet Name</h3>
-              {trackers && (
-                <Table columns={tableInfo.columns} data={tableInfo.data} />
-              )}
-            </Row>
+            {trackers && (
+              <>
+                <h3 className={styles.sectionTitle}>Fleet Controls</h3>
+                <Row>
+                  <Col span={3}>
+                    <LiveTrackCard
+                      setIsErrored={setIsErrored}
+                      setIsLoading={setIsLoading}
+                      setErrorMessage={setErrorMessage}
+                      isLiveTrackingEnabled={isLiveTrackingEnabled}
+                      setIsLiveTrackingEnabled={setIsLiveTrackingEnabled}
+                    />
+                  </Col>
+                </Row>
+                <Row>
+                  <h3 className={styles.sectionTitle}>Fleet Name</h3>
+                  <Table columns={tableInfo.columns} data={tableInfo.data} />
+                </Row>
+              </>
+            )}
             {Config.isBuildVersionSet() ? (
               <Alert description={infoMessage} type="info" closable />
             ) : null}
