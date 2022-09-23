@@ -13,8 +13,6 @@ import { NotehubAccessor } from "../notehub/NotehubAccessor";
 import { AppEventHandler } from "../AppEvent";
 import NotehubDataProvider from "../notehub/NotehubDataProvider";
 import { deviceTransformUpsert } from "./importTransform";
-
-import IDBuilder from "../IDBuilder";
 import { DeviceTracker, TrackerConfig } from "../ClientModel";
 import { appEventFromNotehubRoutedEvent } from "../notehub/AppEvents";
 
@@ -46,6 +44,7 @@ async function manageDeviceImport(
  */
 export class PrismaDataProvider implements DataProvider {
   constructor(private prisma: PrismaClient, private projectID: ProjectID) {}
+
   getTrackerConfig(): Promise<TrackerConfig> {
     throw new Error("Method not implemented.");
   }

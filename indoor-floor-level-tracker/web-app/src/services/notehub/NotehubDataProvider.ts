@@ -89,15 +89,14 @@ export function formatDeviceTrackerData(deviceTrackerData: any[]) {
   const formattedDeviceTrackerData = deviceTrackerData.map((data) => ({
     ...data,
     lastActivity: formatDistanceToNow(parseISO(data.lastActivity), {
-      addSuffix: true,
       includeSeconds: true,
     }),
-    ...(data.altitude && { altitude: Number(data.altitude).toFixed(2) }),
-    voltage: `${Number(data.voltage).toFixed(2)}V`,
+    ...(data.altitude && { altitude: Number(data.altitude).toFixed(1) }),
+    voltage: `${Number(data.voltage).toFixed(1)}V`,
     ...(data.pressure && {
-      pressure: `${Number(data.pressure).toFixed(2)} kPa`,
+      pressure: `${Number(data.pressure).toFixed(1)} hPa`,
     }),
-    ...(data.temp && { temp: `${Number(data.temp).toFixed(2)}C` }),
+    ...(data.temp && { temp: `${Number(data.temp).toFixed(1)}C` }),
   }));
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return

@@ -1,10 +1,5 @@
 /* eslint-disable prefer-rest-params */
-import {
-  PrismaClient,
-  Prisma,
-  Project,
-  Device
-} from "@prisma/client";
+import { PrismaClient, Prisma, Project, Device } from "@prisma/client";
 import { ErrorWithCause } from "pony-cause";
 import { serverLogError, serverLogInfo } from "../../pages/api/log";
 import NotehubLocation from "../notehub/models/NotehubLocation";
@@ -14,9 +9,7 @@ import { AppEvent, AppEventHandler } from "../AppEvent";
  * The "hidden" property that describes the property that bears the primary data item in the event.
  */
 
-export default class PrismaDatastoreEventHandler
-  implements AppEventHandler
-{
+export default class PrismaDatastoreEventHandler implements AppEventHandler {
   constructor(private prisma: PrismaClient) {}
 
   /**
@@ -43,9 +36,7 @@ export default class PrismaDatastoreEventHandler
       event.deviceName,
       event.when
     );
-
   }
-
 
   /**
    * Insert or update the gateway based on the unique device ID.  If the gateway exists but is in a different project,
@@ -102,7 +93,6 @@ export default class PrismaDatastoreEventHandler
         );
       });
   }
-
 
   private async projectFromNaturalKey(projectUID: string) {
     const project = await this.prisma.project.findUnique({

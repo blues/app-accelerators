@@ -32,6 +32,7 @@ export type { AppServiceInterface };
 
 export default class AppService implements AppServiceInterface {
   private projectID: ProjectID;
+
   private fleetID: FleetID;
 
   constructor(
