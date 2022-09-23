@@ -15,10 +15,10 @@ const LayoutComponent = ({
   isLoading: boolean;
 }) => {
   const { Content } = Layout;
-  const [collapsed, setCollapsed] = useState(false);
+  const [isSiderCollapsed, setIsSiderCollapsed] = useState(false);
 
   const toggleCollapse = (collapse: boolean) => {
-    setCollapsed(collapse);
+    setIsSiderCollapsed(collapse);
   };
 
   return (
@@ -26,13 +26,14 @@ const LayoutComponent = ({
       <Sider collapsed={collapsed} />
       <Layout>
         <Header collapsed={collapsed} toggleCollapse={toggleCollapse} />
+      <Sider isSiderCollapsed={isSiderCollapsed} />
+      <Layout>
         <div className={styles.mainContentWrapper}>
           <LoadingSpinner isLoading={isLoading}>
             <Content className={styles.mainContent}>{children}</Content>
           </LoadingSpinner>
           <Footer />
         </div>
-      </Layout>
     </Layout>
   );
 };

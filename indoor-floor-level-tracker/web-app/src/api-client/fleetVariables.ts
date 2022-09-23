@@ -1,19 +1,16 @@
 /* eslint-disable import/prefer-default-export */
-import axios, { AxiosResponse } from "axios";
+import axios from "axios";
 import { services } from "../services/ServiceLocatorClient";
 
 // generic function to pass all preformatted fleet env vars as objects for updates to Notehub
 async function updateFleetEnvVar(fleetEnvVarToUpdate: object) {
-  const endpoint = services()
-    .getUrlManager()
-    .setFleetTrackerConfig(fleetEnvVarToUpdate);
 
-  const response: AxiosResponse = await axios.post(
-    endpoint,
-    fleetEnvVarToUpdate
-  );
+  const endpoint = services().getUrlManager().setFleetTrackerConfig();
 
-  return response.data as object;
+  const response = await axios.post<object>(endpoint, fleetEnvVarToUpdate);
+
+  return response.data;
+
 }
 
 export async function updateLiveTrackerStatus(liveTrackerStatus: boolean) {

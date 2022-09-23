@@ -8,12 +8,16 @@ import OverviewIcon from "../elements/images/overview.svg";
 import SettingsIcon from "../elements/images/settings.svg";
 import styles from "../../styles/Sider.module.scss";
 
-const SiderComponent = ({ collapsed }: { collapsed: boolean }) => {
+const SiderComponent = ({
+  isSiderCollapsed,
+}: {
+  isSiderCollapsed: boolean;
+}) => {
   const { Sider } = Layout;
 
   type MenuItem = Required<MenuProps>["items"][number];
-  const Overview = <Image src={OverviewIcon} alt="Four squares" />;
-  const Settings = <Image src={SettingsIcon} alt="Four squares" />;
+  const Overview = <Image src={OverviewIcon} alt="Overview" />;
+  const Settings = <Image src={SettingsIcon} alt="Settings" />;
 
   function getItem(label: ReactNode, key: Key, icon?: ReactNode): MenuItem {
     return {
@@ -24,27 +28,15 @@ const SiderComponent = ({ collapsed }: { collapsed: boolean }) => {
   }
 
   const menuItems: MenuItem[] = [
-    getItem(
-      <div className={`${collapsed ? `${styles.collapsed}` : ""}`}>
-        Overview
-      </div>,
-      "1",
-      Overview
-    ),
-    getItem(
-      <div className={`${collapsed ? `${styles.collapsed}` : ""}`}>
-        Settings
-      </div>,
-      "2",
-      Settings
-    ),
+    getItem(<div>Overview</div>, "1", Overview),
+    getItem(<div>Settings</div>, "2", Settings),
   ];
 
   return (
     <Sider
       trigger={null}
       collapsible
-      collapsed={collapsed}
+      collapsed={isSiderCollapsed}
       className={styles.siderWrapper}
       theme="light"
       width={180}
@@ -55,7 +47,7 @@ const SiderComponent = ({ collapsed }: { collapsed: boolean }) => {
             <Image src={LogoIcon} height={40} width={40} alt="Logo" />
             <p
               className={`${styles.siderTitle} ${
-                collapsed ? `${styles.collapsed}` : ""
+                isSiderCollapsed ? `${styles.collapsed}` : ""
               }`}
             >
               Company Logo
@@ -63,12 +55,7 @@ const SiderComponent = ({ collapsed }: { collapsed: boolean }) => {
           </a>
         </Link>
       </div>
-      <Menu
-        mode="inline"
-        defaultSelectedKeys={["1"]}
-        style={{ height: "calc(100% - 64px)" }}
-        items={menuItems}
-      />
+      <Menu mode="inline" defaultSelectedKeys={["1"]} items={menuItems} />
     </Sider>
   );
 };

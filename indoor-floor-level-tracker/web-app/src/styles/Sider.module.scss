@@ -27,6 +27,10 @@
     }
   }
 
+  :global .ant-menu-root {
+    height: calc(100% - $header-bar-height);
+  }
+
   :global .ant-menu-title-content {
     margin-left: 16px;
   }

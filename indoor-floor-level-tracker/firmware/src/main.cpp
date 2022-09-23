@@ -1,11 +1,18 @@
-#include <Arduino.h>
-#include <Wire.h>
-#include <Notecard.h>
 #include "Adafruit_BMP581.h"
 #include "metadata.h"
+#include <Arduino.h>
+#include <Notecard.h>
+#include <Wire.h>
 
 // Uncomment to use a connected SSD1306 Display
 #define USE_DISPLAY
+#define DISPLAY_ROTATE_180
+
+// Uncomment to give the OLED Display power from digital MCU pins.
+// Safe for 0.91 Inch I2C OLED Display on Notecarrier-F + Blues Swan.
+// UNSAFE if your display takes more amps than your microcontroller can supply.
+// #define DISPLAY_POWER_PIN 5
+// #define DISPLAY_GROUND_PIN 6
 
 #ifdef USE_DISPLAY
 #include <Adafruit_GFX.h>
@@ -17,7 +24,7 @@
 // #define DEBUG_NOTECARD
 
 #define PRODUCT_UID "com.blues.nf1"
-#define ENV_POLL_SECS	1
+#define ENV_POLL_SECS 1
 
 // Variables for Env Var polling
 static unsigned long nextPollMs = 0;
@@ -75,14 +82,23 @@ void setup() {
   notecard.begin();
 
 #ifdef USE_DISPLAY
+#ifdef DISPLAY_POWER_PIN
+  pinMode(DISPLAY_POWER_PIN, OUTPUT);
+  digitalWrite(DISPLAY_POWER_PIN, HIGH);
+#endif
+#ifdef DISPLAY_GROUND_PIN
+  pinMode(DISPLAY_GROUND_PIN, OUTPUT);
+  digitalWrite(DISPLAY_GROUND_PIN, LOW);
+#endif
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   serialDebugOut.println("OLED connected...");
 #endif
 
-  if (!bmp.begin_I2C())
-  {
-    serialDebugOut.println("Could not find a valid BMP581 sensor, check wiring!");
-    while (1);
+  if (!bmp.begin_I2C()) {
+    serialDebugOut.println(
+        "Could not find a valid BMP581 sensor, check wiring!");
+    while (1)
+      ;
   }
 
   serialDebugOut.println("BMP581 connected...");
@@ -108,13 +124,15 @@ void setup() {
   display.display();
 
   // text display tests
+#ifdef DISPLAY_ROTATE_180
   display.setRotation(2);
+#endif
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
-  display.setCursor(0,0);
+  display.setCursor(0, 0);
   display.println("NF1");
   display.println("Indoor Floor Level Tracker");
-  display.setCursor(0,0);
+  display.setCursor(0, 0);
   display.display();
 #endif
 
@@ -148,12 +166,13 @@ void setup() {
 
   if (!state.live) {
     if (state.floorHeight != 0.0 && state.baselineFloor != 0) {
-        sensorReadings readings = captureSensorReadings();
-        displayReadings(readings);
-        sendSensorReadings(readings);
-      } else {
-        serialDebugOut.println("Waiting for Environment Variables from the Notecard");
-      }
+      sensorReadings readings = captureSensorReadings();
+      displayReadings(readings);
+      sendSensorReadings(readings);
+    } else {
+      serialDebugOut.println(
+          "Waiting for Environment Variables from the Notecard");
+    }
   }
 
   startMs = millis();
@@ -172,7 +191,8 @@ void loop() {
       JAddBoolToObject(req, "sync", true);
       J *body = JCreateObject();
       if (body != NULL) {
-        JAddStringToObject(body, "message", "environment variable update received");
+        JAddStringToObject(body, "message",
+                           "environment variable update received");
         JAddItemToObject(req, "body", body);
         notecard.sendRequest(req);
       }
@@ -189,9 +209,9 @@ void loop() {
         // Uncomment to send readings when not live
         // sendSensorReadings(readings);
       } else {
-        serialDebugOut.println("Waiting for Environment Variables from the Notecard");
+        serialDebugOut.println(
+            "Waiting for Environment Variables from the Notecard");
       }
-
 
       startMs = currentMillis;
     }
@@ -207,7 +227,8 @@ void loop() {
         state.lastFloor = readings.currentFloor;
       }
     } else {
-      serialDebugOut.println("Waiting for Environment Variables from the Notecard");
+      serialDebugOut.println(
+          "Waiting for Environment Variables from the Notecard");
     }
   }
 }
@@ -223,37 +244,38 @@ void fetchEnvironmentVariables(applicationState vars) {
 
   J *rsp = NoteRequestResponse(req);
   if (rsp != NULL) {
-      if (notecard.responseError(rsp)) {
-          notecard.deleteResponse(rsp);
-          return;
+    if (notecard.responseError(rsp)) {
+      notecard.deleteResponse(rsp);
+      return;
+    }
+
+    // Set the lastModifiedTime based on the return
+    lastModifiedTime = JGetNumber(rsp, "time");
+
+    // Get the note's body
+    J *body = JGetObject(rsp, "body");
+    if (body != NULL) {
+      vars.baselineFloor = atoi(JGetString(body, "baseline_floor"));
+      vars.floorHeight = atof(JGetString(body, "floor_height"));
+      vars.noMovementThreshold =
+          atoi(JGetString(body, "no_movement_threshold"));
+
+      char *liveStr = JGetString(body, "live");
+
+      if (strcmp(liveStr, "true") == 0 || strcmp(liveStr, "1") == 0) {
+        vars.live = true;
       }
 
-      // Set the lastModifiedTime based on the return
-      lastModifiedTime = JGetNumber(rsp, "time");
+      serialDebugOut.printf("\nBaseline Floor: %d\n", vars.baselineFloor);
+      serialDebugOut.print("Floor Height: ");
+      serialDebugOut.print(vars.floorHeight);
+      serialDebugOut.printf("\nMovement Threshold: %d\n",
+                            vars.noMovementThreshold);
+      serialDebugOut.printf("Live: %s\n\n", vars.live ? "true" : "false");
 
-      // Get the note's body
-      J *body = JGetObject(rsp, "body");
-      if (body != NULL) {
-          vars.baselineFloor = atoi(JGetString(body, "baseline_floor"));
-          vars.floorHeight = atof(JGetString(body, "floor_height"));
-          vars.noMovementThreshold = atoi(JGetString(body, "no_movement_threshold"));
-
-          char *liveStr = JGetString(body, "live");
-
-          if (strcmp(liveStr, "true") == 0 || strcmp(liveStr, "1") == 0) {
-            vars.live = true;
-          }
-
-          serialDebugOut.printf("\nBaseline Floor: %d\n", vars.baselineFloor);
-          serialDebugOut.print("Floor Height: ");
-          serialDebugOut.print(vars.floorHeight);
-          serialDebugOut.printf("\nMovement Threshold: %d\n", vars.noMovementThreshold);
-          serialDebugOut.printf("Live: %s\n\n", vars.live ? "true" : "false");
-
-          setBaselineFloor = true;
-          state = vars;
-      }
-
+      setBaselineFloor = true;
+      state = vars;
+    }
   }
   notecard.deleteResponse(rsp);
 }
@@ -267,17 +289,17 @@ bool pollEnvVars() {
 
   J *rsp = notecard.requestAndResponse(notecard.newRequest("env.modified"));
 
-	if (rsp == NULL) {
-		return false;
-	}
+  if (rsp == NULL) {
+    return false;
+  }
 
-	uint32_t modifiedTime = JGetInt(rsp, "time");
+  uint32_t modifiedTime = JGetInt(rsp, "time");
   notecard.deleteResponse(rsp);
-	if (lastModifiedTime == modifiedTime) {
-		return false;
-	}
+  if (lastModifiedTime == modifiedTime) {
+    return false;
+  }
 
-	lastModifiedTime = modifiedTime;
+  lastModifiedTime = modifiedTime;
 
   return true;
 }

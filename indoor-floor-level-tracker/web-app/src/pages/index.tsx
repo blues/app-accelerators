@@ -6,12 +6,11 @@ import { useRouter } from "next/router";
 import ResponderIcon from "../components/elements/images/responder.svg";
 import { ERROR_CODES } from "../services/Errors";
 import { DeviceTracker, TrackerConfig } from "../services/ClientModel";
-import { ERROR_MESSAGE, getErrorMessage } from "../constants/ui";
+import { getErrorMessage } from "../constants/ui";
 import Config from "../../Config";
 import Table, { TableProps } from "../components/elements/Table";
 import { useDeviceTrackerData } from "../hooks/useDeviceTrackerData";
 import { services } from "../services/ServiceLocatorServer";
-import { updateLiveTrackerStatus } from "../api-client/fleetVariables";
 import { LoadingSpinner } from "../components/layout/LoadingSpinner";
 import LiveTrackCard from "../components/elements/LiveTrackCard";
 import RespondersByFloorTable from "../components/elements/RespondersByFloorTable";
@@ -26,71 +25,35 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const infoMessage = "Deploy message";
   const MS_REFETCH_INTERVAL = 10000;
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isErred, setIsErred] = useState<boolean>(false);
+  const [isErrored, setIsErrored] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [respondersGroupedByFloor, setRespondersGroupedByFloor] =
-    useState<object>([]);
+  const [isLiveTrackingEnabled, setIsLiveTrackingEnabled] =
+    useState<boolean>(false);
 
   const router = useRouter();
   // refresh the page
-  const refreshData = async () => {
-    await router.replace(router.asPath);
+  const refreshData = () => {
+    // eslint-disable-next-line no-void
+    void router.replace(router.asPath);
   };
 
-  const {
-    isLoading: deviceTrackersLoading,
-    error: deviceTrackersError,
-    data: deviceTrackers,
-  } = useDeviceTrackerData(MS_REFETCH_INTERVAL);
+  const { error: deviceTrackersError, data: deviceTrackers } =
+    useDeviceTrackerData(MS_REFETCH_INTERVAL);
 
   const err =
     deviceTrackersError && getErrorMessage(deviceTrackersError.message);
 
   const trackers: DeviceTracker[] | undefined = deviceTrackers;
 
-  // todo clean up naming of func and vars and doesn't show table until loading is false
-  const groupBy = (array: any[], prop: string) =>
-    array.reduce((acc, obj) => {
-      const key = obj[prop];
-      if (key) {
-        acc[key] ? ++acc[key] : (acc[key] = 1);
-      }
-      return acc;
-    }, {});
+  useEffect(() => {
+    if (fleetTrackerConfig && fleetTrackerConfig.live) {
+      setIsLiveTrackingEnabled(fleetTrackerConfig.live);
+    }
+  }, [fleetTrackerConfig]);
 
   useEffect(() => {
-    if (trackers) {
-      const devicesByFloor = groupBy(trackers, "floor");
-      console.log(devicesByFloor);
-      const transformRawData = Object.entries(devicesByFloor).map(
-        ([key, value]) => ({
-          floorNumber: `Floor ${key}`,
-          responderCount: `${value}`,
-        })
-      );
-      console.log(transformRawData);
-      setRespondersGroupedByFloor([...transformRawData]);
-    }
-  }, [trackers]);
-
-  const liveTrackEnabled: boolean | undefined = !!fleetTrackerConfig?.live;
-
-  const toggleLiveTracking = async (checked: boolean) => {
-    setIsErred(false);
-    setErrorMessage("");
-    setIsLoading(true);
-    let isSuccessful = true;
-    try {
-      await updateLiveTrackerStatus(checked);
-    } catch (e) {
-      setIsErred(true);
-      setErrorMessage(ERROR_MESSAGE.UPDATE_FLEET_LIVE_STATUS_FAILED);
-      isSuccessful = false;
-    }
-    setIsLoading(false);
-    await refreshData();
-    return isSuccessful;
-  };
+    refreshData();
+  }, [isLiveTrackingEnabled]);
 
   const tableInfo: TableProps = {
     columns: [
@@ -149,27 +112,36 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
           dangerouslySetInnerHTML={{ __html: err || error }}
         />
       ) : (
-        <LoadingSpinner isLoading={isLoading || deviceTrackersLoading}>
+        <LoadingSpinner isLoading={isLoading}>
           <div>
-            {isErred && <Alert type="error" message={errorMessage} closable />}
-            <h3 className={styles.sectionTitle}>Fleet Controls</h3>
-            <Row>
-              <Col span={3}>
-                <LiveTrackCard
-                  liveTrackEnabled={liveTrackEnabled}
-                  toggleLiveTracking={toggleLiveTracking}
-                />
-              </Col>
-            </Row>
-            <Row>
-              <h3 className={styles.sectionTitle}>Fleet Name</h3>
-              {trackers && (
-                <Table columns={tableInfo.columns} data={tableInfo.data} />
-              )}
-              {respondersGroupedByFloor && (
-                <RespondersByFloorTable data={respondersGroupedByFloor} />
-              )}
-            </Row>
+            {isErrored && (
+              <Alert type="error" message={errorMessage} closable />
+            )}
+            {trackers && (
+              <>
+                <h3 className={styles.sectionTitle}>Fleet Controls</h3>
+                <Row>
+                  <Col span={3}>
+                    <LiveTrackCard
+                      setIsErrored={setIsErrored}
+                      setIsLoading={setIsLoading}
+                      setErrorMessage={setErrorMessage}
+                      isLiveTrackingEnabled={isLiveTrackingEnabled}
+                      setIsLiveTrackingEnabled={setIsLiveTrackingEnabled}
+                    />
+                  </Col>
+                </Row>
+                <h3 className={styles.sectionTitle}>Fleet Name</h3>
+                <Row gutter={16}>
+                  <Col span={19}>
+                    <Table columns={tableInfo.columns} data={tableInfo.data} />
+                  </Col>
+                  <Col span={4}>
+                    <RespondersByFloorTable data={trackers} />
+                  </Col>
+                </Row>
+              </>
+            )}
             {Config.isBuildVersionSet() ? (
               <Alert description={infoMessage} type="info" closable />
             ) : null}
