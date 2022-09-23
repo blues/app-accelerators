@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GetServerSideProps, NextPage } from "next";
 import Image from "next/image";
 import { Alert, Col, Row, Tooltip } from "antd";
@@ -6,12 +6,11 @@ import { useRouter } from "next/router";
 import ResponderIcon from "../components/elements/images/responder.svg";
 import { ERROR_CODES } from "../services/Errors";
 import { DeviceTracker, TrackerConfig } from "../services/ClientModel";
-import { ERROR_MESSAGE, getErrorMessage } from "../constants/ui";
+import { getErrorMessage } from "../constants/ui";
 import Config from "../../Config";
 import Table, { TableProps } from "../components/elements/Table";
 import { useDeviceTrackerData } from "../hooks/useDeviceTrackerData";
 import { services } from "../services/ServiceLocatorServer";
-import { updateLiveTrackerStatus } from "../api-client/fleetVariables";
 import { LoadingSpinner } from "../components/layout/LoadingSpinner";
 import LiveTrackCard from "../components/elements/LiveTrackCard";
 import styles from "../styles/Home.module.scss";
@@ -27,6 +26,8 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isErrored, setIsErrored] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [isLiveTrackingEnabled, setIsLiveTrackingEnabled] =
+    useState<boolean>(false);
 
   const router = useRouter();
   // refresh the page
@@ -45,24 +46,15 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
 
   const trackers: DeviceTracker[] | undefined = deviceTrackers;
 
-  const liveTrackEnabled: boolean | undefined = !!fleetTrackerConfig?.live;
-
-  const toggleLiveTracking = async (checked: boolean) => {
-    setIsErrored(false);
-    setErrorMessage("");
-    setIsLoading(true);
-    let isSuccessful = true;
-    try {
-      await updateLiveTrackerStatus(checked);
-    } catch (e) {
-      setIsErrored(true);
-      setErrorMessage(ERROR_MESSAGE.UPDATE_FLEET_LIVE_STATUS_FAILED);
-      isSuccessful = false;
+  useEffect(() => {
+    if (trackers !== undefined) {
+      setIsLiveTrackingEnabled(!!fleetTrackerConfig?.live);
     }
-    setIsLoading(false);
-    await refreshData();
-    return isSuccessful;
-  };
+  }, [trackers]);
+
+  useEffect(() => {
+    refreshData();
+  }, [isLiveTrackingEnabled]);
 
   const tableInfo: TableProps = {
     columns: [
@@ -130,14 +122,16 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
             <Row>
               <Col span={3}>
                 <LiveTrackCard
-                  liveTrackEnabled={liveTrackEnabled}
-                  toggleLiveTracking={toggleLiveTracking}
+                  setIsErrored={setIsErrored}
+                  setIsLoading={setIsLoading}
+                  setErrorMessage={setErrorMessage}
+                  isLiveTrackingEnabled={isLiveTrackingEnabled}
+                  setIsLiveTrackingEnabled={setIsLiveTrackingEnabled}
                 />
               </Col>
             </Row>
             <Row>
               <h3 className={styles.sectionTitle}>Fleet Name</h3>
-
               {trackers && (
                 <Table columns={tableInfo.columns} data={tableInfo.data} />
               )}

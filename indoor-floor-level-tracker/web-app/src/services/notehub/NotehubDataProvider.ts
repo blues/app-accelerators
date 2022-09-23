@@ -94,7 +94,7 @@ export function formatDeviceTrackerData(deviceTrackerData: any[]) {
     ...(data.altitude && { altitude: Number(data.altitude).toFixed(1) }),
     voltage: `${Number(data.voltage).toFixed(1)}V`,
     ...(data.pressure && {
-      pressure: `${Number(data.pressure).toFixed(1)} kPa`,
+      pressure: `${Number(data.pressure).toFixed(1)} hPa`,
     }),
     ...(data.temp && { temp: `${Number(data.temp).toFixed(1)}C` }),
   }));
