@@ -1,10 +1,9 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import type { NextApiRequest, NextApiResponse } from "next";
-import { ReasonPhrases, StatusCodes } from "http-status-codes";
+import { StatusCodes } from "http-status-codes";
 import { ErrorWithCause } from "pony-cause";
 import { HTTP_STATUS } from "../../../constants/http";
 import { services } from "../../../services/ServiceLocatorServer";
-import { serverLogError } from "../log";
 
 interface ValidRequest {
   trackerConfig: object;
@@ -42,7 +41,7 @@ async function performPostRequest({ trackerConfig }: ValidRequest) {
   try {
     await app.setTrackerConfig(trackerConfig);
   } catch (cause) {
-    throw new ErrorWithCause("Could not update tracker configuration", {
+    throw new ErrorWithCause("Could not access tracker configuration", {
       cause,
     });
   }
@@ -56,30 +55,20 @@ export default async function trackerConfigHandler(
     return;
   }
 
-  try {
-    switch (req.method) {
-      case "POST":
-        {
-          const validRequest = validateRequest(req, res);
-          if (!validRequest) {
-            return;
-          }
-
-          await performPostRequest(validRequest);
-          res.status(StatusCodes.OK).json({});
+  switch (req.method) {
+    case "POST":
+      {
+        const validRequest = validateRequest(req, res);
+        if (!validRequest) {
+          return;
         }
-        break;
-      default:
-        // Other methods not allowed at this route
-        res.status(405).json({ err: HTTP_STATUS.METHOD_NOT_ALLOWED });
-    }
-  } catch (cause) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR);
-    res.json({ err: ReasonPhrases.INTERNAL_SERVER_ERROR });
-    const e = new ErrorWithCause("Could not access tracker configuration", {
-      cause,
-    });
-    serverLogError(e);
-    throw e;
+
+        await performPostRequest(validRequest);
+        res.status(StatusCodes.OK).json({});
+      }
+      break;
+    default:
+      // Other methods not allowed at this route
+      res.status(405).json({ err: HTTP_STATUS.METHOD_NOT_ALLOWED });
   }
 }

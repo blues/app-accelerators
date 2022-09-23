@@ -4,7 +4,7 @@ import liveTrackStyles from "../../styles/LiveTrackCard.module.scss";
 
 export interface LiveTrackCardProps {
   liveTrackEnabled: boolean;
-  toggleLiveTracking: (checked: boolean) => Promise<boolean>;
+  toggleLiveTracking: (checked: boolean) => void;
 }
 
 const LiveTrackCard = (props: LiveTrackCardProps) => {

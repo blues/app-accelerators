@@ -25,7 +25,7 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const infoMessage = "Deploy message";
   const MS_REFETCH_INTERVAL = 10000;
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isErred, setIsErred] = useState<boolean>(false);
+  const [isErrored, setIsErrored] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
   const router = useRouter();
@@ -48,14 +48,14 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const liveTrackEnabled: boolean | undefined = !!fleetTrackerConfig?.live;
 
   const toggleLiveTracking = async (checked: boolean) => {
-    setIsErred(false);
+    setIsErrored(false);
     setErrorMessage("");
     setIsLoading(true);
     let isSuccessful = true;
     try {
       await updateLiveTrackerStatus(checked);
     } catch (e) {
-      setIsErred(true);
+      setIsErrored(true);
       setErrorMessage(ERROR_MESSAGE.UPDATE_FLEET_LIVE_STATUS_FAILED);
       isSuccessful = false;
     }
@@ -123,7 +123,9 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
       ) : (
         <LoadingSpinner isLoading={isLoading || deviceTrackersLoading}>
           <div>
-            {isErred && <Alert type="error" message={errorMessage} closable />}
+            {isErrored && (
+              <Alert type="error" message={errorMessage} closable />
+            )}
             <h3 className={styles.sectionTitle}>Fleet Controls</h3>
             <Row>
               <Col span={3}>
