@@ -244,7 +244,7 @@ bool publishSensorReadings(sensorReadings& readings, uint32_t currentMillis) {
       serialDebugOut.println("New floor detected. Sending a Note.");
     }
     else if (!state.alarmSent && state.lastFloorChangeAt && state.lastFloorChangeAt<currentMillis && state.noMovementThreshold && ((currentMillis - state.lastFloorChangeAt)>(state.noMovementThreshold*NO_MOVEMENT_THRESHOLD_SCALE_MS))) {
-      serialDebugOut.println("No movement between floors detected. Sending a Note.");
+      serialDebugOut.println("**ALARM**: No movement between floors detected. Sending a Note.");
       send = true;
       alarm = true;
       state.alarmSent = true;
@@ -383,11 +383,11 @@ void sendSensorReadings(const sensorReadings& readings, bool alarm) {
     if (body != NULL) {
       JAddNumberToObject(body, "floor", readings.currentFloor);
       JAddNumberToObject(body, "prevFloor", state.lastFloor);
-      JAddNumberToObject(body, "prevFloorChange", state.lastFloorChangeAt);
       JAddNumberToObject(body, "altitude", readings.altitude);
       JAddNumberToObject(body, "pressure", readings.pressure);
       JAddNumberToObject(body, "temp", readings.temp);
       JAddNumberToObject(body, "direction", readings.currentFloor-state.lastFloor);
+      JAddStringToObject(body, "app", "nf1");
       if (alarm) {
         JAddStringToObject(body, "alarm", "no movement between floors");
       }
@@ -410,7 +410,7 @@ void displayReadings(const sensorReadings& readings) {
   serialDebugOut.print(readings.altitude);
   serialDebugOut.println(" m");
 
-  serialDebugOut.print("Prevoius Floor = ");
+  serialDebugOut.print("Previous Floor = ");
   serialDebugOut.println(state.lastFloor);
 
   serialDebugOut.print("Floor = ");
