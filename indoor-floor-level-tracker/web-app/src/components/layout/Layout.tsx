@@ -23,17 +23,19 @@ const LayoutComponent = ({
 
   return (
     <Layout>
-      <Sider collapsed={collapsed} />
-      <Layout>
-        <Header collapsed={collapsed} toggleCollapse={toggleCollapse} />
       <Sider isSiderCollapsed={isSiderCollapsed} />
       <Layout>
+        <Header
+          isSiderCollapsed={isSiderCollapsed}
+          toggleCollapse={toggleCollapse}
+        />
         <div className={styles.mainContentWrapper}>
           <LoadingSpinner isLoading={isLoading}>
             <Content className={styles.mainContent}>{children}</Content>
           </LoadingSpinner>
           <Footer />
         </div>
+      </Layout>
     </Layout>
   );
 };
