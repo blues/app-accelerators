@@ -378,7 +378,10 @@ sensorReadings captureSensorReadings() {
 void sendSensorReadings(const sensorReadings& readings, bool alarm) {
   J *req = notecard.newRequest("note.add");
   if (req != NULL) {
-    JAddBoolToObject(req, "sync", true);
+    if (!alarm) { // this is the only note, so sync it
+      JAddBoolToObject(req, "sync", true);
+    }
+    JAddStringToObject(req, "file", "floor.qo");
     J *body = JCreateObject();
     if (body != NULL) {
       JAddNumberToObject(body, "floor", readings.currentFloor);
@@ -388,11 +391,23 @@ void sendSensorReadings(const sensorReadings& readings, bool alarm) {
       JAddNumberToObject(body, "temp", readings.temp);
       JAddNumberToObject(body, "direction", readings.currentFloor-state.lastFloor);
       JAddStringToObject(body, "app", "nf1");
-      if (alarm) {
-        JAddStringToObject(body, "alarm", "no movement between floors");
-      }
       JAddItemToObject(req, "body", body);
       notecard.sendRequest(req);
+    }
+  }
+
+  if (alarm) {
+    J *req = notecard.newRequest("note.add");
+    if (req != NULL) {
+      JAddBoolToObject(req, "sync", true);
+      JAddStringToObject(req, "file", "alarm.qo");
+      J *body = JCreateObject();
+      if (body != NULL) {
+        JAddBoolToObject(body, "alarm", true);
+        JAddStringToObject(body, "app", "nf1");
+        JAddItemToObject(req, "body", body);
+        notecard.sendRequest(req);
+      }
     }
   }
 }
