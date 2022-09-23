@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GetServerSideProps, NextPage } from "next";
 import Image from "next/image";
 import { Alert, Col, Row, Tooltip } from "antd";
@@ -14,6 +14,7 @@ import { services } from "../services/ServiceLocatorServer";
 import { updateLiveTrackerStatus } from "../api-client/fleetVariables";
 import { LoadingSpinner } from "../components/layout/LoadingSpinner";
 import LiveTrackCard from "../components/elements/LiveTrackCard";
+import RespondersByFloorTable from "../components/elements/RespondersByFloorTable";
 import styles from "../styles/Home.module.scss";
 
 type HomeData = {
@@ -27,6 +28,8 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isErred, setIsErred] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [respondersGroupedByFloor, setRespondersGroupedByFloor] =
+    useState<object>([]);
 
   const router = useRouter();
   // refresh the page
@@ -44,20 +47,31 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
     deviceTrackersError && getErrorMessage(deviceTrackersError.message);
 
   const trackers: DeviceTracker[] | undefined = deviceTrackers;
-  console.log(JSON.stringify(trackers));
 
-  const groupBy = (array: array, prop: string) =>
+  // todo clean up naming of func and vars and doesn't show table until loading is false
+  const groupBy = (array: any[], prop: string) =>
     array.reduce((acc, obj) => {
       const key = obj[prop];
-      if (!acc[key]) {
-        acc[key] = 1;
+      if (key) {
+        acc[key] ? ++acc[key] : (acc[key] = 1);
       }
-      acc[key] + 1;
       return acc;
     }, {});
 
-  const respondersGroupedByFloor = groupBy(deviceTrackers, "floor");
-  console.log(respondersGroupedByFloor);
+  useEffect(() => {
+    if (trackers) {
+      const devicesByFloor = groupBy(trackers, "floor");
+      console.log(devicesByFloor);
+      const transformRawData = Object.entries(devicesByFloor).map(
+        ([key, value]) => ({
+          floorNumber: `Floor ${key}`,
+          responderCount: `${value}`,
+        })
+      );
+      console.log(transformRawData);
+      setRespondersGroupedByFloor([...transformRawData]);
+    }
+  }, [trackers]);
 
   const liveTrackEnabled: boolean | undefined = !!fleetTrackerConfig?.live;
 
@@ -125,17 +139,6 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
     data: trackers,
   };
 
-  const respondersTableInfo: TableProps = {
-    columns: [
-      {
-        title: "Responders Per Floor",
-        dataIndex: "floorNumber",
-        key: "floorNumber",
-      },
-    ],
-    data: null,
-  };
-
   return (
     <div className={styles.container}>
       {err ? (
@@ -160,9 +163,11 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
             </Row>
             <Row>
               <h3 className={styles.sectionTitle}>Fleet Name</h3>
-
               {trackers && (
                 <Table columns={tableInfo.columns} data={tableInfo.data} />
+              )}
+              {respondersGroupedByFloor && (
+                <RespondersByFloorTable data={respondersGroupedByFloor} />
               )}
             </Row>
             {Config.isBuildVersionSet() ? (
