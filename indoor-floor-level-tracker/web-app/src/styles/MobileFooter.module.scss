@@ -1,0 +1,38 @@
+@import "_variables.scss";
+
+.mobileFooterWrapper {
+  width: 100%;
+  background-color: $bw-color--brand4;
+
+  .mobileFooter {
+    color: #fff;
+    background-color: $bw-color--brand4;
+    padding: 15px 50px;
+
+    :global .ant-menu-root {
+      display: flex;
+      justify-content: center;
+      line-height: 30px;
+    }
+
+    :global .ant-menu-title-content {
+      font-size: 12px;
+    }
+
+    :global .ant-menu-item {
+      display: flex;
+      flex-direction: column;
+      color: #fff;
+    }
+
+    :global .ant-menu-item-selected {
+      background-color: inherit !important;
+      color: #00b9ff !important;
+    }
+
+    :global img.ant-item-menu-icon {
+      filter: brightness(0) saturate(100%) invert(97%) sepia(100%) saturate(0%)
+        hue-rotate(30deg) brightness(103%) contrast(103%) !important;
+    }
+  }
+}

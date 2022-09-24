@@ -66,7 +66,7 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
         ),
         dataIndex: "name",
         key: "name",
-        width: "20%",
+        width: "25%",
         ellipsis: { showTitle: false },
         render: (name) => (
           <Tooltip placement="topLeft" title={name}>
@@ -84,7 +84,6 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
         title: "Last Seen",
         dataIndex: "lastActivity",
         key: "lastActivity",
-        width: "30%",
       },
       {
         title: "Pressure",
@@ -121,7 +120,7 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
               <>
                 <h3 className={styles.sectionTitle}>Fleet Controls</h3>
                 <Row>
-                  <Col span={3}>
+                  <Col xs={12} sm={5} md={4} lg={3}>
                     <LiveTrackCard
                       setIsErrored={setIsErrored}
                       setIsLoading={setIsLoading}
@@ -131,12 +130,12 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
                     />
                   </Col>
                 </Row>
-                <h3 className={styles.sectionTitle}>Fleet Name</h3>
-                <Row gutter={16}>
-                  <Col span={19}>
+                <h3 className={styles.sectionTitle}>Fleet</h3>
+                <Row gutter={[16, 24]}>
+                  <Col xs={24} sm={24} md={24} lg={20}>
                     <Table columns={tableInfo.columns} data={tableInfo.data} />
                   </Col>
-                  <Col span={4}>
+                  <Col xs={12} sm={9} md={8} lg={4}>
                     <RespondersByFloorTable data={trackers} />
                   </Col>
                 </Row>

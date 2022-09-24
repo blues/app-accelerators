@@ -13,3 +13,11 @@
     margin-top: 24px;
   }
 }
+
+@media screen and (max-width: $breakpoints-sm) {
+  .container {
+    .sectionTitle {
+      display: none;
+    }
+  }
+}

@@ -1,0 +1,45 @@
+@import "_variables.scss";
+
+.respondersTableContainer {
+  :global .ant-table {
+    border: 1px solid $bw-color--grey3;
+  }
+
+  :global .ant-table-thead > tr > th {
+    background-color: $bw-color--grey1;
+    border-bottom: 1px solid $bw-color--grey2 !important;
+    font-weight: 600;
+    padding: 5px;
+  }
+
+  :global .ant-table-tbody > tr > td {
+    padding: 16px 6px;
+  }
+
+  .number {
+    color: #fff;
+    background-color: $bw-color--brand3;
+    border-radius: 50%;
+    display: block;
+    height: 22px;
+    width: 22px;
+    line-height: 22px;
+    text-align: center;
+  }
+}
+
+@media screen and (max-width: $breakpoints-lg) {
+  .respondersTableContainer {
+    :global .ant-table-thead > tr > th {
+      padding: 16px 6px;
+    }
+  }
+}
+
+@media screen and (max-width: $breakpoints-sm) {
+  .respondersTableContainer {
+    :global .ant-table-thead > tr > th {
+      padding: 6px 16px;
+    }
+  }
+}
