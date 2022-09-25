@@ -1,36 +1,21 @@
-import { ReactNode, Key } from "react";
-import Image from "next/image";
+import { Dispatch, SetStateAction } from "react";
 import Link from "next/link";
-import { Layout, Menu } from "antd";
-import type { MenuProps } from "antd";
+import Image from "next/image";
+import { Layout } from "antd";
 import LogoIcon from "../../../public/images/logomark-placeholder.svg";
-import OverviewIcon from "../elements/images/overview.svg";
-import SettingsIcon from "../elements/images/settings.svg";
+import MenuComponent from "../elements/Menu";
 import styles from "../../styles/Sider.module.scss";
 
 const SiderComponent = ({
   isSiderCollapsed,
+  selectedPage,
+  setSelectedPage,
 }: {
   isSiderCollapsed: boolean;
+  selectedPage: string;
+  setSelectedPage: Dispatch<SetStateAction<string>>;
 }) => {
   const { Sider } = Layout;
-
-  type MenuItem = Required<MenuProps>["items"][number];
-  const Overview = <Image src={OverviewIcon} alt="Overview" />;
-  const Settings = <Image src={SettingsIcon} alt="Settings" />;
-
-  function getItem(label: ReactNode, key: Key, icon?: ReactNode): MenuItem {
-    return {
-      key,
-      icon,
-      label,
-    } as MenuItem;
-  }
-
-  const menuItems: MenuItem[] = [
-    getItem(<div>Overview</div>, "1", Overview),
-    getItem(<div>Settings</div>, "2", Settings),
-  ];
 
   return (
     <Sider
@@ -55,7 +40,12 @@ const SiderComponent = ({
           </a>
         </Link>
       </div>
-      <Menu mode="inline" defaultSelectedKeys={["1"]} items={menuItems} />
+      <MenuComponent
+        selectedPage={selectedPage}
+        setSelectedPage={setSelectedPage}
+        menuMode="inline"
+        menuTheme="light"
+      />
     </Sider>
   );
 };
