@@ -1,0 +1,27 @@
+@import "_variables.scss";
+
+.settingsContainer {
+  .settingsCard {
+    width: 100%;
+    border: 1px solid $bw-color--grey3;
+
+    :global .ant-card-head {
+      background-color: $bw-color--grey1;
+    }
+
+    :global .ant-card-head-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    :global .ant-card-body {
+      padding-bottom: 56px;
+      font-size: 14px;
+    }
+
+    :global .ant-input-number {
+      width: 295px;
+      font-size: 14px;
+    }
+  }
+}
