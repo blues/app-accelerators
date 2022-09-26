@@ -2,16 +2,16 @@ import { ReactNode, Key } from "react";
 import Image from "next/image";
 import { Layout, Menu } from "antd";
 import type { MenuProps } from "antd";
-import OverviewIcon from "../elements/images/overview.svg";
-import SettingsIcon from "../elements/images/settings.svg";
+import OverviewIconWhite from "../elements/images/overview_white.svg";
+import SettingsIconWhite from "../elements/images/settings_white.svg";
 import styles from "../../styles/MobileFooter.module.scss";
 
 const MobileFooterComponent = () => {
   const { Footer } = Layout;
 
   type MenuItem = Required<MenuProps>["items"][number];
-  const Overview = <Image src={OverviewIcon} alt="Overview" />;
-  const Settings = <Image src={SettingsIcon} alt="Settings" />;
+  const Overview = <Image src={OverviewIconWhite} alt="Overview" />;
+  const Settings = <Image src={SettingsIconWhite} alt="Settings" />;
 
   function getItem(label: ReactNode, key: Key, icon?: ReactNode): MenuItem {
     return {
