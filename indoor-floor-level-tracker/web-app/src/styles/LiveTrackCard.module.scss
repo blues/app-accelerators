@@ -1,0 +1,14 @@
+@import "_variables.scss";
+
+.toggleWrapper {
+  display: flex;
+  justify-content: center;
+
+  :global .ant-switch-checked {
+    background-color: $bw-color--green3;
+  }
+
+  :global .ant-switch-handle::before {
+    background-color: $bw-color--brand3;
+  }
+}

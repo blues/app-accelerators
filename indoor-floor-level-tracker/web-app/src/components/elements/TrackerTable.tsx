@@ -1,39 +1,51 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Form, Input, InputRef, Table } from "antd";
+import { Form, Image, Input, InputRef, Table, Tooltip } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import ResponderIcon from "./images/responder.svg";
 import { DeviceTracker } from "../../services/ClientModel";
 import styles from "../../styles/Table.module.scss";
 
 const columns = [
   {
-    title: "Responders",
+    title: (
+      <>
+        <Image src={ResponderIcon} alt="person outline" />
+        <span style={{ marginLeft: "8px" }}>Responders</span>
+      </>
+    ),
     dataIndex: "name",
     key: "name",
+    width: "20%",
+    ellipsis: { showTitle: false },
+    render: (name) => (
+      <Tooltip placement="topLeft" title={name}>
+        {name}
+      </Tooltip>
+    ),
   },
   {
     title: "Floor",
     dataIndex: "floor",
     key: "floor",
-  },
-  {
-    title: "Alerts",
-    dataIndex: "alerts",
-    key: "alerts",
+    width: "15%",
   },
   {
     title: "Last Seen",
     dataIndex: "lastActivity",
     key: "lastActivity",
+    width: "30%",
   },
   {
     title: "Pressure",
     dataIndex: "pressure",
     key: "pressure",
+    width: "20%",
   },
   {
     title: "Voltage",
     dataIndex: "voltage",
     key: "voltage",
+    width: "15%",
   },
 ] as ColumnsType<DeviceTracker>;
 
@@ -125,7 +137,7 @@ interface TableProps {
   onNameChange: (deviceUID: string, updatedName: string) => Promise<boolean>;
 }
 
-const TableComponent = ({ data, onNameChange }: TableProps) => {
+const TrackerTable = ({ data, onNameChange }: TableProps) => {
   const editableColumns = columns.map((col) => ({
     ...col,
     onCell: (record: DeviceTracker) => ({
@@ -158,4 +170,4 @@ const TableComponent = ({ data, onNameChange }: TableProps) => {
   );
 };
 
-export default TableComponent;
+export default TrackerTable;

@@ -5,15 +5,15 @@ export const NextJsUrlManager = {
   performBulkDataImportApi: () => `/api/admin/bulk-data-import`,
   notehubProject: (notehubUrl: string, projectUID: string) =>
     `${notehubUrl}/project/${projectUID}`,
-  getDeviceTrackerData: () => `/api/deviceTrackers`,
   deviceNameUpdate: (deviceUID: string) => `/api/device/${deviceUID}/name`,
+  getDeviceTrackerData: () => `/api/device-trackers`,
+  setFleetTrackerConfig: () => `/api/fleet/tracker-config`,
 
-  notifications: (...notificationIDs: NotificationID[]) => {
-    return NextJsUrlManager.notificationsImpl(false, ...notificationIDs);
-  },
+  notifications: (...notificationIDs: NotificationID[]) =>
+    NextJsUrlManager.notificationsImpl(false, ...notificationIDs),
 
   notificationsImpl(present: boolean, ...notificationIDs: string[]) {
-    let url = `/api/notifications`;
+    const url = `/api/notifications`;
     let params = present ? "?format=app" : "";
     if (notificationIDs.length) {
       if (!params) {
@@ -27,7 +27,7 @@ export const NextJsUrlManager = {
     return url + params;
   },
 
-  presentNotifications: function (...notificationIDs: string[]): string {
+  presentNotifications(...notificationIDs: string[]): string {
     return NextJsUrlManager.notificationsImpl(true, ...notificationIDs);
   },
 };

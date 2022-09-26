@@ -4,7 +4,7 @@ import { PrismaDataProvider } from "./PrismaDataProvider";
 import { Device, DeviceID, Project, ProjectID } from "../DomainModel";
 import { NotehubAccessor } from "../notehub/NotehubAccessor";
 import { AppEventHandler } from "../AppEvent";
-import { DeviceTracker } from "../ClientModel";
+import { DeviceTracker, TrackerConfig } from "../ClientModel";
 
 export default class CompositeDataProvider implements DataProvider {
   constructor(
@@ -13,6 +13,10 @@ export default class CompositeDataProvider implements DataProvider {
     private notehubProvider: NotehubDataProvider,
     private prismaDataProvider: PrismaDataProvider
   ) {}
+
+  getTrackerConfig(): Promise<TrackerConfig> {
+    throw new Error("Method not implemented.");
+  }
 
   async getProject(): Promise<Project> {
     return this.prismaDataProvider.getProject();

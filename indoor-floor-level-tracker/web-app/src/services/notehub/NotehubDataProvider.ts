@@ -7,8 +7,8 @@ import { DataProvider } from "../DataProvider";
 import { Device, DeviceID, FleetID, Project, ProjectID } from "../DomainModel";
 import NotehubDevice from "./models/NotehubDevice";
 import NotehubEnvVars from "./models/NotehubEnvVars";
-import NotehubEvent from "./models/NotehubEvent";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
+import NotehubRoutedEvent from "./models/NotehubRoutedEvent";
 import { NotehubAccessor } from "./NotehubAccessor";
 
 interface HasDeviceId {
@@ -32,7 +32,7 @@ export function notehubDeviceToIndoorTracker(device: NotehubDevice) {
   };
 }
 
-export function filterEventsData(events: NotehubEvent[]) {
+export function filterEventsData(events: NotehubRoutedEvent[]) {
   const dataEvent = events
     .filter((event) => event.file === "data.qo")
     .reverse();
@@ -40,10 +40,10 @@ export function filterEventsData(events: NotehubEvent[]) {
   return dataEvent;
 }
 
-export function extractRelevantEventBodyData(events: NotehubEvent[]) {
+export function extractRelevantEventBodyData(events: NotehubRoutedEvent[]) {
   const relevantEventInfo = events.map((event) => ({
     ...event.body,
-    uid: event.device_uid,
+    uid: event.device,
   }));
 
   return relevantEventInfo;
@@ -83,16 +83,15 @@ export function formatDeviceTrackerData(deviceTrackerData: DeviceTracker[]) {
   const formattedDeviceTrackerData = deviceTrackerData.map((data) => ({
     ...data,
     lastActivity: formatDistanceToNow(parseISO(data.lastActivity), {
-      addSuffix: true,
       includeSeconds: true,
     }),
-    ...(data.altitude && { altitude: Number(data.altitude).toFixed(2) }),
-    voltage: `${Number(data.voltage).toFixed(2)}V`,
+    ...(data.altitude && { altitude: Number(data.altitude).toFixed(1) }),
+    voltage: `${Number(data.voltage).toFixed(1)}V`,
     ...(data.pressure && {
-      pressure: `${Number(data.pressure).toFixed(2)} kPa`,
+      pressure: `${Number(data.pressure).toFixed(1)} hPa`,
     }),
     ...(data.temperature && {
-      temp: `${Number(data.temperature).toFixed(2)}C`,
+      temp: `${Number(data.temperature).toFixed(1)}C`,
     }),
   }));
 
@@ -165,7 +164,7 @@ export default class NotehubDataProvider implements DataProvider {
     return devicesByFleet;
   }
 
-  async getEvents(minutesFromNow: number): Promise<NotehubEvent[]> {
+  async getEvents(minutesFromNow: number): Promise<NotehubRoutedEvent[]> {
     const epochDateMinutesAgo = epochStringMinutesAgo(minutesFromNow);
     const events = await this.notehubAccessor.getEvents(epochDateMinutesAgo);
     return events;
@@ -189,7 +188,7 @@ export default class NotehubDataProvider implements DataProvider {
     const filteredEvents = filterEventsData(rawEvents);
 
     // get unique events by device ID
-    const uniqueEvents = uniqBy(filteredEvents, "device_uid");
+    const uniqueEvents = uniqBy(filteredEvents, "device");
 
     // pull out relevant device data from unique events
     const mappedEvents: object[] = extractRelevantEventBodyData(uniqueEvents);
