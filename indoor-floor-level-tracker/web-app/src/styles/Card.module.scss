@@ -18,5 +18,18 @@
 @media screen and (max-width: $breakpoints-sm) {
   .cardContainer {
     margin-bottom: 24px;
+    max-width: 250px;
+
+    :global .ant-card-body {
+      padding: 16px 6px;
+    }
+  }
+}
+
+@media screen and (max-width: $breakpoints-xs) {
+  .cardContainer {
+    :global .ant-card-body {
+      padding: 4px 8px;
+    }
   }
 }
