@@ -1,6 +1,10 @@
 @import "_variables.scss";
 
 .container {
+  h3 {
+    width: 100%;
+  }
+
   .errorMessage {
     text-align: center;
     margin-top: 24px;
