@@ -1,9 +1,20 @@
 @import "_variables.scss";
 
 .settingsContainer {
+  .sectionTitle {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    margin-top: 24px;
+  }
+
   .settingsCard {
     width: 100%;
     border: 1px solid $bw-color--grey3;
+
+    .settingsText {
+      color: $bw-color--grey3;
+    }
 
     :global .ant-card-head {
       background-color: $bw-color--grey1;
@@ -16,7 +27,6 @@
     }
 
     :global .ant-card-body {
-      padding-bottom: 56px;
       font-size: 14px;
     }
 
