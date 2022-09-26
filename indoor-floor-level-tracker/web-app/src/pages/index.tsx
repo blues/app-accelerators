@@ -35,7 +35,7 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const refreshData = async () => {
     // Clear the client-side cache so when we refresh the page
     // it refetches data to get the updated name.
-    // await queryClient.invalidateQueries();
+    await queryClient.invalidateQueries();
     // eslint-disable-next-line no-void
     void router.replace(router.asPath);
   };
