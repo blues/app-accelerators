@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Form, Image, Input, InputRef, Table, Tooltip } from "antd";
+import { Form, Image, Input, InputRef, Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { DeviceTracker } from "../../services/ClientModel";
 import styles from "../../styles/Table.module.scss";
+import { changeDeviceName } from "../../api-client/devices";
+import { ERROR_MESSAGE } from "../../constants/ui";
 
 const columns = [
   {
@@ -127,17 +129,42 @@ const EditableCell = ({
 
 interface TrackerTableProps {
   data: DeviceTracker[] | undefined;
-  onNameChange: (deviceUID: string, updatedName: string) => Promise<boolean>;
+  setIsErrored: (isErrored: boolean) => void;
+  setIsLoading: (isLoading: boolean) => void;
+  setErrorMessage: (errorMessage: string) => void;
+  refreshData: () => void;
 }
 
-const TrackerTable = ({ data, onNameChange }: TrackerTableProps) => {
+const TrackerTable = ({
+  data,
+  refreshData,
+  setIsErrored,
+  setIsLoading,
+  setErrorMessage,
+}: TrackerTableProps) => {
+  const onTrackerNameChange = async (deviceUID: string, newName: string) => {
+    setIsErrored(false);
+    setErrorMessage("");
+    setIsLoading(true);
+
+    try {
+      await changeDeviceName(deviceUID, newName);
+    } catch (e) {
+      setIsErrored(true);
+      setErrorMessage(ERROR_MESSAGE.DEVICE_NAME_CHANGE_FAILED);
+    }
+
+    await refreshData();
+    setIsLoading(false);
+  };
+
   const editableColumns = columns.map((col) => ({
     ...col,
     onCell: (record: DeviceTracker) => ({
       record,
       index: col.key,
       title: col.title,
-      onChange: onNameChange,
+      onChange: onTrackerNameChange,
     }),
   }));
 

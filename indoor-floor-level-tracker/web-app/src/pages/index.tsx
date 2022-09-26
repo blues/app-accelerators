@@ -3,8 +3,7 @@ import { useRouter } from "next/router";
 import { Alert, Col, Row } from "antd";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "react-query";
-import { changeDeviceName } from "../api-client/devices";
-import { ERROR_MESSAGE, getErrorMessage } from "../constants/ui";
+import { getErrorMessage } from "../constants/ui";
 import { ERROR_CODES } from "../services/Errors";
 import { DeviceTracker, TrackerConfig } from "../services/ClientModel";
 import Config from "../../Config";
@@ -29,11 +28,14 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [isLiveTrackingEnabled, setIsLiveTrackingEnabled] =
     useState<boolean>(false);
-  const queryClient = useQueryClient();
 
   const router = useRouter();
+  const queryClient = useQueryClient();
   // refresh the page
-  const refreshData = () => {
+  const refreshData = async () => {
+    // Clear the client-side cache so when we refresh the page
+    // it refetches data to get the updated name.
+    // await queryClient.invalidateQueries();
     // eslint-disable-next-line no-void
     void router.replace(router.asPath);
   };
@@ -45,27 +47,6 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
     deviceTrackersError && getErrorMessage(deviceTrackersError.message);
 
   const trackers: DeviceTracker[] | undefined = deviceTrackers;
-
-  const onTrackerNameChange = async (deviceUID: string, newName: string) => {
-    setIsErrored(false);
-    setErrorMessage("");
-    setIsLoading(true);
-    let isSuccessful = true;
-    try {
-      await changeDeviceName(deviceUID, newName);
-    } catch (e) {
-      setIsErrored(true);
-      setErrorMessage(ERROR_MESSAGE.DEVICE_NAME_CHANGE_FAILED);
-      isSuccessful = false;
-    }
-    // Clear the client-side cache so when we refresh the page
-    // it refetches data to get the updated name.
-    await queryClient.invalidateQueries();
-
-    setIsLoading(false);
-    await refreshData();
-    return isSuccessful;
-  };
 
   useEffect(() => {
     if (fleetTrackerConfig && fleetTrackerConfig.live) {
@@ -109,8 +90,11 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
                 <Row>
                   <h3 className={styles.sectionTitle}>My Fleet</h3>
                   <TrackerTable
+                    setIsErrored={setIsErrored}
+                    setIsLoading={setIsLoading}
+                    setErrorMessage={setErrorMessage}
+                    refreshData={refreshData}
                     data={trackers}
-                    onNameChange={onTrackerNameChange}
                   />
                 </Row>
               </>
