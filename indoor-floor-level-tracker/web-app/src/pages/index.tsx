@@ -33,11 +33,14 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const queryClient = useQueryClient();
   // refresh the page
   const refreshData = async () => {
+    // eslint-disable-next-line no-void
+    void router.replace(router.asPath);
+  };
+  const refreshDataAndInvalidateCache = async () => {
     // Clear the client-side cache so when we refresh the page
     // it refetches data to get the updated name.
     await queryClient.invalidateQueries();
-    // eslint-disable-next-line no-void
-    void router.replace(router.asPath);
+    await refreshData();
   };
 
   const { error: deviceTrackersError, data: deviceTrackers } =
@@ -93,7 +96,7 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
                     setIsErrored={setIsErrored}
                     setIsLoading={setIsLoading}
                     setErrorMessage={setErrorMessage}
-                    refreshData={refreshData}
+                    refreshData={refreshDataAndInvalidateCache}
                     data={trackers}
                   />
                 </Row>

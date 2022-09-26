@@ -132,7 +132,7 @@ interface TrackerTableProps {
   setIsErrored: (isErrored: boolean) => void;
   setIsLoading: (isLoading: boolean) => void;
   setErrorMessage: (errorMessage: string) => void;
-  refreshData: () => void;
+  refreshData: () => Promise<void>;
 }
 
 const TrackerTable = ({
