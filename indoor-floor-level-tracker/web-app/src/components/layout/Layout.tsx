@@ -74,6 +74,7 @@ const LayoutComponent = ({
     <Layout>
       {isSiderPresent ? (
         <Sider
+          isSiderPresent={isSiderPresent}
           isSiderCollapsed={isSiderCollapsed}
           selectedPage={selectedPage}
           setSelectedPage={setSelectedPage}
@@ -94,6 +95,7 @@ const LayoutComponent = ({
       </Layout>
       {!isSiderPresent ? (
         <MobileFooterComponent
+          isSiderPresent={isSiderPresent}
           selectedPage={selectedPage}
           setSelectedPage={setSelectedPage}
         />

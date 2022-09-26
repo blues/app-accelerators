@@ -120,7 +120,7 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
               <>
                 <h3 className={styles.sectionTitle}>Fleet Controls</h3>
                 <Row>
-                  <Col xs={12} sm={5} md={4} lg={3}>
+                  <Col sm={5} md={4} lg={3}>
                     <LiveTrackCard
                       setIsErrored={setIsErrored}
                       setIsLoading={setIsLoading}
@@ -135,7 +135,7 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
                   <Col xs={24} sm={24} md={24} lg={20}>
                     <Table columns={tableInfo.columns} data={tableInfo.data} />
                   </Col>
-                  <Col xs={12} sm={9} md={8} lg={4}>
+                  <Col xs={12} sm={7} md={6} lg={4}>
                     <RespondersByFloorTable data={trackers} />
                   </Col>
                 </Row>

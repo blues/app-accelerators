@@ -41,5 +41,22 @@
     :global .ant-table-thead > tr > th {
       padding: 6px 16px;
     }
+
+    :global .ant-table-tbody > tr > td {
+      padding: 16px;
+    }
+  }
+}
+
+@media screen and (max-width: $breakpoints-xs) {
+  .respondersTableContainer {
+    :global .ant-table-thead > tr > th {
+      font-size: 14px;
+      padding: 4px;
+    }
+
+    :global .ant-table-tbody > tr > td {
+      padding: 8px 16px;
+    }
   }
 }

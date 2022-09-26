@@ -10,10 +10,12 @@ const SiderComponent = ({
   isSiderCollapsed,
   selectedPage,
   setSelectedPage,
+  isSiderPresent,
 }: {
   isSiderCollapsed: boolean;
   selectedPage: string;
   setSelectedPage: Dispatch<SetStateAction<string>>;
+  isSiderPresent: boolean;
 }) => {
   const { Sider } = Layout;
 
@@ -43,6 +45,7 @@ const SiderComponent = ({
       <MenuComponent
         selectedPage={selectedPage}
         setSelectedPage={setSelectedPage}
+        isSiderPresent={isSiderPresent}
         menuMode="inline"
         menuTheme="light"
       />

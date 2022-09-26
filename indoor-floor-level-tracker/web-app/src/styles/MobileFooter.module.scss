@@ -26,6 +26,11 @@
       color: #fff;
     }
 
+    :global .ant-menu-item-selected > span > img.ant-menu-item-icon {
+      filter: brightness(0) saturate(100%) invert(58%) sepia(93%)
+        saturate(3528%) hue-rotate(167deg) brightness(108%) contrast(102%);
+    }
+
     :global .ant-menu-item-selected,
     :global .ant-menu-item-active {
       background-color: inherit !important;

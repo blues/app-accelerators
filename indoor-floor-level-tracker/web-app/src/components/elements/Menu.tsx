@@ -7,23 +7,37 @@ import Image from "next/image";
 import { useRouter } from "next/router";
 import OverviewIcon from "./images/overview.svg";
 import SettingsIcon from "./images/settings.svg";
+import OverviewIconWhite from "./images/overview_white.svg";
+import SettingsIconWhite from "./images/settings_white.svg";
 
 const MenuComponent = ({
   selectedPage,
   setSelectedPage,
+  isSiderPresent,
   menuMode,
   menuTheme,
 }: {
   selectedPage: string;
   setSelectedPage: Dispatch<SetStateAction<string>>;
+  isSiderPresent: boolean;
   menuTheme: MenuTheme;
   menuMode: MenuMode;
 }) => {
   const router = useRouter();
 
   type MenuItem = Required<MenuProps>["items"][number];
-  const Overview = <Image src={OverviewIcon} alt="Overview" />;
-  const Settings = <Image src={SettingsIcon} alt="Settings" />;
+  const Overview = (
+    <Image
+      src={isSiderPresent ? OverviewIcon : OverviewIconWhite}
+      alt="Overview"
+    />
+  );
+  const Settings = (
+    <Image
+      src={isSiderPresent ? SettingsIcon : SettingsIconWhite}
+      alt="Settings"
+    />
+  );
 
   function getItem(label: ReactNode, key: Key, icon?: ReactNode): MenuItem {
     return {

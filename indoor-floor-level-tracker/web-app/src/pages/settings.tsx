@@ -2,11 +2,15 @@ import { useState } from "react";
 import { GetServerSideProps, NextPage } from "next";
 import { useRouter } from "next/router";
 import { Row, Col, Alert, Card, InputNumber } from "antd";
+import { Store } from "antd/lib/form/interface";
+import { ValidateErrorEntity } from "rc-field-form/lib/interface";
 import { TrackerConfig } from "../services/ClientModel";
-import { getErrorMessage } from "../constants/ui";
+import { ERROR_MESSAGE, getErrorMessage } from "../constants/ui";
+import { ERROR_CODES } from "../services/Errors";
 import { services } from "../services/ServiceLocatorServer";
 import { LoadingSpinner } from "../components/layout/LoadingSpinner";
 import Form, { FormProps } from "../components/elements/Form";
+import { updateFloorHeightConfig } from "../api-client/fleetVariables";
 import styles from "../styles/Settings.module.scss";
 import homeStyles from "../styles/Home.module.scss";
 
@@ -36,7 +40,9 @@ const SettingsPage: NextPage<SettingsData> = ({
     {
       name: "floorHeight",
       label: <p>Configure Floor Height</p>,
-      initialValue: "Default 4.2672 meters",
+      initialValue: fleetTrackerConfig.floorHeight
+        ? `${JSON.stringify(fleetTrackerConfig.floorHeight)}`
+        : "Input here...",
       rules: [{ required: true, message: "Please add only numbers." }],
       contents: (
         <InputNumber size="large" min={1} max={100000} controls={false} />
@@ -45,13 +51,18 @@ const SettingsPage: NextPage<SettingsData> = ({
   ];
 
   const formOnFinish = async (values: Store) => {
-    // TODO: Move this to the app service / data provider
-    console.log(values);
-    console.log(`Success`);
+    setIsErrored(false);
+    setErrorMessage("");
+    setIsLoading(true);
 
-    // if (response.status < 300) {
-    //   await refreshData();
-    // }
+    try {
+      await updateFloorHeightConfig(values.floorHeight);
+    } catch (e) {
+      setIsErrored(true);
+      setErrorMessage(ERROR_MESSAGE.UPDATE_FLEET_FLOOR_HEIGHT_CONFIG_FAILED);
+    }
+    setIsLoading(false);
+    refreshData();
   };
 
   const formOnFinishFailed = (errorInfo: ValidateErrorEntity) => {
@@ -63,7 +74,6 @@ const SettingsPage: NextPage<SettingsData> = ({
       {error ? (
         <h2
           className={styles.errorMessage}
-          // life in the fast lane...
           // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: error }}
         />

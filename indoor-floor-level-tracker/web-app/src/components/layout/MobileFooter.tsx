@@ -6,9 +6,11 @@ import MenuComponent from "../elements/Menu";
 const MobileFooterComponent = ({
   selectedPage,
   setSelectedPage,
+  isSiderPresent,
 }: {
   selectedPage: string;
   setSelectedPage: Dispatch<SetStateAction<string>>;
+  isSiderPresent: boolean;
 }) => {
   const { Footer } = Layout;
 
@@ -18,6 +20,7 @@ const MobileFooterComponent = ({
         <MenuComponent
           selectedPage={selectedPage}
           setSelectedPage={setSelectedPage}
+          isSiderPresent={isSiderPresent}
           menuMode="horizontal"
           menuTheme="dark"
         />

@@ -13,6 +13,8 @@ const ERROR_MESSAGE = {
   DEVICE_NAME_CHANGE_FAILED: "An error occurred changing the name.",
   UPDATE_FLEET_LIVE_STATUS_FAILED:
     "Failed to update the fleet's tracking mode. If this problem persists, contact <a href='https://discuss.blues.io' target='_blank' rel='noreferrer'>Blues Support</a>.",
+  UPDATE_FLEET_FLOOR_HEIGHT_CONFIG_FAILED:
+    "Failed to update the fleet's floor height configuration. If this problem persists, contact <a href='https://discuss.blues.io' target='_blank' rel='noreferrer'>Blues Support</a>.",
   DATABASE_NOT_RUNNING:
     "Can't reach the database server. Please make sure your database is properly connected.",
   NO_PROJECT_ID:
