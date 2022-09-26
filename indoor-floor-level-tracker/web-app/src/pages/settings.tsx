@@ -8,11 +8,10 @@ import { TrackerConfig } from "../services/ClientModel";
 import { ERROR_MESSAGE, getErrorMessage } from "../constants/ui";
 import { ERROR_CODES } from "../services/Errors";
 import { services } from "../services/ServiceLocatorServer";
-import { LoadingSpinner } from "../components/layout/LoadingSpinner";
 import Form, { FormProps } from "../components/elements/Form";
+import { LoadingSpinner } from "../components/layout/LoadingSpinner";
 import { updateFloorHeightConfig } from "../api-client/fleetVariables";
 import styles from "../styles/Settings.module.scss";
-import homeStyles from "../styles/Home.module.scss";
 
 type SettingsData = {
   fleetTrackerConfig: TrackerConfig;
@@ -29,19 +28,17 @@ const SettingsPage: NextPage<SettingsData> = ({
 
   const router = useRouter();
   // refresh the page
-  const refreshData = () => {
+  const refreshData = async () => {
     // eslint-disable-next-line no-void
     void router.replace(router.asPath);
   };
-
-  console.log(fleetTrackerConfig);
 
   const formItems: FormProps[] = [
     {
       name: "floorHeight",
       label: <p>Configure Floor Height</p>,
       initialValue: fleetTrackerConfig.floorHeight
-        ? `${JSON.stringify(fleetTrackerConfig.floorHeight)}`
+        ? `${String(fleetTrackerConfig.floorHeight)}`
         : "Input here...",
       rules: [{ required: true, message: "Please add only numbers." }],
       contents: (
@@ -51,18 +48,20 @@ const SettingsPage: NextPage<SettingsData> = ({
   ];
 
   const formOnFinish = async (values: Store) => {
+    if (values.floorHeight === fleetTrackerConfig.floorHeight) return;
     setIsErrored(false);
     setErrorMessage("");
     setIsLoading(true);
-
     try {
-      await updateFloorHeightConfig(values.floorHeight);
+      await updateFloorHeightConfig(Number(values.floorHeight));
     } catch (e) {
       setIsErrored(true);
-      setErrorMessage(ERROR_MESSAGE.UPDATE_FLEET_FLOOR_HEIGHT_CONFIG_FAILED);
+      setErrorMessage(
+        String(ERROR_MESSAGE.UPDATE_FLEET_FLOOR_HEIGHT_CONFIG_FAILED)
+      );
     }
     setIsLoading(false);
-    refreshData();
+    await refreshData();
   };
 
   const formOnFinishFailed = (errorInfo: ValidateErrorEntity) => {
@@ -84,10 +83,10 @@ const SettingsPage: NextPage<SettingsData> = ({
               <Alert type="error" message={errorMessage} closable />
             )}
             {fleetTrackerConfig && (
-              <div className={homeStyles.container}>
-                <h3 className={homeStyles.sectionTitle}>Settings</h3>
+              <div className={styles.container}>
+                <h3 className={styles.sectionTitle}>Settings</h3>
                 <Row className={styles.settingsContainer}>
-                  <Col xs={24} sm={24} md={22} lg={20}>
+                  <Col xs={24} sm={22} md={21} lg={20}>
                     <Card
                       className={styles.settingsCard}
                       title="Floor Height"
@@ -98,6 +97,9 @@ const SettingsPage: NextPage<SettingsData> = ({
                         onFinish={formOnFinish}
                         onFinishFailed={formOnFinishFailed}
                       />
+                      <p className={styles.settingsText}>
+                        (Default is set to 4.2672 Meters)
+                      </p>
                     </Card>
                   </Col>
                 </Row>

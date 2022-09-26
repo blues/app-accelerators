@@ -37,8 +37,11 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
     void router.replace(router.asPath);
   };
 
-  const { error: deviceTrackersError, data: deviceTrackers } =
-    useDeviceTrackerData(MS_REFETCH_INTERVAL);
+  const {
+    isLoading: deviceTrackersLoading,
+    error: deviceTrackersError,
+    data: deviceTrackers,
+  } = useDeviceTrackerData(MS_REFETCH_INTERVAL);
 
   const err =
     deviceTrackersError && getErrorMessage(deviceTrackersError.message);
@@ -111,7 +114,7 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
           dangerouslySetInnerHTML={{ __html: err || error }}
         />
       ) : (
-        <LoadingSpinner isLoading={isLoading}>
+        <LoadingSpinner isLoading={isLoading || deviceTrackersLoading}>
           <div>
             {isErrored && (
               <Alert type="error" message={errorMessage} closable />
