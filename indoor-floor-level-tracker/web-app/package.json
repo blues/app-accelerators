@@ -3,20 +3,15 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "genv": "./generate-dotenv.sh | tee .env.production.local",
+    "build": "yarn genv; next build",
+    "ci": "yarn build",
     "dev": "yarn && next dev -p 4000",
-    "build": "yarn genv; yarn prisma:generate; next build",
-    "start": "next start",
-    "lint": "next lint",
+    "genv": "./generate-dotenv.sh | tee .env.production.local",
     "lint:all": "npx eslint . --ext .js,.jsx,.ts,.tsx",
-    "test": "jest --watch",
+    "lint:next": "next lint",
+    "start": "next start",
     "test:coverage": "jest --coverage",
-    "cypress:open": "cypress install && cypress open --env configFile=development",
-    "cypress:run": "cypress install && cypress run --env configFile=development",
-    "prisma:generate": "prisma generate",
-    "db:reset": "prisma db push --force-reset",
-    "db:update": "prisma db push",
-    "db:init": "ts-node --project ./node.tsconfig.json src/services/prisma-datastore/db-init.ts"
+    "test": "jest --watch"
   },
   "dependencies": {
     "@ant-design/icons": "^4.7.0",
