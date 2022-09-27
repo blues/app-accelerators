@@ -69,7 +69,7 @@ const EditableCell = ({
   const toggleEdit = () => {
     setEditing(!editing);
   };
-  const save = () => {
+  const handleSave = () => {
     const newName = form.getFieldValue("name") as string;
     if (newName.trim() === "") {
       return;
@@ -82,13 +82,13 @@ const EditableCell = ({
 
     onChange(record.uid, newName).then(toggleEdit).catch(toggleEdit);
   };
-  const onBlur = () => {
+  const handleBlur = () => {
     const newName = form.getFieldValue("name") as string;
     if (newName.trim() === "") {
       toggleEdit();
       return;
     }
-    save();
+    handleSave();
   };
 
   let childNode = children;
@@ -111,8 +111,8 @@ const EditableCell = ({
         >
           <Input
             className="editable-input"
-            onBlur={onBlur}
-            onPressEnter={save}
+            onBlur={handleBlur}
+            onPressEnter={handleSave}
             ref={inputRef}
           />
         </Form.Item>
