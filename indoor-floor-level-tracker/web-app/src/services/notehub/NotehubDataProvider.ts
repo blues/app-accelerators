@@ -15,7 +15,7 @@ interface HasDeviceId {
   uid: string;
 }
 
-// N.B.: Noteub defines 'best' location with more nuance than we do here (e.g
+// N.B.: Notehub defines 'best' location with more nuance than we do here (e.g
 // considering staleness). Also this algorithm is copy-pasted in a couple places.
 export const getBestLocation = (object: NotehubLocationAlternatives) =>
   object.gps_location || object.triangulated_location || object.tower_location;
