@@ -10,7 +10,8 @@ const ERROR_MESSAGE = {
     "An internal error occurred. If this problem persists, contact <a href='https://discuss.blues.io' target='_blank' rel='noreferrer'>Blues Support</a>.",
   UNAUTHORIZED:
     "Authentication failed. Please ensure you have a valid HUB_AUTH_TOKEN environment variable.",
-  DEVICE_NAME_CHANGE_FAILED: "An error occurred changing the name.",
+  DEVICE_NAME_CHANGE_FAILED:
+    "An error occurred changing your device’s name. If this problem persists, contact Blues support.",
   UPDATE_FLEET_LIVE_STATUS_FAILED:
     "Failed to update the fleet's tracking mode. If this problem persists, contact <a href='https://discuss.blues.io' target='_blank' rel='noreferrer'>Blues Support</a>.",
   DATABASE_NOT_RUNNING:

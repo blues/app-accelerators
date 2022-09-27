@@ -4,30 +4,23 @@ export type ProjectID = DomainModel.ProjectID;
 export type FleetID = DomainModel.FleetID;
 export type DeviceID = DomainModel.DeviceID;
 
-/**
- * The presentation models here are json-serializable representations of the domain model.
- */
-
-export interface Project extends DomainModel.Project {
-  devices: Device[] | null; // null when devices are not required
+export interface TrackerConfig {
+  live?: boolean;
+  baseFloor?: number;
+  floorHeight?: number;
+  noMovementThreshold?: number;
 }
 
-/**
- * Dates are in UTC time, expressed as seconds since the epoch.
- */
-export type AppDate = number;
-
-export interface Device extends DomainModel.Device {}
-
-export interface ProjectDataSnapshot {
-  when: AppDate;
-  project: Project;
-}
-
-export interface BulkDataImportStatus {
-  err?: string;
-  importedItemCount: number;
-  erroredItemCount: number;
-  elapsedTimeMs: number;
-  state: "unstarted" | "ongoing" | "done" | "failed";
+export interface DeviceTracker {
+  uid: string;
+  name: string;
+  lastActivity: string;
+  location?: string;
+  voltage: string;
+  floor?: string | null;
+  pressure?: string | null;
+  temperature?: string | null;
+  altitude?: string | null;
+  direction?: string | null;
+  prevFloor?: string | null;
 }
