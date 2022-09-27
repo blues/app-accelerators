@@ -1,9 +1,14 @@
-name: CI-indoor-floor-level-tracker
+name: indoor-floor-level-tracker/web-app
 
 on:
   pull_request:
     paths:
-      - "indoor-floor-level-tracker/**"
+      - "indoor-floor-level-tracker/web-app/**"
+
+defaults:
+  run:
+    shell: bash
+    working-directory: indoor-floor-level-tracker/web-app
 
 jobs:
   build-and-test:
