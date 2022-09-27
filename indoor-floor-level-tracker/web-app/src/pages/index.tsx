@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useQueryClient } from "react-query";
 import { getErrorMessage } from "../constants/ui";
 import { ERROR_CODES } from "../services/Errors";
-import { DeviceTracker, TrackerConfig } from "../services/ClientModel";
+import { DeviceTracker, TrackerConfig } from "../services/AppModel";
 import Config from "../../Config";
 import { useDeviceTrackerData } from "../hooks/useDeviceTrackerData";
 import { services } from "../services/ServiceLocatorServer";

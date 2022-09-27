@@ -2,7 +2,7 @@
 /* eslint-disable class-methods-use-this */
 import { sub, formatDistanceToNow, parseISO } from "date-fns";
 import { uniqBy } from "lodash";
-import { DeviceTracker, TrackerConfig } from "../ClientModel";
+import { DeviceTracker, TrackerConfig } from "../AppModel";
 import { DataProvider } from "../DataProvider";
 import { Device, DeviceID, FleetID, Project, ProjectID } from "../DomainModel";
 import NotehubDevice from "./models/NotehubDevice";
@@ -28,7 +28,7 @@ export function notehubDeviceToIndoorTracker(device: NotehubDevice) {
     ...(getBestLocation(device) && {
       location: getBestLocation(device)?.name,
     }),
-    voltage: String(device.voltage),
+    voltage: `${device.voltage}`,
   };
 }
 

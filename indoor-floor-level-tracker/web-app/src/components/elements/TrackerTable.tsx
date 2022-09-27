@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Form, Image, Input, InputRef, Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { DeviceTracker } from "../../services/ClientModel";
+import { DeviceTracker } from "../../services/AppModel";
 import styles from "../../styles/Table.module.scss";
 import { changeDeviceName } from "../../api-client/devices";
 import { ERROR_MESSAGE } from "../../constants/ui";
@@ -10,7 +10,7 @@ const columns = [
   {
     title: (
       <>
-        <Image src="/images/responder.svg" alt="person outline" />
+        <Image preview={false} src="/images/responder.svg" alt="" />
         <span style={{ marginLeft: "8px" }}>Responders</span>
       </>
     ),
