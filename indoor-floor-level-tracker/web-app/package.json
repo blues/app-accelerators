@@ -4,14 +4,15 @@
   "private": true,
   "scripts": {
     "build": "yarn genv; next build",
-    "ci": "yarn build",
+    "ci": "yarn build && yarn test",
     "dev": "yarn && next dev -p 4000",
     "genv": "./generate-dotenv.sh | tee .env.production.local",
     "lint:all": "npx eslint . --ext .js,.jsx,.ts,.tsx",
     "lint:next": "next lint",
     "start": "next start",
+    "test": "jest",
     "test:coverage": "jest --coverage",
-    "test": "jest --watch"
+    "test:watch": "jest --watch"
   },
   "dependencies": {
     "@ant-design/icons": "^4.7.0",
