@@ -34,7 +34,7 @@ export function notehubDeviceToIndoorTracker(device: NotehubDevice) {
 
 export function filterEventsData(events: NotehubRoutedEvent[]) {
   const dataEvent = events
-    .filter((event) => event.file === "data.qo")
+    .filter((event) => event.file === "floor.qo")
     .reverse();
 
   return dataEvent;
