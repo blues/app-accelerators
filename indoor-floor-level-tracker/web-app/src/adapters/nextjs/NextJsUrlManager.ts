@@ -5,6 +5,7 @@ export const NextJsUrlManager = {
   performBulkDataImportApi: () => `/api/admin/bulk-data-import`,
   notehubProject: (notehubUrl: string, projectUID: string) =>
     `${notehubUrl}/project/${projectUID}`,
+  deviceNameUpdate: (deviceUID: string) => `/api/device/${deviceUID}/name`,
   getDeviceTrackerData: () => `/api/device-trackers`,
   setFleetTrackerConfig: () => `/api/fleet/tracker-config`,
 
