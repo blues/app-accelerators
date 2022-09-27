@@ -21,4 +21,6 @@ export interface DeviceTracker {
   pressure?: string | null;
   temperature?: string | null;
   altitude?: string | null;
+  direction?: string | null;
+  prevFloor?: string | null;
 }
