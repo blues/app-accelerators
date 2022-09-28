@@ -1,20 +1,19 @@
-import { useEffect, useState } from "react";
 import { GetServerSideProps, NextPage } from "next";
-import Image from "next/image";
-import { Alert, Col, Row, Tooltip } from "antd";
 import { useRouter } from "next/router";
-import ResponderIcon from "../components/elements/images/responder.svg";
-import { ERROR_CODES } from "../services/Errors";
-import { DeviceTracker, TrackerConfig } from "../services/ClientModel";
+import { Alert, Col, Row } from "antd";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "react-query";
 import { getErrorMessage } from "../constants/ui";
+import { ERROR_CODES } from "../services/Errors";
+import { DeviceTracker, TrackerConfig } from "../services/AppModel";
 import Config from "../../Config";
-import Table, { TableProps } from "../components/elements/Table";
 import { useDeviceTrackerData } from "../hooks/useDeviceTrackerData";
 import { services } from "../services/ServiceLocatorServer";
 import { LoadingSpinner } from "../components/layout/LoadingSpinner";
 import LiveTrackCard from "../components/elements/LiveTrackCard";
 import RespondersByFloorTable from "../components/elements/RespondersByFloorTable";
 import styles from "../styles/Home.module.scss";
+import TrackerTable from "../components/elements/TrackerTable";
 
 type HomeData = {
   fleetTrackerConfig: TrackerConfig;
@@ -25,16 +24,24 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const infoMessage = "Deploy message";
   const MS_REFETCH_INTERVAL = 10000;
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
   const [isErrored, setIsErrored] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [isLiveTrackingEnabled, setIsLiveTrackingEnabled] =
     useState<boolean>(false);
 
   const router = useRouter();
+  const queryClient = useQueryClient();
   // refresh the page
-  const refreshData = () => {
+  const refreshData = async () => {
     // eslint-disable-next-line no-void
     void router.replace(router.asPath);
+  };
+  const refreshDataAndInvalidateCache = async () => {
+    // Clear the client-side cache so when we refresh the page
+    // it refetches data to get the updated name.
+    await queryClient.invalidateQueries();
+    await refreshData();
   };
 
   const {
@@ -57,52 +64,6 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   useEffect(() => {
     refreshData();
   }, [isLiveTrackingEnabled]);
-
-  const tableInfo: TableProps = {
-    columns: [
-      {
-        title: (
-          <>
-            <Image src={ResponderIcon} alt="person outline" />
-            <span style={{ marginLeft: "8px" }}>Responders</span>
-          </>
-        ),
-        dataIndex: "name",
-        key: "name",
-        width: "25%",
-        ellipsis: { showTitle: false },
-        render: (name) => (
-          <Tooltip placement="topLeft" title={name}>
-            {name}
-          </Tooltip>
-        ),
-      },
-      {
-        title: "Floor",
-        dataIndex: "floor",
-        key: "floor",
-        width: "15%",
-      },
-      {
-        title: "Last Seen",
-        dataIndex: "lastActivity",
-        key: "lastActivity",
-      },
-      {
-        title: "Pressure",
-        dataIndex: "pressure",
-        key: "pressure",
-        width: "20%",
-      },
-      {
-        title: "Voltage",
-        dataIndex: "voltage",
-        key: "voltage",
-        width: "15%",
-      },
-    ],
-    data: trackers,
-  };
 
   return (
     <div className={styles.container}>
@@ -133,10 +94,16 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
                     />
                   </Col>
                 </Row>
-                <h3 className={styles.sectionTitle}>Fleet</h3>
+                <h3 className={styles.sectionTitle}>My Fleet</h3>
                 <Row gutter={[16, 24]}>
                   <Col xs={24} sm={24} md={24} lg={20}>
-                    <Table columns={tableInfo.columns} data={tableInfo.data} />
+                    <TrackerTable
+                      setIsErrored={setIsErrored}
+                      setIsLoading={setIsLoading}
+                      setErrorMessage={setErrorMessage}
+                      refreshData={refreshDataAndInvalidateCache}
+                      data={trackers}
+                    />
                   </Col>
                   <Col xs={12} sm={7} md={6} lg={4}>
                     <RespondersByFloorTable data={trackers} />
