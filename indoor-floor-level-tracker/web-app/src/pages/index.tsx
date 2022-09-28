@@ -78,6 +78,7 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
             )}
             {trackers && (
               <>
+                {console.log(trackers)}
                 <h3 className={styles.sectionTitle}>Fleet Controls</h3>
                 <Row>
                   <Col span={3}>

@@ -32,10 +32,8 @@ export function notehubDeviceToIndoorTracker(device: NotehubDevice) {
   };
 }
 
-export function filterEventsData(events: NotehubRoutedEvent[]) {
-  const dataEvent = events
-    .filter((event) => event.file === "floor.qo")
-    .reverse();
+export function filterEventsData(events: NotehubRoutedEvent[], file: string) {
+  const dataEvent = events.filter((event) => event.file === file).reverse();
 
   return dataEvent;
 }
@@ -185,7 +183,7 @@ export default class NotehubDataProvider implements DataProvider {
     const rawEvents = await this.getEvents(MINUTES_OF_NOTEHUB_DATA_TO_FETCH);
 
     // filter down to only data.qo events and reverse the order to get the latest event first
-    const filteredEvents = filterEventsData(rawEvents);
+    const filteredEvents = filterEventsData(rawEvents, "floor.qo");
 
     // get unique events by device ID
     const uniqueEvents = uniqBy(filteredEvents, "device");
@@ -207,7 +205,25 @@ export default class NotehubDataProvider implements DataProvider {
     // format the data to round the numbers to 2 decimal places
     formattedDeviceTrackerData = formatDeviceTrackerData(deviceTrackerData);
 
+    const alarmEvents = filterEventsData(rawEvents, "alarm.qo");
+    const uniqueAlarmEvents = uniqBy(alarmEvents, "device");
+    this.appendAlarmData(uniqueAlarmEvents, formattedDeviceTrackerData);
+
     return formattedDeviceTrackerData;
+  }
+
+  private appendAlarmData(
+    alarmEvents: NotehubRoutedEvent[],
+    trackers: DeviceTracker[]
+  ) {
+    alarmEvents.forEach((event) => {
+      trackers
+        .filter((tracker) => event.device === tracker.uid)
+        .forEach((tracker) => {
+          // eslint-disable-next-line no-param-reassign
+          tracker.lastAlarm = `${event.when}`;
+        });
+    });
   }
 
   async getTrackerConfig(): Promise<TrackerConfig> {
