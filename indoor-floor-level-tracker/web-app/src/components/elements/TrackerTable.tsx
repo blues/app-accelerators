@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Form, Image, Input, InputRef, Table } from "antd";
+import { ArrowDownOutlined, ArrowUpOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { DeviceTracker } from "../../services/AppModel";
 import styles from "../../styles/Table.module.scss";
@@ -44,19 +45,14 @@ const columns = [
   },
 ] as ColumnsType<DeviceTracker>;
 
-interface EditableCellProps {
+interface CustomCellProps {
   index: string;
   children: JSX.Element;
   record: DeviceTracker;
   onChange: (deviceUID: string, updatedName: string) => Promise<boolean>;
 }
 
-const EditableCell = ({
-  children,
-  index,
-  record,
-  onChange,
-}: EditableCellProps) => {
+const CustomCell = ({ children, index, record, onChange }: CustomCellProps) => {
   const [editing, setEditing] = useState(false);
   const inputRef = useRef<InputRef | null>(null);
   const [form] = Form.useForm();
@@ -93,6 +89,7 @@ const EditableCell = ({
 
   let childNode = children;
 
+  // Create a custom form for editing responder name
   if (index === "name") {
     childNode = editing ? (
       <Form form={form}>
@@ -121,6 +118,21 @@ const EditableCell = ({
       <button className="editable-button" onClick={toggleEdit} type="button">
         {children}
       </button>
+    );
+  }
+
+  // Custom display of floor number
+  if (index === "floor" && record.floor) {
+    const directionAsNumber = record.direction
+      ? parseInt(record.direction, 10)
+      : 0;
+
+    childNode = (
+      <>
+        {directionAsNumber > 0 && <ArrowUpOutlined />}
+        {directionAsNumber < 0 && <ArrowDownOutlined />}
+        <span>{record.floor}</span>
+      </>
     );
   }
 
@@ -173,7 +185,7 @@ const TrackerTable = ({
       <Table
         components={{
           body: {
-            cell: EditableCell,
+            cell: CustomCell,
           },
         }}
         rowKey="uid"
