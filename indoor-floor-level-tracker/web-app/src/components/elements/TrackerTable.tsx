@@ -17,7 +17,7 @@ const columns = [
     ),
     dataIndex: "name",
     key: "name",
-    width: "20%",
+    width: "25%",
   },
   {
     title: "Floor",
@@ -29,7 +29,6 @@ const columns = [
     title: "Last Seen",
     dataIndex: "lastActivity",
     key: "lastActivity",
-    width: "30%",
   },
   {
     title: "Pressure",
