@@ -11,7 +11,11 @@ const columns = [
   {
     title: (
       <>
-        <Image preview={false} src="/images/responder.svg" alt="" />
+        <Image
+          preview={false}
+          src="/images/responder.svg"
+          alt="person outline"
+        />
         <span style={{ marginLeft: "8px" }}>Responders</span>
       </>
     ),
