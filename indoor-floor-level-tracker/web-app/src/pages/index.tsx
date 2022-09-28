@@ -11,6 +11,7 @@ import { useDeviceTrackerData } from "../hooks/useDeviceTrackerData";
 import { services } from "../services/ServiceLocatorServer";
 import { LoadingSpinner } from "../components/layout/LoadingSpinner";
 import LiveTrackCard from "../components/elements/LiveTrackCard";
+import RespondersByFloorTable from "../components/elements/RespondersByFloorTable";
 import styles from "../styles/Home.module.scss";
 import TrackerTable from "../components/elements/TrackerTable";
 
@@ -80,7 +81,7 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
               <>
                 <h3 className={styles.sectionTitle}>Fleet Controls</h3>
                 <Row>
-                  <Col span={3}>
+                  <Col sm={5} md={4} lg={3}>
                     <LiveTrackCard
                       setIsErrored={setIsErrored}
                       setIsLoading={setIsLoading}
@@ -90,15 +91,20 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
                     />
                   </Col>
                 </Row>
-                <Row>
-                  <h3 className={styles.sectionTitle}>My Fleet</h3>
-                  <TrackerTable
-                    setIsErrored={setIsErrored}
-                    setIsLoading={setIsLoading}
-                    setErrorMessage={setErrorMessage}
-                    refreshData={refreshDataAndInvalidateCache}
-                    data={trackers}
-                  />
+                <h3 className={styles.sectionTitle}>My Fleet</h3>
+                <Row gutter={[16, 24]}>
+                  <Col xs={24} sm={24} md={24} lg={20}>
+                    <TrackerTable
+                      setIsErrored={setIsErrored}
+                      setIsLoading={setIsLoading}
+                      setErrorMessage={setErrorMessage}
+                      refreshData={refreshDataAndInvalidateCache}
+                      data={trackers}
+                    />
+                  </Col>
+                  <Col xs={12} sm={7} md={6} lg={4}>
+                    <RespondersByFloorTable data={trackers} />
+                  </Col>
                 </Row>
               </>
             )}

@@ -28,24 +28,8 @@ const SiderComponent = ({
   }
 
   const menuItems: MenuItem[] = [
-    getItem(
-      <div
-        className={`${isSiderCollapsed ? `${styles.isSiderCollapsed}` : ""}`}
-      >
-        Overview
-      </div>,
-      "1",
-      Overview
-    ),
-    getItem(
-      <div
-        className={`${isSiderCollapsed ? `${styles.isSiderCollapsed}` : ""}`}
-      >
-        Settings
-      </div>,
-      "2",
-      Settings
-    ),
+    getItem(<div>Overview</div>, "1", Overview),
+    getItem(<div>Settings</div>, "2", Settings),
   ];
 
   return (

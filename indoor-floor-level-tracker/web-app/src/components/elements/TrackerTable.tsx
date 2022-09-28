@@ -11,13 +11,17 @@ const columns = [
   {
     title: (
       <>
-        <Image preview={false} src="/images/responder.svg" alt="" />
+        <Image
+          preview={false}
+          src="/images/responder.svg"
+          alt="person outline"
+        />
         <span style={{ marginLeft: "8px" }}>Responders</span>
       </>
     ),
     dataIndex: "name",
     key: "name",
-    width: "20%",
+    width: "25%",
   },
   {
     title: "Floor",
@@ -29,7 +33,6 @@ const columns = [
     title: "Last Seen",
     dataIndex: "lastActivity",
     key: "lastActivity",
-    width: "30%",
   },
   {
     title: "Pressure",
