@@ -12,6 +12,10 @@
     width: 25px;
   }
 
+  :global .ant-table-row.alarm {
+    background: $bw-color--orange0;
+  }
+
   :global .ant-table-cell::before {
     display: none;
   }

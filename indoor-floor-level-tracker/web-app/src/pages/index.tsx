@@ -1,6 +1,6 @@
 import { GetServerSideProps, NextPage } from "next";
 import { useRouter } from "next/router";
-import { Alert, Col, Row } from "antd";
+import { Alert, Button, Col, Row } from "antd";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "react-query";
 import { getErrorMessage } from "../constants/ui";
@@ -92,7 +92,12 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
                   </Col>
                 </Row>
                 <Row>
-                  <h3 className={styles.sectionTitle}>My Fleet</h3>
+                  <div className={styles.tableHeaderRow}>
+                    <h3 className={styles.sectionTitle}>Fleet</h3>
+                    <Button type="primary" danger>
+                      Dismiss Alarms
+                    </Button>
+                  </div>
                   <TrackerTable
                     setIsErrored={setIsErrored}
                     setIsLoading={setIsLoading}

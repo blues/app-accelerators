@@ -45,6 +45,10 @@ const columns = [
   },
 ] as ColumnsType<DeviceTracker>;
 
+const CustomRow = (props) => {
+  return <>{props.children}</>;
+};
+
 interface CustomCellProps {
   index: string;
   children: JSX.Element;
@@ -189,6 +193,9 @@ const TrackerTable = ({
           },
         }}
         rowKey="uid"
+        rowClassName={(record) => {
+          return record.lastAlarm ? "alarm" : "";
+        }}
         // TypeScript does not like the custom properties being present on the column
         // definitions, but they’re essential to Ant’s recommended way of allowing
         // users to edit cell contents.

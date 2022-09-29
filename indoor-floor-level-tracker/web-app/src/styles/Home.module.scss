@@ -17,6 +17,12 @@
     margin-top: 24px;
   }
 
+  .tableHeaderRow {
+    display: flex;
+    width: 100%;
+    align-items: first baseline;
+  }
+
   :global .ant-alert {
     margin-bottom: 12px;
   }

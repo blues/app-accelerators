@@ -17,6 +17,9 @@ interface AppServiceInterface {
   getDevice: (deviceUID: string) => Promise<Device | null>;
   setDeviceName: (deviceUID: string, name: string) => Promise<void>;
 
+  getLastAlarmClear: () => string;
+  setLastAlarmClear: (when: string) => void;
+
   handleEvent(event: AppEvent): Promise<void>;
 
   performBulkDataImport(): Promise<BulkDataImportStatus>;
@@ -46,6 +49,16 @@ export default class AppService implements AppServiceInterface {
   ) {
     this.projectID = this.idBuilder.buildProjectID(projectUID);
     this.fleetID = this.idBuilder.buildFleetID(fleetUID);
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  getLastAlarmClear() {
+    return localStorage.getItem("LAST_ALARM_CLEAR") || "";
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  setLastAlarmClear(when: string) {
+    return localStorage.setItem("LAST_ALARM_CLEAR", when);
   }
 
   async getEventCount(): Promise<number> {
