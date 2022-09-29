@@ -13,10 +13,6 @@ export default class NotehubAttributeStore implements AttributeStore {
     });
   }
 
-  async updateDevicePin(_deviceID: DeviceID, _pin: string) {
-    return Promise.resolve(null);
-  }
-
   async updateTrackerConfig(fleetUID: FleetID, trackerConfig: TrackerConfig) {
     await this.accessor.setEnvironmentVariablesByFleet(
       fleetUID.fleetUID,

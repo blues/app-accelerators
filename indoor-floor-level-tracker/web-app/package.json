@@ -16,10 +16,7 @@
   },
   "dependencies": {
     "@ant-design/icons": "^4.7.0",
-    "@prisma/client": "^3.9.2",
     "@types/lodash": "^4.14.178",
-    "@types/pubnub": "^7.2.0",
-    "@types/react-slick": "^0.23.8",
     "antd": "^4.19.1",
     "axios": "^0.24.0",
     "date-fns": "^2.27.0",
@@ -28,10 +25,6 @@
     "next": "12.1.0",
     "next-plugin-antd-less": "^1.8.0",
     "pony-cause": "^1.1.1",
-    "prisma": "^4.3.0",
-    "pubnub": "^7.2.0",
-    "pubnub-react": "^3.0.1",
-    "rc-field-form": "^1.22.0",
     "react": "17.0.2",
     "react-dom": "17.0.2",
     "react-query": "^3.39.2",
@@ -39,7 +32,6 @@
     "ts-node": "^10.5.0"
   },
   "devDependencies": {
-    "@netlify/plugin-nextjs": "^4.13.1",
     "@testing-library/dom": "^8.11.1",
     "@testing-library/jest-dom": "^5.15.0",
     "@testing-library/react": "^12.1.2",
@@ -50,7 +42,6 @@
     "@typescript-eslint/parser": "^5.4.0",
     "axios-mock-adapter": "^1.20.0",
     "babel-jest": "^27.3.1",
-    "cypress": "9.2.1",
     "eslint": "<8.0.0",
     "eslint-config-airbnb": "^19.0.0",
     "eslint-config-airbnb-typescript": "^16.0.0",
@@ -65,7 +56,6 @@
     "identity-obj-proxy": "^3.0.0",
     "jest": "^27.3.1",
     "jest-dom": "^4.0.0",
-    "moq.ts": "^9.0.2",
     "node-mocks-http": "^1.11.0",
     "prettier": "^2.4.1",
     "react-test-renderer": "^17.0.2",
@@ -85,8 +75,5 @@
   "volta": {
     "node": "16.13.0",
     "yarn": "1.22.17"
-  },
-  "prisma": {
-    "schema": "src/services/prisma-datastore/schema.prisma"
   }
 }
