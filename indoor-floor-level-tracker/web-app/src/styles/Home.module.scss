@@ -17,6 +17,14 @@
     margin-top: 24px;
   }
 
+  .motionAlertCard {
+    width: 200px;
+  }
+
+  .liveTrackCard {
+    width: 115px;
+  }
+
   :global .ant-alert {
     margin-bottom: 12px;
   }
@@ -26,6 +34,12 @@
   .container {
     .sectionTitle {
       display: none;
+    }
+
+    .liveTrackCard,
+    .motionAlertCard {
+      display: block;
+      width: 100%;
     }
   }
 }

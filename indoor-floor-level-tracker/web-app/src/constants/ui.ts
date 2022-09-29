@@ -13,7 +13,9 @@ const ERROR_MESSAGE = {
   DEVICE_NAME_CHANGE_FAILED:
     "An error occurred changing your device’s name. If this problem persists, contact Blues support.",
   UPDATE_FLEET_LIVE_STATUS_FAILED:
-    "Failed to update the fleet's tracking mode. If this problem persists, contact <a href='https://discuss.blues.io' target='_blank' rel='noreferrer'>Blues Support</a>.",
+    "Failed to update the fleet's tracking mode. If this problem persists, contact Blues Support.",
+  UPDATE_FLEET_NO_MOVEMENT_THRESHOLD_FAILED:
+    "Failed to update the fleet's no movement threshold value. If this problem persists, contact Blues Support.",
   DATABASE_NOT_RUNNING:
     "Can't reach the database server. Please make sure your database is properly connected.",
   NO_PROJECT_ID:
