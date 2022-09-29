@@ -8,9 +8,9 @@
     min-height: calc(
       100vh - $header-bar-height - $footer-bar-height
     ) !important;
-    width: clamp($page-content-xs, $page-content-md, calc(100vw - 128px));
+    max-width: 944px;
     margin: 0 auto;
-    padding-bottom: 50px;
+    padding: 0 30px 50px 30px;
   }
 }
 
@@ -19,5 +19,13 @@
     min-height: calc(
       100vh - $header-bar-height - $tablet-footer-bar-height
     ) !important;
+  }
+}
+
+@media screen and (max-width: $breakpoints-sm) {
+  .mainContentWrapper {
+    min-height: calc(
+      100vh - $header-bar-height - $mobile-settings-footer-bar-height
+    );
   }
 }

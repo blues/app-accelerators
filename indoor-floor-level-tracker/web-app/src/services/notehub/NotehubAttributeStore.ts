@@ -1,5 +1,5 @@
 import { AttributeStore } from "../AttributeStore";
-import { TrackerConfig } from "../ClientModel";
+import { TrackerConfig } from "../AppModel";
 import { DeviceID, FleetID } from "../DomainModel";
 import { NotehubAccessor } from "./NotehubAccessor";
 import { trackerConfigToEnvironmentVariables } from "./NotehubDataProvider";

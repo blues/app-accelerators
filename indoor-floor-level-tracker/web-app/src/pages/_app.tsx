@@ -5,7 +5,6 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import PubNub from "pubnub";
 import { PubNubProvider } from "pubnub-react";
-import Notifications from "../components/elements/Notifications";
 import Layout from "../components/layout/Layout";
 import config from "../../Config";
 import "../styles/globals.css";
@@ -66,7 +65,6 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
               />
             </Head>
             <Layout isLoading={isLoading}>
-              <Notifications items={[]} />
               <Component {...pageProps} />
             </Layout>
           </QueryClientProvider>
@@ -90,7 +88,6 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
             />
           </Head>
           <Layout isLoading={isLoading}>
-            <Notifications items={[]} />
             <Component {...pageProps} />
           </Layout>
         </QueryClientProvider>

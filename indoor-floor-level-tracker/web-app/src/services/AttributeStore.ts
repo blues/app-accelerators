@@ -1,4 +1,4 @@
-import { TrackerConfig } from "./ClientModel";
+import { TrackerConfig } from "./AppModel";
 import { Device, DeviceID, FleetID } from "./DomainModel";
 
 export interface AttributeStore {
