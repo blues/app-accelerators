@@ -12,8 +12,9 @@ import { services } from "../services/ServiceLocatorServer";
 import { LoadingSpinner } from "../components/layout/LoadingSpinner";
 import LiveTrackCard from "../components/elements/LiveTrackCard";
 import RespondersByFloorTable from "../components/elements/RespondersByFloorTable";
-import styles from "../styles/Home.module.scss";
 import TrackerTable from "../components/elements/TrackerTable";
+import MotionAlertConfigCard from "../components/elements/MotionAlertConfigCard";
+import styles from "../styles/Home.module.scss";
 
 type HomeData = {
   fleetTrackerConfig: TrackerConfig;
@@ -29,6 +30,8 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [isLiveTrackingEnabled, setIsLiveTrackingEnabled] =
     useState<boolean>(false);
+  const [currentNoMovementValue, setCurrentNoMovementValue] =
+    useState<number>(false);
 
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -59,11 +62,14 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
     if (fleetTrackerConfig && fleetTrackerConfig.live) {
       setIsLiveTrackingEnabled(fleetTrackerConfig.live);
     }
+    if (fleetTrackerConfig && fleetTrackerConfig.noMovementThreshold) {
+      setCurrentNoMovementValue(fleetTrackerConfig.noMovementThreshold);
+    }
   }, [fleetTrackerConfig]);
 
   useEffect(() => {
     refreshData();
-  }, [isLiveTrackingEnabled]);
+  }, [isLiveTrackingEnabled, currentNoMovementValue]);
 
   return (
     <div className={styles.container}>
@@ -83,8 +89,17 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
             {trackers && (
               <>
                 <h3 className={styles.sectionTitle}>Fleet Controls</h3>
-                <Row>
-                  <Col sm={5} md={4} lg={3}>
+                <Row gutter={16}>
+                  <Col className={styles.motionAlertCard}>
+                    <MotionAlertConfigCard
+                      setIsErrored={setIsErrored}
+                      setIsLoading={setIsLoading}
+                      setErrorMessage={setErrorMessage}
+                      currentNoMovementThreshold={currentNoMovementValue}
+                      setCurrentNoMovementThreshold={setCurrentNoMovementValue}
+                    />
+                  </Col>
+                  <Col className={styles.liveTrackCard}>
                     <LiveTrackCard
                       setIsErrored={setIsErrored}
                       setIsLoading={setIsLoading}

@@ -1,6 +1,6 @@
 /* eslint-disable import/prefer-default-export */
 import axios, { AxiosResponse } from "axios";
-import { DeviceTracker } from "../services/ClientModel";
+import { DeviceTracker } from "../services/AppModel";
 import { services } from "../services/ServiceLocatorClient";
 
 type GetDeviceTrackerResponse = {

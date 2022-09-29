@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Table } from "antd";
 import type { ColumnsType } from "antd/lib/table";
-import { DeviceTracker } from "../../services/ClientModel";
+import { DeviceTracker } from "../../services/AppModel";
 import styles from "../../styles/RespondersByFloorTable.module.scss";
 
 interface RespondersByFloorTableProps {
