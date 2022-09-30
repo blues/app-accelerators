@@ -29,3 +29,11 @@
     );
   }
 }
+
+@media screen and (max-width: $breakpoints-xs) {
+  .mainContentWrapper {
+    .mainContent {
+      padding: 0 16px;
+    }
+  }
+}

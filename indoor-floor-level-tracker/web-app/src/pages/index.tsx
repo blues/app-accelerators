@@ -25,13 +25,12 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const infoMessage = "Deploy message";
   const MS_REFETCH_INTERVAL = 10000;
   const [isLoading, setIsLoading] = useState<boolean>(false);
-
   const [isErrored, setIsErrored] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [isLiveTrackingEnabled, setIsLiveTrackingEnabled] =
     useState<boolean>(false);
   const [currentNoMovementValue, setCurrentNoMovementValue] =
-    useState<number>(false);
+    useState<number>(120);
 
   const router = useRouter();
   const queryClient = useQueryClient();

@@ -1,16 +1,20 @@
 @import "_variables.scss";
 
 .formLabel {
-  font-weight: 600;
+  font-size: 400;
 
   :global .ant-input-show-count-suffix {
     font-weight: 400;
+  }
+
+  :global .ant-form-item-required > p {
+    margin-bottom: 0px;
   }
 }
 
 .formLabel:first-child {
   // the !important is needed to override default ant component styling
-  margin-bottom: 0 !important;
+  margin-bottom: 8px !important;
 }
 
 .formData {
