@@ -38,3 +38,16 @@
     }
   }
 }
+
+@media screen and (max-width: $breakpoints-sm) {
+  .settingsContainer {
+    .sectionTitle {
+      margin-top: 16px;
+      margin-bottom: 8px;
+    }
+
+    :global .ant-card-body {
+      padding: 12px;
+    }
+  }
+}
