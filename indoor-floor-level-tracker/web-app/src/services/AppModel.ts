@@ -23,4 +23,5 @@ export interface DeviceTracker {
   altitude?: string | null;
   direction?: string | null;
   prevFloor?: string | null;
+  lastAlarm?: string | null;
 }

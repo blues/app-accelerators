@@ -21,7 +21,7 @@ const HeaderComponent = ({
         className: "trigger",
         onClick: () => toggleCollapse(!isSiderCollapsed),
       })}
-      <h1 className={styles.headerTitle}>Indoor Floor Level Tracker</h1>
+      <h1 className={styles.headerTitle}>Indoor Floor-Level Tracker</h1>
       <h2
         data-testid="company-name"
         className={`${styles.headerText} ${

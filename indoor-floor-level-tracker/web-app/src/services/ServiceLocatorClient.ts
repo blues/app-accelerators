@@ -1,14 +1,24 @@
 import { UrlManager } from "../components/presentation/UrlManager";
 import { NextJsUrlManager } from "../adapters/nextjs/NextJsUrlManager";
+import AlarmService from "./AlarmService";
 
 class ServiceLocatorClient {
   private urlManager?: UrlManager;
+
+  private alarmService?: AlarmService;
 
   getUrlManager(): UrlManager {
     if (!this.urlManager) {
       this.urlManager = NextJsUrlManager;
     }
     return this.urlManager;
+  }
+
+  getAlarmService(): AlarmService {
+    if (!this.alarmService) {
+      this.alarmService = new AlarmService();
+    }
+    return this.alarmService;
   }
 }
 
