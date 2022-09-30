@@ -1,6 +1,6 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
-  "name": "Sparrow Reference Web App Development Dockerfile",
+  "name": "Fridge Fleet Monitor Web App Development Dockerfile",
 
   // Sets the run context to one level up instead of the .devcontainer folder.
   "context": "..",
