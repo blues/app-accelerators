@@ -46,6 +46,12 @@
   }
 }
 
+@media screen and (max-width: $breakpoints-lg) {
+  .tableContainer {
+    margin-top: -24px;
+  }
+}
+
 @media screen and (max-width: 630px) {
   .tableContainer {
     span:has(img) {
@@ -56,6 +62,8 @@
 
 @media screen and (max-width: $breakpoints-sm) {
   .tableContainer {
+    margin-top: -4px;
+
     :global .ant-table-thead > tr > th {
       padding: 6px 16px;
     }
