@@ -32,7 +32,7 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const [isLiveTrackingEnabled, setIsLiveTrackingEnabled] =
     useState<boolean>(false);
   const [currentNoMovementValue, setCurrentNoMovementValue] =
-    useState<number>(false);
+    useState<number>(120);
 
   const router = useRouter();
   const queryClient = useQueryClient();
