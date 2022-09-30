@@ -113,10 +113,15 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
                   </Col>
                 </Row>
                 <Row>
+                  {/* todo fix this button alignment */}
                   <div className={styles.tableHeaderRow}>
                     <h3 className={styles.sectionTitle}>Fleet</h3>
-
-                    <Button type="primary" danger onClick={clearAlarms}>
+                    <Button
+                      type="primary"
+                      danger
+                      onClick={clearAlarms}
+                      size="large"
+                    >
                       Clear Alarms
                     </Button>
                   </div>
