@@ -86,12 +86,12 @@ const LayoutComponent = ({
           toggleCollapse={toggleCollapse}
           isSiderPresent={isSiderPresent}
         />
-        <LoadingSpinner isLoading={isLoading}>
-          <div className={styles.mainContentWrapper}>
+        <div className={styles.mainContentWrapper}>
+          <LoadingSpinner isLoading={isLoading}>
             <Content className={styles.mainContent}>{children}</Content>
-            {isSiderPresent ? <Footer /> : null}
-          </div>
-        </LoadingSpinner>
+          </LoadingSpinner>
+          {isSiderPresent ? <Footer /> : null}
+        </div>
       </Layout>
       {!isSiderPresent ? (
         <MobileFooterComponent
