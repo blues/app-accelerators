@@ -46,18 +46,10 @@
   }
 }
 
-@media screen and (max-width: 610px) {
+@media screen and (max-width: 630px) {
   .tableContainer {
     span:has(img) {
       display: none !important;
-    }
-
-    :global .ant-table-thead > tr > th {
-      padding: 6px 16px;
-    }
-
-    :global .ant-table-tbody > tr > td {
-      padding: 16px;
     }
   }
 }
@@ -76,18 +68,16 @@
 
 @media screen and (max-width: $breakpoints-xs) {
   .tableContainer {
-    margin-bottom: 14px;
-
     :global .ant-table-thead > tr > th {
       font-size: 14px;
       padding: 4px;
     }
 
     :global .ant-table-tbody > tr > td:first-child {
-      padding: 16px 0 16px 8px;
+      padding: 8px 0 8px 8px;
     }
     :global .ant-table-tbody > tr > td:not(first-child) {
-      padding: 16px 0;
+      padding: 8px 0;
     }
   }
 }

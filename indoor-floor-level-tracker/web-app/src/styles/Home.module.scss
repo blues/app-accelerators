@@ -38,10 +38,17 @@
 
 @media screen and (max-width: $breakpoints-sm) {
   .container {
+    .sectionTitle {
+      display: none;
+    }
     .liveTrackCard,
     .motionAlertCard {
       display: block;
       width: 100%;
+    }
+
+    .liveTrackCard {
+      margin-bottom: 8px;
     }
   }
 }
