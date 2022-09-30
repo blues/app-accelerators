@@ -23,7 +23,29 @@
     align-items: first baseline;
   }
 
+  .motionAlertCard {
+    width: 200px;
+  }
+
+  .liveTrackCard {
+    width: 115px;
+  }
+
   :global .ant-alert {
     margin-bottom: 12px;
+  }
+}
+
+@media screen and (max-width: $breakpoints-sm) {
+  .container {
+    .sectionTitle {
+      display: none;
+    }
+
+    .liveTrackCard,
+    .motionAlertCard {
+      display: block;
+      width: 100%;
+    }
   }
 }

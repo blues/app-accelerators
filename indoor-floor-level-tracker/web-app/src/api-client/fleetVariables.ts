@@ -17,6 +17,17 @@ export async function updateLiveTrackerStatus(liveTrackerStatus: boolean) {
   };
 
   const response = await updateFleetEnvVar(updateLiveFleetTrackingObj);
+  return response;
+}
+
+export async function updateNoMovementThreshold(
+  noMovementThresholdValue: number
+) {
+  const updateNoMovementThresholdObj = {
+    noMovementThreshold: noMovementThresholdValue,
+  };
+
+  const response = await updateFleetEnvVar(updateNoMovementThresholdObj);
 
   return response;
 }

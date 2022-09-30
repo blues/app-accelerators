@@ -7,9 +7,11 @@ import styles from "../../styles/Header.module.scss";
 const HeaderComponent = ({
   isSiderCollapsed,
   toggleCollapse,
+  isSiderPresent,
 }: {
   isSiderCollapsed: boolean;
   toggleCollapse: (collpase: boolean) => void;
+  isSiderPresent: boolean;
 }) => {
   const { Header } = Layout;
 
@@ -20,7 +22,12 @@ const HeaderComponent = ({
         onClick: () => toggleCollapse(!isSiderCollapsed),
       })}
       <h1 className={styles.headerTitle}>Indoor Floor-Level Tracker</h1>
-      <h2 data-testid="company-name" className={styles.headerText}>
+      <h2
+        data-testid="company-name"
+        className={`${styles.headerText} ${
+          isSiderPresent ? "" : `${styles.hidden}`
+        }`}
+      >
         {config.companyName}
       </h2>
     </Header>

@@ -11,8 +11,10 @@ import { useDeviceTrackerData } from "../hooks/useDeviceTrackerData";
 import { services } from "../services/ServiceLocatorServer";
 import { LoadingSpinner } from "../components/layout/LoadingSpinner";
 import LiveTrackCard from "../components/elements/LiveTrackCard";
-import styles from "../styles/Home.module.scss";
+import RespondersByFloorTable from "../components/elements/RespondersByFloorTable";
 import TrackerTable from "../components/elements/TrackerTable";
+import MotionAlertConfigCard from "../components/elements/MotionAlertConfigCard";
+import styles from "../styles/Home.module.scss";
 
 type HomeData = {
   fleetTrackerConfig: TrackerConfig;
@@ -28,6 +30,8 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [isLiveTrackingEnabled, setIsLiveTrackingEnabled] =
     useState<boolean>(false);
+  const [currentNoMovementValue, setCurrentNoMovementValue] =
+    useState<number>(false);
 
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -55,11 +59,14 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
     if (fleetTrackerConfig && fleetTrackerConfig.live) {
       setIsLiveTrackingEnabled(fleetTrackerConfig.live);
     }
+    if (fleetTrackerConfig && fleetTrackerConfig.noMovementThreshold) {
+      setCurrentNoMovementValue(fleetTrackerConfig.noMovementThreshold);
+    }
   }, [fleetTrackerConfig]);
 
   useEffect(() => {
     refreshData();
-  }, [isLiveTrackingEnabled]);
+  }, [isLiveTrackingEnabled, currentNoMovementValue]);
 
   return (
     <div className={styles.container}>
@@ -80,8 +87,17 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
               <>
                 {console.log(trackers)}
                 <h3 className={styles.sectionTitle}>Fleet Controls</h3>
-                <Row>
-                  <Col span={3}>
+                <Row gutter={16}>
+                  <Col className={styles.motionAlertCard}>
+                    <MotionAlertConfigCard
+                      setIsErrored={setIsErrored}
+                      setIsLoading={setIsLoading}
+                      setErrorMessage={setErrorMessage}
+                      currentNoMovementThreshold={currentNoMovementValue}
+                      setCurrentNoMovementThreshold={setCurrentNoMovementValue}
+                    />
+                  </Col>
+                  <Col className={styles.liveTrackCard}>
                     <LiveTrackCard
                       setIsErrored={setIsErrored}
                       setIsLoading={setIsLoading}
@@ -98,13 +114,20 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
                       Dismiss Alarms
                     </Button>
                   </div>
-                  <TrackerTable
-                    setIsErrored={setIsErrored}
-                    setIsLoading={setIsLoading}
-                    setErrorMessage={setErrorMessage}
-                    refreshData={refreshDataAndInvalidateCache}
-                    data={trackers}
-                  />
+                </Row>
+                <Row gutter={[16, 24]}>
+                  <Col xs={24} sm={24} md={24} lg={20}>
+                    <TrackerTable
+                      setIsErrored={setIsErrored}
+                      setIsLoading={setIsLoading}
+                      setErrorMessage={setErrorMessage}
+                      refreshData={refreshDataAndInvalidateCache}
+                      data={trackers}
+                    />
+                  </Col>
+                  <Col xs={12} sm={7} md={6} lg={4}>
+                    <RespondersByFloorTable data={trackers} />
+                  </Col>
                 </Row>
               </>
             )}

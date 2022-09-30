@@ -3,14 +3,68 @@
 .cardContainer {
   border: 1px solid $bw-color--grey3;
 
+  .cardTitle {
+    display: flex;
+    justify-content: center;
+
+    .titleImage {
+      margin-right: 4px;
+    }
+  }
+
+  :global .ant-card-head {
+    padding: 0;
+    min-height: 0;
+  }
+
+  :global .ant-card-head-title {
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    color: $bw-color--brand4;
+    padding: 8px 0 4px 0;
+  }
+
   p {
     font-size: 14px;
     font-weight: 600;
     text-align: center;
   }
 
-  :global .ant-card-head,
   :global .ant-card-body {
     padding: 12px 15px;
+  }
+}
+
+@media screen and (max-width: $breakpoints-sm) {
+  .cardContainer {
+    margin-bottom: 24px;
+    max-width: 230px;
+
+    .cardTitle {
+      display: block;
+    }
+
+    .titleImage {
+      display: none;
+    }
+
+    :global .ant-card-head {
+      border-bottom: none;
+    }
+
+    :global .ant-card-head-title {
+      padding: 15px 0 0 15px;
+      text-align: start;
+    }
+  }
+}
+
+@media screen and (max-width: $breakpoints-xs) {
+  .cardContainer {
+    :global .ant-card-head-title,
+    :global .ant-card-body {
+      padding: 4px 8px;
+    }
   }
 }

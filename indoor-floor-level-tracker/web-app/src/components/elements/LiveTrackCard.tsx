@@ -38,7 +38,7 @@ const LiveTrackCard = (props: LiveTrackCardProps) => {
 
   return (
     <Card className={cardStyles.cardContainer}>
-      <p>Enable Live Track</p>
+      <p className={liveTrackStyles.toggleLabel}>Enable Live Track</p>
       <div className={liveTrackStyles.toggleWrapper}>
         <Switch checked={isLiveTrackingEnabled} onChange={toggleLiveTracking} />
       </div>

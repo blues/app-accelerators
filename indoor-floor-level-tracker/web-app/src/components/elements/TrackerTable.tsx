@@ -1,23 +1,25 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Form, Image, Input, InputRef, Table } from "antd";
+import Image from "next/image";
+import { Form, Input, InputRef, Table } from "antd";
 import { ArrowDownOutlined, ArrowUpOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { DeviceTracker } from "../../services/AppModel";
-import styles from "../../styles/Table.module.scss";
 import { changeDeviceName } from "../../api-client/devices";
 import { ERROR_MESSAGE } from "../../constants/ui";
+import ResponderIcon from "../elements/images/responder.svg";
+import styles from "../../styles/Table.module.scss";
 
 const columns = [
   {
     title: (
       <>
-        <Image preview={false} src="/images/responder.svg" alt="" />
+        <Image src={ResponderIcon} alt="person outline" />
         <span style={{ marginLeft: "8px" }}>Responders</span>
       </>
     ),
     dataIndex: "name",
     key: "name",
-    width: "20%",
+    width: "25%",
   },
   {
     title: "Floor",
@@ -29,7 +31,6 @@ const columns = [
     title: "Last Seen",
     dataIndex: "lastActivity",
     key: "lastActivity",
-    width: "30%",
   },
   {
     title: "Pressure",
