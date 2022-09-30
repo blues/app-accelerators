@@ -6,8 +6,14 @@ const mockChildren = <p>Hello, I'm an Indoor Floor-Level Tracker test</p>;
 
 describe("Layout component", () => {
   it("should render the layout successfully", async () => {
+    const useRouter = jest.spyOn(require("next/router"), "useRouter");
+    useRouter.mockReturnValue({
+      asPath: "",
+    });
+
     render(<Layout children={mockChildren} isLoading={false} />);
 
+    expect(useRouter).toHaveBeenCalled();
     expect(
       screen.getByText("Hello, I'm an Indoor Floor-Level Tracker test")
     ).toBeInTheDocument();
