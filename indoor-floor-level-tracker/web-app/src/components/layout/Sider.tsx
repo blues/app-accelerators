@@ -2,7 +2,7 @@ import { Dispatch, SetStateAction } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Layout } from "antd";
-import LogoIcon from "../../../public/images/logomark-placeholder.svg";
+import Logo from "../../../public/images/floor-tracker_icon.svg";
 import MenuComponent from "../elements/Menu";
 import styles from "../../styles/Sider.module.scss";
 
@@ -31,7 +31,7 @@ const SiderComponent = ({
       <div className={styles.siderHeader}>
         <Link href="/">
           <a className={styles.siderTitleWrapper} data-testid="logo">
-            <Image src={LogoIcon} height={40} width={40} alt="Logo" />
+            <Image src={Logo} height={40} width={40} alt="Logo" />
             <p
               className={`${styles.siderTitle} ${
                 isSiderCollapsed ? `${styles.collapsed}` : ""

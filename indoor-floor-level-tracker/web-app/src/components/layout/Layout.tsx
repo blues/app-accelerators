@@ -5,9 +5,16 @@ import Header from "./Header";
 import Sider from "./Sider";
 import Footer from "./Footer";
 import MobileFooterComponent from "./MobileFooter";
+import { LoadingSpinner } from "./LoadingSpinner";
 import styles from "../../styles/Layout.module.scss";
 
-const LayoutComponent = ({ children }: { children: ReactNode }) => {
+const LayoutComponent = ({
+  children,
+  isLoading,
+}: {
+  children: ReactNode;
+  isLoading: boolean;
+}) => {
   const { Content } = Layout;
   const [isSiderCollapsed, setIsSiderCollapsed] = useState<boolean>(false);
   const [isSiderPresent, setIsSiderPresent] = useState<boolean>(true);
@@ -79,10 +86,12 @@ const LayoutComponent = ({ children }: { children: ReactNode }) => {
           toggleCollapse={toggleCollapse}
           isSiderPresent={isSiderPresent}
         />
-        <div className={styles.mainContentWrapper}>
-          <Content className={styles.mainContent}>{children}</Content>
-          {isSiderPresent ? <Footer /> : null}
-        </div>
+        <LoadingSpinner isLoading={isLoading}>
+          <div className={styles.mainContentWrapper}>
+            <Content className={styles.mainContent}>{children}</Content>
+            {isSiderPresent ? <Footer /> : null}
+          </div>
+        </LoadingSpinner>
       </Layout>
       {!isSiderPresent ? (
         <MobileFooterComponent

@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { GetServerSideProps, NextPage } from "next";
 import { useRouter } from "next/router";
-import { Row, Col, Alert, Card, InputNumber } from "antd";
+import { Button, Row, Col, Alert, Card, InputNumber } from "antd";
 import { Store } from "antd/lib/form/interface";
 import { ValidateErrorEntity } from "rc-field-form/lib/interface";
-import { TrackerConfig } from "../services/ClientModel";
+import { TrackerConfig } from "../services/AppModel";
 import { ERROR_MESSAGE, getErrorMessage } from "../constants/ui";
 import { ERROR_CODES } from "../services/Errors";
 import { services } from "../services/ServiceLocatorServer";
@@ -45,6 +45,23 @@ const SettingsPage: NextPage<SettingsData> = ({
         <InputNumber size="large" min={1} max={100000} controls={false} />
       ),
     },
+    {
+      contents: (
+        <p className={styles.settingsText}>(Default is set to 4.2672 Meters)</p>
+      ),
+    },
+    {
+      contents: (
+        <Button
+          data-testid="form-submit"
+          size="large"
+          htmlType="submit"
+          type="primary"
+        >
+          Save Changes
+        </Button>
+      ),
+    },
   ];
 
   const formOnFinish = async (values: Store) => {
@@ -83,7 +100,7 @@ const SettingsPage: NextPage<SettingsData> = ({
               <Alert type="error" message={errorMessage} closable />
             )}
             {fleetTrackerConfig && (
-              <div className={styles.container}>
+              <div className={styles.settingsContainer}>
                 <h3 className={styles.sectionTitle}>Settings</h3>
                 <Row className={styles.settingsContainer}>
                   <Col xs={24} sm={22} md={21} lg={20}>
@@ -97,9 +114,6 @@ const SettingsPage: NextPage<SettingsData> = ({
                         onFinish={formOnFinish}
                         onFinishFailed={formOnFinishFailed}
                       />
-                      <p className={styles.settingsText}>
-                        (Default is set to 4.2672 Meters)
-                      </p>
                     </Card>
                   </Col>
                 </Row>

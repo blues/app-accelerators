@@ -25,13 +25,12 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const infoMessage = "Deploy message";
   const MS_REFETCH_INTERVAL = 10000;
   const [isLoading, setIsLoading] = useState<boolean>(false);
-
   const [isErrored, setIsErrored] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [isLiveTrackingEnabled, setIsLiveTrackingEnabled] =
     useState<boolean>(false);
   const [currentNoMovementValue, setCurrentNoMovementValue] =
-    useState<number>(false);
+    useState<number>(120);
 
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -47,11 +46,8 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
     await refreshData();
   };
 
-  const {
-    isLoading: deviceTrackersLoading,
-    error: deviceTrackersError,
-    data: deviceTrackers,
-  } = useDeviceTrackerData(MS_REFETCH_INTERVAL);
+  const { error: deviceTrackersError, data: deviceTrackers } =
+    useDeviceTrackerData(MS_REFETCH_INTERVAL);
 
   const err =
     deviceTrackersError && getErrorMessage(deviceTrackersError.message);
@@ -81,7 +77,7 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
           dangerouslySetInnerHTML={{ __html: err || error }}
         />
       ) : (
-        <LoadingSpinner isLoading={isLoading || deviceTrackersLoading}>
+        <LoadingSpinner isLoading={isLoading}>
           <div>
             {isErrored && (
               <Alert type="error" message={errorMessage} closable />

@@ -2,13 +2,14 @@
 import { Dispatch, ReactNode, Key, SetStateAction } from "react";
 import { Menu } from "antd";
 import type { MenuProps, MenuTheme } from "antd";
-import type { MenuMode } from "antd/lib/menu";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import OverviewIcon from "./images/overview.svg";
 import SettingsIcon from "./images/settings.svg";
 import OverviewIconWhite from "./images/overview_white.svg";
 import SettingsIconWhite from "./images/settings_white.svg";
+
+type MenuMode = "vertical" | "horizontal" | "inline";
 
 const MenuComponent = ({
   selectedPage,
