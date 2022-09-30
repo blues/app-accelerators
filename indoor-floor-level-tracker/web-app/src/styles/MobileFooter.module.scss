@@ -19,7 +19,8 @@
       font-size: 12px;
     }
 
-    :global .ant-menu-item {
+    :global .ant-menu-item,
+    :global .ant-menu-item a {
       display: flex;
       flex-direction: column;
       color: #fff;

@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import { Layout } from "antd";
 import Header from "./Header";
 import Sider from "./Sider";
@@ -17,6 +18,8 @@ const LayoutComponent = ({
   const { Content } = Layout;
   const [isSiderCollapsed, setIsSiderCollapsed] = useState<boolean>(false);
   const [isSiderPresent, setIsSiderPresent] = useState<boolean>(true);
+  const [selectedPage, setSelectedPage] = useState<string>("");
+  const { asPath } = useRouter();
 
   useEffect(() => {
     const toggleSidebarVisibility = () => {
@@ -58,9 +61,25 @@ const LayoutComponent = ({
     };
   }, []);
 
+  // determine which page the app has loaded on initially
+  useEffect(() => {
+    if (asPath === "/settings") {
+      setSelectedPage("settings");
+    } else {
+      setSelectedPage("overview");
+    }
+  }, []);
+
   return (
     <Layout>
-      {isSiderPresent ? <Sider isSiderCollapsed={isSiderCollapsed} /> : null}
+      {isSiderPresent ? (
+        <Sider
+          isSiderPresent={isSiderPresent}
+          isSiderCollapsed={isSiderCollapsed}
+          selectedPage={selectedPage}
+          setSelectedPage={setSelectedPage}
+        />
+      ) : null}
       <Layout className={styles.mainContentSection}>
         <Header
           isSiderCollapsed={isSiderCollapsed}
@@ -74,7 +93,13 @@ const LayoutComponent = ({
           {isSiderPresent ? <Footer /> : null}
         </div>
       </Layout>
-      {!isSiderPresent ? <MobileFooterComponent /> : null}
+      {!isSiderPresent ? (
+        <MobileFooterComponent
+          isSiderPresent={isSiderPresent}
+          selectedPage={selectedPage}
+          setSelectedPage={setSelectedPage}
+        />
+      ) : null}
     </Layout>
   );
 };
