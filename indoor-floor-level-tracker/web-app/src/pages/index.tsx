@@ -116,14 +116,11 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
                   <div className={styles.tableHeaderRow}>
                     <h3 className={styles.sectionTitle}>Fleet</h3>
 
-                    <Button
-                      type="primary"
-                      danger
-                      onClick={clearAlarms}
-                      disabled={!alarmService.areAlarmsPresent(trackers)}
-                    >
-                      Clear Alarms
-                    </Button>
+                    {alarmService.areAlarmsPresent(trackers) && (
+                      <Button type="primary" danger onClick={clearAlarms}>
+                        Clear Alarms
+                      </Button>
+                    )}
                   </div>
                 </Row>
                 <Row gutter={[16, 24]}>
