@@ -35,6 +35,7 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
 
   const router = useRouter();
   const queryClient = useQueryClient();
+  const alarmService = clientSideServices().getAlarmService();
   // refresh the page
   const refreshData = async () => {
     // eslint-disable-next-line no-void
@@ -65,7 +66,6 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   }, [fleetTrackerConfig]);
 
   const clearAlarms = async () => {
-    const alarmService = clientSideServices().getAlarmService();
     alarmService.setLastAlarmClear();
     await refreshData();
   };
@@ -116,7 +116,12 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
                   <div className={styles.tableHeaderRow}>
                     <h3 className={styles.sectionTitle}>Fleet</h3>
 
-                    <Button type="primary" danger onClick={clearAlarms}>
+                    <Button
+                      type="primary"
+                      danger
+                      onClick={clearAlarms}
+                      disabled={!alarmService.areAlarmsPresent(trackers)}
+                    >
                       Clear Alarms
                     </Button>
                   </div>
