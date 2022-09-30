@@ -1,14 +1,18 @@
-name: CI-PRs-and-main
+name: fridge-fleet-monitor/web-app
 
 on:
   pull_request:
-  push:
-    branches:
-      - main
+    paths:
+      - "fridge-fleet-monitor/web-app/**"
+
+defaults:
+  run:
+    shell: bash
+    working-directory: fridge-fleet-monitor/web-app
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: crazy-max/ghaction-dump-context@v1
       - uses: actions/checkout@v2
