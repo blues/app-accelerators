@@ -9,6 +9,7 @@ import { DeviceTracker, TrackerConfig } from "../services/AppModel";
 import Config from "../../Config";
 import { useDeviceTrackerData } from "../hooks/useDeviceTrackerData";
 import { services } from "../services/ServiceLocatorServer";
+import { services as clientSideServices } from "../services/ServiceLocatorClient";
 import { LoadingSpinner } from "../components/layout/LoadingSpinner";
 import LiveTrackCard from "../components/elements/LiveTrackCard";
 import RespondersByFloorTable from "../components/elements/RespondersByFloorTable";
@@ -64,6 +65,12 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
     }
   }, [fleetTrackerConfig]);
 
+  const clearAlarms = async () => {
+    const alarmService = clientSideServices().getAlarmService();
+    alarmService.setLastAlarmClear();
+    await refreshData();
+  };
+
   useEffect(() => {
     refreshData();
   }, [isLiveTrackingEnabled, currentNoMovementValue]);
@@ -85,7 +92,6 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
             )}
             {trackers && (
               <>
-                {console.log(trackers)}
                 <h3 className={styles.sectionTitle}>Fleet Controls</h3>
                 <Row gutter={16}>
                   <Col className={styles.motionAlertCard}>
@@ -110,8 +116,9 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
                 <Row>
                   <div className={styles.tableHeaderRow}>
                     <h3 className={styles.sectionTitle}>Fleet</h3>
-                    <Button type="primary" danger>
-                      Dismiss Alarms
+
+                    <Button type="primary" danger onClick={clearAlarms}>
+                      Clear Alarms
                     </Button>
                   </div>
                 </Row>

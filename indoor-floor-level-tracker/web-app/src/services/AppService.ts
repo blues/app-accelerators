@@ -10,8 +10,6 @@ interface AppServiceInterface {
   getDeviceTrackerData: () => Promise<DeviceTracker[]>;
   getTrackerConfig: () => Promise<TrackerConfig>;
   setTrackerConfig: (trackerConfig: TrackerConfig) => Promise<void>;
-  getLastAlarmClear: () => string;
-  setLastAlarmClear: (when: string) => void;
 }
 
 export type { AppServiceInterface };
@@ -49,15 +47,5 @@ export default class AppService implements AppServiceInterface {
       this.idBuilder.buildFleetID(fleetUID),
       trackerConfig
     );
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  getLastAlarmClear() {
-    return localStorage.getItem("LAST_ALARM_CLEAR") || "";
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  setLastAlarmClear(when: string) {
-    return localStorage.setItem("LAST_ALARM_CLEAR", when);
   }
 }
