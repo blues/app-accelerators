@@ -112,16 +112,19 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
                     />
                   </Col>
                 </Row>
-                <Row>
-                  <div className={styles.tableHeaderRow}>
-                    <h3 className={styles.sectionTitle}>Fleet</h3>
+                <Row gutter={[16, 24]}>
+                  <Col xs={24} sm={24} md={24} lg={20}>
+                    <div className={styles.tableHeaderRow}>
+                      <h3 className={styles.sectionTitle}>Fleet</h3>
+                      {alarmService.areAlarmsPresent(trackers) && (
+                        <Button type="primary" danger onClick={clearAlarms}>
+                          Clear Alarms
+                        </Button>
+                      )}
+                    </div>
+                  </Col>
 
-                    {alarmService.areAlarmsPresent(trackers) && (
-                      <Button type="primary" danger onClick={clearAlarms}>
-                        Clear Alarms
-                      </Button>
-                    )}
-                  </div>
+                  <Col xs={12} sm={7} md={6} lg={4}></Col>
                 </Row>
                 <Row gutter={[16, 24]}>
                   <Col xs={24} sm={24} md={24} lg={20}>
