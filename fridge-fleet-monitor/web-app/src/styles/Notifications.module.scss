@@ -1,0 +1,12 @@
+@import "_variables.scss";
+
+
+.notifications {
+    margin-bottom: 20px;
+}
+
+.notifications:empty
+{
+    display:none;
+}
+

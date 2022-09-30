@@ -1,0 +1,372 @@
+//SOLIDS
+
+// PRIMARY COLOR
+$bw-color--brand0: #d8e3eb;
+$bw-color--brand1: #9ebacc;
+$bw-color--brand2: #6695b4;
+$bw-color--brand3: #416681; //main
+$bw-color--brand4: #1b3a52;
+
+// SECONDARY COLOR
+$bw-color--blue0: #e8f9ff;
+$bw-color--blue1: #ace8ff;
+$bw-color--blue2: #59d2ff; //hover
+$bw-color--blue3: #00b9ff; //active
+$bw-color--blue4: #009ad4;
+
+// SECONDARY COLOR
+$bw-color--teal0: #f4fcfe;
+$bw-color--teal1: #d8f6fc;
+$bw-color--teal2: #bde8f0;
+$bw-color--teal3: #8ccedb;
+$bw-color--teal4: #3b8b9a;
+
+// SECONDARY COLOR
+$bw-color--orange0: #fbe9e7;
+$bw-color--orange1: #ffb1a0;
+$bw-color--orange2: #ff7e6d;
+$bw-color--orange3: #f9543f;
+$bw-color--orange4: #e13610;
+
+// TERTIARY COLOR
+$bw-color--green0: #f1f8e9;
+$bw-color--green1: #dcedc8;
+$bw-color--green2: #c5e1a5;
+$bw-color--green3: #9ccc65;
+$bw-color--green4: #689f38;
+
+// TERTIARY COLOR
+$bw-color--yellow0: #fff8e1;
+$bw-color--yellow1: #ffecb3;
+$bw-color--yellow2: #ffe082;
+$bw-color--yellow3: #ffd54f;
+$bw-color--yellow4: #ffa000;
+
+// TERTIARY COLOR
+$bw-color--red0: #fdf4f5;
+$bw-color--red1: #ffcdd2;
+$bw-color--red2: #ef9a9a;
+$bw-color--red3: #ef5350; //warning
+$bw-color--red4: #dc3545;
+
+// TERTIARY COLOR
+$bw-color--purple0: #f3e5f5;
+$bw-color--purple1: #e1bee7;
+$bw-color--purple2: #ce93d8;
+$bw-color--purple3: #ba68c8;
+$bw-color--purple4: #7b1fa2;
+
+// TERTIARY COLOR
+$bw-color--grey0: #f3f3f3;
+$bw-color--grey1: #eceff1;
+$bw-color--grey2: #d8dfe2;
+$bw-color--grey3: #c2c9cb;
+$bw-color--grey4: #7b858a;
+
+$bw-color--success: #4cdd6c;
+
+//GRADIENTS
+//$bw-color--gradient-blue1: linear-gradient(#1B3A52,#416681,#3B8B9A);
+//$bw-color--gradient-blue2: linear-gradient(#0E202E,#1B3A52,#3B8B9A);
+
+//FOREGROUND COLORS
+.bw-fgcolor--brand0 {
+  color: $bw-color--brand0 !important;
+}
+.bw-fgcolor--brand1 {
+  color: $bw-color--brand1 !important;
+}
+.bw-fgcolor--brand2 {
+  color: $bw-color--brand2 !important;
+}
+.bw-fgcolor--brand3 {
+  color: $bw-color--brand3 !important;
+}
+.bw-fgcolor--brand4 {
+  color: $bw-color--brand4 !important;
+}
+
+.bw-fgcolor--blue0 {
+  color: $bw-color--blue0 !important;
+}
+.bw-fgcolor--blue1 {
+  color: $bw-color--blue1 !important;
+}
+.bw-fgcolor--blue2 {
+  color: $bw-color--blue2 !important;
+}
+.bw-fgcolor--blue3 {
+  color: $bw-color--blue3 !important;
+}
+.bw-fgcolor--blue4 {
+  color: $bw-color--blue4 !important;
+}
+
+.bw-fgcolor--teal0 {
+  color: $bw-color--teal0 !important;
+}
+.bw-fgcolor--teal1 {
+  color: $bw-color--teal1 !important;
+}
+.bw-fgcolor--teal2 {
+  color: $bw-color--teal2 !important;
+}
+.bw-fgcolor--teal3 {
+  color: $bw-color--teal3 !important;
+}
+.bw-fgcolor--teal4 {
+  color: $bw-color--teal4 !important;
+}
+
+.bw-fgcolor--green0 {
+  color: $bw-color--green0 !important;
+}
+.bw-fgcolor--green1 {
+  color: $bw-color--green1 !important;
+}
+.bw-fgcolor--green2 {
+  color: $bw-color--green2 !important;
+}
+.bw-fgcolor--green3 {
+  color: $bw-color--green3 !important;
+}
+.bw-fgcolor--green4 {
+  color: $bw-color--green4 !important;
+}
+
+.bw-fgcolor--yellow0 {
+  color: $bw-color--yellow0 !important;
+}
+.bw-fgcolor--yellow1 {
+  color: $bw-color--yellow1 !important;
+}
+.bw-fgcolor--yellow2 {
+  color: $bw-color--yellow2 !important;
+}
+.bw-fgcolor--yellow3 {
+  color: $bw-color--yellow3 !important;
+}
+.bw-fgcolor--yellow4 {
+  color: $bw-color--yellow4 !important;
+}
+
+.bw-fgcolor--orange0 {
+  color: $bw-color--orange0 !important;
+}
+.bw-fgcolor--orange1 {
+  color: $bw-color--orange1 !important;
+}
+.bw-fgcolor--orange2 {
+  color: $bw-color--orange2 !important;
+}
+.bw-fgcolor--orange3 {
+  color: $bw-color--orange3 !important;
+}
+.bw-fgcolor--orange4 {
+  color: $bw-color--orange4 !important;
+}
+
+.bw-fgcolor--red0 {
+  color: $bw-color--red0 !important;
+}
+.bw-fgcolor--red1 {
+  color: $bw-color--red1 !important;
+}
+.bw-fgcolor--red2 {
+  color: $bw-color--red2 !important;
+}
+.bw-fgcolor--red3 {
+  color: $bw-color--red3 !important;
+}
+.bw-fgcolor--red4 {
+  color: $bw-color--red4 !important;
+}
+
+.bw-fgcolor--purple0 {
+  color: $bw-color--purple0 !important;
+}
+.bw-fgcolor--purple1 {
+  color: $bw-color--purple1 !important;
+}
+.bw-fgcolor--purple2 {
+  color: $bw-color--purple2 !important;
+}
+.bw-fgcolor--purple3 {
+  color: $bw-color--purple3 !important;
+}
+.bw-fgcolor--purple4 {
+  color: $bw-color--purple4 !important;
+}
+
+.bw-fgcolor--grey0 {
+  color: $bw-color--grey0 !important;
+}
+.bw-fgcolor--grey1 {
+  color: $bw-color--grey1 !important;
+}
+.bw-fgcolor--grey2 {
+  color: $bw-color--grey2 !important;
+}
+.bw-fgcolor--grey3 {
+  color: $bw-color--grey3 !important;
+}
+.bw-fgcolor--grey4 {
+  color: $bw-color--grey4 !important;
+}
+
+//BACKGROUND COLORS
+.bw-bgcolor--brand0 {
+  background-color: $bw-color--brand0 !important;
+}
+.bw-bgcolor--brand1 {
+  background-color: $bw-color--brand1 !important;
+}
+.bw-bgcolor--brand2 {
+  background-color: $bw-color--brand2 !important;
+}
+.bw-bgcolor--brand3 {
+  background-color: $bw-color--brand3 !important;
+}
+.bw-bgcolor--brand4 {
+  background-color: $bw-color--brand4 !important;
+}
+
+.bw-bgcolor--blue0 {
+  background-color: $bw-color--blue0 !important;
+}
+.bw-bgcolor--blue1 {
+  background-color: $bw-color--blue1 !important;
+}
+.bw-bgcolor--blue2 {
+  background-color: $bw-color--blue2 !important;
+}
+.bw-bgcolor--blue3 {
+  background-color: $bw-color--blue3 !important;
+}
+.bw-bgcolor--blue4 {
+  background-color: $bw-color--blue4 !important;
+}
+
+.bw-bgcolor--teal0 {
+  background-color: $bw-color--teal0 !important;
+}
+.bw-bgcolor--teal1 {
+  background-color: $bw-color--teal1 !important;
+}
+.bw-bgcolor--teal2 {
+  background-color: $bw-color--teal2 !important;
+}
+.bw-bgcolor--teal3 {
+  background-color: $bw-color--teal3 !important;
+}
+.bw-bgcolor--teal4 {
+  background-color: $bw-color--teal4 !important;
+}
+
+.bw-bgcolor--green0 {
+  background-color: $bw-color--green0 !important;
+}
+.bw-bgcolor--green1 {
+  background-color: $bw-color--green1 !important;
+}
+.bw-bgcolor--green2 {
+  background-color: $bw-color--green2 !important;
+}
+.bw-bgcolor--green3 {
+  background-color: $bw-color--green3 !important;
+}
+.bw-bgcolor--green4 {
+  background-color: $bw-color--green4 !important;
+}
+
+.bw-bgcolor--yellow0 {
+  background-color: $bw-color--yellow0 !important;
+}
+.bw-bgcolor--yellow1 {
+  background-color: $bw-color--yellow1 !important;
+}
+.bw-bgcolor--yellow2 {
+  background-color: $bw-color--yellow2 !important;
+}
+.bw-bgcolor--yellow3 {
+  background-color: $bw-color--yellow3 !important;
+}
+.bw-bgcolor--yellow4 {
+  background-color: $bw-color--yellow4 !important;
+}
+
+.bw-bgcolor--orange0 {
+  background-color: $bw-color--orange0 !important;
+}
+.bw-bgcolor--orange1 {
+  background-color: $bw-color--orange1 !important;
+}
+.bw-bgcolor--orange2 {
+  background-color: $bw-color--orange2 !important;
+}
+.bw-bgcolor--orange3 {
+  background-color: $bw-color--orange3 !important;
+}
+.bw-bgcolor--orange4 {
+  background-color: $bw-color--orange4 !important;
+}
+
+.bw-bgcolor--red0 {
+  background-color: $bw-color--red0 !important;
+}
+.bw-bgcolor--red1 {
+  background-color: $bw-color--red1 !important;
+}
+.bw-bgcolor--red2 {
+  background-color: $bw-color--red2 !important;
+}
+.bw-bgcolor--red3 {
+  background-color: $bw-color--red3 !important;
+}
+.bw-bgcolor--red4 {
+  background-color: $bw-color--red4 !important;
+}
+
+.bw-bgcolor--purple0 {
+  background-color: $bw-color--purple0 !important;
+}
+.bw-bgcolor--purple1 {
+  background-color: $bw-color--purple1 !important;
+}
+.bw-bgcolor--purple2 {
+  background-color: $bw-color--purple2 !important;
+}
+.bw-bgcolor--purple3 {
+  background-color: $bw-color--purple3 !important;
+}
+.bw-bgcolor--purple4 {
+  background-color: $bw-color--purple4 !important;
+}
+
+.bw-bgcolor--grey0 {
+  background-color: $bw-color--grey0 !important;
+}
+.bw-bgcolor--grey1 {
+  background-color: $bw-color--grey1 !important;
+}
+.bw-bgcolor--grey2 {
+  background-color: $bw-color--grey2 !important;
+}
+.bw-bgcolor--grey3 {
+  background-color: $bw-color--grey3 !important;
+}
+.bw-bgcolor--grey4 {
+  background-color: $bw-color--grey4 !important;
+}
+
+/**
+PRIMARY ACTION BUTTONS 
+- SIGN IN, SIGN UP, SAVE, CONFIRM, NAVIGATION - $bw-color--blue3;
+- ADD, CREATE, EDIT, UPLOAD, LINK BUTTON - $bw-color--teal3
+- DELETE, REMOVE, PURGE BUTTON - $bw-color--red3
+ROLLOVER BUTTON STATE
+HOVER - $bw-color--grey0
+PRESSED - $bw-color--brand3
+DISABLED - $bw-color--grey3
+https://htmlcolorcodes.com/color-chart/material-design-color-chart/
+**/
