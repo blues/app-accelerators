@@ -31,3 +31,13 @@ export async function updateNoMovementThreshold(
 
   return response;
 }
+
+export async function updateFloorHeightConfig(newFloorHeight: number) {
+  const updateFloorHeightConfigObj = {
+    floorHeight: newFloorHeight,
+  };
+
+  const response = await updateFleetEnvVar(updateFloorHeightConfigObj);
+
+  return response;
+}

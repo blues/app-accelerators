@@ -1,6 +1,6 @@
 import { GetServerSideProps, NextPage } from "next";
 import { useRouter } from "next/router";
-import { Alert, Col, Row } from "antd";
+import { Alert, Button, Col, Row } from "antd";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "react-query";
 import { getErrorMessage } from "../constants/ui";
@@ -9,6 +9,7 @@ import { DeviceTracker, TrackerConfig } from "../services/AppModel";
 import Config from "../../Config";
 import { useDeviceTrackerData } from "../hooks/useDeviceTrackerData";
 import { services } from "../services/ServiceLocatorServer";
+import { services as clientSideServices } from "../services/ServiceLocatorClient";
 import { LoadingSpinner } from "../components/layout/LoadingSpinner";
 import LiveTrackCard from "../components/elements/LiveTrackCard";
 import RespondersByFloorTable from "../components/elements/RespondersByFloorTable";
@@ -25,16 +26,16 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const infoMessage = "Deploy message";
   const MS_REFETCH_INTERVAL = 10000;
   const [isLoading, setIsLoading] = useState<boolean>(false);
-
   const [isErrored, setIsErrored] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [isLiveTrackingEnabled, setIsLiveTrackingEnabled] =
     useState<boolean>(false);
   const [currentNoMovementValue, setCurrentNoMovementValue] =
-    useState<number>(false);
+    useState<number>(120);
 
   const router = useRouter();
   const queryClient = useQueryClient();
+  const alarmService = clientSideServices().getAlarmService();
   // refresh the page
   const refreshData = async () => {
     // eslint-disable-next-line no-void
@@ -63,6 +64,11 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
       setCurrentNoMovementValue(fleetTrackerConfig.noMovementThreshold);
     }
   }, [fleetTrackerConfig]);
+
+  const clearAlarms = async () => {
+    alarmService.setLastAlarmClear();
+    await refreshData();
+  };
 
   useEffect(() => {
     refreshData();
@@ -106,7 +112,24 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
                     />
                   </Col>
                 </Row>
-                <h3 className={styles.sectionTitle}>My Fleet</h3>
+                <Row gutter={[16, 24]}>
+                  <Col xs={24} sm={24} md={24} lg={20}>
+                    <div className={styles.tableHeaderRow}>
+                      <h3 className={styles.sectionTitle}>Fleet</h3>
+                      {alarmService.areAlarmsPresent(trackers) && (
+                        <Button
+                          type="primary"
+                          danger
+                          onClick={clearAlarms}
+                          size="large"
+                        >
+                          Clear Alarms
+                        </Button>
+                      )}
+                    </div>
+                  </Col>
+                  <Col xs={12} sm={7} md={6} lg={4} />
+                </Row>
                 <Row gutter={[16, 24]}>
                   <Col xs={24} sm={24} md={24} lg={20}>
                     <TrackerTable

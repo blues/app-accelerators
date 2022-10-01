@@ -17,6 +17,12 @@
     margin-top: 24px;
   }
 
+  .tableHeaderRow {
+    display: flex;
+    width: 100%;
+    align-items: first baseline;
+  }
+
   .motionAlertCard {
     width: 200px;
   }
@@ -35,11 +41,14 @@
     .sectionTitle {
       display: none;
     }
-
     .liveTrackCard,
     .motionAlertCard {
       display: block;
       width: 100%;
+    }
+
+    .liveTrackCard {
+      margin-bottom: 8px;
     }
   }
 }

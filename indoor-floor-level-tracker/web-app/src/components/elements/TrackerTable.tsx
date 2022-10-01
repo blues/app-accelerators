@@ -1,14 +1,20 @@
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Form, Input, InputRef, Table } from "antd";
-import { ArrowDownOutlined, ArrowUpOutlined } from "@ant-design/icons";
+import { Form, Input, InputRef, Table, Tooltip } from "antd";
+import {
+  ArrowDownOutlined,
+  ArrowUpOutlined,
+  WarningOutlined,
+} from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { DeviceTracker } from "../../services/AppModel";
+import { services } from "../../services/ServiceLocatorClient";
 import { changeDeviceName } from "../../api-client/devices";
 import { ERROR_MESSAGE } from "../../constants/ui";
-import ResponderIcon from "../elements/images/responder.svg";
-import styles from "../../styles/Table.module.scss";
+import ResponderIcon from "./images/responder.svg";
+import styles from "../../styles/TrackerTable.module.scss";
 
+const alarmService = services().getAlarmService();
 const columns = [
   {
     title: (
@@ -19,13 +25,11 @@ const columns = [
     ),
     dataIndex: "name",
     key: "name",
-    width: "25%",
   },
   {
     title: "Floor",
     dataIndex: "floor",
     key: "floor",
-    width: "15%",
   },
   {
     title: "Last Seen",
@@ -36,13 +40,13 @@ const columns = [
     title: "Pressure",
     dataIndex: "pressure",
     key: "pressure",
-    width: "20%",
+    responsive: ["md"],
   },
   {
     title: "Voltage",
     dataIndex: "voltage",
     key: "voltage",
-    width: "15%",
+    responsive: ["sm"],
   },
 ] as ColumnsType<DeviceTracker>;
 
@@ -57,6 +61,11 @@ const CustomCell = ({ children, index, record, onChange }: CustomCellProps) => {
   const [editing, setEditing] = useState(false);
   const inputRef = useRef<InputRef | null>(null);
   const [form] = Form.useForm();
+  const isAlarmActive =
+    !!record.lastAlarm &&
+    parseInt(record.lastAlarm, 10) >
+      parseInt(alarmService.getLastAlarmClear(), 10);
+
   useEffect(() => {
     if (editing && inputRef && inputRef.current) {
       inputRef.current.focus();
@@ -86,6 +95,24 @@ const CustomCell = ({ children, index, record, onChange }: CustomCellProps) => {
       return;
     }
     handleSave();
+  };
+  const getCellIcon = () => {
+    const directionAsNumber = record.direction
+      ? parseInt(record.direction, 10)
+      : 0;
+    if (isAlarmActive) {
+      return (
+        <Tooltip title="This responder has not changed floors recently.">
+          <WarningOutlined />
+        </Tooltip>
+      );
+    }
+    if (directionAsNumber > 0) {
+      return <ArrowUpOutlined />;
+    }
+    if (directionAsNumber < 0) {
+      return <ArrowDownOutlined />;
+    }
   };
 
   let childNode = children;
@@ -123,21 +150,22 @@ const CustomCell = ({ children, index, record, onChange }: CustomCellProps) => {
   }
 
   // Custom display of floor number
-  if (index === "floor" && record.floor) {
-    const directionAsNumber = record.direction
-      ? parseInt(record.direction, 10)
-      : 0;
-
+  if (index === "floor") {
     childNode = (
       <>
-        {directionAsNumber > 0 && <ArrowUpOutlined />}
-        {directionAsNumber < 0 && <ArrowDownOutlined />}
+        {getCellIcon()}
         <span>{record.floor}</span>
       </>
     );
   }
 
-  return <td>{childNode}</td>;
+  return (
+    // Providing the colors in JavaScript to override the Ant hover styling
+    // Errored rows should stay red on hover.
+    <td style={{ backgroundColor: isAlarmActive ? "#fbe9e7" : "white" }}>
+      {childNode}
+    </td>
+  );
 };
 
 interface TrackerTableProps {

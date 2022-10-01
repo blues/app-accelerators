@@ -14,6 +14,8 @@ const ERROR_MESSAGE = {
     "An error occurred changing your device’s name. If this problem persists, contact Blues support.",
   UPDATE_FLEET_LIVE_STATUS_FAILED:
     "Failed to update the fleet's tracking mode. If this problem persists, contact Blues Support.",
+  UPDATE_FLEET_FLOOR_HEIGHT_CONFIG_FAILED:
+    "Failed to update the fleet's floor height configuration. If this problem persists, contact Blues Support.",
   UPDATE_FLEET_NO_MOVEMENT_THRESHOLD_FAILED:
     "Failed to update the fleet's no movement threshold value. If this problem persists, contact Blues Support.",
   DATABASE_NOT_RUNNING:

@@ -50,6 +50,8 @@
 
 @media screen and (max-width: $breakpoints-xs) {
   .respondersTableContainer {
+    margin-bottom: 14px;
+
     :global .ant-table-thead > tr > th {
       font-size: 14px;
       padding: 4px;
