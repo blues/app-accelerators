@@ -43,7 +43,6 @@ describe("App Service", () => {
       getNodeData: jest.fn().mockResolvedValueOnce(mockedSparrowNodeData),
       queryProjectLatestValues: jest.fn(),
       queryProjectReadingSeries: jest.fn(),
-      doBulkImport: jest.fn(),
       queryProjectReadingCount: jest.fn(),
     };
     attributeStoreMock = {

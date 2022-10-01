@@ -24,15 +24,8 @@ export type QueryHistoricalReadings = {
   timeFilter: TimePeriodFilter;
 };
 
-export interface BulkImport {
-  itemCount: number;
-  errorCount: number;
-}
-
 // this interface shows gateway or node data - nothing more, nothing less
 export interface DataProvider {
-  doBulkImport: () => Promise<BulkImport>;
-
   getGateways: () => Promise<GatewayDEPRECATED[]>;
 
   getGateway: (gatewayUID: string) => Promise<GatewayDEPRECATED>;

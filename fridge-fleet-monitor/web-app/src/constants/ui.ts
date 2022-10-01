@@ -51,7 +51,7 @@ const ERROR_MESSAGE = {
   NO_PROJECT_ID:
     "A project ID is required, but none was found. Ensure your environment variables are configured correctly for HUB_PROJECTUID.",
   NO_GATEWAYS_FOUND:
-    "We could not find gateways on your project. Ensure your HUB_PROJECTUID environment variable is configured correctly, your gateway’s Notecard is using the correct product UID, and if you've recently initialized your database try a <a href='https://github.com/blues/sparrow-reference-web-app#bulk-data-import' target='_blank' rel='noreferrer'>bulk-data-import</a>.",
+    "We could not find gateways on your project. Ensure your HUB_PROJECTUID environment variable is configured correctly, your gateway’s Notecard is using the correct product UID, and if you've recently initialized your database try manually routing Notehub events to your web app's database.",
 };
 
 const getErrorMessage = (errorCode: string) => {

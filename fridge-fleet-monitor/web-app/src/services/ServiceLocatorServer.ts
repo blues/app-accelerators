@@ -21,7 +21,10 @@ import PrismaAttributeStore from "./prisma-datastore/PrismaAttributeStore";
 import CompositeAttributeStore from "./prisma-datastore/CompositeAttributeStore";
 import { getPrismaClient } from "./prisma-datastore/prisma-util";
 import { serverLogInfo } from "../pages/api/log";
-import { NotificationsStore, TransientNotificationStore } from "./NotificationsStore";
+import {
+  NotificationsStore,
+  TransientNotificationStore,
+} from "./NotificationsStore";
 import { CompositeEventHandler } from "./CompositeEventHandler";
 import { NotificationEventHandler } from "./NotificationEventHandler";
 import PrismaNotificationsStore from "./prisma-datastore/PrismaNotificationsStore";
@@ -164,7 +167,9 @@ class ServiceLocatorServer {
 
   getNotificationsStore(): NotificationsStore {
     if (!this.notificationsStore) {
-      this.notificationsStore = this.prisma ? new PrismaNotificationsStore(this.prisma) : new TransientNotificationStore();
+      this.notificationsStore = this.prisma
+        ? new PrismaNotificationsStore(this.prisma)
+        : new TransientNotificationStore();
     }
     return this.notificationsStore;
   }

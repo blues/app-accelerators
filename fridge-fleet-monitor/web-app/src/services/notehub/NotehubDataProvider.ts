@@ -79,11 +79,6 @@ export default class NotehubDataProvider implements DataProvider {
     return null;
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  doBulkImport(): Promise<never> {
-    throw new Error("It's not possible to do bulk import of data to Notehub");
-  }
-
   /**
    * We made the interface more general (accepting a projectID) but the implementation has the
    * ID fixed. This is a quick check to be sure the project ID is the one expected.

@@ -24,7 +24,7 @@ export interface Project {
  */
 export type AppDate = number;
 
-//export type ReadingsKeyedBySensorTypeName = { [key in string]: Reading };
+// export type ReadingsKeyedBySensorTypeName = { [key in string]: Reading };
 
 export type SensorTypeCurrentReading = {
   sensorType: SensorType;
@@ -35,7 +35,7 @@ export type ReadingSeries = {
   readings: Reading[];
 };
 
-//export type ReadingSeriesKeyedBySensorTypeName = { [key in string]: ReadingSeries };
+// export type ReadingSeriesKeyedBySensorTypeName = { [key in string]: ReadingSeries };
 
 /**
  * Common elements of Sparrow devices with sensors (Gateways and Nodes)
@@ -70,9 +70,9 @@ export interface Node extends SensorHost {
 /**
  * Presently the DomainModel is json serializable.
  */
-export interface SensorType extends DomainModel.SensorType {}
+export type SensorType = DomainModel.SensorType;
 
-export interface Reading extends DomainModel.Reading {}
+export type Reading = DomainModel.Reading;
 
 export interface ProjectReadingsSnapshot {
   when: AppDate;
@@ -80,11 +80,3 @@ export interface ProjectReadingsSnapshot {
 }
 
 export { NodeSensorTypeNames, GatewaySensorTypeNames } from "./DomainModel";
-
-export interface BulkDataImportStatus {
-  err?: string;
-  importedItemCount: number;
-  erroredItemCount: number;
-  elapsedTimeMs: number;
-  state: "unstarted" | "ongoing" | "done" | "failed";
-}
