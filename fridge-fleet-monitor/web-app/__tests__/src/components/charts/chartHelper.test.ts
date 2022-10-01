@@ -3,7 +3,6 @@ import {
   getChartOptions,
   getTooltipDisplayText,
 } from "../../../../src/components/charts/chartHelper";
-import CountSensorSchema from "../../../../src/services/alpha-models/readings/CountSensorSchema";
 import HumiditySensorSchema from "../../../../src/services/alpha-models/readings/HumiditySensorSchema";
 import PressureSensorSchema from "../../../../src/services/alpha-models/readings/PressureSensorSchema";
 import TemperatureSensorSchema from "../../../../src/services/alpha-models/readings/TemperatureSensorSchema";
@@ -59,10 +58,5 @@ describe("Tooltip handling", () => {
       99.999999
     );
     expect(text).toBe("Pressure: 100.00 kPa");
-  });
-
-  it("Generates correct motion count tooltip text", () => {
-    const text = getTooltipDisplayText("Count", CountSensorSchema, 86);
-    expect(text).toBe("Count: 86");
   });
 });

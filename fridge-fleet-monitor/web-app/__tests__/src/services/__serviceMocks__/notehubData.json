@@ -68,14 +68,13 @@
       },
       {
         "device": "dev:123",
-        "file": "123456a#motion.qo",
+        "file": "123456a#switch.qo",
         "captured": "2021-11-30T14:31:24Z",
         "when": 1642795378,
         "received": 1234,
         "event": "55cfc7d3-2987-43b9-9fb7-33173edb5949",
         "body": {
-          "count": 1,
-          "total": 281
+          "contactSwitch": "OPEN"
         }
       },
       {
@@ -93,13 +92,13 @@
       },
       {
         "device": "dev:123",
-        "file": "456789b#motion.qo",
+        "file": "456789b#switch.qo",
         "when": 1642795378,
         "captured": "2021-10-01T17:57:26Z",
         "received": 1234,
         "event": "f3bbd770-40ee-4526-aeda-a560f069528a",
         "body": {
-          "count": 3
+          "contactSwitch": "CLOSED"
         }
       },
       {
@@ -120,33 +119,33 @@
       {
         "uid": "7ae718af-dad1-4834-9e16-6bca7b3ebdda",
         "device": "dev:1234",
-        "file": "20323746323650050042000d#motion.qo",
+        "file": "20323746323650050042000d#switch.qo",
         "captured": "2022-02-05T16:05:55Z",
         "when": 1642795378,
         "received": 1234,
-        "body": { "count": 1, "total": 1164 },
+        "body": { "contactSwitch": "OPEN" },
         "tower_location": null,
         "gps_location": null
       },
       {
         "uid": "52bbb7ff-c1ca-438f-8487-93d542552db6",
         "device": "dev:1234",
-        "file": "20323746323650050042000d#motion.qo",
+        "file": "20323746323650050042000d#switch.qo",
         "captured": "2022-02-05T16:06:10Z",
         "when": 1642795378,
         "received": 1234,
-        "body": { "count": 2, "total": 1166 },
+        "body": { "contactSwitch": "CLOSED" },
         "tower_location": null,
         "gps_location": null
       },
       {
         "uid": "74eab638-3256-4eea-8617-0d117a14133b",
         "device": "dev:1234",
-        "file": "456789b#motion.qo",
+        "file": "456789b#switch.qo",
         "captured": "2022-02-05T16:07:01Z",
         "when": 1642795378,
         "received": 1234,
-        "body": { "count": 1, "total": 1168 },
+        "body": { "contactSwitch": "OPEN" },
         "tower_location": null,
         "gps_location": null
       },

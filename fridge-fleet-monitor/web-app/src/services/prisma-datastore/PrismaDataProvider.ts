@@ -42,11 +42,9 @@ import {
 import ReadingSchema from "../alpha-models/readings/ReadingSchema";
 import VoltageSensorSchema from "../alpha-models/readings/VoltageSensorSchema";
 import HumiditySensorSchema from "../alpha-models/readings/HumiditySensorSchema";
-import CountSensorSchema from "../alpha-models/readings/CountSensorSchema";
 import TemperatureSensorSchema from "../alpha-models/readings/TemperatureSensorSchema";
-import TotalSensorSchema from "../alpha-models/readings/TotalSensorSchema";
 import PressureSensorSchema from "../alpha-models/readings/PressureSensorSchema";
-import DoorSwitchSensorSchema from "../alpha-models/readings/DoorSwitchSensorSchema";
+import ContactSwitchSensorSchema from "../alpha-models/readings/ContactSwitchSensorSchema";
 
 async function manageGatewayImport(
   bi: BulkImport,
@@ -342,9 +340,7 @@ export class PrismaDataProvider implements DataProvider {
     map.set(NodeSensorTypeNames.TEMPERATURE, TemperatureSensorSchema);
     map.set(NodeSensorTypeNames.HUMIDITY, HumiditySensorSchema);
     map.set(NodeSensorTypeNames.AIR_PRESSURE, PressureSensorSchema);
-    map.set(NodeSensorTypeNames.PIR_MOTION, CountSensorSchema);
-    map.set(NodeSensorTypeNames.PIR_MOTION_TOTAL, TotalSensorSchema);
-    map.set(NodeSensorTypeNames.DOOR_STATUS, DoorSwitchSensorSchema);
+    map.set(NodeSensorTypeNames.DOOR_STATUS, ContactSwitchSensorSchema);
 
     const result: ReadingDEPRECATED<unknown>[] = [];
 

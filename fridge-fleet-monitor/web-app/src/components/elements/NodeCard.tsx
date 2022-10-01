@@ -102,11 +102,6 @@ const NodeCardComponent = (props: NodeProps) => {
           <span className="dataNumber">{viewModel?.node?.voltage}</span>
         </Col>
         <Col xs={8} sm={4} md={4} lg={8}>
-          Motion
-          <br />
-          <span className="dataNumber">{viewModel?.node?.count}</span>
-        </Col>
-        <Col xs={8} sm={4} md={4} lg={8}>
           Door Status
           <br />
           <span className="dataNumber">{viewModel?.node?.doorStatus}</span>

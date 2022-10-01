@@ -278,8 +278,6 @@ export const enum GatewaySensorTypeNames {
 export const enum NodeSensorTypeNames {
   VOLTAGE = "node_voltage",
   LORA_SIGNAL_STRENGTH = "node_lora_rssi",
-  PIR_MOTION = "pir_motion",
-  PIR_MOTION_TOTAL = "pir_motion_total",
   HUMIDITY = "humidity",
   TEMPERATURE = "temperature",
   AIR_PRESSURE = "air_pressure",

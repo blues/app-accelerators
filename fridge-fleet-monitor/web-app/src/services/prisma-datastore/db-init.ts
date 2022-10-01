@@ -34,10 +34,6 @@ const prisma = new PrismaClient();
  * @param userID
  */
 
-const motion = {
-  qo: "motion.qo",
-};
-
 const air = {
   qo: "air.qo",
 };
@@ -179,40 +175,6 @@ const standardSchemas: BareReadingSchema[] = [
     spec: {
       contactSwitch: "CLOSED",
       __primary: "contactSwitch",
-    },
-  },
-
-  {
-    name: NodeSensorTypeNames.PIR_MOTION,
-    measure: "count",
-    uuid: "1824c8b0-2ef2-458b-802c-abd869429af0",
-    displayName: referenceSensorName("PIR Motion"),
-    displayMeasure: "Motion Count",
-    // todo - rename to notefileName?
-    eventName: nodeEvent(motion.qo),
-    valueType: ReadingSchemaValueType.SCALAR_INT,
-    unit: "",
-    unitSymbol: "",
-    spec: {
-      count: 1,
-      total: 1,
-      __primary: "count",
-    },
-  },
-  {
-    name: NodeSensorTypeNames.PIR_MOTION_TOTAL,
-    measure: "count",
-    uuid: "959464bf-024e-4f68-8e71-64e3416a7d87",
-    displayName: referenceSensorName("PIR Total Motion"),
-    displayMeasure: "Motion Total Count",
-    eventName: nodeEvent(motion.qo),
-    valueType: ReadingSchemaValueType.SCALAR_INT,
-    unit: "",
-    unitSymbol: "",
-    spec: {
-      count: 1,
-      total: 1,
-      __primary: "total",
     },
   },
   {

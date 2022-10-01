@@ -35,26 +35,8 @@ jobs:
             ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-
       - run: yarn install
       - run: yarn build
-      - name: Run unit tests
-        env:
-          HUB_AUTH_TOKEN: ${{ secrets.HUB_AUTH_TOKEN }}
-          HUB_BASE_URL: ${{ secrets.HUB_BASE_URL }}
-          HUB_PROJECTUID: ${{ secrets.HUB_PROJECTUID }}
-          TEST_NODE_ID: ${{ secrets.TEST_NODE_ID }}
-          NOTEHUB_PROVIDER: 1
         run: yarn test:coverage
       - run: yarn lint
-      - name: Cypress run
-        uses: cypress-io/github-action@v2
-        with:
-          env: configFile=staging
-          start: yarn start
-        env:
-          HUB_AUTH_TOKEN: ${{ secrets.HUB_AUTH_TOKEN }}
-          HUB_BASE_URL: ${{ secrets.HUB_BASE_URL }}
-          HUB_PROJECTUID: ${{ secrets.HUB_PROJECTUID }}
-          TEST_NODE_ID: ${{ secrets.TEST_NODE_ID }}
-          NOTEHUB_PROVIDER: 1
   docker-build:
     runs-on: ubuntu-latest
     steps:

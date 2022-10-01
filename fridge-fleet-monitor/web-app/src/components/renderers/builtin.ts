@@ -3,9 +3,8 @@
  */
 
 import * as Renderers from "./registry";
-import * as AppModel from "./../../services/AppModel";
+import * as AppModel from "../../services/AppModel";
 import TextReadingRendererComponent from "../elements/TextReadingRenderer";
-import NoOpReadingRendererComponent from "../elements/NoopReadingRenderer";
 
 export function registerRenderers(
   rendererRegistry: Renderers.RendererRegistry
@@ -19,7 +18,7 @@ export function registerRenderers(
     AppModel.NodeSensorTypeNames.TEMPERATURE,
     AppModel.NodeSensorTypeNames.HUMIDITY,
     AppModel.NodeSensorTypeNames.AIR_PRESSURE,
-    AppModel.NodeSensorTypeNames.PIR_MOTION,
+    AppModel.NodeSensorTypeNames.DOOR_STATUS,
     AppModel.NodeSensorTypeNames.VOLTAGE,
   ];
 
@@ -31,10 +30,4 @@ export function registerRenderers(
       name
     );
   });
-
-  rendererRegistry.registerReadingRenderer(
-    NoOpReadingRendererComponent,
-    Renderers.ReadingVisualization.CARD,
-    AppModel.NodeSensorTypeNames.PIR_MOTION_TOTAL
-  );
 }
