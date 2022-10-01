@@ -12,7 +12,7 @@ import { services } from "../../services/ServiceLocatorClient";
 import { changeDeviceName } from "../../api-client/devices";
 import { ERROR_MESSAGE } from "../../constants/ui";
 import ResponderIcon from "./images/responder.svg";
-import styles from "../../styles/Table.module.scss";
+import styles from "../../styles/TrackerTable.module.scss";
 
 const alarmService = services().getAlarmService();
 const columns = [
@@ -25,13 +25,11 @@ const columns = [
     ),
     dataIndex: "name",
     key: "name",
-    width: "25%",
   },
   {
     title: "Floor",
     dataIndex: "floor",
     key: "floor",
-    width: "15%",
   },
   {
     title: "Last Seen",
@@ -42,13 +40,13 @@ const columns = [
     title: "Pressure",
     dataIndex: "pressure",
     key: "pressure",
-    width: "20%",
+    responsive: ["md"],
   },
   {
     title: "Voltage",
     dataIndex: "voltage",
     key: "voltage",
-    width: "15%",
+    responsive: ["sm"],
   },
 ] as ColumnsType<DeviceTracker>;
 

@@ -1,0 +1,91 @@
+@import "_variables.scss";
+
+.tableContainer {
+  width: 100%;
+
+  :global .ant-table {
+    border: 1px solid $bw-color--grey3;
+  }
+
+  :global .ant-table-row .alarm {
+    background: $bw-color--orange0;
+  }
+  :global .ant-table-row .alarm:hover {
+    background: $bw-color--orange0;
+  }
+
+  :global .ant-table-cell::before {
+    display: none;
+  }
+
+  :global .ant-table-thead > tr > th {
+    background-color: $bw-color--grey1;
+    border-bottom: 1px solid $bw-color--grey2;
+    font-weight: 600;
+  }
+
+  :global .ant-table-tbody > tr > td {
+    border-bottom: 1px solid $bw-color--grey2;
+  }
+
+  :global .ant-table-tbody .editable-button {
+    background: transparent;
+    border: 1px solid #c2c9cb;
+    text-align: left;
+    border-radius: 5px;
+  }
+  :global .ant-table-tbody .editable-input,
+  :global .ant-table-tbody .editable-button {
+    padding: 0.25em 0.5em;
+    max-width: 100px;
+    width: 100px;
+  }
+
+  :global .anticon {
+    padding-right: 0.5em;
+  }
+}
+
+@media screen and (max-width: $breakpoints-lg) {
+  .tableContainer {
+    margin-top: -24px;
+  }
+}
+
+@media screen and (max-width: 630px) {
+  .tableContainer {
+    span:has(img) {
+      display: none !important;
+    }
+  }
+}
+
+@media screen and (max-width: $breakpoints-sm) {
+  .tableContainer {
+    margin-top: -4px;
+
+    :global .ant-table-thead > tr > th {
+      padding: 6px 16px;
+    }
+
+    :global .ant-table-tbody > tr > td {
+      padding: 16px;
+    }
+  }
+}
+
+@media screen and (max-width: $breakpoints-xs) {
+  .tableContainer {
+    :global .ant-table-thead > tr > th {
+      font-size: 14px;
+      padding: 4px;
+    }
+
+    :global .ant-table-tbody > tr > td:first-child {
+      padding: 8px 0 8px 8px;
+    }
+    :global .ant-table-tbody > tr > td:not(first-child) {
+      padding: 8px 0;
+    }
+  }
+}
