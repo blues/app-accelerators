@@ -102,7 +102,7 @@ function load_env_file() {
 }
 
 function add_date_to_docker_image_env() {
-    export SPARROW_SITE_DOCKER_TAG="${SPARROW_SITE_DOCKER_IMAGE}:$(date +%Y-%m-%d-%H%M)"
+    export APP_SITE_DOCKER_TAG="${APP_SITE_DOCKER_IMAGE}:$(date +%Y-%m-%d-%H%M)"
 }
 
 function configure_environment() {
@@ -115,7 +115,7 @@ function configure_environment() {
 function main() {
   cd "$SCRIPT_DIR"
 
-  log "Deploying Sparrow Reference Web App to the Cloud."
+  log "Deploying Fridge Fleet Monitor Web App to the Cloud."
 
   configure_environment || {
     log "Error: Could not configure environment."
