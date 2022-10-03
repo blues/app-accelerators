@@ -1,4 +1,4 @@
-import { Layout, Col } from "antd";
+import { Layout } from "antd";
 import Config from "../../../config";
 import styles from "../../styles/Footer.module.scss";
 
@@ -26,7 +26,7 @@ const FooterComponent = () => {
             <summary style={{ listStyle: "none", cursor: "pointer" }}>
               About
             </summary>
-            {Config.isBuildVersionSet() ? Config.buildVersion : <></>}
+            {Config.buildVersion ? Config.buildVersion : <></>}
           </details>
         </div>
         <div>

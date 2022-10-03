@@ -55,7 +55,7 @@ Refer to the [`README.md`](web-app/README.md) file in this project's `web-app` f
 
 If all goes well, you'll end up with a Fridge Fleet Monitor dashboard similar to this one.
 
-![Fridge Fleet Monitor web app dashboard](images/readme-fridge-fleet-monitor-dashboard.png)
+![Fridge Fleet Monitor web app dashboard](images/readme-refrigerator-fleet-monitor-dashboard.png)
 
 
 

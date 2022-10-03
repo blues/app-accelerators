@@ -49,7 +49,7 @@ describe("Fridge Fleet Monitor Application", () => {
     cy.get(".ant-card-body :nth-child(3)").should("contain", "Temperature");
     cy.get(".ant-card-body :nth-child(4)").should("contain", "Voltage");
     cy.get(".ant-card-body :nth-child(5)").should("contain", "Door Status");
-    //Click the sparrow Logo to return to the homepage
+    //Click the logo to return to the homepage
     cy.get('[data-testid="logo"]').click({ force: true });
     // verify it navigates back to the homepage
     cy.get('[data-testid="gateway-header"]', { timeout: 20000 }).should(
@@ -57,7 +57,7 @@ describe("Fridge Fleet Monitor Application", () => {
     );
   });
 
-  it.only("should be able to click on a node card and see more details about that node and update the name and location of that node", function () {
+  it("should be able to click on a node card and see more details about that node and update the name and location of that node", function () {
     // this keeps uncaught exceptions from failing Cypress tests
     Cypress.on("uncaught:exception", (err, runnable) => {
       return false;

@@ -2,7 +2,6 @@ import { GetServerSideProps, NextPage } from "next";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import { Card, Input, Button, Tabs, Row, Col, Tooltip, Select } from "antd";
-import { InfoCircleOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { Store } from "antd/lib/form/interface";
 import { ValidateErrorEntity } from "rc-field-form/lib/interface";
@@ -99,7 +98,6 @@ const NodeDetails: NextPage<NodeDetailsData> = ({ viewModel, err }) => {
           placeholder="Name of node"
           maxLength={49}
           showCount
-          disabled={viewModel.readOnly}
         />
       ),
     },
@@ -120,18 +118,12 @@ const NodeDetails: NextPage<NodeDetailsData> = ({ viewModel, err }) => {
           placeholder="Node location"
           maxLength={15}
           showCount
-          disabled={viewModel.readOnly}
         />
       ),
     },
     {
       contents: (
-        <Button
-          data-testid="form-submit"
-          htmlType="submit"
-          type="primary"
-          disabled={viewModel.readOnly}
-        >
+        <Button data-testid="form-submit" htmlType="submit" type="primary">
           Save Changes
         </Button>
       ),

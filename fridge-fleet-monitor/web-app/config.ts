@@ -15,7 +15,6 @@ const env = {
   NEXT_PUBLIC_BUILD_VERSION: process.env.NEXT_PUBLIC_BUILD_VERSION,
   NEXT_PUBLIC_COMPANY_NAME: process.env.NEXT_PUBLIC_COMPANY_NAME,
   DATABASE_URL: process.env.DATABASE_URL,
-  READ_ONLY: process.env.READ_ONLY,
   NOTEHUB_PROVIDER: process.env.NOTEHUB_PROVIDER,
 };
 
@@ -38,10 +37,6 @@ const requiredEnvVar = (varName: keyof typeof env) => {
 };
 
 const Config = {
-  isBuildVersionSet() {
-    return !!optionalEnvVar("NEXT_PUBLIC_BUILD_VERSION", "");
-  },
-
   // These are getters so undefined required variables do not throw errors at build time.
   get buildVersion() {
     return optionalEnvVar("NEXT_PUBLIC_BUILD_VERSION", "ver n/a");
@@ -67,9 +62,6 @@ const Config = {
   get databaseURL() {
     const getVar = this.notehubProvider ? optionalEnvVar : requiredEnvVar;
     return getVar("DATABASE_URL", "");
-  },
-  get readOnly() {
-    return Boolean(optionalEnvVar("READ_ONLY", ""));
   },
   get notehubProvider() {
     return Boolean(optionalEnvVar("NOTEHUB_PROVIDER", ""));

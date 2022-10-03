@@ -23,7 +23,6 @@ import HumiditySensorSchema from "../../services/alpha-models/readings/HumidityS
 import PressureSensorSchema from "../../services/alpha-models/readings/PressureSensorSchema";
 import VoltageSensorSchema from "../../services/alpha-models/readings/VoltageSensorSchema";
 import ContactSwitchSensorSchema from "../../services/alpha-models/readings/ContactSwitchSensorSchema";
-import Config from "../../../config";
 
 // eslint-disable-next-line import/prefer-default-export
 export function getNodeDetailsPresentation(
@@ -72,6 +71,5 @@ export function getNodeDetailsPresentation(
           ),
         }
       : undefined,
-    readOnly: Config.readOnly,
   };
 }
