@@ -83,7 +83,7 @@ running on your device.
 ## Firmware
 
 The Indoor Floor-Level Tracker project has custom firmware that runs on
-the Swan. As a next step, complete the [firmware’s setup guide](/firmware/)
+the Swan. As a next step, complete the [firmware’s setup guide](firmware/)
 to get your firmware up and running.
 
 ## Web Application
@@ -91,5 +91,5 @@ to get your firmware up and running.
 The Indoor Floor-Level Tracker’s web application allows you to view device data and 
 manage environment variables in a browser.
 
-As a final step, complete the [web app’s setup guide](/web-app/) to get the
+As a final step, complete the [web app’s setup guide](web-app/) to get the
 app running on your development machine.
