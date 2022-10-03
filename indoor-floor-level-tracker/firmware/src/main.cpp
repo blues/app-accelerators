@@ -202,7 +202,7 @@ void loop()
         JAddStringToObject(body, "message",
                            "environment variable update received");
         JAddItemToObject(req, "body", body);
-        // notecard.sendRequest(req);
+        notecard.sendRequest(req);
       }
     }
   }
