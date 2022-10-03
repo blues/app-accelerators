@@ -13,7 +13,7 @@ IDE, and then complete the following steps.
 
 > **NOTE**: By default, the Indoor Floor-Level Tracker checks for new data in Notehub
 every 10 seconds. If you’re concerned about the amount of [consumption credits](https://blues.io/pricing/)
-this uses, you may want to update the `MS_REFETCH_INTERVAL` constnat in the app’s
+this uses, you may want to update the `MS_REFETCH_INTERVAL` constant in the app’s
 `pages/index.tsx` file to a much larger value to avoid continuous refetching.
 
 ## Dependencies
