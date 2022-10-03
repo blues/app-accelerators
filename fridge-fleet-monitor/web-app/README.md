@@ -18,7 +18,8 @@ This application is based off of the [Blues Wireless Sparrow Reference Web App](
     - [Create a tunnel to a server running the reference app](#create-a-tunnel-to-a-server-running-the-reference-app)
       - [Localtunnel](#localtunnel)
       - [Ngrok](#ngrok)
-    - [Set up a Notehub route to your tunnel](#set-up-a-notehub-route-to-your-tunnel)
+    - [Set up a Notehub route and dashboard URL to your tunnel](#set-up-a-notehub-route-and-dashboard-url-to-your-tunnel)
+    - [Setup a Project Dashbaord URL to your tunnel](#setup-a-project-dashbaord-url-to-your-tunnel)
     - [Database](#database)
       - [Create the database](#create-the-database)
       - [Custom PostgreSQL Server](#custom-postgresql-server)
@@ -253,7 +254,7 @@ To set up the route complete the following steps:
 
 And with that your route is now complete. When Notehub receives an event it should automatically route that event to your tunnel, and ultimately to your local app.
 
-> **NOTE** Event routing only happens when Notehub receives an event, therefore your Sparrow hardware needs to generate new data and send it to Notehub for Notehub to invoke your route OR you can manually route an existing event from Notehub by clicking the "Route Event" button in the righthand corner of an individual event.
+> **NOTE**: Event routing only happens when Notehub receives an event, therefore your Sparrow hardware needs to generate new data and send it to Notehub for Notehub to invoke your route OR you can manually route an existing event from Notehub by clicking the "Route Event" button in the righthand corner of an individual event.
 
 ![Notehub manual route event button](./readme-notehub-manual-route-event.png)
 
