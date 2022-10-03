@@ -42,7 +42,7 @@ const SettingsPage: NextPage<SettingsData> = ({
         : "Input here...",
       rules: [{ required: true, message: "Please add only numbers." }],
       contents: (
-        <InputNumber size="large" min={0.1} max={100000} controls={false} />
+        <InputNumber size="large" min={1} max={100000} controls={false} />
       ),
     },
     {
