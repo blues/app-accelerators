@@ -8,8 +8,7 @@ then open up the `indoor-floor-level-tracker/web-app` folder in your text editor
 IDE.
 
 From there, complete the [Web Application Development Overview](https://github.com/blues/nifty-fifty/wiki/Web-Application-Development-Overview/_edit), which walks
-you through installing all of the web app’s dependencies, setting up a Notehub
-route, creating a database, and running the application.
+you through installing all of the web app’s dependencies and running the application.
 
 When you’re done, there’s one additional web environment variable you’ll need to
 add for the Indoor Floor-Level Tracker to work. To do so, open your web app’s
