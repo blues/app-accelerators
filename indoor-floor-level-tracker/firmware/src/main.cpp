@@ -19,7 +19,7 @@
 
 #define serialDebugOut Serial
 // Uncomment to view Note requests from the Host
-#define DEBUG_NOTECARD
+// #define DEBUG_NOTECARD
 
 #define PRODUCT_UID "com.blues.nf1"
 #define ENV_POLL_SECS 1
