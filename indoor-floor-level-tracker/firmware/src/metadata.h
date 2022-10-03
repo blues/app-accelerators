@@ -3,10 +3,10 @@
 
 #define PRODUCT_ORG_NAME        ""
 #define PRODUCT_DISPLAY_NAME    "Indoor Floor Level Tracker"
-#define PRODUCT_FIRMWARE_ID     "nf1-0.1.0.0"
+#define PRODUCT_FIRMWARE_ID     "nf1-0.2.0.0"
 #define PRODUCT_DESC      ""
 #define PRODUCT_MAJOR     0
-#define PRODUCT_MINOR     1
+#define PRODUCT_MINOR     2
 #define PRODUCT_PATCH     0
 #define PRODUCT_BUILD     0
 #define PRODUCT_BUILT     __DATE__ " " __TIME__
