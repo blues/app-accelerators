@@ -1,0 +1,21 @@
+@import "_variables.scss";
+
+.toggleWrapper {
+  display: flex;
+  justify-content: center;
+
+  :global .ant-switch-checked {
+    background-color: $bw-color--green3;
+  }
+}
+
+@media screen and (max-width: $breakpoints-sm) {
+  .toggleLabel {
+    margin-right: 38px;
+  }
+
+  .toggleLabel,
+  .toggleWrapper {
+    display: inline;
+  }
+}

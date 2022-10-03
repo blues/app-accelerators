@@ -1,6 +1,10 @@
 @import "_variables.scss";
 
 .container {
+  h3 {
+    width: 100%;
+  }
+
   .errorMessage {
     text-align: center;
     margin-top: 24px;
@@ -10,5 +14,41 @@
     font-size: 18px;
     font-weight: 600;
     margin-bottom: 12px;
+    margin-top: 24px;
+  }
+
+  .tableHeaderRow {
+    display: flex;
+    width: 100%;
+    align-items: first baseline;
+  }
+
+  .motionAlertCard {
+    width: 200px;
+  }
+
+  .liveTrackCard {
+    width: 115px;
+  }
+
+  :global .ant-alert {
+    margin-bottom: 12px;
+  }
+}
+
+@media screen and (max-width: $breakpoints-sm) {
+  .container {
+    .sectionTitle {
+      display: none;
+    }
+    .liveTrackCard,
+    .motionAlertCard {
+      display: block;
+      width: 100%;
+    }
+
+    .liveTrackCard {
+      margin-bottom: 8px;
+    }
   }
 }

@@ -1,0 +1,18 @@
+# Keep secrets and cruft out of docker images.
+*
+
+# Whitelist
+!public/
+!sample-data/
+!src/
+!.bablerc.js
+!.eslintrc.json
+!config.ts
+!environment.d.ts
+!find-version.sh
+!generate-dotenv.sh
+!next-env.d.ts
+!next.config.js
+!package.json
+!tsconfig.json
+!yarn.lock

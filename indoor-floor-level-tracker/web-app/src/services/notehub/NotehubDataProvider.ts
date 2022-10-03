@@ -2,12 +2,7 @@
 /* eslint-disable class-methods-use-this */
 import { sub, formatDistanceToNow, parseISO } from "date-fns";
 import { uniqBy } from "lodash";
-import {
-  ClientDevice,
-  ClientTracker,
-  DeviceTracker,
-  TrackerConfig,
-} from "../ClientModel";
+import { DeviceTracker, TrackerConfig } from "../AppModel";
 import { DataProvider } from "../DataProvider";
 import { Device, DeviceID, FleetID, Project, ProjectID } from "../DomainModel";
 import NotehubDevice from "./models/NotehubDevice";
@@ -20,7 +15,7 @@ interface HasDeviceId {
   uid: string;
 }
 
-// N.B.: Noteub defines 'best' location with more nuance than we do here (e.g
+// N.B.: Notehub defines 'best' location with more nuance than we do here (e.g
 // considering staleness). Also this algorithm is copy-pasted in a couple places.
 export const getBestLocation = (object: NotehubLocationAlternatives) =>
   object.gps_location || object.triangulated_location || object.tower_location;
@@ -33,14 +28,12 @@ export function notehubDeviceToIndoorTracker(device: NotehubDevice) {
     ...(getBestLocation(device) && {
       location: getBestLocation(device)?.name,
     }),
-    voltage: device.voltage,
+    voltage: `${device.voltage}`,
   };
 }
 
-export function filterEventsData(events: NotehubRoutedEvent[]) {
-  const dataEvent = events
-    .filter((event) => event.file === "data.qo")
-    .reverse();
+export function filterEventsData(events: NotehubRoutedEvent[], file: string) {
+  const dataEvent = events.filter((event) => event.file === file).reverse();
 
   return dataEvent;
 }
@@ -84,23 +77,22 @@ export function reducer<CombinedEventObj extends HasDeviceId>(
   return groups;
 }
 
-export function formatDeviceTrackerData(deviceTrackerData: any[]) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+export function formatDeviceTrackerData(deviceTrackerData: DeviceTracker[]) {
   const formattedDeviceTrackerData = deviceTrackerData.map((data) => ({
     ...data,
     lastActivity: formatDistanceToNow(parseISO(data.lastActivity), {
-      addSuffix: true,
       includeSeconds: true,
     }),
-    ...(data.altitude && { altitude: Number(data.altitude).toFixed(2) }),
-    voltage: `${Number(data.voltage).toFixed(2)}V`,
+    ...(data.altitude && { altitude: Number(data.altitude).toFixed(1) }),
+    voltage: `${Number(data.voltage).toFixed(1)}V`,
     ...(data.pressure && {
-      pressure: `${Number(data.pressure).toFixed(2)} kPa`,
+      pressure: `${Number(data.pressure).toFixed(1)} hPa`,
     }),
-    ...(data.temp && { temp: `${Number(data.temp).toFixed(2)}C` }),
+    ...(data.temperature && {
+      temp: `${Number(data.temperature).toFixed(1)}C`,
+    }),
   }));
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return formattedDeviceTrackerData;
 }
 
@@ -148,36 +140,19 @@ export default class NotehubDataProvider implements DataProvider {
     private readonly fleetID: FleetID
   ) {}
 
-  async getProject(): Promise<Project> {
-    const project: Project = {
-      id: this.projectID,
-      name: "fixme",
-      description: "fixme",
-    };
-    return project;
-  }
-
-  async getDevices(): Promise<Device[]> {
-    throw new Error("Method not implemented.");
-  }
-
-  async getDevice(deviceID: DeviceID): Promise<Device | null> {
-    throw new Error("Method not implemented.");
-  }
-
   async getDevicesByFleet(): Promise<NotehubDevice[]> {
     const devicesByFleet = await this.notehubAccessor.getDevicesByFleet();
     return devicesByFleet;
   }
 
-  async getEvents(minutesFromNow: number): Promise<NotehubRoutedEvent[]> {
-    const epochDateMinutesAgo = epochStringMinutesAgo(minutesFromNow);
+  async getEvents(minutesAgo: number): Promise<NotehubRoutedEvent[]> {
+    const epochDateMinutesAgo = epochStringMinutesAgo(minutesAgo);
     const events = await this.notehubAccessor.getEvents(epochDateMinutesAgo);
     return events;
   }
 
   async getDeviceTrackerData(): Promise<DeviceTracker[]> {
-    const trackerDevices: ClientDevice[] = [];
+    const trackerDevices: DeviceTracker[] = [];
     let formattedDeviceTrackerData: DeviceTracker[] = [];
 
     // get all the devices by fleet ID
@@ -191,14 +166,13 @@ export default class NotehubDataProvider implements DataProvider {
     const rawEvents = await this.getEvents(MINUTES_OF_NOTEHUB_DATA_TO_FETCH);
 
     // filter down to only data.qo events and reverse the order to get the latest event first
-    const filteredEvents = filterEventsData(rawEvents);
+    const filteredEvents = filterEventsData(rawEvents, "floor.qo");
 
     // get unique events by device ID
     const uniqueEvents = uniqBy(filteredEvents, "device");
 
     // pull out relevant device data from unique events
-    const mappedEvents: ClientTracker[] =
-      extractRelevantEventBodyData(uniqueEvents);
+    const mappedEvents: object[] = extractRelevantEventBodyData(uniqueEvents);
 
     // concat the device info from fleet with latest device info
     const combinedEventsDevices = [...trackerDevices, ...mappedEvents];
@@ -214,7 +188,25 @@ export default class NotehubDataProvider implements DataProvider {
     // format the data to round the numbers to 2 decimal places
     formattedDeviceTrackerData = formatDeviceTrackerData(deviceTrackerData);
 
+    const alarmEvents = filterEventsData(rawEvents, "alarm.qo");
+    const uniqueAlarmEvents = uniqBy(alarmEvents, "device");
+    this.appendAlarmData(uniqueAlarmEvents, formattedDeviceTrackerData);
+
     return formattedDeviceTrackerData;
+  }
+
+  private appendAlarmData(
+    alarmEvents: NotehubRoutedEvent[],
+    trackers: DeviceTracker[]
+  ) {
+    alarmEvents.forEach((event) => {
+      trackers
+        .filter((tracker) => event.device === tracker.uid)
+        .forEach((tracker) => {
+          // eslint-disable-next-line no-param-reassign
+          tracker.lastAlarm = `${event.when}`;
+        });
+    });
   }
 
   async getTrackerConfig(): Promise<TrackerConfig> {
@@ -224,21 +216,5 @@ export default class NotehubDataProvider implements DataProvider {
       );
     const envVars = envVarResponse.environment_variables;
     return environmentVariablesToTrackerConfig(envVars);
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  doBulkImport(): Promise<never> {
-    throw new Error("It's not possible to do bulk import of data to Notehub");
-  }
-
-  /**
-   * We made the interface more general (accepting a projectID) but the implementation has the
-   * ID fixed. This is a quick check to be sure the project ID is the one expected.
-   * @param projectID
-   */
-  private checkProjectID(projectID: ProjectID) {
-    if (projectID.projectUID !== this.projectID.projectUID) {
-      throw new Error("Project ID does not match expected ID");
-    }
   }
 }

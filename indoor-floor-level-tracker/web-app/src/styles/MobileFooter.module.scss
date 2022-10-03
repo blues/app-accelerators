@@ -1,0 +1,41 @@
+@import "_variables.scss";
+
+.mobileFooterWrapper {
+  width: 100%;
+  background-color: $bw-color--brand4;
+
+  .mobileFooter {
+    color: #fff;
+    background-color: $bw-color--brand4;
+    padding: 15px 50px;
+
+    :global .ant-menu-root {
+      display: flex;
+      justify-content: center;
+      line-height: 30px;
+    }
+
+    :global .ant-menu-title-content {
+      font-size: 12px;
+    }
+
+    :global .ant-menu-item,
+    :global .ant-menu-item a {
+      display: flex;
+      flex-direction: column;
+      color: #fff;
+    }
+
+    :global .ant-menu-item-selected > span > img.ant-menu-item-icon,
+    :global .ant-menu-item-active > span > img.ant-menu-item-icon {
+      filter: brightness(0) saturate(100%) invert(58%) sepia(93%)
+        saturate(3528%) hue-rotate(167deg) brightness(108%) contrast(102%);
+    }
+
+    :global .ant-menu-item-selected,
+    :global .ant-menu-item-active {
+      background-color: inherit !important;
+      color: #00b9ff !important;
+    }
+  }
+}

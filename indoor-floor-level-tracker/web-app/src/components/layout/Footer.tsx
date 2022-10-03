@@ -1,4 +1,4 @@
-import { Layout, Col } from "antd";
+import { Layout } from "antd";
 import Config from "../../../Config";
 import styles from "../../styles/Footer.module.scss";
 

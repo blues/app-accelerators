@@ -24,7 +24,7 @@
 #define PRODUCT_UID "com.blues.nf1"
 #define ENV_POLL_SECS 1
 #define IDLE_UPDATE_PERIOD (1000 * 60 * 5)
-#define LIVE_UPDATE_PERIOD (1000 * 60 * 2)
+#define LIVE_UPDATE_PERIOD (1000 * 60 * 1)
 #define NO_MOVEMENT_THRESHOLD_SCALE_MS \
   (1000) // No movement threshold given in seconds.
 #define FLOOR_SAMPLE_PERIOD (250)
@@ -202,7 +202,7 @@ void loop()
         JAddStringToObject(body, "message",
                            "environment variable update received");
         JAddItemToObject(req, "body", body);
-        notecard.sendRequest(req);
+        // notecard.sendRequest(req);
       }
     }
   }
@@ -443,10 +443,7 @@ void sendSensorReadings(const sensorReadings &readings, bool alarm)
   J *req = notecard.newRequest("note.add");
   if (req != NULL)
   {
-    if (!alarm)
-    { // this is the only note, so sync it
-      JAddBoolToObject(req, "sync", true);
-    }
+    JAddBoolToObject(req, "sync", true);
     JAddStringToObject(req, "file", "floor.qo");
     J *body = JCreateObject();
     if (body != NULL)
@@ -461,6 +458,8 @@ void sendSensorReadings(const sensorReadings &readings, bool alarm)
       JAddStringToObject(body, "app", "nf1");
       JAddItemToObject(req, "body", body);
       notecard.sendRequest(req);
+
+      serialDebugOut.println("Sending floor.qo");
     }
   }
 
@@ -478,6 +477,8 @@ void sendSensorReadings(const sensorReadings &readings, bool alarm)
         JAddStringToObject(body, "app", "nf1");
         JAddItemToObject(req, "body", body);
         notecard.sendRequest(req);
+
+        serialDebugOut.println("Sending alarm.qo");
       }
     }
   }

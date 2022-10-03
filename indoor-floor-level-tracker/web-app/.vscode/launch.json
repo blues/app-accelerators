@@ -8,12 +8,6 @@
       "command": "yarn dev"
     },
     {
-      "name": "Next.js: debug db push",
-      "type": "node-terminal",
-      "request": "launch",
-      "command": "yarn run prisma db push"
-    },
-    {
       "name": "Next.js: debug client-side",
       "type": "chrome",
       "request": "launch",

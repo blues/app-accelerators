@@ -1,12 +1,9 @@
 import axios from "axios";
-import { sub } from "date-fns";
 import MockAdapter from "axios-mock-adapter";
 import { ERROR_CODES } from "../Errors";
 import AxiosHttpNotehubAccessor from "./AxiosHttpNotehubAccessor";
 import NotehubDevice from "./models/NotehubDevice";
 import NotehubEnvVars from "./models/NotehubEnvVars";
-import NotehubLatestEvents from "./models/NotehubLatestEvents";
-import NotehubDeviceConfig from "./models/NotehubDeviceConfig";
 import notehubData from "./models/notehubData.test.json";
 
 let mock: MockAdapter;
@@ -14,16 +11,10 @@ const mockBaseURL = "http://example.io";
 const mockProjectUID = "app:1234";
 const mockDeviceUID = "dev:1234";
 const mockHubFleetUID = "fleet:1234";
-const mockHubHistoricalDataRecentMinutes = 1440;
-const mockedStartDate = sub(new Date(), {
-  minutes: mockHubHistoricalDataRecentMinutes,
-});
 
 const API_DEVICE_URL = `${mockBaseURL}/v1/projects/${mockProjectUID}/devices/${mockDeviceUID}`;
 const API_DEVICES_URL = `${mockBaseURL}/v1/projects/${mockProjectUID}/devices`;
-const API_CONFIG_URL = `${mockBaseURL}/req?project=${mockProjectUID}&device=${mockDeviceUID}`;
 const API_ENV_VAR_URL = `${mockBaseURL}/v1/projects/${mockProjectUID}/devices/${mockDeviceUID}/environment_variables`;
-const API_LATEST_EVENTS_URL = `${mockBaseURL}/v1/projects/${mockProjectUID}/devices/${mockDeviceUID}/latest`;
 const API_INITIAL_ALL_EVENTS_URL = `${mockBaseURL}/v1/projects/${mockProjectUID}/events`;
 
 const axiosHttpNotehubAccessorMock = new AxiosHttpNotehubAccessor(
@@ -95,26 +86,7 @@ describe("Event handling", () => {
     mock = new MockAdapter(axios);
   });
 
-  const mockNotehubLatestEventData =
-    notehubData.successfulNotehubLatestEventsResponse as NotehubLatestEvents;
   const mockNotehubEventData = notehubData.successfulNotehubEventResponse;
-
-  it("should return a list of latest events when getLatestEvents is called with a valid hub device UID", async () => {
-    mock.onGet(API_LATEST_EVENTS_URL).reply(200, mockNotehubLatestEventData);
-
-    const res = await axiosHttpNotehubAccessorMock.getLatestEvents(
-      mockDeviceUID
-    );
-    expect(res).toEqual(mockNotehubLatestEventData);
-  });
-
-  it("should throw a device-not-found error when an invalid device UID is passed in", async () => {
-    mock.onGet(API_LATEST_EVENTS_URL).reply(404, mockNotehubLatestEventData);
-
-    await expect(
-      axiosHttpNotehubAccessorMock.getLatestEvents(mockDeviceUID)
-    ).rejects.toThrow(ERROR_CODES.DEVICE_NOT_FOUND);
-  });
 
   it("should return a list of events when getEvents is called with a valid hub app UID and date range", async () => {
     mock.onGet(API_INITIAL_ALL_EVENTS_URL).reply(200, mockNotehubEventData);
@@ -129,63 +101,6 @@ describe("Event handling", () => {
     await expect(axiosHttpNotehubAccessorMock.getEvents()).rejects.toThrow(
       ERROR_CODES.DEVICE_NOT_FOUND
     );
-  });
-});
-
-describe("Config handling", () => {
-  beforeEach(() => {
-    mock = new MockAdapter(axios);
-  });
-
-  const mockNotehubDeviceConfig =
-    notehubData.successfulNotehubConfigResponse as NotehubDeviceConfig;
-  const mockMacAddress = mockNotehubDeviceConfig.note;
-
-  it("should return valid config", async () => {
-    mock.onPost(API_CONFIG_URL).reply(200, mockNotehubDeviceConfig);
-
-    const res = await axiosHttpNotehubAccessorMock.getConfig(
-      mockDeviceUID,
-      mockMacAddress
-    );
-    expect(res).toEqual(mockNotehubDeviceConfig);
-  });
-
-  it("should pass through the response (and not throw an error) with a bad config", async () => {
-    mock
-      .onPost(API_CONFIG_URL)
-      .reply(200, notehubData.notehubConfigNoteNotFound);
-    const res = await axiosHttpNotehubAccessorMock.getConfig(
-      mockDeviceUID,
-      mockMacAddress
-    );
-    expect(res).toEqual(notehubData.notehubConfigNoteNotFound);
-  });
-
-  it("should throw a device-not-found error if the device does not exist", async () => {
-    mock
-      .onPost(API_CONFIG_URL)
-      .reply(200, notehubData.notehubConfigDeviceNotFound);
-    await expect(
-      axiosHttpNotehubAccessorMock.getConfig(mockDeviceUID, mockMacAddress)
-    ).rejects.toThrow(ERROR_CODES.DEVICE_NOT_FOUND);
-  });
-
-  it("should throw a forbidden error if the API returns insufficient permissions", async () => {
-    mock
-      .onPost(API_CONFIG_URL)
-      .reply(200, notehubData.notehubConfigBadPermissions);
-    await expect(
-      axiosHttpNotehubAccessorMock.getConfig(mockDeviceUID, mockMacAddress)
-    ).rejects.toThrow(ERROR_CODES.FORBIDDEN);
-  });
-
-  it("should throw an internal error if the API returns a 500", async () => {
-    mock.onPost(API_CONFIG_URL).reply(500, {});
-
-    await expect(
-      axiosHttpNotehubAccessorMock.getConfig(mockDeviceUID, mockMacAddress)
-    ).rejects.toThrow(ERROR_CODES.INTERNAL_ERROR);
   });
 });
 

@@ -42,11 +42,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 
-# cypress
-cypress/screenshots/
-cypress/videos/
-cypress/downloads/
-cypress.env.json
-
-# Local Netlify folder
-.netlify
