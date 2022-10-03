@@ -74,6 +74,14 @@ void setup()
   notecard.begin();
 
 #ifdef USE_DISPLAY
+#ifdef DISPLAY_POWER_PIN
+  pinMode(DISPLAY_POWER_PIN, OUTPUT);
+  digitalWrite(DISPLAY_POWER_PIN, HIGH);
+#endif
+#ifdef DISPLAY_GROUND_PIN
+  pinMode(DISPLAY_GROUND_PIN, OUTPUT);
+  digitalWrite(DISPLAY_GROUND_PIN, LOW);
+#endif
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   serialDebugOut.println("OLED connected...");
 #endif
@@ -116,7 +124,9 @@ void setup()
   display.display();
 
   // text display tests
+#ifdef DISPLAY_ROTATE_180
   display.setRotation(2);
+#endif
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
   display.setCursor(0, 0);
