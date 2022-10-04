@@ -13,6 +13,10 @@ struct applicationState {
   uint32_t lastFloorChangeAt;
   bool alarmSent;
   bool baselineChanged;
+  // env.modified and env.get return a time value that is updated when ANY env var
+  // is modified. Use this variable to specify whether a var we care about has
+  // changed.
+  bool variablesUpdated;
 };
 
 struct sensorReadings {
