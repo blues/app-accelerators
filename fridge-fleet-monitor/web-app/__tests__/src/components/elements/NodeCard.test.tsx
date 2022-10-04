@@ -14,8 +14,7 @@ const mockNodeData = {
   pressure: 1000,
   temperature: 24.5,
   voltage: 4.2,
-  total: 40,
-  count: 2,
+  doorStatus: "OPEN",
   lastActivity: "2022-01-01T15:28:38Z",
   gatewayUID: "abcdef",
   bars: 2,
@@ -54,7 +53,7 @@ describe("Node details card component", () => {
     expect(
       screen.getAllByText(mockNodeData.voltage, { exact: false })[0]
     ).toBeInTheDocument();
-    expect(screen.getByText(mockNodeData.count)).toBeInTheDocument();
+    expect(screen.getByText(mockNodeData.doorStatus)).toBeInTheDocument();
   });
 
   it("should render fallback messages when all node details are not supplied", () => {

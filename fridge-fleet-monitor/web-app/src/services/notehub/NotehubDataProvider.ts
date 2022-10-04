@@ -19,8 +19,7 @@ import TemperatureSensorReading from "../alpha-models/readings/TemperatureSensor
 import HumiditySensorReading from "../alpha-models/readings/HumiditySensorReading";
 import PressureSensorReading from "../alpha-models/readings/PressureSensorReading";
 import VoltageSensorReading from "../alpha-models/readings/VoltageSensorReading";
-import CountSensorReading from "../alpha-models/readings/CountSensorReading";
-import TotalSensorReading from "../alpha-models/readings/TotalSensorReading";
+import ContactSwitchSensorReading from "../alpha-models/readings/ContactSwitchSensorReading";
 import {
   GatewayWithNodes,
   Node,
@@ -80,11 +79,6 @@ export default class NotehubDataProvider implements DataProvider {
     return null;
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  doBulkImport(): Promise<never> {
-    throw new Error("It's not possible to do bulk import of data to Notehub");
-  }
-
   /**
    * We made the interface more general (accepting a projectID) but the implementation has the
    * ID fixed. This is a quick check to be sure the project ID is the one expected.
@@ -113,12 +107,10 @@ export default class NotehubDataProvider implements DataProvider {
     const results: ProjectReadingsSnapshot = {
       when: Date.now(),
       project,
-      hostReadings: function (
-        sensorHost: SensorHost
-      ): SensorHostReadingsSnapshot {
+      hostReadings(sensorHost: SensorHost): SensorHostReadingsSnapshot {
         throw new Error("Function not implemented.");
       },
-      hostReadingByName: function (
+      hostReadingByName(
         sensorHost: SensorHost,
         readingName: SensorTypeNames
       ): Reading | undefined {
@@ -176,11 +168,11 @@ export default class NotehubDataProvider implements DataProvider {
         gatewayUID
       );
 
-      // filter out all latest_events that are not `motion.qo` or `air.qo` files - those indicate they are node files
+      // filter out all latest_events that are not `switch.qo` or `air.qo` files - those indicate they are node files
       const filteredNodeData = latestNodeEvents.latest_events.filter(
         (event: NotehubRoutedEvent) => {
           if (
-            event.file.includes("#motion.qo") ||
+            event.file.includes("#switch.qo") ||
             event.file.includes("#air.qo")
           ) {
             return true;
@@ -197,9 +189,8 @@ export default class NotehubDataProvider implements DataProvider {
         pressure: event.body.pressure ? event.body.pressure / 1000 : undefined,
         temperature: event.body.temperature,
         voltage: event.body.voltage,
-        total: event.body.total,
-        count: event.body.count,
-        lastActivity: new Date(event.when*1000).toISOString(),
+        contactSwitch: event.body.contactSwitch,
+        lastActivity: new Date(event.when * 1000).toISOString(),
       }));
       return latestNodeData;
     };
@@ -220,8 +211,7 @@ export default class NotehubDataProvider implements DataProvider {
         pressure: nodeEvent.pressure,
         temperature: nodeEvent.temperature,
         voltage: nodeEvent.voltage,
-        count: nodeEvent.count,
-        total: nodeEvent.total,
+        contactSwitch: nodeEvent.contactSwitch,
         lastActivity: nodeEvent.lastActivity,
       })
     );
@@ -295,11 +285,8 @@ export default class NotehubDataProvider implements DataProvider {
         ...(gatewayNodeInfo.temperature && {
           temperature: gatewayNodeInfo.temperature,
         }),
-        ...(gatewayNodeInfo.count && {
-          count: gatewayNodeInfo.count,
-        }),
-        ...(gatewayNodeInfo.total && {
-          total: gatewayNodeInfo.total,
+        ...(gatewayNodeInfo.doorStatus && {
+          doorStatus: gatewayNodeInfo.doorStatus,
         }),
         // todo replace this with real bars data once calculation to turn notecard data into bars is implemented
         bars: "N/A" as SignalStrengths,
@@ -347,17 +334,17 @@ export default class NotehubDataProvider implements DataProvider {
       (event: NotehubRoutedEvent) =>
         event.file &&
         event.file.includes(`${nodeId}`) &&
-        (event.file.includes("#air.qo") || event.file.includes("#motion.qo")) &&
+        (event.file.includes("#air.qo") || event.file.includes("#switch.qo")) &&
         event.device === gatewayUID
     );
     const readingsToReturn: ReadingDEPRECATED<unknown>[] = [];
     filteredEvents.forEach((event: NotehubRoutedEvent) => {
-      const captured = new Date(event.when*1000).toISOString();
+      const captured = new Date(event.when * 1000).toISOString();
       if (event.body.temperature) {
         readingsToReturn.push(
           new TemperatureSensorReading({
             value: event.body.temperature,
-            captured
+            captured,
           })
         );
       }
@@ -365,7 +352,7 @@ export default class NotehubDataProvider implements DataProvider {
         readingsToReturn.push(
           new HumiditySensorReading({
             value: event.body.humidity,
-            captured
+            captured,
           })
         );
       }
@@ -374,7 +361,7 @@ export default class NotehubDataProvider implements DataProvider {
           new PressureSensorReading({
             // Convert from Pa to kPa
             value: event.body.pressure / 1000,
-            captured
+            captured,
           })
         );
       }
@@ -382,23 +369,15 @@ export default class NotehubDataProvider implements DataProvider {
         readingsToReturn.push(
           new VoltageSensorReading({
             value: event.body.voltage,
-            captured
+            captured,
           })
         );
       }
-      if (event.body.count) {
+      if (event.body.contactSwitch) {
         readingsToReturn.push(
-          new CountSensorReading({
-            value: event.body.count,
-            captured
-          })
-        );
-      }
-      if (event.body.total) {
-        readingsToReturn.push(
-          new TotalSensorReading({
-            value: event.body.total,
-            captured
+          new ContactSwitchSensorReading({
+            value: event.body.contactSwitch,
+            captured,
           })
         );
       }

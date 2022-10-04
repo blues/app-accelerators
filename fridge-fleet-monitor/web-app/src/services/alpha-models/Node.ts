@@ -9,10 +9,8 @@ interface Node {
   temperature?: number;
   voltage?: number;
   lastActivity: string;
-  count?: number;
-  total?: number;
-  gatewayUID: string;
   doorStatus?: string;
+  gatewayUID: string;
   /**
    * The signal strength for this node - lora bars.
    */

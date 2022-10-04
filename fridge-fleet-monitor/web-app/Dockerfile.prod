@@ -1,6 +1,6 @@
 # You can build and run with:
-#   docker build . -t blues:sparrow-web-app &&
-#   docker run --rm -p 3000:3000 blues:sparrow-web-app
+#   docker build . -t blues:fridge-fleet-monitor-web-app &&
+#   docker run --rm -p 3000:3000 blues:fridge-fleet-monitor-web-app
 
 # Sync with package.json volta config
 ARG NODE_VER=16.13.0

@@ -15,7 +15,6 @@ interface GatewayDetailViewModel {
     wifiBarsTooltip?: string | null;
   };
   nodes?: Node[];
-  readOnly?: boolean;
 }
 
 export default GatewayDetailViewModel;

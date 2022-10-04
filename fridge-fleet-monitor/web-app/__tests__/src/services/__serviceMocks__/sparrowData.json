@@ -21,8 +21,6 @@
       "humidity": 27.2,
       "pressure": 101.152,
       "temperature": 22.6,
-      "total": 281,
-      "count": 1,
       "bars": "N/A"
     },
     {
@@ -32,7 +30,6 @@
       "humidity": 38.1,
       "pressure": 101.95,
       "temperature": 24.3,
-      "count": 3,
       "bars": "N/A"
     }
   ],

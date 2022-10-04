@@ -15,7 +15,7 @@ docker run --rm \
   --name $POSTGRES_CONTAINER \
   -p $POSTGRES_PORT:5432 \
   -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
-  -v "sparrow.db.persistence.volume":/var/lib/postgresql/data \
+  -v "$APP_ID.db.persistence.volume":/var/lib/postgresql/data \
   postgres
 
 #### Wait for database to come up.

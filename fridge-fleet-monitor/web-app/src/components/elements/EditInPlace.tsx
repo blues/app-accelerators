@@ -7,14 +7,12 @@ type EditInPlaceData = {
   initialText: string;
   onChange: (updatedText: string) => Promise<boolean>;
   errorMessage: string;
-  enabled: boolean;
 };
 
 const EditInPlace = ({
   initialText,
   onChange,
   errorMessage,
-  enabled,
 }: EditInPlaceData) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isErred, setIsErred] = useState(false);
@@ -37,14 +35,12 @@ const EditInPlace = ({
       {!isEditing && (
         <>
           <span className={styles.editInPlaceText}>{initialText}</span>
-          {enabled && (
-            <Button
-              data-testid="edit-in-place-edit-button"
-              type="link"
-              onClick={toggleEditing}
-              icon={<EditOutlined />}
-            />
-          )}
+          <Button
+            data-testid="edit-in-place-edit-button"
+            type="link"
+            onClick={toggleEditing}
+            icon={<EditOutlined />}
+          />
         </>
       )}
       {isEditing && (

@@ -1,6 +1,6 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
-  "name": "Indoor Floo-level Tracker Reference Web App Development Dockerfile",
+  "name": "Template Reference Web App Development Dockerfile",
 
   // Sets the run context to one level up instead of the .devcontainer folder.
   "context": "..",
@@ -28,10 +28,8 @@
 
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   //"forwardPorts": [4000],
-  // Create a docker network so service discovery works between webapp and db.
-  "initializeCommand": "docker network inspect $(localEnv:APP_ID)-net || docker network create $(localEnv:APP_ID)-net",
   // Use that network.
-  "runArgs": ["--net=$(localEnv:APP_ID)-net"],
+  "runArgs": ["--net=host"],
 
   // Uncomment to use the Docker CLI from inside the container. See https://aka.ms/vscode-remote/samples/docker-from-docker.
   // "mounts": [ "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind" ],

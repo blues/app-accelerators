@@ -13,8 +13,7 @@ const SENSOR_MESSAGE = {
   NO_HUMIDITY: "—",
   NO_PRESSURE: "—",
   NO_TEMPERATURE: "—",
-  NO_COUNT: "—",
-  NO_TOTAL: "—",
+  NO_DOOR_STATUS: "—",
 };
 
 // Historical sensor data fallbacks for no historical sensor data to display
@@ -24,8 +23,7 @@ const HISTORICAL_SENSOR_DATA_MESSAGE = {
   NO_PRESSURE_HISTORY: "No pressure history available for selected date range.",
   NO_TEMPERATURE_HISTORY:
     "No temperature history available for selected date range.",
-  NO_COUNT_HISTORY: "No count history available for selected date range.",
-  NO_TOTAL_HISTORY: "No total history available for selected date range.",
+  NO_DOOR_STATUS_HISTORY: "No door status history for selected date range.",
 };
 
 // Gateway data fallbacks for empty data fields
@@ -53,7 +51,7 @@ const ERROR_MESSAGE = {
   NO_PROJECT_ID:
     "A project ID is required, but none was found. Ensure your environment variables are configured correctly for HUB_PROJECTUID.",
   NO_GATEWAYS_FOUND:
-    "We could not find gateways on your project. Ensure your HUB_PROJECTUID environment variable is configured correctly, your gateway’s Notecard is using the correct product UID, and if you've recently initialized your database try a <a href='https://github.com/blues/sparrow-reference-web-app#bulk-data-import' target='_blank' rel='noreferrer'>bulk-data-import</a>.",
+    "We could not find gateways on your project. Ensure your HUB_PROJECTUID environment variable is configured correctly, your gateway’s Notecard is using the correct product UID, and if you've recently initialized your database try manually routing Notehub events to your web app's database.",
 };
 
 const getErrorMessage = (errorCode: string) => {

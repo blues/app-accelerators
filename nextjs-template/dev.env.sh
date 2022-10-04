@@ -18,4 +18,5 @@ set +o allexport
 # These vars are used by the development database scripts
 DOCKER_DATABASE_VOLUME="${DOCKER_DATABASE_VOLUME:-$APP_ID.db.persistence.volume}"
 POSTGRES_CONTAINER="${POSTGRES_CONTAINER:-$APP_ID-postgresql-container}"
+DATABASE_URL="postgres://$POSTGRES_USERNAME:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DATABASE"
 

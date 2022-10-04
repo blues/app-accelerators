@@ -10,7 +10,6 @@ import {
   DataProvider,
   QueryResult,
   QueryHistoricalReadings,
-  BulkImport,
 } from "../DataProvider";
 import {
   ProjectID,
@@ -23,15 +22,7 @@ import {
   NodeSensorTypeNames,
 } from "../DomainModel";
 import Mapper from "./PrismaDomainModelMapper";
-import {
-  serverLogError,
-  serverLogInfo,
-  serverLogProgress,
-} from "../../pages/api/log";
-import { NotehubAccessor } from "../notehub/NotehubAccessor";
-import { SparrowEventHandler } from "../SparrowEvent";
-import { sparrowEventFromNotehubRoutedEvent } from "../notehub/SparrowEvents";
-import NotehubDataProvider from "../notehub/NotehubDataProvider";
+import { serverLogError, serverLogInfo } from "../../pages/api/log";
 import { gatewayTransformUpsert, nodeTransformUpsert } from "./importTransform";
 import {
   NodeWithGateway,
@@ -42,56 +33,9 @@ import {
 import ReadingSchema from "../alpha-models/readings/ReadingSchema";
 import VoltageSensorSchema from "../alpha-models/readings/VoltageSensorSchema";
 import HumiditySensorSchema from "../alpha-models/readings/HumiditySensorSchema";
-import CountSensorSchema from "../alpha-models/readings/CountSensorSchema";
 import TemperatureSensorSchema from "../alpha-models/readings/TemperatureSensorSchema";
-import TotalSensorSchema from "../alpha-models/readings/TotalSensorSchema";
 import PressureSensorSchema from "../alpha-models/readings/PressureSensorSchema";
-import DoorSwitchSensorSchema from "../alpha-models/readings/DoorSwitchSensorSchema";
-
-async function manageGatewayImport(
-  bi: BulkImport,
-  p: PrismaClient,
-  project: Prisma.Project,
-  gateway: GatewayDEPRECATED
-) {
-  const b = bi;
-  serverLogInfo("gateway import", gateway.name, gateway.uid);
-  try {
-    b.itemCount += 1;
-    await p.gateway.upsert(gatewayTransformUpsert(gateway, project));
-  } catch (cause) {
-    b.errorCount += 1;
-    b.itemCount -= 1;
-    serverLogError(
-      `Failed to import gateway "${gateway.name}": ${String(cause)}`.replaceAll(
-        `\n`,
-        " "
-      )
-    );
-  }
-}
-
-async function manageNodeImport(
-  bi: BulkImport,
-  p: PrismaClient,
-  project: Prisma.Project,
-  node: NodeDEPRECATED
-) {
-  const b = bi;
-  serverLogInfo("node import", node.name, node.nodeId, node.gatewayUID);
-  try {
-    b.itemCount += 1;
-    await p.node.upsert(nodeTransformUpsert(node));
-  } catch (cause) {
-    b.errorCount += 1;
-    b.itemCount -= 1;
-    serverLogError(
-      `Failed to import node "${String(node.name)}" (${node.nodeId}): ${String(
-        cause
-      )}`.replaceAll(`\n`, " ")
-    );
-  }
-}
+import ContactSwitchSensorSchema from "../alpha-models/readings/ContactSwitchSensorSchema";
 
 /**
  * Implements the DataProvider service using Prisma ORM.
@@ -104,72 +48,6 @@ export class PrismaDataProvider implements DataProvider {
     private prisma: PrismaClient,
     private projectUID: ProjectID // todo - remove
   ) {}
-
-  async doBulkImport(
-    source?: NotehubAccessor,
-    target?: SparrowEventHandler
-  ): Promise<BulkImport> {
-    serverLogInfo("Bulk import starting");
-    const b: BulkImport = { itemCount: 0, errorCount: 0 };
-
-    if (!source)
-      throw new Error("PrismaDataProvider needs a source for bulk data import");
-    if (!target)
-      throw new Error("PrismaDataProvider needs a target for bulk data import");
-
-    const project = await this.currentProject();
-
-    // Some  details have to be fetched from the notehub api (because some
-    // gateway details like name are only available in environment variables)
-    const notehubProvider = new NotehubDataProvider(source, {
-      type: "ProjectID",
-      projectUID: project.projectUID,
-    });
-    const gateways = await notehubProvider.getGateways();
-    for (const gateway of gateways) {
-      await manageGatewayImport(b, this.prisma, project, gateway);
-    }
-
-    const nodes = await notehubProvider.getNodes(gateways.map((g) => g.uid));
-    for (const node of nodes) {
-      await manageNodeImport(b, this.prisma, project, node);
-    }
-
-    const now = new Date(Date.now());
-    const pilotBulkImportDays = 10;
-    const hoursBack = 24 * pilotBulkImportDays;
-    const startDate = new Date(now);
-    startDate.setUTCHours(now.getUTCHours() - hoursBack);
-
-    serverLogInfo(`Loading events since ${startDate}`);
-    const startDateAsString = `${Math.round(startDate.getTime() / 1000)}`;
-
-    const events = await source.getEvents(startDateAsString);
-
-    const isHistorical = true;
-    let i = 0;
-    for (const event of events) {
-      i += 1;
-      try {
-        await target.handleEvent(
-          sparrowEventFromNotehubRoutedEvent(event, project.projectUID),
-          isHistorical
-        );
-        b.itemCount += 1;
-      } catch (cause) {
-        const eventString = JSON.stringify(event);
-        serverLogError(
-          `Error loading event ${eventString}. Cause: ${String(cause)}`
-        );
-        b.errorCount += 1;
-      }
-      serverLogProgress("Loaded", events.length, i);
-    }
-
-    serverLogInfo("Bulk import complete");
-
-    return b;
-  }
 
   private currentProjectID(): ProjectID {
     return this.projectUID;
@@ -342,9 +220,7 @@ export class PrismaDataProvider implements DataProvider {
     map.set(NodeSensorTypeNames.TEMPERATURE, TemperatureSensorSchema);
     map.set(NodeSensorTypeNames.HUMIDITY, HumiditySensorSchema);
     map.set(NodeSensorTypeNames.AIR_PRESSURE, PressureSensorSchema);
-    map.set(NodeSensorTypeNames.PIR_MOTION, CountSensorSchema);
-    map.set(NodeSensorTypeNames.PIR_MOTION_TOTAL, TotalSensorSchema);
-    map.set(NodeSensorTypeNames.DOOR_STATUS, DoorSwitchSensorSchema);
+    map.set(NodeSensorTypeNames.DOOR_STATUS, ContactSwitchSensorSchema);
 
     const result: ReadingDEPRECATED<unknown>[] = [];
 

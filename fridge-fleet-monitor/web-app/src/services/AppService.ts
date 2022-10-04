@@ -51,8 +51,6 @@ interface AppServiceInterface {
 
   handleEvent(event: SparrowEvent): Promise<void>;
 
-  performBulkDataImport(): Promise<AppModel.BulkDataImportStatus>;
-
   getAppNotifications(): Promise<AppNotification[]>;
 }
 
@@ -145,37 +143,11 @@ export default class AppService implements AppServiceInterface {
     return this.projectID;
   }
 
-  async performBulkDataImport(): Promise<AppModel.BulkDataImportStatus> {
-    const startTime = performance.now();
-    try {
-      const b = await this.dataProvider.doBulkImport();
-      const finishTime = performance.now();
-      return {
-        elapsedTimeMs: finishTime - startTime,
-        erroredItemCount: b.errorCount,
-        importedItemCount: b.itemCount,
-        state: "done",
-      };
-    } catch (cause) {
-      const finishTime = performance.now();
-      return {
-        elapsedTimeMs: finishTime - startTime,
-        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-        err: `Please Try Again. Cause: ${cause}`,
-        erroredItemCount: 0,
-        importedItemCount: 0,
-        state: "failed",
-      };
-    }
-  }
-
   async getAppNotifications(): Promise<AppNotification[]> {
     const notifications: Notification[] =
       await this.notificationStore.getNotifications();
     const result = (
-      await Promise.all(
-        notifications.map(async (n) => await this.appNotification(n))
-      )
+      await Promise.all(notifications.map(async (n) => this.appNotification(n)))
     ).filter((e): e is AppNotification => e !== null);
     return result;
   }
@@ -185,7 +157,7 @@ export default class AppService implements AppServiceInterface {
   ): Promise<AppNotification | null> {
     switch (true) {
       case notification.type === SPARROW_NODE_PROVISIONED_NOTIFICATION:
-        return await this.buildNodePairedModel(
+        return this.buildNodePairedModel(
           notification as NodePairedNotification
         );
     }
@@ -206,7 +178,7 @@ export default class AppService implements AppServiceInterface {
       type: NodePairedWithGatewayAppNotificationType,
       gateway,
       node,
-      when: notification.when.getTime()
+      when: notification.when.getTime(),
     };
     return result;
   }
