@@ -27,7 +27,6 @@
     "longitude": 138.884734375
   },
   "successfulNotehubLatestEventsResponse": {
-    "uid": "dev:1234",
     "latest_events": [
       {
         "file": "203237463236500200320044#data.qo",

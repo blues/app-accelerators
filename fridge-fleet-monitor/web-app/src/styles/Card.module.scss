@@ -1,0 +1,110 @@
+@import "_variables.scss";
+
+.cardStyle,
+.gatewayCardStyle {
+  margin: 5px 10px 5px 0;
+  padding: 0 14px;
+  box-shadow: 0px 1px 4px rgb(0 0 0 / 25%);
+  border: 0.2rem solid transparent;
+
+  :global .ant-card-head-title {
+    line-height: 21px;
+    padding: 14px 0 6px 0;
+  }
+
+  :global .ant-typography-ellipsis {
+    display: block;
+    width: 100%;
+  }
+
+  .headerSection {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .timestamp {
+    color: $bw-color--grey4;
+    font-size: 11px;
+  }
+
+  .locationWrapper {
+    padding-top: 4px;
+
+    .locationTitle {
+      font-size: 13px;
+      padding-right: 8px;
+    }
+
+    .location {
+      font-size: 13px;
+      font-weight: 600;
+    }
+  }
+
+  .powerSignalWrapper {
+    display: flex;
+    align-items: center;
+
+    .voltage {
+      padding-right: 8px;
+      font-size: 13px;
+    }
+  }
+
+  :global .ant-card-body {
+    padding: 0;
+  }
+
+  :global .ant-card-extra {
+    padding-top: 0;
+    position: relative;
+    top: -5px;
+  }
+
+  .cardContents,
+  .cardContentsSensor {
+    padding: 10px 0 20px 0;
+    margin-bottom: 0;
+
+    :global .ant-col {
+      text-align: center;
+      font-size: 14px;
+
+      span {
+        font-weight: 600;
+        font-size: 16px;
+      }
+    }
+  }
+}
+
+.gatewayCardStyle {
+  :global .ant-card-head {
+    border-bottom: none !important;
+  }
+}
+
+@media screen and (max-width: $breakpoints-md) {
+  .cardStyle {
+    :global .ant-card-head-title {
+      font-size: 18px;
+    }
+
+    .timestamp {
+      font-size: 13px;
+    }
+
+    .cardContents {
+      justify-content: space-evenly;
+
+      li {
+        font-size: 16px;
+
+        span {
+          font-size: 18px;
+        }
+      }
+    }
+  }
+}

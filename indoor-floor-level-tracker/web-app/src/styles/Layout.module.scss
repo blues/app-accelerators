@@ -1,12 +1,17 @@
 @import "_variables.scss";
 
-.mainContent {
-  // required to override default Ant Design component styling
-  min-height: calc(100vh - $header-bar-height - $footer-bar-height) !important;
-  width: clamp($page-content-xs, $page-content-md, calc(100vw - 128px));
-  margin: 0 auto;
-  padding-top: 20px;
-  padding-bottom: 50px;
+.mainContentWrapper {
+  flex-grow: 1;
+
+  .mainContent {
+    // required to override default Ant Design component styling
+    min-height: calc(
+      100vh - $header-bar-height - $footer-bar-height
+    ) !important;
+    max-width: 944px;
+    margin: 0 auto;
+    padding: 0 30px 50px 30px;
+  }
 }
 
 @media screen and (max-width: $breakpoints-md) {
@@ -14,5 +19,21 @@
     min-height: calc(
       100vh - $header-bar-height - $tablet-footer-bar-height
     ) !important;
+  }
+}
+
+@media screen and (max-width: $breakpoints-sm) {
+  .mainContentWrapper {
+    min-height: calc(
+      100vh - $header-bar-height - $mobile-settings-footer-bar-height
+    );
+  }
+}
+
+@media screen and (max-width: $breakpoints-xs) {
+  .mainContentWrapper {
+    .mainContent {
+      padding: 0 16px;
+    }
   }
 }

@@ -1,19 +1,21 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable class-methods-use-this */
-import { env } from "process";
-import { ClientDevice, DeviceTracker, TrackerConfig } from "../ClientModel";
+import { sub, formatDistanceToNow, parseISO } from "date-fns";
+import { uniqBy } from "lodash";
+import { DeviceTracker, TrackerConfig } from "../AppModel";
 import { DataProvider } from "../DataProvider";
 import { Device, DeviceID, FleetID, Project, ProjectID } from "../DomainModel";
 import NotehubDevice from "./models/NotehubDevice";
 import NotehubEnvVars from "./models/NotehubEnvVars";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
+import NotehubRoutedEvent from "./models/NotehubRoutedEvent";
 import { NotehubAccessor } from "./NotehubAccessor";
 
 interface HasDeviceId {
   uid: string;
 }
 
-// N.B.: Noteub defines 'best' location with more nuance than we do here (e.g
+// N.B.: Notehub defines 'best' location with more nuance than we do here (e.g
 // considering staleness). Also this algorithm is copy-pasted in a couple places.
 export const getBestLocation = (object: NotehubLocationAlternatives) =>
   object.gps_location || object.triangulated_location || object.tower_location;
@@ -26,18 +28,23 @@ export function notehubDeviceToIndoorTracker(device: NotehubDevice) {
     ...(getBestLocation(device) && {
       location: getBestLocation(device)?.name,
     }),
+    voltage: `${device.voltage}`,
   };
 }
 
-export function filterLatestEventsData(latestDeviceEvents: any) {
-  const dataEvent = latestDeviceEvents.latest_events.filter(
-    (event: { file: string }) => event.file === "data.qo"
-  );
-  // add device uid for later identification of which events belong to which device
-  return {
-    uid: latestDeviceEvents.uid,
-    ...dataEvent[0].body,
-  };
+export function filterEventsData(events: NotehubRoutedEvent[], file: string) {
+  const dataEvent = events.filter((event) => event.file === file).reverse();
+
+  return dataEvent;
+}
+
+export function extractRelevantEventBodyData(events: NotehubRoutedEvent[]) {
+  const relevantEventInfo = events.map((event) => ({
+    ...event.body,
+    uid: event.device,
+  }));
+
+  return relevantEventInfo;
 }
 
 export function mergeObject<CombinedEventObj>(
@@ -70,6 +77,25 @@ export function reducer<CombinedEventObj extends HasDeviceId>(
   return groups;
 }
 
+export function formatDeviceTrackerData(deviceTrackerData: DeviceTracker[]) {
+  const formattedDeviceTrackerData = deviceTrackerData.map((data) => ({
+    ...data,
+    lastActivity: formatDistanceToNow(parseISO(data.lastActivity), {
+      includeSeconds: true,
+    }),
+    ...(data.altitude && { altitude: Number(data.altitude).toFixed(1) }),
+    voltage: `${Number(data.voltage).toFixed(1)}V`,
+    ...(data.pressure && {
+      pressure: `${Number(data.pressure).toFixed(1)} hPa`,
+    }),
+    ...(data.temperature && {
+      temp: `${Number(data.temperature).toFixed(1)}C`,
+    }),
+  }));
+
+  return formattedDeviceTrackerData;
+}
+
 export function trackerConfigToEnvironmentVariables(
   trackerConfig: TrackerConfig
 ) {
@@ -98,6 +124,15 @@ export function environmentVariablesToTrackerConfig(envVars: NotehubEnvVars) {
   } as TrackerConfig;
 }
 
+export function epochStringMinutesAgo(minutesToConvert: number) {
+  const date = new Date();
+  const rawEpochDate = sub(date, { minutes: minutesToConvert });
+  const formattedEpochDate = Math.round(
+    rawEpochDate.getTime() / 1000
+  ).toString();
+  return formattedEpochDate;
+}
+
 export default class NotehubDataProvider implements DataProvider {
   constructor(
     private readonly notehubAccessor: NotehubAccessor,
@@ -105,49 +140,42 @@ export default class NotehubDataProvider implements DataProvider {
     private readonly fleetID: FleetID
   ) {}
 
-  async getProject(): Promise<Project> {
-    const project: Project = {
-      id: this.projectID,
-      name: "fixme",
-      description: "fixme",
-    };
-    return project;
+  async getDevicesByFleet(): Promise<NotehubDevice[]> {
+    const devicesByFleet = await this.notehubAccessor.getDevicesByFleet();
+    return devicesByFleet;
   }
 
-  async getDevices(): Promise<Device[]> {
-    throw new Error("Method not implemented.");
-  }
-
-  async getDevice(deviceID: DeviceID): Promise<Device | null> {
-    throw new Error("Method not implemented.");
+  async getEvents(minutesAgo: number): Promise<NotehubRoutedEvent[]> {
+    const epochDateMinutesAgo = epochStringMinutesAgo(minutesAgo);
+    const events = await this.notehubAccessor.getEvents(epochDateMinutesAgo);
+    return events;
   }
 
   async getDeviceTrackerData(): Promise<DeviceTracker[]> {
-    const trackerDevices: ClientDevice[] = [];
-    let deviceUIDs: string[] = [];
-    let deviceTrackerData: DeviceTracker[] = [];
+    const trackerDevices: DeviceTracker[] = [];
+    let formattedDeviceTrackerData: DeviceTracker[] = [];
 
     // get all the devices by fleet ID
-    const rawDevices = await this.notehubAccessor.getDevicesByFleet();
-    rawDevices.forEach((device) => {
+    const devicesByFleet = await this.getDevicesByFleet();
+    devicesByFleet.forEach((device) => {
       trackerDevices.push(notehubDeviceToIndoorTracker(device));
     });
 
-    deviceUIDs = trackerDevices.map((device) => device.uid);
+    // fetch events for the last X minutes from Notehub
+    const MINUTES_OF_NOTEHUB_DATA_TO_FETCH = 6;
+    const rawEvents = await this.getEvents(MINUTES_OF_NOTEHUB_DATA_TO_FETCH);
 
-    // get latest events for each device in fleet by device ID
-    const rawLatestEvents = await Promise.all(
-      deviceUIDs.map((deviceID) =>
-        this.notehubAccessor.getLatestEvents(deviceID)
-      )
-    );
-    // filter down to just latest data.qo event for each device
-    const filteredLatestEvents = rawLatestEvents.map((event) =>
-      filterLatestEventsData(event)
-    );
+    // filter down to only data.qo events and reverse the order to get the latest event first
+    const filteredEvents = filterEventsData(rawEvents, "floor.qo");
+
+    // get unique events by device ID
+    const uniqueEvents = uniqBy(filteredEvents, "device");
+
+    // pull out relevant device data from unique events
+    const mappedEvents: object[] = extractRelevantEventBodyData(uniqueEvents);
 
     // concat the device info from fleet with latest device info
-    const combinedEventsDevices = trackerDevices.concat(filteredLatestEvents);
+    const combinedEventsDevices = [...trackerDevices, ...mappedEvents];
 
     // combine events with matching device IDs with helper functions defined above
     const reducedEventsIterator = combinedEventsDevices
@@ -155,8 +183,30 @@ export default class NotehubDataProvider implements DataProvider {
       .values();
 
     // transform the Map iterator obj into plain array
-    deviceTrackerData = Array.from(reducedEventsIterator);
-    return deviceTrackerData;
+    const deviceTrackerData: any[] = Array.from(reducedEventsIterator);
+
+    // format the data to round the numbers to 2 decimal places
+    formattedDeviceTrackerData = formatDeviceTrackerData(deviceTrackerData);
+
+    const alarmEvents = filterEventsData(rawEvents, "alarm.qo");
+    const uniqueAlarmEvents = uniqBy(alarmEvents, "device");
+    this.appendAlarmData(uniqueAlarmEvents, formattedDeviceTrackerData);
+
+    return formattedDeviceTrackerData;
+  }
+
+  private appendAlarmData(
+    alarmEvents: NotehubRoutedEvent[],
+    trackers: DeviceTracker[]
+  ) {
+    alarmEvents.forEach((event) => {
+      trackers
+        .filter((tracker) => event.device === tracker.uid)
+        .forEach((tracker) => {
+          // eslint-disable-next-line no-param-reassign
+          tracker.lastAlarm = `${event.when}`;
+        });
+    });
   }
 
   async getTrackerConfig(): Promise<TrackerConfig> {
@@ -166,21 +216,5 @@ export default class NotehubDataProvider implements DataProvider {
       );
     const envVars = envVarResponse.environment_variables;
     return environmentVariablesToTrackerConfig(envVars);
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  doBulkImport(): Promise<never> {
-    throw new Error("It's not possible to do bulk import of data to Notehub");
-  }
-
-  /**
-   * We made the interface more general (accepting a projectID) but the implementation has the
-   * ID fixed. This is a quick check to be sure the project ID is the one expected.
-   * @param projectID
-   */
-  private checkProjectID(projectID: ProjectID) {
-    if (projectID.projectUID !== this.projectID.projectUID) {
-      throw new Error("Project ID does not match expected ID");
-    }
   }
 }

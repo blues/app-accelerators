@@ -1,0 +1,53 @@
+@import "_variables.scss";
+
+.settingsContainer {
+  .sectionTitle {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    margin-top: 24px;
+  }
+
+  .settingsCard {
+    width: 100%;
+    border: 1px solid $bw-color--grey3;
+
+    .settingsText {
+      color: $bw-color--grey3;
+      font-size: 14px;
+      margin-bottom: 0;
+    }
+
+    :global .ant-card-head {
+      background-color: $bw-color--grey1;
+      border-bottom: 1px solid $bw-color--grey2;
+    }
+
+    :global .ant-card-head-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    :global .ant-card-body {
+      font-size: 14px;
+    }
+
+    :global .ant-input-number {
+      width: 295px;
+      font-size: 14px;
+    }
+  }
+}
+
+@media screen and (max-width: $breakpoints-sm) {
+  .settingsContainer {
+    .sectionTitle {
+      margin-top: 16px;
+      margin-bottom: 8px;
+    }
+
+    :global .ant-card-body {
+      padding: 12px;
+    }
+  }
+}

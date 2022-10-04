@@ -1,120 +1,78 @@
-import { useEffect, useState, useRef } from "react";
 import { GetServerSideProps, NextPage } from "next";
-import { Alert } from "antd";
-import { usePubNub } from "pubnub-react";
-import Pubnub, { FetchMessagesResponse } from "pubnub";
-import { uniqBy } from "lodash";
-import { DeviceTracker } from "../services/ClientModel";
-import { services } from "../services/ServiceLocatorServer";
+import { useRouter } from "next/router";
+import { Alert, Button, Col, Row } from "antd";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "react-query";
 import { getErrorMessage } from "../constants/ui";
 import { ERROR_CODES } from "../services/Errors";
+import { DeviceTracker, TrackerConfig } from "../services/AppModel";
 import Config from "../../Config";
-import Table, { TableProps } from "../components/elements/Table";
+import { useDeviceTrackerData } from "../hooks/useDeviceTrackerData";
+import { services } from "../services/ServiceLocatorServer";
+import { services as clientSideServices } from "../services/ServiceLocatorClient";
+import { LoadingSpinner } from "../components/layout/LoadingSpinner";
+import LiveTrackCard from "../components/elements/LiveTrackCard";
+import RespondersByFloorTable from "../components/elements/RespondersByFloorTable";
+import TrackerTable from "../components/elements/TrackerTable";
+import MotionAlertConfigCard from "../components/elements/MotionAlertConfigCard";
 import styles from "../styles/Home.module.scss";
 
 type HomeData = {
-  deviceTrackers: DeviceTracker[];
-  err?: string;
+  fleetTrackerConfig: TrackerConfig;
+  error: string;
 };
 
-const Home: NextPage<HomeData> = ({ deviceTrackers, err }) => {
+const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const infoMessage = "Deploy message";
-  // let pubnub: any;
-  // if (pubnub) {
-  //   pubnub = usePubNub();
-  // }
-  // const [channels] = useState(["nf1-test"]); // todo make this a constant?
-  // const dataRef = useRef(); // holds previous device state when page re-renders from PubNub update
-  // const [data, setData] = useState([]);
+  const MS_REFETCH_INTERVAL = 10000;
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isErrored, setIsErrored] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [isLiveTrackingEnabled, setIsLiveTrackingEnabled] =
+    useState<boolean>(false);
+  const [currentNoMovementValue, setCurrentNoMovementValue] =
+    useState<number>(120);
 
-  // const fetchPubNubHistory = () => {
-  //   pubnub.fetchMessages(
-  //     {
-  //       channels: ["nf1-test"],
-  //     },
-  //     (status: Pubnub.PubnubStatus, response: FetchMessagesResponse) => {
-  //       console.log(status, response);
-  //       const sortedEvents = response.channels["nf1-test"].sort(
-  //         (a, b) => parseFloat(b.message.when) - parseFloat(a.message.when)
-  //       );
-  //       const uniqueDevices = uniqBy(sortedEvents, "message.device");
-  //       const devicesData = uniqueDevices.map((device) => device.message);
-  //       dataRef.current = devicesData; // ref needed to hold values after page re-renders from state update
-  //       setData(devicesData);
-  //     }
-  //   );
-  // };
-
-  // const handleEvent = (event) => {
-  //   let msgArr: DataType[] = [];
-
-  //   const updatedArr = dataRef.current.map((device) => {
-  //     if (event.message.device === device.device) {
-  //       return event.message;
-  //     }
-  //     return device;
-  //   });
-
-  //   msgArr = updatedArr;
-  //   dataRef.current = msgArr; // update ref before next event comes through and this function's called again
-  //   setData(msgArr);
-  // };
-
-  // useEffect(() => {
-  //   // if pubnub is enabled, subscribe to listeners and fetch latest device history data
-  //   if (pubnub) {
-  //     pubnub.addListener({ message: handleEvent });
-  //     pubnub.subscribe({ channels });
-
-  //     fetchPubNubHistory();
-  //   }
-  // }, [pubnub, channels]);
-
-  const tableInfo: TableProps = {
-    columns: [
-      {
-        title: "Device Name",
-        dataIndex: "name",
-        key: "name",
-      },
-      {
-        title: "Device ID",
-        dataIndex: "uid",
-        key: "uid",
-      },
-      {
-        title: "Location",
-        dataIndex: "location",
-        key: "location",
-      },
-      {
-        title: "Timestamp",
-        dataIndex: "lastActivity",
-        key: "lastActivity",
-      },
-      {
-        title: "Altitude",
-        dataIndex: "altitude",
-        key: "altitude",
-      },
-      {
-        title: "Floor",
-        dataIndex: "floor",
-        key: "floor",
-      },
-      {
-        title: "Pressure",
-        dataIndex: "pressure",
-        key: "pressure",
-      },
-      {
-        title: "Temperature",
-        dataIndex: "temp",
-        key: "temperature",
-      },
-    ],
-    data: deviceTrackers,
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const alarmService = clientSideServices().getAlarmService();
+  // refresh the page
+  const refreshData = async () => {
+    // eslint-disable-next-line no-void
+    void router.replace(router.asPath);
   };
+  const refreshDataAndInvalidateCache = async () => {
+    // Clear the client-side cache so when we refresh the page
+    // it refetches data to get the updated name.
+    await queryClient.invalidateQueries();
+    await refreshData();
+  };
+
+  const { error: deviceTrackersError, data: deviceTrackers } =
+    useDeviceTrackerData(MS_REFETCH_INTERVAL);
+
+  const err =
+    deviceTrackersError && getErrorMessage(deviceTrackersError.message);
+
+  const trackers: DeviceTracker[] | undefined = deviceTrackers;
+
+  useEffect(() => {
+    if (fleetTrackerConfig && fleetTrackerConfig.live) {
+      setIsLiveTrackingEnabled(fleetTrackerConfig.live);
+    }
+    if (fleetTrackerConfig && fleetTrackerConfig.noMovementThreshold) {
+      setCurrentNoMovementValue(fleetTrackerConfig.noMovementThreshold);
+    }
+  }, [fleetTrackerConfig]);
+
+  const clearAlarms = async () => {
+    alarmService.setLastAlarmClear();
+    await refreshData();
+  };
+
+  useEffect(() => {
+    refreshData();
+  }, [isLiveTrackingEnabled, currentNoMovementValue]);
 
   return (
     <div className={styles.container}>
@@ -123,15 +81,76 @@ const Home: NextPage<HomeData> = ({ deviceTrackers, err }) => {
           className={styles.errorMessage}
           // life in the fast lane...
           // eslint-disable-next-line react/no-danger
-          dangerouslySetInnerHTML={{ __html: err }}
+          dangerouslySetInnerHTML={{ __html: err || error }}
         />
       ) : (
-        <>
-          <Table columns={tableInfo.columns} data={tableInfo.data} />
-          {Config.isBuildVersionSet() ? (
-            <Alert description={infoMessage} type="info" closable />
-          ) : null}
-        </>
+        <LoadingSpinner isLoading={isLoading}>
+          <div>
+            {isErrored && (
+              <Alert type="error" message={errorMessage} closable />
+            )}
+            {trackers && (
+              <>
+                <h3 className={styles.sectionTitle}>Fleet Controls</h3>
+                <Row gutter={16}>
+                  <Col className={styles.motionAlertCard}>
+                    <MotionAlertConfigCard
+                      setIsErrored={setIsErrored}
+                      setIsLoading={setIsLoading}
+                      setErrorMessage={setErrorMessage}
+                      currentNoMovementThreshold={currentNoMovementValue}
+                      setCurrentNoMovementThreshold={setCurrentNoMovementValue}
+                    />
+                  </Col>
+                  <Col className={styles.liveTrackCard}>
+                    <LiveTrackCard
+                      setIsErrored={setIsErrored}
+                      setIsLoading={setIsLoading}
+                      setErrorMessage={setErrorMessage}
+                      isLiveTrackingEnabled={isLiveTrackingEnabled}
+                      setIsLiveTrackingEnabled={setIsLiveTrackingEnabled}
+                    />
+                  </Col>
+                </Row>
+                <Row gutter={[16, 24]}>
+                  <Col xs={24} sm={24} md={24} lg={20}>
+                    <div className={styles.tableHeaderRow}>
+                      <h3 className={styles.sectionTitle}>Fleet</h3>
+                      {alarmService.areAlarmsPresent(trackers) && (
+                        <Button
+                          type="primary"
+                          danger
+                          onClick={clearAlarms}
+                          size="large"
+                        >
+                          Clear Alarms
+                        </Button>
+                      )}
+                    </div>
+                  </Col>
+                  <Col xs={12} sm={7} md={6} lg={4} />
+                </Row>
+                <Row gutter={[16, 24]}>
+                  <Col xs={24} sm={24} md={24} lg={20}>
+                    <TrackerTable
+                      setIsErrored={setIsErrored}
+                      setIsLoading={setIsLoading}
+                      setErrorMessage={setErrorMessage}
+                      refreshData={refreshDataAndInvalidateCache}
+                      data={trackers}
+                    />
+                  </Col>
+                  <Col xs={12} sm={7} md={6} lg={4}>
+                    <RespondersByFloorTable data={trackers} />
+                  </Col>
+                </Row>
+              </>
+            )}
+            {Config.isBuildVersionSet() ? (
+              <Alert description={infoMessage} type="info" closable />
+            ) : null}
+          </div>
+        </LoadingSpinner>
       )}
     </div>
   );
@@ -139,24 +158,23 @@ const Home: NextPage<HomeData> = ({ deviceTrackers, err }) => {
 export default Home;
 
 export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
-  let deviceTrackers: DeviceTracker[] = [];
-  let err = "";
+  let fleetTrackerConfig: TrackerConfig = {};
+  let error = "";
 
   try {
     const appService = services().getAppService();
-    // fetch device tracker data
-    deviceTrackers = await appService.getDeviceTrackerData();
+    fleetTrackerConfig = await appService.getTrackerConfig();
 
     return {
-      props: { deviceTrackers, err },
+      props: { fleetTrackerConfig, error },
     };
   } catch (e) {
-    err = getErrorMessage(
+    error = getErrorMessage(
       e instanceof Error ? e.message : ERROR_CODES.INTERNAL_ERROR
     );
   }
 
   return {
-    props: { deviceTrackers, err },
+    props: { fleetTrackerConfig, error },
   };
 };
