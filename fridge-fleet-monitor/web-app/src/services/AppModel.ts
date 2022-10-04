@@ -24,7 +24,6 @@ export interface Project {
  */
 export type AppDate = number;
 
-// export type ReadingsKeyedBySensorTypeName = { [key in string]: Reading };
 
 export type SensorTypeCurrentReading = {
   sensorType: SensorType;
