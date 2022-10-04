@@ -1,6 +1,10 @@
 # Indoor Floor-Level Tracker
 
-A highly accurate floor-level tracker for response teams at emergency events. To run
+A highly accurate floor-level tracker for response teams at emergency events.
+
+![The display of the final web app for floor tracking](images/web-app-display.png)
+
+To run
 this project yourself you’ll need to:
 
 * [Configure Notehub](#notehub-setup).
@@ -78,113 +82,14 @@ running on your device.
 
 ## Firmware
 
-This project’s firmware is built with [Platform.io](https://platformio.org/) as an
-Arduino application. To run the firmware, start by ensuring you have the prerequisites
-below installed.
-
-### Prerequisites
-
-1. Download and install [Visual Studio Code](https://code.visualstudio.com/).
-1. Install the [PlatformIO IDE extension](https://marketplace.visualstudio.com/items?itemName=platformio.platformio-ide)
-via the Extensions menu of Visual Studio Code.
-![Visual Studio Code extensions menu with a search of "platformio"](images/platformio-extension.png)
-
-### Opening
-
-Once you have Visual Studio Code and the PlatformIO extension installed, you next need
-to open the firmware within PlatformIO.
-
-1. Download or clone this repository, so that you have a copy of the firmware source
-code locally.
-1. Open the PlatformIO extension by clicking on the PlatformIO logo in the menu bar. Next,
-click the “Open” option under the “PIO Home” menu  and finally “Open Project”.
-![Instructions on how to open a project in PlatformIO](images/platformio-open-project.png)
-1. Select the `firmware` folder from within your local copy of this repository,
-and click the **Open "firmware"** button.
-![How to open the firmware folder in PlatformIO](images/platformio-open-firmware.png)
-
-### Flashing
-
-With the firmware project open, you can now make any changes you’d like to the firmware
-source code, and then flash the firmware to your device.
-
-Complete the following steps to upload firmware in in PlatformIO.
-
-1. Connect your Swan to your computer using [these steps](https://dev.blues.io/quickstart/swan-quickstart/#programming-swan-platformio).
-
-> **NOTE**: The project’s default configuration assumes you’re using an
-[STLINK-V3MINI programmer and debugger](https://shop.blues.io/products/stlink-v3mini).
-If you’re not, make sure to open your `platformio.ini` file and change the `upload_protocol`
-to `dfu`.
-
-2. Once you have everything connected, click the checkmark button that appears at the
-bottom of your Visual Studio Code window.
-![Uploading firmware in PlatformIO](images/platformio-upload.png)
-
-Once the firmware is running on your device, you might additionally want to open a serial
-monitor to view the firmware’s logs. You can do so by clicking the plug button that appears
-at the bottom of your Visual Studio Code window.
-
-![Opening a serial monitor in PlatformIO](images/platformio-serial-monitor.png)
-
-The firmware has both an idle mode and a live mode, which you can control with your fleet’s
-`live` environment variable.
-
-When in idle mode (`live: false`) the firmware monitors for environment variable changes,
-but does not read from the sensor or send readings.
-
-When in live mode (`live: true`) the firmware constantly reads the pressure level on the
-BMP581 and immediately sends a note under the following conditions.
-
-* **The floor level changes.** If the firmware determines a device has changed floors, it
-sends a `floor.qo` note.
-* **The no-movement threshold has been surpassed.** If the firmware determines a device has
-not changed floors in the interval configured by the `no_movement_threshold` environment
-variable, it sends an `alarm.qo` note.
-
-Once you have the firmware running, you may want to change the fleet’s `live` environment
-variable to `true` to test floor changing and the alarm logic. You will likely also want
-to attach a LiPo battery to the Notecarrier-F so you take your hardware away from your
-computer for testing.
-
-When you are testing you can manually view events as they come in on Notehub, but it’s
-far easier to monitor your devices in this project’s web application.
+The Indoor Floor-Level Tracker project has custom firmware that runs on
+the Swan. As a next step, complete the [firmware’s setup guide](firmware/)
+to get your firmware up and running.
 
 ## Web Application
 
 The Indoor Floor-Level Tracker’s web application allows you to view device data and 
 manage environment variables in a browser.
 
-To get started, make sure you have a copy of this project’s repository locally, and
-then open up the `indoor-floor-level-tracker/web-app` folder in your text editor or
-IDE.
-
-From there, complete the [Web Application Development Overview](https://github.com/blues/nifty-fifty/wiki/Web-Application-Development-Overview/_edit), which walks
-you through installing all of the web app’s dependencies, setting up a Notehub
-route, creating a database, and running the application.
-
-When you’re done, there’s one additional web environment variable you’ll need to
-add for the Indoor Floor-Level Tracker to work. To do so, open your web app’s
-`.env` file and add the following line.
-
-```
-HUB_FLEET_UID=fleet:00000000-0000-0000-0000-000000000000
-```
-
-Next, open your Notehub project, navigate to your project’s fleet you set up
-earlier, and find your fleet’s UID in its settings. Copy this UID, and paste
-it in your `.env` file (replacing the `fleet:0000...` placeholder.)
-
-![Location of the fleet UID in Notehub](images/notehub-fleet-uid.png)
-
-And with that last change in place, you’re ready to start the
-app up with `yarn dev`.
-
-```bash
-yarn dev
-```
-
-If all went well, you should see your devices and a form for changing Notehub
-environment variables.
-
-> **TODO**: Add image of the final web application
+As a final step, complete the [web app’s setup guide](web-app/) to get the
+app running on your development machine.

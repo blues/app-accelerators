@@ -58,7 +58,7 @@ const SettingsPage: NextPage<SettingsData> = ({
           htmlType="submit"
           type="primary"
         >
-          Save Changes
+          Save
         </Button>
       ),
     },
