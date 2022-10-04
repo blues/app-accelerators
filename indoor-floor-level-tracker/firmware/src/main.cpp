@@ -9,6 +9,15 @@
 // Uncomment to use a connected SSD1306 Display
 // #define USE_DISPLAY
 
+// Uncomment to rotate the connected display 180 degrees
+// #define DISPLAY_ROTATE_180
+
+// Uncomment to give the OLED Display power from digital MCU pins.
+// Safe for 0.91 Inch I2C OLED Display on Notecarrier-F + Blues Swan.
+// UNSAFE if your display takes more amps than your microcontroller can supply.
+// #define DISPLAY_POWER_PIN 5
+// #define DISPLAY_GROUND_PIN 6
+
 // Uncomment to output the floor sample every second
 // #define DEBUG_FLOOR_SAMPLES
 
