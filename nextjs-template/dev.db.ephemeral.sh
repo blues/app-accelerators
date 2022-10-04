@@ -11,7 +11,7 @@ source ./dev.env.sh
 # To run a docker image with a clean database
 docker run --rm \
   -d `# detached` \
-  --net=$APP_ID-net \
+  --net=host \
   --name $POSTGRES_CONTAINER \
   -p $POSTGRES_PORT:5432 \
   -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
@@ -27,6 +27,9 @@ timeout $seconds sh -c 'until nc -z $0 $1; do sleep 1; done' "$POSTGRES_HOST" "$
     exit 10
   )
 
-source dev.db.update.sh
+#### Reset the Datastore and generate the datastore tables
+yarn db:reset
+
+ ./dev.db.update.sh
 
 echo Database is now running the background. Use ./dev.db.stop.sh to stop it.
