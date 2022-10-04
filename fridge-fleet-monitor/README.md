@@ -26,7 +26,7 @@ In addition to the Sparrow quickstart docs, connect the Adafruit magnetic contac
 
 ![The Sparrow node with magnetic door sensor attached close up](images/readme-sparrow-sensor-closeup.jpg)
 
-With that, the hardware should be assembled, and flashing firmware is up next.
+With that done, the hardware is assembled, and flashing firmware is up next.
 
 ## Firmware
 
@@ -42,11 +42,11 @@ To attach the Sparrow node inside the fridge, use Command Strips or some other a
 
 ![Sparrow node mounted inside refrigerator on side wall](images/readme-sparrow-mounted-fridge.jpg)
 
-Sparrow node installed in a refrigeration unit.
+_Sparrow node installed in a refrigeration unit._
 
 ![Sparrow node mounted inside freezer on side wall](images/readme-sparrow-mounted-freezer.jpg)
 
-Sparrow node installed in a freezer unit.
+_Sparrow node installed in a freezer unit._
 
 > **NOTE**: Be advised batteries are not an optimal power source in cold conditions, and it's recommended to have a steady state power source for long term fridge fleet monitor projects. Also consider drilling holes through the back of the Sparrow node enclosure to allow for the contact sensor wires to pass through while protecting the rest of the device's innards.
 
@@ -60,22 +60,22 @@ Notice multiple Command Strips raise the connected contact switch sensor on the 
 
 Here's how it looks opened. The rubber seal of the door does not interfere with or impede the contact switches from correctly reporting to the Sparrow node inside the fridge at all.
 
-Now that the harware is installed, the last task to do is to set up the web app.
+Now that the harware is installed, the last task left is to set up the web app.
 ## Web Application
 
 The Fridge Fleet Monitor's web application is based on the [Sparrow Reference Web App](https://github.com/blues/sparrow-reference-web-app). 
 
-Refer to the [`README.md`](web-app/README.md) file in this project's `web-app` folder for full instructions.
+Refer to the [`README.md`](web-app/README.md) file in this project's [`web-app`](web-app/) folder for full setup instructions.
 
-If all goes well, you'll end up with a Fridge Fleet Monitor dashboard similar to these one.
+If all goes well, you'll end up with a Fridge Fleet Monitor dashboard similar to these.
 
 ![Fridge Fleet Monitor web app dashboard](images/readme-refrigerator-fleet-monitor-dashboard.png)
 
-Fridge Fleet Monitor main dashboard.
+_Fridge Fleet Monitor main dashboard._
 
 ![Fridge Fleet Monitor node details page](images/readme-fridge-fleet-monitor-node-details.png)
 
-Fridge Fleet Monitor node details.
+_Fridge Fleet Monitor node details._
 
 
 

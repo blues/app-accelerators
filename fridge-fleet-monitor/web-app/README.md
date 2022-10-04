@@ -28,7 +28,6 @@ This application is based off of the [Blues Wireless Sparrow Reference Web App](
   - [Cloud Deployment](#cloud-deployment)
     - [Deploy on Netlify (recommended)](#deploy-on-netlify-recommended)
     - [Deploy on Vercel](#deploy-on-vercel)
-    - [Deploy on Microsoft Azure Cloud](#deploy-on-microsoft-azure-cloud)
   - [Security](#security)
   - [Testing](#testing)
     - [Testing with Jest](#testing-with-jest)
@@ -430,48 +429,6 @@ information.
 The next easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Read our step-by-step guide to [deploying the Sparrow Reference Web App app on Vercel](https://bluesinc.atlassian.net/wiki/spaces/SPAR/pages/4817057/Deploy+the+Sparrow+Starter+Web+App+Using+Vercel) for more information.
-
-### Deploy on Microsoft Azure Cloud
-
-> **NOTE**: Running this site as Azure Container Instances will cost about $30/mo.
-
-Follow the steps below to deploy to [Microsoft Azure Cloud](https://azure.microsoft.com/en-us/). If you need more details on any of the steps, see
-[Docker’s documentation on deploying Docker containers on Azure](https://docs.docker.com/cloud/aci-integration/).
-
-**Build Machine and Cloud Setup**
-
-1. Sign up for [Azure](https://azure.microsoft.com/en-us/).
-1. Sign up for [Docker Hub](https://hub.docker.com/signup).
-1. Install [Docker](https://docs.docker.com/get-docker/).
-1. Install [docker-compose](https://docs.docker.com/compose/install/).
-1. Install the confusingly named [Compose
-   CLI](https://github.com/docker/compose-cli), which adds cloud-specific
-   compose-like support to `docker` via a wrapper of the standard `docker` cli.
-1. Check that _Compose CLI_ is working. `docker version | grep 'Cloud integration' && echo Yay || echo Boo`.
-1. Sign into Azure using `docker login azure`. See <https://docs.docker.com/cloud/aci-integration/>.
-1. Create a docker context on Azure named however you like. For example, `docker context create aci myacicontext`.
-
-**Configure the _fridge-fleet-monitor-web-app_ environment**
-
-1. `cp .env.example .env.production.local`
-2. Configure the _Required_ variables and the Azure variables.
-
-**Build and Deploy**
-
-`./deploy.sh`
-
-```
-...
-[+] Running 3/3
- ⠿ Group fridge-fleet-monitor-web-app                   Created    6.3s
- ⠿ fridgefleetmonitorwebapp-https-reverse-proxy  Created    113.8s
- ⠿ fridgefleetmonitorwebapp                      Created    113.8s
-[deploy.sh] 🚀 Successful deployment.
-[deploy.sh] 🔃 To deploy new changes, simply run this script again.
-[deploy.sh] 🚮 To delete the deployment or see cloud details, visit the Azure Portal: https://portal.azure.com/#blade/HubsExtension/BrowseResource/resourceType/Microsoft.ContainerInstance%2FcontainerGroups
-[deploy.sh] ⏰ In a few minutes the site should be visible here:
-[deploy.sh] 🔜 https://myfridgefleetstarter.eastus.azurecontainer.io
-```
 
 ## Security
 
