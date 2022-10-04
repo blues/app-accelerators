@@ -1,4 +1,4 @@
-# Blues Reference Applications
+# Blues Application Accelerators
 
 A collection of high-quality purpose-built IoT reference applications.
 
