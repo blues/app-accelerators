@@ -184,26 +184,29 @@ void resetFloorFilter(double floor)
 
 void loop()
 {
-
   if (pollEnvVars())
   {
     fetchEnvironmentVariables(state);
 
-    serialDebugOut.println("Environment Variable Updates Received");
-
-    J *req = notecard.newRequest("note.add");
-    if (req != NULL)
+    if (state.variablesUpdated)
     {
-      JAddStringToObject(req, "file", "notify.qo");
-      JAddBoolToObject(req, "sync", true);
-      J *body = JCreateObject();
-      if (body != NULL)
+      serialDebugOut.println("Environment Variable Updates Received");
+
+      J *req = notecard.newRequest("note.add");
+      if (req != NULL)
       {
-        JAddStringToObject(body, "message",
-                           "environment variable update received");
-        JAddItemToObject(req, "body", body);
-        // notecard.sendRequest(req);
+        JAddStringToObject(req, "file", "notify.qo");
+        JAddBoolToObject(req, "sync", true);
+        J *body = JCreateObject();
+        if (body != NULL)
+        {
+          JAddStringToObject(body, "message",
+                            "environment variable update received");
+          JAddItemToObject(req, "body", body);
+          notecard.sendRequest(req);
+        }
       }
+      state.variablesUpdated = false;
     }
   }
 
@@ -311,7 +314,7 @@ bool publishSensorReadings(sensorReadings &readings, uint32_t currentMillis)
 
 void fetchEnvironmentVariables(applicationState &vars)
 {
-  J *req = NoteNewRequest("env.get");
+  J *req = notecard.newRequest("env.get");
 
   J *names = JAddArrayToObject(req, "names");
   JAddItemToArray(names, JCreateString("live"));
@@ -319,7 +322,7 @@ void fetchEnvironmentVariables(applicationState &vars)
   JAddItemToArray(names, JCreateString("floor_height"));
   JAddItemToArray(names, JCreateString("no_movement_threshold"));
 
-  J *rsp = NoteRequestResponse(req);
+  J *rsp = notecard.requestAndResponse(req);
   if (rsp != NULL)
   {
     if (notecard.responseError(rsp))
@@ -328,12 +331,6 @@ void fetchEnvironmentVariables(applicationState &vars)
       return;
     }
 
-    // Set the lastModifiedTime based on the return
-    uint32_t modifiedTime = JGetNumber(rsp, "time");
-    if (modifiedTime)
-    {
-      lastModifiedTime = modifiedTime;
-    }
     // Get the note's body
     J *body = JGetObject(rsp, "body");
     if (body != NULL)
@@ -342,11 +339,23 @@ void fetchEnvironmentVariables(applicationState &vars)
       if (newBaselineFloor != vars.baselineFloor)
       {
         setBaselineFloor = true;
+        vars.baselineFloor = newBaselineFloor;
+        vars.variablesUpdated = true;
       }
-      vars.baselineFloor = newBaselineFloor;
-      vars.floorHeight = atof(JGetString(body, "floor_height"));
-      vars.noMovementThreshold =
-          atoi(JGetString(body, "no_movement_threshold"));
+
+      float floorHeight = atof(JGetString(body, "floor_height"));
+      if (floorHeight != vars.floorHeight)
+      {
+        vars.floorHeight = floorHeight;
+        vars.variablesUpdated = true;
+      }
+
+      int noMovementThreshold = atoi(JGetString(body, "no_movement_threshold"));
+      if (noMovementThreshold != vars.noMovementThreshold)
+      {
+        vars.noMovementThreshold = noMovementThreshold;
+        vars.variablesUpdated = true;
+      }
 
       char *liveStr = JGetString(body, "live");
       bool wasLive = vars.live;
@@ -355,6 +364,8 @@ void fetchEnvironmentVariables(applicationState &vars)
       {
         // when the device becomes live, calibrate to the floor level given
         setBaselineFloor = true;
+      } else if (vars.live != wasLive) {
+        vars.variablesUpdated = true;
       }
       vars.alarmSent = false;
       updatePeriod = state.live ? LIVE_UPDATE_PERIOD : IDLE_UPDATE_PERIOD;
