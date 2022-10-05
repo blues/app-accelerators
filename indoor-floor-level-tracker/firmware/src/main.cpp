@@ -30,7 +30,12 @@
 // Uncomment to view Note requests from the Host
 // #define DEBUG_NOTECARD
 
-#define PRODUCT_UID "com.blues.nf1"
+// This is the unique Product Identifier for your device
+#ifndef PRODUCT_UID
+#define PRODUCT_UID "" // "com.my-company.my-name:my-project"
+#pragma message "PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://dev.blues.io/tools-and-sdks/samples/product-uid"
+#endif
+
 #define ENV_POLL_SECS 1
 #define IDLE_UPDATE_PERIOD (1000 * 60 * 5)
 #define LIVE_UPDATE_PERIOD (1000 * 60 * 1)
