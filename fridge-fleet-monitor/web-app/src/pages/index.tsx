@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { GetServerSideProps, NextPage } from "next";
-import { Carousel, Alert } from "antd";
+import { Carousel } from "antd";
 import { CarouselRef } from "antd/lib/carousel";
 import GatewayCard from "../components/elements/GatewayCard";
 import { services } from "../services/ServiceLocatorServer";
@@ -12,7 +12,6 @@ import CarouselArrowFixRight from "../components/elements/CarouselArrowFixRight"
 import CarouselArrowFixLeft from "../components/elements/CarouselArrowFixLeft";
 import { getCombinedGatewayNodeInfo } from "../components/presentation/gatewayNodeInfo";
 import styles from "../styles/Home.module.scss";
-import Config from "../../config";
 
 type HomeData = {
   gatewayNodeData: Gateway[];
@@ -22,18 +21,6 @@ type HomeData = {
 const Home: NextPage<HomeData> = ({ gatewayNodeData, err }) => {
   const carouselRef = useRef<CarouselRef>(null);
 
-  const sparrowInfoMessage = (
-    <span>
-      You are viewing an example deployment of the Sparrow Reference Web App,
-      showing live data from LoRa sensor nodes deployed throughout the United
-      States. If you’re interested in building a dashboard like this yourself,
-      check out{" "}
-      <a href="https://github.com/blues/sparrow-reference-web-app">
-        this project’s README on GitHub
-      </a>
-      .
-    </span>
-  );
   useEffect(() => {
     // auto focuses the carousel on component mount for keyboard accessibility
     carouselRef.current?.goTo(0);
@@ -50,10 +37,6 @@ const Home: NextPage<HomeData> = ({ gatewayNodeData, err }) => {
         />
       ) : (
         <>
-          {Config.isBuildVersionSet() ? (
-            <Alert description={sparrowInfoMessage} type="info" closable />
-          ) : null}
-
           <h2 data-testid="gateway-header" className={styles.sectionSubTitle}>
             Gateway
           </h2>

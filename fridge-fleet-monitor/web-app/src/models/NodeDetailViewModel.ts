@@ -12,8 +12,6 @@ interface NodeDetailViewModel {
     humidity: string;
     pressure: string;
     voltage: string;
-    count: string;
-    total: string;
     doorStatus: string;
     bars: SignalStrengths;
     barsIconPath: string | null;
@@ -24,9 +22,7 @@ interface NodeDetailViewModel {
     humidity: { when: string; value: number }[];
     pressure: { when: string; value: number }[];
     voltage: { when: string; value: number }[];
-    count: { when: string; value: number }[];
-    total: { when: string; value: number }[];
-    doorStatus: { when: string; value: string }[];
+    doorStatus: { when: string; value: number }[];
   };
   readOnly?: boolean;
 }

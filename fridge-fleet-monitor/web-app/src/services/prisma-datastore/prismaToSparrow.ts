@@ -101,10 +101,7 @@ export function sparrowNodeFromPrismaNode(
       100
     ),
     voltage: asNumber(findReading(map, NodeSensorTypeNames.VOLTAGE)),
-    total: asNumber(findReading(map, NodeSensorTypeNames.PIR_MOTION_TOTAL)),
-    count: asNumber(findReading(map, NodeSensorTypeNames.PIR_MOTION)),
-    doorStatus:
-      asString(findReading(map, NodeSensorTypeNames.DOOR_STATUS)) || "",
+    doorStatus: asString(findReading(map, NodeSensorTypeNames.DOOR_STATUS)),
   };
 
   const rssi = asNumber(
@@ -118,8 +115,7 @@ export function sparrowNodeFromPrismaNode(
   if (node.humidity === undefined) delete node.humidity;
   if (node.pressure === undefined) delete node.pressure;
   if (node.voltage === undefined) delete node.voltage;
-  if (node.total === undefined) delete node.total;
-  if (node.count === undefined) delete node.count;
+  if (node.doorStatus === undefined) delete node.doorStatus;
 
   return node as Node;
 }

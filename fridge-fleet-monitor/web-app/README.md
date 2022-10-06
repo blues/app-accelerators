@@ -1,8 +1,10 @@
-# 🐦 Sparrow Reference Web App
+# Fridge Fleet Monitor Web App
 
-An example web application to configure and view sensor data from Blues Wireless Sparrow devices.
+An example web application to configure and view sensor data from a Blues Wireless Sparrow devices.
 
-- [🐦 Sparrow Reference Web App](#-sparrow-reference-web-app)
+This application is based off of the [Blues Wireless Sparrow Reference Web App](https://github.com/blues/sparrow-reference-web-app).
+
+- [Fridge Fleet Monitor Web App](#fridge-fleet-monitor-web-app)
   - [Development Overview](#development-overview)
     - [Clone This Repository](#clone-this-repository)
     - [Dependencies](#dependencies)
@@ -16,17 +18,16 @@ An example web application to configure and view sensor data from Blues Wireless
     - [Create a tunnel to a server running the reference app](#create-a-tunnel-to-a-server-running-the-reference-app)
       - [Localtunnel](#localtunnel)
       - [Ngrok](#ngrok)
-    - [Set up a Notehub route to your tunnel](#set-up-a-notehub-route-to-your-tunnel)
+    - [Set up a Notehub route and dashboard URL to your tunnel](#set-up-a-notehub-route-and-dashboard-url-to-your-tunnel)
+    - [Setup a Project Dashbaord URL to your tunnel](#setup-a-project-dashbaord-url-to-your-tunnel)
     - [Database](#database)
       - [Create the database](#create-the-database)
       - [Custom PostgreSQL Server](#custom-postgresql-server)
-      - [Troubleshooting Sparrow getting data from Postgres](#troubleshooting-sparrow-getting-data-from-postgres)
+      - [Troubleshooting Fridge Fleet Monitor getting data from Postgres](#troubleshooting-fridge-fleet-monitor-getting-data-from-postgres)
     - [Web App Development](#web-app-development)
-    - [Bulk Data Import](#bulk-data-import)
   - [Cloud Deployment](#cloud-deployment)
     - [Deploy on Netlify (recommended)](#deploy-on-netlify-recommended)
     - [Deploy on Vercel](#deploy-on-vercel)
-    - [Deploy on Microsoft Azure Cloud](#deploy-on-microsoft-azure-cloud)
   - [Security](#security)
   - [Testing](#testing)
     - [Testing with Jest](#testing-with-jest)
@@ -47,20 +48,20 @@ To get started you need to:
 - Configure this starter web app via [environment variables](#configuration-environment-variables).
 - Start up a local [database](#database).
 - Set up event [routing](#routing).
-- Launch the Sparrow Reference Web App app in [development
+- Launch the Fridge Fleet Monitor Web App app in [development
   mode](#web-app-development).
 
 ### Clone This Repository
 
-To start using the Sparrow Reference Web App you must clone this repository to
+To start using the Fridge Fleet Web App you must clone this repository to
 your local development machine. You can do this with `git clone`.
 
 ```
-git clone https://github.com/blues/sparrow-reference-web-app.git
+git clone https://github.com/blues/nifty-fifty.git
 ```
 
 With your local project downloaded, you’ll next want to open up the
-`sparrow-reference-web-app` folder in your text editor or IDE of choice. Once
+`fridge-fleet-monitor/web-app` folder in your text editor or IDE of choice. Once
 you have the project open in your editor you’re ready to configure the project’s
 environment variables.
 
@@ -101,7 +102,7 @@ As a final step, open a Linux terminal in VS Code, as you’ll need it to run co
 If you choose **not** to use a Dev Container in VS Code, you can install the
 project dependencies as follows.
 
-The Sparrow Reference Web App uses [Node.js](https://nodejs.org/en/) as a
+The Fridge Fleet Monitor Web App uses [Node.js](https://nodejs.org/en/) as a
 runtime, [Yarn](https://yarnpkg.com/) as a package manager, and
 [Volta](https://volta.sh/) as a way of enforcing consistent versions of all
 JavaScript-based tools. You can install these dependencies by following the
@@ -114,7 +115,7 @@ steps below.
    ```
    volta install node yarn
    ```
-3. Navigate to the root of the Sparrow Reference Web App in your terminal or
+3. Navigate to the root of the Fridge Fleet Monitor Web App in your terminal or
    command prompt and run `yarn install`, which installs the starter’s npm
    dependencies.
    ```
@@ -124,19 +125,19 @@ steps below.
 
 ### Configuration (Environment Variables)
 
-The Sparrow Reference Web App uses a series of environment variables to store
+The Fridge Fleet Monitor Web App uses a series of environment variables to store
 project-specific configuration. You _must_ define your own values for these
-variables for the Sparrow Reference Web App to run. You can complete the following
+variables for the Fridge Fleet Monitor Web App to run. You can complete the following
 steps to do so.
 
-1. Create a new `.env` file in the root folder of your project.
+1. Create a new `.env` file in the root folder of your `fridge-fleet-monitor/web-app` project folder.
 1. Copy the contents of this repo’s [.env.example](.env.example) file, and paste it in your new `.env` file.
 1. Change the required values in your `.env` to your own values using the steps
    below.
 
 #### HUB_AUTH_TOKEN
 
-The Sparrow Reference Web App needs access to your Notehub project in order to
+The Fridge Fleet Monitor Web App needs access to your Notehub project in order to
 show the gateway and sensor nodes in your project. An access token is used to
 authenticate the app.
 
@@ -187,7 +188,7 @@ following two steps.
 
 ### Create a tunnel to a server running the reference app
 
-The Sparrow reference app contains logic to process incoming Notehub events. But in order for Notehub to forward data to your local app for processing, your local app must be accessible from the public internet.
+The Fridge Fleet Monitor web app contains logic to process incoming Notehub events. But in order for Notehub to forward data to your local app for processing, your local app must be accessible from the public internet.
 
 To make your local environment accessible you must set up a tunnel. You’re
 welcome to use any tunneling setup you’re comfortable using, but we recommend
@@ -242,7 +243,7 @@ With a tunnel in place, your next step is to create a route in Notehub that forw
 
 To set up the route complete the following steps:
 
-- Visit [Notehub](https://notehub.io) and open the project you’re using for your Sparrow app.
+- Visit [Notehub](https://notehub.io) and open the project you’re using for your Fridge Fleet Monitor app.
 - Select **Routes** in the navigation on the left-hand side of the screen.
 - Click the **Create Route** link in the top right of the screen.
 - Find the **General HTTP/HTTPS Request/Response** route type, and click its **Select** button.
@@ -252,11 +253,13 @@ To set up the route complete the following steps:
 
 And with that your route is now complete. When Notehub receives an event it should automatically route that event to your tunnel, and ultimately to your local app.
 
-> **NOTE** Event routing only happens when Notehub receives an event, therefore your Sparrow hardware needs to generate new data and send it to Notehub for Notehub to invoke your route.
+> **NOTE**: Event routing only happens when Notehub receives an event, therefore your Sparrow hardware needs to generate new data and send it to Notehub for Notehub to invoke your route OR you can manually route an existing event from Notehub by clicking the "Route Event" button in the righthand corner of an individual event.
+
+![Notehub manual route event button](./readme-notehub-manual-route-event.png)
 
 ### Setup a Project Dashbaord URL to your tunnel
 
-- Visit [Notehub](https://notehub.io) and open the project you’re using for your Sparrow app.
+- Visit [Notehub](https://notehub.io) and open the project you’re using for your Fridge Fleet Monitor app.
 - Select **Settings** in the navigation on the left-hand side of the screen.
 - Scroll down to **Device Dashbaord URL**.
 - Click the pencil icon to edit the URL, and paste the localtunnel or ngrok URL you copied earlier followed by `api/go?gateway=[device]&sensor=[sensor]&pin=[pin]`. For example, `https://bb18-217-180-218-163.ngrok.io/api/go?gateway=[device]&sensor=[sensor]&pin=[pin]`.
@@ -266,7 +269,7 @@ Now that you have both a tunnel, route and Device dashbaord URL in place, your l
 
 ### Database
 
-The Sparrow reference web app uses PostgreSQL to store data, including the data
+The Fridge Fleet Monitor web app uses PostgreSQL to store data, including the data
 it receives from Notehub events. To set up your own PostgreSQL instance you need
 to complete the following steps.
 
@@ -300,7 +303,7 @@ running as expected with the `./dev.db.status.sh` command.
 
 ```sh
 $ ./dev.db.status.sh
-398940737bae   postgres  "docker-entrypoint.s…"   2 hours ago   Up 2 hours   0.0.0.0:5432->5432/tcp, :::5432->5432/tcp   sparrow-postgresql-container
+398940737bae   postgres  "docker-entrypoint.s…"   2 hours ago   Up 2 hours   0.0.0.0:5432->5432/tcp, :::5432->5432/tcp   fridge-fleet-monitor-postgresql-container
 ```
 
 To stop the database you can use `./dev.db.stop.sh`.
@@ -348,9 +351,9 @@ Done in 10.36s.
 Database has been reinitialized.
 ```
 
-#### Troubleshooting Sparrow getting data from Postgres
+#### Troubleshooting Fridge Fleet Monitor getting data from Postgres
 
-There are a number of gotchas that could prevent your Notehub data from making it to Postgres and your Sparrow app. If you’re having issues try the following things:
+There are a number of gotchas that could prevent your Notehub data from making it to Postgres and your Fridge Fleet Monitor app. If you’re having issues try the following things:
 
 - Is Docker running the local Postgres instance on your machine?
   - Currently there's no error message thrown if the Postgres Docker container's
@@ -365,7 +368,7 @@ There are a number of gotchas that could prevent your Notehub data from making i
 
 ### Web App Development
 
-The Sparrow Reference Web App uses the [Next.js](https://nextjs.org/) web
+The Fridge Fleet Monitor Web App uses the [Next.js](https://nextjs.org/) web
 framework to serve React-powered web pages and HTTP JSON APIs. You can start a
 Next.js development server using `yarn dev`.
 
@@ -385,34 +388,17 @@ to stop the `yarn dev` with `ctrl+c` and to start `yarn dev` back up.
 The project’s `src/pages/api` directory are
 [APIs](https://nextjs.org/docs/api-routes/introduction) as opposed to
 React-powered HTML pages.
-The Sparrow Reference Web App uses these routes in several places to access the
+The Fridge Fleet Monitor Web App uses these routes in several places to access the
 [Notehub API](https://dev.blues.io/reference/notehub-api/api-introduction/)
 server without triggering a full-page reload.
 
 > **NOTE**: If you’re new to Next.js, the [Next.js official interactive
 > tutorial](https://nextjs.org/learn/basics/create-nextjs-app) is a great way to
-> learn the basics, and understand how the Sparrow Reference Web App works.
-
-### Bulk Data Import
-
-The Sparrow Reference Web App can do a bulk import of historic data from Notehub
-to populate your database with any data from the past 10 days. This can help
-when you’re first getting started, or if you want to import events you might
-have missed during web app or database downtime.
-
-To run the bulk import first make sure your web app is running, and then complete
-the following steps.
-
-- Go to <http://localhost:4000/admin/bulk-data-import>.
-- Click the **Import** button.
-- Wait. If you're curious, watch the detailed information in your web app’s server logs
-  (in the terminal where you ran `yarn dev`).
-
-  ![Imported 3085 items in 1 minutes.](readme.bulk.data.import.png)
+> learn the basics, and understand how the Fridge Fleet Monitor Web App works.
 
 ## Cloud Deployment
 
-The Sparrow Reference Web App is a Next.js project, and is therefore easily deployable to any platform that supports Next.js applications. Below are specific instructions to deploy to a handful of common platforms.
+The Fridge Fleet Monitor Web App is a Next.js project, and is therefore easily deployable to any platform that supports Next.js applications. Below are specific instructions to deploy to a handful of common platforms.
 
 > **NOTE**: For all deployment options we recommend [creating a
 > fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo) of this
@@ -444,48 +430,6 @@ The next easiest way to deploy your Next.js app is to use the [Vercel Platform](
 
 Read our step-by-step guide to [deploying the Sparrow Reference Web App app on Vercel](https://bluesinc.atlassian.net/wiki/spaces/SPAR/pages/4817057/Deploy+the+Sparrow+Starter+Web+App+Using+Vercel) for more information.
 
-### Deploy on Microsoft Azure Cloud
-
-> **NOTE**: Running this site as Azure Container Instances will cost about $30/mo.
-
-Follow the steps below to deploy to [Microsoft Azure Cloud](https://azure.microsoft.com/en-us/). If you need more details on any of the steps, see
-[Docker’s documentation on deploying Docker containers on Azure](https://docs.docker.com/cloud/aci-integration/).
-
-**Build Machine and Cloud Setup**
-
-1. Sign up for [Azure](https://azure.microsoft.com/en-us/).
-1. Sign up for [Docker Hub](https://hub.docker.com/signup).
-1. Install [Docker](https://docs.docker.com/get-docker/).
-1. Install [docker-compose](https://docs.docker.com/compose/install/).
-1. Install the confusingly named [Compose
-   CLI](https://github.com/docker/compose-cli), which adds cloud-specific
-   compose-like support to `docker` via a wrapper of the standard `docker` cli.
-1. Check that _Compose CLI_ is working. `docker version | grep 'Cloud integration' && echo Yay || echo Boo`.
-1. Sign into Azure using `docker login azure`. See <https://docs.docker.com/cloud/aci-integration/>.
-1. Create a docker context on Azure named however you like. For example, `docker context create aci myacicontext`.
-
-**Configure the _sparrow-reference-web-app_ environment**
-
-1. `cp .env.example .env.production.local`
-2. Configure the _Required_ variables and the Azure variables.
-
-**Build and Deploy**
-
-`./deploy.sh`
-
-```
-...
-[+] Running 3/3
- ⠿ Group sparrow-reference-web-app                   Created    6.3s
- ⠿ sparrowreferencewebeapp-https-reverse-proxy  Created    113.8s
- ⠿ sparrowreferencewebeapp                      Created    113.8s
-[deploy.sh] 🚀 Successful deployment.
-[deploy.sh] 🔃 To deploy new changes, simply run this script again.
-[deploy.sh] 🚮 To delete the deployment or see cloud details, visit the Azure Portal: https://portal.azure.com/#blade/HubsExtension/BrowseResource/resourceType/Microsoft.ContainerInstance%2FcontainerGroups
-[deploy.sh] ⏰ In a few minutes the site should be visible here:
-[deploy.sh] 🔜 https://mysparrowstarer.eastus.azurecontainer.io
-```
-
 ## Security
 
 Authentication and authorization are beyond the scope of this reference project.
@@ -495,7 +439,7 @@ app.
 
 ## Testing
 
-The Sparrow Reference Web App contains both unit and end-to-end tests to ensure the project continues to work as intended.
+The Fridge Fleet Monitor Web App contains both unit and end-to-end tests to ensure the project continues to work as intended.
 
 ### Testing with Jest
 
@@ -533,7 +477,7 @@ open coverage/lcov-report/index.html
 
 ### Testing with Cypress
 
-The Sparrow Reference Web App uses [Cypress](https://www.cypress.io/) for automated UI & API testing.
+The Fridge Fleet Monitor Web App uses [Cypress](https://www.cypress.io/) for automated UI & API testing.
 
 **Cypress Setup**
 

@@ -9,6 +9,15 @@
 // Uncomment to use a connected SSD1306 Display
 // #define USE_DISPLAY
 
+// Uncomment to rotate the connected display 180 degrees
+// #define DISPLAY_ROTATE_180
+
+// Uncomment to give the OLED Display power from digital MCU pins.
+// Safe for 0.91 Inch I2C OLED Display on Notecarrier-F + Blues Swan.
+// UNSAFE if your display takes more amps than your microcontroller can supply.
+// #define DISPLAY_POWER_PIN 5
+// #define DISPLAY_GROUND_PIN 6
+
 // Uncomment to output the floor sample every second
 // #define DEBUG_FLOOR_SAMPLES
 
@@ -21,7 +30,12 @@
 // Uncomment to view Note requests from the Host
 // #define DEBUG_NOTECARD
 
-#define PRODUCT_UID "com.blues.nf1"
+// This is the unique Product Identifier for your device
+#ifndef PRODUCT_UID
+#define PRODUCT_UID "" // "com.my-company.my-name:my-project"
+#pragma message "PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://dev.blues.io/tools-and-sdks/samples/product-uid"
+#endif
+
 #define ENV_POLL_SECS 1
 #define IDLE_UPDATE_PERIOD (1000 * 60 * 5)
 #define LIVE_UPDATE_PERIOD (1000 * 60 * 1)
@@ -74,6 +88,14 @@ void setup()
   notecard.begin();
 
 #ifdef USE_DISPLAY
+#ifdef DISPLAY_POWER_PIN
+  pinMode(DISPLAY_POWER_PIN, OUTPUT);
+  digitalWrite(DISPLAY_POWER_PIN, HIGH);
+#endif
+#ifdef DISPLAY_GROUND_PIN
+  pinMode(DISPLAY_GROUND_PIN, OUTPUT);
+  digitalWrite(DISPLAY_GROUND_PIN, LOW);
+#endif
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   serialDebugOut.println("OLED connected...");
 #endif
@@ -116,7 +138,9 @@ void setup()
   display.display();
 
   // text display tests
+#ifdef DISPLAY_ROTATE_180
   display.setRotation(2);
+#endif
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
   display.setCursor(0, 0);

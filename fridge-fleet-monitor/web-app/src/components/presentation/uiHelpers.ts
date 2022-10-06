@@ -121,17 +121,11 @@ export const getFormattedVoltageData = (voltage: number | undefined) => {
   return null;
 };
 
-export const getFormattedCountData = (count: number | undefined) => {
-  if (count !== undefined) {
-    const formattedData = `${count}`;
-    return formattedData;
-  }
-  return null;
-};
-
-export const getFormattedTotalData = (total: number | undefined) => {
-  if (total !== undefined) {
-    const formattedData = `${total}`;
+export const getFormattedDoorStatusData = (
+  doorStatusValue: number | undefined
+) => {
+  if (doorStatusValue !== undefined && doorStatusValue === 1) {
+    const formattedData = "OPEN";
     return formattedData;
   }
   return null;

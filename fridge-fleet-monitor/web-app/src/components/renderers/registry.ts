@@ -118,7 +118,7 @@ export interface RendererRegistry {
     renderer: SensorReadingRenderer,
     visualization: ReadingVisualization,
     identifier: string,
-    scope?: RegistrationScope /*=RegistrationScope.NAME*/
+    scope?: RegistrationScope /*= RegistrationScope.NAME */
   ): void;
 
   // todo - registration for a reading series renderer.

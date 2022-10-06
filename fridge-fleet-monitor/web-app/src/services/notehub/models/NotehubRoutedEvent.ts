@@ -32,11 +32,14 @@ export interface NotehubRoutedEventLocationFields {
   tri_points?: number;
 }
 
-interface NotehubRoutedEvent extends SessionMetadata, NotehubRoutedEventLocationFields {
+interface NotehubRoutedEvent
+  extends SessionMetadata,
+    NotehubRoutedEventLocationFields {
   app?: string; // notehub app/project uid
-  project?: {   // keeping this for backwards compatibility
-    id: string
-  }
+  project?: {
+    // keeping this for backwards compatibility
+    id: string;
+  };
   device: string; // device uid
   event: string; // event uid
   file: string;
@@ -45,13 +48,12 @@ interface NotehubRoutedEvent extends SessionMetadata, NotehubRoutedEventLocation
   received: number;
 
   body: {
-    count?: number;
     sensor?: string;
     humidity?: number;
     pressure?: number;
     temperature?: number;
     voltage?: number;
-    total?: number;
+    contactSwitch?: string;
     text?: string;
     why?: string;
     net_updated?: number;

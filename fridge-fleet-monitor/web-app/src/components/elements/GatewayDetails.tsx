@@ -38,7 +38,6 @@ const GatewayDetails = ({
             onChange={onChangeName}
             initialText={viewModel.gateway?.name}
             errorMessage={ERROR_MESSAGE.GATEWAY_NAME_CHANGE_FAILED}
-            enabled={!viewModel.readOnly}
           />
         </h2>
 

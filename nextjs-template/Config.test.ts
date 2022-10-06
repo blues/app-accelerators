@@ -1,15 +1,5 @@
-import Config from "./Config";
-
 const env = {
-  DATABASE_URL: process.env.DATABASE_URL,
-};
-
-const optionalEnvVar = (varName: keyof typeof env, defaultValue: string) => {
-  const val = env[varName];
-  if (val === undefined) {
-    return defaultValue;
-  }
-  return val;
+  HUB_PROJECTUID: process.env.HUB_PROJECTUID,
 };
 
 const requiredEnvVar = (varName: keyof typeof env) => {
@@ -23,14 +13,14 @@ const requiredEnvVar = (varName: keyof typeof env) => {
 };
 
 const TestConfig = {
-  get databaseUrl() {
-    return requiredEnvVar("DATABASE_URL");
+  get hubProjectUID() {
+    return requiredEnvVar("HUB_PROJECTUID");
   },
 };
 
 describe("mandatory envvars are defined", () => {
-  it("DATABASE_URL", () => {
-    expect(TestConfig.databaseUrl).toBeTruthy;
+  it("HUB_PROJECTUID", () => {
+    expect(TestConfig.hubProjectUID).toBeTruthy;
   });
 });
 

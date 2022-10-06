@@ -14,14 +14,14 @@ import {
   Legend,
 } from "chart.js";
 import "chartjs-adapter-date-fns";
-import CountSensorSchema from "../../services/alpha-models/readings/CountSensorSchema";
+import ContactSwitchSensorSchema from "../../services/alpha-models/readings/ContactSwitchSensorSchema";
 import HumiditySensorSchema from "../../services/alpha-models/readings/HumiditySensorSchema";
 import PressureSensorSchema from "../../services/alpha-models/readings/PressureSensorSchema";
 import ReadingSchema from "../../services/alpha-models/readings/ReadingSchema";
 import TemperatureSensorSchema from "../../services/alpha-models/readings/TemperatureSensorSchema";
 import VoltageSensorSchema from "../../services/alpha-models/readings/VoltageSensorSchema";
 import {
-  getFormattedCountData,
+  getFormattedDoorStatusData,
   getFormattedHumidityData,
   getFormattedPressureData,
   getFormattedTemperatureData,
@@ -91,8 +91,8 @@ export function getTooltipDisplayText(
     case PressureSensorSchema:
       valueDisplay = getFormattedPressureData(value) || "";
       break;
-    case CountSensorSchema:
-      valueDisplay = getFormattedCountData(value) || "";
+    case ContactSwitchSensorSchema:
+      valueDisplay = getFormattedDoorStatusData(value) || "";
       break;
     default:
       // eslint-disable-next-line no-console
