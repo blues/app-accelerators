@@ -1,9 +1,11 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <Notecard.h>
-#include <Adafruit_ImageReader.h>
+#include "Adafruit_ImageReader.h"
 #include "Adafruit_ThinkInk.h"
-#include "metadata.h"
+#include "display_manager.h"
+#include "notecard_config.h"
+#include "blues_bmp.h"
 
 #define EPD_DC      10
 #define EPD_CS      9
@@ -15,7 +17,6 @@
 // Uncomment to view Note requests from the Host
 #define DEBUG_NOTECARD
 
-#define PRODUCT_UID "com.blues.nf4"
 #define ENV_POLL_SECS	1
 
 Notecard notecard;
@@ -27,25 +28,20 @@ ThinkInk_213_Tricolor_RW display(EPD_DC, EPD_RESET, EPD_CS, SRAM_CS, EPD_BUSY);
 static unsigned long nextPollMs = 0;
 static uint32_t lastModifiedTime = 0;
 
-struct applicationState {
-  int lastUpdate;
-  String text;
-  String imageBytes;
-};
-
 applicationState state;
 
+// Forward declarations
 void fetchEnvironmentVariables(applicationState);
 bool pollEnvVars(void);
 void drawText(const char *text, uint16_t color);
 void displayContent(void);
 
 void setup() {
-  Serial.begin(115200);
+  serialDebugOut.begin(115200);
 #ifdef DEBUG_NOTECARD
   notecard.setDebugOutputStream(serialDebugOut);
 #endif
-  while (!Serial) { delay(10); }
+  while (!serialDebugOut) { delay(10); }
   serialDebugOut.println("Low-Power Digital Signage Demo");
   serialDebugOut.println("==============================");
 
@@ -54,30 +50,11 @@ void setup() {
 
   display.begin(THINKINK_TRICOLOR);
 
-  J *req = notecard.newRequest("hub.set");
-  if (req != NULL) {
-    JAddStringToObject(req, "product", PRODUCT_UID);
-    JAddStringToObject(req, "mode", "continuous");
-    JAddBoolToObject(req, "sync", true);
-    notecard.sendRequest(req);
-  }
+  configureNotecard();
 
-  // Notify Notehub of the current firmware version
-  req = notecard.newRequest("dfu.status");
-  if (req != NULL) {
-    JAddStringToObject(req, "version", firmwareVersion());
-    notecard.sendRequest(req);
-  }
-
-  // Enable Outboard DFU
-  req = notecard.newRequest("card.dfu");
-  if (req != NULL) {
-    JAddStringToObject(req, "name", "stm32");
-    JAddBoolToObject(req, "on", true);
-    notecard.sendRequest(req);
-  }
-
+  // Check Environment Variables
   fetchEnvironmentVariables(state);
+
   displayContent();
 }
 
@@ -85,47 +62,76 @@ void loop() {
   if (pollEnvVars()) {
     fetchEnvironmentVariables(state);
 
-    serialDebugOut.println("Environment Variable Updates Received");
+    if (state.variablesUpdated)
+    {
+      serialDebugOut.println("Environment Variable Updates Received");
 
-    displayContent();
+      displayContent();
+
+      J *req = notecard.newRequest("note.add");
+      if (req != NULL)
+      {
+        JAddStringToObject(req, "file", "notify.qo");
+        JAddBoolToObject(req, "sync", true);
+        J *body = JCreateObject();
+        if (body != NULL)
+        {
+          JAddBoolToObject(body, "updated", true);
+          JAddStringToObject(body, "app", "nf4");
+
+          JAddItemToObject(req, "body", body);
+          notecard.sendRequest(req);
+        }
+      }
+      state.variablesUpdated = false;
+    }
   }
 }
 
 void displayContent() {
-  if (state.text != NULL) {
+  if (state.imageBytes != NULL) {
+    // Show image
+    display.clearBuffer();
+    display.drawBitmap(0, 0, blues_logo, 250, 122, EPD_RED, EPD_WHITE);
+    display.display();
+  } else if (state.text != NULL) {
     display.clearBuffer();
     display.setTextSize(4);
     drawText(state.text.c_str(), EPD_RED);
-    display.display();
-  } else if (state.imageBytes != NULL) {
-    // Show image
-    display.clearBuffer();
     display.display();
   }
 }
 
 void fetchEnvironmentVariables(applicationState vars) {
-  J *req = NoteNewRequest("env.get");
+  J *req = notecard.newRequest("env.get");
 
   J *names = JAddArrayToObject(req, "names");
   JAddItemToArray(names, JCreateString("text"));
   JAddItemToArray(names, JCreateString("image_bytes"));
 
-  J *rsp = NoteRequestResponse(req);
+  J *rsp = notecard.requestAndResponse(req);
   if (rsp != NULL) {
       if (notecard.responseError(rsp)) {
           notecard.deleteResponse(rsp);
           return;
       }
 
-      // Set the lastModifiedTime based on the return
-      lastModifiedTime = JGetNumber(rsp, "time");
-
       // Get the note's body
       J *body = JGetObject(rsp, "body");
       if (body != NULL) {
-          vars.text = JGetString(body, "text");
-          vars.imageBytes = JGetString(body, "image_bytes");
+          char *text = JGetString(body, "text");
+          if (strcmp(vars.text.c_str(), text) != 0)
+          {
+            vars.text = String(text);
+            vars.variablesUpdated = true;
+          }
+
+          char *imageBytes = JGetString(body, "image_bytes");
+          if (strcmp(vars.imageBytes.c_str(), imageBytes) != 0)
+          {
+            vars.imageBytes = String(imageBytes);
+            vars.variablesUpdated = true;
+          }
 
           serialDebugOut.print("\nText: ");
           serialDebugOut.println(vars.text);
