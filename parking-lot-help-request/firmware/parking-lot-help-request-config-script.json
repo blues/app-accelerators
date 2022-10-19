@@ -1,0 +1,6 @@
+{"req":"env.default","name":"parking_lot_help_request_config_script_version","text":"1.1.1"}
+{"req":"hub.set","product":"com.your-company.your-name:your_product", "sn":"preferred_device_name_here"}
+{"req":"hub.set","mode":"minimum","outbound":1440,"inbound":10080}
+{"req":"card.aux","mode":"neo-monitor"}
+{"req":"card.voltage","mode":"lipo"}
+{"req":"card.motion.mode","stop":true}
