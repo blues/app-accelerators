@@ -1,6 +1,18 @@
+# Tracking Device setup script version no. is published in an env var so
+# that it's visible within the Notehub's Device Environment Variable UI
 {"req":"env.default","name":"parking_lot_help_request_config_script_version","text":"1.1.1"}
+
+# Set product UID to one that's registered to our product and give it a preferred serial number
 {"req":"hub.set","product":"com.your-company.your-name:your_product", "sn":"preferred_device_name_here"}
+
+# Set Notehub to minimum mode for battery conservation
 {"req":"hub.set","mode":"minimum","outbound":1440,"inbound":10080}
+
+# Turn on Notecard's neo-monitor mode
 {"req":"card.aux","mode":"neo-monitor"}
+
+# Tell the Notecard this project uses LiPo battery
 {"req":"card.voltage","mode":"lipo"}
+
+# Turn off accelerometer to further conserve battery life
 {"req":"card.motion.mode","stop":true}
