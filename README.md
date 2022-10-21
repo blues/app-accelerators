@@ -21,8 +21,6 @@ Each accelerator:
 
 ## The Accelerators
 
----
-
 ### 1: 🏢 Indoor Floor-Level Tracker
 
 A highly accurate floor-level tracker for response teams at emergency events.
