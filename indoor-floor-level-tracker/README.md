@@ -2,10 +2,9 @@
 
 A highly accurate floor-level tracker for response teams at emergency events.
 
-![The display of the final web app for floor tracking](images/web-app-display.png)
+![](../app-banners/nf1.png)
 
-To run
-this project yourself you’ll need to:
+To run this project yourself you’ll need to:
 
 * [Configure Notehub](#notehub).
 * [Purchase the necessary hardware](#hardware).
