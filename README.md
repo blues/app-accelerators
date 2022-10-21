@@ -4,7 +4,7 @@ A collection of high-quality purpose-built IoT reference applications.
 
 ## What is this?
 
-At Blues our attempt is to make wireless IoT easier for developers and more affordable for all. This list of app accelerators is intended to help you get new IoT projects up and running quickly.
+At Blues we are making wireless IoT easier for developers and more affordable for all. This list of app accelerators is intended to help you get new IoT projects up and running quickly.
 
 Each accelerator:
 
@@ -21,7 +21,7 @@ Each accelerator:
 
 ## The Accelerators
 
-### 1: 🏢 Indoor Floor-Level Tracker
+### 1. 🏢 Indoor Floor-Level Tracker
 
 A highly accurate floor-level tracker for response teams at emergency events.
 
