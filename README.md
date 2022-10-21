@@ -53,3 +53,15 @@ A smarter mouse trap with SMS alerting.
 </p>
 
 ---
+
+
+### 6. 🅿️ Parking Lot Help Request
+
+A host-free low latency notification system to alert attendants in a parking lot or facility that customers need assistance.
+
+<p>
+  <a href="tbd"><b>📚 Read About the Project</b></a> •
+  <a href="./parking-lot-help-request/"><b>🔧 Start Building</b></a>
+</p>
+
+---
