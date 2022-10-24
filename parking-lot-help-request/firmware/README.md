@@ -50,6 +50,8 @@ If you'd prefer to upload this script using the in-browser Notecard Playground i
 
 Now, click the button a few times and hopefully you'll see the LED light on the board flash and the button press data similar to this screenshot below flowing into your own Notehub project.
 
+https://user-images.githubusercontent.com/20400845/197624207-36afcfb9-6307-4dc5-acb9-542bec0140cf.mov
+
 ![_button.qo events registering in Notehub when the help request button is pressed on the device](readme-notehub-events.png)
 _The `_button.qo` events are the events we'll want to use to trigger SMS alerts._
 
