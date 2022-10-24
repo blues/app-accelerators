@@ -11,19 +11,21 @@ Host-free low latency notification system to alert attendants in a parking lot o
 The following hardware is required to run the Parking Lot Help Request application.
 
 * [Notecarrier A with pre-soldered headers](https://shop.blues.io/products/carr-al)
-* [Notecard LTE Cat-1](https://shop.blues.io/products/note-wbna-500) (for use in North America)
+* [Cellular Notecard](https://shop.blues.io/collections/notecard) (LTE Cat-1 versions are highly recommended)
 * [Sparkfun RGB LED breakout - WS2812B](https://www.sparkfun.com/products/13282)
 * [Twidec 12mm momentary push button with pre-soldered wires](https://www.amazon.com/gp/product/B08JHW8BPV/ref=ppx_yo_dt_b_asin_title_o00_s00?ie=UTF8&th=1)
 * [LiPo battery](https://www.adafruit.com/product/2011)
-* [Solar panel with JST connectors (any of these are compatible)](https://www.seeedstudio.com/catalogsearch/result/?q=solar%20panels)
+* [Solar panel with JST connectors (any of these are compatible)](https://www.seeedstudio.com/catalogsearch/result/?q=solar%20panels) (This [3W model](https://www.seeedstudio.com/3W-Solar-Panel-138X160.html) is the one used in the project)
 * [Breadboard](https://www.adafruit.com/product/64)
-* [Male to male jumper wires](https://www.adafruit.com/product/758)
+* [Male-to-male jumper wires](https://www.adafruit.com/product/758)
 * [Break-away 0.1" pin strip male headers](https://www.adafruit.com/product/392)
 
 ### Hardware Assembly 
 
 1. After purchasing your hardware, use the [Notecard and Notecarrier Quickstart documentation](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-a/) to assemble your Notecarrier A and Notecard - don't worry too much over connecting to Notehub: this document will cover it shortly.
 1. Break off 3 male pins in a strip and solder to each side of the Sparkfun LED breakout. (This [video from Adafruit](https://www.youtube.com/watch?v=Z0joOKaQ43A&ab_channel=AdafruitIndustries) provides a good example of how to solder male pins to a board like the one the LED comes in.)
+![NeoPixel with male pins soldered onto the underside of it](images/readme-soldered-led.png)
+_These pins will allow the LED to sit in a breadboard and easily interact with the Notecarrier through jumper wires._
 1. Cut a male jumper wire in half and use a wire stripper to strip at least 1/2" of coating off of both the ends of the jumper wire and each wire connected to the Twidec push button. Also snip off the soldered tip of the button's wires so the filaments are free floating.
 ![Twidec button and jumper wire both stripped down to expose their wires for soldering](images/readme-wires-to-solder.jpg)
 _Notice that both the button and jumper wires are exposed for soldering, also there's a length of heat shrink on both button wires that will be used to cover the soldered portion of wire later._
@@ -32,7 +34,7 @@ _Notice that both the button and jumper wires are exposed for soldering, also th
 ![Freshly soldered jumper wire and button wire](images/readme-wires-soldered.jpg)
 _A helping hand tool made soldering the jumper wire and button wire together much easier._
 
-1. Optional: Add a small sleeve of heat shrink tubing to each wire before soldering together and after soldering's complete, slide the heat shrink over the exposed wires and use a heat gun to shrink the wrap and protect the wires from the elements. (A great video that shows how do all of this, [wires to heat shrink, is available here](https://www.youtube.com/watch?v=Zu3TYBs65FM&ab_channel=ChrisFix).)
+1. Optional: Add a short piece of heat shrink tubing to each wire before soldering the wires together. After soldering is complete, slide the heat shrink down over the exposed wires and use a heat gun to shrink the wrap down to and protect the wires from the elements. (A great video that shows how do all of this, [wires to heat shrink, is available here](https://www.youtube.com/watch?v=Zu3TYBs65FM&ab_channel=ChrisFix).)
 ![Button with heatshrink in place awaiting heatgun application](images/readme-heatgun.jpg)
 _The heat shrink has been shifted over the newly soldered wires - now to shrink it with an application of the heat gun._
 ![The button after heatgun application: nice, new jumper wires on each end](images/readme-heatshrink.jpg)
@@ -45,15 +47,15 @@ _The finished button with its newly added jumper wires on each end, and a protec
 _Notecarrier A's GND pin to breadboard's negative bus (-)._
 
 1. Attach the Notecarrier A to the LED breakout by plugging jumper wires into its headers in the following configuration:
-   1. `VIO` -> `V5`
-   1. `AUX2` -> `DI`
-   1. `-` -> `GND` (this will be a wire in the negative bus (`-`) of the breaboard to the `GND` pin in the LED)
+   1. `VIO`  ➡️ `V5`
+   1. `AUX2`  ➡️ `DI`
+   1. `-` ➡️ `GND` (this will be a wire in the negative bus (`-`) of the breaboard to the `GND` pin in the LED)
 ![Jumper wires from Notecarrier A connecting it to the LED via jumper wires into the breadboard](images/readme-led-notecarrier.jpg)
 _Notecarrier A VIO pin to V5, AUX2 pin to DI, and negative bus to GND of LED breakout._ 
 
 1.  Attach the newly soldered button wires to the Notecarrier and breadboard:
-    1. Red wire -> `AUX1` on the Notecarrier A
-    2. Black wire -> `-` (negative bus) on the breadboard
+    1. Red wire  ➡️ `AUX1` on the Notecarrier A
+    2. Black wire  ➡️ `-` (negative bus) on the breadboard
 ![Button's red wire to the Notecarrier A's AUX1 pin and black wire to the breadboard's negative bus](images/readme-add-button.jpg)
 
 1. Plug the LiPo battery and solar panel into the Notecarrier A's JST connectors for each piece of hardware
@@ -94,18 +96,17 @@ can use that as your starting point.
 1. Inside Settings, change the Fleet name input to something more useful (like "Lot L" for all devices in that particulat lot)
 ![How to rename a fleet name in Notehub](images/readme-notehub-fleet-names.png)
 
-1. Then click on the **Devices** link to see all the devices associated with that Notehub project, and simply update the fleet that device is assigned to by using the dropdown.
+1. Then click on the **Devices** link to see all the devices associated with that Notehub project, and update the fleet that device is assigned to by using the dropdown.
 ![Assign device to particular fleet in Notehub](images/readme-notehub-device-to-fleet.png)
 
 1. You can also rename the device from this page if you need to update its parking spot number in the same way.
 
-With this your Notehub backend is fully configured, and you’re ready to start
-setting up your Notecard.
+With this your Notehub backend is fully configured, and you’re ready to start setting up your Notecard.
 
 
 ## Notecard Firmware
 
-Although this is a "host-free" project because the Notecard itself can be configured to send notes to Notehub when the button is pressed, the Notecard still needs to be programmed to do so.
+This is a "host-free" project because the _Notecard itself_ can be configured to send notes to Notehub when the button is pressed. It may sound simple, but this is a pretty big deal. Typically, a host microcontroller is necessary to process logic like when a button is tapped something else (sending a note to Notehub) needs to happen, the fact that Notecard can do this without a host means big savings in terms of necessary hardware and necessary power the device needs to do its job (microcontrollers tend to be resource intensive).
 
 To set up the Notecard, refer to the [`README.md`](firmware/README.md) file in this project's `firmware` folder for full instructions under the [**Configure the Notecard**](firmware/README.md#configure-the-notecard) section.
 
