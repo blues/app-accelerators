@@ -22,10 +22,10 @@ _The in-browser Notecard Playground available on dev.blues.io._
 The instructions to configure the Notecard will assume the Notecard CLI is being used, but this will also work with a very slight modification if you choose to use the in-browser Notecard Playground instead.
 
 1. Before you can configure your Notecard, you must set up a free [Notehub.io](https://notehub.io) account and create a project where the Notecard will send its data to. Follow the [Notehub Walkthrough](https://dev.blues.io/notehub/notehub-walkthrough/#create-a-notehub-account) to sign up and [create your first project](https://dev.blues.io/notehub/notehub-walkthrough/#create-a-new-project) if you haven't done so already. Be sure to copy the Project UID after creating it - you'll need it for the Notecard configuration script.
-1. Download and install the [Notecard CLI](https://dev.blues.io/tools-and-sdks/notecard-cli/#installation) from the Blues Developer Experience site.
-1. Plug the Notecarrier containing the Notecard into your computer with a USB-A to micro USB cable.
-1. Copy the JSON file example in this folder named [`parking-lot-help-request-config-script.json`](./parking-lot-help-request-config-script.json) to your local machine.
-1. Remove all the # comments describing what each command does, replace the `product` and `sn` placeholders in the script with your Notehub Project UID (copied earlier when you created the project) and preferred Notecard serial number (e.g. `Lot G` or `G14` - depending on how location specific you want your help request buttons to be), and resave the file. It will resemble the code snippet below when you're done.
+2. Download and install the [Notecard CLI](https://dev.blues.io/tools-and-sdks/notecard-cli/#installation) from the Blues Developer Experience site.
+3. Plug the Notecarrier containing the Notecard into your computer with a USB-A to micro USB cable.
+4. Copy the JSON file example in this folder named [`parking-lot-help-request-config-script.json`](./parking-lot-help-request-config-script.json) to your local machine.
+5. Remove all the # comments describing what each command does, replace the `product` and `sn` placeholders in the script with your Notehub Project UID (copied earlier when you created the project) and preferred Notecard serial number (e.g. `Lot G` or `G14` - depending on how location specific you want your help request buttons to be), and resave the file. It will resemble the code snippet below when you're done.
 ```json
 {"req":"env.default","name":"parking_lot_help_request_config_script_version","text":"1.1.1"}
 {"req":"hub.set","product":"com.your-company.your-name:your_product", "sn":"preferred_device_name_here"}
@@ -34,14 +34,14 @@ The instructions to configure the Notecard will assume the Notecard CLI is being
 {"req":"card.voltage","mode":"lipo"}
 {"req":"card.motion.mode","stop":true}
 ```
-1. Upload the configuration script to the Notecard via the Notecard CLI by running the following command from the command line:
+6. Upload the configuration script to the Notecard via the Notecard CLI by running the following command from the command line:
 ```bash 
 $ notecard -setup parking-lot-help-request-config-script.json`
 ```
-1. This executes each command on your connected Notecard, one at a time. When the setup completes, your Notecard's configuration is complete.
-1. To confirm your Notecard is now attached to your project in Notehub, navigate to the project in the browser, click the **Devices** tab and see if your Notecard has appeared. If all goes according to plan, you'll see a device with the preferred name of your Notecard (provided by the setup script) under the **Best ID** column.
+7. This executes each command on your connected Notecard, one at a time. When the setup completes, your Notecard's configuration is complete.
+8. To confirm your Notecard is now attached to your project in Notehub, navigate to the project in the browser, click the **Devices** tab and see if your Notecard has appeared. If all goes according to plan, you'll see a device with the preferred name of your Notecard (provided by the setup script) under the **Best ID** column.
   
-![Notecard registered to Notehub project with custom ID displayed as best ID instead of device's serial number](readme-notehub-device.png)
+![Notecard registered to Notehub project with a custom ID displayed as best ID instead of device's serial number](readme-notehub-device.png)
 _Devices tab on Notehub project showing your Notecard is registered to this project._
 
 If you'd prefer to upload this script using the in-browser Notecard Playground instead of downloading the CLI, connect your Notecarrier to your computer via the USB-A to micro USB connector, pair it via serial port in your browser by clicking the **USB Notecard** button in the [Notecard Playground](https://dev.blues.io/notecard-playground/), and copy/paste the whole config file like in the screenshot below. (Don't forget to replace the placeholder `product` and `sn` variables in the script before copy/pasting.)
@@ -49,6 +49,8 @@ If you'd prefer to upload this script using the in-browser Notecard Playground i
 ![Pasting in the Notecard config script in the in-browser Notecard playground](./readme-notecard-playground-script.png)
 
 Now, click the button a few times and hopefully you'll see the LED light on the board flash and the button press data similar to this screenshot below flowing into your own Notehub project.
+
+![Press that button and watch the LED light up](readme-press-the-button.png)
 
 https://user-images.githubusercontent.com/20400845/197624207-36afcfb9-6307-4dc5-acb9-542bec0140cf.mov
 
