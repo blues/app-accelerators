@@ -6,20 +6,31 @@
         "2037335832365003002c0047": "Garage",
         "203733583236500375754859": "Basement"
     };
-    $from := "+18505111111";    /* Your Twilio account phone number */
-    $to := "+14015222222";      /* Your cellphone number */
+
+
+    $lowBatteryVoltage := 2.5;  /* 2.5 is good for the sparrow kit AAA alkalines */
     
     /************** End User Config **************/
 
-    /* This line allows the JSONata code to decide which notefiles to route. */
-    $shouldRoute := $contains(file, "#motion.qo") ? true : $doNotRoute();
+    $isMotionEvent := $contains(file, "#motion.qo");
+    $isLowBatteryEvent := (file = "sensors.db")  and body.voltage < $lowBatteryVoltage;
 
-    $sparrowNodeId := $substringBefore(file, "#");
+    /* This line allows the JSONata code to decide which events should be routed */
+    /* to the SMS service instead of relying on the notehub.io route configuration GUI. */
+    $shouldRoute := $isLowBatteryEvent or $isMotionEvent ? true : $doNotRoute();
+
+    $sparrowNodeId := $isMotionEvent ? $substringBefore(file, "#") :
+                      $isLowBatteryEvent ? note :
+                      "err: missing node id";
     $location := $lookup($TrapLocations,$sparrowNodeId);
 
     $timestamp:= $fromMillis(when*1000, '[H01]:[m01]:[s01] [z]', '-0400');
-    $body := "There's movement in the " & $location & " mousetrap! " & $timestamp;
+    $message := $isMotionEvent ? "There's movement" :
+                $isLowBatteryEvent ? "The battery is almost dead" : 
+                "err: unrecognized event";
+
+    $smsBody := $message & " in the " & $location & " mousetrap! " & $timestamp;
 
     /* Expression from https://dev.blues.io/guides-and-tutorials/twilio-sms-guide/ */
-    "&Body=" & $body & "&From=" & $from & "&To=" & $to & "&"
+    "&Body=" & $smsBody & "&From=" & $from & "&To=" & $to & "&"
 )
