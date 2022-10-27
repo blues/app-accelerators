@@ -2,18 +2,15 @@
     $from := "+1800XXXXXXX";
     $to := "+1404XXXXXXX";
     $best_device_id := best_id ? best_id : device;
-    $body := function(){
-        (
-            $join([
-                "Alert! ",
-                $best_device_id,
-                " requires assistance. Help requested at ",
-                $fromMillis(when * 1000,
-                "[M01]/[D01]/[Y0001] [h#1]:[m01][P]",
-                "-0400"),
-                " ET."
-            ])
-        )
-    };
-    $result := "&Body=" & $body() & "&From=" & $from & "&To=" & $to & "&";
+    $body := 
+        $join([
+            "Alert! ",
+            $best_device_id,
+            " requires assistance. Help requested at ",
+            $fromMillis(when * 1000,
+            "[M01]/[D01]/[Y0001] [h#1]:[m01][P]",
+            "-0400"),
+            " ET."
+        ])
+    $result := "&Body=" & $body & "&From=" & $from & "&To=" & $to & "&";
 )

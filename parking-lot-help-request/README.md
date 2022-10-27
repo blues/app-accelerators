@@ -6,7 +6,8 @@ Host-free low latency notification system to alert attendants in a parking lot o
 * [Configure Notehub](#notehub).
 * [Configure the project's Notecard](#notecard-firmware).
 * [Set up a Twilio account and configure the data to route from Notehub to Twilio](#twilio-firmware).
-* [Optional: Weatherproof your hardware for field testing](#optional-hardware-weatherproofing)
+* [Optional: Weatherproof your hardware for field testing](#optional-hardware-weatherproofing).
+ 
 ## Hardware
 
 The following hardware is required to run the Parking Lot Help Request application.
@@ -37,11 +38,13 @@ _These pins will allow the LED to sit in a breadboard and easily interact with t
 ![Twidec button and jumper wire both stripped down to expose their wires for soldering](images/readme-wires-to-solder.jpg)
 _Notice that both the button and jumper wires are exposed for soldering, also there's a length of heat shrink on both button wires that will be used to cover the soldered portion of wire later._
 
-1. Use the "Western Union" X-style of wire wrapping to join the exposed jumper wires together with the Twidec wires and solder them together.
+1. Use the "Western Union" X-style of wire splicing to wrap the exposed jumper wires together with the Twidec wires and solder them together.
+![Diagram of Western Union wire splicing](images/readme-western-union.png)
+_Cross one wire over the other, wrap together until no wire remains unwrapped._
 ![Freshly soldered jumper wire and button wire](images/readme-wires-soldered.jpg)
 _A helping hand tool made soldering the jumper wire and button wire together much easier._
 
-1. Optional: Add a short piece of heat shrink tubing to each wire before soldering the wires together. After soldering is complete, slide the heat shrink down over the exposed wires and use a heat gun to shrink the wrap down to and protect the wires from the elements. (A great video that shows how do all of this, [wires to heat shrink, is available here](https://www.youtube.com/watch?v=Zu3TYBs65FM&ab_channel=ChrisFix).)
+1. Add a short piece of heat shrink tubing to each wire before soldering the wires together.Solder the wires. After soldering is complete, slide the heat shrink down over the exposed wires and use a heat gun to shrink the wrap down to and protect the wires from the elements and electrical shorts. If heat shrink tubing is unavailable electrical tape can be substituted. (A great video that shows how do all of this, [splicing through heat shrinking, is available here](https://www.youtube.com/watch?v=Zu3TYBs65FM&ab_channel=ChrisFix).)
 ![Button with heatshrink in place awaiting heatgun application](images/readme-heatgun.jpg)
 _The heat shrink has been shifted over the newly soldered wires - now to shrink it with an application of the heat gun._
 ![The button after heatgun application: nice, new jumper wires on each end](images/readme-heatshrink.jpg)
@@ -54,20 +57,21 @@ _The finished button with its newly added jumper wires on each end, and a protec
 _Notecarrier A's GND pin to breadboard's negative bus (-)._
 
 1. Attach the Notecarrier A to the LED breakout by plugging jumper wires into its headers in the following configuration:
-   1. `VIO`  ➡️ `V5`
-   1. `AUX2`  ➡️ `DI`
-   1. `-` ➡️ `GND` (this will be a wire in the negative bus (`-`) of the breaboard to the `GND` pin in the LED)
+   1. `VIO`  ➡️ `V5` on LED
+   1. `AUX2`  ➡️ `DI` on LED
+   1. Breadboard's `-` bus ➡️ `GND` on LED
 ![Jumper wires from Notecarrier A connecting it to the LED via jumper wires into the breadboard](images/readme-led-notecarrier.jpg)
 _Notecarrier A VIO pin to V5, AUX2 pin to DI, and negative bus to GND of LED breakout._ 
 
 1. Attach the newly soldered button wires to the Notecarrier and breadboard:
     1. Red wire  ➡️ `AUX1` on the Notecarrier A
-    2. Black wire  ➡️ `-` (negative bus) on the breadboard
+    1. Black wire  ➡️ breadboard's `-` bus
 ![Button's red wire to the Notecarrier A's AUX1 pin and black wire to the breadboard's negative bus](images/readme-add-button.jpg)
 
 1. Plug the LiPo battery and solar panel into the Notecarrier A's JST connectors for each piece of hardware
 ![Finished hardware](images/readme-finished-hardware.jpg)
 _This hardware is assembled: Notecarrier, Notecard, LED, button, LiPo battery, and solar panel._
+
 1. Now it's time to configure Notehub and the Notecard!
 
 ## Notehub
@@ -79,7 +83,7 @@ The Parking Lot Help Request project runs with the help of Notehub. As such, to 
 1. Sign up for a free [Notehub](https://notehub.io) account, if you don’t have one
 already.
 1. Click the blue **Create Project** button in the top-right corner of the screen.
-2. Give the project a name, such as “ParkingLotHelpRequest”, and then click the **Create Project** button in the modal.
+1. Give the project a name, such as “ParkingLotHelpRequest”, and then click the **Create Project** button in the modal.
 
 ![Creating a project in Notehub with a name](images/readme-notehub-project.png)
 
@@ -102,17 +106,19 @@ can use that as your starting point.
 1. Inside Settings, change the Fleet name input to something more useful (like "Lot L" or "Floor 3" for all devices in that particular lot)
 ![How to rename a fleet name in Notehub](images/readme-notehub-fleet-names.png)
 
-1. Then click on the **Devices** link to see all the devices associated with that Notehub project, and update the fleet that device is assigned to by using the dropdown.
+1. Then click on the **Devices** link to see all the devices associated with that Notehub project.
+1. Double-click the device you're currently configuring.
+1. Update the fleet that device is assigned to by using the dropdown.
 ![Assign device to particular fleet in Notehub](images/readme-notehub-device-to-fleet.png)
 
 1. You can also rename the device from this page if you need to update its parking spot number in the same way.
 
-With this your Notehub backend is fully configured, and you’re ready to start setting up your Notecard.
+With this, your Notehub backend is fully configured, and you’re ready to start setting up your Notecard.
 
 
 ## Notecard Firmware
 
-This is a "host-free" project because the _Notecard itself_ can be configured to send notes to Notehub when the button is pressed. It may sound simple, but this is a pretty big deal. Typically, a host microcontroller is necessary to process logic like when a button is tapped something else (sending a note to Notehub) needs to happen, the fact that Notecard can do this without a host means big savings in terms of necessary hardware and necessary power the device needs to do its job (microcontrollers tend to be resource intensive).
+This is a "host-free" project because the _Notecard itself_ can be configured to send notes to Notehub when the button is pressed. It may sound simple, but this is a pretty big deal. Typically, a host microcontroller is necessary to process logic like "when a button is tapped something else (sending a note to Notehub) needs to happen." The fact that Notecard can do this without a host means big savings in terms of necessary hardware and necessary power-usage the device needs (microcontrollers tend to be resource intensive).
 
 To set up the Notecard, refer to the [`README.md`](firmware/README.md) file in this project's `firmware` folder for full instructions under the [**Configure the Notecard**](firmware/README.md#configure-the-notecard) section.
 
@@ -120,7 +126,7 @@ To set up the Notecard, refer to the [`README.md`](firmware/README.md) file in t
 
 Once help requests (button press events) are being successfully sent to Notehub from the Notecard, the requests will need to be routed out of Notehub to Twilio for SMS alerting.
 
-See the `firmware` folder's [`README.md`](firmware/README.md) once more for complete instructions to format the button press events and send them to Twilio. The [**Transform Notehub data with JSONata for Twilio**](firmware/README.md#transform-notehub-data-with-jsonata-for-twilio) has all the details you should need.
+See the `firmware` folder's [`README.md`](firmware/README.md) once more for complete instructions to format the button press events and send them to Twilio. The section [**Transform Notehub data with JSONata for Twilio**](firmware/README.md#transform-notehub-data-with-jsonata-for-twilio) has all the details you should need.
 
 ![Example SMS alert from Twilio requesting assistance for help request device located in parking lot G](images/readme-twilio-sms.PNG)
 
@@ -138,21 +144,17 @@ As mentioned in the hardware list at the top, an ABS plastic junction box with t
 1. Once you have your box, take a power drill and 1/4" drill bit to drill a pilot hole in the center of one of the short sides of the box (this will be where the button will eventually go). 
 ![Power drill and various sized drill bits](images/readme-drillbits.jpg)
 
-2. After drilling the pilot hole to keep the plastic case from cracking, use a 1/2" drill bit to drill a hole large enough for the button to fit in snugly.
-3. Use an Xacto knife to clean up any loose bits of plastic around the hole's edges.
+1. After drilling the pilot hole to keep the plastic case from cracking, use a 1/2" drill bit to drill a hole large enough for the button to fit in snugly.
+1. Use an Xacto knife to clean up any loose bits of plastic around the hole's edges.
 ![Xacto knife cleaning up bits of plastic left over from drilling a hole into the plastic box](images/readme-exacto-knife.jpg)
 
-4. Unscrew the gasket and hex nut from the top of the button, thread the wires through the hole, and if the hole's the right size, the button head should sit snuggly. Rescrew the hex nut to keep the button in place.
+1. Unscrew the gasket and hex nut from the top of the button, thread the wires through the hole, and if the hole's the right size, the button head should sit snuggly. Rescrew the hex nut to keep the button in place.
 ![Close up of button sitting on top of box](images/readme-button-top.jpg)
 ![Side shot showing button's gasket holding it securely in place underneath](images/readme-button-secured.jpg)
 
-5. Now, reassemble the device inside of the plastic enclosure. Tape or glue everything down to keep the hardware secure. (Make sure the LED NeoPixel and solar panel are visible so the device can recharge itself and display to users the help request has been sent.)
+1. Now, reassemble the device inside of the plastic enclosure. Tape or glue everything down to keep the hardware secure. (Make sure the LED NeoPixel and solar panel are visible so the device can recharge itself and display to users the help request has been sent.)
 ![Hardware reassembled inside enclosure box and secured down with tape](images/readme-assembled-hardware.jpg)
 
-6. Screw the plastic top on, tap the button to make sure everything works, and go forth and field test.
+1. Screw the plastic top on, tap the button to make sure everything works, and go forth and field test.
 ![Overhead image of completely assembled enclosure and hardware](images/readme-enclosed-device.jpg)
 ![Side shot of completely assembled enclosure and hardware](images/readme-enclosed-device-2.jpg)
-
-
-
-  

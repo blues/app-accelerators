@@ -78,25 +78,22 @@ Twilio expects very specific syntax, and you can add the JSONata expression righ
 
 Paste this JSONata into the Tranform Data input, and replace the `$from` and `$to` values with your Twilio number (`$from`) and your cell phone number to receive the SMS messages (`$to`).
 
-```json
+```jsonata
 (
     $from := "+1800XXXXXXX";
     $to := "+1404XXXXXXX";
     $best_device_id := best_id ? best_id : device;
-    $body := function(){
-        (
-            $join([
-                "Alert! ",
-                $best_device_id,
-                " requires assistance. Help requested at ",
-                $fromMillis(when * 1000,
-                "[M01]/[D01]/[Y0001] [h#1]:[m01][P]",
-                "-0400"),
-                " ET."
-            ])
-        )
-    };
-    $result := "&Body=" & $body() & "&From=" & $from & "&To=" & $to & "&";
+    $body := 
+        $join([
+            "Alert! ",
+            $best_device_id,
+            " requires assistance. Help requested at ",
+            $fromMillis(when * 1000,
+            "[M01]/[D01]/[Y0001] [h#1]:[m01][P]",
+            "-0400"),
+            " ET."
+        ]) 
+    $result := "&Body=" & $body & "&From=" & $from & "&To=" & $to & "&";
 )
 ```
 
