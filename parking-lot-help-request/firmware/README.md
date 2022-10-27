@@ -74,7 +74,7 @@ Then, use [JSONata](https://dev.blues.io/guides-and-tutorials/notecard-guides/us
 
 Twilio expects very specific syntax, and you can add the JSONata expression right at the bottom of the new route page you're working in under the **Data** section.
 
-![JSONata expression to format Notehub event for Twilio SMS alerts in Notehub route](readme-notehub-jsonata.png)
+![JSONata expression to format Notehub event for Twilio SMS alerts in Notehub route](readme-twilio-jsonata.png)
 
 Paste this JSONata into the Tranform Data input, and replace the `$from` and `$to` values with your Twilio number (`$from`) and your cell phone number to receive the SMS messages (`$to`).
 
@@ -92,7 +92,7 @@ Paste this JSONata into the Tranform Data input, and replace the `$from` and `$t
             "[M01]/[D01]/[Y0001] [h#1]:[m01][P]",
             "-0400"),
             " ET."
-        ]) 
+        ]); 
     $result := "&Body=" & $body & "&From=" & $from & "&To=" & $to & "&";
 )
 ```
