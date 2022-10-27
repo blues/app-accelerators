@@ -54,6 +54,25 @@ A smarter mouse trap with SMS alerting.
 
 ---
 
+### 4. Low Power Digital Signage
+
+A device to keep a fleet of digital displays synchronized across a facility.
+
+<p>
+  Details coming soon!
+</p>
+
+---
+
+### 5. Connected Analog Signage
+
+A device to keep a fleet of analog displays synchronized across a facility.
+
+<p>
+  Details coming soon!
+</p>
+
+---
 
 ### 6. 🅿️ Parking Lot Help Request
 

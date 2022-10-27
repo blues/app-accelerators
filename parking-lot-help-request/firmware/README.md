@@ -36,7 +36,7 @@ The instructions to configure the Notecard will assume the Notecard CLI is being
 ```
 6. Upload the configuration script to the Notecard via the Notecard CLI by running the following command from the command line:
 ```bash 
-$ notecard -setup parking-lot-help-request-config-script.json`
+$ notecard -setup parking-lot-help-request-config-script.json
 ```
 7. This executes each command on your connected Notecard, one at a time. When the setup completes, your Notecard's configuration is complete.
 8. To confirm your Notecard is now attached to your project in Notehub, navigate to the project in the browser, click the **Devices** tab and see if your Notecard has appeared. If all goes according to plan, you'll see a device with the preferred name of your Notecard (provided by the setup script) under the **Best ID** column.
@@ -68,13 +68,13 @@ Follow the [Twilio starter guide](https://dev.blues.io/guides-and-tutorials/twil
 Instead of selecting `twilio.qo` files, you're going to want to route out `_button.qo` events in the **Filters** section.
 
 ![Selecting just _button.qo events to route to Twilio from Notehub](readme-button-events.png)
-_Select just the `_button.qo` events to route out of Notehub to Twilio_
+_Select just the `_button.qo` events to route out of Notehub to Twilio._
 
 Then, use [JSONata](https://dev.blues.io/guides-and-tutorials/notecard-guides/using-jsonata-to-transform-json/) (a lightweight query and transformation language for JSON) to filter down and format the data from a button event before sending it to Twilio.
 
 Twilio expects very specific syntax, and you can add the JSONata expression right at the bottom of the new route page you're working in under the **Data** section.
 
-![JSONata expression to ](readme-notehub-jsonata.png)
+![JSONata expression to format Notehub event for Twilio SMS alerts in Notehub route](readme-notehub-jsonata.png)
 
 Paste this JSONata into the Tranform Data input, and replace the `$from` and `$to` values with your Twilio number (`$from`) and your cell phone number to receive the SMS messages (`$to`).
 
