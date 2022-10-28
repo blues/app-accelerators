@@ -9,7 +9,7 @@ Find the complete story in the detailed [Hackster.io writeup].
 _A Better Mousetrap_ is a humane mousetrap that will alert you with an SMS when
 it has caught a mouse.
 
-![Finished trap on a concrete floor](./readme-images/pxl_20221018_203442381_2HE5Zxfkng.avif)
+![Finished trap on a concrete floor](./readme-images/pxl_20221018_203442381_2HE5Zxfkng.jpg)
 
 - [Better Mouse Trap](#better-mouse-trap)
   - [You will need](#you-will-need)
@@ -49,7 +49,7 @@ into the trap, I cut a 1/2” hole in the lid of the Victor M333 Mousetrap. To
 locate the circuit board securely, I cut four 1/8” holes to receive M3-threaded
 nylon standoffs.
 
-![Side view of Victor trap surmounted by the motion sensor](<readme-images/nf3_mousetrap_(7)_Ggl9W9TOQ8.avif>)
+![Side view of Victor trap surmounted by the motion sensor](<readme-images/nf3_mousetrap_(7)_Ggl9W9TOQ8.jpg>)
 
 ### Sparrow Setup
 
@@ -68,8 +68,8 @@ When the Sparrow sensor detects motion, it creates a message. The Sparrow
 gateway, thanks to the onboard Notecard, forwards the message through Wi-Fi to
 my home router.
 
-![View inside the trap showing underside of lid](<readme-images/nf3_mousetrap_(8)_gUpTQaXMpg.avif>)
-![Sparrow Gateway wiring and logical data path from Lora Radio Signal to Sparrow essentials board, to qwiic i2c cable, to notecarrier, to notecard, to wifi](<readme-images/nf3_mousetrap_(13)_g4ofhDRGNm.avif>)
+![View inside the trap showing underside of lid](<readme-images/nf3_mousetrap_(8)_gUpTQaXMpg.jpg>)
+![Sparrow Gateway wiring and logical data path from Lora Radio Signal to Sparrow essentials board, to qwiic i2c cable, to notecarrier, to notecard, to wifi](<readme-images/nf3_mousetrap_(13)_g4ofhDRGNm.jpg>)
 
 ## Cloud Setup
 
@@ -83,17 +83,17 @@ Notehub doesn’t have native SMS alerts yet, but it does allow you to route mes
 
 To correctly format the request for the Twilio HTTP API I followed the Blues Wireless [Twilio SMS Guide] and [modified the JSONata] expression to tell me which mousetrap (Garage, Basement, etc.) saw motion based on the unique ID of the Sparrow sensor node I affixed to each trap.
 
-![Data path from Wi-Fi to Notehub.io and JSONata transformation into SMS format](<readme-images/nf3_mousetrap_(18)_sghXhszUbO.avif>)
+![Data path from Wi-Fi to Notehub.io and JSONata transformation into SMS format](<readme-images/nf3_mousetrap_(18)_sghXhszUbO.jpg>)
 
 ## System Test
 
 To trigger the PIR sensor, flip the trap upside down and back upright. You should see an event on [Notehub.io] and an SMS message on your phone.
 
-![Notehub.io event screenshot](readme-images/image_X1HU4mO9mN.avif)
+![Notehub.io event screenshot](readme-images/image_X1HU4mO9mN.jpg)
 
-![Route to Twilio SMS Service](<readme-images/nf3_mousetrap_(19)_TOXG7lKQRu.avif>)
+![Route to Twilio SMS Service](<readme-images/nf3_mousetrap_(19)_TOXG7lKQRu.jpg>)
 
-![Phone Screenshot of SMS](readme-images/image_S2jSMIx7G8.avif)
+![Phone Screenshot of SMS](readme-images/image_S2jSMIx7G8.jpg)
 
 ### Blues Wireless Community
 
