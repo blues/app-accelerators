@@ -1,6 +1,10 @@
 # Parking Lot Help Request
 
-Host-free low latency notification system to alert attendants in a parking lot or facility that customers need assistance. To run this project youself you'll need to:
+Host-free low latency notification system to alert attendants in a parking lot or facility that customers need assistance. 
+
+https://user-images.githubusercontent.com/20400845/198608657-0a79a4f1-1cc9-4ef9-bced-da28a713b0ba.MOV
+
+To run this project youself you'll need to:
 
 * [Purchase the necessary hardware and configure it](#hardware).
 * [Configure Notehub](#notehub).
