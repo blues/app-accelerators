@@ -6,31 +6,42 @@ Find the complete story in the detailed [Hackster.io writeup].
 
 [![Mouse wearing a helmet grabbing cheese from a trap](../app-banners/nf3.png)][hackster.io writeup]
 
-## TL;DR Instructions
-
 _A Better Mousetrap_ is a humane mousetrap that will alert you with an SMS when
 it has caught a mouse.
 
 ![Finished trap on a concrete floor](./readme-images/pxl_20221018_203442381_2HE5Zxfkng.avif)
 
-### You will need
+- [Better Mouse Trap](#better-mouse-trap)
+  - [You will need](#you-will-need)
+    - [Parts](#parts)
+    - [Tools](#tools)
+  - [Hardware Setup](#hardware-setup)
+    - [Modifying the Mousetrap](#modifying-the-mousetrap)
+    - [Sparrow Setup](#sparrow-setup)
+  - [Firmware](#firmware)
+  - [Cloud Setup](#cloud-setup)
+  - [SMS Alerts](#sms-alerts)
+  - [System Test](#system-test)
+    - [Blues Wireless Community](#blues-wireless-community)
 
-#### Parts
+## You will need
+
+### Parts
 
 - [Victor M333 Humane Mouse Trap](https://www.amazon.com/gp/product/B004CMNWES)
 - [Blues Wireless WiFi + LoRa Dev Kit (Sparrow)](https://shop.blues.io/products/sparrow-dev-kit)
 - [Clear Polycarbonate Sheet 1/16-in](https://www.amazon.com/gp/product/B07MQTDF4R)
 - [M3-threaded Nylon Standoff Kit](https://www.amazon.com/gp/product/B07KP2ZFNJ)
 
-#### Tools
+### Tools
 
 - Hand Drill
 - 1/2 inch Drill Bit
 - 1/8 inch Twist Drill
 
-### Hardware Setup
+## Hardware Setup
 
-#### Modifying the Mousetrap
+### Modifying the Mousetrap
 
 I used a LoRa-based [Blues Wireless Sparrow Development Kit] which has a passive
 infrared (PIR) motion sensor on each sensor node. To allow the PIR sensor to see
@@ -40,7 +51,7 @@ nylon standoffs.
 
 ![Side view of Victor trap surmounted by the motion sensor](<readme-images/nf3_mousetrap_(7)_Ggl9W9TOQ8.avif>)
 
-#### Sparrow Setup
+### Sparrow Setup
 
 Follow the [Sparrow quickstart]. Including:
 
@@ -48,7 +59,7 @@ Follow the [Sparrow quickstart]. Including:
 - Pressing a few `pair` buttons
 - Setting your wifi credentials `{"req":"card.wifi","ssid":"<ssid name>","password":"<password>"}`
 
-### Firmware
+## Firmware
 
 The Sparrow kit's PIR sensors and factory firmware are perfect to detect motion
 in a mousetrap like this.
@@ -60,13 +71,13 @@ my home router.
 ![View inside the trap showing underside of lid](<readme-images/nf3_mousetrap_(8)_gUpTQaXMpg.avif>)
 ![Sparrow Gateway wiring and logical data path from Lora Radio Signal to Sparrow essentials board, to qwiic i2c cable, to notecarrier, to notecard, to wifi](<readme-images/nf3_mousetrap_(13)_g4ofhDRGNm.avif>)
 
-### Cloud Setup
+## Cloud Setup
 
 - Sign up for a free account on [Notehub.io], and create a new project.
-- Configure the Notecard on the Sparrow Gateway with your Notehub ProductID
+- Configure the Notecard on the Sparrow Gateway with your Notehub ProductUID
   `{"req":"hub.set", "product":"com.your-company.your-name:your_product", "mode":"continuous"}`
 
-### SMS Alerts
+## SMS Alerts
 
 Notehub doesn’t have native SMS alerts yet, but it does allow you to route messages [to any other cloud services or HTTPS API endpoint][route] that your heart desires. I used Twilio, an inexpensive SMS service, to send message to my phone when there is motion in the trap.
 
@@ -74,7 +85,7 @@ To correctly format the request for the Twilio HTTP API I followed the Blues Wir
 
 ![Data path from Wi-Fi to Notehub.io and JSONata transformation into SMS format](<readme-images/nf3_mousetrap_(18)_sghXhszUbO.avif>)
 
-### System Test
+## System Test
 
 To trigger the PIR sensor, flip the trap upside down and back upright. You should see an event on [Notehub.io] and an SMS message on your phone.
 
@@ -84,13 +95,9 @@ To trigger the PIR sensor, flip the trap upside down and back upright. You shoul
 
 ![Phone Screenshot of SMS](readme-images/image_S2jSMIx7G8.avif)
 
-### Final Thoughts
-
-In just a few hours, I was able to make a connected mousetrap solution that communicates anywhere on my property using LoRa thanks to [Sparrow]. Thanks to LoRa’s excellent signal propagation, traps can even be put in my detached garage, made of concrete block, where Wi-Fi doesn’t reach. As a bonus, if I ever want to move my mousetraps to a property where I don’t have internet access (like a storage location on the other side of town, or a grain silo on the other side of the country) I can easily swap in a cellular [Notecard] (with 10 years of data included) for about $60 (as of 2021).
-
 ### Blues Wireless Community
 
-We’d love to hear bout you and your project on the [Blues Wireless Community Forum].
+We’d love to hear about you and your project on the [Blues Wireless Community Forum].
 
 [blues wireless community forum]: https://discuss.blues.io/
 [blues wireless sparrow development kit]: https://shop.blues.io/products/sparrow-dev-kit?&utm_source=github&utm_medium=web&utm_campaign=nf&utm_content=nf3
