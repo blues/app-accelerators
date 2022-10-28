@@ -103,9 +103,7 @@ We’d love to hear about you and your project on the [Blues Wireless Community 
 [blues wireless sparrow development kit]: https://shop.blues.io/products/sparrow-dev-kit?&utm_source=github&utm_medium=web&utm_campaign=nf&utm_content=nf3
 [hackster.io writeup]: https://www.hackster.io/hendersoncarlton/i-love-checking-on-mousetraps-said-no-one-ever-52c5e7
 [modified the jsonata]: ./mousetrap.jsonata
-[notecard]: https://shop.blues.io/collections/notecard?&utm_source=github&utm_medium=web&utm_campaign=nf&utm_content=nf3
 [notehub.io]: https://notehub.io
 [route]: https://dev.blues.io/guides-and-tutorials/routing-data-to-cloud/?&utm_source=github&utm_medium=web&utm_campaign=nf&utm_content=nf3
 [sparrow quickstart]: https://dev.blues.io/quickstart/sparrow-quickstart/?&utm_source=github&utm_medium=web&utm_campaign=nf&utm_content=nf3#set-up-notecard
-[sparrow]: https://shop.blues.io/products/sparrow-dev-kit?&utm_source=github&utm_medium=web&utm_campaign=nf&utm_content=nf3
 [twilio sms guide]: https://dev.blues.io/guides-and-tutorials/twilio-sms-guide/?&utm_source=github&utm_medium=web&utm_campaign=nf&utm_content=nf3
