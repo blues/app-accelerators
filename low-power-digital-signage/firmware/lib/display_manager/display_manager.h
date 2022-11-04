@@ -5,6 +5,6 @@
 struct applicationState {
   int lastUpdate;
   String text;
-  String imageBytes;
+  String imageString;
   bool variablesUpdated;
 };

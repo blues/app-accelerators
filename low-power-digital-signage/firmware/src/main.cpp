@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <Notecard.h>
+#include <base64_decode.h>
 #include "Adafruit_ImageReader.h"
 #include "Adafruit_ThinkInk.h"
 #include "display_manager.h"
@@ -15,7 +16,7 @@
 
 #define serialDebugOut Serial
 // Uncomment to view Note requests from the Host
-#define DEBUG_NOTECARD
+// #define DEBUG_NOTECARD
 
 #define ENV_POLL_SECS	1
 
@@ -33,19 +34,21 @@ applicationState state;
 // Forward declarations
 void fetchEnvironmentVariables(applicationState);
 bool pollEnvVars(void);
-void drawText(const char *text, uint16_t color);
 void displayContent(void);
+int decodeImage(unsigned char *decoded);
 
 void setup() {
   serialDebugOut.begin(115200);
-#ifdef DEBUG_NOTECARD
-  notecard.setDebugOutputStream(serialDebugOut);
-#endif
-  while (!serialDebugOut) { delay(10); }
+
+  //while (!serialDebugOut) { delay(10); }
+  delay(2500);
   serialDebugOut.println("Low-Power Digital Signage Demo");
   serialDebugOut.println("==============================");
 
   Wire.begin();
+#ifdef DEBUG_NOTECARD
+  notecard.setDebugOutputStream(serialDebugOut);
+#endif
   notecard.begin();
 
   display.begin(THINKINK_TRICOLOR);
@@ -89,15 +92,72 @@ void loop() {
 }
 
 void displayContent() {
-  if (state.imageBytes != NULL) {
+  if (state.imageString != NULL) {
     // Show image
-    display.clearBuffer();
-    display.drawBitmap(0, 0, blues_logo, 250, 122, EPD_RED, EPD_WHITE);
-    display.display();
+    unsigned char * imageBytes PROGMEM;
+    int imageBytesSize = decodeImage(imageBytes);
+
+    if (imageBytesSize > 1) {
+      serialDebugOut.print("First element:\t");
+      serialDebugOut.println(imageBytes[885]);
+
+      for (size_t i = 0; i < imageBytesSize; i++)
+      {
+        if (imageBytes[i] != blues_logo[i]) {
+          serialDebugOut.println(imageBytes[i], HEX);
+          serialDebugOut.println(blues_logo[i], HEX);
+          serialDebugOut.println();
+        }
+      }
+
+      if (strcmp(reinterpret_cast<const char*>(imageBytes), reinterpret_cast<const char*>(blues_logo)) != 0) {
+        serialDebugOut.println("Strings are not the same!");
+      } else {
+        serialDebugOut.println("Strings are the same!");
+      }
+
+      display.clearBuffer();
+      display.drawBitmap(0, 0, imageBytes, 250, 122, EPD_RED, EPD_WHITE);
+      display.display();
+    }
   } else if (state.text != NULL) {
     display.clearBuffer();
-    display.setTextSize(4);
-    drawText(state.text.c_str(), EPD_RED);
+
+    uint8_t textSize = 4;
+    uint8_t cursorY = 30;
+
+    char* text = const_cast<char*>(state.text.c_str());
+    size_t textLength = strlen(text);
+
+    if (textLength > 16 && textLength <= 32) {
+      textSize = 3;
+      cursorY = 20;
+    } else if (textLength > 32 && textLength <= 64) {
+      textSize = 2;
+      cursorY = 10;
+    } else if (textLength > 64) {
+      textSize = 1;
+      cursorY = 5;
+    }
+
+    display.setCursor(0, cursorY);
+    display.setTextSize(textSize);
+    display.setTextColor(EPD_RED);
+
+    char* segment = strtok(text, " ");
+    while (segment != NULL) {
+      size_t segmentLen = strlen(segment);
+      uint8_t padSpaces = floor((44 / textSize - segmentLen) / 2.00);
+
+      for (size_t i = 0; i < padSpaces; i++)
+      {
+        display.print(" ");
+      }
+      display.println(segment);
+
+      segment = strtok(NULL, " ");
+    }
+
     display.display();
   }
 }
@@ -107,7 +167,7 @@ void fetchEnvironmentVariables(applicationState vars) {
 
   J *names = JAddArrayToObject(req, "names");
   JAddItemToArray(names, JCreateString("text"));
-  JAddItemToArray(names, JCreateString("image_bytes"));
+  JAddItemToArray(names, JCreateString("image_string"));
 
   J *rsp = notecard.requestAndResponse(req);
   if (rsp != NULL) {
@@ -126,17 +186,17 @@ void fetchEnvironmentVariables(applicationState vars) {
             vars.variablesUpdated = true;
           }
 
-          char *imageBytes = JGetString(body, "image_bytes");
-          if (strcmp(vars.imageBytes.c_str(), imageBytes) != 0)
+          char *imageString = JGetString(body, "image_string");
+          if (strcmp(vars.imageString.c_str(), imageString) != 0)
           {
-            vars.imageBytes = String(imageBytes);
+            vars.imageString = String(imageString);
             vars.variablesUpdated = true;
           }
 
           serialDebugOut.print("\nText: ");
           serialDebugOut.println(vars.text);
-          serialDebugOut.print("Image Bytes: ");
-          serialDebugOut.println(vars.imageBytes);
+          // serialDebugOut.print("Image String: ");
+          // serialDebugOut.println(vars.imageString);
 
           state = vars;
       }
@@ -169,9 +229,18 @@ bool pollEnvVars() {
   return true;
 }
 
-void drawText(const char *text, uint16_t color) {
-  display.setCursor(10, 10);
-  display.setTextColor(color);
-  display.setTextWrap(true);
-  display.print(text);
+int decodeImage(unsigned char *decoded) {
+  char *imageString = const_cast<char*>(state.imageString.c_str());
+  int inputStringLength = strlen(imageString);
+  int decodedLength = b64_decoded_size(imageString)+1;
+
+  serialDebugOut.print("Input string length:\t");
+  serialDebugOut.println(inputStringLength);
+
+  b64_decode(imageString, decoded, decodedLength);
+
+  serialDebugOut.print("Decoded string length:\t");
+  serialDebugOut.println(decodedLength);
+
+  return decodedLength;
 }
