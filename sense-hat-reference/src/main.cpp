@@ -6,6 +6,7 @@
 #include <Adafruit_VCNL4040.h>
 #include <vl53l4cx_class.h>
 #include <Wire.h>
+#include <MEMSAudioCapture.h>
 
 #define serialDebugOut Serial
 // Uncomment to view Note requests from the Host
@@ -13,7 +14,10 @@
 #define PRODUCT_UID "com.blues.sense_hat_sample"
 
 #define UPDATE_PERIOD (15000) // (1000 * 60 * 5)
+#define VOLUME_UPDATE_PERIOD (1000)
+#define LED_MONITOR_MIC 1       // set to 0 to have the LED monitor the notecard LED
 static unsigned long lastUpdateMs;
+static unsigned long lastVolumeUpdateMs;
 
 // Forward Declarations
 void getBMP581Readings(J *body);
@@ -27,6 +31,41 @@ Adafruit_BMP581 bmp;
 Adafruit_BME280 bme;
 Adafruit_VCNL4040 vcnl4040 = Adafruit_VCNL4040();
 VL53L4CX vl53l4cx(&Wire, D10);
+MEMSAudioCapture mic;
+
+/**
+ * @brief Computes the root mean square of a number of PCM samples.
+ */
+class RMS {
+  double square;
+  uint32_t sampleCount;
+public:
+  void accumulate(pcm_sample_t* samples, size_t sampleCount) {
+    this->sampleCount += sampleCount;
+    while (sampleCount-->0) {
+      int32_t sample = samples[sampleCount];
+      square += sample * sample;
+    }
+  }
+
+  double computeRMS() {
+    noInterrupts();
+    double mean = square/sampleCount;
+    square = 0;
+    sampleCount = 0;
+    interrupts();
+    double root = sqrt(mean);
+    return root;
+  }
+};
+
+void displayRMS(double rmsValue);
+
+RMS rms;
+
+void updateAudioVolume(MemsAudio* audio, pcm_sample_t* pcmSamples, size_t pcmSamplesLength) {
+  rms.accumulate(pcmSamples, pcmSamplesLength);
+}
 
 void setup()
 {
@@ -41,7 +80,9 @@ void setup()
 
   Wire.begin();
   notecard.begin();
-
+  if (!mic.begin(updateAudioVolume)) {
+      serialDebugOut.println("Unable to start audio capture.");
+  }
   if (!bmp.begin_I2C())
   {
     serialDebugOut.println(
@@ -89,10 +130,11 @@ void setup()
   // Turn on Neopixel Monitoring mode. Will enable the COMM LED
   // And COMM TEST button. Pressing the button will send a note
   // to the Notecard.
+  // When LED_MONITOR_MIC is 1, the LED monitors the ambient noise level
   req = notecard.newRequest("card.aux");
   if (req != NULL)
   {
-    JAddStringToObject(req, "mode", "neo-monitor");
+    JAddStringToObject(req, "mode", LED_MONITOR_MIC ? "neo-monitor" : "neo");
     notecard.sendRequest(req);
   }
 
@@ -104,12 +146,18 @@ void setup()
     notecard.sendRequest(req);
   }
 
-  lastUpdateMs = millis();
+  lastVolumeUpdateMs = lastUpdateMs = millis();
 }
 
 void loop()
 {
   const uint32_t currentMillis = millis();
+
+  if (currentMillis - lastVolumeUpdateMs >= VOLUME_UPDATE_PERIOD) {
+      double rmsValue = rms.computeRMS();
+      displayRMS(rmsValue);
+      lastVolumeUpdateMs = currentMillis;
+  }
 
   if (currentMillis - lastUpdateMs >= UPDATE_PERIOD)
   {
@@ -273,3 +321,35 @@ void getVL53L4Readings(J *body)
     }
   }
 }
+
+const uint8_t VOLUME_COLORS_COUNT = 5;
+const char* volumeColors[] = {
+  "white",
+  "green",
+  "yellow",
+  "orange",
+  "red"
+};
+
+void displayRMS(double rmsValue) {
+  static int8_t lastColor = -1;
+  int noise = 20;
+  int color = sqrt((rmsValue-noise)*VOLUME_COLORS_COUNT*VOLUME_COLORS_COUNT/2000);    // values above 2000 are rare so shorten the scale
+  if (color>=VOLUME_COLORS_COUNT) {
+    color = VOLUME_COLORS_COUNT-1;
+  }
+  serialDebugOut.print("Audio RMS: ");
+  serialDebugOut.println(rmsValue);
+  if (true || color!=lastColor) {
+    lastColor = color;
+    J* req = notecard.newRequest("card.led");
+    if (req != NULL)
+    {
+      JAddStringToObject(req, "mode", volumeColors[color]);
+      JAddBoolToObject(req, "on", true);
+      notecard.sendRequest(req);
+    }
+  }
+}
+
+
