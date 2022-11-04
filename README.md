@@ -53,3 +53,14 @@ A smarter mouse trap with SMS alerting.
 </p>
 
 ---
+
+### 7. 🚑 Medical Panic Button
+
+Press a button to send a low latency alert for medical assistance.
+
+<p>
+  <a href=""><b>📚 Read About the Project</b></a> •
+  <a href=""><b>🔧 Start Building</b></a>
+</p>
+
+---

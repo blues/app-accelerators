@@ -1,0 +1,19 @@
+# Track which version of the setup script was used on each device. You can
+# view this version in the device's environment variables in Notehub.
+{"req":"env.default","name":"medical_panic_button_config_version","text":"1.0.0"}
+
+# Set the product UID to one that's registered to our product and give it a
+# preferred serial number (name).
+{"req":"hub.set","product":"com.your-company.your-name:your_product", "sn":"Your_Device_Name"}
+
+# Set Notehub to minimum mode for battery conservation
+{"req":"hub.set","mode":"minimum","outbound":1440,"inbound":10080}
+
+# Turn on Notecard's neo-monitor mode
+{"req":"card.aux","mode":"neo-monitor"}
+
+# Tell the Notecard this project uses a LiPo battery
+{"req":"card.voltage","mode":"lipo"}
+
+# Turn off accelerometer to further conserve battery life
+{"req":"card.motion.mode","stop":true}
