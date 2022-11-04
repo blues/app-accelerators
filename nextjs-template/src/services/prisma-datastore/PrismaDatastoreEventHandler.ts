@@ -1,10 +1,5 @@
 /* eslint-disable prefer-rest-params */
-import {
-  PrismaClient,
-  Prisma,
-  Project,
-  Device
-} from "@prisma/client";
+import { PrismaClient, Prisma, Project, Device, Event } from "@prisma/client";
 import { ErrorWithCause } from "pony-cause";
 import { serverLogError, serverLogInfo } from "../../pages/api/log";
 import NotehubLocation from "../notehub/models/NotehubLocation";
@@ -14,9 +9,7 @@ import { AppEvent, AppEventHandler } from "../AppEvent";
  * The "hidden" property that describes the property that bears the primary data item in the event.
  */
 
-export default class PrismaDatastoreEventHandler
-  implements AppEventHandler
-{
+export default class PrismaDatastoreEventHandler implements AppEventHandler {
   constructor(private prisma: PrismaClient) {}
 
   /**
@@ -44,8 +37,12 @@ export default class PrismaDatastoreEventHandler
       event.when
     );
 
+    const deviceEvent = await this.upsertEvent(
+      event.deviceUID,
+      event.when,
+      event.eventBody
+    );
   }
-
 
   /**
    * Insert or update the gateway based on the unique device ID.  If the gateway exists but is in a different project,
@@ -103,6 +100,44 @@ export default class PrismaDatastoreEventHandler
       });
   }
 
+  /**
+   * Insert or update the event
+   *
+   * @param deviceUID
+   * @param when
+   * @param value
+   * @returns
+   */
+  private upsertEvent(deviceUID: string, when: Date, value: unknown) {
+    const args = arguments;
+
+    // todo fix this
+    return this.prisma.event
+      .upsert({
+        where: {
+          deviceUID_when_value: {
+            deviceUID,
+            when,
+            value,
+          },
+        },
+        create: {
+          deviceUID,
+          when,
+          value,
+        },
+        update: {
+          // reading already exists
+          // no-op
+        },
+      })
+      .catch((cause) => {
+        throw new ErrorWithCause(
+          `error upserting event ${deviceUID} ${JSON.stringify(args)}`,
+          { cause }
+        );
+      });
+  }
 
   private async projectFromNaturalKey(projectUID: string) {
     const project = await this.prisma.project.findUnique({

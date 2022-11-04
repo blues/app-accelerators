@@ -101,8 +101,8 @@ export function appEventFromNotehubRoutedEvent(
     throw eventError("device is not defined", event);
   }
 
-  if (!event.project.id) {
-    throw eventError("project.id is not defined", event);
+  if (!event.app) {
+    throw eventError("app id is not defined", event);
   }
 
   const locations = locationAlternativesFromRoutedEvent(event);
@@ -110,7 +110,7 @@ export function appEventFromNotehubRoutedEvent(
   const body = bodyAugmentedWithMetadata(event, locations);
 
   return new BasicAppEvent(
-    event.project.id,
+    event.app,
     event.device,
     new Date(event.when * 1000),
     event.file,
@@ -140,6 +140,5 @@ export function appEventFromNotehubEvent(
     body
   );
 }
-
 
 export type { AppEvent };

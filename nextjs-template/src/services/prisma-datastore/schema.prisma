@@ -32,11 +32,31 @@ model Device {
   project           Project @relation(fields: [project_id], references: [id])
   project_id        Int
 
+  // all the events the device produced
+  events            Event[] 
+
   pin               String?   @db.VarChar(20) // MAX_PIN_LENGTH
 
   @@index([project_id])
   @@index([deviceUID])
   @@map("device")
+}
+
+// a single event from a specific device
+model Event {
+  id           Int         @id @default(autoincrement())
+
+// the device that produced this reading
+  device       Device      @relation(fields: [deviceUID], references: [id], onDelete: Cascade)
+  deviceUID   Int
+
+// when the event occurred
+  when         DateTime
+  value        Json
+
+  @@unique([deviceUID, when, value]) // natural key
+  @@index([deviceUID])
+  @@map("event")
 }
 
 model Notification {
