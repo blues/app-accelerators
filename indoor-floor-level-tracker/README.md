@@ -6,7 +6,7 @@ A highly accurate floor-level tracker for response teams at emergency events.
 
 To run this project yourself you’ll need to:
 
-* [Configure Notehub](#notehub-setup).
+* [Configure Notehub](#notehub).
 * [Purchase the necessary hardware](#hardware).
 * [Flash the project’s firmware](#firmware).
 * [Run the project’s web application](#web-application).

@@ -53,3 +53,34 @@ A smarter mouse trap with SMS alerting.
 </p>
 
 ---
+
+### 4. Low Power Digital Signage
+
+A device to keep a fleet of digital displays synchronized across a facility.
+
+<p>
+  Details coming soon!
+</p>
+
+---
+
+### 5. Connected Analog Signage
+
+A device to keep a fleet of analog displays synchronized across a facility.
+
+<p>
+  Details coming soon!
+</p>
+
+---
+
+### 6. 🅿️ Parking Lot Help Request
+
+A host-free low latency notification system to alert attendants in a parking lot or facility that customers need assistance.
+
+<p>
+  <a href="https://www.hackster.io/blues-wireless/host-free-smart-parking-lot-help-request-device-f4a03c"><b>📚 Read About the Project</b></a> •
+  <a href="./parking-lot-help-request/"><b>🔧 Start Building</b></a>
+</p>
+
+---
