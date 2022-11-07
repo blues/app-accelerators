@@ -36,9 +36,14 @@ export default Home;
 
 export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
   let err = "";
+  // just to get something on screen soon
+  let devices: any = [];
+  const deviceEvents: any = [];
 
   try {
     const appService = services().getAppService();
+    devices = await appService.getDevices();
+    console.log(devices);
 
     return {
       props: { err },

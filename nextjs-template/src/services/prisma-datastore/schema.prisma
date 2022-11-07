@@ -46,9 +46,11 @@ model Device {
 model Event {
   id           Int         @id @default(autoincrement())
 
+  eventName     String      @map("event") @unique
+
 // the device that produced this reading
-  device       Device      @relation(fields: [deviceUID], references: [id], onDelete: Cascade)
-  deviceUID   Int
+  device       Device      @relation(fields: [deviceUID], references: [deviceUID], onDelete: Cascade)
+  deviceUID    String 
 
 // when the event occurred
   when         DateTime

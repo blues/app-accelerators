@@ -19,7 +19,7 @@ export interface AppEvent {
   /**
    * The format of the event depends upon the event type.
    */
-  readonly eventBody: unknown;
+  readonly eventBody: string;
 
   /**
    * The time the event was published by the origin device.
@@ -41,7 +41,7 @@ export class BasicAppEvent implements AppEvent {
     readonly when: Date,
     readonly eventName: string,
     readonly location: NotehubLocation | undefined,
-    readonly eventBody: unknown,
+    readonly eventBody: string,
     readonly deviceName?: string
   ) {}
 }

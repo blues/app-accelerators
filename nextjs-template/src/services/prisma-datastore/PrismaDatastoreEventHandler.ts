@@ -36,12 +36,14 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
       event.deviceName,
       event.when
     );
+    console.log("DEVICE UPSERTED SUCCESSFULLY!");
 
     const deviceEvent = await this.upsertEvent(
       event.deviceUID,
       event.when,
       event.eventBody
     );
+    console.log("EVENT UPSERTED SUCCESSFULLY!");
   }
 
   /**
@@ -108,7 +110,7 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
    * @param value
    * @returns
    */
-  private upsertEvent(deviceUID: string, when: Date, value: unknown) {
+  private upsertEvent(deviceUID: string, when: Date, value: string) {
     const args = arguments;
 
     // todo fix this

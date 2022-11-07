@@ -3,16 +3,8 @@
 /* eslint-disable import/prefer-default-export */
 import Prisma, { PrismaClient } from "@prisma/client";
 import { ErrorWithCause } from "pony-cause";
-import {
-  DataProvider,
-  BulkImport,
-} from "../DataProvider";
-import {
-  ProjectID,
-  DeviceID,
-  Device,
-  Project
-} from "../DomainModel";
+import { DataProvider, BulkImport } from "../DataProvider";
+import { ProjectID, DeviceID, Device, Project, Event } from "../DomainModel";
 import Mapper, { PrismaDomainModelMapper } from "./PrismaDomainModelMapper";
 import {
   serverLogError,
@@ -50,23 +42,18 @@ async function manageDeviceImport(
   }
 }
 
-
 /**
  * Implements the DataProvider service using Prisma ORM.
  */
 export class PrismaDataProvider implements DataProvider {
-
-  constructor(
-    private prisma: PrismaClient,
-    private projectID: ProjectID
-  ) {}
+  constructor(private prisma: PrismaClient, private projectID: ProjectID) {}
 
   async getProject(): Promise<Project> {
     const project = await this.currentProject();
     return {
       id: this.projectID,
       name: project.name,
-      description: null
+      description: null,
     };
   }
 
@@ -166,6 +153,16 @@ export class PrismaDataProvider implements DataProvider {
     return devices.map((device) => this.deviceFromPrismaDevice(device));
   }
 
+  // todo work on this disconnect
+  async getDeviceEvents(deviceID: DeviceID): Promise<Event[]> {
+    const deviceEvents = await this.prisma.event.findMany({
+      where: {
+        deviceUID: deviceID.deviceUID,
+      },
+    });
+    return deviceEvents;
+  }
+
   async getDevice(deviceID: DeviceID): Promise<Device> {
     const device = await this.fetchDevice(deviceID);
     if (device === null) {
@@ -181,7 +178,7 @@ export class PrismaDataProvider implements DataProvider {
     const device = await this.prisma.device.findUnique({
       where: {
         deviceUID: deviceID.deviceUID,
-      }
+      },
     });
     return device;
   }
@@ -190,9 +187,9 @@ export class PrismaDataProvider implements DataProvider {
     return {
       ...device,
       id: IDBuilder.buildDeviceID(device.deviceUID),
-      name: device.name || '',
-      locationName: device.locationName || '',
-      lastSeenAt: device.lastSeenAt?.toISOString() || ''
+      name: device.name || "",
+      locationName: device.locationName || "",
+      lastSeenAt: device.lastSeenAt?.toISOString() || "",
     };
   }
 }
