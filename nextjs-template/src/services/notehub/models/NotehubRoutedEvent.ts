@@ -1,6 +1,5 @@
 import { SessionMetadata } from "./SessionMetadata";
 
-// todo revisit these and ensure they're up to date
 export interface NotehubRoutedEventLocationFields {
   best_location_type?: string;
   best_location_when?: number;
@@ -45,6 +44,9 @@ interface NotehubRoutedEvent
 
   best_id: string;
   app: string;
+  product: string;
+  event: string;
+  req: string;
 }
 
 export default NotehubRoutedEvent;

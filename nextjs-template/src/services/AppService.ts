@@ -1,8 +1,13 @@
-import { ErrorWithCause } from "pony-cause";
 import { DataProvider } from "./DataProvider";
 import { AttributeStore } from "./AttributeStore";
 import { AppEvent, AppEventHandler } from "./AppEvent";
-import { Project, Device, ProjectID, BulkDataImportStatus } from "./AppModel";
+import {
+  Project,
+  Device,
+  ProjectID,
+  BulkDataImportStatus,
+  Event,
+} from "./AppModel";
 import { IDBuilder } from "./IDBuilder";
 import { NotificationsStore, Notification } from "./NotificationsStore";
 import { serverLogError } from "../pages/api/log";
@@ -13,10 +18,12 @@ interface AppServiceInterface {
   getEventCount: () => Promise<number>;
   getProject: () => Promise<Project>;
   getDevices: () => Promise<Device[]>;
-  getDevice: (deviceUID: string) => Promise<Device|null>;
+  getDevice: (deviceUID: string) => Promise<Device | null>;
   setDeviceName: (deviceUID: string, name: string) => Promise<void>;
 
   handleEvent(event: AppEvent): Promise<void>;
+
+  getDeviceEvents: (deviceUIDs: string[]) => Promise<Event[]>;
 
   performBulkDataImport(): Promise<BulkDataImportStatus>;
 
@@ -39,18 +46,23 @@ export default class AppService implements AppServiceInterface {
     this.projectID = this.idBuilder.buildProjectID(projectUID);
   }
 
-  async getEventCount(): Promise<number> { return 0; }
+  async getEventCount(): Promise<number> {
+    return 0;
+  }
 
   async getProject(): Promise<Project> {
     const project = await this.dataProvider.getProject();
     return {
       devices: null,
-      ...project
+      ...project,
     };
   }
 
   async setDeviceName(deviceUID: string, name: string): Promise<void> {
-    return await this.attributeStore.updateDeviceName(this.idBuilder.buildDeviceID(deviceUID), name);
+    return this.attributeStore.updateDeviceName(
+      this.idBuilder.buildDeviceID(deviceUID),
+      name
+    );
   }
 
   async getDevices() {
@@ -59,6 +71,10 @@ export default class AppService implements AppServiceInterface {
 
   async getDevice(deviceUID: string) {
     return this.dataProvider.getDevice(this.idBuilder.buildDeviceID(deviceUID));
+  }
+
+  async getDeviceEvents(deviceUIDs: string[]) {
+    return this.dataProvider.getDeviceEvents(deviceUIDs);
   }
 
   async handleEvent(event: AppEvent) {
@@ -97,9 +113,7 @@ export default class AppService implements AppServiceInterface {
     const notifications: Notification[] =
       await this.notificationStore.getNotifications();
     const result = (
-      await Promise.all(
-        notifications.map(async (n) => await this.appNotification(n))
-      )
+      await Promise.all(notifications.map(async (n) => this.appNotification(n)))
     ).filter((e): e is AppNotification => e !== null);
     return result;
   }

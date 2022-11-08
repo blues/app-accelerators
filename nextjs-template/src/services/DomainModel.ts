@@ -12,7 +12,8 @@ export interface DeviceID {
 
 export interface EventID {
   readonly type: "EventID";
-  readonly eventName: string;
+
+  readonly eventUID: string;
 }
 
 export interface Event {
@@ -20,6 +21,11 @@ export interface Event {
 
   // device associated with event
   readonly deviceUID: DeviceID;
+
+  // json value event body
+  when: string;
+  // todo fix this to be JsonValue later
+  value: any;
 }
 
 export interface ProjectID {

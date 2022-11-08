@@ -2,13 +2,13 @@ import * as DomainModel from "./DomainModel";
 
 export type ProjectID = DomainModel.ProjectID;
 export type DeviceID = DomainModel.DeviceID;
+export type EventID = DomainModel.EventID;
 
 /**
  * The presentation models here are json-serializable representations of the domain model.
  */
 
 export interface Project extends DomainModel.Project {
-
   devices: Device[] | null; // null when devices are not required
 }
 
@@ -17,8 +17,9 @@ export interface Project extends DomainModel.Project {
  */
 export type AppDate = number;
 
-export interface Device extends DomainModel.Device {
-}
+export type Device = DomainModel.Device;
+
+export type Event = DomainModel.Event;
 
 export interface ProjectDataSnapshot {
   when: AppDate;

@@ -14,6 +14,8 @@ export interface AppEvent {
    */
   readonly eventName: string;
 
+  readonly eventUID: string;
+
   readonly deviceUID: string;
 
   /**
@@ -38,6 +40,7 @@ export class BasicAppEvent implements AppEvent {
   constructor(
     readonly projectUID: string,
     readonly deviceUID: string,
+    readonly eventUID: string,
     readonly when: Date,
     readonly eventName: string,
     readonly location: NotehubLocation | undefined,

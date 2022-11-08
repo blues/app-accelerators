@@ -153,14 +153,22 @@ export class PrismaDataProvider implements DataProvider {
     return devices.map((device) => this.deviceFromPrismaDevice(device));
   }
 
-  // todo work on this disconnect
-  async getDeviceEvents(deviceID: DeviceID): Promise<Event[]> {
+  async getDeviceEvents(deviceIDs: string[]): Promise<Event[]> {
+    return Promise.all(
+      deviceIDs.map((deviceID) =>
+        this.getEvents(IDBuilder.buildDeviceID(deviceID))
+      )
+    ).then((events) => events.flat());
+  }
+
+  async getEvents(deviceID: DeviceID): Promise<Event[]> {
     const deviceEvents = await this.prisma.event.findMany({
       where: {
         deviceUID: deviceID.deviceUID,
       },
     });
-    return deviceEvents;
+
+    return deviceEvents.map((event) => this.eventFromPrismaEvent(event));
   }
 
   async getDevice(deviceID: DeviceID): Promise<Device> {
@@ -190,6 +198,16 @@ export class PrismaDataProvider implements DataProvider {
       name: device.name || "",
       locationName: device.locationName || "",
       lastSeenAt: device.lastSeenAt?.toISOString() || "",
+    };
+  }
+
+  eventFromPrismaEvent(event: Prisma.Event): Event {
+    return {
+      ...event,
+      id: IDBuilder.buildEventID(event.eventUID),
+      deviceUID: IDBuilder.buildDeviceID(event.deviceUID),
+      when: event.when.toISOString(),
+      value: event.value,
     };
   }
 }

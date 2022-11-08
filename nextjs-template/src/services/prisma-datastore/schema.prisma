@@ -46,7 +46,8 @@ model Device {
 model Event {
   id           Int         @id @default(autoincrement())
 
-  eventName     String      @map("event") @unique
+  eventName    String      @map("file")
+  eventUID     String      @map("event") @unique
 
 // the device that produced this reading
   device       Device      @relation(fields: [deviceUID], references: [deviceUID], onDelete: Cascade)
@@ -56,8 +57,7 @@ model Event {
   when         DateTime
   value        Json
 
-  @@unique([deviceUID, when, value]) // natural key
-  @@index([deviceUID])
+  @@unique([eventUID, when, value]) // natural key
   @@map("event")
 }
 
