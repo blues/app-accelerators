@@ -35,7 +35,7 @@ model Device {
   // all the events the device produced
   events            Event[] 
 
-  pin               String?   @db.VarChar(20) // MAX_PIN_LENGTH
+  // pin               String?   @db.VarChar(20) // MAX_PIN_LENGTH
 
   @@index([project_id])
   @@index([deviceUID])

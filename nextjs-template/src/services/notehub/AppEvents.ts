@@ -1,5 +1,5 @@
 import { BasicAppEvent, AppEvent } from "../AppEvent";
-import NotehubEvent from "./models/NotehubEvent";
+// import NotehubEvent from "./models/NotehubEvent";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import NotehubRoutedEvent, {
   NotehubRoutedEventLocationFields,
@@ -10,7 +10,7 @@ export const _health = {
   SENSOR_PROVISION: "sensor-provision",
 };
 
-function eventError(msg: string, event: NotehubRoutedEvent | NotehubEvent) {
+function eventError(msg: string, event: NotehubRoutedEvent) {
   return new Error(msg);
 }
 
@@ -18,6 +18,23 @@ export function locationAlternativesFromRoutedEvent(
   event: NotehubRoutedEventLocationFields
 ): NotehubLocationAlternatives {
   const alternatives: NotehubLocationAlternatives = {};
+  if (
+    event.best_location_when &&
+    event.best_location &&
+    event.best_country &&
+    event.best_timezone &&
+    event.best_lat &&
+    event.best_lon
+  ) {
+    alternatives.best_location = {
+      when: event.best_location_when,
+      name: event.best_location,
+      country: event.best_country,
+      timezone: event.best_timezone,
+      latitude: event.best_lat,
+      longitude: event.best_lon,
+    };
+  }
   if (
     event.tower_when &&
     event.tower_location &&
@@ -75,10 +92,13 @@ export function locationAlternativesFromRoutedEvent(
 // N.B.: Noteub defines 'best' location with more nuance than we do here (e.g
 // considering staleness). Also this algorthm is copy-pasted in a couple places.
 export const bestLocation = (object: NotehubLocationAlternatives) =>
-  object.gps_location || object.triangulated_location || object.tower_location;
+  object.best_location ||
+  object.gps_location ||
+  object.triangulated_location ||
+  object.tower_location;
 
 function bodyAugmentedWithMetadata(
-  event: NotehubEvent | NotehubRoutedEvent,
+  event: NotehubRoutedEvent,
   locations: NotehubLocationAlternatives
 ) {
   // eslint-disable-next-line prefer-destructuring
@@ -112,6 +132,7 @@ export function appEventFromNotehubRoutedEvent(
   return new BasicAppEvent(
     event.app,
     event.device,
+    event.event,
     new Date(event.when * 1000),
     event.file,
     location,
@@ -120,6 +141,7 @@ export function appEventFromNotehubRoutedEvent(
   );
 }
 
+// todo remove
 export function appEventFromNotehubEvent(
   event: NotehubEvent,
   projectUID: string
@@ -134,6 +156,7 @@ export function appEventFromNotehubEvent(
   return new BasicAppEvent(
     projectUID,
     event.device_uid,
+    event.event_uid,
     new Date(event.captured),
     event.file,
     location,
