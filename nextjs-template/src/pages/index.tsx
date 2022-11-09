@@ -4,17 +4,17 @@ import { services } from "../services/ServiceLocatorServer";
 import { getErrorMessage } from "../constants/ui";
 import { getCombinedDeviceEventsInfo } from "../components/presentation/deviceEventInfo";
 import { ERROR_CODES } from "../services/Errors";
+import DeviceCard from "../components/elements/DeviceCard";
 import styles from "../styles/Home.module.scss";
 import Config from "../../Config";
 
 type HomeData = {
-  temp: any;
+  deviceEventDataList: any[];
   err?: string;
 };
 
-const Home: NextPage<HomeData> = ({ temp, err }) => {
+const Home: NextPage<HomeData> = ({ deviceEventDataList, err }) => {
   const infoMessage = "Deploy message";
-  console.log(temp);
 
   return (
     <div className={styles.container}>
@@ -30,6 +30,10 @@ const Home: NextPage<HomeData> = ({ temp, err }) => {
           {Config.isBuildVersionSet() ? (
             <Alert description={infoMessage} type="info" closable />
           ) : null}
+          <h2>Devices</h2>
+          {deviceEventDataList.map((deviceData, index) => (
+            <DeviceCard key={deviceData.deviceID} deviceDetails={deviceData} />
+          ))}
         </>
       )}
     </div>
@@ -39,26 +43,23 @@ export default Home;
 
 export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
   let err = "";
-  // just to get something on screen soon
+  // just to get something on screen
   let devices: any = [];
   let deviceEvents: any = [];
-  let temp: any = [];
+  let deviceEventDataList: any = [];
 
   try {
     const appService = services().getAppService();
     devices = await appService.getDevices();
-    // console.log("DEVICES-------", devices);
-    // const deviceIDs = devices.map((device) => device.deviceUID);
     deviceEvents = await appService.getDeviceEvents(
       devices.map((device) => device.deviceUID)
     );
-    // console.log("DEVICE EVENTS------ ", deviceEvents);
 
     // combine the devices with their events
-    temp = getCombinedDeviceEventsInfo(devices, deviceEvents);
+    deviceEventDataList = getCombinedDeviceEventsInfo(devices, deviceEvents);
 
     return {
-      props: { temp, err },
+      props: { deviceEventDataList, err },
     };
   } catch (e) {
     err = getErrorMessage(
@@ -67,6 +68,6 @@ export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
   }
 
   return {
-    props: { temp, err },
+    props: { deviceEventDataList, err },
   };
 };
