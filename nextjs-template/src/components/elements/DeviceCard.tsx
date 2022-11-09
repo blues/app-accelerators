@@ -43,7 +43,6 @@ const DeviceCardComponent = (props: DeviceCardProps) => {
     deviceDetails.eventList,
     "altitude"
   );
-  console.log(altitudeChartData);
 
   return (
     <Card title={deviceDetails.deviceID}>

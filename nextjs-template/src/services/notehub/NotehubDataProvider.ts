@@ -1,9 +1,8 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {
-  DataProvider
-} from "../DataProvider";
+import { DataProvider } from "../DataProvider";
 import { Device, DeviceID, Project, ProjectID } from "../DomainModel";
+import NotehubFleetsByProject from "./models/NotehubFleetsByProject";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import { NotehubAccessor } from "./NotehubAccessor";
 
@@ -12,8 +11,7 @@ import { NotehubAccessor } from "./NotehubAccessor";
 export const getBestLocation = (object: NotehubLocationAlternatives) =>
   object.gps_location || object.triangulated_location || object.tower_location;
 
-
-  export default class NotehubDataProvider implements DataProvider {
+export default class NotehubDataProvider implements DataProvider {
   constructor(
     private readonly notehubAccessor: NotehubAccessor,
     private readonly projectID: ProjectID
@@ -23,8 +21,8 @@ export const getBestLocation = (object: NotehubLocationAlternatives) =>
     const project: Project = {
       id: this.projectID,
       name: "fixme",
-      description: "fixme"
-    }
+      description: "fixme",
+    };
     return project;
   }
 
@@ -34,6 +32,18 @@ export const getBestLocation = (object: NotehubLocationAlternatives) =>
 
   async getDevice(deviceID: DeviceID): Promise<Device | null> {
     throw new Error("Method not implemented.");
+  }
+
+  async getFleetsByProject(): Promise<NotehubFleetsByProject> {
+    const fleetsByProject = await this.notehubAccessor.getFleetsByProject();
+    return fleetsByProject;
+  }
+
+  async getDevicesByFleet(fleetUID: string): Promise<any> {
+    const devicesByFleet = await this.notehubAccessor.getDevicesByFleet(
+      fleetUID
+    );
+    return devicesByFleet;
   }
 
   // eslint-disable-next-line class-methods-use-this

@@ -29,6 +29,15 @@ export default class CompositeDataProvider implements DataProvider {
     return this.prismaDataProvider.getDeviceEvents(deviceIDs);
   }
 
+  // todo genericize this
+  getFleetsByProject(): Promise<any> {
+    return this.notehubProvider.getFleetsByProject();
+  }
+
+  getDevicesByFleet(fleetUID: string): Promise<any> {
+    return this.notehubProvider.getDevicesByFleet(fleetUID);
+  }
+
   async doBulkImport(): Promise<BulkImport> {
     const b = await this.prismaDataProvider.doBulkImport(
       this.notehubAccessor,

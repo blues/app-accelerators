@@ -4,6 +4,8 @@ import NotehubEvent from "./models/NotehubEvent";
 import NotehubLatestEvents from "./models/NotehubLatestEvents";
 import NotehubDeviceConfig from "./models/NotehubDeviceConfig";
 import NoteDeviceConfigBody from "./models/NoteDeviceConfigBody";
+import NotehubFleetsByProject from "./models/NotehubFleetsByProject";
+import NotehubDevicesByFleet from "./models/NotehubDevicesByFleet";
 
 // An interface for accessing Notehub APIs
 interface NotehubAccessor {
@@ -11,6 +13,8 @@ interface NotehubAccessor {
   getDevice: (hubDeviceUID: string) => Promise<NotehubDevice>;
   getLatestEvents: (hubDeviceUID: string) => Promise<NotehubLatestEvents>;
   getEvents: (startDate?: string) => Promise<NotehubEvent[]>;
+  getFleetsByProject: () => Promise<NotehubFleetsByProject>;
+  getDevicesByFleet: (fleetUID: string) => Promise<NotehubDevicesByFleet>;
   getConfig: (
     hubDeviceUID: string,
     note: string

@@ -12,6 +12,8 @@ import NotehubResponse from "./models/NotehubResponse";
 import NoteDeviceConfigBody from "./models/NoteDeviceConfigBody";
 import NotehubEnvVars from "./models/NotehubEnvVars";
 import { serverLogInfo } from "../../pages/api/log";
+import NotehubFleetsByProject from "./models/NotehubFleetsByProject";
+import NotehubDevicesByFleet from "./models/NotehubDevicesByFleet";
 
 // this class directly interacts with Notehub via HTTP calls
 export default class AxiosHttpNotehubAccessor implements NotehubAccessor {
@@ -59,6 +61,30 @@ export default class AxiosHttpNotehubAccessor implements NotehubAccessor {
     }
   }
 
+  async getFleetsByProject() {
+    const endpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/fleets`;
+    try {
+      const resp = await axios.get<NotehubFleetsByProject>(endpoint, {
+        headers: this.commonHeaders,
+      });
+      return resp.data;
+    } catch (e) {
+      throw this.errorWithCode(e);
+    }
+  }
+
+  async getDevicesByFleet(fleetUID: string) {
+    const endpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/fleets/${fleetUID}/devices`;
+    try {
+      const resp = await axios.get<NotehubDevicesByFleet>(endpoint, {
+        headers: this.commonHeaders,
+      });
+      return resp.data;
+    } catch (e) {
+      throw this.errorWithCode(e);
+    }
+  }
+
   // eslint-disable-next-line class-methods-use-this
   httpErrorToErrorCode(e: unknown): ERROR_CODES {
     let errorCode = ERROR_CODES.INTERNAL_ERROR;
@@ -92,12 +118,11 @@ export default class AxiosHttpNotehubAccessor implements NotehubAccessor {
   }
 
   async getEvents(startDate?: string) {
-
     // Take the start date from the argument first, but fall back to the environment
     // variable.
     let events: NotehubEvent[] = [];
-    const startDateQuery = startDate ? `?startDate=${startDate}` : '';
-    const initialEndpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/events`+startDateQuery;
+    const startDateQuery = startDate ? `?startDate=${startDate}` : "";
+    const initialEndpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/events${startDateQuery}`;
     try {
       const resp: AxiosResponse<NotehubResponse> = await axios.get(
         initialEndpoint,

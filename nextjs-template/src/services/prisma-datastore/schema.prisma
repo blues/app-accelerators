@@ -12,9 +12,24 @@ model Project {
   createdAt  DateTime  @default(now()) @map("created_at")
   projectUID String    @map("project_uid") @unique
   name       String    @db.VarChar(50)
+  fleets     Fleet[]
   devices    Device[]
 
   @@map("project")
+}
+
+model Fleet {
+  id                 Int      @id @default(autoincrement())
+  fleetUID           String   @map("uid") @unique
+  name               String   @db.VarChar(100)
+
+  // the project the fleet belongs to
+  project           Project @relation(fields: [project_id], references: [id])
+  project_id        Int
+
+  devices            Device[]
+
+  @@map("fleet")
 }
 
 model Device {
@@ -31,6 +46,10 @@ model Device {
   // the project the device belongs to
   project           Project @relation(fields: [project_id], references: [id])
   project_id        Int
+
+  // any fleets a device belongs to
+  fleets            Fleet[]
+
 
   // all the events the device produced
   events            Event[] 

@@ -1,4 +1,7 @@
-import { BasicAppEvent, AppEvent } from "../AppEvent";
+import { BasicAppEvent, AppEvent, FleetEvent } from "../AppEvent";
+import NotehubDevice from "./models/NotehubDevice";
+import NotehubDevicesByFleet from "./models/NotehubDevicesByFleet";
+import NotehubEvent from "./models/NotehubEvent";
 // import NotehubEvent from "./models/NotehubEvent";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import NotehubRoutedEvent, {
@@ -141,7 +144,6 @@ export function appEventFromNotehubRoutedEvent(
   );
 }
 
-// todo remove
 export function appEventFromNotehubEvent(
   event: NotehubEvent,
   projectUID: string
@@ -163,5 +165,21 @@ export function appEventFromNotehubEvent(
     body
   );
 }
+
+// todo how do I make this work with the handleEvent function?
+export function devicesByFleetFromNotehubApiEvent(
+  event: NotehubDevice,
+  projectUID: string,
+  fleetUID: string,
+  fleetName: string
+): AppEvent {
+
+  return new FleetEvent(
+    projectUID,
+    deviceUID: event.uid,
+    fleetUID,
+    fleetName
+  );
+};
 
 export type { AppEvent };

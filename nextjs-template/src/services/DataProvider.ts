@@ -10,5 +10,7 @@ export interface DataProvider {
   getDevices(): Promise<Device[]>;
   getDevice(deviceID: DeviceID): Promise<Device | null>;
   getDeviceEvents(deviceIDs: string[]): Promise<Event[]>;
+  getFleetsByProject(): Promise<any>;
+  getDevicesByFleet(fleetUID: string): Promise<any>;
   doBulkImport(): Promise<BulkImport>;
 }

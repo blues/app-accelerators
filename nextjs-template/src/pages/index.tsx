@@ -55,6 +55,29 @@ export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
       devices.map((device) => device.deviceUID)
     );
 
+    // fetch fleets by project
+    const fleetsForProject = await appService.getFleetsByProject();
+    console.log("FLEETS----", fleetsForProject);
+
+    // fetch devices associated with fleets
+    const devicesByFleet = await appService.getDevicesByFleet(
+      fleetsForProject.fleets.map((fleet) => fleet.uid)
+    );
+    console.log("DEVICES BY FLEET-------------", devicesByFleet);
+
+    // save fleet uids to db
+    // todo how do I reshape this data so handleEvent can use it?
+    // const storeFleetInDB = await appService.handleEvent(
+    //   devicesByFleet.devices.map((device) =>
+    //     devicesByFleetFromNotehubApiEvent(device)
+    //   )
+    // );
+    // console.log(storeFleetInDB);
+
+    // fetch env vars associated with fleets
+
+    // and save fleet env vars from Notehub and associate device with fleet
+
     // combine the devices with their events
     deviceEventDataList = getCombinedDeviceEventsInfo(devices, deviceEvents);
 
