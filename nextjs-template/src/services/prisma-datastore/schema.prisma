@@ -19,40 +19,48 @@ model Project {
 }
 
 model Fleet {
-  id                 Int      @id @default(autoincrement())
-  fleetUID           String   @map("uid") @unique
-  name               String   @db.VarChar(100)
+  id          Int      @id @default(autoincrement())
+
+  fleetUID    String   @map("uid") @unique
+  name        String   @map("label") @db.VarChar(100)
+  createdAt   DateTime @map("created")
 
   // the project the fleet belongs to
-  project           Project @relation(fields: [project_id], references: [id])
-  project_id        Int
+  project     Project   @relation(fields: [project_id], references: [id])
+  project_id  Int
 
-  devices            Device[]
+  // devices assigned to fleet
+  devices     Device[]
+
+  // fleet level env vars
+  envVars     Json?
 
   @@map("fleet")
 }
 
 model Device {
-  id                Int @id @default(autoincrement())
+  id            Int         @id @default(autoincrement())
 
   // unique device uid in notehub
-  deviceUID         String @unique @map("device_uid") @db.VarChar(64)
+  deviceUID     String      @unique @map("device_uid") @db.VarChar(64)
 
   // device serial number (cached)
-  name              String? @db.VarChar(80) // cached
-  locationName      String? @db.VarChar(200) // cached
-  lastSeenAt        DateTime? @map("last_seen_at") // the last time an event was heard from this device
+  name          String?     @db.VarChar(80) // cached
+  locationName  String?     @db.VarChar(200) // cached
+  lastSeenAt    DateTime?   @map("last_seen_at") // the last time an event was heard from this device
 
   // the project the device belongs to
-  project           Project @relation(fields: [project_id], references: [id])
-  project_id        Int
+  project       Project     @relation(fields: [project_id], references: [id])
+  project_id    Int
 
   // any fleets a device belongs to
-  fleets            Fleet[]
-
+  fleets        Fleet[]
 
   // all the events the device produced
-  events            Event[] 
+  events        Event[] 
+  
+  // device level env vars
+  envVars       Json? 
 
   // pin               String?   @db.VarChar(20) // MAX_PIN_LENGTH
 

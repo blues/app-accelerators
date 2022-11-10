@@ -1,5 +1,4 @@
-// todo wip function to combine deviecs with their data
-
+// todo wip function to combine devices with their data
 export function getCombinedDeviceEventsInfo(devices, deviceEvents) {
   const deviceEventInfo = devices.map((device) => {
     // consider also filtering out alarm.qo events as well to keep the data cleaner and more uniform
@@ -20,4 +19,22 @@ export function getCombinedDeviceEventsInfo(devices, deviceEvents) {
   });
 
   return deviceEventInfo;
+}
+
+// todo wip function to combine fleets with their env vars
+export function getCombinedFleetInfo(fleetsForProject, fleetEnvVars) {
+  const fullFleetInfo = fleetsForProject.fleets.map((fleet) => {
+    let updatedFleetInfoObj;
+    if (fleetEnvVars.fleetUID == fleet.uid) {
+      updatedFleetInfoObj = {
+        ...fleet,
+        ...fleetEnvVars,
+      };
+    } else {
+      updatedFleetInfoObj = fleet;
+    }
+    return updatedFleetInfoObj;
+  });
+
+  return fullFleetInfo;
 }

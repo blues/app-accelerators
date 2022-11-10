@@ -12,5 +12,6 @@ export interface DataProvider {
   getDeviceEvents(deviceIDs: string[]): Promise<Event[]>;
   getFleetsByProject(): Promise<any>;
   getDevicesByFleet(fleetUID: string): Promise<any>;
+  getFleetEnvVars(fleetUID: string): Promise<any>;
   doBulkImport(): Promise<BulkImport>;
 }

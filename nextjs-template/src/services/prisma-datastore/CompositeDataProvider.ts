@@ -38,6 +38,10 @@ export default class CompositeDataProvider implements DataProvider {
     return this.notehubProvider.getDevicesByFleet(fleetUID);
   }
 
+  getFleetEnvVars(fleetUID: string): Promise<any> {
+    return this.notehubProvider.getFleetEnvVars(fleetUID);
+  }
+
   async doBulkImport(): Promise<BulkImport> {
     const b = await this.prismaDataProvider.doBulkImport(
       this.notehubAccessor,

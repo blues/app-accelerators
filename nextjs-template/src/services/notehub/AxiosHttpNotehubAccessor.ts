@@ -85,6 +85,18 @@ export default class AxiosHttpNotehubAccessor implements NotehubAccessor {
     }
   }
 
+  async getFleetEnvVars(fleetUID: string) {
+    const endpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/fleets/${fleetUID}/environment_variables`;
+    try {
+      const resp = await axios.get<NotehubEnvVars>(endpoint, {
+        headers: this.commonHeaders,
+      });
+      return resp.data;
+    } catch (e) {
+      throw this.errorWithCode(e);
+    }
+  }
+
   // eslint-disable-next-line class-methods-use-this
   httpErrorToErrorCode(e: unknown): ERROR_CODES {
     let errorCode = ERROR_CODES.INTERNAL_ERROR;

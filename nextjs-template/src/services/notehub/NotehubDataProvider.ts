@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { DataProvider } from "../DataProvider";
 import { Device, DeviceID, Project, ProjectID } from "../DomainModel";
-import NotehubFleetsByProject from "./models/NotehubFleetsByProject";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import { NotehubAccessor } from "./NotehubAccessor";
 
@@ -34,7 +33,7 @@ export default class NotehubDataProvider implements DataProvider {
     throw new Error("Method not implemented.");
   }
 
-  async getFleetsByProject(): Promise<NotehubFleetsByProject> {
+  async getFleetsByProject(): Promise<any> {
     const fleetsByProject = await this.notehubAccessor.getFleetsByProject();
     return fleetsByProject;
   }
@@ -44,6 +43,12 @@ export default class NotehubDataProvider implements DataProvider {
       fleetUID
     );
     return devicesByFleet;
+  }
+
+  async getFleetEnvVars(fleetUID: string): Promise<any> {
+    const fleetEnvVars = await this.notehubAccessor.getFleetEnvVars(fleetUID);
+    // attach fleet UID to env vars for combining data later
+    return { fleetUID: fleetUID[0], ...fleetEnvVars };
   }
 
   // eslint-disable-next-line class-methods-use-this

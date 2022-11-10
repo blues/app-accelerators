@@ -31,11 +31,13 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
     const project = await this.projectFromNaturalKey(event.projectUID);
 
     // todo add fleet if fleet data is present? fix tomorrow
-    if (event.fleetUID && event.fleetName) {
+    if (event.fleetUID && event.label) {
       const fleet = await this.upsertFleet(
         project,
-        event?.fleetUID,
-        event?.fleetName
+        event.fleetUID,
+        event.label,
+        event.createdAt,
+        event?.envVars
       );
     }
 
@@ -45,8 +47,8 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
       event.deviceUID,
       event.deviceName,
       event.when,
-      event.location,
-      event?.fleetUID
+      event.location
+      // event.envVars
     );
 
     const deviceEvent = await this.upsertEvent(
@@ -58,7 +60,13 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
     );
   }
 
-  private upsertFleet(project: Project, fleetUID?: string, fleetName?: string) {
+  private upsertFleet(
+    project: Project,
+    fleetUID: string,
+    name: string,
+    createdAt: Date,
+    envVars?: string
+  ) {
     const args = arguments;
     return this.prisma.fleet
       .upsert({
@@ -66,21 +74,25 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
           fleetUID,
         },
         create: {
-          fleetName,
+          name,
           fleetUID,
+          createdAt,
           project: {
             connect: {
               id: project.id,
             },
           },
+          envVars,
         },
         update: {
-          fleetName,
+          name,
+          createdAt,
           project: {
             connect: {
               id: project.id,
             },
           },
+          envVars,
         },
       })
       .catch((cause) => {
@@ -100,7 +112,7 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
    * @param name
    * @param lastSeenAt
    * @param location
-   * @param fleetUID
+   * todo includ envVars
    * @returns
    */
   private upsertDevice(
@@ -108,8 +120,7 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
     deviceUID: string,
     name: string | undefined,
     lastSeenAt: Date,
-    location?: NotehubLocation,
-    fleetUID?: string
+    location?: NotehubLocation
   ) {
     const args = arguments;
     const locationName = location?.name; // todo use structured location
@@ -123,7 +134,6 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
           name,
           deviceUID,
           locationName,
-          fleetUID,
           project: {
             connect: {
               id: project.id,
@@ -134,7 +144,6 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
         update: {
           name,
           locationName,
-          fleetUID,
           project: {
             connect: {
               id: project.id,
