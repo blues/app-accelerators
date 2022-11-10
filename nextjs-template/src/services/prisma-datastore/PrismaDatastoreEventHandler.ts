@@ -31,15 +31,15 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
     const project = await this.projectFromNaturalKey(event.projectUID);
 
     // todo add fleet if fleet data is present? fix tomorrow
-    if (event.fleetUID && event.label) {
-      const fleet = await this.upsertFleet(
-        project,
-        event.fleetUID,
-        event.label,
-        event.createdAt,
-        event?.envVars
-      );
-    }
+    // if (event.fleetUID && event.label) {
+    //   const fleet = await this.upsertFleet(
+    //     project,
+    //     event.fleetUID,
+    //     event.label,
+    //     event.createdAt,
+    //     event?.envVars
+    //   );
+    // }
 
     // todo add fleet if fleet data is present?
     const device = await this.upsertDevice(
@@ -47,6 +47,7 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
       event.deviceUID,
       event.deviceName,
       event.when,
+      event.fleetUIDs,
       event.location
       // event.envVars
     );
@@ -111,8 +112,9 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
    * @param deviceUID
    * @param name
    * @param lastSeenAt
+   * @param fleetUIDs
    * @param location
-   * todo includ envVars
+   * todo include envVars?
    * @returns
    */
   private upsertDevice(
@@ -120,6 +122,7 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
     deviceUID: string,
     name: string | undefined,
     lastSeenAt: Date,
+    fleetUIDs: string[],
     location?: NotehubLocation
   ) {
     const args = arguments;
@@ -134,6 +137,7 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
           name,
           deviceUID,
           locationName,
+          fleetUIDs,
           project: {
             connect: {
               id: project.id,
@@ -144,6 +148,7 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
         update: {
           name,
           locationName,
+          fleetUIDs,
           project: {
             connect: {
               id: project.id,

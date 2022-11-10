@@ -29,13 +29,16 @@ export default class CompositeDataProvider implements DataProvider {
     return this.prismaDataProvider.getDeviceEvents(deviceIDs);
   }
 
-  // todo genericize this
   getFleetsByProject(): Promise<any> {
     return this.notehubProvider.getFleetsByProject();
   }
 
   getDevicesByFleet(fleetUID: string): Promise<any> {
     return this.notehubProvider.getDevicesByFleet(fleetUID);
+  }
+
+  getFleetsByDevice(deviceID: string): Promise<any> {
+    return this.notehubProvider.getFleetsByDevice(deviceID);
   }
 
   getFleetEnvVars(fleetUID: string): Promise<any> {

@@ -22,15 +22,15 @@ model Fleet {
   id          Int      @id @default(autoincrement())
 
   fleetUID    String   @map("uid") @unique
-  name        String   @map("label") @db.VarChar(100)
-  createdAt   DateTime @map("created")
+  // name        String   @map("label") @db.VarChar(100)
+  // createdAt   DateTime @map("created")
 
   // the project the fleet belongs to
   project     Project   @relation(fields: [project_id], references: [id])
   project_id  Int
 
   // devices assigned to fleet
-  devices     Device[]
+  // devices     Device[]
 
   // fleet level env vars
   envVars     Json?
@@ -54,7 +54,7 @@ model Device {
   project_id    Int
 
   // any fleets a device belongs to
-  fleets        Fleet[]
+  fleetUIDs     String[] 
 
   // all the events the device produced
   events        Event[] 

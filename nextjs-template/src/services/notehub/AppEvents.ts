@@ -1,8 +1,6 @@
-import { BasicAppEvent, AppEvent, FleetEvent } from "../AppEvent";
-import NotehubDevice from "./models/NotehubDevice";
-import NotehubDevicesByFleet from "./models/NotehubDevicesByFleet";
+import { BasicAppEvent, AppEvent } from "../AppEvent";
+import { services } from "../ServiceLocatorServer";
 import NotehubEvent from "./models/NotehubEvent";
-// import NotehubEvent from "./models/NotehubEvent";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import NotehubRoutedEvent, {
   NotehubRoutedEventLocationFields,
@@ -117,9 +115,9 @@ function bodyAugmentedWithMetadata(
   return body;
 }
 
-export function appEventFromNotehubRoutedEvent(
+export async function appEventFromNotehubRoutedEvent(
   event: NotehubRoutedEvent
-): AppEvent {
+): Promise<AppEvent> {
   if (!event.device) {
     throw eventError("device is not defined", event);
   }
@@ -131,6 +129,10 @@ export function appEventFromNotehubRoutedEvent(
   const locations = locationAlternativesFromRoutedEvent(event);
   const location = bestLocation(locations);
   const body = bodyAugmentedWithMetadata(event, locations);
+  // todo fetch device fleet info here and whatever else is needed
+  const appService = services().getAppService();
+  const fleets = await appService.getFleetsByDevice(event.device);
+  const fleetUIDs: string[] = fleets.fleets.map((fleet) => fleet.uid);
 
   return new BasicAppEvent(
     event.app,
@@ -140,20 +142,24 @@ export function appEventFromNotehubRoutedEvent(
     event.file,
     location,
     body,
-    event.sn
+    event.sn,
+    fleetUIDs
   );
 }
 
-export function appEventFromNotehubEvent(
+export async function appEventFromNotehubEvent(
   event: NotehubEvent,
   projectUID: string
-): AppEvent {
+): Promise<AppEvent> {
   if (!event.device_uid) {
     throw eventError("device uid is not defined", event);
   }
 
   const location = bestLocation(event);
   const body = bodyAugmentedWithMetadata(event, event);
+  const appService = services().getAppService();
+  const fleets = await appService.getFleetsByDevice(event.device);
+  const fleetUIDs: string[] = fleets.fleets.map((fleet) => fleet.uid);
 
   return new BasicAppEvent(
     projectUID,
@@ -162,24 +168,9 @@ export function appEventFromNotehubEvent(
     new Date(event.captured),
     event.file,
     location,
-    body
+    body,
+    fleetUIDs
   );
 }
-
-// todo how do I make this work with the handleEvent function?
-export function devicesByFleetFromNotehubApiEvent(
-  event: NotehubDevice,
-  projectUID: string,
-  fleetUID: string,
-  fleetName: string
-): AppEvent {
-
-  return new FleetEvent(
-    projectUID,
-    deviceUID: event.uid,
-    fleetUID,
-    fleetName
-  );
-};
 
 export type { AppEvent };

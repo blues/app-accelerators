@@ -99,7 +99,7 @@ export class PrismaDataProvider implements DataProvider {
       i += 1;
       try {
         await target.handleEvent(
-          appEventFromNotehubEvent(event, project.projectUID),
+          await appEventFromNotehubEvent(event, project.projectUID),
           isHistorical
         );
         b.itemCount += 1;

@@ -12,7 +12,7 @@ async function ingestEvent(notehubEvent: NotehubRoutedEvent) {
     throw Error(HTTP_STATUS.INVALID_PROJECTUID); // todo - this is a client error.
   }
 
-  const appEvent = appEventFromNotehubRoutedEvent(notehubEvent);
+  const appEvent = await appEventFromNotehubRoutedEvent(notehubEvent);
   return services().getAppService().handleEvent(appEvent);
 }
 

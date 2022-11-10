@@ -19,9 +19,8 @@ export interface AppEvent {
   readonly deviceUID: string;
 
   // todo should these be included here?
-  readonly fleetUID?: string;
+  readonly fleetUIDs: string[];
 
-  readonly fleetName?: string;
   /**
    * The format of the event depends upon the event type.
    */
@@ -49,20 +48,10 @@ export class BasicAppEvent implements AppEvent {
     readonly eventName: string,
     readonly location: NotehubLocation | undefined,
     readonly eventBody: string,
-    readonly deviceName?: string,
-    readonly fleetUID?: string,
-    readonly fleetName?: string
-  ) {}
-}
-
-// todo do I need to make a new class / constructor?
-export class FleetEvent {
-  constructor(
-    readonly projectUID: string,
-    readonly deviceUID: string,
-    readonly fleetUID: string,
-    readonly fleetName?: string
-  );
+    readonly fleetUIDs: string[],
+    readonly deviceName?: string // readonly fleetName?: string
+  ) // readonly fleetUID?: string,
+  {}
 }
 
 export interface AppEventHandler {

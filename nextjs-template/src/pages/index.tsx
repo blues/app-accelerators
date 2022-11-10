@@ -62,12 +62,6 @@ export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
     const fleetsForProject = await appService.getFleetsByProject();
     console.log("FLEETS----", fleetsForProject);
 
-    // fetch devices associated with fleets
-    const devicesByFleet = await appService.getDevicesByFleet(
-      fleetsForProject.fleets.map((fleet) => fleet.uid)
-    );
-    // console.log("DEVICES BY FLEET-------------", devicesByFleet);
-
     // fetch env vars associated with fleets
     const fleetEnvVars = await Promise.all(
       fleetsForProject.fleets.map((fleet) =>
@@ -81,14 +75,6 @@ export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
     console.log("FULL FLEET INFO--------", fullFleetInfo);
     // save fleet info to db
     // todo how do I reshape this data so handleEvent can use it?
-    // const storeFleetInDB = await appService.handleEvent(
-    //   devicesByFleet.devices.map((device) =>
-    //     devicesByFleetFromNotehubApiEvent(device)
-    //   )
-    // );
-    // console.log(storeFleetInDB);
-
-    // associate device with fleet
 
     // combine the devices with their events
     deviceEventDataList = getCombinedDeviceEventsInfo(devices, deviceEvents);

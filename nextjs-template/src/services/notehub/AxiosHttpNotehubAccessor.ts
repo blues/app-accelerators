@@ -85,6 +85,18 @@ export default class AxiosHttpNotehubAccessor implements NotehubAccessor {
     }
   }
 
+  async getFleetsByDevice(hubDeviceUID: string) {
+    const endpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/devices/${hubDeviceUID}/fleets`;
+    try {
+      const resp = await axios.get(endpoint, {
+        headers: this.commonHeaders,
+      });
+      return resp.data;
+    } catch (e) {
+      throw this.errorWithCode(e);
+    }
+  }
+
   async getFleetEnvVars(fleetUID: string) {
     const endpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/fleets/${fleetUID}/environment_variables`;
     try {

@@ -15,6 +15,7 @@ interface NotehubAccessor {
   getEvents: (startDate?: string) => Promise<NotehubEvent[]>;
   getFleetsByProject: () => Promise<NotehubFleetsByProject>;
   getDevicesByFleet: (fleetUID: string) => Promise<NotehubDevicesByFleet>;
+  getFleetsByDevice: (hubDeviceUID: string) => Promise<any>;
   getFleetEnvVars: (fleetUID: string) => Promise<NotehubEnvVars>;
   getConfig: (
     hubDeviceUID: string,
