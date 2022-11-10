@@ -48,7 +48,7 @@ export default class NotehubDataProvider implements DataProvider {
   async getFleetEnvVars(fleetUID: string): Promise<any> {
     const fleetEnvVars = await this.notehubAccessor.getFleetEnvVars(fleetUID);
     // attach fleet UID to env vars for combining data later
-    return { fleetUID: fleetUID[0], ...fleetEnvVars };
+    return { fleetUID, ...fleetEnvVars };
   }
 
   // eslint-disable-next-line class-methods-use-this

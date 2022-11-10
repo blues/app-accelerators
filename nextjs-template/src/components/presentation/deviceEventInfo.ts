@@ -24,15 +24,21 @@ export function getCombinedDeviceEventsInfo(devices, deviceEvents) {
 // todo wip function to combine fleets with their env vars
 export function getCombinedFleetInfo(fleetsForProject, fleetEnvVars) {
   const fullFleetInfo = fleetsForProject.fleets.map((fleet) => {
-    let updatedFleetInfoObj;
-    if (fleetEnvVars.fleetUID == fleet.uid) {
-      updatedFleetInfoObj = {
-        ...fleet,
-        ...fleetEnvVars,
-      };
-    } else {
-      updatedFleetInfoObj = fleet;
-    }
+    const filterEnvVarsByFleet = fleetEnvVars.filter(
+      (envVar) => envVar.fleetUID === fleet.uid
+    );
+
+    // todo handle if there's no envVars as well to attach to obj?
+
+    const updatedEnvVars = {
+      envVars: filterEnvVarsByFleet[0].environment_variables,
+    };
+
+    const updatedFleetInfoObj = {
+      ...fleet,
+      ...updatedEnvVars,
+    };
+
     return updatedFleetInfoObj;
   });
 

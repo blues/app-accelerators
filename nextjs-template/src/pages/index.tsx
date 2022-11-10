@@ -69,8 +69,10 @@ export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
     // console.log("DEVICES BY FLEET-------------", devicesByFleet);
 
     // fetch env vars associated with fleets
-    const fleetEnvVars = await appService.getFleetEnvVars(
-      fleetsForProject.fleets.map((fleet) => fleet.uid)
+    const fleetEnvVars = await Promise.all(
+      fleetsForProject.fleets.map((fleet) =>
+        appService.getFleetEnvVars(fleet.uid)
+      )
     );
     console.log("FLEET ENV VARS-------------", fleetEnvVars);
 
