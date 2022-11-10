@@ -1,0 +1,15 @@
+.DS_Store
+*.gch
+*.out
+*.gcda
+*.gcno
+*.gcov
+vgcore.*
+
+coverage/
+
+Doxyfile*
+doxygen_sqlite3.db
+html
+latex
+coverage.json

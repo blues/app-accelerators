@@ -1,0 +1,17 @@
+name: 'Compile Examples'
+author: 'Zachary J. Fields'
+description: 'Validate examples by compiling for supported platforms'
+runs:
+  using: 'docker'
+  image: './Dockerfile'
+  entrypoint: 'bash'
+  args:
+    - -c
+    - "cp -r . /home/blues/Arduino/libraries/Blues_Wireless_Notecard \
+      && HOME=/home/blues arduino-cli compile \
+      --build-property compiler.cpp.extra_flags='-Wno-unused-parameter -Werror' \
+      --fqbn ${{ inputs.fully-qualified-board-name }} \
+      --log-level trace \
+      --verbose \
+      --warnings all \
+      ${{ inputs.example-sketch }}"

@@ -1,0 +1,6 @@
+name: 'Containerized Test'
+author: 'Zachary J. Fields'
+description: 'Perform unit-test in containerized environment'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'

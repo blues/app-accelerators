@@ -1,0 +1,29 @@
+==================================
+CLASS
+==================================
+Notecard	KEYWORD1
+
+==================================
+FUNCTIONS
+==================================
+begin	KEYWORD2
+setDebugOutputStream	KEYWORD2
+clearDebugOutputStream	KEYWORD2
+newRequest	KEYWORD2
+newCommand	KEYWORD2
+sendRequest	KEYWORD2
+requestAndResponse	KEYWORD2
+deleteResponse	KEYWORD2
+logDebug	KEYWORD2
+logDebugf	KEYWORD2
+debugSyncStatus	KEYWORD2
+responseError	KEYWORD2
+
+==================================
+CONSTANTS
+==================================
+Notecard_h	LITERAL1
+
+==================================
+DATA TYPES
+==================================
