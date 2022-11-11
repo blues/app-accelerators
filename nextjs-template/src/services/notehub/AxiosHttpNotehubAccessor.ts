@@ -12,7 +12,7 @@ import NotehubResponse from "./models/NotehubResponse";
 import NoteDeviceConfigBody from "./models/NoteDeviceConfigBody";
 import NotehubEnvVars from "./models/NotehubEnvVars";
 import { serverLogInfo } from "../../pages/api/log";
-import NotehubFleetsByProject from "./models/NotehubFleetsByProject";
+import NotehubFleets from "./models/NotehubFleets";
 import NotehubDevicesByFleet from "./models/NotehubDevicesByFleet";
 
 // this class directly interacts with Notehub via HTTP calls
@@ -61,18 +61,6 @@ export default class AxiosHttpNotehubAccessor implements NotehubAccessor {
     }
   }
 
-  async getFleetsByProject() {
-    const endpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/fleets`;
-    try {
-      const resp = await axios.get<NotehubFleetsByProject>(endpoint, {
-        headers: this.commonHeaders,
-      });
-      return resp.data;
-    } catch (e) {
-      throw this.errorWithCode(e);
-    }
-  }
-
   async getDevicesByFleet(fleetUID: string) {
     const endpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/fleets/${fleetUID}/devices`;
     try {
@@ -85,10 +73,34 @@ export default class AxiosHttpNotehubAccessor implements NotehubAccessor {
     }
   }
 
+  async getFleetsByProject() {
+    const endpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/fleets`;
+    try {
+      const resp = await axios.get<NotehubFleets>(endpoint, {
+        headers: this.commonHeaders,
+      });
+      return resp.data;
+    } catch (e) {
+      throw this.errorWithCode(e);
+    }
+  }
+
   async getFleetsByDevice(hubDeviceUID: string) {
     const endpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/devices/${hubDeviceUID}/fleets`;
     try {
-      const resp = await axios.get(endpoint, {
+      const resp = await axios.get<NotehubFleets>(endpoint, {
+        headers: this.commonHeaders,
+      });
+      return resp.data;
+    } catch (e) {
+      throw this.errorWithCode(e);
+    }
+  }
+
+  async getDeviceEnvVars(hubDeviceUID: string) {
+    const endpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/devices/${hubDeviceUID}/environment_variables`;
+    try {
+      const resp = await axios.get<NotehubEnvVars>(endpoint, {
         headers: this.commonHeaders,
       });
       return resp.data;

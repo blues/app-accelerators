@@ -27,6 +27,7 @@ interface AppServiceInterface {
   getFleetsByProject: () => Promise<any>;
   getFleetsByDevice: (deviceUID: string) => Promise<any>;
   getDevicesByFleet: (fleetUID: string) => Promise<any>;
+  getDeviceEnvVars: (deviceUID: string) => Promise<any>;
   getFleetEnvVars: (fleetUID: string) => Promise<any>;
 
   performBulkDataImport(): Promise<BulkDataImportStatus>;
@@ -91,6 +92,10 @@ export default class AppService implements AppServiceInterface {
 
   async getDevicesByFleet(fleetUID: string) {
     return this.dataProvider.getDevicesByFleet(fleetUID);
+  }
+
+  async getDeviceEnvVars(deviceUID: string) {
+    return this.dataProvider.getDeviceEnvVars(deviceUID);
   }
 
   async getFleetEnvVars(fleetUID: string) {

@@ -58,11 +58,6 @@ model Device {
 
   // all the events the device produced
   events        Event[] 
-  
-  // device level env vars
-  envVars       Json? 
-
-  // pin               String?   @db.VarChar(20) // MAX_PIN_LENGTH
 
   @@index([project_id])
   @@index([deviceUID])

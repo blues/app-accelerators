@@ -1,3 +1,4 @@
+/* eslint-disable class-methods-use-this */
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable import/prefer-default-export */
@@ -159,6 +160,26 @@ export class PrismaDataProvider implements DataProvider {
         this.getEvents(IDBuilder.buildDeviceID(deviceID))
       )
     ).then((events) => events.flat());
+  }
+
+  getFleetsByProject(): Promise<any> {
+    throw new Error("Method not implemented.");
+  }
+
+  getDevicesByFleet(fleetUID: string): Promise<any> {
+    throw new Error("Method not implemented.");
+  }
+
+  getFleetsByDevice(deviceID: string): Promise<any> {
+    throw new Error("Method not implemented.");
+  }
+
+  getDeviceEnvVars(deviceID: string): Promise<any> {
+    throw new Error("Method not implemented");
+  }
+
+  getFleetEnvVars(fleetUID: string): Promise<any> {
+    throw new Error("Method not implemented.");
   }
 
   async getEvents(deviceID: DeviceID): Promise<Event[]> {

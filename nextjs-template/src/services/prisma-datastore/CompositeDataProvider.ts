@@ -41,6 +41,10 @@ export default class CompositeDataProvider implements DataProvider {
     return this.notehubProvider.getFleetsByDevice(deviceID);
   }
 
+  getDeviceEnvVars(deviceID: string): Promise<any> {
+    return this.notehubProvider.getDeviceEnvVars(deviceID);
+  }
+
   getFleetEnvVars(fleetUID: string): Promise<any> {
     return this.notehubProvider.getFleetEnvVars(fleetUID);
   }

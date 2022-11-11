@@ -41,7 +41,6 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
     //   );
     // }
 
-    // todo add fleet if fleet data is present?
     const device = await this.upsertDevice(
       project,
       event.deviceUID,
@@ -49,7 +48,6 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
       event.when,
       event.fleetUIDs,
       event.location
-      // event.envVars
     );
 
     const deviceEvent = await this.upsertEvent(
@@ -61,48 +59,48 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
     );
   }
 
-  private upsertFleet(
-    project: Project,
-    fleetUID: string,
-    name: string,
-    createdAt: Date,
-    envVars?: string
-  ) {
-    const args = arguments;
-    return this.prisma.fleet
-      .upsert({
-        where: {
-          fleetUID,
-        },
-        create: {
-          name,
-          fleetUID,
-          createdAt,
-          project: {
-            connect: {
-              id: project.id,
-            },
-          },
-          envVars,
-        },
-        update: {
-          name,
-          createdAt,
-          project: {
-            connect: {
-              id: project.id,
-            },
-          },
-          envVars,
-        },
-      })
-      .catch((cause) => {
-        throw new ErrorWithCause(
-          `error upserting fleet ${fleetUID} ${JSON.stringify(args)}`,
-          { cause }
-        );
-      });
-  }
+  // private upsertFleet(
+  //   project: Project,
+  //   fleetUID: string,
+  //   name: string,
+  //   createdAt: Date,
+  //   envVars?: string
+  // ) {
+  //   const args = arguments;
+  //   return this.prisma.fleet
+  //     .upsert({
+  //       where: {
+  //         fleetUID,
+  //       },
+  //       create: {
+  //         name,
+  //         fleetUID,
+  //         createdAt,
+  //         project: {
+  //           connect: {
+  //             id: project.id,
+  //           },
+  //         },
+  //         envVars,
+  //       },
+  //       update: {
+  //         name,
+  //         createdAt,
+  //         project: {
+  //           connect: {
+  //             id: project.id,
+  //           },
+  //         },
+  //         envVars,
+  //       },
+  //     })
+  //     .catch((cause) => {
+  //       throw new ErrorWithCause(
+  //         `error upserting fleet ${fleetUID} ${JSON.stringify(args)}`,
+  //         { cause }
+  //       );
+  //     });
+  // }
 
   /**
    * Insert or update the gateway based on the unique device ID.  If the gateway exists but is in a different project,

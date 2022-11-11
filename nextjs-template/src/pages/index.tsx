@@ -1,11 +1,10 @@
 import { GetServerSideProps, NextPage } from "next";
 import { Alert } from "antd";
+import { uniq } from "lodash";
 import { services } from "../services/ServiceLocatorServer";
 import { getErrorMessage } from "../constants/ui";
-import {
-  getCombinedDeviceEventsInfo,
-  getCombinedFleetInfo,
-} from "../components/presentation/deviceEventInfo";
+import { getNormalizedDeviceData } from "../components/presentation/deviceEventInfo";
+import { Device, Event } from "../services/DomainModel";
 import { ERROR_CODES } from "../services/Errors";
 import DeviceCard from "../components/elements/DeviceCard";
 import styles from "../styles/Home.module.scss";
@@ -46,38 +45,40 @@ export default Home;
 
 export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
   let err = "";
-  // just to get something on screen
-  let devices: any = [];
-  let deviceEvents: any = [];
+
+  let devices: Device[] = [];
+  let deviceEvents: Event[] = [];
   let deviceEventDataList: any = [];
 
   try {
     const appService = services().getAppService();
     devices = await appService.getDevices();
     deviceEvents = await appService.getDeviceEvents(
-      devices.map((device) => device.deviceUID)
+      devices.map((device) => device.id.deviceUID)
     );
 
-    // fetch fleets by project (OR JUST USE FLEETUID in .env file)
-    const fleetsForProject = await appService.getFleetsByProject();
-    console.log("FLEETS----", fleetsForProject);
+    // fetch all unique fleets associated with devices
+    const uniqueFleets = uniq(devices.map((device) => device.fleetUIDs).flat());
 
-    // fetch env vars associated with fleets
+    // fetch fleet env vars from Notehub
     const fleetEnvVars = await Promise.all(
-      fleetsForProject.fleets.map((fleet) =>
-        appService.getFleetEnvVars(fleet.uid)
-      )
+      uniqueFleets.map((fleetUID) => appService.getFleetEnvVars(fleetUID))
     );
-    console.log("FLEET ENV VARS-------------", fleetEnvVars);
 
-    // combine fleets for project with any env vars they might have and store in db
-    const fullFleetInfo = getCombinedFleetInfo(fleetsForProject, fleetEnvVars);
-    console.log("FULL FLEET INFO--------", fullFleetInfo);
-    // save fleet info to db
-    // todo how do I reshape this data so handleEvent can use it?
+    // fetch device env vars from Notehub
+    const deviceEnvVars = await Promise.all(
+      devices.map((device) => appService.getDeviceEnvVars(device.id.deviceUID))
+    );
 
-    // combine the devices with their events
-    deviceEventDataList = getCombinedDeviceEventsInfo(devices, deviceEvents);
+    // combine the devices with their events and fleet and device level env vars
+    deviceEventDataList = getNormalizedDeviceData(
+      devices,
+      deviceEvents,
+      deviceEnvVars,
+      fleetEnvVars
+    );
+
+    console.log(deviceEventDataList);
 
     return {
       props: { deviceEventDataList, err },

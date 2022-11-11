@@ -18,13 +18,13 @@ export interface AppEvent {
 
   readonly deviceUID: string;
 
-  // todo should these be included here?
-  readonly fleetUIDs: string[];
+  // device can be assigned to no fleet manually
+  readonly fleetUIDs: string[] | null;
 
   /**
    * The format of the event depends upon the event type.
    */
-  readonly eventBody: string;
+  readonly eventBody: { [key: string]: any };
 
   /**
    * The time the event was published by the origin device.
@@ -47,11 +47,10 @@ export class BasicAppEvent implements AppEvent {
     readonly when: Date,
     readonly eventName: string,
     readonly location: NotehubLocation | undefined,
-    readonly eventBody: string,
-    readonly fleetUIDs: string[],
-    readonly deviceName?: string // readonly fleetName?: string
-  ) // readonly fleetUID?: string,
-  {}
+    readonly eventBody: { [key: string]: any },
+    readonly fleetUIDs: string[] | null,
+    readonly deviceName?: string
+  ) {}
 }
 
 export interface AppEventHandler {

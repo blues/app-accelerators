@@ -1,4 +1,4 @@
-interface NotehubFleetsByProject {
+interface NotehubFleets {
   fleets: [
     {
       uid: string;
@@ -8,4 +8,4 @@ interface NotehubFleetsByProject {
   ];
 }
 
-export default NotehubFleetsByProject;
+export default NotehubFleets;

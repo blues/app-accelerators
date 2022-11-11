@@ -1,6 +1,7 @@
 import { BasicAppEvent, AppEvent } from "../AppEvent";
 import { services } from "../ServiceLocatorServer";
 import NotehubEvent from "./models/NotehubEvent";
+import NotehubFleets from "./models/NotehubFleets";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import NotehubRoutedEvent, {
   NotehubRoutedEventLocationFields,
@@ -11,7 +12,7 @@ export const _health = {
   SENSOR_PROVISION: "sensor-provision",
 };
 
-function eventError(msg: string, event: NotehubRoutedEvent) {
+function eventError(msg: string, event: NotehubRoutedEvent | NotehubEvent) {
   return new Error(msg);
 }
 
@@ -99,7 +100,7 @@ export const bestLocation = (object: NotehubLocationAlternatives) =>
   object.tower_location;
 
 function bodyAugmentedWithMetadata(
-  event: NotehubRoutedEvent,
+  event: NotehubEvent | NotehubRoutedEvent,
   locations: NotehubLocationAlternatives
 ) {
   // eslint-disable-next-line prefer-destructuring
@@ -125,14 +126,18 @@ export async function appEventFromNotehubRoutedEvent(
   if (!event.app) {
     throw eventError("app id is not defined", event);
   }
+  let fleetUIDs: string[] | null = null;
 
   const locations = locationAlternativesFromRoutedEvent(event);
   const location = bestLocation(locations);
   const body = bodyAugmentedWithMetadata(event, locations);
-  // todo fetch device fleet info here and whatever else is needed
   const appService = services().getAppService();
-  const fleets = await appService.getFleetsByDevice(event.device);
-  const fleetUIDs: string[] = fleets.fleets.map((fleet) => fleet.uid);
+  const fleetsByDevice: NotehubFleets = await appService.getFleetsByDevice(
+    event.device
+  );
+  if (fleetsByDevice !== null) {
+    fleetUIDs = fleetsByDevice.fleets.map((fleet) => fleet.uid);
+  }
 
   return new BasicAppEvent(
     event.app,
@@ -142,8 +147,8 @@ export async function appEventFromNotehubRoutedEvent(
     event.file,
     location,
     body,
-    event.sn,
-    fleetUIDs
+    fleetUIDs,
+    event.sn
   );
 }
 
@@ -155,11 +160,16 @@ export async function appEventFromNotehubEvent(
     throw eventError("device uid is not defined", event);
   }
 
+  let fleetUIDs: string[] | null = null;
   const location = bestLocation(event);
   const body = bodyAugmentedWithMetadata(event, event);
   const appService = services().getAppService();
-  const fleets = await appService.getFleetsByDevice(event.device);
-  const fleetUIDs: string[] = fleets.fleets.map((fleet) => fleet.uid);
+  const fleetsByDevice: NotehubFleets = await appService.getFleetsByDevice(
+    event.device_uid
+  );
+  if (fleetsByDevice !== null) {
+    fleetUIDs = fleetsByDevice.fleets.map((fleet) => fleet.uid);
+  }
 
   return new BasicAppEvent(
     projectUID,

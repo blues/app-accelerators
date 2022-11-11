@@ -13,6 +13,7 @@ export interface DataProvider {
   getFleetsByProject(): Promise<any>;
   getFleetsByDevice(deviceID: string): Promise<any>;
   getDevicesByFleet(fleetUID: string): Promise<any>;
+  getDeviceEnvVars(deviceID: string): Promise<any>;
   getFleetEnvVars(fleetUID: string): Promise<any>;
   doBulkImport(): Promise<BulkImport>;
 }

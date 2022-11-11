@@ -57,6 +57,7 @@ export interface Device {
   name: string;
   locationName: string;
   lastSeenAt: string;
+  fleetUIDs: string[] | null;
   readonly id: DeviceID;
 }
 

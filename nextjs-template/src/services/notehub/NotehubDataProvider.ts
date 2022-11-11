@@ -1,7 +1,7 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { DataProvider } from "../DataProvider";
-import { Device, DeviceID, Project, ProjectID } from "../DomainModel";
+import { Device, DeviceID, Event, Project, ProjectID } from "../DomainModel";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import { NotehubAccessor } from "./NotehubAccessor";
 
@@ -25,11 +25,15 @@ export default class NotehubDataProvider implements DataProvider {
     return project;
   }
 
-  async getDevices(): Promise<Device[]> {
+  getDevices(): Promise<Device[]> {
     throw new Error("Method not implemented.");
   }
 
-  async getDevice(deviceID: DeviceID): Promise<Device | null> {
+  getDevice(deviceID: DeviceID): Promise<Device | null> {
+    throw new Error("Method not implemented.");
+  }
+
+  getDeviceEvents(deviceIDs: string[]): Promise<Event[]> {
     throw new Error("Method not implemented.");
   }
 
@@ -50,6 +54,12 @@ export default class NotehubDataProvider implements DataProvider {
       deviceID
     );
     return fleetsByDevice;
+  }
+
+  async getDeviceEnvVars(deviceID: string): Promise<any> {
+    const deviceEnvVars = await this.notehubAccessor.getDeviceEnvVars(deviceID);
+    // attach device ID to env vars for combining data later
+    return {deviceID, ...deviceEnvVars};
   }
 
   async getFleetEnvVars(fleetUID: string): Promise<any> {
