@@ -33,7 +33,7 @@ const Home: NextPage<HomeData> = ({ deviceEventDataList, err }) => {
             <Alert description={infoMessage} type="info" closable />
           ) : null}
           <h2>Devices</h2>
-          {deviceEventDataList.map((deviceData, index) => (
+          {deviceEventDataList.map((deviceData) => (
             <DeviceCard key={deviceData.deviceID} deviceDetails={deviceData} />
           ))}
         </>
@@ -77,8 +77,6 @@ export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
       deviceEnvVars,
       fleetEnvVars
     );
-
-    console.log(deviceEventDataList);
 
     return {
       props: { deviceEventDataList, err },

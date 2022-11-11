@@ -1,5 +1,5 @@
 import NotehubLocation from "./notehub/models/NotehubLocation";
-import { _health } from "./notehub/AppEvents";
+import { _health, alarm, notify } from "./notehub/AppEvents";
 
 export interface AppEvent {
   // replace these IDs with typed IDs?
@@ -66,4 +66,20 @@ export type DeviceHealthEventMethodBody = {
 
 export function isDeviceHealthEvent(e: AppEvent): e is AppEvent {
   return e.eventName === _health.qo;
+}
+
+export function isDeviceAlarmEvent(e: AppEvent): e is AppEvent {
+  return e.eventName === alarm.qo;
+}
+
+export function isDeviceNotificationEvent(e: AppEvent): e is AppEvent {
+  return e.eventName === notify.qo;
+}
+
+export function isAlarmEvent(e: AppEvent) {
+  return Boolean(isDeviceAlarmEvent(e));
+}
+
+export function isNotificationEvent(e: AppEvent) {
+  return Boolean(isDeviceNotificationEvent);
 }

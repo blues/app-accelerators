@@ -25,9 +25,9 @@ export function getNormalizedDeviceData(
 
     // filter correct fleet env vars
     /* operating under the assumption a device will only be assigned to one fleet at a time */
-    const filteredFleetEnvVars: any[] = [];
+    let filteredFleetEnvVars: any[] = [];
     if (fleetEnvVars.length) {
-      fleetEnvVars.filter(
+      filteredFleetEnvVars = fleetEnvVars.filter(
         (fleetEnvVar) => fleetEnvVar.fleetUID === device.fleetUIDs[0]
       );
     }

@@ -4,11 +4,10 @@ import LineChart from "../charts/LineChart";
 
 interface DeviceCardProps {
   deviceDetails: any;
-  index: number;
 }
 
 const DeviceCardComponent = (props: DeviceCardProps) => {
-  const { deviceDetails, index } = props;
+  const { deviceDetails } = props;
 
   // some helper function here that transforms this raw data into the format required by the component's HTML
   // format the eventlist data for chart display (probably done by same function mentioned above)

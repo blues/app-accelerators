@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
-import { QueryClient, QueryClientProvider } from 'react-query';
+import { QueryClient, QueryClientProvider } from "react-query";
 import { AppProps } from "next/app";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import Layout from "../components/layout/Layout";
-import "../styles/globals.css";
 import Notifications from "../components/elements/Notifications";
+import "../styles/globals.css";
 
 require("../styles/antd-variables.less");
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient();
 
 const MyApp = ({ Component, pageProps }: AppProps) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +40,7 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
         />
       </Head>
       <Layout isLoading={isLoading}>
-        <Notifications items={[]}/>
+        <Notifications items={[]} />
         <Component {...pageProps} />
       </Layout>
     </QueryClientProvider>
