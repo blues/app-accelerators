@@ -1,5 +1,5 @@
 import { Card } from "antd";
-import { uniqBy } from "lodash";
+import { uniqBy, isEmpty } from "lodash";
 import LineChart from "../charts/LineChart";
 
 interface DeviceCardProps {
@@ -9,6 +9,7 @@ interface DeviceCardProps {
 
 const DeviceCardComponent = (props: DeviceCardProps) => {
   const { deviceDetails, index } = props;
+
   // some helper function here that transforms this raw data into the format required by the component's HTML
   // format the eventlist data for chart display (probably done by same function mentioned above)
   const getFormattedChartData = (eventList: [], reading: string) => {
@@ -46,6 +47,12 @@ const DeviceCardComponent = (props: DeviceCardProps) => {
 
   return (
     <Card title={deviceDetails.deviceID}>
+      <h2>Fleet Level Env Vars</h2>
+      {!isEmpty(deviceDetails.fleetEnvVars) ? (
+        <div>{JSON.stringify(deviceDetails.fleetEnvVars)}</div>
+      ) : (
+        <div>No fleet level env vars to display</div>
+      )}
       <h2>Current Device Details</h2>
       <div>
         Last Updated{` `}
@@ -67,6 +74,12 @@ const DeviceCardComponent = (props: DeviceCardProps) => {
         Altitude{` `}
         {deviceDetails.eventList[0].value.altitude}
       </div>
+      <h2>Device Env Vars</h2>
+      {!isEmpty(deviceDetails.deviceEnvVars) ? (
+        <div>{JSON.stringify(deviceDetails.deviceEnvVars)}</div>
+      ) : (
+        <div>No device env vars to display</div>
+      )}
       <h2>Historical Device Data</h2>
       <Card>
         <h3>Floor</h3>

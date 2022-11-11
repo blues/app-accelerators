@@ -1,5 +1,13 @@
-// todo wip function to combine devices with their data
-export function getCombinedDeviceEventsInfo(devices, deviceEvents) {
+/* eslint-disable import/prefer-default-export */
+import { Device, Event } from "../../services/DomainModel";
+
+// todo wip function to combine devices with their data and env vars
+export function getNormalizedDeviceData(
+  devices: Device[],
+  deviceEvents: Event[],
+  deviceEnvVars: any[],
+  fleetEnvVars: any[]
+) {
   const deviceEventInfo = devices.map((device) => {
     // consider also filtering out alarm.qo events as well to keep the data cleaner and more uniform
     const filterEventsByDevice = deviceEvents
@@ -9,9 +17,28 @@ export function getCombinedDeviceEventsInfo(devices, deviceEvents) {
     const updatedEventList = {
       eventList: filterEventsByDevice,
     };
-    // reassemble each device with its list of associated events
+
+    // filter correct device env vars
+    const filteredDeviceEnvVars = deviceEnvVars.filter(
+      (deviceEnvVar) => deviceEnvVar.deviceID === device.id.deviceUID
+    );
+
+    // filter correct fleet env vars
+    /* operating under the assumption a device will only be assigned to one fleet at a time */
+    const filteredFleetEnvVars: any[] = [];
+    if (fleetEnvVars.length) {
+      fleetEnvVars.filter(
+        (fleetEnvVar) => fleetEnvVar.fleetUID === device.fleetUIDs[0]
+      );
+    }
+
+    // reassemble each device with its events and env vars
     const updatedDeviceEventsObject = {
       deviceID: device.id.deviceUID,
+      deviceEnvVars: filteredDeviceEnvVars[0].environment_variables,
+      fleetEnvVars: filteredFleetEnvVars.length
+        ? filteredFleetEnvVars[0].environment_variables
+        : {},
       ...updatedEventList,
     };
 
@@ -19,28 +46,4 @@ export function getCombinedDeviceEventsInfo(devices, deviceEvents) {
   });
 
   return deviceEventInfo;
-}
-
-// todo wip function to combine fleets with their env vars
-export function getCombinedFleetInfo(fleetsForProject, fleetEnvVars) {
-  const fullFleetInfo = fleetsForProject.fleets.map((fleet) => {
-    const filterEnvVarsByFleet = fleetEnvVars.filter(
-      (envVar) => envVar.fleetUID === fleet.uid
-    );
-
-    // todo handle if there's no envVars as well to attach to obj?
-
-    const updatedEnvVars = {
-      envVars: filterEnvVarsByFleet[0].environment_variables,
-    };
-
-    const updatedFleetInfoObj = {
-      ...fleet,
-      ...updatedEnvVars,
-    };
-
-    return updatedFleetInfoObj;
-  });
-
-  return fullFleetInfo;
 }
