@@ -7,7 +7,7 @@ export type Notification = {
   readonly type: string;
   readonly when: Date;
   readonly id: NotificationID;
-  content: object;
+  content: object | any;
 };
 
 export interface NotificationsStore {

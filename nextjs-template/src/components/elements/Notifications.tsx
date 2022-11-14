@@ -7,11 +7,9 @@ import {
   removeNotification,
 } from "../../api-client/notification";
 import { AppNotification } from "../presentation/notifications";
-import { getFormattedLastSeenDate } from "../presentation/uiHelpers";
 import notificationsStyles from "../../styles/Notifications.module.scss";
 
 function renderAppNotification(n: AppNotification, router: NextRouter) {
-  const whenPaired = getFormattedLastSeenDate(new Date(n.when));
   const note = <span>Alarm for {n.deviceId}</span>;
   return (
     <Alert

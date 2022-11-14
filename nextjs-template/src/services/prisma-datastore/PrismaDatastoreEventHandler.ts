@@ -1,7 +1,7 @@
 /* eslint-disable prefer-rest-params */
-import { PrismaClient, Prisma, Project, Device, Event } from "@prisma/client";
+import { PrismaClient, Project } from "@prisma/client";
 import { ErrorWithCause } from "pony-cause";
-import { serverLogError, serverLogInfo } from "../../pages/api/log";
+import { serverLogInfo } from "../../pages/api/log";
 import NotehubLocation from "../notehub/models/NotehubLocation";
 import { AppEvent, AppEventHandler } from "../AppEvent";
 
@@ -30,17 +30,6 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
     // todo - should we validate the project? and create on demand?
     const project = await this.projectFromNaturalKey(event.projectUID);
 
-    // todo add fleet if fleet data is present? fix tomorrow
-    // if (event.fleetUID && event.label) {
-    //   const fleet = await this.upsertFleet(
-    //     project,
-    //     event.fleetUID,
-    //     event.label,
-    //     event.createdAt,
-    //     event?.envVars
-    //   );
-    // }
-
     const device = await this.upsertDevice(
       project,
       event.deviceUID,
@@ -59,49 +48,6 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
     );
   }
 
-  // private upsertFleet(
-  //   project: Project,
-  //   fleetUID: string,
-  //   name: string,
-  //   createdAt: Date,
-  //   envVars?: string
-  // ) {
-  //   const args = arguments;
-  //   return this.prisma.fleet
-  //     .upsert({
-  //       where: {
-  //         fleetUID,
-  //       },
-  //       create: {
-  //         name,
-  //         fleetUID,
-  //         createdAt,
-  //         project: {
-  //           connect: {
-  //             id: project.id,
-  //           },
-  //         },
-  //         envVars,
-  //       },
-  //       update: {
-  //         name,
-  //         createdAt,
-  //         project: {
-  //           connect: {
-  //             id: project.id,
-  //           },
-  //         },
-  //         envVars,
-  //       },
-  //     })
-  //     .catch((cause) => {
-  //       throw new ErrorWithCause(
-  //         `error upserting fleet ${fleetUID} ${JSON.stringify(args)}`,
-  //         { cause }
-  //       );
-  //     });
-  // }
-
   /**
    * Insert or update the gateway based on the unique device ID.  If the gateway exists but is in a different project,
    * the project is updated.
@@ -112,7 +58,6 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
    * @param lastSeenAt
    * @param fleetUIDs
    * @param location
-   * todo include envVars?
    * @returns
    */
   private upsertDevice(
@@ -126,6 +71,16 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
     const args = arguments;
     const locationName = location?.name; // todo use structured location
 
+    const formatConnectedFleetData = fleetUIDs.map((fleet) => ({
+      create: {
+        fleetUID: fleet,
+        projectID: project.id,
+      },
+      where: {
+        fleetUID: fleet,
+      },
+    }));
+
     return this.prisma.device
       .upsert({
         where: {
@@ -135,7 +90,9 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
           name,
           deviceUID,
           locationName,
-          fleetUIDs,
+          fleets: {
+            connectOrCreate: formatConnectedFleetData,
+          },
           project: {
             connect: {
               id: project.id,
@@ -146,7 +103,10 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
         update: {
           name,
           locationName,
-          fleetUIDs,
+          fleets: {
+            deleteMany: {},
+            connectOrCreate: formatConnectedFleetData,
+          },
           project: {
             connect: {
               id: project.id,

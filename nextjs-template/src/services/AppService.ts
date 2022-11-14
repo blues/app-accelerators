@@ -1,3 +1,4 @@
+/* eslint-disable class-methods-use-this */
 import { DataProvider } from "./DataProvider";
 import { AttributeStore } from "./AttributeStore";
 import { AppEvent, AppEventHandler } from "./AppEvent";
@@ -12,7 +13,7 @@ import { IDBuilder } from "./IDBuilder";
 import { NotificationsStore, Notification } from "./NotificationsStore";
 import { serverLogError } from "../pages/api/log";
 import { AppNotification } from "../components/presentation/notifications";
-import { ALARM } from "./NotificationEventHandler";
+import { ALARM, NOTIFICATION } from "./NotificationEventHandler";
 
 // this class / interface combo passes data and functions to the service locator file
 interface AppServiceInterface {
@@ -147,16 +148,16 @@ export default class AppService implements AppServiceInterface {
   private async appNotification(
     notification: Notification
   ): Promise<AppNotification | null> {
-    // todo add notification type for notify messages
     switch (true) {
       case notification.type === ALARM:
         return this.buildDeviceAlarmModel(notification);
+      case notification.type === NOTIFICATION:
+        return null;
     }
     serverLogError(`unknown notification ${notification}`);
     return null;
   }
 
-  // todo clean this up
   async buildDeviceAlarmModel(
     notification: Notification
   ): Promise<AppNotification | null> {

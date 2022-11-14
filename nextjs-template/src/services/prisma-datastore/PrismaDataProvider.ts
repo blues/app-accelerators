@@ -3,10 +3,8 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable import/prefer-default-export */
 import Prisma, { PrismaClient } from "@prisma/client";
-import { ErrorWithCause } from "pony-cause";
 import { DataProvider, BulkImport } from "../DataProvider";
 import { ProjectID, DeviceID, Device, Project, Event } from "../DomainModel";
-import Mapper, { PrismaDomainModelMapper } from "./PrismaDomainModelMapper";
 import {
   serverLogError,
   serverLogInfo,
@@ -150,6 +148,9 @@ export class PrismaDataProvider implements DataProvider {
       where: {
         project,
       },
+      include: {
+        fleets: true,
+      },
     });
     return devices.map((device) => this.deviceFromPrismaDevice(device));
   }
@@ -188,7 +189,6 @@ export class PrismaDataProvider implements DataProvider {
         deviceUID: deviceID.deviceUID,
       },
     });
-
     return deviceEvents.map((event) => this.eventFromPrismaEvent(event));
   }
 
@@ -208,16 +208,24 @@ export class PrismaDataProvider implements DataProvider {
       where: {
         deviceUID: deviceID.deviceUID,
       },
+      include: {
+        fleets: true,
+      },
     });
     return device;
   }
 
-  deviceFromPrismaDevice(device: Prisma.Device): Device {
+  deviceFromPrismaDevice(
+    device: Prisma.Device & { fleets: Prisma.Fleet[] }
+  ): Device {
+    const fleetUIDs = device.fleets.map((fleet) => fleet.fleetUID);
+
     return {
       ...device,
       id: IDBuilder.buildDeviceID(device.deviceUID),
       name: device.name || "",
       locationName: device.locationName || "",
+      fleetUIDs,
       lastSeenAt: device.lastSeenAt?.toISOString() || "",
     };
   }

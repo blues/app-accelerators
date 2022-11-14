@@ -21,19 +21,15 @@ model Project {
 model Fleet {
   id          Int      @id @default(autoincrement())
 
-  fleetUID    String   @map("uid") @unique
-  // name        String   @map("label") @db.VarChar(100)
-  // createdAt   DateTime @map("created")
+// unique fleet uid in notehub
+  fleetUID    String   @unique
 
   // the project the fleet belongs to
-  project     Project   @relation(fields: [project_id], references: [id])
-  project_id  Int
+  project     Project   @relation(fields: [projectUID], references: [projectUID])
+  projectUID   String
 
-  // devices assigned to fleet
-  // devices     Device[]
-
-  // fleet level env vars
-  envVars     Json?
+  // devices assigned to fleet (implicit many-to-many relationship)
+  devices     Device[]
 
   @@map("fleet")
 }
@@ -50,16 +46,15 @@ model Device {
   lastSeenAt    DateTime?   @map("last_seen_at") // the last time an event was heard from this device
 
   // the project the device belongs to
-  project       Project     @relation(fields: [project_id], references: [id])
-  project_id    Int
+  project       Project     @relation(fields: [projectUID], references: [projectUID])
+  projectUID    String
 
-  // any fleets a device belongs to
-  fleetUIDs     String[] 
+  // fleets a device belongs to (implicit many-to-many relationship)
+  fleets        Fleet[]
 
-  // all the events the device produced
+  // all the events the device produced (implicit one-to-many relationship)
   events        Event[] 
 
-  @@index([project_id])
   @@index([deviceUID])
   @@map("device")
 }
@@ -71,7 +66,7 @@ model Event {
   eventName    String      @map("file")
   eventUID     String      @map("event") @unique
 
-// the device that produced this reading
+// the device that produced the event
   device       Device      @relation(fields: [deviceUID], references: [deviceUID], onDelete: Cascade)
   deviceUID    String 
 

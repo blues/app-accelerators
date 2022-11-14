@@ -14,6 +14,7 @@ class DefaultPrismaDomainModelMapper {
   mapDateNull(date: Date | null): number | null {
     return date == null ? date : date.getTime() / 1000;
   }
+
   mapDate(date: Date): number {
     return date.getTime() / 1000;
   }
