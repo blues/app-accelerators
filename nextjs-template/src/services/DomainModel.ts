@@ -24,7 +24,7 @@ export interface Event {
 
   // json value event body
   when: string;
-  value: JSONValue;
+  value: any;
 }
 
 export interface DeviceEnvVars {

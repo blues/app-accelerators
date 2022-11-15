@@ -16,10 +16,6 @@ export const alarm = {
   qo: "alarm.qo",
 };
 
-export const notify = {
-  qo: "notify.qo",
-};
-
 function eventError(msg: string, event: NotehubRoutedEvent | NotehubEvent) {
   return new Error(msg);
 }
@@ -134,7 +130,7 @@ export async function appEventFromNotehubRoutedEvent(
   if (!event.app) {
     throw eventError("app id is not defined", event);
   }
-  let fleetUIDs: string[] | null = null;
+  let fleetUIDs: string[] = [];
 
   const locations = locationAlternativesFromRoutedEvent(event);
   const location = bestLocation(locations);
@@ -143,9 +139,8 @@ export async function appEventFromNotehubRoutedEvent(
   const fleetsByDevice: NotehubFleets = await appService.getFleetsByDevice(
     event.device
   );
-  if (fleetsByDevice !== null) {
-    fleetUIDs = fleetsByDevice.fleets.map((fleet) => fleet.uid);
-  }
+
+  fleetUIDs = fleetsByDevice.fleets.map((fleet) => fleet.uid);
 
   return new BasicAppEvent(
     event.app,
@@ -168,16 +163,15 @@ export async function appEventFromNotehubEvent(
     throw eventError("device uid is not defined", event);
   }
 
-  let fleetUIDs: string[] | null = null;
+  let fleetUIDs: string[] = [];
   const location = bestLocation(event);
   const body = bodyAugmentedWithMetadata(event, event);
   const appService = services().getAppService();
   const fleetsByDevice: NotehubFleets = await appService.getFleetsByDevice(
     event.device_uid
   );
-  if (fleetsByDevice !== null) {
-    fleetUIDs = fleetsByDevice.fleets.map((fleet) => fleet.uid);
-  }
+
+  fleetUIDs = fleetsByDevice.fleets.map((fleet) => fleet.uid);
 
   return new BasicAppEvent(
     projectUID,

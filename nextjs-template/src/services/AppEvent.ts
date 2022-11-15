@@ -1,5 +1,5 @@
 import NotehubLocation from "./notehub/models/NotehubLocation";
-import { _health, alarm, notify } from "./notehub/AppEvents";
+import { _health, alarm } from "./notehub/AppEvents";
 
 export interface AppEvent {
   // replace these IDs with typed IDs?
@@ -18,8 +18,7 @@ export interface AppEvent {
 
   readonly deviceUID: string;
 
-  // device can be assigned to no fleet manually
-  readonly fleetUIDs: string[] | null;
+  readonly fleetUIDs: string[];
 
   /**
    * The format of the event depends upon the event type.
@@ -48,7 +47,7 @@ export class BasicAppEvent implements AppEvent {
     readonly eventName: string,
     readonly location: NotehubLocation | undefined,
     readonly eventBody: { [key: string]: any },
-    readonly fleetUIDs: string[] | null,
+    readonly fleetUIDs: string[],
     readonly deviceName?: string
   ) {}
 }
@@ -72,14 +71,6 @@ export function isDeviceAlarmEvent(e: AppEvent): e is AppEvent {
   return e.eventName === alarm.qo;
 }
 
-export function isDeviceNotificationEvent(e: AppEvent): e is AppEvent {
-  return e.eventName === notify.qo;
-}
-
 export function isAlarmEvent(e: AppEvent) {
   return Boolean(isDeviceAlarmEvent(e));
-}
-
-export function isNotificationEvent(e: AppEvent) {
-  return Boolean(isDeviceNotificationEvent);
 }

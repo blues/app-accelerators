@@ -138,7 +138,7 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
     when: Date,
     eventName: string,
     eventUID: string,
-    value: string
+    value: object
   ) {
     const args = arguments;
 

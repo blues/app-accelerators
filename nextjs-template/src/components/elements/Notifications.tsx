@@ -10,7 +10,7 @@ import { AppNotification } from "../presentation/notifications";
 import notificationsStyles from "../../styles/Notifications.module.scss";
 
 function renderAppNotification(n: AppNotification, router: NextRouter) {
-  const note = <span>Alarm for {n.deviceId}</span>;
+  const note = <span>Notification message</span>;
   return (
     <Alert
       key={n.id}
@@ -47,6 +47,7 @@ const NotificationsComponent = (props: NotificationProps) => {
     <div className={notificationsStyles.notifications}>
       {" "}
       {status === "success" &&
+        data &&
         data.notifications
           .map((notification) => renderNotification(notification, router))
           .filter((n) => n)}
