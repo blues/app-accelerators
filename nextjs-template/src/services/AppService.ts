@@ -2,13 +2,7 @@
 import { DataProvider } from "./DataProvider";
 import { AttributeStore } from "./AttributeStore";
 import { AppEvent, AppEventHandler } from "./AppEvent";
-import {
-  Project,
-  Device,
-  ProjectID,
-  BulkDataImportStatus,
-  Event,
-} from "./AppModel";
+import { Project, Device, ProjectID, Event } from "./AppModel";
 import { IDBuilder } from "./IDBuilder";
 import { NotificationsStore, Notification } from "./NotificationsStore";
 import { serverLogError } from "../pages/api/log";
@@ -31,8 +25,6 @@ interface AppServiceInterface {
   getDevicesByFleet: (fleetUID: string) => Promise<any>;
   getDeviceEnvVars: (deviceUID: string) => Promise<any>;
   getFleetEnvVars: (fleetUID: string) => Promise<any>;
-
-  performBulkDataImport(): Promise<BulkDataImportStatus>;
 
   getAppNotifications(): Promise<AppNotification[]>;
 }
@@ -110,30 +102,6 @@ export default class AppService implements AppServiceInterface {
 
   private currentProjectID() {
     return this.projectID;
-  }
-
-  async performBulkDataImport(): Promise<BulkDataImportStatus> {
-    const startTime = performance.now();
-    try {
-      const b = await this.dataProvider.doBulkImport();
-      const finishTime = performance.now();
-      return {
-        elapsedTimeMs: finishTime - startTime,
-        erroredItemCount: b.errorCount,
-        importedItemCount: b.itemCount,
-        state: "done",
-      };
-    } catch (cause) {
-      const finishTime = performance.now();
-      return {
-        elapsedTimeMs: finishTime - startTime,
-        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-        err: `Please Try Again. Cause: ${cause}`,
-        erroredItemCount: 0,
-        importedItemCount: 0,
-        state: "failed",
-      };
-    }
   }
 
   async getAppNotifications(): Promise<AppNotification[]> {

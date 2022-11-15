@@ -1,4 +1,4 @@
-import { BulkImport, DataProvider } from "../DataProvider";
+import { DataProvider } from "../DataProvider";
 import NotehubDataProvider from "../notehub/NotehubDataProvider";
 import { PrismaDataProvider } from "./PrismaDataProvider";
 import { Device, DeviceID, Event, Project } from "../DomainModel";
@@ -47,13 +47,5 @@ export default class CompositeDataProvider implements DataProvider {
 
   getFleetEnvVars(fleetUID: string): Promise<any> {
     return this.notehubProvider.getFleetEnvVars(fleetUID);
-  }
-
-  async doBulkImport(): Promise<BulkImport> {
-    const b = await this.prismaDataProvider.doBulkImport(
-      this.notehubAccessor,
-      this.eventHandler
-    );
-    return b;
   }
 }

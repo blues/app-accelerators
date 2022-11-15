@@ -25,11 +25,3 @@ export interface ProjectDataSnapshot {
   when: AppDate;
   project: Project;
 }
-
-export interface BulkDataImportStatus {
-  err?: string;
-  importedItemCount: number;
-  erroredItemCount: number;
-  elapsedTimeMs: number;
-  state: "unstarted" | "ongoing" | "done" | "failed";
-}

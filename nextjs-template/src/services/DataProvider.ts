@@ -1,10 +1,5 @@
 import { Project, Device, DeviceID, Event } from "./DomainModel";
 
-export interface BulkImport {
-  itemCount: number;
-  errorCount: number;
-}
-
 export interface DataProvider {
   getProject(): Promise<Project>;
   getDevices(): Promise<Device[]>;
@@ -15,5 +10,4 @@ export interface DataProvider {
   getDevicesByFleet(fleetUID: string): Promise<any>;
   getDeviceEnvVars(deviceID: string): Promise<any>;
   getFleetEnvVars(fleetUID: string): Promise<any>;
-  doBulkImport(): Promise<BulkImport>;
 }

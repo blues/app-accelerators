@@ -59,18 +59,13 @@ export default class NotehubDataProvider implements DataProvider {
   async getDeviceEnvVars(deviceID: string): Promise<any> {
     const deviceEnvVars = await this.notehubAccessor.getDeviceEnvVars(deviceID);
     // attach device ID to env vars for combining data later
-    return {deviceID, ...deviceEnvVars};
+    return { deviceID, ...deviceEnvVars };
   }
 
   async getFleetEnvVars(fleetUID: string): Promise<any> {
     const fleetEnvVars = await this.notehubAccessor.getFleetEnvVars(fleetUID);
     // attach fleet UID to env vars for combining data later
     return { fleetUID, ...fleetEnvVars };
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  doBulkImport(): Promise<never> {
-    throw new Error("It's not possible to do bulk import of data to Notehub");
   }
 
   /**
