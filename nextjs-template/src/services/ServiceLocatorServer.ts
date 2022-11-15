@@ -148,8 +148,6 @@ class ServiceLocatorServer {
           notehubStore,
           prismaStore,
         ]);
-        compositeStore.updateDevicePin =
-          prismaStore.updateDevicePin.bind(prismaStore);
         this.attributeStore = compositeStore;
       } else {
         this.attributeStore = notehubStore;
