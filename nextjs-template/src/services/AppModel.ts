@@ -21,6 +21,12 @@ export type Device = DomainModel.Device;
 
 export type Event = DomainModel.Event;
 
+export type Fleets = DomainModel.Fleets;
+
+export type DeviceEnvVars = DomainModel.DeviceEnvVars;
+
+export type FleetEnvVars = DomainModel.FleetEnvVars;
+
 export interface ProjectDataSnapshot {
   when: AppDate;
   project: Project;

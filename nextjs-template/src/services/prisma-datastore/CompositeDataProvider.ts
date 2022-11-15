@@ -1,7 +1,15 @@
 import { DataProvider } from "../DataProvider";
 import NotehubDataProvider from "../notehub/NotehubDataProvider";
 import { PrismaDataProvider } from "./PrismaDataProvider";
-import { Device, DeviceID, Event, Project } from "../DomainModel";
+import {
+  Device,
+  DeviceEnvVars,
+  DeviceID,
+  Event,
+  FleetEnvVars,
+  Fleets,
+  Project,
+} from "../DomainModel";
 import { NotehubAccessor } from "../notehub/NotehubAccessor";
 import { AppEventHandler } from "../AppEvent";
 
@@ -29,23 +37,23 @@ export default class CompositeDataProvider implements DataProvider {
     return this.prismaDataProvider.getDeviceEvents(deviceIDs);
   }
 
-  getFleetsByProject(): Promise<any> {
+  getFleetsByProject(): Promise<Fleets> {
     return this.notehubProvider.getFleetsByProject();
   }
 
-  getDevicesByFleet(fleetUID: string): Promise<any> {
+  getDevicesByFleet(fleetUID: string): Promise<Device[]> {
     return this.notehubProvider.getDevicesByFleet(fleetUID);
   }
 
-  getFleetsByDevice(deviceID: string): Promise<any> {
+  getFleetsByDevice(deviceID: string): Promise<Fleets> {
     return this.notehubProvider.getFleetsByDevice(deviceID);
   }
 
-  getDeviceEnvVars(deviceID: string): Promise<any> {
+  getDeviceEnvVars(deviceID: string): Promise<DeviceEnvVars> {
     return this.notehubProvider.getDeviceEnvVars(deviceID);
   }
 
-  getFleetEnvVars(fleetUID: string): Promise<any> {
+  getFleetEnvVars(fleetUID: string): Promise<FleetEnvVars> {
     return this.notehubProvider.getFleetEnvVars(fleetUID);
   }
 }

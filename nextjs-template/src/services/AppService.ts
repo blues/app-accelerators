@@ -2,12 +2,20 @@
 import { DataProvider } from "./DataProvider";
 import { AttributeStore } from "./AttributeStore";
 import { AppEvent, AppEventHandler } from "./AppEvent";
-import { Project, Device, ProjectID, Event } from "./AppModel";
+import {
+  Project,
+  Device,
+  ProjectID,
+  Event,
+  Fleets,
+  DeviceEnvVars,
+  FleetEnvVars,
+} from "./AppModel";
 import { IDBuilder } from "./IDBuilder";
 import { NotificationsStore, Notification } from "./NotificationsStore";
 import { serverLogError } from "../pages/api/log";
 import { AppNotification } from "../components/presentation/notifications";
-import { ALARM, NOTIFICATION } from "./NotificationEventHandler";
+import { ALARM } from "./NotificationEventHandler";
 
 // this class / interface combo passes data and functions to the service locator file
 interface AppServiceInterface {
@@ -20,11 +28,11 @@ interface AppServiceInterface {
   handleEvent(event: AppEvent): Promise<void>;
 
   getDeviceEvents: (deviceUIDs: string[]) => Promise<Event[]>;
-  getFleetsByProject: () => Promise<any>;
-  getFleetsByDevice: (deviceUID: string) => Promise<any>;
-  getDevicesByFleet: (fleetUID: string) => Promise<any>;
-  getDeviceEnvVars: (deviceUID: string) => Promise<any>;
-  getFleetEnvVars: (fleetUID: string) => Promise<any>;
+  getFleetsByProject: () => Promise<Fleets>;
+  getFleetsByDevice: (deviceUID: string) => Promise<Fleets>;
+  getDevicesByFleet: (fleetUID: string) => Promise<Device[]>;
+  getDeviceEnvVars: (deviceUID: string) => Promise<DeviceEnvVars>;
+  getFleetEnvVars: (fleetUID: string) => Promise<FleetEnvVars>;
 
   getAppNotifications(): Promise<AppNotification[]>;
 }
@@ -119,8 +127,6 @@ export default class AppService implements AppServiceInterface {
     switch (true) {
       case notification.type === ALARM:
         return this.buildDeviceAlarmModel(notification);
-      case notification.type === NOTIFICATION:
-        return null;
     }
     serverLogError(`unknown notification ${notification}`);
     return null;

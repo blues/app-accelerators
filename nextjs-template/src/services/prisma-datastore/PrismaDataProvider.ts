@@ -4,7 +4,16 @@
 /* eslint-disable import/prefer-default-export */
 import Prisma, { PrismaClient } from "@prisma/client";
 import { DataProvider } from "../DataProvider";
-import { ProjectID, DeviceID, Device, Project, Event } from "../DomainModel";
+import {
+  ProjectID,
+  DeviceID,
+  Device,
+  Project,
+  Event,
+  Fleets,
+  FleetEnvVars,
+  DeviceEnvVars,
+} from "../DomainModel";
 
 import IDBuilder from "../IDBuilder";
 
@@ -70,23 +79,23 @@ export class PrismaDataProvider implements DataProvider {
     ).then((events) => events.flat());
   }
 
-  getFleetsByProject(): Promise<any> {
+  getFleetsByProject(): Promise<Fleets> {
     throw new Error("Method not implemented.");
   }
 
-  getDevicesByFleet(fleetUID: string): Promise<any> {
+  getDevicesByFleet(fleetUID: string): Promise<Device[]> {
     throw new Error("Method not implemented.");
   }
 
-  getFleetsByDevice(deviceID: string): Promise<any> {
+  getFleetsByDevice(deviceID: string): Promise<Fleets> {
     throw new Error("Method not implemented.");
   }
 
-  getDeviceEnvVars(deviceID: string): Promise<any> {
+  getDeviceEnvVars(deviceID: string): Promise<DeviceEnvVars> {
     throw new Error("Method not implemented");
   }
 
-  getFleetEnvVars(fleetUID: string): Promise<any> {
+  getFleetEnvVars(fleetUID: string): Promise<FleetEnvVars> {
     throw new Error("Method not implemented.");
   }
 

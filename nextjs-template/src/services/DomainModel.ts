@@ -29,12 +29,22 @@ export interface Event {
 
 export interface DeviceEnvVars {
   readonly deviceID: DeviceID["deviceUID"];
-  environment_variables: object;
+  environment_variables?: object;
+}
+
+export interface Fleets {
+  fleets: [
+    {
+      uid: string;
+      label?: string;
+      created?: string;
+    }
+  ];
 }
 
 export interface FleetEnvVars {
   readonly fleetUID: string;
-  environment_variables: object;
+  environment_variables?: object;
 }
 
 export interface ProjectID {

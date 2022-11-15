@@ -1,7 +1,16 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { DataProvider } from "../DataProvider";
-import { Device, DeviceID, Event, Project, ProjectID } from "../DomainModel";
+import {
+  Device,
+  DeviceEnvVars,
+  DeviceID,
+  Event,
+  Fleets,
+  FleetEnvVars,
+  Project,
+  ProjectID,
+} from "../DomainModel";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import { NotehubAccessor } from "./NotehubAccessor";
 
@@ -37,7 +46,7 @@ export default class NotehubDataProvider implements DataProvider {
     throw new Error("Method not implemented.");
   }
 
-  async getFleetsByProject(): Promise<any> {
+  async getFleetsByProject(): Promise<Fleets> {
     const fleetsByProject = await this.notehubAccessor.getFleetsByProject();
     return fleetsByProject;
   }
@@ -49,20 +58,20 @@ export default class NotehubDataProvider implements DataProvider {
     return devicesByFleet;
   }
 
-  async getFleetsByDevice(deviceID: string): Promise<any> {
+  async getFleetsByDevice(deviceID: string): Promise<Fleets> {
     const fleetsByDevice = await this.notehubAccessor.getFleetsByDevice(
       deviceID
     );
     return fleetsByDevice;
   }
 
-  async getDeviceEnvVars(deviceID: string): Promise<any> {
+  async getDeviceEnvVars(deviceID: string): Promise<DeviceEnvVars> {
     const deviceEnvVars = await this.notehubAccessor.getDeviceEnvVars(deviceID);
     // attach device ID to env vars for combining data later
     return { deviceID, ...deviceEnvVars };
   }
 
-  async getFleetEnvVars(fleetUID: string): Promise<any> {
+  async getFleetEnvVars(fleetUID: string): Promise<FleetEnvVars> {
     const fleetEnvVars = await this.notehubAccessor.getFleetEnvVars(fleetUID);
     // attach fleet UID to env vars for combining data later
     return { fleetUID, ...fleetEnvVars };
