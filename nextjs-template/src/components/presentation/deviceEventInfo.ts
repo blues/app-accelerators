@@ -1,19 +1,24 @@
 /* eslint-disable import/prefer-default-export */
-import { Device, Event } from "../../services/DomainModel";
+import {
+  Device,
+  DeviceEnvVars,
+  Event,
+  FleetEnvVars,
+} from "../../services/DomainModel";
 
-// todo wip function to combine devices with their data and env vars
+// function to combine devices with their event data and env vars
 export function getNormalizedDeviceData(
   devices: Device[],
   deviceEvents: Event[],
-  deviceEnvVars: any[],
-  fleetEnvVars: any[]
+  deviceEnvVars: DeviceEnvVars[],
+  fleetEnvVars: FleetEnvVars[]
 ) {
   const deviceEventInfo = devices.map((device) => {
     // consider also filtering out alarm.qo events as well to keep the data cleaner and more uniform
     const filterEventsByDevice = deviceEvents
       .filter((event) => event.deviceUID.deviceUID === device.id.deviceUID)
       // sort events newest to oldest
-      .sort((a, b) => new Date(b.when) - new Date(a.when));
+      .sort((a, b) => Number(new Date(b.when)) - Number(new Date(a.when)));
     const updatedEventList = {
       eventList: filterEventsByDevice,
     };
@@ -25,7 +30,7 @@ export function getNormalizedDeviceData(
 
     // filter correct fleet env vars
     /* operating under the assumption a device will only be assigned to one fleet at a time */
-    let filteredFleetEnvVars: any[] = [];
+    let filteredFleetEnvVars: FleetEnvVars[] = [];
     if (fleetEnvVars.length) {
       filteredFleetEnvVars = fleetEnvVars.filter(
         (fleetEnvVar) => fleetEnvVar.fleetUID === device.fleetUIDs[0]

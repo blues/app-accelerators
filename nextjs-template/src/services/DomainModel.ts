@@ -24,8 +24,17 @@ export interface Event {
 
   // json value event body
   when: string;
-  // todo fix this to be JsonValue later
-  value: any;
+  value: JSONValue;
+}
+
+export interface DeviceEnvVars {
+  readonly deviceID: DeviceID["deviceUID"];
+  environment_variables: object;
+}
+
+export interface FleetEnvVars {
+  readonly fleetUID: string;
+  environment_variables: object;
 }
 
 export interface ProjectID {

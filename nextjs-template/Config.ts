@@ -61,7 +61,7 @@ const Config = {
     return requiredEnvVar("HUB_PROJECTUID");
   },
   get hubFleetUID() {
-    return requiredEnvVar("HUB_FLEET_UID");
+    return optionalEnvVar("HUB_FLEET_UID", "");
   },
   get hubAuthToken() {
     return requiredEnvVar("HUB_AUTH_TOKEN");
