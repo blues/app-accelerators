@@ -1,7 +1,6 @@
 import { BasicAppEvent, AppEvent } from "../AppEvent";
 import { services } from "../ServiceLocatorServer";
 import NotehubEvent from "./models/NotehubEvent";
-import NotehubFleets from "./models/NotehubFleets";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import NotehubRoutedEvent, {
   NotehubRoutedEventLocationFields,
@@ -136,9 +135,7 @@ export async function appEventFromNotehubRoutedEvent(
   const location = bestLocation(locations);
   const body = bodyAugmentedWithMetadata(event, locations);
   const appService = services().getAppService();
-  const fleetsByDevice: NotehubFleets = await appService.getFleetsByDevice(
-    event.device
-  );
+  const fleetsByDevice = await appService.getFleetsByDevice(event.device);
 
   fleetUIDs = fleetsByDevice.fleets.map((fleet) => fleet.uid);
 
@@ -167,9 +164,7 @@ export async function appEventFromNotehubEvent(
   const location = bestLocation(event);
   const body = bodyAugmentedWithMetadata(event, event);
   const appService = services().getAppService();
-  const fleetsByDevice: NotehubFleets = await appService.getFleetsByDevice(
-    event.device_uid
-  );
+  const fleetsByDevice = await appService.getFleetsByDevice(event.device_uid);
 
   fleetUIDs = fleetsByDevice.fleets.map((fleet) => fleet.uid);
 
