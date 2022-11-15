@@ -26,7 +26,7 @@ model Fleet {
 
   // the project the fleet belongs to
   project     Project   @relation(fields: [projectUID], references: [projectUID])
-  projectUID   String
+  projectUID  String
 
   // devices assigned to fleet (implicit many-to-many relationship)
   devices     Device[]
