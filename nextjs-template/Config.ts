@@ -12,7 +12,6 @@ const env = {
   HUB_BASE_URL: process.env.HUB_BASE_URL,
   HUB_GUI_URL: process.env.HUB_GUI_URL,
   HUB_PROJECTUID: process.env.HUB_PROJECTUID,
-  HUB_FLEET_UID: process.env.HUB_FLEET_UID,
   NEXT_PUBLIC_BUILD_VERSION: process.env.NEXT_PUBLIC_BUILD_VERSION,
   NEXT_PUBLIC_COMPANY_NAME: process.env.NEXT_PUBLIC_COMPANY_NAME,
   POSTGRES_USERNAME: process.env.POSTGRES_USERNAME,
@@ -59,9 +58,6 @@ const Config = {
   },
   get hubProjectUID() {
     return requiredEnvVar("HUB_PROJECTUID");
-  },
-  get hubFleetUID() {
-    return optionalEnvVar("HUB_FLEET_UID", "");
   },
   get hubAuthToken() {
     return requiredEnvVar("HUB_AUTH_TOKEN");

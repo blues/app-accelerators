@@ -15,11 +15,9 @@ import { IDBuilder } from "./IDBuilder";
 import { NotificationsStore, Notification } from "./NotificationsStore";
 import { serverLogError } from "../pages/api/log";
 import { AppNotification } from "../components/presentation/notifications";
-import { ALARM } from "./NotificationEventHandler";
 
 // this class / interface combo passes data and functions to the service locator file
 interface AppServiceInterface {
-  getEventCount: () => Promise<number>;
   getProject: () => Promise<Project>;
   getDevices: () => Promise<Device[]>;
   getDevice: (deviceUID: string) => Promise<Device | null>;
@@ -51,10 +49,6 @@ export default class AppService implements AppServiceInterface {
     private notificationStore: NotificationsStore
   ) {
     this.projectID = this.idBuilder.buildProjectID(projectUID);
-  }
-
-  async getEventCount(): Promise<number> {
-    return 0;
   }
 
   async getProject(): Promise<Project> {
@@ -124,23 +118,14 @@ export default class AppService implements AppServiceInterface {
   private async appNotification(
     notification: Notification
   ): Promise<AppNotification | null> {
-    switch (true) {
-      case notification.type === ALARM:
-        return this.buildDeviceAlarmModel(notification);
+    switch (
+      true
+      // case notification type, return properly formatted notification model
+    ) {
     }
     serverLogError(`unknown notification ${notification}`);
     return null;
   }
 
-  async buildDeviceAlarmModel(
-    notification: Notification
-  ): Promise<AppNotification | null> {
-    const result = {
-      id: notification.id,
-      type: ALARM,
-      when: notification.when.getTime(),
-      deviceId: notification.content.deviceID,
-    };
-    return result;
-  }
+  // build models here to handle different types of notifications
 }

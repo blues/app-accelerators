@@ -29,9 +29,9 @@ interface NotificationProps {
 
 function renderNotification(notification: AppNotification, router: NextRouter) {
   // test the type of notification
-  if (notification.type === "alarm") {
-    return renderAppNotification(notification, router);
-  }
+  // if (notification.type === "some notification type") {
+  //   return renderAppNotification(notification, router);
+  // }
   return null;
 }
 

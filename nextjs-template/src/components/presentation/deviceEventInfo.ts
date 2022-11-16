@@ -6,6 +6,22 @@ import {
   FleetEnvVars,
 } from "../../services/DomainModel";
 
+function assembleDeviceEventsObject(
+  deviceID: string,
+  deviceEnvVars: DeviceEnvVars[],
+  fleetEnvVars: FleetEnvVars[],
+  eventList: Event[]
+) {
+  return {
+    deviceID,
+    deviceEnvVars: deviceEnvVars[0].environment_variables,
+    fleetEnvVars: fleetEnvVars.length
+      ? fleetEnvVars[0].environment_variables
+      : {},
+    eventList,
+  };
+}
+
 // function to combine devices with their event data and env vars
 export function getNormalizedDeviceData(
   devices: Device[],
@@ -14,14 +30,13 @@ export function getNormalizedDeviceData(
   fleetEnvVars: FleetEnvVars[]
 ) {
   const deviceEventInfo = devices.map((device) => {
-    // consider also filtering out alarm.qo events as well to keep the data cleaner and more uniform
+    // consider also filtering out certain event types (like alarms or notification events) as well to keep the data cleaner and more uniform
     const filterEventsByDevice = deviceEvents
       .filter((event) => event.deviceUID.deviceUID === device.id.deviceUID)
       // sort events newest to oldest
       .sort((a, b) => Number(new Date(b.when)) - Number(new Date(a.when)));
-    const updatedEventList = {
-      eventList: filterEventsByDevice,
-    };
+
+    const updatedEventList = [...filterEventsByDevice];
 
     // filter correct device env vars
     const filteredDeviceEnvVars = deviceEnvVars.filter(
@@ -38,14 +53,12 @@ export function getNormalizedDeviceData(
     }
 
     // reassemble each device with its events and env vars
-    const updatedDeviceEventsObject = {
-      deviceID: device.id.deviceUID,
-      deviceEnvVars: filteredDeviceEnvVars[0].environment_variables,
-      fleetEnvVars: filteredFleetEnvVars.length
-        ? filteredFleetEnvVars[0].environment_variables
-        : {},
-      ...updatedEventList,
-    };
+    const updatedDeviceEventsObject = assembleDeviceEventsObject(
+      device.id.deviceUID,
+      filteredDeviceEnvVars,
+      filteredFleetEnvVars,
+      updatedEventList
+    );
 
     return updatedDeviceEventsObject;
   });
