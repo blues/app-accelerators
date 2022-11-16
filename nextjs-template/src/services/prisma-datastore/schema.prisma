@@ -12,31 +12,70 @@ model Project {
   createdAt  DateTime  @default(now()) @map("created_at")
   projectUID String    @map("project_uid") @unique
   name       String    @db.VarChar(50)
+  fleets     Fleet[]
   devices    Device[]
 
   @@map("project")
 }
 
+model Fleet {
+  id          Int      @id @default(autoincrement())
+
+// unique fleet uid in notehub
+  fleetUID    String   @unique
+
+  // the project the fleet belongs to
+  project     Project   @relation(fields: [projectUID], references: [projectUID])
+  projectUID  String
+
+  // devices assigned to fleet (implicit many-to-many relationship)
+  devices     Device[]
+
+  @@map("fleet")
+}
+
 model Device {
-  id                Int @id @default(autoincrement())
+  id            Int         @id @default(autoincrement())
 
   // unique device uid in notehub
-  deviceUID         String @unique @map("device_uid") @db.VarChar(64)
+  deviceUID     String      @unique @map("device_uid") @db.VarChar(64)
 
   // device serial number (cached)
-  name              String? @db.VarChar(80) // cached
-  locationName      String? @db.VarChar(200) // cached
-  lastSeenAt        DateTime? @map("last_seen_at") // the last time an event was heard from this device
+  name          String?     @db.VarChar(80) // cached
+  locationName  String?     @db.VarChar(200) // cached
+  lastSeenAt    DateTime?   @map("last_seen_at") // the last time an event was heard from this device
 
   // the project the device belongs to
-  project           Project @relation(fields: [project_id], references: [id])
-  project_id        Int
+  project       Project     @relation(fields: [projectUID], references: [projectUID])
+  projectUID    String
 
-  pin               String?   @db.VarChar(20) // MAX_PIN_LENGTH
+  // fleets a device belongs to (implicit many-to-many relationship)
+  fleets        Fleet[]
 
-  @@index([project_id])
+  // all the events the device produced (implicit one-to-many relationship)
+  events        Event[] 
+
   @@index([deviceUID])
   @@map("device")
+}
+
+// a single event from a specific device
+model Event {
+  id           Int         @id @default(autoincrement())
+
+  eventName    String      @map("file")
+  eventUID     String      @map("event") @unique
+
+// the device that produced the event
+  device       Device      @relation(fields: [deviceUID], references: [deviceUID], onDelete: Cascade)
+  deviceUID    String 
+
+// when the event occurred
+  when         DateTime
+  value        Json
+
+  @@unique([eventUID, when, value]) // natural key
+  @@map("event")
 }
 
 model Notification {

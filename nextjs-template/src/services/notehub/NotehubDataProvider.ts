@@ -1,9 +1,16 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { DataProvider } from "../DataProvider";
 import {
-  DataProvider
-} from "../DataProvider";
-import { Device, DeviceID, Project, ProjectID } from "../DomainModel";
+  Device,
+  DeviceEnvVars,
+  DeviceID,
+  Event,
+  Fleets,
+  FleetEnvVars,
+  Project,
+  ProjectID,
+} from "../DomainModel";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import { NotehubAccessor } from "./NotehubAccessor";
 
@@ -12,8 +19,7 @@ import { NotehubAccessor } from "./NotehubAccessor";
 export const getBestLocation = (object: NotehubLocationAlternatives) =>
   object.gps_location || object.triangulated_location || object.tower_location;
 
-
-  export default class NotehubDataProvider implements DataProvider {
+export default class NotehubDataProvider implements DataProvider {
   constructor(
     private readonly notehubAccessor: NotehubAccessor,
     private readonly projectID: ProjectID
@@ -23,22 +29,52 @@ export const getBestLocation = (object: NotehubLocationAlternatives) =>
     const project: Project = {
       id: this.projectID,
       name: "fixme",
-      description: "fixme"
-    }
+      description: "fixme",
+    };
     return project;
   }
 
-  async getDevices(): Promise<Device[]> {
+  getDevices(): Promise<Device[]> {
     throw new Error("Method not implemented.");
   }
 
-  async getDevice(deviceID: DeviceID): Promise<Device | null> {
+  getDevice(deviceID: DeviceID): Promise<Device | null> {
     throw new Error("Method not implemented.");
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  doBulkImport(): Promise<never> {
-    throw new Error("It's not possible to do bulk import of data to Notehub");
+  getDeviceEvents(deviceIDs: string[]): Promise<Event[]> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getFleetsByProject(): Promise<Fleets> {
+    const fleetsByProject = await this.notehubAccessor.getFleetsByProject();
+    return fleetsByProject;
+  }
+
+  async getDevicesByFleet(fleetUID: string): Promise<any> {
+    const devicesByFleet = await this.notehubAccessor.getDevicesByFleet(
+      fleetUID
+    );
+    return devicesByFleet;
+  }
+
+  async getFleetsByDevice(deviceID: string): Promise<Fleets> {
+    const fleetsByDevice = await this.notehubAccessor.getFleetsByDevice(
+      deviceID
+    );
+    return fleetsByDevice;
+  }
+
+  async getDeviceEnvVars(deviceID: string): Promise<DeviceEnvVars> {
+    const deviceEnvVars = await this.notehubAccessor.getDeviceEnvVars(deviceID);
+    // attach device ID to env vars for combining data later
+    return { deviceID, ...deviceEnvVars };
+  }
+
+  async getFleetEnvVars(fleetUID: string): Promise<FleetEnvVars> {
+    const fleetEnvVars = await this.notehubAccessor.getFleetEnvVars(fleetUID);
+    // attach fleet UID to env vars for combining data later
+    return { fleetUID, ...fleetEnvVars };
   }
 
   /**
