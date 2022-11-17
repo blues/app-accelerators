@@ -26,6 +26,7 @@ void loop() {
   J *req = notecard.newRequest("note.add");
   if (req) {
     JAddStringToObject(req, "file", "data.qo");
+    JAddBoolToObject(req, "sync", true);
     J *body = JCreateObject();
     if (body) {
         JAddNumberToObject(body, "flow_rate", FLOW_RATE_FLOOR + RANDOM_OFFSET);
