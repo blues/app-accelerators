@@ -10,6 +10,7 @@ import {
   Fleets,
   DeviceEnvVars,
   FleetEnvVars,
+  ValveMonitorDevice,
 } from "./AppModel";
 import { IDBuilder } from "./IDBuilder";
 import { NotificationsStore, Notification } from "./NotificationsStore";
@@ -22,6 +23,8 @@ interface AppServiceInterface {
   getDevices: () => Promise<Device[]>;
   getDevice: (deviceUID: string) => Promise<Device | null>;
   setDeviceName: (deviceUID: string, name: string) => Promise<void>;
+
+  getValveMonitorDeviceData: () => Promise<ValveMonitorDevice[]>;
 
   handleEvent(event: AppEvent): Promise<void>;
 
@@ -76,6 +79,10 @@ export default class AppService implements AppServiceInterface {
 
   async getDeviceEvents(deviceUIDs: string[]) {
     return this.dataProvider.getDeviceEvents(deviceUIDs);
+  }
+
+  async getValveMonitorDeviceData() {
+    return this.dataProvider.getValveMonitorDeviceData();
   }
 
   async getFleetsByProject() {

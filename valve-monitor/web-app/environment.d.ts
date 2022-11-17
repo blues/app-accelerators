@@ -5,7 +5,7 @@ declare global {
       HUB_AUTH_TOKEN: string;
       HUB_BASE_URL: string;
       HUB_GUI_URL: string;
-      HUB_PROJECTUID: string;
+      HUB_PROJECT_UID: string;
       TEST_NODE_ID: string;
     }
   }

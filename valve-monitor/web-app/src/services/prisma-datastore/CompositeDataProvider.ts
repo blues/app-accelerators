@@ -10,6 +10,7 @@ import {
   Fleets,
   Project,
 } from "../DomainModel";
+import { ValveMonitorDevice } from "../AppModel";
 import { NotehubAccessor } from "../notehub/NotehubAccessor";
 import { AppEventHandler } from "../AppEvent";
 
@@ -31,6 +32,10 @@ export default class CompositeDataProvider implements DataProvider {
 
   getDevice(deviceID: DeviceID): Promise<Device | null> {
     return this.prismaDataProvider.getDevice(deviceID);
+  }
+
+  getValveMonitorDeviceData(): Promise<ValveMonitorDevice[]> {
+    return this.prismaDataProvider.getValveMonitorDeviceData();
   }
 
   getDeviceEvents(deviceIDs: string[]): Promise<Event[]> {

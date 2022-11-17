@@ -31,3 +31,15 @@ export interface ProjectDataSnapshot {
   when: AppDate;
   project: Project;
 }
+
+export interface ValveMonitorDevice {
+  deviceID: string;
+  name: string;
+  lastActivity: string;
+  valveState?: string | null;
+  flowRate?: number | null;
+  // todo these are for later table functionality
+  // lastAlarm?: string | null;
+  // valveControl: string | null;  // alarmValveThreshold: number | null;
+  // flowRateFrequency: number | null;
+}

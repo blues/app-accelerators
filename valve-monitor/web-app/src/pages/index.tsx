@@ -1,6 +1,7 @@
 import { GetServerSideProps, NextPage } from "next";
 import { Alert } from "antd";
 import { services } from "../services/ServiceLocatorServer";
+import { useValveMonitorDeviceData } from "../hooks/useValveMonitorDeviceData";
 import { getErrorMessage } from "../constants/ui";
 import { ERROR_CODES } from "../services/Errors";
 import styles from "../styles/Home.module.scss";
@@ -12,6 +13,10 @@ type HomeData = {
 
 const Home: NextPage<HomeData> = ({ err }) => {
   const infoMessage = "Deploy message";
+
+  const MS_REFETCH_INTERVAL = 60000;
+  const { error: valveMonitorDevicesError, data: valveMonitorDevices } =
+    useValveMonitorDeviceData(MS_REFETCH_INTERVAL);
 
   return (
     <div className={styles.container}>
@@ -39,6 +44,8 @@ export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
 
   try {
     const appService = services().getAppService();
+    const temp = appService.getValveMonitorDeviceData();
+    console.log("temp----", temp);
 
     return {
       props: { err },
