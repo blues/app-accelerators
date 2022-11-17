@@ -1,0 +1,17 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "npm",
+      "script": "dev",
+      "options": {
+        "env": {
+          "REACT_EDITOR": "code"
+        }
+      },
+      "problemMatcher": [],
+      "label": "Template reference app (local dev)",
+      "detail": "Launch with Target Project Values"
+    }
+  ]
+}
