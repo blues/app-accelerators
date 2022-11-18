@@ -1,3 +1,4 @@
+/* eslint-disable import/no-named-as-default */
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable no-await-in-loop */
@@ -19,13 +20,23 @@ import { ValveMonitorDevice } from "../AppModel";
 import IDBuilder from "../IDBuilder";
 
 function filterEventsByDevice(device: Device, eventList: Event[]) {
-  // consider also filtering out certain event types (like alarms or notification events) as well to keep the data cleaner and more uniform
-  console.log(device.id.deviceUID, eventList);
   const filteredEvents = eventList.filter(
     (event) => event.deviceUID.deviceUID === device.id.deviceUID
   );
-  console.log("Filtered events", filteredEvents);
   return filteredEvents;
+}
+
+function assembleDeviceEventsObject(device: Device, eventList: Event[]) {
+  // there will only ever be one item in the eventList array
+  const updatedValveDeviceMonitorObj = {
+    deviceID: device.id.deviceUID,
+    name: device.name,
+    lastActivity: eventList[0].when,
+    valveState: eventList[0].value.valve_state,
+    flowRate: eventList[0].value.flow_rate,
+  };
+
+  return updatedValveDeviceMonitorObj;
 }
 
 /**
@@ -83,36 +94,29 @@ export class PrismaDataProvider implements DataProvider {
   }
 
   async getValveMonitorDeviceData(): Promise<ValveMonitorDevice[]> {
-    const valveMonitorDevices: ValveMonitorDevice[] = [];
-    const formattedValveMonitorDeviceData: ValveMonitorDevice[] = [];
+    let valveMonitorDevices: ValveMonitorDevice[] = [];
 
     // fetch all devices by project
     const devices = await this.getDevices();
-    // console.log("DEVICES--------", devices);
 
-    // fetch most most recent event for each device
-    // todo fix this tomorrow morning
-    const deviceEvents = await this.getLatestDeviceEvent(
-      devices.map((device) => device.id.deviceUID)
+    // fetch most most recent data.qo event for each device
+    const deviceEvents = await Promise.all(
+      devices.map((device) => this.getLatestDeviceEvent(device.id)).flat()
     );
-    console.log("DEVICE EVENTS", deviceEvents);
 
-    // combine data
-    const valveDeviceMonitorData = devices.map((device) => {
+    // combine data for each device and its latest event
+    valveMonitorDevices = devices.map((device) => {
       const filteredEventsByDevice = filterEventsByDevice(device, deviceEvents);
-      // console.log("FILTERED EVENTS BY DEVICE", filteredEventsByDevice);
+      const updatedValveDeviceMonitorObj = assembleDeviceEventsObject(
+        device,
+        filteredEventsByDevice
+      );
 
-      // todo make this a separate helper function
-      const updatedValveDeviceMonitorObj = {
-        deviceID: device.id.deviceUID,
-        name: device.name,
-        lastActivity: filteredEventsByDevice[0].when,
-        valveState: filteredEventsByDevice[0].value.valve_state,
-        flowRate: filteredEventsByDevice[0].value.flow_rate,
-      };
+      return updatedValveDeviceMonitorObj;
     });
 
-    return null;
+    console.log("valve monitor devs", valveMonitorDevices);
+    return valveMonitorDevices;
   }
 
   async getDeviceEvents(deviceIDs: string[]): Promise<Event[]> {
@@ -152,7 +156,7 @@ export class PrismaDataProvider implements DataProvider {
     return deviceEvents.map((event) => this.eventFromPrismaEvent(event));
   }
 
-  async getLatestDeviceEvent(deviceID: DeviceID): Promise<Event[]> {
+  async getLatestDeviceEvent(deviceID: DeviceID): Promise<Event> {
     const latestDeviceEvent = await this.prisma.event.findMany({
       where: {
         AND: {
@@ -162,7 +166,7 @@ export class PrismaDataProvider implements DataProvider {
       },
       take: -1,
     });
-    return latestDeviceEvent.map((event) => this.eventFromPrismaEvent(event));
+    return this.eventFromPrismaEvent(latestDeviceEvent[0]);
   }
 
   async getDevice(deviceID: DeviceID): Promise<Device> {

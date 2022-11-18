@@ -36,8 +36,8 @@ export interface ValveMonitorDevice {
   deviceID: string;
   name: string;
   lastActivity: string;
-  valveState?: string | null;
-  flowRate?: number | null;
+  valveState: string;
+  flowRate: number;
   // todo these are for later table functionality
   // lastAlarm?: string | null;
   // valveControl: string | null;  // alarmValveThreshold: number | null;

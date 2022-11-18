@@ -1,5 +1,4 @@
-import { Layout, Col } from "antd";
-import Config from "../../../Config";
+import { Layout } from "antd";
 import styles from "../../styles/Footer.module.scss";
 
 const FooterComponent = () => {
@@ -22,12 +21,9 @@ const FooterComponent = () => {
           </span>
         </div>
         <div>
-          <details>
-            <summary style={{ listStyle: "none", cursor: "pointer" }}>
-              About
-            </summary>
-            {Config.isBuildVersionSet() ? Config.buildVersion : <></>}
-          </details>
+          <a href="https://github.com/blues/app-accelerators/tree/main/valve-monitor">
+            About
+          </a>
         </div>
         <div>
           Developed by{` `}
