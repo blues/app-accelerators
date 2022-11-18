@@ -4,6 +4,7 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable import/prefer-default-export */
 import Prisma, { PrismaClient } from "@prisma/client";
+import { some } from "lodash";
 import { DataProvider } from "../DataProvider";
 import {
   ProjectID,
@@ -26,14 +27,28 @@ function filterEventsByDevice(device: Device, eventList: Event[]) {
   return filteredEvents;
 }
 
-function assembleDeviceEventsObject(device: Device, eventList: Event[]) {
-  // there will only ever be one item in the eventList array
+// todo make notifications a domain object?
+function filterAlarmsByDevice(device: Device, alarmList: any) {
+  const filteredAlarms = alarmList.filter((alarm) =>
+    alarm.content.includes(device.id.deviceUID)
+  );
+
+  return filteredAlarms;
+}
+
+function assembleDeviceEventsObject(
+  device: Device,
+  latestDeviceEvent: Event[],
+  alarmNotification: any
+) {
+  // there will only ever be one item in the latestDeviceEvent array
   const updatedValveDeviceMonitorObj = {
     deviceID: device.id.deviceUID,
-    name: device.name,
-    lastActivity: eventList[0].when,
-    valveState: eventList[0].value.valve_state,
-    flowRate: eventList[0].value.flow_rate,
+    name: device.name ? device.name : device.id.deviceUID,
+    lastActivity: latestDeviceEvent[0].when,
+    valveState: latestDeviceEvent[0].value.valve_state,
+    deviceFlowRate: latestDeviceEvent[0].value.flow_rate,
+    deviceAlarm: !!alarmNotification.length,
   };
 
   return updatedValveDeviceMonitorObj;
@@ -104,18 +119,28 @@ export class PrismaDataProvider implements DataProvider {
       devices.map((device) => this.getLatestDeviceEvent(device.id)).flat()
     );
 
+    // fetch latest unacknowledged alarm.qo events for each device (if they exist)
+    const deviceAlarms = await Promise.all(
+      devices.map((device) => this.getLatestDeviceAlarm(device.id)).flat()
+    );
+
     // combine data for each device and its latest event
+    // todo clean this up
     valveMonitorDevices = devices.map((device) => {
       const filteredEventsByDevice = filterEventsByDevice(device, deviceEvents);
+      let filteredAlarmsByDevice = [];
+      if (some(deviceAlarms, !undefined)) {
+        filteredAlarmsByDevice = filterAlarmsByDevice(device, deviceAlarms);
+      }
       const updatedValveDeviceMonitorObj = assembleDeviceEventsObject(
         device,
-        filteredEventsByDevice
+        filteredEventsByDevice,
+        filteredAlarmsByDevice
       );
 
       return updatedValveDeviceMonitorObj;
     });
 
-    console.log("valve monitor devs", valveMonitorDevices);
     return valveMonitorDevices;
   }
 
@@ -167,6 +192,23 @@ export class PrismaDataProvider implements DataProvider {
       take: -1,
     });
     return this.eventFromPrismaEvent(latestDeviceEvent[0]);
+  }
+
+  // todo possibly transform this returned obj like we do for events and devices?
+  async getLatestDeviceAlarm(deviceID: DeviceID): Promise<any> {
+    const latestAlarmFromDevice = await this.prisma.notification.findMany({
+      where: {
+        AND: {
+          type: "alarm.qo",
+        },
+        content: {
+          path: ["deviceID"],
+          equals: deviceID.deviceUID,
+        },
+      },
+      take: -1,
+    });
+    return latestAlarmFromDevice[0];
   }
 
   async getDevice(deviceID: DeviceID): Promise<Device> {

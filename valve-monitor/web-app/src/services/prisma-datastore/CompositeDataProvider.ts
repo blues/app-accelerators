@@ -34,8 +34,43 @@ export default class CompositeDataProvider implements DataProvider {
     return this.prismaDataProvider.getDevice(deviceID);
   }
 
-  getValveMonitorDeviceData(): Promise<ValveMonitorDevice[]> {
-    return this.prismaDataProvider.getValveMonitorDeviceData();
+  async getValveMonitorDeviceData(): Promise<ValveMonitorDevice[]> {
+    // get as much device data as is available in Prisma
+    const valveMonitorDevices =
+      await this.prismaDataProvider.getValveMonitorDeviceData();
+
+    // fetch env vars for each device
+    const deviceEnvVars = await Promise.all(
+      valveMonitorDevices.map((device) =>
+        this.getDeviceEnvVars(device.deviceID)
+      )
+    );
+
+    // combine devices with any env vars
+    const normalizedDeviceData = valveMonitorDevices.map((device) => {
+      const filteredDeviceEnvVars = deviceEnvVars.filter(
+        (deviceEnvVar) => deviceEnvVar.deviceID === device.deviceID
+      );
+
+      // todo clean this up
+      const formattedDeviceObj = {
+        ...device,
+        deviceAlarm: !device.deviceAlarm ? `-` : `!`,
+        deviceFlowRateFrequency: filteredDeviceEnvVars[0].environment_variables
+          .monitor_interval
+          ? filteredDeviceEnvVars[0].environment_variables.monitor_interval
+          : `-`,
+        deviceAlarmThreshold: filteredDeviceEnvVars[0].environment_variables
+          .flow_rate_alarm_threshold
+          ? filteredDeviceEnvVars[0].environment_variables
+              .flow_rate_alarm_threshold
+          : `-`,
+      };
+
+      return formattedDeviceObj;
+    });
+
+    return normalizedDeviceData;
   }
 
   getDeviceEvents(deviceIDs: string[]): Promise<Event[]> {
