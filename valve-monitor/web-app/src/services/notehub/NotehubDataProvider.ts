@@ -1,5 +1,6 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { ValveMonitorConfig } from "../AppModel";
 import { DataProvider } from "../DataProvider";
 import {
   Device,
@@ -75,6 +76,15 @@ export default class NotehubDataProvider implements DataProvider {
     const fleetEnvVars = await this.notehubAccessor.getFleetEnvVars(fleetUID);
     // attach fleet UID to env vars for combining data later
     return { fleetUID, ...fleetEnvVars };
+  }
+
+  async getValveMonitorConfig(fleetUID: string): Promise<ValveMonitorConfig> {
+    const fleetEnvVars =
+      await this.notehubAccessor.getEnvironmentVariablesByFleet(fleetUID);
+    const environmentVariables = fleetEnvVars.environment_variables;
+    return {
+      monitorFrequency: Number(environmentVariables?.monitor_interval),
+    };
   }
 
   /**

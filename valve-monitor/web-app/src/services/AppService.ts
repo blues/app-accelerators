@@ -8,8 +8,10 @@ import {
   ProjectID,
   Event,
   Fleets,
+  FleetID,
   DeviceEnvVars,
   FleetEnvVars,
+  ValveMonitorConfig,
 } from "./AppModel";
 import { IDBuilder } from "./IDBuilder";
 import { NotificationsStore, Notification } from "./NotificationsStore";
@@ -32,6 +34,13 @@ interface AppServiceInterface {
   getDeviceEnvVars: (deviceUID: string) => Promise<DeviceEnvVars>;
   getFleetEnvVars: (fleetUID: string) => Promise<FleetEnvVars>;
 
+  getValveMonitorConfig: () => Promise<ValveMonitorConfig>;
+  /*
+  setValveMonitorConfig: () => (
+    valveMonitorConfig: ValveMonitorConfig
+  ) => Promise<void>;
+  */
+
   getAppNotifications(): Promise<AppNotification[]>;
 }
 
@@ -40,8 +49,11 @@ export type { AppServiceInterface };
 export default class AppService implements AppServiceInterface {
   private projectID: ProjectID;
 
+  private fleetID: FleetID;
+
   constructor(
     projectUID: string,
+    fleetUID: string,
     private readonly idBuilder: IDBuilder,
     private dataProvider: DataProvider,
     private appEventHandler: AppEventHandler,
@@ -49,6 +61,7 @@ export default class AppService implements AppServiceInterface {
     private notificationStore: NotificationsStore
   ) {
     this.projectID = this.idBuilder.buildProjectID(projectUID);
+    this.fleetID = this.idBuilder.buildFleetID(fleetUID);
   }
 
   async getProject(): Promise<Project> {
@@ -114,6 +127,16 @@ export default class AppService implements AppServiceInterface {
     ).filter((e): e is AppNotification => e !== null);
     return result;
   }
+
+  async getValveMonitorConfig() {
+    return this.dataProvider.getValveMonitorConfig(this.fleetID.fleetUID);
+  }
+
+  /*
+  async setValveMonitorConfig(valveMonitorConfig: ValveMonitorConfig) {
+    
+  }
+  */
 
   private async appNotification(
     notification: Notification

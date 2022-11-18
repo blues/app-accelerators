@@ -1,6 +1,7 @@
 import * as DomainModel from "./DomainModel";
 
 export type ProjectID = DomainModel.ProjectID;
+export type FleetID = DomainModel.FleetID;
 export type DeviceID = DomainModel.DeviceID;
 export type EventID = DomainModel.EventID;
 
@@ -10,6 +11,10 @@ export type EventID = DomainModel.EventID;
 
 export interface Project extends DomainModel.Project {
   devices: Device[] | null; // null when devices are not required
+}
+
+export interface ValveMonitorConfig {
+  monitorFrequency?: number;
 }
 
 /**

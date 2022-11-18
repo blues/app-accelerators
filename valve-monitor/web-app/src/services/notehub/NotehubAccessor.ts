@@ -6,6 +6,7 @@ import NotehubDeviceConfig from "./models/NotehubDeviceConfig";
 import NoteDeviceConfigBody from "./models/NoteDeviceConfigBody";
 import NotehubFleets from "./models/NotehubFleets";
 import NotehubDevicesByFleet from "./models/NotehubDevicesByFleet";
+import NotehubEnvVarsResponse from "./models/NotehubEnvVarsResponse";
 
 // An interface for accessing Notehub APIs
 interface NotehubAccessor {
@@ -17,7 +18,13 @@ interface NotehubAccessor {
   getFleetsByProject: () => Promise<NotehubFleets>;
   getFleetsByDevice: (hubDeviceUID: string) => Promise<NotehubFleets>;
   getDeviceEnvVars: (hubDeviceUID: string) => Promise<NotehubEnvVars>;
-  getFleetEnvVars: (fleetUID: string) => Promise<NotehubEnvVars>;
+  getEnvironmentVariablesByFleet: (
+    fleetUID: string
+  ) => Promise<NotehubEnvVarsResponse>;
+  setEnvironmentVariablesByFleet: (
+    fleetUID: string,
+    envVars: NotehubEnvVars
+  ) => Promise<boolean>;
   getConfig: (
     hubDeviceUID: string,
     note: string
