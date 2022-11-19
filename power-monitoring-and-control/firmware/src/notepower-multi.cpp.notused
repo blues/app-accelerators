@@ -1,0 +1,99 @@
+// Copyright 2022 Blues Inc.  All rights reserved.
+// Use of this source code is governed by licenses granted by the
+// copyright holder including that found in the LICENSE file.
+
+#include <STM32FreeRTOS.h>
+
+#define APP_MAIN
+#include "app.h"
+
+// Forwards
+void app_main(void *);
+void task_main(void *);
+
+// Arduino entry point
+void setup()
+{
+
+    // Initialize debug IO
+    pinMode(LED_BUILTIN, OUTPUT);
+    while (!debug) ;
+    debug.begin(115200);
+    debug.println("*** " __DATE__ " " __TIME__ " ***");
+
+    // Initialize the RTOS support (see NoteRTOS.h)
+    _init();
+
+    // Initialize I2C
+    Wire.begin();
+
+    // Initialize Notecard library (without doing any I/O on this task)
+    notecard.setDebugOutputStream(debug);
+    NoteSetFn(_malloc, _free, _delay, _millis);
+    NoteSetFnMutex(_lock_wire, _unlock_wire, _lock_note, _unlock_note);
+    notecard.begin();
+
+    // Start the main task, which performs initialization assuming an active scheduler
+    portBASE_TYPE status = xTaskCreate(app_main, NULL, 4096, NULL, 0, NULL);
+    if (status != pdPASS) {
+        debug.printf("task creation error\n");
+        return;
+    }
+
+    // Start scheduler
+    vTaskStartScheduler();
+    debug.printf("scheduler failure: insufficient memory\n");
+
+}
+
+// Never to be used, because this has a microscopic stack of configMINIMAL_STACK_SIZE
+void loop()
+{
+}
+
+// Main task
+void app_main(void *)
+{
+
+    // Perform setup, including Notefile initialization on the Notecard
+    while (!appSetup()) {
+        _delay(750);
+    }
+
+    // Discover the number of instances
+    uint8_t *taskContext;
+    uint32_t tasks;
+    uint32_t *taskSchedMs;
+    uint32_t taskContextSize;
+    for (;;) {
+        tasks = appTasks(&taskSchedMs, &taskContext, &taskContextSize);
+        if (tasks > 0) {
+            break;
+        }
+        _delay(750);
+    }
+
+    // Create the tasks
+    for (uint32_t i=0; i<tasks; i++) {
+        portBASE_TYPE status = xTaskCreate(task_main, NULL, 4096, &taskContext[i*taskContextSize], 0, NULL);
+        if (status != pdPASS) {
+            debug.printf("task creation error\n");
+            return;
+        }
+    }
+
+    // Perform repetitive tasks for the app
+    for (;;) {
+        _delay(appLoop());
+    }
+
+}
+
+// Handle a single instance
+void task_main(void *context)
+{
+    taskSetup(context);
+    for (;;) {
+        _delay(taskLoop(context));
+    }
+}

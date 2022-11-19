@@ -1,0 +1,57 @@
+
+*** USING SWAN FOR ARDUINO DEVELOPMENT ***
+
+0) BEFORE DOING ANYTHING
+
+0a) Make sure that STM32CubeProgrammer V2.11.0 or later is installed.  By running STM32CubeProgrammer, if you click the (?) icon in the lower left you can see the version.  If you need to download it again: https://www.st.com/en/development-tools/stm32cubeprog.html noting that if you are a Mac user you need to unzip it, manually Explore the .app file/folder, and run the program inside it - all for privilege reasons.
+
+0b) Download the Arduino Legacy IDE (1.8.x) by going here and scrolling down.  https://www.arduino.cc/en/software
+Note that the new Arduino v2 IDE does work fine, but some menu items have been moved around and it's easier to help people if you know what they are using, which is the only reason why I'm recommending 1.8.x here.
+
+0c) in Arduino, open Preferences and add this link in the "Additional Boards Managers URLs" field in Arduino
+https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json
+
+0d) In Arduino, use Tools / Boards / Board Manager, and type "stm32 mcu" in the search box to find the STM32 MCU based boards" support package.  Make sure it is up to date, but very importantly make sure AT LEAST 2.3.0 is installed.  THE VERSION IS VERY IMPORTANT.  This will install support for the Swan.  (Note: versions prior to 2.3.0 contained a version of the STMicroelectronics firmware programming utility that could render the Swan into a complete unusable state, and so 2.3.0 is absolutely necessary.)
+
+0e) In Arduino, use Sketch / Include Library / Manage Libraries, and type "blues wireless" into the search box to find the Blues Wireless Notecard library.  Make sure that it is up to date with AT LEAST 1.3.16.  This will install support for the Notecard.  (See comment above about 2.3.0, because this version goes hand-in-hand with the Board Manager.)
+
+1) On the Tools menu, set your Arduino environment up to use Swan:
+Board: Blues Wireless Boards
+Board Part Number: Swan R5
+U(S)ART support: Enabled (generic 'Serial')
+USB support: (SEE BELOW - IT DEPENDS)
+USB speed: Low/Full Speed
+C Runtime Library: Newlib Standard
+Upload Method: (SEE BELOW - IT DEPENDS)
+Port: /dev/cu.usbmodem<...>
+
+2) Decide whether you want to use USB-based development or STLink-based development.
+
+a) If you are a normal Arduino user, you have the option for USB-based development OR STLink-based development.  However (importantly) if you are using FreeRTOS, you may only use STLink-based development because there are bugs in stm32duino that prevent USB-based development from working in conjunction with FreeRTOS.
+b) Importantly, in order to get debug output to come out on the Arduino IDE using Serial.print, put the code to initialize the serial port (and LED while you are at it) at the very top of your initialization method:
+void setup() {
+    pinMode(LED_BUILTIN, OUTPUT);							// Initialize the Swan's on-board LED
+    while (!Serial) ;										// Wait for Serial port to become available
+    Serial.begin(115200);									// Set the baud rate
+    Serial.println("*** " __DATE__ " " __TIME__ " ***");	// Print a welcome message
+
+DOING USB-based development:
+a) Make sure that your PC's USB cable is plugged into the Swan's USB port.  This will be used BOTH for loading firmware and also for getting debug output on the Arduino's Serial Monitor.
+b) Make sure that In Tools / Upload Method, "STM32Programmer (DFU)" is selected
+c) Make sure that in Tools / USB support, "CDC (generic Serial) supersede U(S)ART)" is selected
+d) Press-and-hold the black BOOT button on the Swan while then tapping the white RESET button.  (Only one tap is necessary, but some find tapping it twice ensures that it is really tapped.)  This puts the Swan into Bootloader mode.
+e) Press the -> button in the IDE, or use Sketch / Upload to program your Swan.  You should see "erasing sector" messages, "Downlaod in Progress", "File download complete", then "Start operation achieved successfully".
+f) After having done this at least once, you can now use Tools / Port to select the Swan's USB port which will now appear in the list because the Arduino program now has USB Serial support.  (This port will vary based upon whether you are on Windows, Mac, or Linux.)  At this point you may click the little magnifying glass icon in the upper right of the Arduino window, or use Tools / Serial Monitor, to show what is appearing on the monitor.
+
+DOING STLink-based development:
+a) Make sure that at the top of your .ino file you redirect the Serial port to use for debug output to go to the STLink V3 debug connector which contains a "virtual COM port" built-in.  The STLink V3 will be used BOTH for loading firmware and for getting debug output on Arduino's Serial Monitor.
+HardwareSerial Serial(PG8, PG7);
+b) Make sure that Swan has power.  Most people do this by plugging a cable into the USB port, but any way of providing the Swan with power is fine.  Note that in any case the USB port will NEITHER be used for loading firmware or for getting debug output.
+c) Make sure that an STLink V3's cable is plugged into the 14-pin debug connector, and that the STLink is connected by USB to your PC
+d) Make sure that In Tools / Upload Method, "STM32Programmer (SWD)" is selected
+e) Make sure that in Tools / USB support, "None" is selected
+f) Make sure that in Tools/Port, your STLink's virtual COM port is selected as the debug output port.  (This port will vary based upon whether you are on Windows, Mac, or Linux.)
+g) Now, whenever you Press the -> button in the IDE, or use Sketch / Upload to program your Swan, your Swan will be programmed without the need to press the Reset or Boot buttons.  And if you click the little magnifying glass icon in the upper right of the Arduino window, or use Tools / Serial Monitor, to show what is appearing on the monitor.
+
+
+
