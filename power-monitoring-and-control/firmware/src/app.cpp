@@ -27,6 +27,7 @@ pindef ioPin[] = {
 
 // Notefile/Note definitions
 #define	DATA_FILENAME			"power.qo"
+#define DATA_FIELD_APP          "app"
 #define DATA_FIELD_EVENT		"event"
 #define DATA_FIELD_INSTANCE		"instance"
 #define DATA_FIELD_VOLTAGE		"voltage"
@@ -136,6 +137,7 @@ bool appSetup(void)
 
     // Add the notefile template
     J *body = JCreateObject();
+    JAddStringToObject(body, DATA_FIELD_APP, TSTRINGV);
     JAddStringToObject(body, DATA_FIELD_EVENT, TSTRINGV);
     JAddNumberToObject(body, DATA_FIELD_INSTANCE, TUINT8);
     JAddNumberToObject(body, DATA_FIELD_VOLTAGE, TFLOAT32);
@@ -377,6 +379,7 @@ uint32_t taskLoop(void *vmcp)
     JAddNumberToObject(body, DATA_FIELD_POWERFACTOR, data.powerFactor);
     JAddNumberToObject(body, DATA_FIELD_APPARENT, data.apparentPower);
     JAddNumberToObject(body, DATA_FIELD_REACTIVE, data.reactivePower);
+    JAddStringToObject(body, DATA_FIELD_APP, APP_NAME);
     J *req = notecard.newCommand("note.add");
     JAddStringToObject(req, "file", DATA_FILENAME);
     if (reportReasons[0] != '\0') {

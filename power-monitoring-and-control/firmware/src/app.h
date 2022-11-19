@@ -42,3 +42,5 @@ bool appSetup(void);
 uint32_t appLoop(void);
 bool taskSetup(void *mcp);
 uint32_t taskLoop(void *mcp);
+
+#define APP_NAME "nf8"
