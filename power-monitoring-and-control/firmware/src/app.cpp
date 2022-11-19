@@ -14,6 +14,7 @@ typedef struct {
     const char *var;
     int pin;
     bool on;
+    bool output;
     bool init;
 } pindef;
 pindef ioPin[] = {
@@ -32,6 +33,9 @@ pindef ioPin[] = {
 #define DATA_FIELD_CURRENT		"current"
 #define DATA_FIELD_POWER		"power"
 #define DATA_FIELD_FREQUENCY	"frequency"
+#define DATA_FIELD_REACTIVE     "reactivePower"
+#define DATA_FIELD_APPARENT     "apparentPower"
+#define DATA_FIELD_POWERFACTOR  "powerFactor"
 
 // Cached copies of environment variables
 uint32_t envHeartbeatMins = 0;
@@ -53,6 +57,9 @@ typedef struct {
     uint8_t taskID;
     uint8_t i2cAddress;
     UpbeatLabs_MCP39F521 wattson;
+    float lastApparentPower;
+    float lastReactivePower;
+    float lastPowerFactor;
     float lastVoltage;
     float lastCurrent;
     float lastPower;
@@ -135,6 +142,9 @@ bool appSetup(void)
     JAddNumberToObject(body, DATA_FIELD_CURRENT, TFLOAT32);
     JAddNumberToObject(body, DATA_FIELD_POWER, TFLOAT32);
     JAddNumberToObject(body, DATA_FIELD_FREQUENCY, TFLOAT16);
+    JAddNumberToObject(body, DATA_FIELD_APPARENT, TFLOAT32);
+    JAddNumberToObject(body, DATA_FIELD_REACTIVE, TFLOAT32);
+    JAddNumberToObject(body, DATA_FIELD_POWERFACTOR, TFLOAT16);
     req = notecard.newCommand("note.template");
     JAddStringToObject(req, "file", DATA_FILENAME);
     JAddItemToObject(req, "body", body);
@@ -341,6 +351,12 @@ uint32_t taskLoop(void *vmcp)
     if (mcp->lastPower > mcp->maxPower) {
         mcp->maxPower = mcp->lastPower;
     }
+    mcp->lastReactivePower = data.reactivePower;
+    mcp->lastApparentPower = data.apparentPower;
+    mcp->lastPowerFactor = data.powerFactor;
+
+
+
 
     // Exit and come back immediately if nothing to report
     if (!reportHeartbeat && reportReasons[0] == '\0') {
@@ -358,6 +374,9 @@ uint32_t taskLoop(void *vmcp)
     JAddNumberToObject(body, DATA_FIELD_CURRENT, data.currentRMS);
     JAddNumberToObject(body, DATA_FIELD_POWER, data.activePower);
     JAddNumberToObject(body, DATA_FIELD_FREQUENCY, data.lineFrequency);
+    JAddNumberToObject(body, DATA_FIELD_POWERFACTOR, data.powerFactor);
+    JAddNumberToObject(body, DATA_FIELD_APPARENT, data.apparentPower);
+    JAddNumberToObject(body, DATA_FIELD_REACTIVE, data.reactivePower);
     J *req = notecard.newCommand("note.add");
     JAddStringToObject(req, "file", DATA_FILENAME);
     if (reportReasons[0] != '\0') {
