@@ -17,3 +17,14 @@ export async function updateValveMonitorFrequency(monitorFrequency: number) {
   });
   return response;
 }
+
+export async function updateAlarmThreshold(
+  minFlowThreshold: number,
+  maxFlowThreshold: number
+) {
+  const response = await updateFleetEnvVar({
+    minFlowThreshold,
+    maxFlowThreshold,
+  });
+  return response;
+}

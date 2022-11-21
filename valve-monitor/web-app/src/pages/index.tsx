@@ -10,6 +10,7 @@ import MonitorFrequencyCard from "../components/elements/MonitorFrequencyCard";
 import { LoadingSpinner } from "../components/layout/LoadingSpinner";
 import styles from "../styles/Home.module.scss";
 import { ValveMonitorConfig } from "../services/AppModel";
+import AlarmThresholdCard from "../components/elements/AlarmThresholdCard";
 
 type HomeData = {
   valveMonitorConfig: ValveMonitorConfig;
@@ -61,6 +62,17 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
                   setErrorMessage={setErrorMessage}
                   setIsErrored={setIsErrored}
                   setIsLoading={setIsLoading}
+                />
+              </Col>
+              <Col className="">
+                <AlarmThresholdCard
+                  currentMinFlow={2}
+                  currentMaxFlow={10}
+                  setCurrentMinFlow={() => {}}
+                  setCurrentMaxFlow={() => {}}
+                  setIsErrored={() => {}}
+                  setIsLoading={() => {}}
+                  setErrorMessage={() => {}}
                 />
               </Col>
             </Row>

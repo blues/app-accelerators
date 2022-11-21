@@ -1,6 +1,7 @@
 import { ValveMonitorConfig } from "../AppModel";
 import { AttributeStore } from "../AttributeStore";
 import { DeviceID, FleetID } from "../DomainModel";
+import NotehubEnvVars from "./models/NotehubEnvVars";
 import { NotehubAccessor } from "./NotehubAccessor";
 
 export default class NotehubAttributeStore implements AttributeStore {
@@ -16,8 +17,20 @@ export default class NotehubAttributeStore implements AttributeStore {
     fleetUID: FleetID,
     valveMonitorConfig: ValveMonitorConfig
   ) {
-    await this.accessor.setEnvironmentVariablesByFleet(fleetUID.fleetUID, {
-      monitor_interval: `${valveMonitorConfig.monitorFrequency}`,
-    });
+    const envVars = {} as NotehubEnvVars;
+    if (valveMonitorConfig.monitorFrequency !== undefined) {
+      envVars.monitor_interval = `${valveMonitorConfig.monitorFrequency}`;
+    }
+    if (valveMonitorConfig.minFlowThreshold !== undefined) {
+      envVars.flow_rate_alarm_threshold_min = `${valveMonitorConfig.minFlowThreshold}`;
+    }
+    if (valveMonitorConfig.maxFlowThreshold !== undefined) {
+      envVars.flow_rate_alarm_threshold_max = `${valveMonitorConfig.maxFlowThreshold}`;
+    }
+
+    await this.accessor.setEnvironmentVariablesByFleet(
+      fleetUID.fleetUID,
+      envVars
+    );
   }
 }

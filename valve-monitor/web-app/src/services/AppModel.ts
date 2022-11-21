@@ -15,6 +15,8 @@ export interface Project extends DomainModel.Project {
 
 export interface ValveMonitorConfig {
   monitorFrequency?: number;
+  minFlowThreshold?: number;
+  maxFlowThreshold?: number;
 }
 
 /**
