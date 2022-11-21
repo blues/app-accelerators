@@ -26,6 +26,8 @@ export const NextJsUrlManager = {
   presentNotifications: function (...notificationIDs: string[]): string {
     return NextJsUrlManager.notificationsImpl(true, ...notificationIDs);
   },
+
+  setFleetValveMonitorConfig: () => `/api/fleet/valve-monitor-config`,
 };
 
 const DEFAULT = { NextJsUrlManager };

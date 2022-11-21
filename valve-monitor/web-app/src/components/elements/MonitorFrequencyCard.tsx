@@ -1,6 +1,6 @@
 import { Card, Radio } from "antd";
 import type { RadioChangeEvent } from "antd/lib/radio";
-// import { updateNoMovementThreshold } from "../../api-client/fleetVariables";
+import { updateValveMonitorFrequency } from "../../api-client/fleetVariables";
 import { ERROR_MESSAGE } from "../../constants/ui";
 import cardStyles from "../../styles/Card.module.scss";
 import monitorFrequencyCardStyles from "../../styles/MonitorFrequencyCard.module.scss";
@@ -35,12 +35,12 @@ const MonitorFrequencyCard = (props: MonitorFrequencyProps) => {
     setIsLoading(true);
 
     try {
-      // await updateNoMovementThreshold(Number(value));
+      await updateValveMonitorFrequency(Number(value));
       setCurrentFrequency(Number(value));
     } catch (e) {
       setIsErrored(true);
       setErrorMessage("");
-      // setErrorMessage(String(ERROR_MESSAGE.UPDATE_FLEET_NO_MOVEMENT_THRESHOLD_FAILED));
+      setErrorMessage(ERROR_MESSAGE.UPDATE_FLEET_MONITOR_FREQUENCY_FAILED);
     }
     setIsLoading(false);
   };

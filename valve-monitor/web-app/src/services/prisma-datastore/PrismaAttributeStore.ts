@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
+import { ValveMonitorConfig } from "../AppModel";
 import { AttributeStore } from "../AttributeStore";
-import { DeviceID } from "../DomainModel";
+import { DeviceID, FleetID } from "../DomainModel";
 import { PrismaDataProvider } from "./PrismaDataProvider";
 
 /**
@@ -22,5 +23,14 @@ export default class PrismaAttributeStore implements AttributeStore {
         name,
       },
     });
+  }
+
+  updateValveMonitorConfig(
+    fleetUID: FleetID,
+    valveMonitorConfig: ValveMonitorConfig
+  ) {
+    // No action necessary as we don’t store environment variables in the
+    // database
+    return Promise.resolve();
   }
 }

@@ -1,10 +1,13 @@
 import { GetServerSideProps, NextPage } from "next";
+import { useRouter } from "next/router";
 import { Alert, Col, Row } from "antd";
+import { useEffect, useState } from "react";
 import { services } from "../services/ServiceLocatorServer";
 import { getErrorMessage } from "../constants/ui";
 import { ERROR_CODES } from "../services/Errors";
 import Config from "../../Config";
 import MonitorFrequencyCard from "../components/elements/MonitorFrequencyCard";
+import { LoadingSpinner } from "../components/layout/LoadingSpinner";
 import styles from "../styles/Home.module.scss";
 import { ValveMonitorConfig } from "../services/AppModel";
 
@@ -16,6 +19,24 @@ type HomeData = {
 const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
   const infoMessage = "Deploy message";
 
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isErrored, setIsErrored] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [monitorFrequency, setMonitorFrequency] = useState<number>(
+    valveMonitorConfig.monitorFrequency
+  );
+
+  const router = useRouter();
+  // refresh the page
+  const refreshData = async () => {
+    // eslint-disable-next-line no-void
+    void router.replace(router.asPath);
+  };
+
+  useEffect(() => {
+    refreshData();
+  }, [monitorFrequency]);
+
   return (
     <div className={styles.container}>
       {err ? (
@@ -26,24 +47,29 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
           dangerouslySetInnerHTML={{ __html: err }}
         />
       ) : (
-        <div>
-          <h3 className={styles.sectionTitle}>Fleet Controls</h3>
-          <Row gutter={16}>
-            <Col className={styles.motionFrequencyCard}>
-              <MonitorFrequencyCard
-                currentFrequency={valveMonitorConfig.monitorFrequency}
-                setCurrentFrequency={() => {}}
-                setErrorMessage={() => {}}
-                setIsErrored={() => {}}
-                setIsLoading={() => {}}
-              />
-            </Col>
-          </Row>
+        <LoadingSpinner isLoading={isLoading}>
+          <div>
+            {isErrored && (
+              <Alert type="error" message={errorMessage} closable />
+            )}
+            <h3 className={styles.sectionTitle}>Fleet Controls</h3>
+            <Row gutter={16}>
+              <Col className={styles.motionFrequencyCard}>
+                <MonitorFrequencyCard
+                  currentFrequency={monitorFrequency}
+                  setCurrentFrequency={setMonitorFrequency}
+                  setErrorMessage={setErrorMessage}
+                  setIsErrored={setIsErrored}
+                  setIsLoading={setIsLoading}
+                />
+              </Col>
+            </Row>
 
-          {Config.isBuildVersionSet() ? (
-            <Alert description={infoMessage} type="info" closable />
-          ) : null}
-        </div>
+            {Config.isBuildVersionSet() ? (
+              <Alert description={infoMessage} type="info" closable />
+            ) : null}
+          </div>
+        </LoadingSpinner>
       )}
     </div>
   );

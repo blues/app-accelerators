@@ -35,11 +35,9 @@ interface AppServiceInterface {
   getFleetEnvVars: (fleetUID: string) => Promise<FleetEnvVars>;
 
   getValveMonitorConfig: () => Promise<ValveMonitorConfig>;
-  /*
-  setValveMonitorConfig: () => (
+  setValveMonitorConfig: (
     valveMonitorConfig: ValveMonitorConfig
   ) => Promise<void>;
-  */
 
   getAppNotifications(): Promise<AppNotification[]>;
 }
@@ -132,11 +130,12 @@ export default class AppService implements AppServiceInterface {
     return this.dataProvider.getValveMonitorConfig(this.fleetID.fleetUID);
   }
 
-  /*
   async setValveMonitorConfig(valveMonitorConfig: ValveMonitorConfig) {
-    
+    return this.attributeStore.updateValveMonitorConfig(
+      this.fleetID,
+      valveMonitorConfig
+    );
   }
-  */
 
   private async appNotification(
     notification: Notification
