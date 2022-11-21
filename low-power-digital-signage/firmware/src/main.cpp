@@ -2,8 +2,8 @@
 #include <Wire.h>
 #include <Notecard.h>
 #include <base64_decode.h>
-#include "Adafruit_ImageReader.h"
 #include "Adafruit_ThinkInk.h"
+#include "Adafruit_ImageReader.h"
 #include "display_manager.h"
 #include "notecard_config.h"
 #include "blues_bmp.h"
