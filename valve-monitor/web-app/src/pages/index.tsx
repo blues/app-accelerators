@@ -26,6 +26,12 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
   const [monitorFrequency, setMonitorFrequency] = useState<number>(
     valveMonitorConfig.monitorFrequency
   );
+  const [minFlowThreshold, setMinFlowThreshold] = useState<number>(
+    valveMonitorConfig.minFlowThreshold
+  );
+  const [maxFlowThreshold, setMaxFlowThreshold] = useState<number>(
+    valveMonitorConfig.maxFlowThreshold
+  );
 
   const router = useRouter();
   // refresh the page
@@ -36,7 +42,7 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
 
   useEffect(() => {
     refreshData();
-  }, [monitorFrequency]);
+  }, [monitorFrequency, minFlowThreshold, maxFlowThreshold]);
 
   return (
     <div className={styles.container}>
@@ -66,13 +72,13 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
               </Col>
               <Col className="">
                 <AlarmThresholdCard
-                  currentMinFlow={2}
-                  currentMaxFlow={10}
-                  setCurrentMinFlow={() => {}}
-                  setCurrentMaxFlow={() => {}}
-                  setIsErrored={() => {}}
-                  setIsLoading={() => {}}
-                  setErrorMessage={() => {}}
+                  currentMinFlowThreshold={minFlowThreshold}
+                  currentMaxFlowThreshold={maxFlowThreshold}
+                  setCurrentMinFlowThreshold={setMinFlowThreshold}
+                  setCurrentMaxFlowThreshold={setMaxFlowThreshold}
+                  setIsErrored={setIsErrored}
+                  setIsLoading={setIsLoading}
+                  setErrorMessage={setErrorMessage}
                 />
               </Col>
             </Row>

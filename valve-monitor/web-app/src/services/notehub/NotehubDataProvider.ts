@@ -84,6 +84,12 @@ export default class NotehubDataProvider implements DataProvider {
     const environmentVariables = fleetEnvVars.environment_variables;
     return {
       monitorFrequency: Number(environmentVariables?.monitor_interval),
+      minFlowThreshold: Number(
+        environmentVariables?.flow_rate_alarm_threshold_min
+      ),
+      maxFlowThreshold: Number(
+        environmentVariables?.flow_rate_alarm_threshold_max
+      ),
     };
   }
 

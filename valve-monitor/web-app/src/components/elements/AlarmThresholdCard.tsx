@@ -5,10 +5,10 @@ import cardStyles from "../../styles/Card.module.scss";
 // import monitorFrequencyCardStyles from "../../styles/MonitorFrequencyCard.module.scss";
 
 export interface AlarmThresholdProps {
-  currentMinFlow: number;
-  currentMaxFlow: number;
-  setCurrentMinFlow: (currentMinFlow: number) => void;
-  setCurrentMaxFlow: (currentMaxFlow: number) => void;
+  currentMinFlowThreshold: number;
+  currentMaxFlowThreshold: number;
+  setCurrentMinFlowThreshold: (currentMinFlow: number) => void;
+  setCurrentMaxFlowThreshold: (currentMaxFlow: number) => void;
   setIsErrored: (isErrored: boolean) => void;
   setIsLoading: (isLoading: boolean) => void;
   setErrorMessage: (errorMessage: string) => void;
@@ -16,10 +16,10 @@ export interface AlarmThresholdProps {
 
 const AlarmThresholdCard = (props: AlarmThresholdProps) => {
   const {
-    currentMinFlow,
-    currentMaxFlow,
-    setCurrentMinFlow,
-    setCurrentMaxFlow,
+    currentMinFlowThreshold,
+    currentMaxFlowThreshold,
+    setCurrentMinFlowThreshold,
+    setCurrentMaxFlowThreshold,
     setIsErrored,
     setIsLoading,
     setErrorMessage,
@@ -28,22 +28,28 @@ const AlarmThresholdCard = (props: AlarmThresholdProps) => {
   const [form] = Form.useForm();
 
   const update = async () => {
-    const min = form.getFieldValue("min");
-    const max = form.getFieldValue("max");
-    if (min === currentMinFlow && max === currentMaxFlow) {
+    const min = Number(form.getFieldValue("min"));
+    const max = Number(form.getFieldValue("max"));
+
+    console.log(currentMinFlowThreshold, currentMaxFlowThreshold);
+    console.log(min, max);
+    console.log("---");
+
+    if (min === currentMinFlowThreshold && max === currentMaxFlowThreshold) {
       return;
     }
+
     setIsErrored(false);
     setErrorMessage("");
     setIsLoading(true);
 
     try {
       await updateAlarmThreshold(Number(min), Number(max));
-      setCurrentMinFlow(Number(min));
-      setCurrentMaxFlow(Number(max));
+      setCurrentMinFlowThreshold(Number(min));
+      setCurrentMaxFlowThreshold(Number(max));
     } catch (e) {
       setIsErrored(true);
-      setErrorMessage("");
+      // TODO: Update this message
       setErrorMessage(ERROR_MESSAGE.UPDATE_FLEET_MONITOR_FREQUENCY_FAILED);
     }
     setIsLoading(false);
@@ -60,12 +66,27 @@ const AlarmThresholdCard = (props: AlarmThresholdProps) => {
     >
       <div className="">
         <p>Configure default flow rate range</p>
-        <Form form={form}>
+        <Form
+          form={form}
+          initialValues={{
+            min: currentMinFlowThreshold,
+            max: currentMaxFlowThreshold,
+          }}
+          onFinish={update}
+        >
           <Form.Item name="min" label="Min mL/min">
-            <Input placeholder="xx.x" onBlur={update} />
+            <Input
+              placeholder="xx.x"
+              onBlur={form.submit}
+              onPressEnter={form.submit}
+            />
           </Form.Item>
           <Form.Item name="max" label="Max mL/min">
-            <Input placeholder="xx.x" onBlur={update} />
+            <Input
+              placeholder="xx.x"
+              onBlur={form.submit}
+              onPressEnter={form.submit}
+            />
           </Form.Item>
         </Form>
       </div>
