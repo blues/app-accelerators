@@ -7,7 +7,6 @@ import socketpool
 import json
 import wifi
 
-import adafruit_dotstar
 import feathers2
 import vestaboard
 from secrets import secrets
@@ -24,9 +23,6 @@ application_state = {
 
 # Make sure the 2nd LDO is turned on
 feathers2.enable_LDO2(True)
-
-# Create a DotStar instance
-dotstar = adafruit_dotstar.DotStar(board.APA102_SCK, board.APA102_MOSI, 1, brightness=0.5, auto_write=True)
 
 i2c = board.I2C()
 card = notecard.OpenI2C(i2c, 0, 0, debug=False)
@@ -156,13 +152,3 @@ while True:
         update_board(request, board_data)
 
         application_state["variables_updated"] = False
-
-    r, g, b = feathers2.dotstar_color_wheel(color_index)
-    dotstar[0] = (r, g, b, 0.5)
-    color_index += 1
-
-    if color_index == 255:
-        color_index = 0
-        feathers2.led_blink()
-
-    time.sleep(0.015)
