@@ -2,6 +2,8 @@
 
 .cardContainer {
   border: 1px solid $bw-color--grey3;
+  height: 230px;
+  margin-bottom: 15px;
 
   :global .ant-card-head {
     padding: 0;
@@ -12,16 +14,24 @@
     font-size: 14px;
     font-weight: 600;
     text-align: center;
-    padding: 8px 0 4px 0;
     background-color: $bw-color--grey0;
     color: $bw-color--brand3;
     white-space: normal;
+    height: 50px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 
   p {
     font-size: 14px;
-    font-weight: 600;
-    text-align: center;
+    color: $bw-color--brand2;
+  }
+  p span {
+    display: inline-block;
+    padding-left: 3px;
+    color: $bw-color--brand4;
   }
 
   :global .ant-card-body {
@@ -32,19 +42,11 @@
 @media screen and (max-width: $breakpoints-sm) {
   .cardContainer {
     margin: 12px 0;
+    height: auto;
 
     :global .ant-card-head-title {
-      padding: 15px 0 15px 15px;
       text-align: start;
-    }
-  }
-}
-
-@media screen and (max-width: $breakpoints-xs) {
-  .cardContainer {
-    :global .ant-card-head-title,
-    :global .ant-card-body {
-      padding: 4px 8px;
+      padding-left: 10px;
     }
   }
 }

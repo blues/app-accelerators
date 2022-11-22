@@ -19,8 +19,8 @@ export async function updateValveMonitorFrequency(monitorFrequency: number) {
 }
 
 export async function updateAlarmThreshold(
-  minFlowThreshold: number,
-  maxFlowThreshold: number
+  minFlowThreshold: number | undefined,
+  maxFlowThreshold: number | undefined
 ) {
   const response = await updateFleetEnvVar({
     minFlowThreshold,

@@ -18,6 +18,7 @@ export default class NotehubAttributeStore implements AttributeStore {
     valveMonitorConfig: ValveMonitorConfig
   ) {
     const envVars = {} as NotehubEnvVars;
+
     if (valveMonitorConfig.monitorFrequency !== undefined) {
       envVars.monitor_interval = `${valveMonitorConfig.monitorFrequency}`;
     }

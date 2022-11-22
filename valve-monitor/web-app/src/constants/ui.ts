@@ -17,6 +17,8 @@ const ERROR_MESSAGE = {
     "A project ID is required, but none was found. Ensure your environment variables are configured correctly for HUB_PROJECTUID.",
   UPDATE_FLEET_MONITOR_FREQUENCY_FAILED:
     "Failed to update the fleet’s flow monitoring frequency. If this problem persists, contact Blues support.",
+  UPDATE_ALARM_THRESHOLD_FAILED:
+    "Failed to update the fleet’s alarm thresholds. If this problem persists, contact Blues support.",
 };
 
 const getErrorMessage = (errorCode: string) => {

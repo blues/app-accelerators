@@ -1,6 +1,7 @@
 @import "_variables.scss";
 
 .radioContainer {
+  margin-top: 10px;
   :global .ant-radio-group {
     display: flex;
     flex-direction: column;
@@ -10,7 +11,7 @@
   :global span.ant-radio + * {
     font-size: 14px;
     padding-left: 14px;
-    margin: 7px 0;
+    margin: 10px 0;
   }
 
   :global .ant-radio-inner::after {
