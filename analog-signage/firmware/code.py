@@ -118,12 +118,8 @@ def update_board(req, board_data):
 
 fetch_environment_variables()
 
-# Say hello
 print("\nAnalog Display Demo")
 print("-------------------\n")
-
-# Turn on the internal blue LED
-feathers2.led_set(True)
 
 print("joining Wi-Fi network...")
 wifi.radio.connect(ssid=secrets['ssid'], password=secrets['passwd'])
