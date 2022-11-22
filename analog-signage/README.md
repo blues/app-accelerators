@@ -53,7 +53,7 @@ setting up your hardware.
 
 ## Hardware
 
-The following hardware is required to run the Indoor Floor-Level Tracker.
+The following hardware is required to run the Analog Signage demo.
 
 * [Notecarrier F](https://shop.blues.io/products/notecarrier-f)
 * [Notecard](https://shop.blues.io/products/note-wbna-500)
