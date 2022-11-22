@@ -1,69 +1,51 @@
 //SOLIDS
+$bw-color--brand0: #eff4f8; //background - because light
+$bw-color--brand1: #9ebacc; //background - because light
+$bw-color--brand2: #6695b4; //main (hightlight or rollover state or accent, depending on contrast)
+$bw-color--brand3: #416681; //main (hightlight or rollover state or accent, depending on contrast)
+$bw-color--brand4: #1b3a52; //default color of text on page
 
-// PRIMARY COLOR
-$bw-color--brand0: #d8e3eb;
-$bw-color--brand1: #9ebacc;
-$bw-color--brand2: #6695b4;
-$bw-color--brand3: #416681; //main
-$bw-color--brand4: #1b3a52;
-
-// SECONDARY COLOR
-$bw-color--blue0: #e8f9ff;
-$bw-color--blue1: #ace8ff;
+$bw-color--blue0: #e8f9ff; //background - because light
+$bw-color--blue1: #ace8ff; //background - because light
 $bw-color--blue2: #59d2ff; //hover
 $bw-color--blue3: #00b9ff; //active
-$bw-color--blue4: #009ad4;
+$bw-color--blue4: #009ad4; //links
 
-// SECONDARY COLOR
-$bw-color--teal0: #f4fcfe;
-$bw-color--teal1: #d8f6fc;
+$bw-color--teal0: #f4fcfe; //background
+$bw-color--teal1: #d8f6fc; //background
 $bw-color--teal2: #bde8f0;
-$bw-color--teal3: #8ccedb;
-$bw-color--teal4: #3b8b9a;
+$bw-color--teal3: #4daabb; //highlight state for info content, sometimes numbers, values, sometimes members
+$bw-color--teal4: #3b8b9a; //use darkest one for contrast - main informational, vlaues, numbers
 
-// SECONDARY COLOR
-$bw-color--orange0: #fbe9e7;
-$bw-color--orange1: #ffb1a0;
-$bw-color--orange2: #ff7e6d;
-$bw-color--orange3: #f9543f;
-$bw-color--orange4: #e13610;
-
-// TERTIARY COLOR
-$bw-color--green0: #f1f8e9;
-$bw-color--green1: #dcedc8;
+$bw-color--green0: #f1f8e9; //background
+$bw-color--green1: #dcedc8; //foreground hightlight
 $bw-color--green2: #c5e1a5;
 $bw-color--green3: #9ccc65;
-$bw-color--green4: #689f38;
+$bw-color--green4: #689f38; //enabled states, members, if a device is online, if a transaction is
 
-// TERTIARY COLOR
-$bw-color--yellow0: #fff8e1;
-$bw-color--yellow1: #ffecb3;
-$bw-color--yellow2: #ffe082;
-$bw-color--yellow3: #ffd54f;
-$bw-color--yellow4: #ffa000;
+$bw-color--yellow0: #fff8e1; //background
+$bw-color--yellow1: #ffecb3; //highlights (e.g. if you highlight a row)
+$bw-color--yellow2: #ffe082; //highlights (e.g. if you highlight a row)
+$bw-color--yellow3: #ffd54f; //highlights (e.g. if you highlight a row)
+$bw-color--yellow4: #ffa000; //cautionary alert
 
-// TERTIARY COLOR
 $bw-color--red0: #fdf4f5;
 $bw-color--red1: #ffcdd2;
 $bw-color--red2: #ef9a9a;
 $bw-color--red3: #ef5350; //warning
-$bw-color--red4: #dc3545;
+$bw-color--red4: #dc3545; //danger! warning!
 
-// TERTIARY COLOR
 $bw-color--purple0: #f3e5f5;
 $bw-color--purple1: #e1bee7;
 $bw-color--purple2: #ce93d8;
 $bw-color--purple3: #ba68c8;
-$bw-color--purple4: #7b1fa2;
+$bw-color--purple4: #7b1fa2; //member state (premium member or access level)
 
-// TERTIARY COLOR
-$bw-color--grey0: #f3f3f3;
+$bw-color--grey0: #f5f5f5;
 $bw-color--grey1: #eceff1;
 $bw-color--grey2: #d8dfe2;
-$bw-color--grey3: #c2c9cb;
-$bw-color--grey4: #7b858a;
-
-$bw-color--success: #4cdd6c;
+$bw-color--grey3: #c2c9cb; //muted, disabled, suboptimal text (optional info you can ignore)
+$bw-color--grey4: #7b858a; //border outlines
 
 //GRADIENTS
 //$bw-color--gradient-blue1: linear-gradient(#1B3A52,#416681,#3B8B9A);
@@ -148,22 +130,6 @@ $bw-color--success: #4cdd6c;
 }
 .bw-fgcolor--yellow4 {
   color: $bw-color--yellow4 !important;
-}
-
-.bw-fgcolor--orange0 {
-  color: $bw-color--orange0 !important;
-}
-.bw-fgcolor--orange1 {
-  color: $bw-color--orange1 !important;
-}
-.bw-fgcolor--orange2 {
-  color: $bw-color--orange2 !important;
-}
-.bw-fgcolor--orange3 {
-  color: $bw-color--orange3 !important;
-}
-.bw-fgcolor--orange4 {
-  color: $bw-color--orange4 !important;
 }
 
 .bw-fgcolor--red0 {
@@ -295,22 +261,6 @@ $bw-color--success: #4cdd6c;
   background-color: $bw-color--yellow4 !important;
 }
 
-.bw-bgcolor--orange0 {
-  background-color: $bw-color--orange0 !important;
-}
-.bw-bgcolor--orange1 {
-  background-color: $bw-color--orange1 !important;
-}
-.bw-bgcolor--orange2 {
-  background-color: $bw-color--orange2 !important;
-}
-.bw-bgcolor--orange3 {
-  background-color: $bw-color--orange3 !important;
-}
-.bw-bgcolor--orange4 {
-  background-color: $bw-color--orange4 !important;
-}
-
 .bw-bgcolor--red0 {
   background-color: $bw-color--red0 !important;
 }
@@ -360,13 +310,17 @@ $bw-color--success: #4cdd6c;
 }
 
 /**
-PRIMARY ACTION BUTTONS 
-- SIGN IN, SIGN UP, SAVE, CONFIRM, NAVIGATION - $bw-color--blue3;
-- ADD, CREATE, EDIT, UPLOAD, LINK BUTTON - $bw-color--teal3
-- DELETE, REMOVE, PURGE BUTTON - $bw-color--red3
+
+PRIMARY ACTION - $bw-color--blue3;
 ROLLOVER BUTTON STATE
-HOVER - $bw-color--grey0
-PRESSED - $bw-color--brand3
-DISABLED - $bw-color--grey3
+
+HOVER - $bw-color--grey0;
+
 https://htmlcolorcodes.com/color-chart/material-design-color-chart/
+
+You can use the logo as dark blues blue (#416681) and on hover light blue (#6695B4)
+or dark blue (#009AD4) and light blue (#00B9FF)
+However the dark blue (#1B3A52) is for static unclickable page content, not links 
+The lighter variant (#416681) is for clickable links
+
 **/

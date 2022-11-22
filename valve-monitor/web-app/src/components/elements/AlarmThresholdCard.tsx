@@ -62,7 +62,10 @@ const AlarmThresholdCard = (props: AlarmThresholdProps) => {
       <div>
         <p>
           Configure default flow rate range
-          <Tooltip title="Readings with values outside of your configured range will generate an alarm.">
+          <Tooltip
+            color="#416681"
+            title="An alarm is triggered if the valve flow rate falls outside these values."
+          >
             <InfoCircleOutlined />
           </Tooltip>
         </p>

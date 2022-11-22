@@ -34,6 +34,9 @@
     padding-left: 3px;
     color: $bw-color--brand4;
   }
+  :global .anticon {
+    color: $bw-color--brand3;
+  }
 
   :global .ant-form-item {
     margin-bottom: 5px;
@@ -41,6 +44,14 @@
 
   label {
     font-size: 14px;
+  }
+
+  :global .ant-input-number {
+    border-color: $bw-color--grey3;
+  }
+  :global .ant-input-number:focus,
+  :global .ant-input-number:hover {
+    border-color: $bw-color--blue3;
   }
 
   :global .ant-card-body {
