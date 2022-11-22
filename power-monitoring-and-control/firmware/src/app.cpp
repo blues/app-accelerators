@@ -11,19 +11,22 @@
 
 // Switched outputs
 typedef struct {
-    const char *var;
+    const char *ovar;   // output variable name
+    const char *ivar;   // input variable name
     int pin;
     bool on;
-    bool output;
+    bool output;        // pin mode is output when true, input when false.
     bool init;
+    
 } pindef;
 pindef ioPin[] = {
-    {.var = "switch1", .pin = D10, .on = false, .init = false},
-    {.var = "switch2", .pin = D11, .on = false, .init = false},
-    {.var = "switch3", .pin = D12, .on = false, .init = false},
-    {.var = "switch4", .pin = D13, .on = false, .init = false},
+    {.ovar = "switch1", .ivar = "input1", .pin = D10, .on = false, .init = false},
+    {.ovar = "switch2", .ivar = "input2", .pin = D11, .on = false, .init = false},
+    {.ovar = "switch3", .ivar = "input3", .pin = D12, .on = false, .init = false},
+    {.ovar = "switch4", .ivar = "input4", .pin = D13, .on = false, .init = false},
 };
 #define ioPins ((int)(sizeof(ioPin)/sizeof(ioPin[0])))
+
 
 // Notefile/Note definitions
 #define	DATA_FILENAME			"power.qo"
@@ -37,6 +40,7 @@ pindef ioPin[] = {
 #define DATA_FIELD_REACTIVE     "reactivePower"
 #define DATA_FIELD_APPARENT     "apparentPower"
 #define DATA_FIELD_POWERFACTOR  "powerFactor"
+#define DATA_FIELD_PIN_ACTIVE       "pinActive"
 
 // Cached copies of environment variables
 uint32_t envHeartbeatMins = 0;
@@ -118,11 +122,6 @@ uint32_t appTasks(uint32_t **taskSchedMs, uint8_t **contextBase, uint32_t *conte
 bool appSetup(void)
 {
 
-    // Inititialize digital I/O's for switches
-    for (int i=0; i<ioPins; i++) {
-        pinMode(ioPin[i].pin, OUTPUT);
-    }
-
     // Initialize the Notecard for I2C and for the rtos
     J *req = notecard.newRequest("hub.set");
     JAddStringToObject(req, "product", NOTEHUB_PRODUCT_UID);
@@ -147,6 +146,8 @@ bool appSetup(void)
     JAddNumberToObject(body, DATA_FIELD_APPARENT, TFLOAT32);
     JAddNumberToObject(body, DATA_FIELD_REACTIVE, TFLOAT32);
     JAddNumberToObject(body, DATA_FIELD_POWERFACTOR, TFLOAT16);
+    JAddBoolToObject(body, DATA_FIELD_PIN_ACTIVE, TBOOL);
+
     req = notecard.newCommand("note.template");
     JAddStringToObject(req, "file", DATA_FILENAME);
     JAddItemToObject(req, "body", body);
@@ -261,6 +262,12 @@ bool taskSetup(void *vmcp)
 
 }
 
+void updatePinState(pindef& ioPin) {
+    if (ioPin.init && !ioPin.output) {
+        ioPin.on = digitalRead(ioPin.pin)==HIGH;
+    }
+}
+
 // Per-task loop
 uint32_t taskLoop(void *vmcp)
 {
@@ -357,8 +364,10 @@ uint32_t taskLoop(void *vmcp)
     mcp->lastApparentPower = data.apparentPower;
     mcp->lastPowerFactor = data.powerFactor;
 
-
-
+    // update input pin state
+    for (int i=0; i<ioPins; i++) {
+        updatePinState(ioPin[i]);
+    }
 
     // Exit and come back immediately if nothing to report
     if (!reportHeartbeat && reportReasons[0] == '\0') {
@@ -367,10 +376,9 @@ uint32_t taskLoop(void *vmcp)
 
     // Generate a report
     J *body = NoteNewBody();
-    JAddNumberToObject(body, DATA_FIELD_INSTANCE, mcp->taskID);
+    JAddNumberToObject(body, DATA_FIELD_INSTANCE, mcp->taskID+1);
     if (reportReasons[0] != '\0') {
-        // skip the first comma
-        JAddStringToObject(body, DATA_FIELD_EVENT, &reportReasons[1]);
+        JAddStringToObject(body, DATA_FIELD_EVENT, &reportReasons[1]);         // [1] skip the first comma
     }
     JAddNumberToObject(body, DATA_FIELD_VOLTAGE, data.voltageRMS);
     JAddNumberToObject(body, DATA_FIELD_CURRENT, data.currentRMS);
@@ -380,6 +388,12 @@ uint32_t taskLoop(void *vmcp)
     JAddNumberToObject(body, DATA_FIELD_APPARENT, data.apparentPower);
     JAddNumberToObject(body, DATA_FIELD_REACTIVE, data.reactivePower);
     JAddStringToObject(body, DATA_FIELD_APP, APP_NAME);
+
+    pindef& pin = ioPin[mcp->taskID];
+    if (pin.init) {
+        JAddBoolToObject(body, DATA_FIELD_PIN_ACTIVE, pin.on);
+    }
+
     J *req = notecard.newCommand("note.add");
     JAddStringToObject(req, "file", DATA_FILENAME);
     if (reportReasons[0] != '\0') {
@@ -418,7 +432,52 @@ bool refreshEnvironmentVars()
     // Done
     notecard.deleteResponse(rsp);
     return true;
+}
 
+
+int8_t parsePinSetting(const char* v) {
+    if (0 == strcmp(v, "1") || 0 == strcmp(v, "on") || 0 == strcmp(v, "true")) {
+        return 1;
+    }
+    if (0 == strcmp(v, "0") || 0 == strcmp(v, "off") || 0 == strcmp(v, "false")) {
+        return 0;
+    }
+    return -1;
+}
+
+void updatePinFromEnvironment(J *body, pindef& ioPin)
+{
+    const char *output = JGetString(body, ioPin.ovar);
+    const char *input = JGetString(body, ioPin.ivar);
+
+    int8_t outputSetting = parsePinSetting(output);
+    int8_t inputSetting = parsePinSetting(input);
+
+    if (outputSetting>=0) {
+        if (!ioPin.output || !ioPin.init) {
+            pinMode(ioPin.pin, OUTPUT);
+            ioPin.output = true;
+            ioPin.on = !outputSetting;    // enure pin state is set below
+            ioPin.init = true;
+        }
+        if (outputSetting != ioPin.on) { // output state has changed
+            digitalWrite(ioPin.pin, outputSetting==1 ? HIGH : LOW);
+            ioPin.on = outputSetting;
+        }
+    }
+    else if (inputSetting==1) {
+        if (ioPin.output || !ioPin.init) {
+            pinMode(ioPin.pin, INPUT);
+            ioPin.output = false;
+            ioPin.init = true;
+        }
+        updatePinState(ioPin);
+    }
+    else {
+        ioPin.init = false;
+        pinMode(ioPin.pin, INPUT);
+        // ideally we would uninitialize the pin here, but for now, set it to input
+    }
 }
 
 // Update the environment from the body
@@ -454,22 +513,7 @@ void updateEnvironment(J *body)
 
     // Turn on/off each switch as it changes
     for (int i=0; i<ioPins; i++) {
-        const char *v = JGetString(body, ioPin[i].var);
-        if (0 == strcmp(v, "1") || 0 == strcmp(v, "on")) {
-            if (!ioPin[i].on || !ioPin[i].init) {
-                digitalWrite(ioPin[i].pin, HIGH);
-                ioPin[i].on = true;
-                ioPin[i].init = true;
-            }
-        } else if (0 == strcmp(v, "0")|| 0 == strcmp(v, "off")) {
-            if (ioPin[i].on || !ioPin[i].init) {
-                digitalWrite(ioPin[i].pin, LOW);
-                ioPin[i].on = false;
-                ioPin[i].init = true;
-            }
-        } else {
-            ioPin[i].init = false;
-        }
+        updatePinFromEnvironment(body, ioPin[i]);
     }
 
 }
