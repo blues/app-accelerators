@@ -74,7 +74,6 @@ def map_env_vars():
     for key, value in application_state["lines"].items():
         row_state = []
         key_index = int(key[-1]) + 1
-        # print(key, '->', key_index, '->', value)
 
         if value['delay'] is 'true':
             row_state.extend([vestaboard.character_codes['red'], 0])
@@ -126,9 +125,6 @@ print("-------------------\n")
 # Turn on the internal blue LED
 feathers2.led_set(True)
 
-# Create a colour wheel index int
-color_index = 0
-
 print("joining Wi-Fi network...")
 wifi.radio.connect(ssid=secrets['ssid'], password=secrets['passwd'])
 
@@ -137,6 +133,7 @@ print("IP addr:", wifi.radio.ipv4_address)
 pool = socketpool.SocketPool(wifi.radio)
 request = adafruit_requests.Session(pool)
 
+# For first run, set the board default display
 setup_board(request)
 
 while True:
