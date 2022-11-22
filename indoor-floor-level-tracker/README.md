@@ -64,7 +64,7 @@ setting up your hardware.
 
 The following hardware is required to run the Indoor Floor-Level Tracker.
 
-* [Feather Starter Kit for Swan](https://shop.blues.io/products/notecarrier-swan)
+* [Blues Starter Kit](https://shop.blues.io/products/blues-starter-kit-for-north-america)
 * [BMP581](https://www.sparkfun.com/products/20170)
 * [Qwiic Cable](https://www.sparkfun.com/products/14427)
 
