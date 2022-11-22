@@ -62,7 +62,7 @@ const AlarmThresholdCard = (props: AlarmThresholdProps) => {
       <div>
         <p>
           Configure default flow rate range
-          <Tooltip title="Flow rate readings with a value outside of your configured range will generate an alarm.">
+          <Tooltip title="Readings with values outside of your configured range will generate an alarm.">
             <InfoCircleOutlined />
           </Tooltip>
         </p>
@@ -73,6 +73,7 @@ const AlarmThresholdCard = (props: AlarmThresholdProps) => {
             max: currentMaxFlowThreshold,
           }}
           onFinish={update}
+          layout="vertical"
         >
           <Form.Item name="min" label="Min mL/min">
             <InputNumber

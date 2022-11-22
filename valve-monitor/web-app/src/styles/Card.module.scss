@@ -2,7 +2,7 @@
 
 .cardContainer {
   border: 1px solid $bw-color--grey3;
-  height: 230px;
+  height: 250px;
   margin-bottom: 15px;
 
   :global .ant-card-head {
@@ -27,11 +27,20 @@
   p {
     font-size: 14px;
     color: $bw-color--brand2;
+    margin-bottom: 5px;
   }
   p span {
     display: inline-block;
     padding-left: 3px;
     color: $bw-color--brand4;
+  }
+
+  :global .ant-form-item {
+    margin-bottom: 5px;
+  }
+
+  label {
+    font-size: 14px;
   }
 
   :global .ant-card-body {
