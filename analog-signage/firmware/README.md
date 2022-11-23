@@ -5,16 +5,17 @@ The Analog Signage Demo's firmware is built using [CircuitPython](https://circui
 ## Prerequisites
 
 1. Download the .UF2 or .BIN for your MCU from CircuitPython.org. For example, the release files for the FeatherS2 can be found [here](https://circuitpython.org/board/unexpectedmaker_feathers2/).
-1. Follow the instructions at [CircuitPython.org](https://learn.adafruit.com/welcome-to-circuitpython/installing-circuitpython) to program your device.
-1. Download the [Adafruit Libraries bundle](https://circuitpython.org/libraries)
-1. Unzip the bundle, find the `adafruit_requests.mpy` file and drag it into the `lib` folder of the `CIRCUITPY` drive mounted to your machine.
-1. Download the Notecard Python library from [GitHub](https://github.com/blues/note-python)
+2. Follow the instructions at [CircuitPython.org](https://learn.adafruit.com/welcome-to-circuitpython/installing-circuitpython) to program your device.
+3. Download the [Adafruit Libraries bundle](https://circuitpython.org/libraries)
+4. Unzip the bundle, find the `adafruit_requests.mpy` file and drag it into the `lib` folder of the `CIRCUITPY` drive mounted to your machine.
+5. Download the Notecard Python library from [GitHub](https://github.com/blues/note-python)
 
   ![note-python Download](https://dev.blues.io/_next/static/media/note-python.c43d4b57.png)
 
 1. In the downloaded `note-python` directory, drag the `notecard` folder into the `lib` folder of the `CIRCUITPY` drive mounted to your machine. See [here](https://dev.blues.io/guides-and-tutorials/collecting-sensor-data/notecarrier-f/
 
   ![note-python installation for CircuitPython](https://dev.blues.io/_next/static/media/install-note-python.68e5d1f7.png)
+
 
 ## Firmware Overview
 
