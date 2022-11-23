@@ -4,6 +4,7 @@
 
 #include "app.h"
 #include "UpbeatLabs_MCP39F521.h"
+#include "TicksTimer.h"
 
 // MCP Hardware definitions
 #define	MCP_I2C_ADDRESS_BASE	0x74
@@ -17,8 +18,8 @@ typedef struct {
     bool on;
     bool output;        // pin mode is output when true, input when false.
     bool init;
-    
 } pindef;
+
 pindef ioPin[] = {
     {.ovar = "switch1", .ivar = "input1", .pin = D10, .on = false, .init = false},
     {.ovar = "switch2", .ivar = "input2", .pin = D11, .on = false, .init = false},
@@ -40,7 +41,7 @@ pindef ioPin[] = {
 #define DATA_FIELD_REACTIVE     "reactivePower"
 #define DATA_FIELD_APPARENT     "apparentPower"
 #define DATA_FIELD_POWERFACTOR  "powerFactor"
-#define DATA_FIELD_PIN_ACTIVE       "pinActive"
+#define DATA_FIELD_PIN_ACTIVE   "pinActive"
 
 // Cached copies of environment variables
 uint32_t envHeartbeatMins = 0;
@@ -56,6 +57,12 @@ float envPowerChange = 0;
 
 // Time used to determine whether or not we should refresh the environment vars
 int64_t environmentModifiedTime = 0;
+
+enum class PowerActivityAlert {
+    NONE,   /* no alerts related to activity of the line pin */
+    LOAD,   /* power is supplied to a load, should be 0 power consumed when inactive */
+    SUPPLY  /* power is provided by a supply, current and voltage should be 0 when off. */
+};
 
 // MCP-specific context used to manage instances.
 typedef struct {
@@ -73,10 +80,16 @@ typedef struct {
     float maxPower;
     JTIME heartbeatDue;
     uint32_t heartbeatMins;
+    PowerActivityAlert activityAlert;
+    float startup;              // duration in seconds
+    float shutdown;             // duration in seconds
+    ArduinoTicksTimer suppressActivityAlarmUntil;    // when alarm suppression begins
     bool first;
 } mcpContext;
 mcpContext mcp[MCP_I2C_INSTANCES];
 uint32_t mcpSchedMs[MCP_I2C_INSTANCES];
+
+static_assert(MCP_I2C_INSTANCES==ioPins, "Each MCP instance should have a dedicated IO pin.");
 
 // Forwards
 bool refreshEnvironmentVars(void);
@@ -268,6 +281,47 @@ void updatePinState(pindef& ioPin) {
     }
 }
 
+// Nominal voltage/current for 0
+#define ZERO_VOLTS (0.1)
+#define ZERO_AMPS (0.1)
+
+enum class PowerCheck {
+    NORMAL,  /* no additional checks for power being present are done beyond the under/over checks */
+    PRESENT, /* Power is expected since the activation pin indicates the device is active */
+    NOT_PRESENT, /* Power is not expected since the activation pin indicates the device is not active */
+};
+
+PowerCheck voltageActivityCheckRequired(mcpContext* mcp, pindef& pin) {
+    if (!pin.init) {
+        // activity monitoring requires the corresponding pin to be configured
+        return PowerCheck::NORMAL;
+    }
+    PowerCheck result;
+    switch (mcp->activityAlert) {
+        case PowerActivityAlert::NONE: result = PowerCheck::NORMAL; break;       // activity checks not configured for this line
+        case PowerActivityAlert::LOAD: result = PowerCheck::PRESENT; break;      // load is always supplied with voltage
+        case PowerActivityAlert::SUPPLY: result = pin.on ? PowerCheck::PRESENT : PowerCheck::NOT_PRESENT; break;   // supply provides voltage when on
+    }
+    return result;
+}
+
+PowerCheck currentActivityCheckRequired(mcpContext* mcp, pindef& pin) {
+    if (!pin.init || mcp->activityAlert==PowerActivityAlert::NONE) {
+        // activity monitoring requires the corresponding pin to be configured
+        return PowerCheck::NORMAL;
+    }
+    PowerCheck result;
+    switch (mcp->activityAlert) {
+        case PowerActivityAlert::NONE: result = PowerCheck::NORMAL; break;
+        // load is expected to draw current while it's on
+        case PowerActivityAlert::LOAD: result = pin.on ? PowerCheck::PRESENT : PowerCheck::NOT_PRESENT; break;       
+        // supply may or may not be showing a current measurement depending on the activity of the load
+        case PowerActivityAlert::SUPPLY: result = PowerCheck::NORMAL; break;
+    }
+    return result;
+}
+
+
 // Per-task loop
 uint32_t taskLoop(void *vmcp)
 {
@@ -314,37 +368,66 @@ uint32_t taskLoop(void *vmcp)
         mcp->maxPower = mcp->lastPower = data.activePower;
     }
 
+    for (int i=0; i<ioPins; i++) {
+        updatePinState(ioPin[i]);
+    }
+
+    pindef& pin = ioPin[mcp->taskID];
+    PowerCheck voltageActivityCheck = currentActivityCheckRequired(mcp, pin);
+    PowerCheck currentActivityCheck = voltageActivityCheckRequired(mcp, pin);
+
     // Determine if anything requires an alert
     char reportReasons[256] = {'\0'};
-    if (envVoltageUnder != 0 && data.voltageRMS < envVoltageUnder) {
-        strlcat(reportReasons, ",undervoltage", sizeof(reportReasons));
+    if (voltageActivityCheck != PowerCheck::NOT_PRESENT) {
+        if (envVoltageUnder != 0 && data.voltageRMS < envVoltageUnder) {
+            strlcat(reportReasons, ",undervoltage", sizeof(reportReasons));
+        }
+        if (envVoltageOver != 0 && data.voltageRMS > envVoltageOver) {
+            strlcat(reportReasons, ",overvoltage", sizeof(reportReasons));
+        }
+        float d = mcp->maxVoltage * (envVoltageChange * 0.01) < 1 ? 1 : mcp->maxVoltage * (envVoltageChange * 0.01);
+        if (envVoltageChange != 0 && ((data.voltageRMS < mcp->lastVoltage-d) || data.voltageRMS > mcp->lastVoltage+d)) {
+            strlcat(reportReasons, ",voltage", sizeof(reportReasons));
+        }
+        if (voltageActivityCheck==PowerCheck::PRESENT && data.voltageRMS <= ZERO_VOLTS) {
+            strlcat(reportReasons, ",powerfailure", sizeof(reportReasons));
+        }
     }
-    if (envVoltageOver != 0 && data.voltageRMS > envVoltageOver) {
-        strlcat(reportReasons, ",overvoltage", sizeof(reportReasons));
+    else {
+        if (data.voltageRMS > ZERO_VOLTS) {
+            strlcat(reportReasons, ",inactivevoltage", sizeof(reportReasons));
+        }
     }
-    float d = mcp->maxVoltage * (envVoltageChange * 0.01) < 1 ? 1 : mcp->maxVoltage * (envVoltageChange * 0.01);
-    if (envVoltageChange != 0 && ((data.voltageRMS < mcp->lastVoltage-d) || data.voltageRMS > mcp->lastVoltage+d)) {
-        strlcat(reportReasons, ",voltage", sizeof(reportReasons));
+
+    if (currentActivityCheck != PowerCheck::NOT_PRESENT) {
+        if (envCurrentUnder != 0 && data.currentRMS < envCurrentUnder) {
+            strlcat(reportReasons, ",undercurrent", sizeof(reportReasons));
+        }
+        if (envCurrentOver != 0 && data.currentRMS > envCurrentOver) {
+            strlcat(reportReasons, ",overcurrent", sizeof(reportReasons));
+        }
+        float d = mcp->maxCurrent * (envCurrentChange * 0.01) < 1 ? 1 : mcp->maxCurrent * (envCurrentChange * 0.01);
+        if (envCurrentChange != 0 && ((data.currentRMS < mcp->lastCurrent-d) || data.currentRMS > mcp->lastCurrent+d)) {
+            strlcat(reportReasons, ",current", sizeof(reportReasons));
+        }
+        if (envPowerUnder != 0 && data.activePower < envPowerUnder) {
+            strlcat(reportReasons, ",underpower", sizeof(reportReasons));
+        }
+        if (envPowerOver != 0 && data.activePower > envPowerOver) {
+            strlcat(reportReasons, ",overpower", sizeof(reportReasons));
+        }
+        d = mcp->maxPower * (envPowerChange * 0.01) < 1 ? 1 : mcp->maxPower * (envPowerChange * 0.01);
+        if (envPowerChange != 0 && ((data.activePower < mcp->lastPower-d) || data.activePower > mcp->lastPower+d)) {
+            strlcat(reportReasons, ",power", sizeof(reportReasons));
+        }
+        if (currentActivityCheck == PowerCheck::PRESENT && data.currentRMS <= ZERO_AMPS) {
+            strlcat(reportReasons, ",inactivecurrent", sizeof(reportReasons));
+        }
     }
-    if (envCurrentUnder != 0 && data.currentRMS < envCurrentUnder) {
-        strlcat(reportReasons, ",undercurrent", sizeof(reportReasons));
-    }
-    if (envCurrentOver != 0 && data.currentRMS > envCurrentOver) {
-        strlcat(reportReasons, ",overcurrent", sizeof(reportReasons));
-    }
-    d = mcp->maxCurrent * (envCurrentChange * 0.01) < 1 ? 1 : mcp->maxCurrent * (envCurrentChange * 0.01);
-    if (envCurrentChange != 0 && ((data.currentRMS < mcp->lastCurrent-d) || data.currentRMS > mcp->lastCurrent+d)) {
-        strlcat(reportReasons, ",current", sizeof(reportReasons));
-    }
-    if (envPowerUnder != 0 && data.activePower < envPowerUnder) {
-        strlcat(reportReasons, ",underpower", sizeof(reportReasons));
-    }
-    if (envPowerOver != 0 && data.activePower > envPowerOver) {
-        strlcat(reportReasons, ",overpower", sizeof(reportReasons));
-    }
-    d = mcp->maxPower * (envPowerChange * 0.01) < 1 ? 1 : mcp->maxPower * (envPowerChange * 0.01);
-    if (envPowerChange != 0 && ((data.activePower < mcp->lastPower-d) || data.activePower > mcp->lastPower+d)) {
-        strlcat(reportReasons, ",power", sizeof(reportReasons));
+    else {
+        if (data.currentRMS > ZERO_AMPS) {
+            strlcat(reportReasons, ",inactivecurrent", sizeof(reportReasons));
+        }
     }
 
     // Remember state for next time
@@ -364,14 +447,15 @@ uint32_t taskLoop(void *vmcp)
     mcp->lastApparentPower = data.apparentPower;
     mcp->lastPowerFactor = data.powerFactor;
 
-    // update input pin state
-    for (int i=0; i<ioPins; i++) {
-        updatePinState(ioPin[i]);
-    }
-
     // Exit and come back immediately if nothing to report
-    if (!reportHeartbeat && reportReasons[0] == '\0') {
-        return quickly;
+    if (!reportHeartbeat) {
+        if (reportReasons[0] == '\0') {
+            return quickly;
+        }
+        else if (!mcp->suppressActivityAlarmUntil.hasElapsed()) {
+            debug.printf("mcp %d: suppressing alarms %s\n", mcp->taskID, reportReasons[1]);
+            return quickly;
+        }
     }
 
     // Generate a report
@@ -389,7 +473,6 @@ uint32_t taskLoop(void *vmcp)
     JAddNumberToObject(body, DATA_FIELD_REACTIVE, data.reactivePower);
     JAddStringToObject(body, DATA_FIELD_APP, APP_NAME);
 
-    pindef& pin = ioPin[mcp->taskID];
     if (pin.init) {
         JAddBoolToObject(body, DATA_FIELD_PIN_ACTIVE, pin.on);
     }
@@ -405,6 +488,16 @@ uint32_t taskLoop(void *vmcp)
     // Come back immediately
     return quickly;
 }
+
+void activityChanged(bool active, int pinIndex) {
+    mcpContext& mcp = ::mcp[pinIndex];
+    if (mcp.taskID) {
+        float duration = active ? mcp.startup : mcp.shutdown;
+        mcp.suppressActivityAlarmUntil.set(duration*1000);
+    }
+}
+
+
 
 // Re-load all env vars, returning the modified time
 bool refreshEnvironmentVars()
@@ -445,8 +538,9 @@ int8_t parsePinSetting(const char* v) {
     return -1;
 }
 
-void updatePinFromEnvironment(J *body, pindef& ioPin)
+bool updatePinFromEnvironment(J *body, pindef& ioPin)
 {
+    bool changed = false;
     const char *output = JGetString(body, ioPin.ovar);
     const char *input = JGetString(body, ioPin.ivar);
 
@@ -459,8 +553,10 @@ void updatePinFromEnvironment(J *body, pindef& ioPin)
             ioPin.output = true;
             ioPin.on = !outputSetting;    // enure pin state is set below
             ioPin.init = true;
+            changed = true;
         }
         if (outputSetting != ioPin.on) { // output state has changed
+            changed = true;
             digitalWrite(ioPin.pin, outputSetting==1 ? HIGH : LOW);
             ioPin.on = outputSetting;
         }
@@ -470,15 +566,49 @@ void updatePinFromEnvironment(J *body, pindef& ioPin)
             pinMode(ioPin.pin, INPUT);
             ioPin.output = false;
             ioPin.init = true;
+            changed = true;
         }
+        bool oldState = ioPin.on;
         updatePinState(ioPin);
+        changed = oldState != ioPin.on;
     }
     else {
         ioPin.init = false;
         pinMode(ioPin.pin, INPUT);
         // ideally we would uninitialize the pin here, but for now, set it to input
     }
+    return changed;
 }
+
+const char* getLineEnvironmentVariable(int8_t mcp, J* body, const char* name) {
+    char varName[strlen(name)+3];
+    const char* result = nullptr;
+    if (mcp>=0) {
+        sprintf(varName, "%s_%d", name, mcp+1);
+        result = JGetString(body, varName);
+    }
+    if (!result || strlen(result)==0) {
+        result = JGetString(body, name);
+    }
+    return result;
+}
+
+void updateMCPEnvironment(J* body, mcpContext& mcp)
+{
+    const char* alert = getLineEnvironmentVariable(mcp.taskID, body, "alert_power_activity");
+    PowerActivityAlert alertType = PowerActivityAlert::NONE;
+    if (!strcmp(alert, "load")) {
+        alertType = PowerActivityAlert::LOAD;
+    }
+    else if (!strcmp(alert, "supply")) {
+        alertType = PowerActivityAlert::SUPPLY;
+    }
+    mcp.activityAlert = alertType;
+
+    mcp.startup = JAtoN(getLineEnvironmentVariable(mcp.taskID, body, "power_activity_startup_secs"), nullptr);
+    mcp.shutdown = JAtoN(getLineEnvironmentVariable(mcp.taskID, body, "power_activity_shutdown_secs"), nullptr);
+}
+
 
 // Update the environment from the body
 void updateEnvironment(J *body)
@@ -513,7 +643,14 @@ void updateEnvironment(J *body)
 
     // Turn on/off each switch as it changes
     for (int i=0; i<ioPins; i++) {
-        updatePinFromEnvironment(body, ioPin[i]);
+        if (updatePinFromEnvironment(body, ioPin[i])) {
+            activityChanged(ioPin[i].on, i);
+        }
     }
 
+    for (int i=0; i<MCP_I2C_INSTANCES; i++) {
+        if (mcp[i].i2cAddress) {
+            updateMCPEnvironment(body, mcp[i]);
+        }
+    }
 }
