@@ -78,6 +78,3 @@ running on your device.
 The Analog Signage project has custom firmware that runs on
 the FeatherS2 device. As a next step, complete the [firmware’s setup guide](firmware/)
 to get your firmware up and running.
-
-
-
