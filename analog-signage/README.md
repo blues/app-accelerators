@@ -65,7 +65,7 @@ Please note that the included firmware is optimized for the FeatherS2 MCU and Ve
 The Notecard, FeatherS2 microcontroller connect
 to the Notecarrier-F as shown in the image below.
 
-![The final assembled hardware](images/hardware-build.png)
+![The final assembled hardware](images/hardware_build.png)
 
 > **NOTE**: For a detailed look at how to connect the hardware, refer to the
 [Notecard and Notecarrier-F quickstart guide](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/).
