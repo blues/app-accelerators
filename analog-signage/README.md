@@ -3,7 +3,7 @@
 Use the Notecard and a Wi-Fi-capable MCU to update character values on an analog split-flap display.
 
 This project is built around a hypothetical entity, "Blues Railway," which manages a number of train stations throughout the United States. Each station contains a set of analog split-flap displays that provide visitors with real-time departure
-information like city, track, time, and whether there is a delay. Departure information is set across the station using Fleet-level Notehub environment variables. Variable changes are sent to the Notecard and delivered to a Host MCU. The host MCU then uses its on-board Wi-Fi Connection to communicate with the signs in the facility and update the displayed information.
+information like city, track, time, and whether there is a delay. Departure information is set across the station using Fleet-level Notehub environment variables. Variable changes are sent to the Notecard and delivered to a Host MCU. The host MCU then uses its on-board Wi-Fi connection to communicate with the signs in the facility and update the displayed information.
 
 To run this project yourself you'll need to:
 
