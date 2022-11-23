@@ -6,7 +6,7 @@ The Analog Signage Demo's firmware is built using [CircuitPython](https://circui
 
 1. Download the .UF2 or .BIN for your MCU from CircuitPython.org. For example, the release files for the FeatherS2 can be found [here](https://circuitpython.org/board/unexpectedmaker_feathers2/).
 1. Follow the instructions at [CircuitPython.org](https://circuitpython.org) to program your device.
-1. Download the [Adafruit Libraries bundle](https://circuitpython.org/libraries)
+1. Download the [Adafruit Libraries bundle](https://circuitpython.org/libraries).
 1. Unzip the bundle, find the `adafruit_requests.mpy` file and drag it into the `lib` folder of the `CIRCUITPY` drive mounted to your machine.
 1. Download the Notecard Python library from [GitHub](https://github.com/blues/note-python).
 1. In the downloaded `note-python` directory, drag the `notecard` folder into the `lib` folder of the `CIRCUITPY` drive mounted to your machine.
