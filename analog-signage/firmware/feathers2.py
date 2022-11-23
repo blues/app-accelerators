@@ -13,7 +13,7 @@ from digitalio import DigitalInOut, Direction, Pull
 # Helper functions
 
 def led_blink():
-    """Set the internal LED IO13 to it's inverse state"""
+    """Set the internal LED IO13 to its inverse state"""
     led13.value = not led13.value
 
 def led_set( state ):
