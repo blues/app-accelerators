@@ -59,8 +59,7 @@ A smarter mouse trap with SMS alerting.
 A device to keep a fleet of digital displays synchronized across a facility.
 
 <p>
-  <a href="#"><b>📚 Read About the Project</b></a> •
-  <a href="./analog-signage/"><b>🔧 Start Building</b></a>
+  Details coming soon!
 </p>
 
 ---
@@ -70,7 +69,7 @@ A device to keep a fleet of digital displays synchronized across a facility.
 Use the Notecard and a Wi-Fi-capable MCU to update character values on an analog split-flap display.
 
 <p>
-  Details coming soon!
+  <a href="./analog-signage/"><b>🔧 Start Building</b></a>
 </p>
 
 ---
