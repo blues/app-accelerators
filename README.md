@@ -64,12 +64,12 @@ A device to keep a fleet of digital displays synchronized across a facility.
 
 ---
 
-### 5. Connected Analog Signage
+### 5. 🚞 Connected Analog Signage
 
-A device to keep a fleet of analog displays synchronized across a facility.
+Use the Notecard and a Wi-Fi-capable MCU to update character values on an analog split-flap display.
 
 <p>
-  Details coming soon!
+  <a href="./analog-signage/"><b>🔧 Start Building</b></a>
 </p>
 
 ---
