@@ -43,7 +43,7 @@ link.
 ![Location of Notehub fleet settings](images/notehub-fleet-settings.png)
 1. Click the **Environment** tab.
 1. Scroll down to the **Fleet environment variables** heading, and define the
-four variables: `line_1`, '`line_2`, `line_3`, and `line_4`.
+four variables: `line_1`, `line_2`, `line_3`, and `line_4`.
 1. Each variable will need a JSON value in the following format `{"city":"SLC","track":"02","time":"09:55","delay":"true"}`. The firmware in this repo expects keys like `city`, `track`, `time` and `delay`, while the values can be varied.
 2. With all four defined, click the blue **Save** button.
 ![Notehub fleet environment variables fully defined](images/notehub-env-vars-defined.png)
