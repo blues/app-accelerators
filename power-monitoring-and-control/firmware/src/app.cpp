@@ -42,6 +42,8 @@ pindef ioPin[] = {
 #define DATA_FIELD_APPARENT     "apparentPower"
 #define DATA_FIELD_POWERFACTOR  "powerFactor"
 #define DATA_FIELD_PIN_ACTIVE   "pinActive"
+#define DATA_FIELD_VIBRATION    "vibration"
+#define DATA_FIELD_VIBRATION_RAW "vibration_raw"
 
 // Cached copies of environment variables
 uint32_t envHeartbeatMins = 0;
@@ -54,9 +56,14 @@ float envCurrentChange = 0;
 float envPowerUnder = 0;
 float envPowerOver = 0;
 float envPowerChange = 0;
+float envVibrationOff = 0;
+float envVibrationUnder = 0;
+float envVibrationOver = 0;
+int8_t envVibrationActiveLine = 0;
 
 // Time used to determine whether or not we should refresh the environment vars
 int64_t environmentModifiedTime = 0;
+float vibration = 0;
 
 enum class PowerActivityAlert {
     NONE,   /* no alerts related to activity of the line pin */
@@ -94,6 +101,7 @@ static_assert(MCP_I2C_INSTANCES==ioPins, "Each MCP instance should have a dedica
 // Forwards
 bool refreshEnvironmentVars(void);
 void updateEnvironment(J *body);
+float computeVibrationFromAccelerometer(int x, int y, int z);
 
 // Dynamically sense the instance(s) of the device that are present
 uint32_t appTasks(uint32_t **taskSchedMs, uint8_t **contextBase, uint32_t *contextSize)
@@ -159,6 +167,8 @@ bool appSetup(void)
     JAddNumberToObject(body, DATA_FIELD_APPARENT, TFLOAT32);
     JAddNumberToObject(body, DATA_FIELD_REACTIVE, TFLOAT32);
     JAddNumberToObject(body, DATA_FIELD_POWERFACTOR, TFLOAT16);
+    JAddNumberToObject(body, DATA_FIELD_VIBRATION_RAW, TFLOAT16);
+    JAddStringToObject(body, DATA_FIELD_VIBRATION, TSTRINGV);
     JAddBoolToObject(body, DATA_FIELD_PIN_ACTIVE, TBOOL);
 
     req = notecard.newCommand("note.template");
@@ -173,7 +183,8 @@ bool appSetup(void)
 #endif
         Serial.begin(115200);
         req = notecard.newCommand("card.aux.serial");
-        JAddStringToObject(req, "mode", "notify,env");
+        JAddStringToObject(req, "mode", "notify,env,accel");
+        JAddNumberToObject(req, "duration", 500);
         notecard.sendRequest(req);
     }
 
@@ -233,25 +244,28 @@ uint32_t appLoop(void)
 
     // Get notification type, and ignore if not an "env" notification
     const char *notificationType = JGetString(notification, "type");
-    if (0 != strcmp(notificationType, "env")) {
+    if (!strcmp(notificationType, "env")) {
+        // Update the env modified time
+        environmentModifiedTime = JGetNumber(notification, "modified");
+
+        // Update the environment
+        J *body = JGetObject(notification, "body");
+        if (body != NULL) {
+            updateEnvironment(body);
+        }
+    }
+    else if (!strcmp(notificationType, "accel")) {
+        int x = JGetNumber(notification, "x");
+        int y = JGetNumber(notification, "y");
+        int z = JGetNumber(notification, "z");
+        vibration = computeVibrationFromAccelerometer(x, y, z);
+    }
+    else {
         debug.printf("notify: ignoring '%s'\n", notificationType);
-        JDelete(notification);
-        return 0;
     }
-
-    // Update the env modified time
-    environmentModifiedTime = JGetNumber(notification, "modified");
-
-    // Update the environment
-    J *body = JGetObject(notification, "body");
-    if (body != NULL) {
-        updateEnvironment(body);
-    }
-
     // Done
     JDelete(notification);
     return 0;
-
 }
 
 // Per-task setup
@@ -273,6 +287,13 @@ bool taskSetup(void *vmcp)
     // Done
     return true;
 
+}
+
+float computeVibrationFromAccelerometer(int x, int y, int z)
+{
+    // remove acceleration due to gravity
+    z -= 1024;
+    return sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
 }
 
 void updatePinState(pindef& ioPin) {
@@ -321,6 +342,44 @@ PowerCheck currentActivityCheckRequired(mcpContext* mcp, pindef& pin) {
     return result;
 }
 
+enum VibrationCategory {
+    VIBRATION_NOT_MEASURED = 0,
+    VIBRATION_NONE,
+    VIBRATION_LOW,        // can't call this LOW because of Arduino #defines.
+    VIBRATION_NORMAL,
+    VIBRATION_HIGH
+};
+
+inline bool isMonitoringVibration() {
+    return envVibrationOff != 0.0 || envVibrationUnder != 0.0 || envVibrationOver != 0.0
+        && (envVibrationOff <= envVibrationUnder) && (envVibrationUnder < envVibrationOver);
+}
+
+VibrationCategory determineVibrationCategory() {
+    if (!isMonitoringVibration())
+        return VIBRATION_NOT_MEASURED;
+    if (vibration <= envVibrationOff) {
+        return VIBRATION_NONE;
+    }
+    if (vibration <= envVibrationUnder) {
+        return VIBRATION_LOW;
+    }
+    if (vibration < envVibrationOver) {
+        return VIBRATION_NORMAL;
+    }
+    return VIBRATION_HIGH;
+}
+
+const char* vibrationCategoryString(VibrationCategory category) {
+    switch (category) {
+        case VIBRATION_NOT_MEASURED: return "N/A";
+        case VIBRATION_NONE: return "none";
+        case VIBRATION_LOW: return "low";
+        case VIBRATION_NORMAL: return "normal";
+        case VIBRATION_HIGH: return "high";
+    }
+    return "";
+}
 
 // Per-task loop
 uint32_t taskLoop(void *vmcp)
@@ -371,6 +430,8 @@ uint32_t taskLoop(void *vmcp)
     for (int i=0; i<ioPins; i++) {
         updatePinState(ioPin[i]);
     }
+
+    VibrationCategory vibrationCategory = determineVibrationCategory();
 
     pindef& pin = ioPin[mcp->taskID];
     PowerCheck voltageActivityCheck = currentActivityCheckRequired(mcp, pin);
@@ -430,6 +491,13 @@ uint32_t taskLoop(void *vmcp)
         }
     }
 
+    bool vibrationAlert = vibrationCategory &&
+        ((envVibrationActiveLine==0 || !pin.init) && (vibrationCategory==VIBRATION_LOW || vibrationCategory==HIGH)) ||
+        (envVibrationActiveLine==mcp->taskID && (vibrationCategory!=(pin.on ? VIBRATION_NORMAL : VIBRATION_NONE)));
+    if (vibrationAlert) {
+        strlcat(reportReasons, ",vibration", sizeof(reportReasons));
+    }
+
     // Remember state for next time
     mcp->lastVoltage = data.voltageRMS;
     if (mcp->lastVoltage > mcp->maxVoltage) {
@@ -475,6 +543,11 @@ uint32_t taskLoop(void *vmcp)
 
     if (pin.init) {
         JAddBoolToObject(body, DATA_FIELD_PIN_ACTIVE, pin.on);
+    }
+    
+    if (vibrationCategory && (envVibrationActiveLine==0 || envVibrationActiveLine==mcp->taskID)) {
+        JAddStringToObject(body, DATA_FIELD_VIBRATION, vibrationCategoryString(vibrationCategory));
+        JAddNumberToObject(body, DATA_FIELD_VIBRATION_RAW, vibration);
     }
 
     J *req = notecard.newCommand("note.add");
@@ -639,6 +712,15 @@ void updateEnvironment(J *body)
     envPowerChange = JAtoN(JGetString(body, "alert_change_power_percent"), NULL);
     if (envPowerUnder == 0.0 && envPowerOver == 0.0 && envPowerChange == 0) {
         envPowerChange = 15.0;
+    }
+
+    envVibrationOff = JAtoN(JGetString(body, "alert_off_vibration"), NULL);
+    envVibrationUnder = JAtoN(JGetString(body, "alert_under_vibration"), NULL);
+    envVibrationOver = JAtoN(JGetString(body, "alert_over_vibration"), NULL);
+    envVibrationActiveLine = JAtoN(JGetString(body, "alert_vibration_activity_line"), NULL);
+    // disable vibration activity alerts when there are no vibration bounds configured
+    if (!isMonitoringVibration()) {
+        envVibrationActiveLine = 0;
     }
 
     // Turn on/off each switch as it changes
