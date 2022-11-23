@@ -1,4 +1,4 @@
-# Analog Signage Remote Control
+# Connected Analog Signage
 
 Use the Notecard and a Wi-Fi-capable MCU to update character values on an analog split-flap display.
 
@@ -22,7 +22,7 @@ a handful of environment variables.
 1. Sign up for a free [Notehub](https://notehub.io) account, if you don’t have one
 already.
 1. Click the blue **Create Project** button in the top-right corner of the screen.
-1. Give the project a name, such as “DisplayManager”, and then click the next
+1. Give the project a name, such as "AnalogSignage", and then click the next
 **Create Project** button.
 ![Creating a project in Notehub with a name](images/notehub-create-project.png)
 
