@@ -56,7 +56,7 @@ setting up your hardware.
 The following hardware is required to run the Analog Signage demo.
 
 * [Notecarrier F](https://shop.blues.io/products/notecarrier-f)
-* [Notecard](https://shop.blues.io/products/note-wbna-500)
+* [Notecard](https://shop.blues.io/collections/notecard)
 * [FeatherS2 ESP32-S2 From Unexpected Maker](https://feathers2.io) or equivalent ESP32/Wi-Fi capable MCU.
 * [Vestaboard](https://www.vestaboard.com/) or equivalent split-flap display.
 
