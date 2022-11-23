@@ -16,7 +16,7 @@ The Analog Signage Demo's firmware is built using [CircuitPython](https://circui
 The `.py` files in this directory contain the complete working source for this demo.
 
 - `secrets.py` contains Wi-Fi SSID and Password information, as well as the IP address and API key for your Vestaboard. This file will need to be updated before you run the app.
-- `code.py` is the main application and should either be incorporated into the `code.py` file of your MCU or dragged onto the `CIRCUITPY` dive to overwrite the default file. This file contains application logic for:
+- `code.py` is the main application and should either be incorporated into the `code.py` file of your MCU or dragged onto the `CIRCUITPY` drive to overwrite the default file. This file contains application logic for:
   - Connecting to the Notecard and configuring its connection (don't forget to set your Notehub ProductUID in this app or using the REPL at [dev.blues.io](https://dev.blues.io)).
   - Connecting to a local Wi-Fi network.
   - Communicating with the Vestaboard over the local Wi-Fi Network.
