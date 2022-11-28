@@ -1,3 +1,4 @@
+import { ValveMonitorConfig } from "./AppModel";
 import {
   Project,
   Device,
@@ -18,4 +19,6 @@ export interface DataProvider {
   getDevicesByFleet(fleetUID: string): Promise<Device[]>;
   getDeviceEnvVars(deviceID: string): Promise<DeviceEnvVars>;
   getFleetEnvVars(fleetUID: string): Promise<FleetEnvVars>;
+
+  getValveMonitorConfig(fleetUID: string): Promise<ValveMonitorConfig>;
 }

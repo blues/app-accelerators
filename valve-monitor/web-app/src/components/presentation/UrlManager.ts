@@ -5,4 +5,6 @@ export interface UrlManager {
 
   notifications(...notificationIDs: NotificationID[]): string;
   presentNotifications(...notificationIDs: NotificationID[]): string;
+
+  setFleetValveMonitorConfig(): string;
 }
