@@ -1,7 +1,7 @@
+import { useEffect, useState } from "react";
 import { GetServerSideProps, NextPage } from "next";
 import { useRouter } from "next/router";
 import { Alert, Col, Row } from "antd";
-import { useEffect, useState } from "react";
 import { services } from "../services/ServiceLocatorServer";
 import { useValveMonitorDeviceData } from "../hooks/useValveMonitorDeviceData";
 import AlarmThresholdCard from "../components/elements/AlarmThresholdCard";
