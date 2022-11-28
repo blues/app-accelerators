@@ -47,8 +47,9 @@ function assembleDeviceEventsObject(
     name: device.name ? device.name : device.id.deviceUID,
     lastActivity: latestDeviceEvent[0].when,
     valveState: latestDeviceEvent[0].value.valve_state,
-    deviceFlowRate: latestDeviceEvent[0].value.flow_rate,
+    deviceFlowRate: Number(latestDeviceEvent[0].value.flow_rate).toFixed(1),
     deviceAlarm: !!alarmNotification.length,
+    deviceFleetID: device.fleetUIDs[0], // a device can only be assigned to one fleet a time
   };
 
   return updatedValveDeviceMonitorObj;

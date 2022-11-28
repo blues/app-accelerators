@@ -48,7 +48,7 @@ export interface Fleets {
 }
 
 export interface FleetEnvVars {
-  readonly fleetUID: string;
+  readonly fleetUID?: string;
   environment_variables?: any;
 }
 

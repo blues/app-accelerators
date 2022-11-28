@@ -1,3 +1,4 @@
+/* eslint-disable import/prefer-default-export */
 import axios, { AxiosResponse } from "axios";
 import { ValveMonitorDevice } from "../services/AppModel";
 import { services } from "../services/ServiceLocatorClient";

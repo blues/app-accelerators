@@ -45,6 +45,7 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
   const valveMonitorDevices: ValveMonitorDevice[] | undefined =
     valveMonitorDeviceList;
   console.log("table data-----", valveMonitorDevices);
+  console.log("fleet valve monitor config ", valveMonitorConfig);
 
   const router = useRouter();
   // refresh the page
