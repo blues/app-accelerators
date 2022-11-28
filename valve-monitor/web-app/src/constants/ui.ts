@@ -14,10 +14,10 @@ const ERROR_MESSAGE = {
   DATABASE_NOT_RUNNING:
     "Can't reach the database server. Please make sure your database is properly connected.",
   NO_PROJECT_ID:
-    "A project ID is required, but none was found. Ensure your environment variables are configured correctly for HUB_PROJECTUID.",
+    "A project ID is required, but none was found. Ensure your environment variables are configured correctly for HUB_PROJECT_UID.",
   UPDATE_FLEET_MONITOR_FREQUENCY_FAILED:
     "Failed to update the fleet’s flow monitoring frequency. If this problem persists, contact Blues support.",
-  UPDATE_ALARM_THRESHOLD_FAILED:
+  UPDATE_FLEET_ALARM_THRESHOLD_FAILED:
     "Failed to update the fleet’s alarm thresholds. If this problem persists, contact Blues support.",
 };
 

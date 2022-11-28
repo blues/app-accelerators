@@ -45,7 +45,7 @@ const AlarmThresholdCard = (props: AlarmThresholdProps) => {
       setCurrentMaxFlowThreshold(max);
     } catch (e) {
       setIsErrored(true);
-      setErrorMessage(ERROR_MESSAGE.UPDATE_FLEET_MONITOR_FREQUENCY_FAILED);
+      setErrorMessage(ERROR_MESSAGE.UPDATE_FLEET_ALARM_THRESHOLD_FAILED);
     }
     setIsLoading(false);
   };
