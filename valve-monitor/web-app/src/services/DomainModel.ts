@@ -10,6 +10,11 @@ export interface DeviceID {
   readonly deviceUID: string;
 }
 
+export interface FleetID {
+  readonly type: "FleetID";
+  readonly fleetUID: string;
+}
+
 export interface EventID {
   readonly type: "EventID";
 

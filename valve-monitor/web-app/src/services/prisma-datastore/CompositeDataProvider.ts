@@ -96,4 +96,8 @@ export default class CompositeDataProvider implements DataProvider {
   getFleetEnvVars(fleetUID: string): Promise<FleetEnvVars> {
     return this.notehubProvider.getFleetEnvVars(fleetUID);
   }
+
+  getValveMonitorConfig(fleetUID: string) {
+    return this.notehubProvider.getValveMonitorConfig(fleetUID);
+  }
 }
