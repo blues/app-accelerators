@@ -13,5 +13,5 @@ export async function getValveMonitorDeviceData(): Promise<
   const endpoint = services().getUrlManager().getValveMonitorDeviceData();
   const response: AxiosResponse =
     await axios.get<GetValveMonitorDeviceResponse>(endpoint);
-  return response.data;
+  return response.data.valveMonitorDevices;
 }

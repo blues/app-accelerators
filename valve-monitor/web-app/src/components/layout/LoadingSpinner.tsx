@@ -1,6 +1,6 @@
 import { Spin } from "antd";
 
-export const LoadingSpinner = ({
+const LoadingSpinner = ({
   isLoading,
   children,
 }: {
@@ -15,5 +15,4 @@ export const LoadingSpinner = ({
   );
 };
 
-const de = { LoadingSpinner };
-export default de;
+export default LoadingSpinner;

@@ -1,5 +1,10 @@
 @import "_variables.scss";
 
+// this gets the page-level loader to line up when both content loader and layout loader are triggered
+.loader {
+  top: 9% !important;
+}
+
 .mainContentWrapper {
   background-color: $bw-color--grey0;
   padding: 32px;

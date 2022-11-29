@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import { GetServerSideProps, NextPage } from "next";
 import { useRouter } from "next/router";
+import { useQueryClient } from "react-query";
 import { Alert, Col, Row } from "antd";
 import { services } from "../services/ServiceLocatorServer";
 import { useValveMonitorDeviceData } from "../hooks/useValveMonitorDeviceData";
 import AlarmThresholdCard from "../components/elements/AlarmThresholdCard";
 import MonitorFrequencyCard from "../components/elements/MonitorFrequencyCard";
 import ValveMonitorTable from "../components/elements/ValveMonitorTable";
-import { LoadingSpinner } from "../components/layout/LoadingSpinner";
+import LoadingSpinner from "../components/layout/LoadingSpinner";
 import { getErrorMessage } from "../constants/ui";
-import { ValveMonitorConfig, ValveMonitorDevice } from "../services/AppModel";
+import { ValveMonitorConfig } from "../services/AppModel";
 import { ERROR_CODES } from "../services/Errors";
 import Config from "../../Config";
 import styles from "../styles/Home.module.scss";
@@ -42,20 +43,26 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
     valveMonitorDevicesError &&
     getErrorMessage(valveMonitorDevicesError.message);
 
-  const valveMonitorDevices: ValveMonitorDevice[] | undefined =
-    valveMonitorDeviceList;
-  console.log("table data-----", valveMonitorDevices);
-  console.log("fleet valve monitor config ", valveMonitorConfig);
+  const valveMonitorDevices = valveMonitorDeviceList;
 
   const router = useRouter();
+  const queryClient = useQueryClient();
+
   // refresh the page
   const refreshData = async () => {
     // eslint-disable-next-line no-void
     void router.replace(router.asPath);
   };
 
+  const refreshDataAndInvalidateCache = async () => {
+    // Clear the client-side cache so when we refresh the page
+    // it refetches data to get the updated table data.
+    await refreshData();
+    await queryClient.invalidateQueries();
+  };
+
   useEffect(() => {
-    refreshData();
+    refreshDataAndInvalidateCache();
   }, [monitorFrequency, minFlowThreshold, maxFlowThreshold]);
 
   return (
@@ -112,7 +119,7 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
                   </Row>
                   <Row gutter={[16, 24]}>
                     <Col span={24}>
-                      <ValveMonitorTable data={valveMonitorDeviceList} />
+                      <ValveMonitorTable data={valveMonitorDevices} />
                     </Col>
                   </Row>
                 </>

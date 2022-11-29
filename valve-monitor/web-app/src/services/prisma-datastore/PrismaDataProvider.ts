@@ -16,7 +16,7 @@ import {
   FleetEnvVars,
   DeviceEnvVars,
 } from "../DomainModel";
-import { ValveMonitorDevice } from "../AppModel";
+import { ValveMonitorConfig, ValveMonitorDevice } from "../AppModel";
 
 import IDBuilder from "../IDBuilder";
 
@@ -126,13 +126,15 @@ export class PrismaDataProvider implements DataProvider {
     );
 
     // combine data for each device and its latest event
-    // todo clean this up
     valveMonitorDevices = devices.map((device) => {
       const filteredEventsByDevice = filterEventsByDevice(device, deviceEvents);
+
       let filteredAlarmsByDevice = [];
+
       if (some(deviceAlarms, !undefined)) {
         filteredAlarmsByDevice = filterAlarmsByDevice(device, deviceAlarms);
       }
+
       const updatedValveDeviceMonitorObj = assembleDeviceEventsObject(
         device,
         filteredEventsByDevice,
@@ -170,6 +172,10 @@ export class PrismaDataProvider implements DataProvider {
   }
 
   getFleetEnvVars(fleetUID: string): Promise<FleetEnvVars> {
+    throw new Error("Method not implemented.");
+  }
+
+  getValveMonitorConfig(fleetUID: string): Promise<ValveMonitorConfig> {
     throw new Error("Method not implemented.");
   }
 
