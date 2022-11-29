@@ -1,5 +1,5 @@
 interface NotehubEnvVars {
-  [key: string]: string;
+  [key: string]: any;
 }
 
 export default NotehubEnvVars;

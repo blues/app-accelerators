@@ -4,7 +4,6 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable import/prefer-default-export */
 import Prisma, { PrismaClient } from "@prisma/client";
-import { some } from "lodash";
 import { DataProvider } from "../DataProvider";
 import {
   ProjectID,
@@ -131,7 +130,7 @@ export class PrismaDataProvider implements DataProvider {
 
       let filteredAlarmsByDevice = [];
 
-      if (some(deviceAlarms, !undefined)) {
+      if (deviceAlarms.includes(!undefined)) {
         filteredAlarmsByDevice = filterAlarmsByDevice(device, deviceAlarms);
       }
 

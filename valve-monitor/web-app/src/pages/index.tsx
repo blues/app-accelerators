@@ -115,7 +115,6 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
                         </h3>
                       </div>
                     </Col>
-                    <Col xs={12} sm={7} md={6} lg={4} />
                   </Row>
                   <Row gutter={[16, 24]}>
                     <Col span={24}>
