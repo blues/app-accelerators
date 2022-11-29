@@ -9,6 +9,8 @@
 // MCP Hardware definitions
 #define	MCP_I2C_ADDRESS_BASE	0x74
 #define	MCP_I2C_INSTANCES		4
+#define SYNC_POWER_NOTES        (true)
+#define REPORT_REASONS_LENGTH   (256)
 
 // Switched outputs
 typedef struct {
@@ -44,6 +46,7 @@ pindef ioPin[] = {
 #define DATA_FIELD_PIN_ACTIVE   "pinActive"
 #define DATA_FIELD_VIBRATION    "vibration"
 #define DATA_FIELD_VIBRATION_RAW "vibration_raw"
+#define DATA_FIELD_EVENT_COUNTER "counter"
 
 // Cached copies of environment variables
 uint32_t envHeartbeatMins = 0;
@@ -64,6 +67,7 @@ int8_t envVibrationActiveLine = 0;
 // Time used to determine whether or not we should refresh the environment vars
 int64_t environmentModifiedTime = 0;
 float vibration = 0;
+int32_t eventCounter = 0;
 
 enum class PowerActivityAlert {
     NONE,   /* no alerts related to activity of the line pin */
@@ -92,6 +96,7 @@ typedef struct {
     float shutdown;             // duration in seconds
     ArduinoTicksTimer suppressActivityAlarmUntil;    // when alarm suppression begins
     bool first;
+    char lastReasons[REPORT_REASONS_LENGTH];
 } mcpContext;
 mcpContext mcp[MCP_I2C_INSTANCES];
 uint32_t mcpSchedMs[MCP_I2C_INSTANCES];
@@ -116,6 +121,7 @@ uint32_t appTasks(uint32_t **taskSchedMs, uint8_t **contextBase, uint32_t *conte
             if (Wire.endTransmission() == 0) {
                 mcp[tasks].taskID = i;
                 mcp[tasks].i2cAddress = MCP_I2C_ADDRESS_BASE + i;
+                mcp[tasks].lastReasons[0] = 0;
                 debug.printf("mcp %d found at i2c 0x%02x\n", mcp[tasks].taskID, mcp[tasks].i2cAddress);
                 _delay(100);
                 tasks++;
@@ -170,6 +176,7 @@ bool appSetup(void)
     JAddNumberToObject(body, DATA_FIELD_VIBRATION_RAW, TFLOAT16);
     JAddStringToObject(body, DATA_FIELD_VIBRATION, TSTRINGV);
     JAddBoolToObject(body, DATA_FIELD_PIN_ACTIVE, TBOOL);
+    JAddNumberToObject(body, DATA_FIELD_EVENT_COUNTER, TUINT32);
 
     req = notecard.newCommand("note.template");
     JAddStringToObject(req, "file", DATA_FILENAME);
@@ -438,7 +445,7 @@ uint32_t taskLoop(void *vmcp)
     PowerCheck currentActivityCheck = voltageActivityCheckRequired(mcp, pin);
 
     // Determine if anything requires an alert
-    char reportReasons[256] = {'\0'};
+    char reportReasons[REPORT_REASONS_LENGTH] = {'\0'};
     if (voltageActivityCheck != PowerCheck::NOT_PRESENT) {
         if (envVoltageUnder != 0 && data.voltageRMS < envVoltageUnder) {
             strlcat(reportReasons, ",undervoltage", sizeof(reportReasons));
@@ -451,7 +458,7 @@ uint32_t taskLoop(void *vmcp)
             strlcat(reportReasons, ",voltage", sizeof(reportReasons));
         }
         if (voltageActivityCheck==PowerCheck::PRESENT && data.voltageRMS <= ZERO_VOLTS) {
-            strlcat(reportReasons, ",powerfailure", sizeof(reportReasons));
+            strlcat(reportReasons, ",novoltage", sizeof(reportReasons));
         }
     }
     else {
@@ -482,7 +489,7 @@ uint32_t taskLoop(void *vmcp)
             strlcat(reportReasons, ",power", sizeof(reportReasons));
         }
         if (currentActivityCheck == PowerCheck::PRESENT && data.currentRMS <= ZERO_AMPS) {
-            strlcat(reportReasons, ",inactivecurrent", sizeof(reportReasons));
+            strlcat(reportReasons, ",nocurrent", sizeof(reportReasons));
         }
     }
     else {
@@ -491,9 +498,13 @@ uint32_t taskLoop(void *vmcp)
         }
     }
 
+    /*
+     * Send the vibration alert when vibration 
+     * 
+     */
     bool vibrationAlert = vibrationCategory &&
-        ((envVibrationActiveLine==0 || !pin.init) && (vibrationCategory==VIBRATION_LOW || vibrationCategory==HIGH)) ||
-        (envVibrationActiveLine==mcp->taskID && (vibrationCategory!=(pin.on ? VIBRATION_NORMAL : VIBRATION_NONE)));
+        (((envVibrationActiveLine==0 || !pin.init) && (vibrationCategory==VIBRATION_LOW || vibrationCategory==HIGH)) ||
+        (envVibrationActiveLine==mcp->taskID && (vibrationCategory!=(pin.on ? VIBRATION_NORMAL : VIBRATION_NONE))));
     if (vibrationAlert) {
         strlcat(reportReasons, ",vibration", sizeof(reportReasons));
     }
@@ -517,18 +528,20 @@ uint32_t taskLoop(void *vmcp)
 
     // Exit and come back immediately if nothing to report
     if (!reportHeartbeat) {
-        if (reportReasons[0] == '\0') {
+        if (reportReasons[0] == '\0' || !strcmp(reportReasons+1, mcp->lastReasons)) {
             return quickly;
         }
         else if (!mcp->suppressActivityAlarmUntil.hasElapsed()) {
             debug.printf("mcp %d: suppressing alarms %s\n", mcp->taskID, reportReasons[1]);
             return quickly;
         }
+        strlcpy(mcp->lastReasons, reportReasons+1, REPORT_REASONS_LENGTH);
     }
 
     // Generate a report
     J *body = NoteNewBody();
     JAddNumberToObject(body, DATA_FIELD_INSTANCE, mcp->taskID+1);
+    JAddNumberToObject(body, DATA_FIELD_EVENT_COUNTER, ++eventCounter);
     if (reportReasons[0] != '\0') {
         JAddStringToObject(body, DATA_FIELD_EVENT, &reportReasons[1]);         // [1] skip the first comma
     }
@@ -544,7 +557,7 @@ uint32_t taskLoop(void *vmcp)
     if (pin.init) {
         JAddBoolToObject(body, DATA_FIELD_PIN_ACTIVE, pin.on);
     }
-    
+
     if (vibrationCategory && (envVibrationActiveLine==0 || envVibrationActiveLine==mcp->taskID)) {
         JAddStringToObject(body, DATA_FIELD_VIBRATION, vibrationCategoryString(vibrationCategory));
         JAddNumberToObject(body, DATA_FIELD_VIBRATION_RAW, vibration);
@@ -552,7 +565,7 @@ uint32_t taskLoop(void *vmcp)
 
     J *req = notecard.newCommand("note.add");
     JAddStringToObject(req, "file", DATA_FILENAME);
-    if (reportReasons[0] != '\0') {
+    if (reportReasons[0] != '\0' || SYNC_POWER_NOTES) {
         JAddBoolToObject(req, "sync", true);
     }
     NoteAddBodyToObject(req, body);
