@@ -93,7 +93,12 @@ const ValveMonitorTable = ({
 // setErrorMessage,
 ValveMonitorTableProps) => (
   <div className={styles.tableContainer}>
-    <Table columns={columns} dataSource={data} pagination={false} />
+    <Table
+      rowKey="name"
+      columns={columns}
+      dataSource={data}
+      pagination={false}
+    />
   </div>
 );
 export default ValveMonitorTable;
