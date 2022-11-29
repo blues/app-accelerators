@@ -15,3 +15,26 @@ export async function getValveMonitorDeviceData(): Promise<
     await axios.get<GetValveMonitorDeviceResponse>(endpoint);
   return response.data.valveMonitorDevices;
 }
+
+async function updateDeviceEnvVar(
+  deviceUID: string,
+  deviceEnvVarToUpdate: object
+) {
+  const endpoint = services()
+    .getUrlManager()
+    .setDeviceValveMonitorConfig(deviceUID);
+
+  const response = await axios.post<object>(endpoint, deviceEnvVarToUpdate);
+
+  return response.data;
+}
+
+export async function updateDeviceValveMonitorFrequency(
+  deviceUID: string,
+  monitorFrequency: number
+) {
+  const response = await updateDeviceEnvVar(deviceUID, {
+    monitor_frequency: monitorFrequency,
+  });
+  return response;
+}

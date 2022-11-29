@@ -34,7 +34,7 @@ interface NotehubAccessor {
     note: string,
     body: NoteDeviceConfigBody
   ) => Promise<boolean>;
-  setEnvironmentVariables: (
+  setEnvironmentVariablesByDevice: (
     hubDeviceUID: string,
     envVars: NotehubEnvVars
   ) => Promise<boolean>;

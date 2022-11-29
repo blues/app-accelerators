@@ -1,6 +1,7 @@
-import { Switch, Table, Tag } from "antd";
+import { Input, Switch, Table, Tag } from "antd";
 import type { ColumnsType } from "antd/lib/table";
 import { ValveMonitorDevice } from "../../services/AppModel";
+import { updateDeviceValveMonitorFrequency } from "../../api-client/valveDevices";
 import styles from "../../styles/ValveMonitorTable.module.scss";
 
 const columns = [
@@ -79,26 +80,51 @@ const columns = [
 
 interface ValveMonitorTableProps {
   data: ValveMonitorDevice[] | undefined;
-  // setIsErrored: (isErrored: boolean) => void;
-  // setIsLoading: (isLoading: boolean) => void;
-  // setErrorMessage: (errorMessage: string) => void;
-  // refreshData: () => Promise<void>;
+  setIsErrored: (isErrored: boolean) => void;
+  setIsLoading: (isLoading: boolean) => void;
+  setErrorMessage: (errorMessage: string) => void;
+  refreshData: () => Promise<void>;
 }
 
 const ValveMonitorTable = ({
   data,
-}: // refreshData,
-// setIsErrored,
-// setIsLoading,
-// setErrorMessage,
-ValveMonitorTableProps) => (
-  <div className={styles.tableContainer}>
-    <Table
-      rowKey="name"
-      columns={columns}
-      dataSource={data}
-      pagination={false}
-    />
-  </div>
-);
+  refreshData,
+  setIsErrored,
+  setIsLoading,
+  setErrorMessage,
+}: ValveMonitorTableProps) => {
+  console.log(data);
+
+  const onDeviceMonitorFrequencyChange = async (
+    deviceUID: string,
+    newFrequency: number
+  ) => {
+    setIsErrored(false);
+    setErrorMessage("");
+    setIsLoading(true);
+
+    try {
+      await updateDeviceValveMonitorFrequency(deviceUID, newFrequency);
+    } catch (e) {
+      setIsErrored(true);
+      setErrorMessage(
+        "REPLACE ME WITH A CONSTANT ABOUT NOT BEING ABLE TO UPDATE DEVICE MONITOR FREQUENCY"
+      );
+    }
+
+    await refreshData();
+    setIsLoading(false);
+  };
+
+  return (
+    <div className={styles.tableContainer}>
+      <Table
+        rowKey="name"
+        columns={columns}
+        dataSource={data}
+        pagination={false}
+      />
+    </div>
+  );
+};
 export default ValveMonitorTable;

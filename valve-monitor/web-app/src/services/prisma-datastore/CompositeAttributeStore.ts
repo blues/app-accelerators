@@ -16,6 +16,15 @@ export default class CompositeAttributeStore implements AttributeStore {
     return this.apply((store) => store.updateDeviceName(deviceID, name));
   }
 
+  updateDeviceValveMonitorConfig(
+    deviceUID: string,
+    valveMonitorConfig: ValveMonitorConfig
+  ) {
+    return this.apply((store) =>
+      store.updateDeviceValveMonitorConfig(deviceUID, valveMonitorConfig)
+    );
+  }
+
   updateValveMonitorConfig(
     fleetUID: FleetID,
     valveMonitorConfig: ValveMonitorConfig

@@ -8,9 +8,28 @@ export default class NotehubAttributeStore implements AttributeStore {
   constructor(private accessor: NotehubAccessor) {}
 
   async updateDeviceName(deviceID: DeviceID, name: string) {
-    await this.accessor.setEnvironmentVariables(deviceID.deviceUID, {
+    await this.accessor.setEnvironmentVariablesByDevice(deviceID.deviceUID, {
       _sn: name,
     });
+  }
+
+  async updateDeviceValveMonitorConfig(
+    deviceID: string,
+    deviceValveMonitorConfig: ValveMonitorConfig
+  ) {
+    const envVars = {} as NotehubEnvVars;
+
+    if (deviceValveMonitorConfig.monitorFrequency !== undefined) {
+      envVars.monitor_interval = `${deviceValveMonitorConfig.monitorFrequency}`;
+    }
+    if (deviceValveMonitorConfig.minFlowThreshold !== undefined) {
+      envVars.flow_rate_alarm_threshold_min = `${deviceValveMonitorConfig.minFlowThreshold}`;
+    }
+    if (deviceValveMonitorConfig.maxFlowThreshold !== undefined) {
+      envVars.flow_rate_alarm_threshold_max = `${deviceValveMonitorConfig.maxFlowThreshold}`;
+    }
+
+    await this.accessor.setEnvironmentVariablesByDevice(deviceID, envVars);
   }
 
   async updateValveMonitorConfig(
