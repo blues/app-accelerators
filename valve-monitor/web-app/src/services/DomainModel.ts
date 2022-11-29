@@ -34,7 +34,9 @@ export interface Event {
 
 export interface DeviceEnvVars {
   readonly deviceID: DeviceID["deviceUID"];
-  environment_variables?: object;
+  environment_variables?: {
+    [key: string]: any;
+  };
 }
 
 export interface Fleets {
@@ -48,8 +50,10 @@ export interface Fleets {
 }
 
 export interface FleetEnvVars {
-  readonly fleetUID: string;
-  environment_variables?: object;
+  readonly fleetUID?: string;
+  environment_variables?: {
+    [key: string]: any;
+  };
 }
 
 export interface ProjectID {

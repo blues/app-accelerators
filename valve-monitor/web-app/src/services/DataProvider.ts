@@ -8,11 +8,13 @@ import {
   FleetEnvVars,
   DeviceEnvVars,
 } from "./DomainModel";
+import { ValveMonitorDevice } from "./AppModel";
 
 export interface DataProvider {
   getProject(): Promise<Project>;
   getDevices(): Promise<Device[]>;
   getDevice(deviceID: DeviceID): Promise<Device | null>;
+  getValveMonitorDeviceData(): Promise<ValveMonitorDevice[]>;
   getDeviceEvents(deviceIDs: string[]): Promise<Event[]>;
   getFleetsByProject(): Promise<Fleets>;
   getFleetsByDevice(deviceID: string): Promise<Fleets>;

@@ -11,6 +11,10 @@ export const _health = {
   SENSOR_PROVISION: "sensor-provision",
 };
 
+export const alarm = {
+  qo: "alarm.qo",
+};
+
 function eventError(msg: string, event: NotehubRoutedEvent | NotehubEvent) {
   return new Error(msg);
 }

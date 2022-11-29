@@ -1,0 +1,18 @@
+@import "_variables.scss";
+
+.tableContainer {
+  border: 1px solid $bw-color--grey3;
+  border-radius: 6px;
+
+  :global .ant-table-thead .ant-table-cell {
+    font-weight: 600;
+  }
+
+  :global .ant-tag {
+    text-transform: capitalize;
+  }
+
+  :global .ant-switch-checked {
+    background-color: $bw-color--green3;
+  }
+}

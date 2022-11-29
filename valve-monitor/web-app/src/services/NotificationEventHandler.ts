@@ -1,5 +1,6 @@
 /* eslint-disable import/prefer-default-export */
-import { _health } from "./notehub/AppEvents";
+import { randomUUID } from "crypto";
+import { _health, alarm } from "./notehub/AppEvents";
 import { AppEvent, AppEventHandler } from "./AppEvent";
 import { NotificationsStore } from "./NotificationsStore";
 
@@ -9,15 +10,33 @@ import { NotificationsStore } from "./NotificationsStore";
 
 type EventHandler = (event: AppEvent) => Promise<void>;
 
-// various notification types go here
+// various notification types
+export const ALARM = "alarm";
+
 export class NotificationEventHandler implements AppEventHandler {
   nameHandlers: Map<string, EventHandler> = new Map();
 
   constructor(private readonly notificationStore: NotificationsStore) {
     this.nameHandlers.set(_health.qo, (e) => this.healthEventHandler(e));
+    this.nameHandlers.set(alarm.qo, (e) => this.alarmEventHandler(e));
   }
 
   async healthEventHandler(event: AppEvent): Promise<void> {}
+
+  async alarmEventHandler(event: AppEvent): Promise<void> {
+    if (event.eventName === "alarm.qo") {
+      const notification = {
+        type: ALARM,
+        id: randomUUID(),
+        when: event.when,
+        content: {
+          deviceID: event.deviceUID,
+          content: event.eventBody,
+        },
+      };
+      await this.notificationStore.addNotifications(notification);
+    }
+  }
 
   async handleEvent(
     event: AppEvent,

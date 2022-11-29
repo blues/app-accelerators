@@ -104,7 +104,7 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
           name,
           locationName,
           fleets: {
-            deleteMany: {},
+            deleteMany: { fleetUID: { in: fleetUIDs } },
             connectOrCreate: formatConnectedFleetData,
           },
           project: {

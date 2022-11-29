@@ -4,12 +4,13 @@ export const NextJsUrlManager = {
   notehubProject: (notehubUrl: string, projectUID: string) =>
     `${notehubUrl}/project/${projectUID}`,
 
-  notifications: (...notificationIDs: NotificationID[]) => {
-    return NextJsUrlManager.notificationsImpl(false, ...notificationIDs);
-  },
+  getValveMonitorDeviceData: () => `/api/valve-device-monitors`,
+
+  notifications: (...notificationIDs: NotificationID[]) =>
+    NextJsUrlManager.notificationsImpl(false, ...notificationIDs),
 
   notificationsImpl(present: boolean, ...notificationIDs: string[]) {
-    let url = `/api/notifications`;
+    const url = `/api/notifications`;
     let params = present ? "?format=app" : "";
     if (notificationIDs.length) {
       if (!params) {
@@ -23,7 +24,7 @@ export const NextJsUrlManager = {
     return url + params;
   },
 
-  presentNotifications: function (...notificationIDs: string[]): string {
+  presentNotifications(...notificationIDs: string[]): string {
     return NextJsUrlManager.notificationsImpl(true, ...notificationIDs);
   },
 

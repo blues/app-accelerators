@@ -1,12 +1,24 @@
 @import "_variables.scss";
 
-.mainContent {
-  // required to override default Ant Design component styling
-  min-height: calc(100vh - $header-bar-height - $footer-bar-height) !important;
-  width: clamp($page-content-xs, $page-content-md, calc(100vw - 128px));
-  margin: 0 auto;
-  padding-top: 20px;
-  padding-bottom: 50px;
+// this gets the page-level loader to line up when both content loader and layout loader are triggered
+.loader {
+  top: 9% !important;
+}
+
+.mainContentWrapper {
+  background-color: $bw-color--grey0;
+  padding: 32px;
+
+  .mainContent {
+    // required to override default Ant Design component styling
+    min-height: calc(
+      100vh - $header-bar-height - $footer-bar-height
+    ) !important;
+    width: clamp($page-content-xs, $page-content-lg, calc(100vw - 79px));
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 20px;
+  }
 }
 
 @media screen and (max-width: $breakpoints-md) {

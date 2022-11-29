@@ -38,3 +38,16 @@ export interface ProjectDataSnapshot {
   when: AppDate;
   project: Project;
 }
+
+export interface ValveMonitorDevice {
+  deviceID: string;
+  name: string;
+  lastActivity: string;
+  valveState: string;
+  deviceFlowRate: number | string;
+  deviceAlarm?: any;
+  deviceFleetID: string;
+  monitorFrequency?: number | null; // env var
+  minFlowThreshold?: number | null; // env var
+  maxFlowThreshold?: number | null; // env var
+}

@@ -1,16 +1,19 @@
+import { useEffect, useState } from "react";
 import { GetServerSideProps, NextPage } from "next";
 import { useRouter } from "next/router";
+import { useQueryClient } from "react-query";
 import { Alert, Col, Row } from "antd";
-import { useEffect, useState } from "react";
 import { services } from "../services/ServiceLocatorServer";
+import { useValveMonitorDeviceData } from "../hooks/useValveMonitorDeviceData";
+import AlarmThresholdCard from "../components/elements/AlarmThresholdCard";
+import MonitorFrequencyCard from "../components/elements/MonitorFrequencyCard";
+import ValveMonitorTable from "../components/elements/ValveMonitorTable";
+import LoadingSpinner from "../components/layout/LoadingSpinner";
 import { getErrorMessage } from "../constants/ui";
+import { ValveMonitorConfig } from "../services/AppModel";
 import { ERROR_CODES } from "../services/Errors";
 import Config from "../../Config";
-import MonitorFrequencyCard from "../components/elements/MonitorFrequencyCard";
-import { LoadingSpinner } from "../components/layout/LoadingSpinner";
 import styles from "../styles/Home.module.scss";
-import { ValveMonitorConfig } from "../services/AppModel";
-import AlarmThresholdCard from "../components/elements/AlarmThresholdCard";
 
 type HomeData = {
   valveMonitorConfig: ValveMonitorConfig;
@@ -19,6 +22,7 @@ type HomeData = {
 
 const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
   const infoMessage = "Deploy message";
+  const MS_REFETCH_INTERVAL = 60000;
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isErrored, setIsErrored] = useState<boolean>(false);
@@ -33,15 +37,32 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
     valveMonitorConfig.maxFlowThreshold
   );
 
+  const { error: valveMonitorDevicesError, data: valveMonitorDeviceList } =
+    useValveMonitorDeviceData(MS_REFETCH_INTERVAL);
+  const error =
+    valveMonitorDevicesError &&
+    getErrorMessage(valveMonitorDevicesError.message);
+
+  const valveMonitorDevices = valveMonitorDeviceList;
+
   const router = useRouter();
+  const queryClient = useQueryClient();
+
   // refresh the page
   const refreshData = async () => {
     // eslint-disable-next-line no-void
     void router.replace(router.asPath);
   };
 
+  const refreshDataAndInvalidateCache = async () => {
+    // Clear the client-side cache so when we refresh the page
+    // it refetches data to get the updated table data.
+    await refreshData();
+    await queryClient.invalidateQueries();
+  };
+
   useEffect(() => {
-    refreshData();
+    refreshDataAndInvalidateCache();
   }, [monitorFrequency, minFlowThreshold, maxFlowThreshold]);
 
   return (
@@ -51,7 +72,7 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
           className={styles.errorMessage}
           // life in the fast lane...
           // eslint-disable-next-line react/no-danger
-          dangerouslySetInnerHTML={{ __html: err }}
+          dangerouslySetInnerHTML={{ __html: err || error }}
         />
       ) : (
         <LoadingSpinner isLoading={isLoading}>
@@ -59,29 +80,50 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
             {isErrored && (
               <Alert type="error" message={errorMessage} closable />
             )}
-            <h3 className={styles.sectionTitle}>Fleet Controls</h3>
-            <Row gutter={16}>
-              <Col className={styles.motionFrequencyCard}>
-                <MonitorFrequencyCard
-                  currentFrequency={monitorFrequency}
-                  setCurrentFrequency={setMonitorFrequency}
-                  setErrorMessage={setErrorMessage}
-                  setIsErrored={setIsErrored}
-                  setIsLoading={setIsLoading}
-                />
-              </Col>
-              <Col>
-                <AlarmThresholdCard
-                  currentMinFlowThreshold={minFlowThreshold}
-                  currentMaxFlowThreshold={maxFlowThreshold}
-                  setCurrentMinFlowThreshold={setMinFlowThreshold}
-                  setCurrentMaxFlowThreshold={setMaxFlowThreshold}
-                  setIsErrored={setIsErrored}
-                  setIsLoading={setIsLoading}
-                  setErrorMessage={setErrorMessage}
-                />
-              </Col>
-            </Row>
+
+            <div>
+              {valveMonitorDevices && (
+                <>
+                  <h3 className={styles.sectionTitle}>Fleet Controls</h3>
+                  <Row gutter={16}>
+                    <Col className={styles.motionFrequencyCard}>
+                      <MonitorFrequencyCard
+                        currentFrequency={monitorFrequency}
+                        setCurrentFrequency={setMonitorFrequency}
+                        setErrorMessage={setErrorMessage}
+                        setIsErrored={setIsErrored}
+                        setIsLoading={setIsLoading}
+                      />
+                    </Col>
+                    <Col>
+                      <AlarmThresholdCard
+                        currentMinFlowThreshold={minFlowThreshold}
+                        currentMaxFlowThreshold={maxFlowThreshold}
+                        setCurrentMinFlowThreshold={setMinFlowThreshold}
+                        setCurrentMaxFlowThreshold={setMaxFlowThreshold}
+                        setIsErrored={setIsErrored}
+                        setIsLoading={setIsLoading}
+                        setErrorMessage={setErrorMessage}
+                      />
+                    </Col>
+                  </Row>
+                  <Row gutter={[16, 24]}>
+                    <Col span={24}>
+                      <div className={styles.tableHeaderRow}>
+                        <h3 className={styles.sectionTitle}>
+                          Individual Controls
+                        </h3>
+                      </div>
+                    </Col>
+                  </Row>
+                  <Row gutter={[16, 24]}>
+                    <Col span={24}>
+                      <ValveMonitorTable data={valveMonitorDevices} />
+                    </Col>
+                  </Row>
+                </>
+              )}
+            </div>
 
             {Config.isBuildVersionSet() ? (
               <Alert description={infoMessage} type="info" closable />

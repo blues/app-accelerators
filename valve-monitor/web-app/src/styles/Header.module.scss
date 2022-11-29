@@ -3,17 +3,21 @@
 .header {
   display: flex;
   justify-content: space-between;
-  // required to override default Ant Design component styling
-  padding: 0 64px !important;
 
   .logo {
     display: flex;
     align-items: center;
   }
 
-  .headerText {
+  .headerTitle {
     color: #fff;
-    font-size: 15px;
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  .headerText {
+    color: $bw-color--brand1;
+    font-size: 13px;
   }
 }
 
