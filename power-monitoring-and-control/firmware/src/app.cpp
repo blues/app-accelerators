@@ -319,8 +319,8 @@ void updatePinState(pindef& ioPin) {
 }
 
 // Nominal voltage/current for 0
-#define ZERO_VOLTS (0.1)
-#define ZERO_AMPS (0.1)
+#define ZERO_VOLTS (5)
+#define ZERO_AMPS (0.3)
 
 enum class PowerCheck {
     NORMAL,  /* no additional checks for power being present are done beyond the under/over checks */
@@ -367,8 +367,8 @@ enum VibrationCategory {
 };
 
 inline bool isMonitoringVibration() {
-    return envVibrationOff != 0.0 || envVibrationUnder != 0.0 || envVibrationOver != 0.0
-        && (envVibrationOff <= envVibrationUnder) && (envVibrationUnder < envVibrationOver);
+    return vibration!=0.0 && (envVibrationOff != 0.0 || envVibrationUnder != 0.0 || envVibrationOver != 0.0
+        && (envVibrationOff <= envVibrationUnder) && (envVibrationUnder < envVibrationOver));
 }
 
 VibrationCategory determineVibrationCategory() {
@@ -450,8 +450,8 @@ uint32_t taskLoop(void *vmcp)
     VibrationCategory vibrationCategory = determineVibrationCategory();
 
     pindef& pin = ioPin[mcp->taskID];
-    PowerCheck voltageActivityCheck = currentActivityCheckRequired(mcp, pin);
-    PowerCheck currentActivityCheck = voltageActivityCheckRequired(mcp, pin);
+    PowerCheck currentActivityCheck = currentActivityCheckRequired(mcp, pin);
+    PowerCheck voltageActivityCheck = voltageActivityCheckRequired(mcp, pin);
 
     // Determine if anything requires an alert
     char reportReasons[REPORT_REASONS_LENGTH] = {'\0'};
@@ -512,8 +512,8 @@ uint32_t taskLoop(void *vmcp)
      * 
      */
     bool vibrationAlert = vibrationCategory &&
-        (((envVibrationActiveLine==0 || !pin.init) && (vibrationCategory==VIBRATION_LOW || vibrationCategory==HIGH)) ||
-        (envVibrationActiveLine==mcp->taskID && (vibrationCategory!=(pin.on ? VIBRATION_NORMAL : VIBRATION_NONE))));
+        (((envVibrationActiveLine==0 || (envVibrationActiveLine==mcp->taskID+1 && !pin.init)) && (vibrationCategory==VIBRATION_LOW || vibrationCategory==VIBRATION_HIGH)) ||
+        (envVibrationActiveLine==mcp->taskID+1 && pin.init && (vibrationCategory!=(pin.on ? VIBRATION_NORMAL : VIBRATION_NONE))));
     if (vibrationAlert) {
         strlcat(reportReasons, ",vibration", sizeof(reportReasons));
     }
@@ -537,15 +537,15 @@ uint32_t taskLoop(void *vmcp)
 
     // Exit and come back immediately if nothing to report
     if (!reportHeartbeat) {
-        if (reportReasons[0] == '\0' || !strcmp(reportReasons+1, mcp->lastReasons)) {
+        if (!strcmp(reportReasons+1, mcp->lastReasons)) {
             return quickly;
         }
         else if (!mcp->suppressActivityAlarmUntil.hasElapsed()) {
             debug.printf("mcp %d: suppressing alarms %s\n", mcp->taskID, reportReasons[1]);
             return quickly;
         }
-        strlcpy(mcp->lastReasons, reportReasons+1, REPORT_REASONS_LENGTH);
     }
+    strlcpy(mcp->lastReasons, reportReasons+1, REPORT_REASONS_LENGTH);
 
     // Generate a report
     J *body = NoteNewBody();
@@ -567,7 +567,7 @@ uint32_t taskLoop(void *vmcp)
         JAddBoolToObject(body, DATA_FIELD_PIN_ACTIVE, pin.on);
     }
 
-    if (vibrationCategory && (envVibrationActiveLine==0 || envVibrationActiveLine==mcp->taskID)) {
+    if (vibrationCategory && (envVibrationActiveLine==0 || envVibrationActiveLine==mcp->taskID+1)) {
         JAddStringToObject(body, DATA_FIELD_VIBRATION, vibrationCategoryString(vibrationCategory));
         JAddNumberToObject(body, DATA_FIELD_VIBRATION_RAW, vibration);
     }
@@ -745,16 +745,16 @@ void updateEnvironment(J *body)
         envVibrationActiveLine = 0;
     }
 
+    for (int i=0; i<MCP_I2C_INSTANCES; i++) {
+        if (mcp[i].i2cAddress) {
+            updateMCPEnvironment(body, mcp[i]);
+        }
+    }
+
     // Turn on/off each switch as it changes
     for (int i=0; i<ioPins; i++) {
         if (updatePinFromEnvironment(body, ioPin[i])) {
             activityChanged(ioPin[i].on, i);
-        }
-    }
-
-    for (int i=0; i<MCP_I2C_INSTANCES; i++) {
-        if (mcp[i].i2cAddress) {
-            updateMCPEnvironment(body, mcp[i]);
         }
     }
 }
