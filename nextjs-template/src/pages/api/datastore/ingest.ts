@@ -8,11 +8,11 @@ import { serverLogInfo } from "../log";
 
 async function ingestEvent(notehubEvent: NotehubRoutedEvent) {
   serverLogInfo("ingesting ", JSON.stringify(notehubEvent));
-  if (!notehubEvent.project?.id) {
+  if (!notehubEvent.app) {
     throw Error(HTTP_STATUS.INVALID_PROJECTUID); // todo - this is a client error.
   }
 
-  const appEvent = appEventFromNotehubRoutedEvent(notehubEvent);
+  const appEvent = await appEventFromNotehubRoutedEvent(notehubEvent);
   return services().getAppService().handleEvent(appEvent);
 }
 

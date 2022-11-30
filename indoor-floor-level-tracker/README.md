@@ -2,12 +2,11 @@
 
 A highly accurate floor-level tracker for response teams at emergency events.
 
-![The display of the final web app for floor tracking](images/web-app-display.png)
+![](../app-banners/nf1.png)
 
-To run
-this project yourself you’ll need to:
+To run this project yourself you’ll need to:
 
-* [Configure Notehub](#notehub-setup).
+* [Configure Notehub](#notehub).
 * [Purchase the necessary hardware](#hardware).
 * [Flash the project’s firmware](#firmware).
 * [Run the project’s web application](#web-application).
@@ -65,7 +64,7 @@ setting up your hardware.
 
 The following hardware is required to run the Indoor Floor-Level Tracker.
 
-* [Feather Starter Kit for Swan](https://shop.blues.io/products/notecarrier-swan)
+* [Blues Starter Kit](https://shop.blues.io/collections/blues-starter-kits)
 * [BMP581](https://www.sparkfun.com/products/20170)
 * [Qwiic Cable](https://www.sparkfun.com/products/14427)
 

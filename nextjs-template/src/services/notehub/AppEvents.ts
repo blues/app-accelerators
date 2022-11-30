@@ -1,4 +1,5 @@
 import { BasicAppEvent, AppEvent } from "../AppEvent";
+import { services } from "../ServiceLocatorServer";
 import NotehubEvent from "./models/NotehubEvent";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import NotehubRoutedEvent, {
@@ -18,6 +19,23 @@ export function locationAlternativesFromRoutedEvent(
   event: NotehubRoutedEventLocationFields
 ): NotehubLocationAlternatives {
   const alternatives: NotehubLocationAlternatives = {};
+  if (
+    event.best_location_when &&
+    event.best_location &&
+    event.best_country &&
+    event.best_timezone &&
+    event.best_lat &&
+    event.best_lon
+  ) {
+    alternatives.best_location = {
+      when: event.best_location_when,
+      name: event.best_location,
+      country: event.best_country,
+      timezone: event.best_timezone,
+      latitude: event.best_lat,
+      longitude: event.best_lon,
+    };
+  }
   if (
     event.tower_when &&
     event.tower_location &&
@@ -75,7 +93,10 @@ export function locationAlternativesFromRoutedEvent(
 // N.B.: Noteub defines 'best' location with more nuance than we do here (e.g
 // considering staleness). Also this algorthm is copy-pasted in a couple places.
 export const bestLocation = (object: NotehubLocationAlternatives) =>
-  object.gps_location || object.triangulated_location || object.tower_location;
+  object.best_location ||
+  object.gps_location ||
+  object.triangulated_location ||
+  object.tower_location;
 
 function bodyAugmentedWithMetadata(
   event: NotehubEvent | NotehubRoutedEvent,
@@ -94,52 +115,65 @@ function bodyAugmentedWithMetadata(
   return body;
 }
 
-export function appEventFromNotehubRoutedEvent(
+export async function appEventFromNotehubRoutedEvent(
   event: NotehubRoutedEvent
-): AppEvent {
+): Promise<AppEvent> {
   if (!event.device) {
     throw eventError("device is not defined", event);
   }
 
-  if (!event.project.id) {
-    throw eventError("project.id is not defined", event);
+  if (!event.app) {
+    throw eventError("app id is not defined", event);
   }
+  let fleetUIDs: string[] = [];
 
   const locations = locationAlternativesFromRoutedEvent(event);
   const location = bestLocation(locations);
   const body = bodyAugmentedWithMetadata(event, locations);
+  const appService = services().getAppService();
+  const fleetsByDevice = await appService.getFleetsByDevice(event.device);
+
+  fleetUIDs = fleetsByDevice.fleets.map((fleet) => fleet.uid);
 
   return new BasicAppEvent(
-    event.project.id,
+    event.app,
     event.device,
+    event.event,
     new Date(event.when * 1000),
     event.file,
     location,
     body,
+    fleetUIDs,
     event.sn
   );
 }
 
-export function appEventFromNotehubEvent(
+export async function appEventFromNotehubEvent(
   event: NotehubEvent,
   projectUID: string
-): AppEvent {
+): Promise<AppEvent> {
   if (!event.device_uid) {
     throw eventError("device uid is not defined", event);
   }
 
+  let fleetUIDs: string[] = [];
   const location = bestLocation(event);
   const body = bodyAugmentedWithMetadata(event, event);
+  const appService = services().getAppService();
+  const fleetsByDevice = await appService.getFleetsByDevice(event.device_uid);
+
+  fleetUIDs = fleetsByDevice.fleets.map((fleet) => fleet.uid);
 
   return new BasicAppEvent(
     projectUID,
     event.device_uid,
+    event.event_uid,
     new Date(event.captured),
     event.file,
     location,
-    body
+    body,
+    fleetUIDs
   );
 }
-
 
 export type { AppEvent };

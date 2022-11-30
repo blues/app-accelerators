@@ -6,10 +6,8 @@ export default class NotehubAttributeStore implements AttributeStore {
   constructor(private accessor: NotehubAccessor) {}
 
   async updateDeviceName(deviceID: DeviceID, name: string) {
-    await this.accessor.setEnvironmentVariables(deviceID.deviceUID, { _sn: name });
-  }
-
-  async updateDevicePin(_deviceID: DeviceID, _pin: string) {
-    return Promise.resolve(null);
+    await this.accessor.setEnvironmentVariables(deviceID.deviceUID, {
+      _sn: name,
+    });
   }
 }

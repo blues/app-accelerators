@@ -22,7 +22,6 @@ describe("App Service", () => {
 
   beforeEach(() => {
     dataProviderMock = {
-      doBulkImport: jest.fn(),
       getProject: jest.fn(),
       getDevice: jest.fn().mockReturnValueOnce(mockedDeviceData),
       getDevices: jest.fn()

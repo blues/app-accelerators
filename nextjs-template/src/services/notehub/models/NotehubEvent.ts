@@ -5,7 +5,7 @@ interface NotehubEvent extends SessionMetadata, NotehubLocationAlternatives {
   file: string;
   captured: string;
   received: string;
-  event_uid?: string;
+  event_uid: string;
   note?: string;
   uid: string;
   device_uid?: string;

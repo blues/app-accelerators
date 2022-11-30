@@ -1,36 +1,7 @@
-import {
-  PrismaClient,
-  Project,
-  Prisma,
-} from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import Config from "../../../Config";
 
 const prisma = new PrismaClient();
-
-// todo - move these up to the AppEvents defined against notehub
-
-const motion = {
-  qo: "motion.qo",
-};
-
-const air = {
-  qo: "air.qo",
-};
-
-const sensors = {
-  db: "sensors.db",
-};
-
-const _session = {
-  qo: "_session.qo",
-};
-
-const _health = {
-  qo: "_health.qo",
-};
-
-
-
 
 /**
  * Creates a new project.
@@ -45,8 +16,6 @@ async function createProject(prisma: PrismaClient, projectUID: string) {
   });
   return project;
 }
-
-
 
 async function upsertProject({
   prisma,

@@ -1,5 +1,5 @@
 import { AttributeStore } from "../AttributeStore";
-import { Device, DeviceID } from "../DomainModel";
+import { DeviceID } from "../DomainModel";
 
 // would be nice to generify this and implement as a generic proxy
 export default class CompositeAttributeStore implements AttributeStore {
@@ -13,14 +13,5 @@ export default class CompositeAttributeStore implements AttributeStore {
 
   updateDeviceName(deviceID: DeviceID, name: string): Promise<void> {
     return this.apply((store) => store.updateDeviceName(deviceID, name));
-  }
-
-  updateDevicePin(
-    deviceID: DeviceID,
-    pin: string
-  ): Promise<Device | null> {
-    return this.apply((store) =>
-      store.updateDevicePin(deviceID, pin)
-    );
   }
 }

@@ -43,9 +43,10 @@ interface NotehubRoutedEvent
   sn: string;
 
   best_id: string;
-  project: {
-    id: string;
-  };
+  app: string;
+  product: string;
+  event: string;
+  req: string;
 }
 
 export default NotehubRoutedEvent;

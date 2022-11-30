@@ -14,12 +14,16 @@ export interface AppEvent {
    */
   readonly eventName: string;
 
+  readonly eventUID: string;
+
   readonly deviceUID: string;
+
+  readonly fleetUIDs: string[];
 
   /**
    * The format of the event depends upon the event type.
    */
-  readonly eventBody: unknown;
+  readonly eventBody: { [key: string]: number | string | boolean | object };
 
   /**
    * The time the event was published by the origin device.
@@ -38,10 +42,12 @@ export class BasicAppEvent implements AppEvent {
   constructor(
     readonly projectUID: string,
     readonly deviceUID: string,
+    readonly eventUID: string,
     readonly when: Date,
     readonly eventName: string,
     readonly location: NotehubLocation | undefined,
-    readonly eventBody: unknown,
+    readonly eventBody: { [key: string]: number | string | boolean | object },
+    readonly fleetUIDs: string[],
     readonly deviceName?: string
   ) {}
 }

@@ -1,6 +1,10 @@
 # Fridge Fleet Monitor
 
-LoRa-based temperature, humidity and door open/close state for a fleet of refrigerators. To run this project yourself you'll need to:
+LoRa-based temperature, humidity and door open/close state for a fleet of refrigerators.
+
+![](../app-banners/nf2.png)
+
+To run this project yourself you'll need to:
 
 * [Purchase the necessary hardware and configure it](#hardware).
 * [Flash the project's firmware](#firmware).
