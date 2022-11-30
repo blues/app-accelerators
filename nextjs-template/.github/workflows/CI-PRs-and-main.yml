@@ -35,7 +35,7 @@ jobs:
         env:
           HUB_AUTH_TOKEN: ${{ secrets.HUB_AUTH_TOKEN }}
           HUB_BASE_URL: ${{ secrets.HUB_BASE_URL }}
-          HUB_PROJECTUID: ${{ secrets.HUB_PROJECTUID }}
+          HUB_PROJECT_UID: ${{ secrets.HUB_PROJECT_UID }}
           TEST_DEVICE_ID: ${{ secrets.TEST_DEVICE_ID }}
           NOTEHUB_PROVIDER: 1
         run: yarn test:coverage
@@ -48,7 +48,7 @@ jobs:
         env:
           HUB_AUTH_TOKEN: ${{ secrets.HUB_AUTH_TOKEN }}
           HUB_BASE_URL: ${{ secrets.HUB_BASE_URL }}
-          HUB_PROJECTUID: ${{ secrets.HUB_PROJECTUID }}
+          HUB_PROJECT_UID: ${{ secrets.HUB_PROJECT_UID }}
           TEST_DEVICE_ID: ${{ secrets.TEST_DEVICE_ID }}
           NOTEHUB_PROVIDER: 1
   docker-build:

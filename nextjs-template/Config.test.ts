@@ -1,5 +1,5 @@
 const env = {
-  HUB_PROJECTUID: process.env.HUB_PROJECTUID,
+  HUB_PROJECT_UID: process.env.HUB_PROJECT_UID,
 };
 
 const requiredEnvVar = (varName: keyof typeof env) => {
@@ -14,12 +14,12 @@ const requiredEnvVar = (varName: keyof typeof env) => {
 
 const TestConfig = {
   get hubProjectUID() {
-    return requiredEnvVar("HUB_PROJECTUID");
+    return requiredEnvVar("HUB_PROJECT_UID");
   },
 };
 
 describe("mandatory envvars are defined", () => {
-  it("HUB_PROJECTUID", () => {
+  it("HUB_PROJECT_UID", () => {
     expect(TestConfig.hubProjectUID).toBeTruthy;
   });
 });

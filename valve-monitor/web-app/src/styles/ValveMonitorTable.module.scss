@@ -15,4 +15,19 @@
   :global .ant-switch-checked {
     background-color: $bw-color--green3;
   }
+
+  :global .ant-table-tbody .editable-button {
+    background: transparent;
+    border: 1px solid #c2c9cb;
+    text-align: left;
+    border-radius: 5px;
+  }
+
+  :global .ant-table-tbody .editable-input,
+  :global .ant-table-tbody .editable-button {
+    padding: 0.25em 0.5em;
+    max-width: 150px;
+    width: 150px;
+    text-align: left;
+  }
 }

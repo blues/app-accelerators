@@ -12,7 +12,6 @@ import LoadingSpinner from "../components/layout/LoadingSpinner";
 import { getErrorMessage } from "../constants/ui";
 import { ValveMonitorConfig } from "../services/AppModel";
 import { ERROR_CODES } from "../services/Errors";
-import Config from "../../Config";
 import styles from "../styles/Home.module.scss";
 
 type HomeData = {
@@ -21,7 +20,6 @@ type HomeData = {
 };
 
 const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
-  const infoMessage = "Deploy message";
   const MS_REFETCH_INTERVAL = 60000;
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -118,16 +116,18 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
                   </Row>
                   <Row gutter={[16, 24]}>
                     <Col span={24}>
-                      <ValveMonitorTable data={valveMonitorDevices} />
+                      <ValveMonitorTable
+                        data={valveMonitorDevices}
+                        refreshData={refreshDataAndInvalidateCache}
+                        setIsErrored={setIsErrored}
+                        setIsLoading={setIsLoading}
+                        setErrorMessage={setErrorMessage}
+                      />
                     </Col>
                   </Row>
                 </>
               )}
             </div>
-
-            {Config.isBuildVersionSet() ? (
-              <Alert description={infoMessage} type="info" closable />
-            ) : null}
           </div>
         </LoadingSpinner>
       )}

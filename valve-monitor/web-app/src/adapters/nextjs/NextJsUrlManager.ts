@@ -5,6 +5,7 @@ export const NextJsUrlManager = {
     `${notehubUrl}/project/${projectUID}`,
 
   getValveMonitorDeviceData: () => `/api/valve-device-monitors`,
+  deviceNameUpdate: (deviceUID: string) => `/api/device/${deviceUID}/name`,
 
   notifications: (...notificationIDs: NotificationID[]) =>
     NextJsUrlManager.notificationsImpl(false, ...notificationIDs),
