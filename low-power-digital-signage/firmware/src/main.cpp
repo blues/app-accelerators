@@ -116,19 +116,17 @@ void loop() {
     }
   }
 
-  if (state.displayValues) {
-    rotateContent();
-  }
-}
-
-void rotateContent() {
-  //Rotate items on the display based on interval
   if (millis() < nextDisplayRotation) {
     return;
   }
 
   nextDisplayRotation = millis() + (displayUpdateInterval * 1000);
 
+  rotateContent();
+}
+
+void rotateContent() {
+  //Rotate items on the display based on interval
   J *itemsToDisplay = state.displayObject->child;
 
   if (itemsToDisplay != NULL) {
@@ -151,10 +149,15 @@ void rotateContent() {
       serialDebugOut.print("Displaying image ");
       serialDebugOut.println(item->valuestring);
       displayImage(item->valuestring);
-    } else {
+    } else if (strcmp(item->valuestring, "") != 0) {
       serialDebugOut.print("Displaying text ");
       serialDebugOut.println(item->valuestring);
       displayText(item->valuestring);
+    } else {
+      // Clear the Display
+      serialDebugOut.println("Clearing Display");
+      display.clearBuffer();
+      display.display();
     }
 
     state.displayUpdated = true;
@@ -193,6 +196,7 @@ void fetchEnvironmentVariables(applicationState vars) {
             vars.displayValues = String(displayValues);
             vars.variablesUpdated = true;
             vars.displayUpdated = false;
+            vars.currentDisplayObjectIndex = 0;
 
             J *valueList = JCreateObject();
             if (valueList != NULL) {
