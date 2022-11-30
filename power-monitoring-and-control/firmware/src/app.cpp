@@ -66,6 +66,9 @@ int8_t envVibrationActiveLine = 0;
 
 // Time used to determine whether or not we should refresh the environment vars
 int64_t environmentModifiedTime = 0;
+float vibrationAccumulator = 0;
+int32_t vibrationCount = 0;
+const int32_t vibrationSamples = 5;
 float vibration = 0;
 int32_t eventCounter = 0;
 
@@ -265,7 +268,13 @@ uint32_t appLoop(void)
         int x = JGetNumber(notification, "x");
         int y = JGetNumber(notification, "y");
         int z = JGetNumber(notification, "z");
-        vibration = computeVibrationFromAccelerometer(x, y, z);
+        vibrationAccumulator += computeVibrationFromAccelerometer(x, y, z);
+        vibrationCount++;
+        if (vibrationCount>=vibrationSamples) {
+            vibration = vibrationAccumulator/vibrationCount;
+            vibrationAccumulator = 0;
+            vibrationCount = 0;
+        }
     }
     else {
         debug.printf("notify: ignoring '%s'\n", notificationType);
