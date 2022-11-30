@@ -1,18 +1,31 @@
+/*!
+ *
+ * Written by the Blues Inc. team.
+ *
+ *
+ * Copyright (c) 2019 Blues Inc. MIT License. Use of this source code is
+ * governed by licenses granted by the copyright holder including that found in
+ * the
+ * <a href="https://github.com/blues/app-accelerators/blob/main/LICENSE">LICENSE</a>
+ * file.
+ *
+ */
+
 #include <Arduino.h>
 #include <Wire.h>
 #include <Notecard.h>
-#include <base64_decode.h>
 #include "Adafruit_ThinkInk.h"
-#include "Adafruit_ImageReader.h"
+#include <SdFat.h>
+#include <Adafruit_ImageReader_EPD.h>
 #include "display_manager.h"
 #include "notecard_config.h"
-#include "blues_bmp.h"
 
 #define EPD_DC      10
 #define EPD_CS      9
 #define EPD_BUSY    -1
 #define SRAM_CS     6
 #define EPD_RESET   -1
+#define SD_CS       5
 
 #define serialDebugOut Serial
 // Uncomment to view Note requests from the Host
@@ -25,23 +38,32 @@ Notecard notecard;
 // 2.13" Tricolor EPD with IL0373 chipset
 ThinkInk_213_Tricolor_RW display(EPD_DC, EPD_RESET, EPD_CS, SRAM_CS, EPD_BUSY);
 
+bool usingSD = false;
+SdFat SD;
+Adafruit_ImageReader_EPD reader(SD);
+
 // Variables for Env Var polling
 static unsigned long nextPollMs = 0;
 static uint32_t lastModifiedTime = 0;
+uint16_t displayUpdateInterval = 300;
+static unsigned long nextDisplayRotation = 0;
 
+// Struct for holding the current state of the application, while running
 applicationState state;
 
 // Forward declarations
 void fetchEnvironmentVariables(applicationState);
 bool pollEnvVars(void);
-void displayContent(void);
-int decodeImage(unsigned char *decoded);
+void rotateContent(void);
+void enumerateSDFiles();
+void displayImage(String);
+void displayText(String);
+void sendNotifyNote(J *);
 
 void setup() {
   serialDebugOut.begin(115200);
+  while (!serialDebugOut) { delay(10); }
 
-  //while (!serialDebugOut) { delay(10); }
-  delay(2500);
   serialDebugOut.println("Low-Power Digital Signage Demo");
   serialDebugOut.println("==============================");
 
@@ -53,15 +75,25 @@ void setup() {
 
   display.begin(THINKINK_TRICOLOR);
 
+  if(!SD.begin(SD_CS, SD_SCK_MHZ(10))) {
+    serialDebugOut.println("SD begin() failed");
+  } else {
+    usingSD = true;
+  }
+
+  // Notecard configuration for low-power operation
   configureNotecard();
 
-  // Check Environment Variables
-  fetchEnvironmentVariables(state);
-
-  displayContent();
+  if (usingSD) {
+    // Query SD Card for files and send Note to Notecard
+    enumerateSDFiles();
+  }
 }
 
 void loop() {
+  // Check for environment variable updates and display new content or images.
+  // If state.displayValues is not NULL, rotate to the next image or content
+  // in the collection.
   if (pollEnvVars()) {
     fetchEnvironmentVariables(state);
 
@@ -69,96 +101,64 @@ void loop() {
     {
       serialDebugOut.println("Environment Variable Updates Received");
 
-      displayContent();
-
-      J *req = notecard.newRequest("note.add");
-      if (req != NULL)
+      J *body = JCreateObject();
+      if (body != NULL)
       {
-        JAddStringToObject(req, "file", "notify.qo");
-        JAddBoolToObject(req, "sync", true);
-        J *body = JCreateObject();
-        if (body != NULL)
-        {
-          JAddBoolToObject(body, "updated", true);
-          JAddStringToObject(body, "app", "nf4");
+        JAddBoolToObject(body, "updated", true);
+        JAddStringToObject(body, "app", "nf4");
 
-          JAddItemToObject(req, "body", body);
-          notecard.sendRequest(req);
-        }
+        sendNotifyNote(body);
       }
+
+      rotateContent();
+
       state.variablesUpdated = false;
     }
   }
+
+  if (state.displayValues) {
+    rotateContent();
+  }
 }
 
-void displayContent() {
-  if (state.imageString != NULL) {
-    // Show image
-    unsigned char * imageBytes PROGMEM;
-    int imageBytesSize = decodeImage(imageBytes);
+void rotateContent() {
+  //Rotate items on the display based on interval
+  if (millis() < nextDisplayRotation) {
+    return;
+  }
 
-    if (imageBytesSize > 1) {
-      serialDebugOut.print("First element:\t");
-      serialDebugOut.println(imageBytes[885]);
+  nextDisplayRotation = millis() + (displayUpdateInterval * 1000);
 
-      for (size_t i = 0; i < imageBytesSize; i++)
-      {
-        if (imageBytes[i] != blues_logo[i]) {
-          serialDebugOut.println(imageBytes[i], HEX);
-          serialDebugOut.println(blues_logo[i], HEX);
-          serialDebugOut.println();
-        }
-      }
+  J *itemsToDisplay = state.displayObject->child;
 
-      if (strcmp(reinterpret_cast<const char*>(imageBytes), reinterpret_cast<const char*>(blues_logo)) != 0) {
-        serialDebugOut.println("Strings are not the same!");
-      } else {
-        serialDebugOut.println("Strings are the same!");
-      }
+  if (itemsToDisplay != NULL) {
+    int size = JGetArraySize(itemsToDisplay);
 
-      display.clearBuffer();
-      display.drawBitmap(0, 0, imageBytes, 250, 122, EPD_RED, EPD_WHITE);
-      display.display();
-    }
-  } else if (state.text != NULL) {
-    display.clearBuffer();
-
-    uint8_t textSize = 4;
-    uint8_t cursorY = 30;
-
-    char* text = const_cast<char*>(state.text.c_str());
-    size_t textLength = strlen(text);
-
-    if (textLength > 16 && textLength <= 32) {
-      textSize = 3;
-      cursorY = 20;
-    } else if (textLength > 32 && textLength <= 64) {
-      textSize = 2;
-      cursorY = 10;
-    } else if (textLength > 64) {
-      textSize = 1;
-      cursorY = 5;
+    // If there's only one item, don't rotate
+    if (size == 1 && state.displayUpdated) {
+      return;
     }
 
-    display.setCursor(0, cursorY);
-    display.setTextSize(textSize);
-    display.setTextColor(EPD_RED);
-
-    char* segment = strtok(text, " ");
-    while (segment != NULL) {
-      size_t segmentLen = strlen(segment);
-      uint8_t padSpaces = floor((44 / textSize - segmentLen) / 2.00);
-
-      for (size_t i = 0; i < padSpaces; i++)
-      {
-        display.print(" ");
-      }
-      display.println(segment);
-
-      segment = strtok(NULL, " ");
+    if (state.currentDisplayObjectIndex == size) {
+      state.currentDisplayObjectIndex = 0;
     }
 
-    display.display();
+    J *item = JGetArrayItem(itemsToDisplay, state.currentDisplayObjectIndex);
+
+    // If the string contains a ".bmp" it's an image to display.
+    // Otherwise, assume it's text.
+    if (strstr(item->valuestring, ".bmp") != NULL) {
+      serialDebugOut.print("Displaying image ");
+      serialDebugOut.println(item->valuestring);
+      displayImage(item->valuestring);
+    } else {
+      serialDebugOut.print("Displaying text ");
+      serialDebugOut.println(item->valuestring);
+      displayText(item->valuestring);
+    }
+
+    state.displayUpdated = true;
+    state.currentDisplayObjectIndex++;
   }
 }
 
@@ -166,8 +166,8 @@ void fetchEnvironmentVariables(applicationState vars) {
   J *req = notecard.newRequest("env.get");
 
   J *names = JAddArrayToObject(req, "names");
-  JAddItemToArray(names, JCreateString("text"));
-  JAddItemToArray(names, JCreateString("image_string"));
+  JAddItemToArray(names, JCreateString("display_interval_sec"));
+  JAddItemToArray(names, JCreateString("display_values"));
 
   J *rsp = notecard.requestAndResponse(req);
   if (rsp != NULL) {
@@ -179,24 +179,48 @@ void fetchEnvironmentVariables(applicationState vars) {
       // Get the note's body
       J *body = JGetObject(rsp, "body");
       if (body != NULL) {
-          char *text = JGetString(body, "text");
-          if (strcmp(vars.text.c_str(), text) != 0)
+          int displayInterval = atoi(JGetString(body, "display_interval_sec"));
+          if (displayInterval != vars.displayIntervalSec)
           {
-            vars.text = String(text);
+            vars.displayIntervalSec = displayInterval;
             vars.variablesUpdated = true;
+
+            displayUpdateInterval = vars.displayIntervalSec;
           }
 
-          char *imageString = JGetString(body, "image_string");
-          if (strcmp(vars.imageString.c_str(), imageString) != 0)
-          {
-            vars.imageString = String(imageString);
+          char *displayValues = JGetString(body, "display_values");
+          if (strcmp(vars.displayValues.c_str(), displayValues) != 0) {
+            vars.displayValues = String(displayValues);
             vars.variablesUpdated = true;
+            vars.displayUpdated = false;
+
+            J *valueList = JCreateObject();
+            if (valueList != NULL) {
+              J* listItems = JAddArrayToObject(valueList, "list_items");
+
+              if (listItems != NULL) {
+                char* value = strtok(displayValues, ";");
+
+                if (value == NULL) {
+                  JAddItemToArray(listItems, JCreateString(displayValues));
+                } else {
+                  while (value != NULL) {
+                    JAddItemToArray(listItems, JCreateString(value));
+
+                    value = strtok(NULL, ";");
+                  }
+                }
+              }
+              vars.displayObject = valueList;
+            }
           }
 
-          serialDebugOut.print("\nText: ");
-          serialDebugOut.println(vars.text);
-          // serialDebugOut.print("Image String: ");
-          // serialDebugOut.println(vars.imageString);
+          /*
+          serialDebugOut.print("\nDisplay Interval (sec): ");
+          serialDebugOut.println(vars.displayIntervalSec);
+          serialDebugOut.print("Display Values: ");
+          serialDebugOut.println(vars.displayValues);
+          */
 
           state = vars;
       }
@@ -229,18 +253,151 @@ bool pollEnvVars() {
   return true;
 }
 
-int decodeImage(unsigned char *decoded) {
-  char *imageString = const_cast<char*>(state.imageString.c_str());
-  int inputStringLength = strlen(imageString);
-  int decodedLength = b64_decoded_size(imageString)+1;
+void sendNotifyNote(J *body) {
+  J *req = notecard.newRequest("note.add");
+  if (req != NULL)
+  {
+    JAddStringToObject(req, "file", "notify.qo");
+    JAddBoolToObject(req, "sync", true);
+    JAddItemToObject(req, "body", body);
+    notecard.sendRequest(req);
+  }
+}
 
-  serialDebugOut.print("Input string length:\t");
-  serialDebugOut.println(inputStringLength);
+void displayText(String val) {
+  display.clearBuffer();
 
-  b64_decode(imageString, decoded, decodedLength);
+  uint8_t textSize = 4;
+  uint8_t cursorY = 30;
 
-  serialDebugOut.print("Decoded string length:\t");
-  serialDebugOut.println(decodedLength);
+  char* text = const_cast<char*>(val.c_str());
+  size_t textLength = strlen(text);
 
-  return decodedLength;
+  if (textLength > 16 && textLength <= 32) {
+    textSize = 3;
+    cursorY = 20;
+  } else if (textLength > 32 && textLength <= 64) {
+    textSize = 2;
+    cursorY = 10;
+  } else if (textLength > 64) {
+    textSize = 1;
+    cursorY = 5;
+  }
+
+  display.setCursor(0, cursorY);
+  display.setTextSize(textSize);
+  display.setTextColor(EPD_RED);
+
+  // Split the string by word and use the number of words to align and format
+  // the text so it looks centered on the display.
+  char* segment = strtok(text, " ");
+  while (segment != NULL) {
+    size_t segmentLen = strlen(segment);
+    uint8_t padSpaces = floor((44 / textSize - segmentLen) / 2.00);
+
+    for (size_t i = 0; i < padSpaces; i++)
+    {
+      display.print(" ");
+    }
+    display.println(segment);
+
+    segment = strtok(NULL, " ");
+  }
+
+  display.display();
+}
+
+void displayImage(String fileName) {
+  Adafruit_Image_EPD img;
+  int32_t width  = 0, height = 0;
+  ImageReturnCode ret;
+  const char *file = fileName.c_str();
+
+  if (!usingSD) {
+    return;
+  }
+
+  serialDebugOut.print("Querying image size...");
+  ret = reader.bmpDimensions(file, &width, &height);
+  reader.printStatus(ret);
+  if(ret == IMAGE_SUCCESS) {
+    serialDebugOut.print(F("Image dimensions: "));
+    serialDebugOut.print(width);
+    serialDebugOut.write('x');
+    serialDebugOut.println(height);
+
+    if (width != 250 && height != 122)
+    {
+      serialDebugOut.println("Image dimensions are incorrect.");
+
+      J *body = JCreateObject();
+      if (body != NULL)
+      {
+        JAddStringToObject(body, "message", "image dimensions are incorrect.");
+        JAddStringToObject(body, "file", file);
+        JAddStringToObject(body, "app", "nf4");
+
+        sendNotifyNote(body);
+      }
+    }
+
+    serialDebugOut.print(F("Loading image to canvas..."));
+    ret = reader.drawBMP((char *)file, display, 0, 0);
+    reader.printStatus(ret);
+    display.display();
+  } else {
+    serialDebugOut.println("Image not found.");
+    J *body = JCreateObject();
+      if (body != NULL)
+      {
+        JAddStringToObject(body, "message", "image not found.");
+        JAddStringToObject(body, "file", file);
+        JAddStringToObject(body, "app", "nf4");
+
+        sendNotifyNote(body);
+      }
+  }
+}
+
+void enumerateSDFiles() {
+  File dir;
+  File file;
+
+  if (!dir.open("/")){
+    serialDebugOut.println("dir.open failed");
+  }
+
+  J* req = notecard.newRequest("note.add");
+  if (req != NULL) {
+    JAddBoolToObject(req, "sync", true);
+    JAddStringToObject(req, "file", "image_files.qo");
+    J *body = JCreateObject();
+    if (body != NULL)
+    {
+      JAddStringToObject(body, "message","images detected on this display. Use the image environment variable to display an image to the screen.");
+      J* files = JAddArrayToObject(body, "images");
+      if (files != NULL) {
+        while (file.openNext(&dir, O_RDONLY)) {
+          char fileName[255];
+          file.getName(fileName, 255);
+
+          if (fileName[0] != '.' && !file.isDir()) {
+            JAddItemToArray(files, JCreateString(fileName));
+
+            // Uncomment to see file names during enumeration
+            //file.printName(&Serial);
+            //serialDebugOut.println();
+          }
+          file.close();
+        }
+
+        JAddItemToObject(req, "body", body);
+        notecard.sendRequest(req);
+      }
+    }
+  }
+
+  if (dir.getError()) {
+    serialDebugOut.println("file enumeration error.");
+  }
 }
