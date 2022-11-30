@@ -5,11 +5,10 @@ import { ErrorWithCause } from "pony-cause";
 import { HTTP_STATUS } from "../../../../constants/http";
 import { services } from "../../../../services/ServiceLocatorServer";
 
-// todo consider combining with name.ts file after it's working
-
 interface ValidRequest {
   deviceUID: string;
-  valveMonitorConfig: object;
+  valveMonitorConfig?: object;
+  name?: string;
 }
 
 function validateMethod(req: NextApiRequest, res: NextApiResponse) {
@@ -28,7 +27,9 @@ function validateRequest(
 ): false | ValidRequest {
   const { deviceUID } = req.query;
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const valveMonitorConfig = req.body;
+  const { valveMonitorConfig, name } = req.body as ValidRequest;
+
+  console.log(deviceUID, valveMonitorConfig, name);
 
   if (typeof deviceUID !== "string") {
     res.status(StatusCodes.BAD_REQUEST);
@@ -36,7 +37,16 @@ function validateRequest(
     return false;
   }
 
-  if (typeof valveMonitorConfig !== "object") {
+  if (typeof name !== "string" && typeof name !== "undefined") {
+    res.status(StatusCodes.BAD_REQUEST);
+    res.json({ err: HTTP_STATUS.INVALID_DEVICE_NAME });
+    return false;
+  }
+
+  if (
+    typeof valveMonitorConfig !== "object" &&
+    typeof valveMonitorConfig !== "undefined"
+  ) {
     res.status(StatusCodes.BAD_REQUEST);
     res.json({ err: HTTP_STATUS.INVALID_VALVE_MONITOR_CONFIG });
     return false;
@@ -48,14 +58,25 @@ function validateRequest(
 async function performPostRequest({
   deviceUID,
   valveMonitorConfig,
+  name,
 }: ValidRequest) {
   const app = services().getAppService();
 
+  console.log(
+    "🚀 ~ file: valve-monitor-config.ts:63 ~ valveMonitorConfig",
+    valveMonitorConfig
+  );
+
   try {
-    await app.setDeviceValveMonitorConfig(deviceUID, valveMonitorConfig);
+    if (valveMonitorConfig) {
+      await app.setDeviceValveMonitorConfig(deviceUID, valveMonitorConfig);
+    }
+    if (name) {
+      await app.setDeviceName(deviceUID, name);
+    }
   } catch (cause) {
     throw new ErrorWithCause(
-      "Could not access device valve monitor configuration",
+      "Could not perform device valve monitor configuration",
       {
         cause,
       }

@@ -1,7 +1,10 @@
-import { Input, Switch, Table, Tag } from "antd";
+import { useEffect, useRef, useState } from "react";
+import { Form, Input, InputRef, Switch, Table, Tag } from "antd";
 import type { ColumnsType } from "antd/lib/table";
+import { isEmpty } from "lodash";
 import { ValveMonitorDevice } from "../../services/AppModel";
-import { updateDeviceValveMonitorFrequency } from "../../api-client/valveDevices";
+import { ERROR_MESSAGE } from "../../constants/ui";
+import { updateDeviceValveMonitorConfig } from "../../api-client/valveDevices";
 import styles from "../../styles/ValveMonitorTable.module.scss";
 
 const columns = [
@@ -30,25 +33,26 @@ const columns = [
     ),
     dataIndex: "monitorFrequency",
     key: "monitorFrequency",
+    editable: true,
     align: "center",
   },
   {
+    // todo fix this
     title: "Alarm Threshold",
-    colSpan: 2,
     children: [
       {
         title: "Min",
         dataIndex: "minFlowThreshold",
-        colSpan: 0,
+        editable: true,
+        colSpan: 1,
         align: "center",
-        onCell: () => ({ rowSpan: 1 }),
       },
       {
         title: "Max",
         dataIndex: "maxFlowThreshold",
-        colSpan: 0,
+        editable: true,
+        colSpan: 1,
         align: "center",
-        onCell: () => ({ rowSpan: 1 }),
       },
     ],
     dataIndex: "deviceAlarmThreshold",
@@ -78,6 +82,106 @@ const columns = [
   },
 ] as ColumnsType<ValveMonitorDevice>;
 
+interface CustomCellProps {
+  title: string;
+  editable: boolean;
+  index: string;
+  children: JSX.Element;
+  record: ValveMonitorDevice;
+  onChange: (
+    deviceUID: string,
+    valveDeviceEnvVarToUpdate: { [key: string]: any }
+  ) => Promise<boolean>;
+}
+
+const CustomCell = ({
+  title,
+  editable,
+  children,
+  index,
+  record,
+  onChange,
+}: CustomCellProps) => {
+  const [editing, setEditing] = useState(false);
+  const inputRef = useRef<InputRef | null>(null);
+  const [form] = Form.useForm();
+
+  useEffect(() => {
+    if (editing && inputRef && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [editing]);
+
+  const toggleEdit = () => {
+    setEditing(!editing);
+    form.setFieldsValue({ [index]: record[index] });
+  };
+
+  const handleSave = () => {
+    const valveDeviceEnvVarToUpdate = form.getFieldsValue([index]) as {
+      [key: string]: number;
+    };
+
+    if (record[index] === valveDeviceEnvVarToUpdate[index]) {
+      toggleEdit();
+      return;
+    }
+
+    onChange(record.deviceID, valveDeviceEnvVarToUpdate)
+      .then(toggleEdit)
+      .catch(toggleEdit);
+  };
+
+  const handleBlur = () => {
+    const valveDeviceEnvVarToUpdate = form.getFieldsValue([index]) as {
+      [key: string]: number;
+    };
+
+    if (isEmpty(valveDeviceEnvVarToUpdate[index])) {
+      toggleEdit();
+      return;
+    }
+
+    handleSave();
+  };
+
+  let childNode = children;
+
+  // Create a custom form for editing
+  if (editable) {
+    childNode = editing ? (
+      <Form form={form}>
+        <Form.Item
+          style={{
+            margin: 0,
+          }}
+          name={index}
+          rules={[
+            {
+              required: true,
+              message: `${title} is required`,
+            },
+          ]}
+          initialValue={record[index] as [key: string]}
+        >
+          <Input
+            className="editable-input"
+            onBlur={handleBlur}
+            onPressEnter={handleSave}
+            ref={inputRef}
+          />
+        </Form.Item>
+      </Form>
+    ) : (
+      <button className="editable-button" onClick={toggleEdit} type="button">
+        {children}
+      </button>
+    );
+  }
+
+  return <td>{childNode}</td>;
+};
+
 interface ValveMonitorTableProps {
   data: ValveMonitorDevice[] | undefined;
   setIsErrored: (isErrored: boolean) => void;
@@ -93,34 +197,63 @@ const ValveMonitorTable = ({
   setIsLoading,
   setErrorMessage,
 }: ValveMonitorTableProps) => {
-  console.log(data);
-
-  const onDeviceMonitorFrequencyChange = async (
+  const onDeviceValveMonitorConfigChange = async (
     deviceUID: string,
-    newFrequency: number
+    valveDeviceEnvVarToUpdate: object
   ) => {
+    console.log(
+      "🚀 ~ file: ValveMonitorTable.tsx:202 ~ valveDeviceEnvVarToUpdate",
+      valveDeviceEnvVarToUpdate
+    );
     setIsErrored(false);
     setErrorMessage("");
     setIsLoading(true);
 
     try {
-      await updateDeviceValveMonitorFrequency(deviceUID, newFrequency);
+      await updateDeviceValveMonitorConfig(
+        deviceUID,
+        valveDeviceEnvVarToUpdate
+      );
     } catch (e) {
       setIsErrored(true);
-      setErrorMessage(
-        "REPLACE ME WITH A CONSTANT ABOUT NOT BEING ABLE TO UPDATE DEVICE MONITOR FREQUENCY"
-      );
+      setErrorMessage(ERROR_MESSAGE.UPDATE_DEVICE_MONITOR_FREQUENCY_FAILED);
     }
 
     await refreshData();
     setIsLoading(false);
   };
 
+  const mapColumns = (col) => {
+    console.log(col);
+    const newCol = {
+      ...col,
+      onCell: (record: ValveMonitorDevice) => ({
+        record,
+        editable: col.editable,
+        index: col.key,
+        title: col.title,
+        onChange: onDeviceValveMonitorConfigChange,
+      }),
+    };
+    if (col.children) {
+      newCol.children = col.children.map(mapColumns);
+    }
+    return newCol;
+  };
+
+  const editableColumns = columns.map(mapColumns);
+
   return (
     <div className={styles.tableContainer}>
       <Table
+        components={{
+          body: {
+            cell: CustomCell,
+          },
+        }}
         rowKey="name"
-        columns={columns}
+        // @ts-ignore
+        columns={editableColumns}
         dataSource={data}
         pagination={false}
       />

@@ -29,12 +29,13 @@ async function updateDeviceEnvVar(
   return response.data;
 }
 
-export async function updateDeviceValveMonitorFrequency(
+export async function updateDeviceValveMonitorConfig(
   deviceUID: string,
-  monitorFrequency: number
+  valveDeviceEnvVarToUpdate: object
 ) {
   const response = await updateDeviceEnvVar(deviceUID, {
-    monitor_frequency: monitorFrequency,
+    valveMonitorConfig: valveDeviceEnvVarToUpdate,
   });
+
   return response;
 }
