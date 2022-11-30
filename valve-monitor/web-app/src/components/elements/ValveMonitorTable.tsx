@@ -37,21 +37,20 @@ const columns = [
     align: "center",
   },
   {
-    // todo fix this
     title: "Alarm Threshold",
     children: [
       {
         title: "Min",
         dataIndex: "minFlowThreshold",
         editable: true,
-        colSpan: 1,
+        key: "minFlowThreshold",
         align: "center",
       },
       {
         title: "Max",
         dataIndex: "maxFlowThreshold",
         editable: true,
-        colSpan: 1,
+        key: "maxFlowThreshold",
         align: "center",
       },
     ],
@@ -82,8 +81,7 @@ const columns = [
   },
 ] as ColumnsType<ValveMonitorDevice>;
 
-interface CustomCellProps {
-  title: string;
+interface EditableCellProps {
   editable: boolean;
   index: string;
   children: JSX.Element;
@@ -94,14 +92,13 @@ interface CustomCellProps {
   ) => Promise<boolean>;
 }
 
-const CustomCell = ({
-  title,
+const EditableCell = ({
   editable,
   children,
   index,
   record,
   onChange,
-}: CustomCellProps) => {
+}: EditableCellProps) => {
   const [editing, setEditing] = useState(false);
   const inputRef = useRef<InputRef | null>(null);
   const [form] = Form.useForm();
@@ -147,7 +144,7 @@ const CustomCell = ({
 
   let childNode = children;
 
-  // Create a custom form for editing
+  // Create a custom form for editing cells
   if (editable) {
     childNode = editing ? (
       <Form form={form}>
@@ -159,7 +156,7 @@ const CustomCell = ({
           rules={[
             {
               required: true,
-              message: `${title} is required`,
+              message: `Number is required`,
             },
           ]}
           initialValue={record[index] as [key: string]}
@@ -201,10 +198,6 @@ const ValveMonitorTable = ({
     deviceUID: string,
     valveDeviceEnvVarToUpdate: object
   ) => {
-    console.log(
-      "🚀 ~ file: ValveMonitorTable.tsx:202 ~ valveDeviceEnvVarToUpdate",
-      valveDeviceEnvVarToUpdate
-    );
     setIsErrored(false);
     setErrorMessage("");
     setIsLoading(true);
@@ -224,35 +217,34 @@ const ValveMonitorTable = ({
   };
 
   const mapColumns = (col) => {
-    console.log(col);
     const newCol = {
       ...col,
       onCell: (record: ValveMonitorDevice) => ({
-        record,
         editable: col.editable,
         index: col.key,
-        title: col.title,
+        record,
         onChange: onDeviceValveMonitorConfigChange,
       }),
-    };
+    } as EditableCellProps;
     if (col.children) {
       newCol.children = col.children.map(mapColumns);
     }
     return newCol;
   };
 
-  const editableColumns = columns.map(mapColumns);
+  const editableColumns = columns.map(
+    mapColumns
+  ) as ColumnsType<ValveMonitorDevice>;
 
   return (
     <div className={styles.tableContainer}>
       <Table
         components={{
           body: {
-            cell: CustomCell,
+            cell: EditableCell,
           },
         }}
-        rowKey="name"
-        // @ts-ignore
+        rowKey="deviceID"
         columns={editableColumns}
         dataSource={data}
         pagination={false}
