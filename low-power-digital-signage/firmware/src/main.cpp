@@ -3,7 +3,7 @@
  * Written by the Blues Inc. team.
  *
  *
- * Copyright (c) 2019 Blues Inc. MIT License. Use of this source code is
+ * Copyright (c) 2022 Blues Inc. MIT License. Use of this source code is
  * governed by licenses granted by the copyright holder including that found in
  * the
  * <a href="https://github.com/blues/app-accelerators/blob/main/LICENSE">LICENSE</a>
@@ -52,12 +52,12 @@ static unsigned long nextDisplayRotation = 0;
 applicationState state;
 
 // Forward declarations
-void fetchEnvironmentVariables(applicationState);
+void fetchEnvironmentVariables(applicationState&);
 bool pollEnvVars(void);
 void rotateContent(void);
 void enumerateSDFiles();
 void displayImage(String);
-void displayText(String);
+void displayText(const String&);
 void sendNotifyNote(J *);
 
 void setup() {
@@ -165,7 +165,8 @@ void rotateContent() {
   }
 }
 
-void fetchEnvironmentVariables(applicationState vars) {
+void fetchEnvironmentVariables(applicationState& state) {
+  applicationState vars = state;
   J *req = notecard.newRequest("env.get");
 
   J *names = JAddArrayToObject(req, "names");
@@ -268,14 +269,15 @@ void sendNotifyNote(J *body) {
   }
 }
 
-void displayText(String val) {
+void displayText(const String& val) {
   display.clearBuffer();
 
   uint8_t textSize = 4;
   uint8_t cursorY = 30;
 
-  char* text = const_cast<char*>(val.c_str());
-  size_t textLength = strlen(text);
+  int textLength = val.length();
+  char text[textLength+1];
+  val.toCharArray(text, textLength+1);
 
   if (textLength > 16 && textLength <= 32) {
     textSize = 3;
@@ -297,6 +299,8 @@ void displayText(String val) {
   char* segment = strtok(text, " ");
   while (segment != NULL) {
     size_t segmentLen = strlen(segment);
+    // Determine the number of leading spaces we should have on the line
+    // in order to reasonably center the text
     uint8_t padSpaces = floor((44 / textSize - segmentLen) / 2.00);
 
     for (size_t i = 0; i < padSpaces; i++)
