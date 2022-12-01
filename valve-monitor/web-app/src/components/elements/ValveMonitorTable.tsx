@@ -9,7 +9,7 @@ import styles from "../../styles/ValveMonitorTable.module.scss";
 
 const columns = [
   {
-    title: "Valve Location",
+    title: "Location",
     dataIndex: "name",
     key: "name",
   },
@@ -17,7 +17,7 @@ const columns = [
     title: (
       <>
         <div>Flow Rate</div>
-        <div> mL/min</div>
+        <div>mL/min</div>
       </>
     ),
     dataIndex: "deviceFlowRate",
@@ -28,7 +28,7 @@ const columns = [
     title: (
       <>
         <div>Monitoring</div>
-        <div>Frequency (min)</div>
+        <div>(min)</div>
       </>
     ),
     dataIndex: "monitorFrequency",
@@ -37,7 +37,7 @@ const columns = [
     align: "center",
   },
   {
-    title: "Alarm Threshold",
+    title: "Alarm Setting",
     children: [
       {
         title: "Min",
@@ -212,8 +212,8 @@ const ValveMonitorTable = ({
       setErrorMessage(ERROR_MESSAGE.UPDATE_DEVICE_MONITOR_FREQUENCY_FAILED);
     }
 
-    await refreshData();
     setIsLoading(false);
+    await refreshData();
   };
 
   const mapColumns = (col) => {
