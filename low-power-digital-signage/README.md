@@ -45,7 +45,7 @@ two variables below.
     1. `display_values` which is a semicolon-delimited (`;`) string of text to display and/or bitmap images to load from an SD card to the e-ink display. If this variable has a single value (either text or an image name), that will be loaded. Otherwise, the values are loaded into an array and the host will display one item at a time using the `display_interval_sec` variable or a default value, if not set.
     1. `display_interval_sec` is the number of seconds to display text or an image on the screen before rotating to the next item in the list.
 
-1. With all four defined, click the blue **Save** button.
+1. With both defined, click the blue **Save** button.
 ![Notehub fleet environment variables fully defined](assets/images/notehub-env-vars-defined.png)
 
 With this your Notehub backend is fully configured, and you’re ready to start
