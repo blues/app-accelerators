@@ -2,11 +2,13 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { StatusCodes } from "http-status-codes";
 import { ErrorWithCause } from "pony-cause";
-import { HTTP_STATUS } from "../../../constants/http";
-import { services } from "../../../services/ServiceLocatorServer";
+import { HTTP_STATUS } from "../../../../constants/http";
+import { services } from "../../../../services/ServiceLocatorServer";
 
 interface ValidRequest {
-  valveMonitorConfig: object;
+  deviceUID: string;
+  valveMonitorConfig?: object;
+  name?: string;
 }
 
 function validateMethod(req: NextApiRequest, res: NextApiResponse) {
@@ -23,26 +25,51 @@ function validateRequest(
   req: NextApiRequest,
   res: NextApiResponse
 ): false | ValidRequest {
+  const { deviceUID } = req.query;
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const valveMonitorConfig = req.body;
+  const { valveMonitorConfig, name } = req.body as ValidRequest;
 
-  if (typeof valveMonitorConfig !== "object") {
+  if (typeof deviceUID !== "string") {
+    res.status(StatusCodes.BAD_REQUEST);
+    res.json({ err: HTTP_STATUS.INVALID_DEVICE });
+    return false;
+  }
+
+  if (typeof name !== "string" && typeof name !== "undefined") {
+    res.status(StatusCodes.BAD_REQUEST);
+    res.json({ err: HTTP_STATUS.INVALID_DEVICE_NAME });
+    return false;
+  }
+
+  if (
+    typeof valveMonitorConfig !== "object" &&
+    typeof valveMonitorConfig !== "undefined"
+  ) {
     res.status(StatusCodes.BAD_REQUEST);
     res.json({ err: HTTP_STATUS.INVALID_VALVE_MONITOR_CONFIG });
     return false;
   }
 
-  return { valveMonitorConfig };
+  return { deviceUID, valveMonitorConfig };
 }
 
-async function performPostRequest({ valveMonitorConfig }: ValidRequest) {
+async function performPostRequest({
+  deviceUID,
+  valveMonitorConfig,
+  name,
+}: ValidRequest) {
   const app = services().getAppService();
 
   try {
-    await app.setValveMonitorConfig(valveMonitorConfig);
+    if (valveMonitorConfig) {
+      await app.setDeviceValveMonitorConfig(deviceUID, valveMonitorConfig);
+    }
+    if (name) {
+      await app.setDeviceName(deviceUID, name);
+    }
   } catch (cause) {
     throw new ErrorWithCause(
-      "Could not access fleet valve monitor configuration",
+      "Could not perform device valve monitor configuration",
       {
         cause,
       }

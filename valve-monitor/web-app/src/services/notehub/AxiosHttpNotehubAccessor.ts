@@ -278,7 +278,10 @@ export default class AxiosHttpNotehubAccessor implements NotehubAccessor {
     return true;
   }
 
-  async setEnvironmentVariables(hubDeviceUID: string, envVars: NotehubEnvVars) {
+  async setEnvironmentVariablesByDevice(
+    hubDeviceUID: string,
+    envVars: NotehubEnvVars
+  ) {
     const endpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/devices/${hubDeviceUID}/environment_variables`;
     try {
       await axios.put(

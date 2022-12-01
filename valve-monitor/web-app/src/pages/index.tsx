@@ -118,7 +118,13 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
                   </Row>
                   <Row gutter={[16, 24]}>
                     <Col span={24}>
-                      <ValveMonitorTable data={valveMonitorDevices} />
+                      <ValveMonitorTable
+                        data={valveMonitorDevices}
+                        setIsErrored={setIsErrored}
+                        setIsLoading={setIsLoading}
+                        setErrorMessage={setErrorMessage}
+                        refreshData={refreshDataAndInvalidateCache}
+                      />
                     </Col>
                   </Row>
                 </>

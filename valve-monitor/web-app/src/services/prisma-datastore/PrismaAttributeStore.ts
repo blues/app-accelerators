@@ -25,6 +25,15 @@ export default class PrismaAttributeStore implements AttributeStore {
     });
   }
 
+  updateDeviceValveMonitorConfig(
+    deviceUID: string,
+    valveMonitorConfig: ValveMonitorConfig
+  ) {
+    // No action necessary as we don’t store environment variables in the
+    // database
+    return Promise.resolve();
+  }
+
   updateValveMonitorConfig(
     fleetUID: FleetID,
     valveMonitorConfig: ValveMonitorConfig

@@ -42,12 +42,12 @@ export interface ProjectDataSnapshot {
 export interface ValveMonitorDevice {
   deviceID: string;
   name: string;
-  lastActivity: string;
-  valveState: string;
-  deviceFlowRate: number | string;
+  lastActivity?: string;
+  valveState?: string;
+  deviceFlowRate?: number | string;
   deviceAlarm?: any;
-  deviceFleetID: string;
-  monitorFrequency?: number | null; // env var
-  minFlowThreshold?: number | null; // env var
-  maxFlowThreshold?: number | null; // env var
+  deviceFleetID?: string;
+  monitorFrequency?: number; // env var
+  minFlowThreshold?: number; // env var
+  maxFlowThreshold?: number; // env var
 }
