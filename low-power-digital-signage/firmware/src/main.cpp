@@ -62,7 +62,7 @@ void sendNotifyNote(J *);
 
 void setup() {
   serialDebugOut.begin(115200);
-  while (!serialDebugOut) { delay(10); }
+  delay(2500);
 
   serialDebugOut.println("Low-Power Digital Signage Demo");
   serialDebugOut.println("==============================");
@@ -379,6 +379,7 @@ void enumerateSDFiles() {
     if (body != NULL)
     {
       JAddStringToObject(body, "message","images detected on this display. Use the image environment variable to display an image to the screen.");
+      JAddStringToObject(body, "app", "nf4");
       J* files = JAddArrayToObject(body, "images");
       if (files != NULL) {
         while (file.openNext(&dir, O_RDONLY)) {
