@@ -2,6 +2,8 @@
 
 Use the Notecard and Notehub.io to keep a fleet of digital displays synchronized across a facility.
 
+![](assets/images/nf4.gif)
+
 To run this project yourself you'll need to:
 
 * [Configure Notehub](#notehub).
@@ -78,6 +80,8 @@ running on your device.
 ## Format Images for Display
 
 The [assets/bitmap/](/assets/bitmaps/) folder contains a number of bitmaps formatted for the 2.13" display. Simply copy these onto the root of a FAT formatted MicroSD card, and the firmware for this project will detect them.
+
+![Animated GIF of copying bitmaps onto the SD Card](assets/images/sdcard.gif)
 
 If you want to show your own images on the display, see [this guide](https://learn.adafruit.com/preparing-graphics-for-e-ink-displays?view=all) for detailed instructions on formatting and saving images for e-ink displays. Make sure to crop your images to 250x122 for display on the 2.13" screen.
 

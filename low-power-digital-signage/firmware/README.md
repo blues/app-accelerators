@@ -61,6 +61,8 @@ Additionally, the firmware sends outbound Notes to the Notecard and Notehub in s
 - If the host is unable to load an image from the SD card because the file is not found, a notification is sent.
 - If the loaded image is not in the correct dimensions (255x122), the image will not be loaded and a notification is sent.
 
+![Example of Events sent by a display](../assets/images/notehub-events.png)
+
 Once you have the firmware running, you'll want to set the environment variables above to test the application. If you want to deploy this app to multiple devices for fleet testing, make sure you attach a LiPo battery to both the Swan and Notecarrier B.
 
 When you are testing you can manually view events as they come in on Notehub, and use the UI or included scripts to update environment variables.
