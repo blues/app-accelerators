@@ -89,7 +89,7 @@ to get your firmware up and running.
 
 ## Update Environment Variables
 
-Once the app is running, you can update the display using the environment variables above, either using the Notehub UI or one of the shell scripts in the [`scripts`](/scripts/) folder.
+Once the app is running, you can update the display using the environment variables above, either using the Notehub UI or one of the shell scripts in the [`scripts`](scripts/) folder.
 
 The scripts use the Notehub API, so you'll need follow the [instructions here](https://dev.blues.io/reference/notehub-api/api-introduction/#authentication) to get an authentication token.
 
