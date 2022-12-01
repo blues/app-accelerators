@@ -51,7 +51,7 @@ at the bottom of your Visual Studio Code window.
 
 The firmware operates on two environment variables, which you can set at the fleet or device level using either the Notehub UI or one of the [shell scripts in the `scripts` folder](../scripts/).
 
-1. `display_values` which is a semicolon-delimited string of text to display and/or bitmap images to load from an SD card to the eInk display. If this variable has a single value (either text or an image name), that will be loaded. Otherwise, the values are loaded into an array and the host will display one item ata time using the `display_interval_sec` variable or a default value, if not set.
+1. `display_values` which is a semicolon-delimited string of text to display and/or bitmap images to load from an SD card to the e-ink display. If this variable has a single value (either text or an image name), that will be loaded. Otherwise, the values are loaded into an array and the host will display one item at a time using the `display_interval_sec` variable or a default value, if not set.
 1. `display_interval_sec` is the number of seconds to display text or an image on the screen before rotating to the next item in the list.
 
 Additionally, the firmware sends outbound Notes to the Notecard and Notehub in several cases:
