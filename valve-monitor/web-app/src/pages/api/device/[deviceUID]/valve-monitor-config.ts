@@ -29,8 +29,6 @@ function validateRequest(
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const { valveMonitorConfig, name } = req.body as ValidRequest;
 
-  console.log(deviceUID, valveMonitorConfig, name);
-
   if (typeof deviceUID !== "string") {
     res.status(StatusCodes.BAD_REQUEST);
     res.json({ err: HTTP_STATUS.INVALID_DEVICE });
@@ -61,11 +59,6 @@ async function performPostRequest({
   name,
 }: ValidRequest) {
   const app = services().getAppService();
-
-  console.log(
-    "🚀 ~ file: valve-monitor-config.ts:63 ~ valveMonitorConfig",
-    valveMonitorConfig
-  );
 
   try {
     if (valveMonitorConfig) {

@@ -209,7 +209,7 @@ const ValveMonitorTable = ({
       );
     } catch (e) {
       setIsErrored(true);
-      setErrorMessage(ERROR_MESSAGE.UPDATE_DEVICE_MONITOR_FREQUENCY_FAILED);
+      setErrorMessage(ERROR_MESSAGE.UPDATE_DEVICE_CONFIG_FAILED);
     }
 
     setIsLoading(false);
