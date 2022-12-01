@@ -54,12 +54,12 @@ A smarter mouse trap with SMS alerting.
 
 ---
 
-### 4. Low Power Digital Signage
+### 4. 🪧 Low Power Digital Signage
 
 A device to keep a fleet of digital displays synchronized across a facility.
 
 <p>
-  Details coming soon!
+  <a href="./low-power-digital-signage/"><b>🔧 Start Building</b></a>
 </p>
 
 ---
