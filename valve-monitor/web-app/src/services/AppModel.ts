@@ -47,7 +47,7 @@ export interface ValveMonitorDevice {
   deviceFlowRate?: number | string;
   deviceAlarm?: any;
   deviceFleetID?: string;
-  monitorFrequency?: number | null; // env var
-  minFlowThreshold?: number | null; // env var
-  maxFlowThreshold?: number | null; // env var
+  monitorFrequency?: number; // env var
+  minFlowThreshold?: number; // env var
+  maxFlowThreshold?: number; // env var
 }

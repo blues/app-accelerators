@@ -111,13 +111,13 @@ export default class CompositeDataProvider implements DataProvider {
 
       // device env vars trump fleet env vars
       const monitorFrequency =
-        deviceMonitorInterval || fleetMonitorInterval || "x";
+        deviceMonitorInterval || fleetMonitorInterval || undefined;
 
       const minFlowThreshold =
-        deviceMinFlowThreshold || fleetMinFlowThreshold || "xx.x";
+        deviceMinFlowThreshold || fleetMinFlowThreshold || undefined;
 
       const maxFlowThreshold =
-        deviceMaxFlowThreshold || fleetMaxFlowThreshold || "xx.x";
+        deviceMaxFlowThreshold || fleetMaxFlowThreshold || undefined;
 
       const formattedDeviceObj = {
         ...device,

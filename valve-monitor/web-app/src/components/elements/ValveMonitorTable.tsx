@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Form, Input, InputRef, Switch, Table, Tag } from "antd";
+import { Form, InputNumber, Switch, Table, Tag } from "antd";
 import type { ColumnsType } from "antd/lib/table";
 import { isEmpty } from "lodash";
 import { ValveMonitorDevice } from "../../services/AppModel";
@@ -100,7 +100,7 @@ const EditableCell = ({
   onChange,
 }: EditableCellProps) => {
   const [editing, setEditing] = useState(false);
-  const inputRef = useRef<InputRef | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -161,8 +161,9 @@ const EditableCell = ({
           ]}
           initialValue={record[index] as [key: string]}
         >
-          <Input
+          <InputNumber
             className="editable-input"
+            placeholder="xx.x"
             onBlur={handleBlur}
             onPressEnter={handleSave}
             ref={inputRef}
@@ -171,7 +172,7 @@ const EditableCell = ({
       </Form>
     ) : (
       <button className="editable-button" onClick={toggleEdit} type="button">
-        {children}
+        {children[1] || "xx.x"}
       </button>
     );
   }
