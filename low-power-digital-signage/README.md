@@ -79,7 +79,7 @@ running on your device.
 
 The [assets/bitmap/](/assets/bitmaps/) folder contains a number of bitmaps formatted for the 2.13" display. Simply copy these onto the root of a FAT formatted MicroSD card, and the firmware for this project will detect them.
 
-If you want to show your own images on the display, see [this guide](https://learn.adafruit.com/preparing-graphics-for-e-ink-displays?view=all) for detailed instructions on formatting and saving images for ePink displays. Make sure to crop your images to 250x122 for display on the 2.13" screen.
+If you want to show your own images on the display, see [this guide](https://learn.adafruit.com/preparing-graphics-for-e-ink-displays?view=all) for detailed instructions on formatting and saving images for e-ink displays. Make sure to crop your images to 250x122 for display on the 2.13" screen.
 
 ## Firmware
 
