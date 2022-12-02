@@ -59,6 +59,7 @@ A smarter mouse trap with SMS alerting.
 A device to keep a fleet of digital displays synchronized across a facility.
 
 <p>
+  <a href="https://www.hackster.io/brandonsatrom/build-a-fleet-of-low-power-cloud-connected-e-ink-displays-d588e7"><b>📚 Read About the Project</b></a> •
   <a href="./low-power-digital-signage/"><b>🔧 Start Building</b></a>
 </p>
 

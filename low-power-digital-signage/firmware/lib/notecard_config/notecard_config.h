@@ -34,7 +34,7 @@ void configureNotecard() {
   #else
     // Tune for a long-running app that doesn't need to make
     // immediate display updates.
-    AddStringToObject(req, "mode", "periodic");
+    JAddStringToObject(req, "mode", "periodic");
     JAddBoolToObject(req, "align", true);
     JAddNumberToObject(req, "inbound", 60); // Once an hour
     // Voltage-variable outbound settings based on battery life
