@@ -118,10 +118,10 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
                     <Col span={24}>
                       <ValveMonitorTable
                         data={valveMonitorDevices}
-                        refreshData={refreshDataAndInvalidateCache}
                         setIsErrored={setIsErrored}
                         setIsLoading={setIsLoading}
                         setErrorMessage={setErrorMessage}
+                        refreshData={refreshDataAndInvalidateCache}
                       />
                     </Col>
                   </Row>

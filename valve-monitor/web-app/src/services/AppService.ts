@@ -27,6 +27,10 @@ interface AppServiceInterface {
   setDeviceName: (deviceUID: string, name: string) => Promise<void>;
 
   getValveMonitorDeviceData: () => Promise<ValveMonitorDevice[]>;
+  setDeviceValveMonitorConfig: (
+    deviceUID: string,
+    valveMonitorConfig: ValveMonitorConfig
+  ) => Promise<void>;
 
   handleEvent(event: AppEvent): Promise<void>;
 
@@ -94,6 +98,16 @@ export default class AppService implements AppServiceInterface {
 
   async getValveMonitorDeviceData() {
     return this.dataProvider.getValveMonitorDeviceData();
+  }
+
+  async setDeviceValveMonitorConfig(
+    deviceUID: string,
+    valveMonitorConfig: ValveMonitorConfig
+  ): Promise<void> {
+    return this.attributeStore.updateDeviceValveMonitorConfig(
+      deviceUID,
+      valveMonitorConfig
+    );
   }
 
   async getFleetsByProject() {

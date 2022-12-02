@@ -200,10 +200,11 @@ describe("Environment variable handling", () => {
   it("should true if the request succeeds", async () => {
     mock.onPut(API_ENV_VAR_URL).reply(200, mockEnvVarResponse);
 
-    const res = await axiosHttpNotehubAccessorMock.setEnvironmentVariables(
-      mockDeviceUID,
-      { _sn: "TEST" }
-    );
+    const res =
+      await axiosHttpNotehubAccessorMock.setEnvironmentVariablesByDevice(
+        mockDeviceUID,
+        { _sn: "TEST" }
+      );
     expect(res).toEqual(true);
   });
 
@@ -211,9 +212,12 @@ describe("Environment variable handling", () => {
     mock.onPut(API_ENV_VAR_URL).reply(401, mockEnvVarResponse);
 
     await expect(
-      axiosHttpNotehubAccessorMock.setEnvironmentVariables(mockDeviceUID, {
-        _sn: "TEST",
-      })
+      axiosHttpNotehubAccessorMock.setEnvironmentVariablesByDevice(
+        mockDeviceUID,
+        {
+          _sn: "TEST",
+        }
+      )
     ).rejects.toThrow(ERROR_CODES.UNAUTHORIZED);
   });
 
@@ -221,9 +225,12 @@ describe("Environment variable handling", () => {
     mock.onPut(API_ENV_VAR_URL).reply(403, mockEnvVarResponse);
 
     await expect(
-      axiosHttpNotehubAccessorMock.setEnvironmentVariables(mockDeviceUID, {
-        _sn: "TEST",
-      })
+      axiosHttpNotehubAccessorMock.setEnvironmentVariablesByDevice(
+        mockDeviceUID,
+        {
+          _sn: "TEST",
+        }
+      )
     ).rejects.toThrow(ERROR_CODES.FORBIDDEN);
   });
 
@@ -231,9 +238,12 @@ describe("Environment variable handling", () => {
     mock.onPut(API_ENV_VAR_URL).reply(404, mockEnvVarResponse);
 
     await expect(
-      axiosHttpNotehubAccessorMock.setEnvironmentVariables(mockDeviceUID, {
-        _sn: "TEST",
-      })
+      axiosHttpNotehubAccessorMock.setEnvironmentVariablesByDevice(
+        mockDeviceUID,
+        {
+          _sn: "TEST",
+        }
+      )
     ).rejects.toThrow(ERROR_CODES.DEVICE_NOT_FOUND);
   });
 
@@ -241,9 +251,12 @@ describe("Environment variable handling", () => {
     mock.onPut(API_ENV_VAR_URL).reply(500, mockEnvVarResponse);
 
     await expect(
-      axiosHttpNotehubAccessorMock.setEnvironmentVariables(mockDeviceUID, {
-        _sn: "TEST",
-      })
+      axiosHttpNotehubAccessorMock.setEnvironmentVariablesByDevice(
+        mockDeviceUID,
+        {
+          _sn: "TEST",
+        }
+      )
     ).rejects.toThrow(ERROR_CODES.INTERNAL_ERROR);
   });
 });

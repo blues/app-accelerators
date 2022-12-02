@@ -1,22 +1,27 @@
-import { Form, Input, InputRef, Switch, Table, Tag } from "antd";
-import type { ColumnsType } from "antd/lib/table";
 import { useEffect, useRef, useState } from "react";
-import { changeDeviceName } from "../../api-client/valveDevices";
-import { ERROR_MESSAGE } from "../../constants/ui";
+import { Form, Input, InputNumber, Switch, Table, Tag } from "antd";
+import type { ColumnsType } from "antd/lib/table";
+import { isEmpty } from "lodash";
 import { ValveMonitorDevice } from "../../services/AppModel";
+import { ERROR_MESSAGE } from "../../constants/ui";
+import {
+  changeDeviceName,
+  updateDeviceValveMonitorConfig,
+} from "../../api-client/valveDevices";
 import styles from "../../styles/ValveMonitorTable.module.scss";
 
 const columns = [
   {
-    title: "Valve Location",
+    title: "Location",
     dataIndex: "name",
     key: "name",
+    editable: true,
   },
   {
     title: (
       <>
         <div>Flow Rate</div>
-        <div> mL/min</div>
+        <div>mL/min</div>
       </>
     ),
     dataIndex: "deviceFlowRate",
@@ -27,30 +32,30 @@ const columns = [
     title: (
       <>
         <div>Monitoring</div>
-        <div>Frequency (min)</div>
+        <div>(min)</div>
       </>
     ),
     dataIndex: "monitorFrequency",
     key: "monitorFrequency",
+    editable: true,
     align: "center",
   },
   {
-    title: "Alarm Threshold",
-    colSpan: 2,
+    title: "Alarm Setting",
     children: [
       {
         title: "Min",
         dataIndex: "minFlowThreshold",
-        colSpan: 0,
+        editable: true,
+        key: "minFlowThreshold",
         align: "center",
-        onCell: () => ({ rowSpan: 1 }),
       },
       {
         title: "Max",
         dataIndex: "maxFlowThreshold",
-        colSpan: 0,
+        editable: true,
+        key: "maxFlowThreshold",
         align: "center",
-        onCell: () => ({ rowSpan: 1 }),
       },
     ],
     dataIndex: "deviceAlarmThreshold",
@@ -80,21 +85,26 @@ const columns = [
   },
 ] as ColumnsType<ValveMonitorDevice>;
 
-interface CustomCellProps {
+interface EditableCellProps {
+  editable: boolean;
   index: string;
   children: JSX.Element;
   record: ValveMonitorDevice;
-  onNameChange: (deviceID: string, updatedName: string) => Promise<boolean>;
+  onChange: (
+    deviceUID: string,
+    valveDeviceEnvVarToUpdate: { [key: string]: any }
+  ) => Promise<boolean>;
 }
 
-const CustomCell = ({
+const EditableCell = ({
+  editable,
   children,
   index,
   record,
-  onNameChange,
-}: CustomCellProps) => {
+  onChange,
+}: EditableCellProps) => {
   const [editing, setEditing] = useState(false);
-  const inputRef = useRef<InputRef | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -105,57 +115,82 @@ const CustomCell = ({
 
   const toggleEdit = () => {
     setEditing(!editing);
+    form.setFieldsValue({ [index]: record[index] });
   };
+
   const handleSave = () => {
-    const newName = form.getFieldValue("name") as string;
-    if (newName.trim() === "") {
-      return;
-    }
+    const valveDeviceEnvVarToUpdate = form.getFieldsValue([index]) as {
+      [key: string]: number;
+    };
 
-    if (record.name === newName) {
+    if (record[index] === valveDeviceEnvVarToUpdate[index]) {
       toggleEdit();
       return;
     }
 
-    onNameChange(record.deviceID, newName).then(toggleEdit).catch(toggleEdit);
+    onChange(record.deviceID, valveDeviceEnvVarToUpdate)
+      .then(toggleEdit)
+      .catch(toggleEdit);
   };
+
   const handleBlur = () => {
-    const newName = form.getFieldValue("name") as string;
-    if (newName.trim() === "") {
+    const valveDeviceEnvVarToUpdate = form.getFieldsValue([index]) as {
+      [key: string]: number;
+    };
+
+    if (isEmpty(valveDeviceEnvVarToUpdate[index])) {
       toggleEdit();
       return;
     }
+
     handleSave();
   };
 
   let childNode = children;
-  if (index === "name") {
+
+  // Create a custom form for editing cells
+  if (editable) {
     childNode = editing ? (
       <Form form={form}>
         <Form.Item
           style={{
             margin: 0,
           }}
-          name="name"
+          name={index}
           rules={[
             {
               required: true,
-              message: "Name is required",
+              message:
+                index === "name" ? `Name is required` : `Number is required`,
             },
           ]}
-          initialValue={record.name}
+          initialValue={record[index] as [key: string]}
         >
-          <Input
-            className="editable-input"
-            onBlur={handleBlur}
-            onPressEnter={handleSave}
-            ref={inputRef}
-          />
+          {index === "name" ? (
+            <Input
+              className="editable-input editable-input-name"
+              onBlur={handleBlur}
+              onPressEnter={handleSave}
+              ref={inputRef}
+            />
+          ) : (
+            <InputNumber
+              className="editable-input"
+              placeholder="xx.x"
+              onBlur={handleBlur}
+              onPressEnter={handleSave}
+              ref={inputRef}
+            />
+          )}
         </Form.Item>
       </Form>
     ) : (
-      <button className="editable-button" onClick={toggleEdit} type="button">
-        {children}
+      <button
+        className={`editable-button editable-button-${index}`}
+        onClick={toggleEdit}
+        type="button"
+      >
+        {children[1] || "xx.x"}
       </button>
     );
   }
@@ -171,6 +206,13 @@ interface ValveMonitorTableProps {
   refreshData: () => Promise<void>;
 }
 
+interface ValveMonitorConfigChange {
+  name?: string;
+  monitorFrequency?: string;
+  minFlowThreshold?: string;
+  maxFlowThreshold?: string;
+}
+
 const ValveMonitorTable = ({
   data,
   refreshData,
@@ -178,47 +220,63 @@ const ValveMonitorTable = ({
   setIsLoading,
   setErrorMessage,
 }: ValveMonitorTableProps) => {
-  const onNameChange = async (deviceID: string, newName: string) => {
+  const onDeviceValveMonitorConfigChange = async (
+    deviceUID: string,
+    valveDeviceEnvVarToUpdate: ValveMonitorConfigChange
+  ) => {
     setIsErrored(false);
     setErrorMessage("");
     setIsLoading(true);
 
     try {
-      await changeDeviceName(deviceID, newName);
+      // Name updates
+      if (valveDeviceEnvVarToUpdate.name) {
+        await changeDeviceName(deviceUID, valveDeviceEnvVarToUpdate.name);
+      } else {
+        // All other environment variable updates
+        await updateDeviceValveMonitorConfig(
+          deviceUID,
+          valveDeviceEnvVarToUpdate
+        );
+      }
     } catch (e) {
       setIsErrored(true);
-      setErrorMessage(ERROR_MESSAGE.DEVICE_NAME_CHANGE_FAILED);
+      setErrorMessage(ERROR_MESSAGE.UPDATE_DEVICE_CONFIG_FAILED);
     }
 
-    await refreshData();
     setIsLoading(false);
+    await refreshData();
   };
 
-  const editableColumns = columns.map((col) => ({
-    ...col,
-    onCell: (record: ValveMonitorDevice) => ({
-      record,
-      index: col.key,
-      title: col.title,
-      onNameChange,
-    }),
-  }));
+  const mapColumns = (col) => {
+    const newCol = {
+      ...col,
+      onCell: (record: ValveMonitorDevice) => ({
+        editable: col.editable,
+        index: col.key,
+        record,
+        onChange: onDeviceValveMonitorConfigChange,
+      }),
+    } as EditableCellProps;
+    if (col.children) {
+      newCol.children = col.children.map(mapColumns);
+    }
+    return newCol;
+  };
+
+  const editableColumns = columns.map(
+    mapColumns
+  ) as ColumnsType<ValveMonitorDevice>;
 
   return (
     <div className={styles.tableContainer}>
       <Table
         components={{
           body: {
-            cell: CustomCell,
+            cell: EditableCell,
           },
         }}
-        rowKey="name"
-        // TypeScript does not like the custom properties being present on the column
-        // definitions, but they’re essential to Ant’s recommended way of allowing
-        // users to edit cell contents.
-        // https://ant.design/components/table/#components-table-demo-edit-cell
-        // https://github.com/ant-design/ant-design/issues/22451#issuecomment-714513684
-        // @ts-ignore
+        rowKey="deviceID"
         columns={editableColumns}
         dataSource={data}
         pagination={false}
