@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Form, Input, InputNumber, Switch, Table, Tag } from "antd";
+import { MutableRefObject, useEffect, useRef, useState } from "react";
+import { Form, Input, InputNumber, InputRef, Switch, Table, Tag } from "antd";
 import type { ColumnsType } from "antd/lib/table";
 import { isEmpty } from "lodash";
 import { ValveMonitorDevice } from "../../services/AppModel";
@@ -104,7 +104,7 @@ const EditableCell = ({
   onChange,
 }: EditableCellProps) => {
   const [editing, setEditing] = useState(false);
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | InputRef | null>(null);
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -171,7 +171,7 @@ const EditableCell = ({
               className="editable-input editable-input-name"
               onBlur={handleBlur}
               onPressEnter={handleSave}
-              ref={inputRef}
+              ref={inputRef as MutableRefObject<InputRef>}
             />
           ) : (
             <InputNumber
@@ -179,7 +179,7 @@ const EditableCell = ({
               placeholder="xx.x"
               onBlur={handleBlur}
               onPressEnter={handleSave}
-              ref={inputRef}
+              ref={inputRef as MutableRefObject<HTMLInputElement>}
             />
           )}
         </Form.Item>
