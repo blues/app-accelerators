@@ -9,12 +9,14 @@
 
 #pragma once
 
-// Notehub definitions
-#define	NOTEHUB_PRODUCT_UID	"com.blues.mat:test"
+#ifndef PRODUCT_UID
+#define PRODUCT_UID ""		// "com.my-company.my-name:my-project"
+#pragma message "PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://bit.ly/product-uid"
+#endif
 
 // Define this if using USB serial, and comment it out if using the ST-Link V3
 // (See USING_SWAN.txt for more info.)
-//#define debug Serial
+// #define debug Serial
 
 // Define the debug output stream device, as well as a method enabling us
 // to determine whether or not the Serial device is available for app usage.

@@ -7,7 +7,6 @@ Make sure that
 2. The SWITCHED switch should be set to ON
 3. IF you are connecting this to a DigitalLoggers (DLI) Power Control device, connect + to the F_D10 pad and - to GND
 
-If you are using a 
 *** Before doing anything, the Dr. Wattson board requires that its I2C address be specified, soldering as follows:
 
 With the board laid out with the pins pointing at you, A1/SJ1 is left (toward inside of board) and A0/SJ2 is right (toward right edge of board).

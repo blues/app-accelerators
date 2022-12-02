@@ -33,7 +33,7 @@ pindef ioPin[] = {
 
 // Notefile/Note definitions
 #define	DATA_FILENAME			"power.qo"
-#define DATA_FIELD_APP          "app"
+#define DATA_FIELD_APP			"app"
 #define DATA_FIELD_EVENT		"event"
 #define DATA_FIELD_INSTANCE		"instance"
 #define DATA_FIELD_VOLTAGE		"voltage"
@@ -154,7 +154,7 @@ bool appSetup(void)
 
     // Initialize the Notecard for I2C and for the rtos
     J *req = notecard.newRequest("hub.set");
-    JAddStringToObject(req, "product", NOTEHUB_PRODUCT_UID);
+    JAddStringToObject(req, "product", PRODUCT_UID);
     JAddStringToObject(req, "mode", "continuous");
     JAddBoolToObject(req, "sync", true);
     JAddNumberToObject(req, "inbound", 60*24);
