@@ -1,4 +1,4 @@
-1. You will need the drwattson Arduino librar
+1. You will need the drwattson Arduino library
 a) Download the ZIP (under the Code button) from http://github.com/upbeatlabs/drwattson
 b) Unzip it to your desktop
 c) Use the Arduino Sketch / Include Library / Add .ZIP Library option to add the folder "drwattson-master/Arduino/UpbeatLabs_MCP39F521" to the project
