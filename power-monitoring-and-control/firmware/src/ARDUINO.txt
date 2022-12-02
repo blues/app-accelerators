@@ -1,0 +1,24 @@
+1. You will need the drwattson Arduino library
+a) Download the ZIP (under the Code button) from http://github.com/upbeatlabs/drwattson
+b) Unzip it to your desktop
+c) Use the Arduino Sketch / Include Library / Add .ZIP Library option to add the folder "drwattson-master/Arduino/UpbeatLabs_MCP39F521" to the project
+
+2. Arduino has a very limited Serial input buffer, which means that if a developer wishes to use the serial port in a way that receives a large volume of data quickly, the data will be truncated.
+
+The workaround, which is required by this sketch, is to add a compiler flag that increases the serial buffer size.
+
+The first thing you must do is to find the location of the "platform.txt" for the board that you are building for.
+
+For Swan, which is supported by STM32Duino, this is generally located at:
+	Mac
+		~/Library/Arduino15/packages/STMicroelectronics/hardware/stm32/2.3.0
+	Windows
+		%HOME$/AppData/Local/Arduino15/packages/STMicroelectronics/hardware/stm32/2.3.0
+
+Create a file in that directory called "platform.local.txt" that has this line within it:
+
+compiler.cpp.extra_flags=-DSERIAL_RX_BUFFER_SIZE=4096
+
+This will increase the RX buffer size to what you need for this sketch.
+
+When using PlatformIO the `SERIAL_RX_BUFFER_SIZE` define is already present in the platformio.ini file in this project.
