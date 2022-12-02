@@ -3,8 +3,7 @@ a) Download the ZIP (under the Code button) from http://github.com/upbeatlabs/dr
 b) Unzip it to your desktop
 c) Use the Arduino Sketch / Include Library / Add .ZIP Library option to add the folder "drwattson-master/Arduino/UpbeatLabs_MCP39F521" to the project
 
-2. 
-Arduino has a very limited Serial input buffer, which means that if a developer wishes to use the serial port in a way that receives a large volume of data quickly, the data will be truncated.
+2. Arduino has a very limited Serial input buffer, which means that if a developer wishes to use the serial port in a way that receives a large volume of data quickly, the data will be truncated.
 
 The workaround, which is required by this sketch, is to add a compiler flag that increases the serial buffer size.
 
