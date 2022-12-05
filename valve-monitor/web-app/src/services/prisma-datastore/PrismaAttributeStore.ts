@@ -25,6 +25,18 @@ export default class PrismaAttributeStore implements AttributeStore {
     });
   }
 
+  async updateValveState(deviceUID: string, state: string) {
+    await this.prisma.event.create({
+      data: {
+        eventName: "data.qi",
+        eventUID: "-",
+        deviceUID,
+        value: { state },
+        when: new Date(),
+      },
+    });
+  }
+
   updateDeviceValveMonitorConfig(
     deviceUID: string,
     valveMonitorConfig: ValveMonitorConfig
@@ -40,11 +52,6 @@ export default class PrismaAttributeStore implements AttributeStore {
   ) {
     // No action necessary as we don’t store environment variables in the
     // database
-    return Promise.resolve();
-  }
-
-  updateValveState(deviceUID: string, state: string) {
-    // TODO: Make this work
     return Promise.resolve();
   }
 }
