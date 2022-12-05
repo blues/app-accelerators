@@ -50,7 +50,7 @@ function validateRequest(
     return false;
   }
 
-  return { deviceUID, valveMonitorConfig };
+  return { deviceUID, valveMonitorConfig, name };
 }
 
 async function performPostRequest({

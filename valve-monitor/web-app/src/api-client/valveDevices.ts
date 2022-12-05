@@ -41,8 +41,9 @@ export async function updateDeviceValveMonitorConfig(
 }
 
 export async function changeDeviceName(deviceUID: string, name: string) {
-  const endpoint = services().getUrlManager().deviceNameUpdate(deviceUID);
-  const postBody = { name };
-  const response: AxiosResponse = await axios.post(endpoint, postBody);
-  return response.status === 200;
+  const response = await updateDeviceEnvVar(deviceUID, {
+    name,
+  });
+
+  return response;
 }
