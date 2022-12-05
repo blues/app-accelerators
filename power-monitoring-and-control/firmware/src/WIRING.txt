@@ -1,0 +1,50 @@
+*** Notecarrier-F Specific
+
+Add the Swan to the Notecarrier-F.
+
+Make sure that
+1. The DFU switch is ON, which maps AUX RX/TX over to F_TX/F_RX for our use of card.aux.serial
+2. The SWITCHED switch should be set to ON
+3. IF you are connecting this to a DigitalLoggers (DLI) Power Control device, connect + to the F_D10 pad and - to GND
+
+*** Before doing anything, the Dr. Wattson board requires that its I2C address be specified, soldering as follows:
+
+With the board laid out with the pins pointing at you, A1/SJ1 is left (toward inside of board) and A0/SJ2 is right (toward right edge of board).
+
+When soldering to add a solder bridge, the LEFT PAIR SOLDERED is HIGH and RIGHT PAIR SOLDERED is LOW.
+
+0x74  SJ1/A1  LOW, SJ2/A0 LOW
+0x75  SJ1/A1  LOW, SJ2/A0 HIGH
+0x76  SJ1/A1 HIGH, SJ2/A0 LOW
+0x77  SJ1/A1 HIGH, SJ2/A0 HIGH
+
+Note that the firmware works with any address as it dynamically senses 'what's out there'.
+
+*** If you just want to use I2C and nothing else ***
+
+1. buy this: https://www.adafruit.com/product/4397
+2. with the pcb laid out with the 8 pins pointing at you, connect that cable as:
+BLACK  RED  NC  NC  NC  NC  BLUE  YELLOW
+
+That's all you need to wire, and you can connect it to either the Notecarrier-F's QWIICs or the Swan's QWIIC.  I have verified that the Swan/Notecarrier-F supplies sufficient current to power four units.
+
+In order to mux them, you can use either:
+https://www.adafruit.com/product/4861
+https://www.adafruit.com/product/5625
+
+*** If you are using Notecarrier-F and want to test all signals (for example, if using Dr. Wattson's examples),
+
+With the PCB laid out with the 8 pins pointing at you,
+GND to Notecarrier-F Pin GND
+3.3v (power) to Notecarrier-F Pin F_3V3
+Vin (logic level power) to Notecarrier-F Pin N_VIO
+GND to Notecarrier-F Pin  GND
+Event to Notecarrier-F Pin F_D6
+ZCD to Notecarrier-F Pin F_D5
+SDA to Notecarrier-F Pin F_SDA
+SCL to Notecarrier-F Pin F_SCL
+
+*** For reference:
+https://www.upbeatlabs.com/wattson/
+https://www.tindie.com/products/upbeatlabs/dr-wattson-energy-monitoring-board-v2-2/
+https://github.com/upbeatlabs/drwattson

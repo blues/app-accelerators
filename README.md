@@ -54,22 +54,24 @@ A smarter mouse trap with SMS alerting.
 
 ---
 
-### 4. Low Power Digital Signage
+### 4. 🪧 Low Power Digital Signage
 
 A device to keep a fleet of digital displays synchronized across a facility.
 
 <p>
-  Details coming soon!
+  <a href="https://www.hackster.io/brandonsatrom/build-a-fleet-of-low-power-cloud-connected-e-ink-displays-d588e7"><b>📚 Read About the Project</b></a> •
+  <a href="./low-power-digital-signage/"><b>🔧 Start Building</b></a>
 </p>
 
 ---
 
-### 5. Connected Analog Signage
+### 5. 🚞 Connected Analog Signage
 
-A device to keep a fleet of analog displays synchronized across a facility.
+Use the Notecard and a Wi-Fi-capable MCU to update character values on an analog split-flap display.
 
 <p>
-  Details coming soon!
+  <a href="https://www.hackster.io/brandonsatrom/build-a-cellular-powered-fleet-of-split-flap-displays-a8dc0f"><b>📚 Read About the Project</b></a> •
+  <a href="./analog-signage/"><b>🔧 Start Building</b></a>
 </p>
 
 ---
