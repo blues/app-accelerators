@@ -10,4 +10,6 @@ export interface UrlManager {
 
   setDeviceValveMonitorConfig(deviceUID: string): string;
   setFleetValveMonitorConfig(): string;
+
+  updateValveState(deviceUID: string): string;
 }

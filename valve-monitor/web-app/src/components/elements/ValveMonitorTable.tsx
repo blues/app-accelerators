@@ -7,6 +7,7 @@ import { ERROR_MESSAGE } from "../../constants/ui";
 import {
   changeDeviceName,
   updateDeviceValveMonitorConfig,
+  updateValveControl,
 } from "../../api-client/valveDevices";
 import styles from "../../styles/ValveMonitorTable.module.scss";
 
@@ -81,7 +82,8 @@ const columns = [
     title: "Valve Control (open/closed)",
     align: "center",
     width: "15%",
-    render: (_, record) => <Switch checked={record.valveState === "open"} />,
+    key: "valveControl",
+    editable: true,
   },
 ] as ColumnsType<ValveMonitorDevice>;
 
@@ -149,7 +151,7 @@ const EditableCell = ({
   let childNode = children;
 
   // Create a custom form for editing cells
-  if (editable) {
+  if (editable && index !== "valveControl") {
     childNode = editing ? (
       <Form form={form}>
         <Form.Item
@@ -195,6 +197,19 @@ const EditableCell = ({
     );
   }
 
+  if (index === "valveControl") {
+    childNode = (
+      <Switch
+        onChange={(value) => {
+          onChange(record.deviceID, {
+            valveControl: value ? "open" : "closed",
+          });
+        }}
+        checked={record.valveState === "open"}
+      />
+    );
+  }
+
   return <td>{childNode}</td>;
 };
 
@@ -211,6 +226,7 @@ interface ValveMonitorConfigChange {
   monitorFrequency?: string;
   minFlowThreshold?: string;
   maxFlowThreshold?: string;
+  valveControl?: string;
 }
 
 const ValveMonitorTable = ({
@@ -229,9 +245,15 @@ const ValveMonitorTable = ({
     setIsLoading(true);
 
     try {
-      // Name updates
       if (valveDeviceEnvVarToUpdate.name) {
+        // Name updates
         await changeDeviceName(deviceUID, valveDeviceEnvVarToUpdate.name);
+      } else if (valveDeviceEnvVarToUpdate.valveControl) {
+        // Valve control updates
+        await updateValveControl(
+          deviceUID,
+          valveDeviceEnvVarToUpdate.valveControl
+        );
       } else {
         // All other environment variable updates
         await updateDeviceValveMonitorConfig(

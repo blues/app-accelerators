@@ -47,3 +47,9 @@ export async function changeDeviceName(deviceUID: string, name: string) {
 
   return response;
 }
+
+export async function updateValveControl(deviceUID: string, state: string) {
+  const endpoint = services().getUrlManager().updateValveState(deviceUID);
+  const response = await axios.post<object>(endpoint, { state });
+  return response;
+}
