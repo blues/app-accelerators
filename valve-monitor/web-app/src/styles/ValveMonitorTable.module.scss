@@ -41,6 +41,15 @@
     border-radius: 2px;
   }
 
+  :global .ant-table-tbody .editable-input-name,
+  :global .ant-table-tbody .editable-button-name {
+    max-width: 150px;
+    width: 150px;
+    text-align: left;
+    padding: 0.25em 0.5em;
+    margin: auto;
+  }
+
   :global .ant-input-number {
     width: 70px;
     margin: auto;

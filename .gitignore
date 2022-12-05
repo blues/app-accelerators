@@ -1,2 +1,6 @@
 # misc
 .DS_Store
+.idea
+venv
+env
+.pio
