@@ -65,7 +65,7 @@ const columns = [
     align: "center",
   },
   {
-    title: "Valve State",
+    title: "V. State",
     render: (_, record) => (
       <Tag color={record.valveState === "open" ? "success" : "warning"}>
         {record.valveState}

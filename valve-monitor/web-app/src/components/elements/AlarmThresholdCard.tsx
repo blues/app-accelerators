@@ -1,8 +1,9 @@
-import { InfoCircleOutlined } from "@ant-design/icons";
+import { InfoCircleFilled } from "@ant-design/icons";
 import { Card, Form, InputNumber, Tooltip } from "antd";
 import { updateAlarmThreshold } from "../../api-client/fleetVariables";
 import { ERROR_MESSAGE } from "../../constants/ui";
 import cardStyles from "../../styles/Card.module.scss";
+import alarmThresholdCardStyles from "../../styles/AlarmThresholdCard.module.scss";
 
 export interface AlarmThresholdProps {
   currentMinFlowThreshold: number | undefined;
@@ -55,18 +56,18 @@ const AlarmThresholdCard = (props: AlarmThresholdProps) => {
       className={cardStyles.cardContainer}
       title={
         <div className={cardStyles.cardTitle}>
-          <div>Alarm Threshold</div>
+          <div>Alarm Setting</div>
         </div>
       }
     >
-      <div>
+      <div className={alarmThresholdCardStyles.cardBody}>
         <p>
           Configure default flow rate range
           <Tooltip
             color="#416681"
             title="An alarm is triggered if the valve flow rate falls outside these values."
           >
-            <InfoCircleOutlined />
+            <InfoCircleFilled />
           </Tooltip>
         </p>
         <Form

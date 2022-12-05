@@ -2,8 +2,6 @@
 
 .cardContainer {
   border: 1px solid $bw-color--grey3;
-  height: 250px;
-  margin-bottom: 15px;
 
   :global .ant-card-head {
     padding: 0;
@@ -55,7 +53,8 @@
   }
 
   :global .ant-card-body {
-    padding: 15px;
+    padding: 0;
+    height: 200px;
   }
 }
 

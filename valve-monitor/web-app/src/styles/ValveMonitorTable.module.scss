@@ -9,6 +9,10 @@
     font-weight: 600;
   }
 
+  :global .ant-table-thead .ant-table-cell::before {
+    background-color: $bw-color--grey1 !important;
+  }
+
   :global .ant-table-thead > tr > th {
     padding: 2px 16px 0 16px;
   }
