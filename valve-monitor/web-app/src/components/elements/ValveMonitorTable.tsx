@@ -27,6 +27,7 @@ const columns = [
     dataIndex: "deviceFlowRate",
     key: "deviceFlowRate",
     align: "center",
+    width: "20%",
   },
   {
     title: (
@@ -38,10 +39,12 @@ const columns = [
     dataIndex: "monitorFrequency",
     key: "monitorFrequency",
     editable: true,
+    responsive: ["sm"],
     align: "center",
   },
   {
     title: "Alarm Setting",
+    responsive: ["md"],
     children: [
       {
         title: "Min",
@@ -280,6 +283,7 @@ const ValveMonitorTable = ({
         columns={editableColumns}
         dataSource={data}
         pagination={false}
+        size="small"
       />
     </div>
   );

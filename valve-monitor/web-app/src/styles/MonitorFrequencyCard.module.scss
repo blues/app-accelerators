@@ -1,12 +1,12 @@
 @import "_variables.scss";
 
 .radioContainer {
-  margin: 25% 0;
+  margin: 20% 0;
+  padding-left: 16px;
 
   :global .ant-radio-group {
     display: flex;
     flex-direction: column;
-    align-items: center;
   }
 
   :global span.ant-radio + * {
@@ -22,6 +22,12 @@
   :global .ant-radio-inner {
     border-color: $bw-color--brand3;
     border-width: 2px;
+  }
+}
+
+@media screen and (max-width: $breakpoints-md) {
+  .radioContainer {
+    margin-top: 15%;
   }
 }
 

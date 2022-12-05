@@ -84,7 +84,12 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
                 <>
                   <h3 className={styles.sectionTitle}>Fleet Controls</h3>
                   <Row gutter={16}>
-                    <Col lg={4} xl={4} className={styles.motionFrequencyCard}>
+                    <Col
+                      md={5}
+                      lg={4}
+                      xl={4}
+                      className={styles.motionFrequencyCard}
+                    >
                       <MonitorFrequencyCard
                         currentFrequency={monitorFrequency}
                         setCurrentFrequency={setMonitorFrequency}
@@ -93,7 +98,7 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
                         setIsLoading={setIsLoading}
                       />
                     </Col>
-                    <Col lg={7} xl={7}>
+                    <Col md={8} lg={6} xl={6}>
                       <AlarmThresholdCard
                         currentMinFlowThreshold={minFlowThreshold}
                         currentMaxFlowThreshold={maxFlowThreshold}

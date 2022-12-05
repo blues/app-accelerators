@@ -62,7 +62,7 @@ const AlarmThresholdCard = (props: AlarmThresholdProps) => {
     >
       <div className={alarmThresholdCardStyles.cardBody}>
         <p>
-          Configure default flow rate range
+          Configure fleet flow rate
           <Tooltip
             color="#416681"
             title="An alarm is triggered if the valve flow rate falls outside these values."
