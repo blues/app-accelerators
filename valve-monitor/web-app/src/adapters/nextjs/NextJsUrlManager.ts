@@ -32,6 +32,9 @@ export const NextJsUrlManager = {
     `/api/device/${deviceUID}/valve-monitor-config`,
 
   setFleetValveMonitorConfig: () => `/api/fleet/valve-monitor-config`,
+
+  updateValveState: (deviceUID: string) =>
+    `/api/device/${deviceUID}/valve-state`,
 };
 
 const DEFAULT = { NextJsUrlManager };

@@ -42,4 +42,9 @@ export default class PrismaAttributeStore implements AttributeStore {
     // database
     return Promise.resolve();
   }
+
+  updateValveState(deviceUID: string, state: string) {
+    // TODO: Make this work
+    return Promise.resolve();
+  }
 }

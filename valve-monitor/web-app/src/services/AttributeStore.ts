@@ -11,4 +11,5 @@ export interface AttributeStore {
     fleetUID: FleetID,
     valveMonitorConfig: ValveMonitorConfig
   ) => Promise<void>;
+  updateValveState: (deviceUID: string, state: string) => Promise<void>;
 }
