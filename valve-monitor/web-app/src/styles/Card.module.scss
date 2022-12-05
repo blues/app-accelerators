@@ -73,12 +73,14 @@
 
 @media screen and (max-width: $breakpoints-sm) {
   .cardContainer {
-    margin: 12px 0;
-    height: auto;
+    margin-bottom: 32px;
+
+    :global .ant-card-body {
+      height: auto;
+    }
 
     :global .ant-card-head-title {
-      text-align: start;
-      padding-left: 10px;
+      font-size: 16px;
     }
   }
 }

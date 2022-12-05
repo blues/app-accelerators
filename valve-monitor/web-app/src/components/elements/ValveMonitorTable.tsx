@@ -27,7 +27,6 @@ const columns = [
     dataIndex: "deviceFlowRate",
     key: "deviceFlowRate",
     align: "center",
-    width: "20%",
   },
   {
     title: (

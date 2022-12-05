@@ -33,7 +33,8 @@
 
 @media screen and (max-width: $breakpoints-sm) {
   .radioContainer {
-    margin-top: 0;
+    margin: 5% 0;
+
     :global .ant-radio-group {
       align-items: flex-start;
       margin-left: 20px;

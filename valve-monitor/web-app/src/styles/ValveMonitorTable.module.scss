@@ -58,6 +58,8 @@
 
 @media screen and (max-width: 910px) {
   .tableContainer {
+    margin-bottom: 32px;
+
     :global .ant-table-thead .ant-table-cell,
     :global .ant-table-tbody td {
       font-size: 14px;
@@ -65,8 +67,8 @@
 
     :global .ant-table-tbody .editable-input-name,
     :global .ant-table-tbody .editable-button-name {
-      max-width: 80px;
-      width: 80px;
+      max-width: 100px;
+      width: 100px;
     }
   }
 }
