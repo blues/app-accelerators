@@ -39,3 +39,11 @@ export async function updateDeviceValveMonitorConfig(
 
   return response;
 }
+
+export async function changeDeviceName(deviceUID: string, name: string) {
+  const response = await updateDeviceEnvVar(deviceUID, {
+    name,
+  });
+
+  return response;
+}

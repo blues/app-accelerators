@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from "react";
-import { Form, InputNumber, Switch, Table, Tag } from "antd";
+import { MutableRefObject, useEffect, useRef, useState } from "react";
+import { Form, Input, InputNumber, InputRef, Switch, Table, Tag } from "antd";
 import type { ColumnsType } from "antd/lib/table";
 import { isEmpty } from "lodash";
 import { ValveMonitorDevice } from "../../services/AppModel";
 import { ERROR_MESSAGE } from "../../constants/ui";
-import { updateDeviceValveMonitorConfig } from "../../api-client/valveDevices";
+import {
+  changeDeviceName,
+  updateDeviceValveMonitorConfig,
+} from "../../api-client/valveDevices";
 import styles from "../../styles/ValveMonitorTable.module.scss";
 
 const columns = [
@@ -12,6 +15,7 @@ const columns = [
     title: "Location",
     dataIndex: "name",
     key: "name",
+    editable: true,
   },
   {
     title: (
@@ -100,7 +104,7 @@ const EditableCell = ({
   onChange,
 }: EditableCellProps) => {
   const [editing, setEditing] = useState(false);
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | InputRef | null>(null);
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -156,22 +160,36 @@ const EditableCell = ({
           rules={[
             {
               required: true,
-              message: `Number is required`,
+              message:
+                index === "name" ? `Name is required` : `Number is required`,
             },
           ]}
           initialValue={record[index] as [key: string]}
         >
-          <InputNumber
-            className="editable-input"
-            placeholder="xx.x"
-            onBlur={handleBlur}
-            onPressEnter={handleSave}
-            ref={inputRef}
-          />
+          {index === "name" ? (
+            <Input
+              className="editable-input editable-input-name"
+              onBlur={handleBlur}
+              onPressEnter={handleSave}
+              ref={inputRef as MutableRefObject<InputRef>}
+            />
+          ) : (
+            <InputNumber
+              className="editable-input"
+              placeholder="xx.x"
+              onBlur={handleBlur}
+              onPressEnter={handleSave}
+              ref={inputRef as MutableRefObject<HTMLInputElement>}
+            />
+          )}
         </Form.Item>
       </Form>
     ) : (
-      <button className="editable-button" onClick={toggleEdit} type="button">
+      <button
+        className={`editable-button editable-button-${index}`}
+        onClick={toggleEdit}
+        type="button"
+      >
         {children[1] || "xx.x"}
       </button>
     );
@@ -188,6 +206,13 @@ interface ValveMonitorTableProps {
   refreshData: () => Promise<void>;
 }
 
+interface ValveMonitorConfigChange {
+  name?: string;
+  monitorFrequency?: string;
+  minFlowThreshold?: string;
+  maxFlowThreshold?: string;
+}
+
 const ValveMonitorTable = ({
   data,
   refreshData,
@@ -197,17 +222,23 @@ const ValveMonitorTable = ({
 }: ValveMonitorTableProps) => {
   const onDeviceValveMonitorConfigChange = async (
     deviceUID: string,
-    valveDeviceEnvVarToUpdate: object
+    valveDeviceEnvVarToUpdate: ValveMonitorConfigChange
   ) => {
     setIsErrored(false);
     setErrorMessage("");
     setIsLoading(true);
 
     try {
-      await updateDeviceValveMonitorConfig(
-        deviceUID,
-        valveDeviceEnvVarToUpdate
-      );
+      // Name updates
+      if (valveDeviceEnvVarToUpdate.name) {
+        await changeDeviceName(deviceUID, valveDeviceEnvVarToUpdate.name);
+      } else {
+        // All other environment variable updates
+        await updateDeviceValveMonitorConfig(
+          deviceUID,
+          valveDeviceEnvVarToUpdate
+        );
+      }
     } catch (e) {
       setIsErrored(true);
       setErrorMessage(ERROR_MESSAGE.UPDATE_DEVICE_CONFIG_FAILED);
