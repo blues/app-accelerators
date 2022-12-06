@@ -85,8 +85,8 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
                   <h3 className={styles.sectionTitle}>Fleet Controls</h3>
                   <Row gutter={16}>
                     <Col
-                      xs={12}
-                      sm={8}
+                      xs={10}
+                      sm={7}
                       md={5}
                       lg={4}
                       xl={4}
@@ -100,7 +100,7 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
                         setIsLoading={setIsLoading}
                       />
                     </Col>
-                    <Col xs={12} sm={10} md={8} lg={6} xl={6}>
+                    <Col xs={14} sm={10} md={7} lg={6} xl={6}>
                       <AlarmThresholdCard
                         currentMinFlowThreshold={minFlowThreshold}
                         currentMaxFlowThreshold={maxFlowThreshold}

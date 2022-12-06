@@ -3,8 +3,17 @@
 .cardBody {
   padding: 12px 16px;
 
+  :global .ant-form {
+    display: flex;
+    flex-direction: column;
+  }
+
   :global .ant-form-item-label {
     padding-bottom: 2px;
+  }
+
+  :global .ant-input-number {
+    width: 74px;
   }
 }
 
@@ -12,6 +21,31 @@
   .cardBody {
     :global .ant-input-number-input-wrap {
       font-size: 14px;
+    }
+  }
+}
+
+@media screen and (max-width: $breakpoints-sm) {
+  .cardBody {
+    padding: 20px 16px;
+
+    p {
+      font-size: 12px;
+      text-align: center;
+    }
+
+    :global .ant-form {
+      display: flex;
+      justify-content: space-between;
+      flex-direction: row;
+    }
+
+    :global .ant-form-item-label {
+      padding-bottom: 6px;
+    }
+
+    :global .ant-input-number {
+      width: 64px;
     }
   }
 }

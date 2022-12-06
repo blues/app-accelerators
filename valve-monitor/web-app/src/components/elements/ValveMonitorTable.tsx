@@ -27,6 +27,12 @@ const columns = [
     dataIndex: "deviceFlowRate",
     key: "deviceFlowRate",
     align: "center",
+    render: (_, record) => (
+      <>
+        <span className={styles.rowTitle}>Flow Rate mL/min</span>
+        <span>{record.deviceFlowRate}</span>
+      </>
+    ),
   },
   {
     title: (
@@ -38,12 +44,12 @@ const columns = [
     dataIndex: "monitorFrequency",
     key: "monitorFrequency",
     editable: true,
-    responsive: ["sm"],
+    // responsive: ["sm"],
     align: "center",
   },
   {
     title: "Alarm Setting",
-    responsive: ["md"],
+    // responsive: ["md"],
     children: [
       {
         title: "Min",
@@ -69,13 +75,22 @@ const columns = [
     dataIndex: "deviceAlarm",
     key: "deviceAlarm",
     align: "center",
+    render: (_, record) => (
+      <>
+        <span className={styles.rowTitle}>Alarm</span>
+        <span>{record.deviceAlarm}</span>
+      </>
+    ),
   },
   {
     title: "V. State",
     render: (_, record) => (
-      <Tag color={record.valveState === "open" ? "success" : "warning"}>
-        {record.valveState}
-      </Tag>
+      <>
+        <span className={styles.rowTitle}>Valve State</span>
+        <Tag color={record.valveState === "open" ? "success" : "warning"}>
+          {record.valveState}
+        </Tag>
+      </>
     ),
     align: "center",
   },
@@ -83,11 +98,17 @@ const columns = [
     title: "Valve Control (open/closed)",
     align: "center",
     width: "15%",
-    render: (_, record) => <Switch checked={record.valveState === "open"} />,
+    render: (_, record) => (
+      <>
+        <span className={styles.rowTitle}>Valve Control (open/closed)</span>
+        <Switch checked={record.valveState === "open"} />
+      </>
+    ),
   },
 ] as ColumnsType<ValveMonitorDevice>;
 
 interface EditableCellProps {
+  title: string;
   editable: boolean;
   index: string;
   children: JSX.Element;
@@ -99,6 +120,7 @@ interface EditableCellProps {
 }
 
 const EditableCell = ({
+  title,
   editable,
   children,
   index,
@@ -150,50 +172,64 @@ const EditableCell = ({
 
   let childNode = children;
 
+  let rowTitle: string = title;
+  if (title === "Min") {
+    rowTitle = "Alarm Setting (min)";
+  }
+  if (title === "Max") {
+    rowTitle = "Alarm Setting (max)";
+  }
+
   // Create a custom form for editing cells
   if (editable) {
     childNode = editing ? (
-      <Form form={form}>
-        <Form.Item
-          style={{
-            margin: 0,
-          }}
-          name={index}
-          rules={[
-            {
-              required: true,
-              message:
-                index === "name" ? `Name is required` : `Number is required`,
-            },
-          ]}
-          initialValue={record[index] as [key: string]}
-        >
-          {index === "name" ? (
-            <Input
-              className="editable-input editable-input-name"
-              onBlur={handleBlur}
-              onPressEnter={handleSave}
-              ref={inputRef as MutableRefObject<InputRef>}
-            />
-          ) : (
-            <InputNumber
-              className="editable-input"
-              placeholder="xx.x"
-              onBlur={handleBlur}
-              onPressEnter={handleSave}
-              ref={inputRef as MutableRefObject<HTMLInputElement>}
-            />
-          )}
-        </Form.Item>
-      </Form>
+      <>
+        <span className={styles.rowTitle}>{rowTitle}</span>
+        <Form form={form}>
+          <Form.Item
+            style={{
+              margin: 0,
+            }}
+            name={index}
+            rules={[
+              {
+                required: true,
+                message:
+                  index === "name" ? `Name is required` : `Number is required`,
+              },
+            ]}
+            initialValue={record[index] as [key: string]}
+          >
+            {index === "name" ? (
+              <Input
+                className="editable-input editable-input-name"
+                onBlur={handleBlur}
+                onPressEnter={handleSave}
+                ref={inputRef as MutableRefObject<InputRef>}
+              />
+            ) : (
+              <InputNumber
+                className="editable-input"
+                placeholder="xx.x"
+                onBlur={handleBlur}
+                onPressEnter={handleSave}
+                ref={inputRef as MutableRefObject<HTMLInputElement>}
+              />
+            )}
+          </Form.Item>
+        </Form>
+      </>
     ) : (
-      <button
-        className={`editable-button editable-button-${index}`}
-        onClick={toggleEdit}
-        type="button"
-      >
-        {children[1] || "xx.x"}
-      </button>
+      <>
+        <span className={styles.rowTitle}>{rowTitle}</span>
+        <button
+          className={`editable-button editable-button-${index}`}
+          onClick={toggleEdit}
+          type="button"
+        >
+          {children[1] || "xx.x"}
+        </button>
+      </>
     );
   }
 
@@ -254,6 +290,7 @@ const ValveMonitorTable = ({
     const newCol = {
       ...col,
       onCell: (record: ValveMonitorDevice) => ({
+        title: col.title,
         editable: col.editable,
         index: col.key,
         record,
