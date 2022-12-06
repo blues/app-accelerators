@@ -208,21 +208,24 @@ const EditableCell = ({
   }
 
   if (index === "valveControl") {
-    childNode = (
-      <Switch
-        onChange={(value) => {
-          onChange(record.deviceID, {
-            valveControl: value ? "open" : "closed",
-          });
-        }}
-        loading={
-          record.valveState === "opening" || record.valveState === "closing"
-        }
-        checked={
-          record.valveState === "open" || record.valveState === "opening"
-        }
-      />
-    );
+    childNode =
+      record.valveState !== "-" ? (
+        <Switch
+          onChange={(value) => {
+            onChange(record.deviceID, {
+              valveControl: value ? "open" : "closed",
+            });
+          }}
+          loading={
+            record.valveState === "opening" || record.valveState === "closing"
+          }
+          checked={
+            record.valveState === "open" || record.valveState === "opening"
+          }
+        />
+      ) : (
+        <>-</>
+      );
   }
 
   return <td>{childNode}</td>;
