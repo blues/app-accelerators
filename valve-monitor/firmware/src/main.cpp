@@ -33,8 +33,8 @@
 #define USE_VALVE 1
 #endif
 
-// This is the unique Product Identifier for your device
-#define PRODUCT_UID "com.blues.hroche:quickstart"   // "com.my-company.my-name:my-project"
+// Replace with your product UID.
+// #define PRODUCT_UID "com.my-company.my-name:my-project"
 
 #ifndef PRODUCT_UID
 #error "PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://dev.blues.io/tools-and-sdks/samples/product-uid"
@@ -135,12 +135,18 @@ void handleValveCmd(char *cmd)
     state.ackValveCmd = 1;
 }
 
-void publishSystemStatus(uint32_t flowRate)
+// Publish the system status (flow rate, valve state) via a note to the
+// specified Notefile.
+void publishSystemStatus(uint32_t flowRate, const char *file)
 {
-    J *req = notecard.newRequest("note.add");
+    if (file == NULL) {
+        notecard.logDebug("publishSystemStatus called with NULL file.\n");
+        return;
+    }
 
+    J *req = notecard.newRequest("note.add");
     if (req != NULL) {
-        JAddStringToObject(req, "file", "data.qo");
+        JAddStringToObject(req, "file", file);
         JAddBoolToObject(req, "sync", true);
 
         J *body = JCreateObject();
@@ -346,8 +352,10 @@ void setup()
     // handler.
     attachInterrupt(digitalPinToInterrupt(ATTN_INPUT_PIN), attnISR, RISING);
 
+#ifdef USE_VALVE
     // Configure valve open pin. Will default to LOW (closed).
     pinMode(VALVE_OPEN_PIN, OUTPUT);
+#endif
 
     pinMode(FLOW_RATE_METER_PIN, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(FLOW_RATE_METER_PIN), flowMeterISR, FALLING);
@@ -381,7 +389,7 @@ void alarm(float flowRate)
         J *body = JCreateObject();
         if (body != NULL) {
             JAddNumberToObject(body, "flow_rate", flowRate);
-            JAddBoolToObject(body, "alarm", true);
+            JAddBoolToObject(body, "valve_state", true);
             JAddStringToObject(body, "app", "nf9");
             JAddItemToObject(req, "body", body);
 
@@ -398,13 +406,12 @@ void alarm(float flowRate)
 
 void checkAlarm(float flowRate)
 {
-    // TODO: Add leak detection. If the valve is closed and we detect any flow
-    //       sound the alarm.
+    bool flowRateOutOfBounds = state.valveOpen &&
+                               (flowRate < state.flowRateAlarmMin ||
+                                flowRate > state.flowRateAlarmMax);
+    bool leaking = !state.valveOpen && flowRate > 0;
 
-    // If the valve's open and the flow rate falls outside our configured
-    // range.
-    if (state.valveOpen && (flowRate < state.flowRateAlarmMin ||
-        flowRate > state.flowRateAlarmMax)) {
+    if (flowRateOutOfBounds || leaking) {
         uint32_t currentMs = millis();
 
         // After the initial alarm for an event, only resend the alarm note
@@ -412,7 +419,7 @@ void checkAlarm(float flowRate)
         if (state.lastAlarmMs == 0 || (currentMs - state.lastAlarmMs) >=
             ALARM_REFRESH_MS) {
             state.lastAlarmMs = currentMs;
-            alarm(flowRate);
+            publishSystemStatus(flowRate, "alarm.qo");
         }
     }
     else {
@@ -441,7 +448,7 @@ void loop()
     if (state.ackValveCmd ||
         (currentMs - state.monitorLastUpdateMs >= state.monitorIntervalMs)) {
         state.monitorLastUpdateMs = currentMs;
-        publishSystemStatus(state.flowRate);
+        publishSystemStatus(state.flowRate, "data.qo");
 
         if (state.ackValveCmd) {
             state.ackValveCmd = 0;
@@ -468,8 +475,6 @@ void loop()
     // Re-arm the ATTN interrupt.
     attnArm();
 
-    // TODO: Should we drain the queue and only take the most recent valve
-    //       command?
     // Process all pending inbound requests.
     while (true) {
         // Pop the next available note from data.qi.
