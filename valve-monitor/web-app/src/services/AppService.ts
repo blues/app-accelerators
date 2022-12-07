@@ -31,6 +31,7 @@ interface AppServiceInterface {
     deviceUID: string,
     valveMonitorConfig: ValveMonitorConfig
   ) => Promise<void>;
+  updateValveState: (deviceUID: string, state: string) => Promise<void>;
 
   handleEvent(event: AppEvent): Promise<void>;
 
@@ -156,6 +157,10 @@ export default class AppService implements AppServiceInterface {
       this.fleetID,
       valveMonitorConfig
     );
+  }
+
+  async updateValveState(deviceUID: string, state: string) {
+    return this.attributeStore.updateValveState(deviceUID, state);
   }
 
   private async appNotification(
