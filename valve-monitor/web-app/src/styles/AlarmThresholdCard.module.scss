@@ -32,6 +32,7 @@
     p {
       font-size: 12px;
       text-align: center;
+      margin-bottom: 8px;
     }
 
     :global .ant-form {
@@ -41,7 +42,7 @@
     }
 
     :global .ant-form-item-label {
-      padding-bottom: 6px;
+      padding-bottom: 4px;
     }
 
     :global .ant-input-number {

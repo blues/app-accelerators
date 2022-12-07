@@ -15,8 +15,8 @@
 
 @media screen and (max-width: $breakpoints-sm) {
   .container {
-    :global .ant-row {
-      // flex-direction: column;
+    .sectionTitle {
+      font-size: 16px;
     }
   }
 }

@@ -44,12 +44,10 @@ const columns = [
     dataIndex: "monitorFrequency",
     key: "monitorFrequency",
     editable: true,
-    // responsive: ["sm"],
     align: "center",
   },
   {
     title: "Alarm Setting",
-    // responsive: ["md"],
     children: [
       {
         title: "Min",
@@ -210,6 +208,7 @@ const EditableCell = ({
             ) : (
               <InputNumber
                 className="editable-input"
+                min="0"
                 placeholder="xx.x"
                 onBlur={handleBlur}
                 onPressEnter={handleSave}

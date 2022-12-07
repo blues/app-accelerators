@@ -20,7 +20,10 @@ export default class NotehubAttributeStore implements AttributeStore {
     const envVars = {} as NotehubEnvVars;
 
     if (deviceValveMonitorConfig.monitorFrequency !== undefined) {
-      envVars.monitor_interval = `${deviceValveMonitorConfig.monitorFrequency}`;
+      // convert device monitor frequency to seconds for Notehub
+      envVars.monitor_interval = `${
+        deviceValveMonitorConfig.monitorFrequency * 60
+      }`;
     }
     if (deviceValveMonitorConfig.minFlowThreshold !== undefined) {
       envVars.flow_rate_alarm_threshold_min = `${deviceValveMonitorConfig.minFlowThreshold}`;
@@ -39,7 +42,10 @@ export default class NotehubAttributeStore implements AttributeStore {
     const envVars = {} as NotehubEnvVars;
 
     if (valveMonitorConfig.monitorFrequency !== undefined) {
-      envVars.monitor_interval = `${valveMonitorConfig.monitorFrequency}`;
+      // convert fleet monitor frequency to seconds for Notehub
+      envVars.monitor_interval = `${Number(
+        valveMonitorConfig.monitorFrequency * 60
+      )}`;
     }
     if (valveMonitorConfig.minFlowThreshold !== undefined) {
       envVars.flow_rate_alarm_threshold_min = `${valveMonitorConfig.minFlowThreshold}`;
