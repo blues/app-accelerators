@@ -38,16 +38,30 @@ function filterAlarmsByDevice(device: Device, alarmList: any) {
 function assembleDeviceEventsObject(
   device: Device,
   latestDeviceEvent: Event[],
+  latestDeviceControlEvent: Event[],
   alarmNotification: any
 ) {
+  function determineValveState(deviceEvent: Event, controlEvent: Event) {
+    if (!deviceEvent.value.valve_state) {
+      return "-";
+    }
+    // If the control event is the latest event, the device has not processed
+    // the last valve control command.
+    if (controlEvent.when > deviceEvent.when) {
+      return controlEvent.value.state === "open" ? "opening" : "closing";
+    }
+    return deviceEvent.value.valve_state;
+  }
+
   // there will only ever be one item in the latestDeviceEvent array
   const updatedValveDeviceMonitorObj = {
     deviceID: device.id.deviceUID,
     name: device.name ? device.name : device.id.deviceUID,
     lastActivity: latestDeviceEvent[0].when ? latestDeviceEvent[0].when : "-",
-    valveState: latestDeviceEvent[0].value.valve_state
-      ? latestDeviceEvent[0].value.valve_state
-      : "-",
+    valveState: determineValveState(
+      latestDeviceEvent[0],
+      latestDeviceControlEvent[0]
+    ),
     deviceFlowRate: latestDeviceEvent[0].value.flow_rate
       ? Number(latestDeviceEvent[0].value.flow_rate).toFixed(1)
       : "-",
@@ -118,9 +132,18 @@ export class PrismaDataProvider implements DataProvider {
     // fetch all devices by project
     const devices = await this.getDevices();
 
-    // fetch most most recent data.qo event for each device
+    // fetch the most recent data.qo event for each device
     const deviceEvents = await Promise.all(
-      devices.map((device) => this.getLatestDeviceEvent(device.id)).flat()
+      devices
+        .map((device) => this.getLatestDeviceEvent(device.id, "data.qo"))
+        .flat()
+    );
+
+    // fetch the most recent data.qi event for each device
+    const controlEvents = await Promise.all(
+      devices
+        .map((device) => this.getLatestDeviceEvent(device.id, "data.qi"))
+        .flat()
     );
 
     // fetch latest unacknowledged alarm.qo events for each device (if they exist)
@@ -131,6 +154,10 @@ export class PrismaDataProvider implements DataProvider {
     // combine data for each device and its latest event
     valveMonitorDevices = devices.map((device) => {
       const filteredEventsByDevice = filterEventsByDevice(device, deviceEvents);
+      const filteredControlEventsByDevice = filterEventsByDevice(
+        device,
+        controlEvents
+      );
 
       let filteredAlarmsByDevice = [];
 
@@ -141,6 +168,7 @@ export class PrismaDataProvider implements DataProvider {
       const updatedValveDeviceMonitorObj = assembleDeviceEventsObject(
         device,
         filteredEventsByDevice,
+        filteredControlEventsByDevice,
         filteredAlarmsByDevice
       );
 
@@ -191,13 +219,13 @@ export class PrismaDataProvider implements DataProvider {
     return deviceEvents.map((event) => this.eventFromPrismaEvent(event));
   }
 
-  async getLatestDeviceEvent(deviceID: DeviceID): Promise<Event> {
+  async getLatestDeviceEvent(deviceID: DeviceID, file: string): Promise<Event> {
     const latestDeviceEvent = await this.prisma.event.findMany({
       where: {
         AND: {
           deviceUID: deviceID.deviceUID,
         },
-        eventName: "data.qo",
+        eventName: file,
       },
       take: -1,
     });
