@@ -213,7 +213,7 @@ const EditableCell = ({
         <Switch
           onChange={(value) => {
             onChange(record.deviceID, {
-              valveControl: value ? "open" : "closed",
+              valveControl: value ? "open" : "close",
             });
           }}
           loading={
