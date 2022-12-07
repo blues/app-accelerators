@@ -1,14 +1,5 @@
 import { MutableRefObject, useEffect, useRef, useState } from "react";
-import {
-  Form,
-  Input,
-  InputNumber,
-  InputRef,
-  Spin,
-  Switch,
-  Table,
-  Tag,
-} from "antd";
+import { Form, Input, InputNumber, InputRef, Switch, Table, Tag } from "antd";
 import type { ColumnsType } from "antd/lib/table";
 import { isEmpty } from "lodash";
 import { ValveMonitorDevice } from "../../services/AppModel";
@@ -19,7 +10,6 @@ import {
   updateValveControl,
 } from "../../api-client/valveDevices";
 import styles from "../../styles/ValveMonitorTable.module.scss";
-import { LoadingOutlined } from "@ant-design/icons";
 
 const columns = [
   {
