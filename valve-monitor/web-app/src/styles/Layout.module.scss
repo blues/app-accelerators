@@ -11,6 +11,11 @@
   width: clamp($page-content-xs, $page-content-lg, calc(100vw - 79px));
   margin: 0 auto;
   background-color: #fff;
+
+  :global .ant-row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
 }
 
 @media screen and (max-width: $breakpoints-md) {

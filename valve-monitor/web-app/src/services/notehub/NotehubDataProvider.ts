@@ -66,25 +66,39 @@ export default class NotehubDataProvider implements DataProvider {
     const deviceEnvVars = await this.notehubAccessor.getDeviceEnvVars(deviceID);
 
     const { environment_variables } = deviceEnvVars;
+    // attach device ID to env vars for combining data later
     return {
       deviceID,
       environment_variables: {
         ...environment_variables,
-        // convert Notehub device monitor frequency from seconds to mins for UI
-        monitor_interval: `${
-          Number(environment_variables?.monitor_interval) / 60
-        }`,
+        // convert Notehub device monitor frequency from seconds to mins for UI if it exists
+        ...(environment_variables.monitor_interval && {
+          monitor_interval: `${
+            Number(environment_variables?.monitor_interval) / 60
+          }`,
+        }),
       },
     };
-    // attach device ID to env vars for combining data later
-    return { deviceID, ...deviceEnvVars };
   }
 
   async getFleetEnvVars(fleetUID: string): Promise<FleetEnvVars> {
     const fleetEnvVars =
       await this.notehubAccessor.getEnvironmentVariablesByFleet(fleetUID);
+
+    const { environment_variables } = fleetEnvVars;
     // attach fleet UID to env vars for combining data later
-    return { fleetUID, ...fleetEnvVars };
+    return {
+      fleetUID,
+      environment_variables: {
+        ...environment_variables,
+        // convert Notehub fleet monitor frequency from seconds to mins for UI if it exists
+        ...(environment_variables.monitor_interval && {
+          monitor_interval: `${
+            Number(environment_variables?.monitor_interval) / 60
+          }`,
+        }),
+      },
+    };
   }
 
   getValveMonitorDeviceData(): Promise<ValveMonitorDevice[]> {

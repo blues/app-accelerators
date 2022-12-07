@@ -28,8 +28,8 @@ export const NextJsUrlManager = {
     return NextJsUrlManager.notificationsImpl(true, ...notificationIDs);
   },
 
-  setDeviceValveMonitorConfig: (deviceUID: string) =>
-    `/api/device/${deviceUID}/valve-monitor-config`,
+  updateValveMonitorDevice: (deviceUID: string) =>
+    `/api/device/${deviceUID}/valve-monitor`,
 
   setFleetValveMonitorConfig: () => `/api/fleet/valve-monitor-config`,
 };

@@ -40,7 +40,6 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
         />
       </Head>
       <Layout isLoading={isLoading}>
-        <Notifications items={[]} />
         <Component {...pageProps} />
       </Layout>
     </QueryClientProvider>

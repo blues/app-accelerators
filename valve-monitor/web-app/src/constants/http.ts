@@ -7,6 +7,7 @@ const HTTP_STATUS = {
   INVALID_DEVICE: "Invalid Device UID",
   INVALID_DEVICE_NAME: "Invalid Device name",
   INVALID_VALVE_MONITOR_CONFIG: "Invalid valve monitor configuration",
+  INVALID_VALVE_STATE: "Invalid valve state",
 };
 
 // HTTP headers

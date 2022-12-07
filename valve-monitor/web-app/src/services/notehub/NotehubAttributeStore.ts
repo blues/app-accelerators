@@ -59,4 +59,8 @@ export default class NotehubAttributeStore implements AttributeStore {
       envVars
     );
   }
+
+  async updateValveState(deviceUID: string, state: string) {
+    await this.accessor.addNote(deviceUID, "data.qi", { state });
+  }
 }
