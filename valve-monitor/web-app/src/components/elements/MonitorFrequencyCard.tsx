@@ -23,9 +23,9 @@ const MonitorFrequencyCard = (props: MonitorFrequencyProps) => {
   } = props;
 
   const frequencyOptions = [
-    { label: "2 Min", value: 2 },
-    { label: "3 Min", value: 3 },
-    { label: "5 Min", value: 5 },
+    { label: "2 min", value: 2 },
+    { label: "3 min", value: 3 },
+    { label: "5 min", value: 5 },
   ];
 
   const updateFrequency = async ({ target: { value } }: RadioChangeEvent) => {

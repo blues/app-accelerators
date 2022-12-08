@@ -2,8 +2,6 @@
 
 .cardContainer {
   border: 1px solid $bw-color--grey3;
-  height: 250px;
-  margin-bottom: 15px;
 
   :global .ant-card-head {
     padding: 0;
@@ -27,7 +25,7 @@
   p {
     font-size: 14px;
     color: $bw-color--brand2;
-    margin-bottom: 5px;
+    margin-bottom: 0;
   }
   p span {
     display: inline-block;
@@ -43,7 +41,7 @@
   }
 
   label {
-    font-size: 14px;
+    font-size: 12px;
   }
 
   :global .ant-input-number {
@@ -55,18 +53,32 @@
   }
 
   :global .ant-card-body {
-    padding: 15px;
+    padding: 0;
+    height: 185px;
+  }
+}
+
+@media screen and (max-width: $breakpoints-md) {
+  .cardContainer {
+    :global .ant-card-head-title {
+      font-size: 14px;
+      padding: 0 21px;
+    }
+
+    :global .ant-card-body {
+      height: 180px;
+    }
   }
 }
 
 @media screen and (max-width: $breakpoints-sm) {
   .cardContainer {
-    margin: 12px 0;
-    height: auto;
+    :global .ant-card-body {
+      height: 130px;
+    }
 
     :global .ant-card-head-title {
-      text-align: start;
-      padding-left: 10px;
+      font-size: 14px;
     }
   }
 }

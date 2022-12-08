@@ -3,10 +3,23 @@
 .header {
   display: flex;
   justify-content: space-between;
+  padding: 0 32px !important;
+
+  :global .ant-layout-header {
+    padding: 0 32px;
+  }
 
   .logo {
     display: flex;
     align-items: center;
+  }
+
+  .largeLogo {
+    display: inline-block;
+  }
+
+  .smallLogo {
+    display: none;
   }
 
   .headerTitle {
@@ -21,8 +34,16 @@
   }
 }
 
-@media screen and (max-width: $breakpoints-xs) {
+@media screen and (max-width: $breakpoints-md) {
   .header {
-    padding: 0 20px !important;
+    padding: 0 26px !important;
+
+    .largeLogo {
+      display: none;
+    }
+
+    .smallLogo {
+      display: inline-block;
+    }
   }
 }

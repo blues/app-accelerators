@@ -11,8 +11,12 @@
     font-weight: 600;
     margin: 24px 0;
   }
+}
 
-  .motionFrequencyCard {
-    width: 170px;
+@media screen and (max-width: $breakpoints-sm) {
+  .container {
+    .sectionTitle {
+      font-size: 16px;
+    }
   }
 }

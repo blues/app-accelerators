@@ -28,18 +28,21 @@ const columns = [
     dataIndex: "deviceFlowRate",
     key: "deviceFlowRate",
     align: "center",
-  },
-  {
-    title: (
+    render: (_, record) => (
       <>
-        <div>Monitoring</div>
-        <div>(min)</div>
+        <span className={styles.rowTitle}>Flow Rate mL/min</span>
+        <span>{record.deviceFlowRate}</span>
       </>
     ),
+  },
+  {
+    title: "Monitoring (min)",
     dataIndex: "monitorFrequency",
     key: "monitorFrequency",
     editable: true,
     align: "center",
+
+    width: "115px",
   },
   {
     title: "Alarm Setting",
@@ -68,13 +71,27 @@ const columns = [
     dataIndex: "deviceAlarm",
     key: "deviceAlarm",
     align: "center",
+    render: (_, record) => (
+      <>
+        <span className={styles.rowTitle}>Alarm</span>
+        <span>{record.deviceAlarm}</span>
+      </>
+    ),
   },
   {
-    title: "Valve State",
+    title: (
+      <>
+        <div>Valve</div>
+        <div>State</div>
+      </>
+    ),
     render: (_, record) => (
-      <Tag color={record.valveState === "open" ? "success" : "warning"}>
-        {record.valveState}
-      </Tag>
+      <>
+        <span className={styles.rowTitle}>Valve State</span>
+        <Tag color={record.valveState === "open" ? "success" : "warning"}>
+          {record.valveState}
+        </Tag>
+      </>
     ),
     align: "center",
   },
@@ -88,6 +105,7 @@ const columns = [
 ] as ColumnsType<ValveMonitorDevice>;
 
 interface EditableCellProps {
+  title: string;
   editable: boolean;
   index: string;
   children: JSX.Element;
@@ -99,6 +117,7 @@ interface EditableCellProps {
 }
 
 const EditableCell = ({
+  title,
   editable,
   children,
   index,
@@ -150,71 +169,91 @@ const EditableCell = ({
 
   let childNode = children;
 
+  let rowTitle: string = title;
+  if (title === "Min") {
+    rowTitle = "Alarm Setting Minimum";
+  }
+  if (title === "Max") {
+    rowTitle = "Alarm Setting Maximum";
+  }
+
   // Create a custom form for editing cells
   if (editable && index !== "valveControl") {
     childNode = editing ? (
-      <Form form={form}>
-        <Form.Item
-          style={{
-            margin: 0,
-          }}
-          name={index}
-          rules={[
-            {
-              required: true,
-              message:
-                index === "name" ? `Name is required` : `Number is required`,
-            },
-          ]}
-          initialValue={record[index] as [key: string]}
-        >
-          {index === "name" ? (
-            <Input
-              className="editable-input editable-input-name"
-              onBlur={handleBlur}
-              onPressEnter={handleSave}
-              ref={inputRef as MutableRefObject<InputRef>}
-            />
-          ) : (
-            <InputNumber
-              className="editable-input"
-              placeholder="xx.x"
-              onBlur={handleBlur}
-              onPressEnter={handleSave}
-              ref={inputRef as MutableRefObject<HTMLInputElement>}
-            />
-          )}
-        </Form.Item>
-      </Form>
+      <>
+        <span className={styles.rowTitle}>{rowTitle}</span>
+        <Form form={form}>
+          <Form.Item
+            style={{
+              margin: 0,
+            }}
+            name={index}
+            rules={[
+              {
+                required: true,
+                message:
+                  index === "name" ? `Name is required` : `Number is required`,
+              },
+            ]}
+            initialValue={record[index] as [key: string]}
+          >
+            {index === "name" ? (
+              <Input
+                className="editable-input editable-input-name"
+                onBlur={handleBlur}
+                onPressEnter={handleSave}
+                ref={inputRef as MutableRefObject<InputRef>}
+              />
+            ) : (
+              <InputNumber
+                className="editable-input"
+                min="0"
+                placeholder="xx.x"
+                onBlur={handleBlur}
+                onPressEnter={handleSave}
+                ref={inputRef as MutableRefObject<HTMLInputElement>}
+              />
+            )}
+          </Form.Item>
+        </Form>
+      </>
     ) : (
-      <button
-        className={`editable-button editable-button-${index}`}
-        onClick={toggleEdit}
-        type="button"
-      >
-        {children[1] || "xx.x"}
-      </button>
+      <>
+        <span className={styles.rowTitle}>{rowTitle}</span>
+        <button
+          className={`editable-button editable-button-${index}`}
+          onClick={toggleEdit}
+          type="button"
+        >
+          {children[1] || "xx.x"}
+        </button>
+      </>
     );
   }
 
   if (index === "valveControl") {
     childNode =
       record.valveState !== "-" ? (
-        <Switch
-          onChange={(value) => {
-            onChange(record.deviceID, {
-              valveControl: value ? "open" : "close",
-            });
-          }}
-          loading={
-            record.valveState === "opening" || record.valveState === "closing"
-          }
-          checked={
-            record.valveState === "open" || record.valveState === "opening"
-          }
-        />
+        <>
+          <span className={styles.rowTitle}>Valve Control (open/closed)</span>
+          <Switch
+            onChange={(value) => {
+              onChange(record.deviceID, {
+                valveControl: value ? "open" : "close",
+              });
+            }}
+            loading={
+              record.valveState === "opening" || record.valveState === "closing"
+            }
+            checked={
+              record.valveState === "open" || record.valveState === "opening"
+            }
+          />
+        </>
       ) : (
-        <>-</>
+        <>
+          <span className={styles.rowTitle}>Valve Control (open/closed)</span>-
+        </>
       );
   }
 
@@ -282,6 +321,7 @@ const ValveMonitorTable = ({
     const newCol = {
       ...col,
       onCell: (record: ValveMonitorDevice) => ({
+        title: col.title,
         editable: col.editable,
         index: col.key,
         record,
@@ -310,6 +350,7 @@ const ValveMonitorTable = ({
         columns={editableColumns}
         dataSource={data}
         pagination={false}
+        size="small"
       />
     </div>
   );
