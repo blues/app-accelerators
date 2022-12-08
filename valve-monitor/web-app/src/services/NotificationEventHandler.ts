@@ -12,6 +12,7 @@ type EventHandler = (event: AppEvent) => Promise<void>;
 
 // various notification types
 export const ALARM = "alarm";
+export const NOTIFICATION = "notify";
 
 export class NotificationEventHandler implements AppEventHandler {
   nameHandlers: Map<string, EventHandler> = new Map();

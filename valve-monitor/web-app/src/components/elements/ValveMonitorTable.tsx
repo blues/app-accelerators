@@ -1,5 +1,14 @@
 import { MutableRefObject, useEffect, useRef, useState } from "react";
-import { Form, Input, InputNumber, InputRef, Switch, Table, Tag } from "antd";
+import {
+  Form,
+  Input,
+  InputNumber,
+  InputRef,
+  Switch,
+  Table,
+  Tag,
+  Tooltip,
+} from "antd";
 import type { ColumnsType } from "antd/lib/table";
 import { isEmpty } from "lodash";
 import { ValveMonitorDevice } from "../../services/AppModel";
@@ -10,6 +19,12 @@ import {
   updateValveControl,
 } from "../../api-client/valveDevices";
 import styles from "../../styles/ValveMonitorTable.module.scss";
+import {
+  WarningFilled,
+  WarningOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
+} from "@ant-design/icons";
 
 const columns = [
   {
@@ -68,6 +83,18 @@ const columns = [
     dataIndex: "deviceAlarm",
     key: "deviceAlarm",
     align: "center",
+    render(value) {
+      // TODO: Add conditionals for above/below once we have that data
+      return value ? (
+        <Tooltip title="The flow rate is above/below the flow rate threshold for this device.">
+          <ArrowDownOutlined />
+          <ArrowUpOutlined />
+          <WarningFilled style={{ color: "red" }} />
+        </Tooltip>
+      ) : (
+        <>-</>
+      );
+    },
   },
   {
     title: "Valve State",

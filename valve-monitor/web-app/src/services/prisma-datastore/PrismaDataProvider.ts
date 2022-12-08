@@ -18,6 +18,7 @@ import {
 import { ValveMonitorConfig, ValveMonitorDevice } from "../AppModel";
 
 import IDBuilder from "../IDBuilder";
+import { Notification } from "../NotificationsStore";
 
 function filterEventsByDevice(device: Device, eventList: Event[]) {
   const filteredEvents = eventList.filter(
@@ -26,10 +27,10 @@ function filterEventsByDevice(device: Device, eventList: Event[]) {
   return filteredEvents;
 }
 
-// todo make notifications a domain object?
-function filterAlarmsByDevice(device: Device, alarmList: any) {
-  const filteredAlarms = alarmList.filter((alarm) =>
-    alarm.content.includes(device.id.deviceUID)
+function filterAlarmsByDevice(device: Device, alarmList: Notification[]) {
+  const filteredAlarms = alarmList.filter(
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    (alarm) => alarm.content?.deviceID === device.id.deviceUID
   );
 
   return filteredAlarms;
@@ -39,7 +40,7 @@ function assembleDeviceEventsObject(
   device: Device,
   latestDeviceEvent: Event[],
   latestDeviceControlEvent: Event[],
-  alarmNotification: any
+  alarmNotification: Notification[]
 ) {
   function determineValveState(deviceEvent: Event, controlEvent: Event) {
     if (!deviceEvent.value.valve_state) {
@@ -159,11 +160,10 @@ export class PrismaDataProvider implements DataProvider {
         controlEvents
       );
 
-      let filteredAlarmsByDevice = [];
-
-      if (deviceAlarms.includes(!undefined)) {
-        filteredAlarmsByDevice = filterAlarmsByDevice(device, deviceAlarms);
-      }
+      const filteredAlarmsByDevice = filterAlarmsByDevice(
+        device,
+        deviceAlarms.filter((alarm) => alarm !== undefined)
+      );
 
       const updatedValveDeviceMonitorObj = assembleDeviceEventsObject(
         device,
@@ -237,11 +237,11 @@ export class PrismaDataProvider implements DataProvider {
   }
 
   // todo possibly transform this returned obj like we do for events and devices?
-  async getLatestDeviceAlarm(deviceID: DeviceID): Promise<any> {
+  async getLatestDeviceAlarm(deviceID: DeviceID): Promise<Notification> {
     const latestAlarmFromDevice = await this.prisma.notification.findMany({
       where: {
         AND: {
-          type: "alarm.qo",
+          type: "alarm",
         },
         content: {
           path: ["deviceID"],

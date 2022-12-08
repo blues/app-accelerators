@@ -35,6 +35,8 @@
     background-color: #fff;
     border: 1px solid $bw-color--grey3;
     border-radius: 2px;
+    overflow: hidden;
+    white-space: nowrap;
   }
 
   :global .ant-table-tbody .editable-input-name,

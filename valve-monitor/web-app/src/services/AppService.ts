@@ -18,6 +18,7 @@ import { IDBuilder } from "./IDBuilder";
 import { NotificationsStore, Notification } from "./NotificationsStore";
 import { serverLogError } from "../pages/api/log";
 import { AppNotification } from "../components/presentation/notifications";
+import { ALARM, NOTIFICATION } from "./NotificationEventHandler";
 
 // this class / interface combo passes data and functions to the service locator file
 interface AppServiceInterface {
@@ -166,14 +167,22 @@ export default class AppService implements AppServiceInterface {
   private async appNotification(
     notification: Notification
   ): Promise<AppNotification | null> {
-    switch (
-      true
-      // case notification type, return properly formatted notification model
-    ) {
+    // build models here to handle different types of notifications
+    switch (true) {
+      case notification.type === ALARM:
+        return {
+          id: notification.id,
+          type: ALARM,
+          when: notification.when.getTime(),
+        };
+      case notification.type === NOTIFICATION:
+        // The only notification this project currently uses are for
+        // environment variable updates, which we’re ignoring in the
+        // web app
+        return null;
+      default:
+        serverLogError(`unknown notification ${notification}`);
+        return null;
     }
-    serverLogError(`unknown notification ${notification}`);
-    return null;
   }
-
-  // build models here to handle different types of notifications
 }
