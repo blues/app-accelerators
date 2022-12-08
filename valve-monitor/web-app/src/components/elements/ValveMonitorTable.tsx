@@ -129,7 +129,12 @@ const columns = [
     align: "center",
   },
   {
-    title: "Valve Control (open/closed)",
+    title: (
+      <>
+        <div>Valve Control</div>
+        <div>(open / closed)</div>
+      </>
+    ),
     align: "center",
     key: "valveControl",
     editable: true,
@@ -137,7 +142,7 @@ const columns = [
 ] as ColumnsType<ValveMonitorDevice>;
 
 interface EditableCellProps {
-  title: string;
+  title: string | { props: { children: any } };
   editable: boolean;
   index: string;
   children: JSX.Element;
@@ -201,12 +206,28 @@ const EditableCell = ({
 
   let childNode = children;
 
-  let rowTitle: string = title;
+  let rowTitle = title;
   if (title === "Min") {
     rowTitle = "Alarm Setting Minimum";
   }
   if (title === "Max") {
     rowTitle = "Alarm Setting Maximum";
+  }
+  if (
+    typeof title !== "string" &&
+    title.props &&
+    title.props.children &&
+    title?.props?.children[1].props.children === "(open / closed)"
+  ) {
+    rowTitle = "Valve Control (open/closed)";
+  }
+  if (
+    typeof title !== "string" &&
+    title.props &&
+    title.props.children &&
+    title?.props?.children[0].props.children === "Monitoring"
+  ) {
+    rowTitle = "Monitoring (min)";
   }
 
   // Create a custom form for editing cells

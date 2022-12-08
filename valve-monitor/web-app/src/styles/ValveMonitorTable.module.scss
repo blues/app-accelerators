@@ -108,7 +108,6 @@
       display: flex;
       flex-direction: column;
       margin-bottom: 24px;
-      width: 117%; // I don't know why this is necessary but it is
     }
 
     :global .ant-table-tbody tr td,
@@ -153,8 +152,6 @@
 
     :global .ant-table-tbody .editable-input-name,
     :global .ant-table-tbody .editable-button-name {
-      max-width: 80px;
-      width: 80px;
       margin: 0 0 0 16px;
     }
 
