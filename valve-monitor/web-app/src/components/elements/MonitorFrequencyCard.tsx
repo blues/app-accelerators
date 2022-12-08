@@ -45,8 +45,6 @@ const MonitorFrequencyCard = (props: MonitorFrequencyProps) => {
     setIsLoading(false);
   };
 
-  console.log(currentFrequency);
-
   return (
     <Card
       className={cardStyles.cardContainer}
