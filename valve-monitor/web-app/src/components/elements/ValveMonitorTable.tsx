@@ -245,7 +245,13 @@ const EditableCell = ({
       );
   }
 
-  return <td>{childNode}</td>;
+  return (
+    // Providing the colors in JavaScript to override the Ant hover styling
+    // Errored rows should stay red on hover.
+    <td style={{ backgroundColor: record.deviceAlarm ? "#fbe9e7" : "white" }}>
+      {childNode}
+    </td>
+  );
 };
 
 interface ValveMonitorTableProps {
