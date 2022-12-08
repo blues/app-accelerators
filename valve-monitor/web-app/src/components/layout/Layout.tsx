@@ -12,6 +12,7 @@ const LayoutComponent = ({
   isLoading: boolean;
 }) => {
   const { Content } = Layout;
+
   return (
     <Layout>
       <Header />

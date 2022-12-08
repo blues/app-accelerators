@@ -1,7 +1,5 @@
 @import "_variables.scss";
 .footerWrapper {
-  background-color: $bw-color--grey0;
-
   .footerDivider {
     margin: auto;
     border: 0;
@@ -15,7 +13,6 @@
     width: clamp($page-content-xs, $page-content-lg, calc(100vw - 79px));
     margin: auto;
     padding: 16px 0 64px 0;
-    background-color: $bw-color--grey0;
   }
 
   /* this hides the disclosure widget triangle: https://stackoverflow.com/a/56649741 */

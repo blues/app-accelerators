@@ -12,14 +12,18 @@
     margin: 24px 0;
   }
 
-  .motionFrequencyCard {
-    width: 170px;
-  }
-
   .tableHeaderRow {
     display: flex;
     width: 100%;
     align-items: first baseline;
     justify-content: space-between;
+  }
+}
+
+@media screen and (max-width: $breakpoints-sm) {
+  .container {
+    .sectionTitle {
+      font-size: 16px;
+    }
   }
 }
