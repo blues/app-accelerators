@@ -92,8 +92,8 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
                     {/* relying on Ant D's responsive design column system: https://ant.design/components/grid#components-grid-demo-responsive */}
                     <Col
                       xs={11}
-                      sm={7}
-                      md={5}
+                      sm={8}
+                      md={6}
                       lg={4}
                       xl={4}
                       className={styles.motionFrequencyCard}
@@ -106,7 +106,7 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
                         setIsLoading={setIsLoading}
                       />
                     </Col>
-                    <Col xs={13} sm={10} md={7} lg={6} xl={6}>
+                    <Col xs={13} sm={10} md={8} lg={6} xl={6}>
                       <AlarmThresholdCard
                         currentMinFlowThreshold={minFlowThreshold}
                         currentMaxFlowThreshold={maxFlowThreshold}
