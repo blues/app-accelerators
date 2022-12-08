@@ -36,16 +36,13 @@ const columns = [
     ),
   },
   {
-    title: (
-      <>
-        <div>Monitoring</div>
-        <div>(min)</div>
-      </>
-    ),
+    title: "Monitoring (min)",
     dataIndex: "monitorFrequency",
     key: "monitorFrequency",
     editable: true,
     align: "center",
+
+    width: "115px",
   },
   {
     title: "Alarm Setting",
@@ -82,7 +79,12 @@ const columns = [
     ),
   },
   {
-    title: "V. State",
+    title: (
+      <>
+        <div>Valve</div>
+        <div>State</div>
+      </>
+    ),
     render: (_, record) => (
       <>
         <span className={styles.rowTitle}>Valve State</span>
@@ -204,7 +206,7 @@ const EditableCell = ({
               />
             ) : (
               <InputNumber
-                className="editable-input test"
+                className="editable-input"
                 min="0"
                 placeholder="xx.x"
                 onBlur={handleBlur}

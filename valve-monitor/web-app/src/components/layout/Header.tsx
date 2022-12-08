@@ -1,4 +1,3 @@
-import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Layout } from "antd";
@@ -7,17 +6,18 @@ import Logomark from "../../../public/images/logomark-placeholder.svg";
 import config from "../../../Config";
 import styles from "../../styles/Header.module.scss";
 
-const HeaderComponent = ({ showLargeLogo }) => {
+const HeaderComponent = () => {
   const { Header } = Layout;
   return (
     <Header className={styles.header}>
       <Link href="/">
-        <a data-testid="logo">
-          {showLargeLogo ? (
-            <Image src={Logo} height={60} width={154} alt="App Logo" />
-          ) : (
-            <Image src={Logomark} height={60} width={35} alt="App Logo" />
-          )}
+        <a className={styles.largeLogo} data-testid="logo">
+          <Image src={Logo} height={60} width={154} alt="App Logo" />
+        </a>
+      </Link>
+      <Link href="/">
+        <a className={styles.smallLogo} data-testid="smalllogo">
+          <Image src={Logomark} height={60} width={37} alt="App Logo" />
         </a>
       </Link>
       <h1 className={styles.headerTitle}>Valve Monitor</h1>

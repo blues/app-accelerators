@@ -89,6 +89,7 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
                     </Col>
                   </Row>
                   <Row gutter={16}>
+                    {/* relying on Ant D's responsive design column system: https://ant.design/components/grid#components-grid-demo-responsive */}
                     <Col
                       xs={11}
                       sm={7}

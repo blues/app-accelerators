@@ -9,7 +9,7 @@
   // required to override default Ant Design component styling
   min-height: calc(100vh - $header-bar-height - $footer-bar-height) !important;
   width: clamp($page-content-xs, $page-content-lg, calc(100vw - 79px));
-  margin: 0 auto;
+  margin: 0 auto 32px;
   background-color: #fff;
 
   :global .ant-row {
