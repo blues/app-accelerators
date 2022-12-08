@@ -21,6 +21,8 @@ const ERROR_MESSAGE = {
     "Failed to update the fleet’s flow monitoring frequency. If this problem persists, contact Blues support.",
   UPDATE_FLEET_ALARM_THRESHOLD_FAILED:
     "Failed to update the fleet’s alarm thresholds. If this problem persists, contact Blues support.",
+  CLEAR_ALARMS_FAILED:
+    "Failed to clear the project’s alarms. If this this problem persists, contact Blues support.",
 };
 
 const getErrorMessage = (errorCode: string) => {

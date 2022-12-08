@@ -2,15 +2,16 @@ import { useEffect, useState } from "react";
 import { GetServerSideProps, NextPage } from "next";
 import { useRouter } from "next/router";
 import { useQueryClient } from "react-query";
-import { Alert, Col, Row } from "antd";
-import { services } from "../services/ServiceLocatorServer";
+import { Alert, Button, Col, Row } from "antd";
+import { clearAlarms } from "../api-client/alarms";
 import { useValveMonitorDeviceData } from "../hooks/useValveMonitorDeviceData";
 import AlarmThresholdCard from "../components/elements/AlarmThresholdCard";
 import MonitorFrequencyCard from "../components/elements/MonitorFrequencyCard";
 import ValveMonitorTable from "../components/elements/ValveMonitorTable";
 import LoadingSpinner from "../components/layout/LoadingSpinner";
-import { getErrorMessage } from "../constants/ui";
+import { getErrorMessage, ERROR_MESSAGE } from "../constants/ui";
 import { ValveMonitorConfig } from "../services/AppModel";
+import { services } from "../services/ServiceLocatorServer";
 import { ERROR_CODES } from "../services/Errors";
 import styles from "../styles/Home.module.scss";
 
@@ -57,6 +58,16 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
     // it refetches data to get the updated table data.
     await refreshData();
     await queryClient.invalidateQueries();
+  };
+
+  const clearAllAlarms = async () => {
+    try {
+      await clearAlarms();
+    } catch (e) {
+      setIsErrored(true);
+      setErrorMessage(ERROR_MESSAGE.CLEAR_ALARMS_FAILED);
+    }
+    await refreshDataAndInvalidateCache();
   };
 
   useEffect(() => {
@@ -111,6 +122,17 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
                         <h3 className={styles.sectionTitle}>
                           Individual Controls
                         </h3>
+                        {valveMonitorDevices.filter(
+                          (device) => device.deviceAlarm
+                        ).length > 0 && (
+                          <Button
+                            type="primary"
+                            danger
+                            onClick={clearAllAlarms}
+                          >
+                            Clear Alarms
+                          </Button>
+                        )}
                       </div>
                     </Col>
                   </Row>

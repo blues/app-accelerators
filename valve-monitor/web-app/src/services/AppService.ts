@@ -49,6 +49,7 @@ interface AppServiceInterface {
   ) => Promise<void>;
 
   getAppNotifications(): Promise<AppNotification[]>;
+  clearAlarms(): Promise<void>;
 }
 
 export type { AppServiceInterface };
@@ -164,6 +165,11 @@ export default class AppService implements AppServiceInterface {
     return this.attributeStore.updateValveState(deviceUID, state);
   }
 
+  async clearAlarms() {
+    await this.notificationStore.removeNotificationsByType(ALARM);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
   private async appNotification(
     notification: Notification
   ): Promise<AppNotification | null> {

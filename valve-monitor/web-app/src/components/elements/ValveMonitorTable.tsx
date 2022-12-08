@@ -89,7 +89,7 @@ const columns = [
         <Tooltip title="The flow rate is above/below the flow rate threshold for this device.">
           <ArrowDownOutlined />
           <ArrowUpOutlined />
-          <WarningFilled style={{ color: "red" }} />
+          <WarningFilled />
         </Tooltip>
       ) : (
         <>-</>

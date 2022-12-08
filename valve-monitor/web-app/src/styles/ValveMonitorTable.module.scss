@@ -35,8 +35,8 @@
     background-color: #fff;
     border: 1px solid $bw-color--grey3;
     border-radius: 2px;
-    overflow: hidden;
-    white-space: nowrap;
+    white-space: normal;
+    height: auto;
   }
 
   :global .ant-table-tbody .editable-input-name,
@@ -51,5 +51,11 @@
   :global .ant-input-number {
     width: 70px;
     margin: auto;
+  }
+
+  :global .anticon-warning {
+    color: red;
+    font-size: 20px;
+    margin-left: 5px;
   }
 }
