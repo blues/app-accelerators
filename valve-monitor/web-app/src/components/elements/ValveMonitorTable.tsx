@@ -103,13 +103,6 @@ const columns = [
         </>
       );
     },
-
-    /*
-      <>
-        <span className={styles.rowTitle}>Alarm</span>
-        <span>{record.deviceAlarm}</span>
-      </>
-      */
   },
   {
     title: (
