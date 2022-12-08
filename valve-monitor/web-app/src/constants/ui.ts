@@ -44,13 +44,30 @@ const getErrorMessage = (errorCode: string) => {
   }
 };
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-const SIGNAL_STRENGTH_TOOLTIP = {
-  OFF: "Off",
-  WEAK: "Weak",
-  FAIR: "Fair",
-  GOOD: "Good",
-  EXCELLENT: "Excellent",
+const VALVE_STATE_ALARM_MESSAGES = {
+  HIGH: "The flow rate is above the flow rate threshold for this device.",
+  LOW: "The flow rate is below the flow rate threshold for this device.",
+  LEAK: "A flow rate was detected while this valve was closed.",
 };
 
-export { ERROR_MESSAGE, SIGNAL_STRENGTH_TOOLTIP, getErrorMessage };
+const getValveStateAlarmMessage = (alarmReason: string) => {
+  switch (alarmReason) {
+    case "high":
+      return VALVE_STATE_ALARM_MESSAGES.HIGH;
+    case "low":
+      return VALVE_STATE_ALARM_MESSAGES.LOW;
+    case "leak":
+      return VALVE_STATE_ALARM_MESSAGES.LEAK;
+    default:
+      // eslint-disable-next-line no-console
+      console.error(`Unknown alarm cause: ${alarmReason}`);
+      return "";
+  }
+};
+
+export {
+  ERROR_MESSAGE,
+  getErrorMessage,
+  VALVE_STATE_ALARM_MESSAGES,
+  getValveStateAlarmMessage,
+};

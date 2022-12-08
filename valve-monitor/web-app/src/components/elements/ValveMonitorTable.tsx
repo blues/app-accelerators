@@ -12,7 +12,7 @@ import {
 import type { ColumnsType } from "antd/lib/table";
 import { isEmpty } from "lodash";
 import { ValveMonitorDevice } from "../../services/AppModel";
-import { ERROR_MESSAGE } from "../../constants/ui";
+import { ERROR_MESSAGE, getValveStateAlarmMessage } from "../../constants/ui";
 import {
   changeDeviceName,
   updateDeviceValveMonitorConfig,
@@ -83,12 +83,12 @@ const columns = [
     dataIndex: "deviceAlarm",
     key: "deviceAlarm",
     align: "center",
-    render(value) {
+    render(value, record) {
       // TODO: Add conditionals for above/below once we have that data
       return value ? (
-        <Tooltip title="The flow rate is above/below the flow rate threshold for this device.">
-          <ArrowDownOutlined />
-          <ArrowUpOutlined />
+        <Tooltip title={getValveStateAlarmMessage(record.deviceAlarmReason)}>
+          {record.deviceAlarmReason === "low" && <ArrowDownOutlined />}
+          {record.deviceAlarmReason === "high" && <ArrowUpOutlined />}
           <WarningFilled />
         </Tooltip>
       ) : (

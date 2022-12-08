@@ -67,6 +67,7 @@ function assembleDeviceEventsObject(
       ? Number(latestDeviceEvent[0].value.flow_rate).toFixed(1)
       : "-",
     deviceAlarm: !!alarmNotification.length,
+    deviceAlarmReason: alarmNotification[0]?.content?.content?.reason,
     deviceFleetID: device.fleetUIDs[0], // a device can only be assigned to one fleet a time
   };
 
