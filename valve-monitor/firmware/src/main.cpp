@@ -392,8 +392,8 @@ void setup()
 
     // Default values.
     state.monitorIntervalMs = 10000; // 10 seconds
-    state.flowRateAlarmMin = 10;
-    state.flowRateAlarmMax = 100;
+    state.flowRateAlarmMin = 500;
+    state.flowRateAlarmMax = 1500;
 
     fetchEnvVars();
 }
