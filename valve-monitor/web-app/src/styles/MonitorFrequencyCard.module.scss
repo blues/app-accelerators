@@ -1,7 +1,7 @@
 @import "_variables.scss";
 
 .radioContainer {
-  margin: 20% 0;
+  margin: 13% 0;
   padding-left: 16px;
 
   :global .ant-radio-group {
@@ -27,7 +27,7 @@
 
 @media screen and (max-width: $breakpoints-md) {
   .radioContainer {
-    margin-top: 15%;
+    margin-top: 10%;
   }
 }
 

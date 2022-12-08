@@ -36,12 +36,7 @@ const columns = [
     ),
   },
   {
-    title: (
-      <>
-        <div>Monitoring</div>
-        <div>(min)</div>
-      </>
-    ),
+    title: "Monitoring (min)",
     dataIndex: "monitorFrequency",
     key: "monitorFrequency",
     editable: true,
