@@ -84,7 +84,6 @@ const columns = [
     key: "deviceAlarm",
     align: "center",
     render(value, record) {
-      // TODO: Add conditionals for above/below once we have that data
       return value ? (
         <Tooltip title={getValveStateAlarmMessage(record.deviceAlarmReason)}>
           {record.deviceAlarmReason === "low" && <ArrowDownOutlined />}
