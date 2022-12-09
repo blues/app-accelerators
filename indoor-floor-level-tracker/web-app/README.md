@@ -163,3 +163,8 @@ the change.
 
 > **NOTE**: Changes to `.env` are **not** automatically reloaded, and require you
 to stop the `yarn dev` with `ctrl+c` and to start `yarn dev` back up.
+
+The web app uses the [Notehub API](https://dev.blues.io/guides-and-tutorials/using-the-notehub-api/) to retrieve event data, which consumes [Notehub consumption credits](https://blues.io/pricing/).
+You can change how frequently the app refreshes data from Notehub by altering
+the `MS_REFETCH_INTERVAL` constant in the [`src/pages/index.tsx`](/src/pages/index.tsx)
+file.
