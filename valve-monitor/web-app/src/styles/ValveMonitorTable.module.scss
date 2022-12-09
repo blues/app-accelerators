@@ -83,8 +83,8 @@
 
     :global .ant-table-tbody .editable-input-name,
     :global .ant-table-tbody .editable-button-name {
-      max-width: 100px;
-      width: 100px;
+      max-width: 120px;
+      width: 120px;
     }
   }
 }
@@ -153,6 +153,12 @@
     :global .ant-table-tbody .editable-input-name,
     :global .ant-table-tbody .editable-button-name {
       margin: 0 0 0 16px;
+    }
+
+    :global .editable-button {
+      height: default;
+      white-space: nowrap;
+      overflow: hidden;
     }
 
     :global .ant-input-number {
