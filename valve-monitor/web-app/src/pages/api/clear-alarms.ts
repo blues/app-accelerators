@@ -1,4 +1,5 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
+import { StatusCodes } from "http-status-codes";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { ErrorWithCause } from "pony-cause";
 import { HTTP_STATUS } from "../../constants/http";
@@ -18,8 +19,7 @@ export default async function clearAlarmsHandler(
         });
       }
 
-      // res.status(StatusCodes.OK).json({});
-      res.status(500).json({});
+      res.status(StatusCodes.OK).json({});
 
       break;
     default:

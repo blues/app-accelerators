@@ -239,7 +239,7 @@ export class PrismaDataProvider implements DataProvider {
 
   // todo possibly transform this returned obj like we do for events and devices?
   async getLatestDeviceAlarm(deviceID: DeviceID): Promise<Notification> {
-    const latestAlarmFromDevice = await this.prisma.notification.findMany({
+    const latestAlarmFromDevice = await this.prisma.notification.findFirst({
       where: {
         AND: {
           type: "alarm",
@@ -249,9 +249,12 @@ export class PrismaDataProvider implements DataProvider {
           equals: deviceID.deviceUID,
         },
       },
-      take: -1,
+      orderBy: {
+        when: "desc",
+      },
     });
-    return latestAlarmFromDevice[0];
+
+    return latestAlarmFromDevice || undefined;
   }
 
   async getDevice(deviceID: DeviceID): Promise<Device> {

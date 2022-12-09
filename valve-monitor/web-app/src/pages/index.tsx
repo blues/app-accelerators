@@ -21,7 +21,8 @@ type HomeData = {
 };
 
 const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
-  const MS_REFETCH_INTERVAL = 60000;
+  // How often to refresh that page’s data (in milliseconds)
+  const MS_REFETCH_INTERVAL = 60 * 1000;
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isErrored, setIsErrored] = useState<boolean>(false);
@@ -141,6 +142,7 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
                           <Button
                             type="primary"
                             danger
+                            disabled={isLoading}
                             onClick={clearAllAlarms}
                           >
                             Clear Alarms

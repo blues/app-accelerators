@@ -18,6 +18,10 @@
     align-items: first baseline;
     justify-content: space-between;
   }
+
+  :global .ant-alert {
+    margin-top: 15px;
+  }
 }
 
 @media screen and (max-width: $breakpoints-sm) {

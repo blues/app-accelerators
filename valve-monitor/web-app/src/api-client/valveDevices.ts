@@ -13,7 +13,8 @@ export async function getValveMonitorDeviceData(): Promise<
   const endpoint = services().getUrlManager().getValveMonitorDeviceData();
   const response: AxiosResponse =
     await axios.get<GetValveMonitorDeviceResponse>(endpoint);
-  return response.data.valveMonitorDevices;
+  const devices = response.data.valveMonitorDevices as ValveMonitorDevice[];
+  return devices.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 async function updateDevice(deviceUID: string, deviceEnvVarToUpdate: object) {
