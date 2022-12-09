@@ -47,6 +47,8 @@
     background-color: #fff;
     border: 1px solid $bw-color--grey3;
     border-radius: 2px;
+    white-space: normal;
+    height: auto;
   }
 
   :global .ant-table-tbody .editable-input-name,
@@ -62,6 +64,12 @@
     width: 70px;
     margin: auto;
   }
+
+  :global .anticon-warning {
+    color: red;
+    font-size: 20px;
+    margin-left: 5px;
+  }
 }
 
 @media screen and (max-width: 910px) {
@@ -75,8 +83,8 @@
 
     :global .ant-table-tbody .editable-input-name,
     :global .ant-table-tbody .editable-button-name {
-      max-width: 100px;
-      width: 100px;
+      max-width: 120px;
+      width: 120px;
     }
   }
 }
@@ -145,6 +153,12 @@
     :global .ant-table-tbody .editable-input-name,
     :global .ant-table-tbody .editable-button-name {
       margin: 0 0 0 16px;
+    }
+
+    :global .editable-button {
+      height: default;
+      white-space: nowrap;
+      overflow: hidden;
     }
 
     :global .ant-input-number {

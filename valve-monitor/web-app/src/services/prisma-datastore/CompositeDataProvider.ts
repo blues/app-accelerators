@@ -121,7 +121,6 @@ export default class CompositeDataProvider implements DataProvider {
 
       const formattedDeviceObj = {
         ...device,
-        deviceAlarm: device.deviceAlarm ? "!" : "-",
         monitorFrequency,
         minFlowThreshold,
         maxFlowThreshold,

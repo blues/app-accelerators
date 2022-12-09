@@ -14,10 +14,7 @@ import { PrismaDataProvider } from "./prisma-datastore/PrismaDataProvider";
 // eslint-disable-next-line import/no-named-as-default
 import { getPrismaClient } from "./prisma-datastore/prisma-util";
 import { serverLogInfo } from "../pages/api/log";
-import {
-  NotificationsStore,
-  TransientNotificationStore,
-} from "./NotificationsStore";
+import { NotificationsStore } from "./NotificationsStore";
 import { CompositeEventHandler } from "./CompositeEventHandler";
 import { NotificationEventHandler } from "./NotificationEventHandler";
 import PrismaNotificationsStore from "./prisma-datastore/PrismaNotificationsStore";
@@ -166,9 +163,7 @@ class ServiceLocatorServer {
 
   getNotificationsStore(): NotificationsStore {
     if (!this.notificationsStore) {
-      this.notificationsStore = this.prisma
-        ? new PrismaNotificationsStore(this.prisma)
-        : new TransientNotificationStore();
+      this.notificationsStore = new PrismaNotificationsStore(this.prisma);
     }
     return this.notificationsStore;
   }

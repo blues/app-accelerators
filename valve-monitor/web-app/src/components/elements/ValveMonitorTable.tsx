@@ -1,15 +1,29 @@
 import { MutableRefObject, useEffect, useRef, useState } from "react";
-import { Form, Input, InputNumber, InputRef, Switch, Table, Tag } from "antd";
+import {
+  Form,
+  Input,
+  InputNumber,
+  InputRef,
+  Switch,
+  Table,
+  Tag,
+  Tooltip,
+} from "antd";
 import type { ColumnsType } from "antd/lib/table";
 import { isEmpty } from "lodash";
 import { ValveMonitorDevice } from "../../services/AppModel";
-import { ERROR_MESSAGE } from "../../constants/ui";
+import { ERROR_MESSAGE, getValveStateAlarmMessage } from "../../constants/ui";
 import {
   changeDeviceName,
   updateDeviceValveMonitorConfig,
   updateValveControl,
 } from "../../api-client/valveDevices";
 import styles from "../../styles/ValveMonitorTable.module.scss";
+import {
+  WarningFilled,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
+} from "@ant-design/icons";
 
 const columns = [
   {
@@ -69,12 +83,26 @@ const columns = [
     dataIndex: "deviceAlarm",
     key: "deviceAlarm",
     align: "center",
-    render: (_, record) => (
-      <>
-        <span className={styles.rowTitle}>Alarm</span>
-        <span>{record.deviceAlarm}</span>
-      </>
-    ),
+    render(value, record) {
+      return (
+        <>
+          <span className={styles.rowTitle}>Alarm</span>
+          <span>
+            {value ? (
+              <Tooltip
+                title={getValveStateAlarmMessage(record.deviceAlarmReason)}
+              >
+                {record.deviceAlarmReason === "low" && <ArrowDownOutlined />}
+                {record.deviceAlarmReason === "high" && <ArrowUpOutlined />}
+                <WarningFilled />
+              </Tooltip>
+            ) : (
+              <>-</>
+            )}
+          </span>
+        </>
+      );
+    },
   },
   {
     title: (
@@ -275,7 +303,13 @@ const EditableCell = ({
       );
   }
 
-  return <td>{childNode}</td>;
+  return (
+    // Providing the colors in JavaScript to override the Ant hover styling
+    // Errored rows should stay red on hover.
+    <td style={{ backgroundColor: record.deviceAlarm ? "#fbe9e7" : "white" }}>
+      {childNode}
+    </td>
+  );
 };
 
 interface ValveMonitorTableProps {

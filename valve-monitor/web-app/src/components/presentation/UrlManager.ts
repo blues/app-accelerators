@@ -9,4 +9,6 @@ export interface UrlManager {
 
   updateValveMonitorDevice(deviceUID: string): string;
   setFleetValveMonitorConfig(): string;
+
+  clearAlarms(): string;
 }

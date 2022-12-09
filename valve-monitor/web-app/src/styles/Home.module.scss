@@ -11,6 +11,13 @@
     font-weight: 600;
     margin: 24px 0;
   }
+
+  .tableHeaderRow {
+    display: flex;
+    width: 100%;
+    align-items: first baseline;
+    justify-content: space-between;
+  }
 }
 
 @media screen and (max-width: $breakpoints-sm) {
