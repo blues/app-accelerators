@@ -21,11 +21,13 @@
 #define ENV_POLL_MS (5 * 1000)
 // After triggering an alarm, raise the alarm every 30 seconds after that.
 #define ALARM_REFRESH_MS (30 * 1000)
-// Calculate the flow rate every 200 ms. We want to allow a little time between
+// Calculate the flow rate every 500 ms. We want to allow a little time between
 // measurements for the sensor's signal line to pulse. If we make this interval
 // too small, its possible we won't have enough sensor data (i.e. pulses) to
 // produce an accurate flow rate measurement.
-#define FLOW_CALC_INTERVAL_MS 200
+#define FLOW_CALC_INTERVAL_MS 500
+
+#define LEAK_THRESHOLD 6
 
 // Define USE_VALVE to compile in valve control support. If not defined, it's
 // turned on by default.
@@ -33,8 +35,8 @@
 #define USE_VALVE 1
 #endif
 
-// This is the unique Product Identifier for your device
-#define PRODUCT_UID "com.blues.hroche:quickstart"   // "com.my-company.my-name:my-project"
+// Replace with your product UID.
+// #define PRODUCT_UID "com.my-company.my-name:my-project"
 
 #ifndef PRODUCT_UID
 #error "PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://dev.blues.io/tools-and-sdks/samples/product-uid"
@@ -53,6 +55,7 @@ struct AppState {
     uint32_t flowRate;
     uint32_t flowRateAlarmMin;
     uint32_t flowRateAlarmMax;
+    uint32_t leakCount;
     volatile bool attnTriggered;
     bool valveOpen;
     bool ackValveCmd;
@@ -100,6 +103,9 @@ void valveToggle()
         // mechanism isn't needed.
         state.valveOpenedMs = millis();
         digitalWrite(VALVE_OPEN_PIN, HIGH);
+        // Clear leak counter. By definition, we can't have a leak if the valve
+        // is open.
+        state.leakCount = 0;
     }
 
     state.valveOpen = !state.valveOpen;
@@ -121,7 +127,6 @@ void handleValveCmd(char *cmd)
     else if (!strcmp(cmd, "close")) {
         notecard.logDebug("Received valve close cmd.\n");
         if (state.valveOpen) {
-            state.flowMeterPulseCount = 0;
             valveToggle();
         }
         else {
@@ -135,12 +140,23 @@ void handleValveCmd(char *cmd)
     state.ackValveCmd = 1;
 }
 
-void publishSystemStatus(uint32_t flowRate)
+// Publish the system status (flow rate, valve state). If alarmReason is not
+// NULL, attach the reason to the outbound note and send it to alarm.qo.
+// Otherwise, send the note to data.qo.
+void publishSystemStatus(uint32_t flowRate, const char *alarmReason)
 {
-    J *req = notecard.newRequest("note.add");
+    const char *file;
 
+    if (alarmReason == NULL) {
+        file = "data.qo";
+    }
+    else {
+        file = "alarm.qo";
+    }
+
+    J *req = notecard.newRequest("note.add");
     if (req != NULL) {
-        JAddStringToObject(req, "file", "data.qo");
+        JAddStringToObject(req, "file", file);
         JAddBoolToObject(req, "sync", true);
 
         J *body = JCreateObject();
@@ -155,6 +171,10 @@ void publishSystemStatus(uint32_t flowRate)
                 JAddStringToObject(body, "valve_state", "closed");
             }
         #endif // USE_VALVE
+
+            if (alarmReason != NULL) {
+                JAddStringToObject(body, "reason", alarmReason);
+            }
 
             JAddStringToObject(body, "app", "nf9");
             JAddItemToObject(req, "body", body);
@@ -226,10 +246,15 @@ bool fetchEnvVars()
             if (body != NULL) {
                 char *valueStr = JGetString(body, "monitor_interval");
                 float value;
+                char *endPtr;
 
                 if (valueStr != NULL) {
-                    value = atof(valueStr);
-                    if (value != 0.0) {
+                    value = strtof(valueStr, &endPtr);
+                    if ((value == 0 && valueStr == endPtr) || value < 0) {
+                        notecard.logDebugf("Failed to convert %s to positive "
+                            "float for monitor interval.\n", valueStr);
+                    }
+                    else {
                         state.monitorIntervalMs = (uint32_t)(value * 1000);
                         updated = true;
                         notecard.logDebugf("Monitor interval set to %u ms.\n",
@@ -239,8 +264,12 @@ bool fetchEnvVars()
 
                 valueStr = JGetString(body, "flow_rate_alarm_threshold_min");
                 if (valueStr != NULL) {
-                    value = atof(valueStr);
-                    if (value != 0.0) {
+                    value = strtof(valueStr, &endPtr);
+                    if ((value == 0 && valueStr == endPtr) || value < 0) {
+                        notecard.logDebugf("Failed to convert %s to positive "
+                            "float for flow rate min.\n", valueStr);
+                    }
+                    else {
                         state.flowRateAlarmMin = value;
                         updated = true;
                         notecard.logDebugf("Flow rate min set to %u mL/min.\n",
@@ -250,8 +279,12 @@ bool fetchEnvVars()
 
                 valueStr = JGetString(body, "flow_rate_alarm_threshold_max");
                 if (valueStr != NULL) {
-                    value = atof(valueStr);
-                    if (value != 0.0) {
+                    value = strtof(valueStr, &endPtr);
+                    if ((value == 0 && valueStr == endPtr) || value < 0) {
+                        notecard.logDebugf("Failed to convert %s to positive "
+                            "float for flow rate max.\n", valueStr);
+                    }
+                    else {
                         state.flowRateAlarmMax = value;
                         updated = true;
                         notecard.logDebugf("Flow rate max set to %u mL/min.\n",
@@ -346,8 +379,10 @@ void setup()
     // handler.
     attachInterrupt(digitalPinToInterrupt(ATTN_INPUT_PIN), attnISR, RISING);
 
+#ifdef USE_VALVE
     // Configure valve open pin. Will default to LOW (closed).
     pinMode(VALVE_OPEN_PIN, OUTPUT);
+#endif
 
     pinMode(FLOW_RATE_METER_PIN, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(FLOW_RATE_METER_PIN), flowMeterISR, FALLING);
@@ -357,8 +392,8 @@ void setup()
 
     // Default values.
     state.monitorIntervalMs = 10000; // 10 seconds
-    state.flowRateAlarmMin = 10;
-    state.flowRateAlarmMax = 100;
+    state.flowRateAlarmMin = 500;
+    state.flowRateAlarmMax = 1500;
 
     fetchEnvVars();
 }
@@ -370,49 +405,32 @@ uint32_t calculateFlowRate(uint32_t currentMs)
            (currentMs - state.lastFlowRateCalcMs);
 }
 
-void alarm(float flowRate)
-{
-    J *req = notecard.newRequest("note.add");
-
-    if (req != NULL) {
-        JAddBoolToObject(req, "sync", true);
-        JAddStringToObject(req, "file", "alarm.qo");
-
-        J *body = JCreateObject();
-        if (body != NULL) {
-            JAddNumberToObject(body, "flow_rate", flowRate);
-            JAddBoolToObject(body, "alarm", true);
-            JAddStringToObject(body, "app", "nf9");
-            JAddItemToObject(req, "body", body);
-
-            notecard.sendRequest(req);
-        }
-        else {
-             notecard.logDebug("Failed to create body for alarm note.\n");
-        }
-    }
-    else {
-        notecard.logDebug("Failed to create note.add request alarm note.\n");
-    }
-}
-
 void checkAlarm(float flowRate)
 {
-    // TODO: Add leak detection. If the valve is closed and we detect any flow
-    //       sound the alarm.
+    bool flowRateHigh = state.valveOpen && flowRate > state.flowRateAlarmMax;
+    bool flowRateLow = state.valveOpen && flowRate < state.flowRateAlarmMin;
+    bool leaking = state.leakCount >= LEAK_THRESHOLD;
 
-    // If the valve's open and the flow rate falls outside our configured
-    // range.
-    if (state.valveOpen && (flowRate < state.flowRateAlarmMin ||
-        flowRate > state.flowRateAlarmMax)) {
-        uint32_t currentMs = millis();
-
+    if (flowRateHigh || flowRateLow || leaking) {
         // After the initial alarm for an event, only resend the alarm note
         // every ALARM_REFRESH_MS, to avoid flooding Notehub.
+        uint32_t currentMs = millis();
         if (state.lastAlarmMs == 0 || (currentMs - state.lastAlarmMs) >=
             ALARM_REFRESH_MS) {
             state.lastAlarmMs = currentMs;
-            alarm(flowRate);
+
+            const char* reason;
+            if (flowRateHigh) {
+                reason = "high";
+            }
+            else if (flowRateLow) {
+                reason = "low";
+            }
+            else {
+                reason = "leak";
+            }
+
+            publishSystemStatus(flowRate, reason);
         }
     }
     else {
@@ -422,13 +440,84 @@ void checkAlarm(float flowRate)
 
 void loop()
 {
+    uint32_t currentMs;
+
+#ifdef USE_VALVE
+    if (state.valveOpen) {
+        currentMs = millis();
+        if (currentMs - state.valveOpenedMs >= MAX_OPEN_MS) {
+            notecard.logDebugf("Valve open for max %u ms, closing to "
+                "prevent overheating.\n", MAX_OPEN_MS);
+            valveToggle();
+        }
+    }
+
+    if (state.attnTriggered) {
+        // Re-arm the ATTN interrupt.
+        attnArm();
+
+        // Process all pending inbound requests.
+        while (true) {
+            // Pop the next available note from data.qi.
+            J *req = notecard.newRequest("note.get");
+            JAddStringToObject(req, "file", "data.qi");
+            JAddBoolToObject(req, "delete", true);
+            J *rsp = notecard.requestAndResponse(req);
+            if (rsp != NULL) {
+
+                // If an error is returned, this means that no response is
+                // pending. Note that it's expected that this might return
+                // either a "note does not exist" error if there are no pending
+                // inbound notes, or a "file does not exist" error if the
+                // inbound queue hasn't yet been created on the service.
+                if (notecard.responseError(rsp)) {
+                    notecard.deleteResponse(rsp);
+                    break;
+                }
+
+                // Get the note's body
+                J *body = JGetObject(rsp, "body");
+                if (body != NULL) {
+                    char *cmd = JGetString(body, "state");
+                    if (cmd != NULL && strlen(cmd) != 0) {
+                        handleValveCmd(cmd);
+                    }
+                    else {
+                        notecard.logDebug("Unable to get valve command from note."
+                            "\n");
+                    }
+                }
+                else {
+                    notecard.logDebug("Note body was NULL.\n");
+                }
+            }
+
+            notecard.deleteResponse(rsp);
+        }
+    }
+#endif // USE_VALVE
+
     updateEnvVars();
 
-    uint32_t currentMs = millis();
+    currentMs = millis();
     if (currentMs - state.lastFlowRateCalcMs >= FLOW_CALC_INTERVAL_MS) {
         state.flowRate = calculateFlowRate(currentMs);
         state.lastFlowRateCalcMs = currentMs;
         state.flowMeterPulseCount = 0;
+
+        if (!state.valveOpen) {
+            // If the valve is closed and flow is detected, increment the
+            // leak counter. If a leak is detected on LEAK_THRESHOLD or more
+            // consecutive measurements, a leak alarm will be published. This
+            // filter prevents spurious leak alarms shortly after the valve is
+            // closed while the flow meter's spinner is still slowing down.
+            if (state.flowRate > 0) {
+                ++state.leakCount;
+            }
+            else {
+                state.leakCount = 0;
+            }
+        }
     }
     
     checkAlarm(state.flowRate);
@@ -441,72 +530,10 @@ void loop()
     if (state.ackValveCmd ||
         (currentMs - state.monitorLastUpdateMs >= state.monitorIntervalMs)) {
         state.monitorLastUpdateMs = currentMs;
-        publishSystemStatus(state.flowRate);
+        publishSystemStatus(state.flowRate, NULL);
 
         if (state.ackValveCmd) {
             state.ackValveCmd = 0;
         }
     }
-
-// All the code below is for valve control, so only compile it in if USE_VALVE
-// is defined.
-#ifdef USE_VALVE
-    if (state.valveOpen) {
-        currentMs = millis();
-        if (currentMs - state.valveOpenedMs >= MAX_OPEN_MS) {
-            notecard.logDebugf("Valve open for max %u ms, closing to "
-                "prevent overheating.\n", MAX_OPEN_MS);
-            valveToggle();
-        }
-    }
-
-    // If the ATTN interrupt hasn't occurred, nothing to do.
-    if (!state.attnTriggered) {
-        return;
-    }
-
-    // Re-arm the ATTN interrupt.
-    attnArm();
-
-    // TODO: Should we drain the queue and only take the most recent valve
-    //       command?
-    // Process all pending inbound requests.
-    while (true) {
-        // Pop the next available note from data.qi.
-        J *req = notecard.newRequest("note.get");
-        JAddStringToObject(req, "file", "data.qi");
-        JAddBoolToObject(req, "delete", true);
-        J *rsp = notecard.requestAndResponse(req);
-        if (rsp != NULL) {
-
-            // If an error is returned, this means that no response is pending.
-            // Note that it's expected that this might return either a "note
-            // does not exist" error if there are no pending inbound notes, or a
-            // "file does not exist" error if the inbound queue hasn't yet been
-            // created on the service.
-            if (notecard.responseError(rsp)) {
-                notecard.deleteResponse(rsp);
-                break;
-            }
-
-            // Get the note's body
-            J *body = JGetObject(rsp, "body");
-            if (body != NULL) {
-                char *cmd = JGetString(body, "state");
-                if (cmd != NULL && strlen(cmd) != 0) {
-                    handleValveCmd(cmd);
-                }
-                else {
-                    notecard.logDebug("Unable to get valve command from note."
-                        "\n");
-                }
-            }
-            else {
-                notecard.logDebug("Note body was NULL.\n");
-            }
-        }
-
-        notecard.deleteResponse(rsp);
-    }
-#endif // USE_VALVE
 }
