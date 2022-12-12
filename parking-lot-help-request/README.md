@@ -2,7 +2,7 @@
 
 Host-free low latency notification system to alert attendants in a parking lot or facility that customers need assistance. 
 
-![](../app-banners/nf6.jpg)
+![](../app-banners/06-banner.jpg)
 
 https://user-images.githubusercontent.com/20400845/198608657-0a79a4f1-1cc9-4ef9-bced-da28a713b0ba.MOV
 

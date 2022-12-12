@@ -2,7 +2,7 @@
 
 LoRa-based temperature, humidity and door open/close state for a fleet of refrigerators.
 
-![](../app-banners/nf2.png)
+![](../app-banners/02-banner.png)
 
 To run this project yourself you'll need to:
 
