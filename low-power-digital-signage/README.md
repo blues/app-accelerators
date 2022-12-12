@@ -55,7 +55,7 @@ setting up your hardware.
 
 ## Hardware
 
-The following hardware is required to run the Indoor Floor-Level Tracker.
+The following hardware is required to run the Low Power Digital Signage.
 
 * [Blues Notecard](https://shop.blues.io/collections/notecard)
 * [Blues Notecarrier B](https://shop.blues.io/products/carr-b)
