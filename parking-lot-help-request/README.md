@@ -4,9 +4,7 @@ Host-free low latency notification system to alert attendants in a parking lot o
 
 ![](../app-banners/nf6.jpg)
 
-change this
-
-https://user-images.githubusercontent.com/20400845/198608657-0a79a4f1-1cc9-4ef9-bced-da28a713b0ba.MOV
+https://user-images.githubusercontent.com/20400845/207144197-c4e99d29-cd9c-4e8f-9dfc-2e0ae0103c1c.mp4
 
 To run this project youself you'll need to:
 
