@@ -7,7 +7,6 @@ import {
 } from "../../services/DomainModel";
 
 function filterEventsByDevice(device: Device, eventList: Event[]) {
-  // consider also filtering out certain event types (like alarms or notification events) as well to keep the data cleaner and more uniform
   const filteredEvents = eventList
     .filter((event) => event.deviceUID.deviceUID === device.id.deviceUID)
     // sort events newest to oldest

@@ -1,7 +1,7 @@
 // HTTP status constants
 const HTTP_STATUS = {
   METHOD_NOT_ALLOWED: "HTTP method not allowed",
-  INVALID_PROJECTUID: "Invalid ProjectUID",
+  INVALID_PROJECT_UID: "Invalid Project UID",
   UNAUTHORIZED: "Unauthorized to access this project",
   INVALID_REQUEST: "The request is not valid.",
   INVALID_DEVICE: "Invalid Device UID",
