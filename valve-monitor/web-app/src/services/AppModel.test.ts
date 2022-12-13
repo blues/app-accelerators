@@ -1,5 +1,3 @@
-import * as AppModel from "./AppModel";
-
 import IDBuilder from "./IDBuilder";
 
 const mockProjectUID = "app:12345";

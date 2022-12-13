@@ -9,7 +9,6 @@ import {
   ProjectID,
   DeviceID,
   Device,
-  Project,
   Event,
   Fleets,
   FleetEnvVars,
@@ -79,15 +78,6 @@ function assembleDeviceEventsObject(
  */
 export class PrismaDataProvider implements DataProvider {
   constructor(private prisma: PrismaClient, private projectID: ProjectID) {}
-
-  async getProject(): Promise<Project> {
-    const project = await this.currentProject();
-    return {
-      id: this.projectID,
-      name: project.name,
-      description: null,
-    };
-  }
 
   private currentProjectID(): ProjectID {
     return this.projectID;
@@ -179,22 +169,6 @@ export class PrismaDataProvider implements DataProvider {
     return valveMonitorDevices;
   }
 
-  async getDeviceEvents(deviceIDs: string[]): Promise<Event[]> {
-    return Promise.all(
-      deviceIDs.map((deviceID) =>
-        this.getEvents(IDBuilder.buildDeviceID(deviceID))
-      )
-    ).then((events) => events.flat());
-  }
-
-  getFleetsByProject(): Promise<Fleets> {
-    throw new Error("Method not implemented.");
-  }
-
-  getDevicesByFleet(fleetUID: string): Promise<Device[]> {
-    throw new Error("Method not implemented.");
-  }
-
   getFleetsByDevice(deviceID: string): Promise<Fleets> {
     throw new Error("Method not implemented.");
   }
@@ -209,15 +183,6 @@ export class PrismaDataProvider implements DataProvider {
 
   getValveMonitorConfig(fleetUID: string): Promise<ValveMonitorConfig> {
     throw new Error("Method not implemented.");
-  }
-
-  async getEvents(deviceID: DeviceID): Promise<Event[]> {
-    const deviceEvents = await this.prisma.event.findMany({
-      where: {
-        deviceUID: deviceID.deviceUID,
-      },
-    });
-    return deviceEvents.map((event) => this.eventFromPrismaEvent(event));
   }
 
   async getLatestDeviceEvent(deviceID: DeviceID, file: string): Promise<Event> {
@@ -237,7 +202,6 @@ export class PrismaDataProvider implements DataProvider {
     return this.noEventsFromPrisma(deviceID);
   }
 
-  // todo possibly transform this returned obj like we do for events and devices?
   async getLatestDeviceAlarm(deviceID: DeviceID): Promise<Notification> {
     const latestAlarmFromDevice = await this.prisma.notification.findFirst({
       where: {

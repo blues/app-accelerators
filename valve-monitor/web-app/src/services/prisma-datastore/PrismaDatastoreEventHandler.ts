@@ -26,8 +26,7 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
     const verboseLog = verbose ? serverLogInfo : () => {};
 
     verboseLog("handling event", event);
-
-    // todo - should we validate the project? and create on demand?
+    
     const project = await this.projectFromNaturalKey(event.projectUID);
 
     const device = await this.upsertDevice(
