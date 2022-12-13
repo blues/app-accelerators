@@ -17,7 +17,6 @@ interface NotehubAccessor {
     hubDeviceUID: string,
     envVars: NotehubEnvVars
   ) => Promise<boolean>;
-  // todo add this to nextjs template
   addNote: (
     hubDeviceUID: string,
     file: string,

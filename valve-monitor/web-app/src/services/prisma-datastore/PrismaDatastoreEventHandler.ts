@@ -26,7 +26,6 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
     const verboseLog = verbose ? serverLogInfo : () => {};
 
     verboseLog("handling event", event);
-    
     const project = await this.projectFromNaturalKey(event.projectUID);
 
     const device = await this.upsertDevice(
