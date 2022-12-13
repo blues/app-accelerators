@@ -91,8 +91,6 @@ class ServiceLocatorServer {
       if (this.prisma) {
         const dataStoreProvider = this.getPrismaDataProvider();
         const combinedProvider = new CompositeDataProvider(
-          this.getEventHandler(),
-          this.getNotehubAccessor(),
           notehubProvider,
           dataStoreProvider
         );
