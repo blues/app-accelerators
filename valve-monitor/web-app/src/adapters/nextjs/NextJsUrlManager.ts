@@ -1,9 +1,6 @@
 import { NotificationID } from "../../services/NotificationsStore";
 
 export const NextJsUrlManager = {
-  notehubProject: (notehubUrl: string, projectUID: string) =>
-    `${notehubUrl}/project/${projectUID}`,
-
   getValveMonitorDeviceData: () => `/api/valve-device-monitors`,
 
   notifications: (...notificationIDs: NotificationID[]) =>

@@ -67,7 +67,6 @@ export interface Project {
   // Attributes
   name: string;
   description: string | null;
-  // Links
 }
 
 export type Devices = Set<Device>;
@@ -76,11 +75,6 @@ export type ProjectWithDevices = Project & {
   devices: Devices;
 };
 
-/**
- * Seconds since the epoch
- */
-export type DomainDate = number;
-
 export interface Device {
   name: string;
   locationName: string;
@@ -88,22 +82,6 @@ export interface Device {
   readonly fleetUIDs: string[];
   readonly id: DeviceID;
 }
-
-export interface DateRange {
-  from: DomainDate;
-  to: DomainDate;
-}
-
-export type DurationInMinutes = number;
-
-/**
- * Shows the most recent data
- */
-export interface MostRecent {
-  duration: DurationInMinutes;
-}
-
-export type TimePeriod = DateRange | MostRecent;
 
 export type JSONObject = { [key in string]?: JSONValue };
 
