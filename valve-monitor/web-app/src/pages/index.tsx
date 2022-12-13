@@ -26,6 +26,7 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isErrored, setIsErrored] = useState<boolean>(false);
+  const [isClearingAlarms, setIsClearingAlarms] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [monitorFrequency, setMonitorFrequency] = useState<number>(
     valveMonitorConfig.monitorFrequency
@@ -62,13 +63,16 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
   };
 
   const clearAllAlarms = async () => {
+    setIsClearingAlarms(true);
     try {
       await clearAlarms();
     } catch (e) {
+      setIsClearingAlarms(false);
       setIsErrored(true);
       setErrorMessage(ERROR_MESSAGE.CLEAR_ALARMS_FAILED);
     }
     await refreshDataAndInvalidateCache();
+    setIsClearingAlarms(false);
   };
 
   useEffect(() => {
@@ -142,7 +146,7 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
                           <Button
                             type="primary"
                             danger
-                            disabled={isLoading}
+                            loading={isClearingAlarms}
                             onClick={clearAllAlarms}
                           >
                             Clear Alarms
