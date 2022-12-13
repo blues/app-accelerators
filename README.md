@@ -86,3 +86,27 @@ A host-free low latency notification system to alert attendants in a parking lot
 </p>
 
 ---
+
+### 7. Coming Soon!
+
+---
+
+### 8. Coming Soon!
+
+---
+
+### 9. 🚰 Valve Monitor
+
+Monitor and control the open/closed state of a valve, and measure liquid flow state.
+
+<p>
+  <a href="./valve-monitor/"><b>🔧 Start Building</b></a>
+</p>
+
+---
+
+<!--
+
+### 10. 💧 Flow-Rate Monitor
+
+-->
