@@ -45,12 +45,14 @@ link.
 1. Click the **Environment** tab.
 1. Scroll down to the **Fleet environment variables** heading, and define the
 four variables below.
-    1. `flow_rate_alarm_threshold_max`: (number) The maximum expected flow rate from your
-    device, in mL / min. Flow-rate readings over this amount will trigger an alarm.
-    1. `flow_rate_alarm_threshold_min`: (number) The minimum expected flow rate from your
-    device, in mL / min. Flow-rate readings under this amount will trigger an alarm.
-    1. `monitor_interval`: (integer) How often to take readings from the device’s flow-rate
-    monitor, in seconds.
+    1. `flow_rate_alarm_threshold_max`: (number) The maximum expected flow rate
+    from your device, in mL / min. Flow-rate readings over this amount will trigger
+    an alarm.
+    1. `flow_rate_alarm_threshold_min`: (number) The minimum expected flow rate
+    from your device, in mL / min. Flow-rate readings under this amount will trigger
+    an alarm.
+    1. `monitor_interval`: (integer) How often to take readings from the device’s
+    flow-rate monitor, in seconds.
 1. With all three defined, click the blue **Save** button.
 ![Notehub fleet environment variables fully defined](images/notehub-env-vars-defined.png)
 
@@ -70,10 +72,13 @@ The following hardware is required to run the Valve Monitor project.
 [1/4 OD silicone tubing](https://www.amazon.com/dp/B09H4RNGGG/ref=cm_sw_r_api_i_H171CC4D2EDPPM23X8A4_0?th=1).
 * A power breakout, such as this [HiLetgo power breakout](https://www.amazon.com/dp/B07X9SQKL6/ref=cm_sw_r_api_i_5JYD92FH343E04VKPMR5_0)
 for supplying correct voltage to this project’s various components.
-* An I2C level shifter, such as [this one from HiLetgo](https://www.amazon.com/dp/B07F7W91LC/ref=cm_sw_r_api_i_FZPJ7VRY2329ARNQ3W22_0),
-because ???????????????????????????????????????
+* An I2C level shifter, such as [this one from HiLetgo](https://www.amazon.com/dp/B07F7W91LC/ref=cm_sw_r_api_i_FZPJ7VRY2329ARNQ3W22_0), to
+translate flow meter’s pulses from 5V logic to 3.3V logic for the Swan
+microcontroller.
 * A MOSFET driver, such as this one from [HiLetgo](https://www.amazon.com/dp/B01I1J14MO/ref=cm_sw_r_api_i_8YRY25Q7R9HGV1ZPHERP_0),
-because ???????????????????????????????????????
+is required to allow the Swan to switch on high-power devices such as the
+solenoid, without needing to send that power from the microcontroller. (The
+Swan can only send about 0.066 Watts (3.3V*20mA) out of a GPIO.)
 
 Additionally you may wish to also use the following.
 
@@ -83,10 +88,22 @@ to make it easier to start/stop the flow of liquid while testing.
 [outdoor-friendly enclosure from Sixfab](https://sixfab.com/product/raspberry-pi-ip54-outdoor-iot-project-enclosure/).
 
 Once you have all of your hardware you’ll next need to assemble the pieces.
-As a start, complete the [Notecard and Notecarrier-F quickstart guide](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/)
-for a detailed look at how to assemble your Blues Starer Kit for this project.
+As a start, complete the [Notecard and Notecarrier-F quickstart guide](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/), which will help
+you connect your Notecard, Notecarrier, and Swan.
 
 <!-- TODO: Image of the hardware build start -->
+
+From there you’ll need to connect both your flow meter and solenoid valve
+to the Notecarrier. If you’re using this project’s recommended hardware, here’s a [wiring diagram that shows how all the components connect](https://miro.com/app/board/uXjVPL8v4hE=/).
+
+<!-- Is it a good idea to put a screenshot of the Miro diagram here? -->
+
+Regardless of which hardware you use you’ll need to you’ll need to make sure the
+following pins wired to your Notecarrier.
+
+* The solenoid valve’s signal line must be connected to the Notecarrier’s `F_D6`
+pin. The Swan uses this pin to open and close the solenoid.
+* The flow meter’s signal line must be be connected to the Notecarrier’s 
 
 <!-- TODO: Final image of the build -->
 
