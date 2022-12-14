@@ -98,15 +98,35 @@ to the Notecarrier. If you’re using this project’s recommended hardware, her
 
 <!-- Is it a good idea to put a screenshot of the Miro diagram here? -->
 
-Regardless of which hardware you use you’ll need to you’ll need to make sure the
-following pins wired to your Notecarrier.
+Regardless of which hardware you use you’ll need to you’ll need to make sure to
+have the following pins wired to your Notecarrier.
 
 * The solenoid valve’s signal line must be connected to the Notecarrier’s `F_D6`
 pin. The Swan uses this pin to open and close the solenoid.
-* The flow meter’s signal line must be be connected to the Notecarrier’s 
+* The flow meter’s signal line must be be connected to the Notecarrier’s `F_D10`
+pin. The Swan uses this pin to flow rate from the flow meter.
+* The Notecarrier’s `F_D13` pin must be wired to the Notecarrier’s `ATTN` pin. The
+Swan uses this to [respond to interrupts](https://dev.blues.io/guides-and-tutorials/notecard-guides/attention-pin-guide/)
+whenever the Notecard receives a command to open or close the solenoid valve.
+
+When everything is put together your build should look something like this.
 
 <!-- TODO: Final image of the build -->
 
+With the hardware assembled you next need to get the project’s firmware running on
+your device.
+
 ## Firmware
 
+The Valve Monitor project has custom firmware that runs on the Swan. As a next step,
+complete the [firmware’s setup guide](firmware/) to get your firmware up and running.
+
 ## Web Application
+
+The Valve Monitor project’s web application allows you to view flow rates, open and
+close solenoid valves, and manage environment variables in a browser.
+
+<!-- TODO: Image of the web app -->
+
+As a final step, complete the [web app’s setup guide](web-app/) to get the app running
+on your development machine.

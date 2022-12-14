@@ -11,10 +11,11 @@ IDE, and then complete the following steps.
 - [Configuration (Environment Variables)](#configuration-environment-variables)
 - [Development](#development)
 
-> **NOTE**: By default, the Indoor Floor-Level Tracker checks for new data in Notehub
-every 10 seconds. If you’re concerned about the amount of [consumption credits](https://blues.io/pricing/)
-this uses, you may want to update the `MS_REFETCH_INTERVAL` constant in the app’s
-`pages/index.tsx` file to a much larger value to avoid continuous refetching.
+> **NOTE**: The Indoor Floor-Level Tracker’s web app uses the [Notehub API](https://dev.blues.io/guides-and-tutorials/using-the-notehub-api/)
+to retrieve event data, which consumes [Notehub consumption credits](https://blues.io/pricing/).
+You can change how frequently the app refreshes data from Notehub by altering
+the `MS_REFETCH_INTERVAL` constant in the [`src/pages/index.tsx`](src/pages/index.tsx)
+file.
 
 ## Dependencies
 
@@ -163,8 +164,3 @@ the change.
 
 > **NOTE**: Changes to `.env` are **not** automatically reloaded, and require you
 to stop the `yarn dev` with `ctrl+c` and to start `yarn dev` back up.
-
-The web app uses the [Notehub API](https://dev.blues.io/guides-and-tutorials/using-the-notehub-api/) to retrieve event data, which consumes [Notehub consumption credits](https://blues.io/pricing/).
-You can change how frequently the app refreshes data from Notehub by altering
-the `MS_REFETCH_INTERVAL` constant in the [`src/pages/index.tsx`](src/pages/index.tsx)
-file.
