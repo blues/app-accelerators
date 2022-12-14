@@ -91,7 +91,7 @@ Once you have all of your hardware you’ll next need to assemble the pieces.
 As a start, complete the [Notecard and Notecarrier-F quickstart guide](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/), which will help
 you connect your Notecard, Notecarrier, and Swan.
 
-<!-- TODO: Image of the hardware build start -->
+![The Notecard, Notecarrier, and Swan connected](images/notecard-and-notecarrier.jpg)
 
 From there you’ll need to connect both your flow meter and solenoid valve
 to the Notecarrier. If you’re using this project’s recommended hardware, here’s a [wiring diagram that shows how all the components connect](https://miro.com/app/board/uXjVPL8v4hE=/).
@@ -111,7 +111,12 @@ whenever the Notecard receives a command to open or close the solenoid valve.
 
 When everything is put together your build should look something like this.
 
-<!-- TODO: Final image of the build -->
+![The Notecarrier connected to the solenoid and the valve monitor](images/full-build-no-case.jpg)
+
+If you’re additionally using a case like the [recommended one from Sixfab](https://sixfab.com/product/raspberry-pi-ip54-outdoor-iot-project-enclosure/),
+your build can look like this when placed within the enclosure.
+
+![The full build within a Sixfab enclosure](images/full-build-in-case.jpg)
 
 With the hardware assembled, you next need to get the project’s firmware running on
 your device.
