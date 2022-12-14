@@ -51,13 +51,13 @@ at the bottom of your Visual Studio Code window.
 
 ## Testing
 
-Once you have the firmware running, you’ll next want to open the `main.cpp` file,
+Once you have the firmware running, you’ll next want to the firmware’s `main.cpp` file,
 uncomment the `#define PRODUCT_UID` line, and replace the hardcoded value with
 a ProductUID from the Notehub project you’d like to use.
 
 ```C
 // Replace with your product UID.
-// #define PRODUCT_UID "com.my-company.my-name:my-project"
+#define PRODUCT_UID "com.my-company.my-name:my-project"
 ```
 
 Next, ensure you have you have the following connections in place in your hardware.
@@ -81,8 +81,7 @@ Notes in the following format to open and close the solenoid valve.
 > **NOTE**: If you’re unsure how to send Notes to a Notecard, check out this
 [tutorial on using the Notehub API](https://dev.blues.io/guides-and-tutorials/using-the-notehub-api/).
 
-In addition to interrupting on any inbound `data.qi` Notes, the firmware regularly
-sends two types of outbound Notes.
+The firmware additionally sends two types of outbound Notes.
 
 The first, `data.qo`, reports the current flow rate and valve state, and is sent
 at an interval you can configure with the `monitor_interval` environment variable.
@@ -90,11 +89,19 @@ at an interval you can configure with the `monitor_interval` environment variabl
 ```json
 "body": {
     "flow_rate": 10.0,
-    "valve_state": "closed",
+    "valve_state": "closed", // or "open"
 }
 ```
 
 The second, `alarm.qo`, is sent if the measured flow rate falls outside the range
 defined by the `flow_rate_alarm_threshold_min` and `flow_rate_alarm_threshold_max` 
-environment variables and the valve state is open. Additionally, the firmware sends
+environment variables, and the valve state is open. Additionally, the firmware sends
 send an alarm if the valve is closed and flow is detected (i.e. it’s leaking).
+
+```
+"body": {
+    "flow_rate": 10.0,
+    "valve_state": "closed",
+    "reason": "leak" // or "high" or "low"
+}
+```
