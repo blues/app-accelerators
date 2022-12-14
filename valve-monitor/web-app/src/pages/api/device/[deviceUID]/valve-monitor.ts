@@ -67,7 +67,6 @@ async function performPostRequest({
   state,
 }: ValidRequest) {
   const app = services().getAppService();
-  console.log("valve monitor file ", state);
 
   try {
     if (valveMonitorConfig) {

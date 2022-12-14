@@ -16,6 +16,6 @@ export interface DataProvider {
   getFleetsByProject(): Promise<Fleets>;
   getFleetsByDevice(deviceID: string): Promise<Fleets>;
   getDevicesByFleet(fleetUID: string): Promise<Device[]>;
-  getDeviceEnvVars(deviceID: string): Promise<DeviceEnvVars>;
-  getFleetEnvVars(fleetUID: string): Promise<FleetEnvVars>;
+  getEnvironmentVariablesByDevice(deviceID: string): Promise<DeviceEnvVars>;
+  getEnvironmentVariablesByFleet(fleetUID: string): Promise<FleetEnvVars>;
 }

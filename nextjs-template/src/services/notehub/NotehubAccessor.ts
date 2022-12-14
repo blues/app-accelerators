@@ -6,18 +6,16 @@ import NotehubDeviceConfig from "./models/NotehubDeviceConfig";
 import NoteDeviceConfigBody from "./models/NoteDeviceConfigBody";
 import NotehubFleets from "./models/NotehubFleets";
 import NotehubDevicesByFleet from "./models/NotehubDevicesByFleet";
+import NotehubEnvVarsResponse from './models/NotehubEnvVarsResponse'
 
 // An interface for accessing Notehub APIs
 interface NotehubAccessor {
+  // devices
   getDevices: () => Promise<NotehubDevice[]>;
   getDevice: (hubDeviceUID: string) => Promise<NotehubDevice>;
-  getLatestEvents: (hubDeviceUID: string) => Promise<NotehubLatestEvents>;
-  getEvents: (startDate?: string) => Promise<NotehubEvent[]>;
   getDevicesByFleet: (fleetUID: string) => Promise<NotehubDevicesByFleet>;
-  getFleetsByProject: () => Promise<NotehubFleets>;
-  getFleetsByDevice: (hubDeviceUID: string) => Promise<NotehubFleets>;
-  getDeviceEnvVars: (hubDeviceUID: string) => Promise<NotehubEnvVars>;
-  getFleetEnvVars: (fleetUID: string) => Promise<NotehubEnvVars>;
+
+  // device config 
   getConfig: (
     hubDeviceUID: string,
     note: string
@@ -27,10 +25,30 @@ interface NotehubAccessor {
     note: string,
     body: NoteDeviceConfigBody
   ) => Promise<boolean>;
-  setEnvironmentVariables: (
+
+  // events
+  getLatestEvents: (hubDeviceUID: string) => Promise<NotehubLatestEvents>;
+  getEvents: (startDate?: string) => Promise<NotehubEvent[]>;
+
+  // fleets
+  getFleetsByProject: () => Promise<NotehubFleets>;
+  getFleetsByDevice: (hubDeviceUID: string) => Promise<NotehubFleets>;
+
+  // env vars by device
+  getEnvironmentVariablesByDevice: (hubDeviceUID: string) => Promise<NotehubEnvVars>;
+  setEnvironmentVariablesByDevice: (
     hubDeviceUID: string,
     envVars: NotehubEnvVars
   ) => Promise<boolean>;
+
+  // env vars by fleet
+  getEnvironmentVariablesByFleet: (fleetUID: string) => Promise<NotehubEnvVarsResponse>;
+  setEnvironmentVariablesByFleet: (
+    fleetUID: string,
+    envVars: NotehubEnvVars
+  ) => Promise<boolean>;
+
+  // notes
   addNote: (
     hubDeviceUID: string,
     file: string,
