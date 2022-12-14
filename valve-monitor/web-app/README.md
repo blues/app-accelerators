@@ -3,6 +3,8 @@
 The Valve Monitor project’s web application allows you to view flow rates, open and
 close solenoid valves, and manage environment variables in a browser.
 
+![The Valve Monitor project’s web application](../images/web-app.png)
+
 To get started, make sure you have a copy of this project’s repository locally, open
 up the `valve-monitor/web-app` folder in your text editor or IDE, and then complete
 the following steps.

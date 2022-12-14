@@ -2,7 +2,7 @@
 
 Monitor and control the open/closed state of a valve, and measure liquid flow state.
 
-<!-- TODO: Put Hackster banner image here once we have it. -->
+<!-- Future TODO: Put the Hackster banner image here once we have it. -->
 
 To run this project yourself you’ll need to:
 
@@ -13,7 +13,7 @@ To run this project yourself you’ll need to:
 
 ## Notehub
 
-The Indoor Floor-Level Tracker runs on top of Notehub. As such, to run this sample
+The Valve Monitor project runs on top of Notehub. As such, to run this sample
 you’ll need to create a Notehub account, start a new Notehub project, and configure
 a handful of environment variables.
 
@@ -96,7 +96,7 @@ you connect your Notecard, Notecarrier, and Swan.
 From there you’ll need to connect both your flow meter and solenoid valve
 to the Notecarrier. If you’re using this project’s recommended hardware, here’s a [wiring diagram that shows how all the components connect](https://miro.com/app/board/uXjVPL8v4hE=/).
 
-<!-- Is it a good idea to put a screenshot of the Miro diagram here? -->
+![Wiring diagram of the various valve monitor components](images/wiring-diagram.png)
 
 Regardless of which hardware you use, you’ll need to have the following pins
 wired to your Notecarrier.
@@ -126,7 +126,7 @@ complete the [firmware’s setup guide](firmware/) to get your firmware up and r
 The Valve Monitor project’s web application allows you to view flow rates, open and
 close solenoid valves, and manage environment variables in a browser.
 
-<!-- TODO: Image of the web app -->
+![The Valve Monitor project’s web application](images/web-app.png)
 
 As a final step, complete the [web app’s setup guide](web-app/) to get the app running
 on your development machine.
