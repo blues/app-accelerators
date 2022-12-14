@@ -1,0 +1,48 @@
+{
+  "req":       "hub.set",
+  "mode":      "periodic",
+  "align":     true,
+  "voutbound": "usb:10; high:360; normal:720; low:1440; dead:0",
+  "vinbound":  "usb:10; high:180; normal:180; low:360; dead:0"}
+
+# Optimize for LiPo Battery
+{
+  "req":  "card.voltage",
+  "mode": "lipo"
+}
+
+# Configure motion tracking using the built-in accelerometer
+{
+  "req":         "card.motion.mode",
+  "start":       true,
+  "sensitivity": -1, # Set sensitivity to -1 to conserve battery.
+  "seconds":     60 # Seconds is required when using minutes with card.motion
+}
+
+{
+  "req":       "card.motion.track",
+  "start":     true,
+  "minutes":   20,
+  "count":     20,
+  "threshold": 1
+}
+
+{
+  "req":     "card.motion.sync",
+  "start":   true,
+  "minutes": 60  # Sync motion every 60 minutes
+}
+
+# Daily sampling of location
+{
+  "req":"card.location.mode",
+  "mode":"periodic",
+  "seconds":86400
+}
+
+# Unless overridden at Notehub, log network registration failures
+{
+  "req":  "env.default",
+  "name": "_log",
+  "text": "on"
+}
