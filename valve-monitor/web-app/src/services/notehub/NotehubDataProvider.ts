@@ -3,16 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ValveMonitorConfig, ValveMonitorDevice } from "../AppModel";
 import { DataProvider } from "../DataProvider";
-import {
-  Device,
-  DeviceEnvVars,
-  DeviceID,
-  Event,
-  Fleets,
-  FleetEnvVars,
-  Project,
-  ProjectID,
-} from "../DomainModel";
+import { DeviceEnvVars, Fleets, FleetEnvVars } from "../DomainModel";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import { NotehubAccessor } from "./NotehubAccessor";
 
@@ -22,38 +13,7 @@ export const getBestLocation = (object: NotehubLocationAlternatives) =>
   object.gps_location || object.triangulated_location || object.tower_location;
 
 export default class NotehubDataProvider implements DataProvider {
-  constructor(
-    private readonly notehubAccessor: NotehubAccessor,
-    private readonly projectID: ProjectID
-  ) {}
-
-  getProject(): Promise<Project> {
-    throw new Error("Method not implemented.");
-  }
-
-  getDevices(): Promise<Device[]> {
-    throw new Error("Method not implemented.");
-  }
-
-  getDevice(deviceID: DeviceID): Promise<Device | null> {
-    throw new Error("Method not implemented.");
-  }
-
-  getDeviceEvents(deviceIDs: string[]): Promise<Event[]> {
-    throw new Error("Method not implemented.");
-  }
-
-  async getFleetsByProject(): Promise<Fleets> {
-    const fleetsByProject = await this.notehubAccessor.getFleetsByProject();
-    return fleetsByProject;
-  }
-
-  async getDevicesByFleet(fleetUID: string): Promise<any> {
-    const devicesByFleet = await this.notehubAccessor.getDevicesByFleet(
-      fleetUID
-    );
-    return devicesByFleet;
-  }
+  constructor(private readonly notehubAccessor: NotehubAccessor) {}
 
   async getFleetsByDevice(deviceID: string): Promise<Fleets> {
     const fleetsByDevice = await this.notehubAccessor.getFleetsByDevice(
@@ -119,16 +79,5 @@ export default class NotehubDataProvider implements DataProvider {
         environmentVariables?.flow_rate_alarm_threshold_max
       ),
     };
-  }
-
-  /**
-   * We made the interface more general (accepting a projectID) but the implementation has the
-   * ID fixed. This is a quick check to be sure the project ID is the one expected.
-   * @param projectID
-   */
-  private checkProjectID(projectID: ProjectID) {
-    if (projectID.projectUID !== this.projectID.projectUID) {
-      throw new Error("Project ID does not match expected ID");
-    }
   }
 }
