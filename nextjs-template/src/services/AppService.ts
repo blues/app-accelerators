@@ -29,8 +29,8 @@ interface AppServiceInterface {
   getFleetsByProject: () => Promise<Fleets>;
   getFleetsByDevice: (deviceUID: string) => Promise<Fleets>;
   getDevicesByFleet: (fleetUID: string) => Promise<Device[]>;
-  getDeviceEnvVars: (deviceUID: string) => Promise<DeviceEnvVars>;
-  getFleetEnvVars: (fleetUID: string) => Promise<FleetEnvVars>;
+  getEnvironmentVariablesByDevice: (deviceUID: string) => Promise<DeviceEnvVars>;
+  getEnvironmentVariablesByFleet: (fleetUID: string) => Promise<FleetEnvVars>;
 
   getAppNotifications(): Promise<AppNotification[]>;
 }
@@ -90,12 +90,12 @@ export default class AppService implements AppServiceInterface {
     return this.dataProvider.getDevicesByFleet(fleetUID);
   }
 
-  async getDeviceEnvVars(deviceUID: string) {
-    return this.dataProvider.getDeviceEnvVars(deviceUID);
+  async getEnvironmentVariablesByDevice(deviceUID: string) {
+    return this.dataProvider.getEnvironmentVariablesByDevice(deviceUID);
   }
 
-  async getFleetEnvVars(fleetUID: string) {
-    return this.dataProvider.getFleetEnvVars(fleetUID);
+  async getEnvironmentVariablesByFleet(fleetUID: string) {
+    return this.dataProvider.getEnvironmentVariablesByFleet(fleetUID);
   }
 
   async handleEvent(event: AppEvent) {

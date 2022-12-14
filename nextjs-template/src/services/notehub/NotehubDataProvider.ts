@@ -65,14 +65,14 @@ export default class NotehubDataProvider implements DataProvider {
     return fleetsByDevice;
   }
 
-  async getDeviceEnvVars(deviceID: string): Promise<DeviceEnvVars> {
-    const deviceEnvVars = await this.notehubAccessor.getDeviceEnvVars(deviceID);
+  async getEnvironmentVariablesByDevice(deviceID: string): Promise<DeviceEnvVars> {
+    const deviceEnvVars = await this.notehubAccessor.getEnvironmentVariablesByDevice(deviceID);
     // attach device ID to env vars for combining data later
     return { deviceID, ...deviceEnvVars };
   }
 
-  async getFleetEnvVars(fleetUID: string): Promise<FleetEnvVars> {
-    const fleetEnvVars = await this.notehubAccessor.getFleetEnvVars(fleetUID);
+  async getEnvironmentVariablesByFleet(fleetUID: string): Promise<FleetEnvVars> {
+    const fleetEnvVars = await this.notehubAccessor.getEnvironmentVariablesByFleet(fleetUID);
     // attach fleet UID to env vars for combining data later
     return { fleetUID, ...fleetEnvVars };
   }

@@ -66,7 +66,7 @@
   }
 
   :global .anticon-warning {
-    color: red;
+    color: $bw-color--red4;
     font-size: 20px;
     margin-left: 5px;
   }
@@ -151,7 +151,8 @@
     }
 
     :global .ant-table-tbody .editable-input-name,
-    :global .ant-table-tbody .editable-button-name {
+    :global .ant-table-tbody .editable-button-name,
+    :global .ant-input-number {
       margin: 0 0 0 16px;
     }
 
@@ -159,10 +160,6 @@
       height: default;
       white-space: nowrap;
       overflow: hidden;
-    }
-
-    :global .ant-input-number {
-      margin: 0 0 0 16px;
     }
   }
 }
