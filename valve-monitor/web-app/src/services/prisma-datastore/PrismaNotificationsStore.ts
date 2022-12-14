@@ -37,4 +37,12 @@ export default class PrismaNotificationsStore implements NotificationsStore {
       },
     });
   }
+
+  async removeNotificationsByType(type: string): Promise<void> {
+    await this.prisma.notification.deleteMany({
+      where: {
+        type,
+      },
+    });
+  }
 }
