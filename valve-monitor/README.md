@@ -73,7 +73,7 @@ The following hardware is required to run the Valve Monitor project.
 * A power breakout, such as this [HiLetgo power breakout](https://www.amazon.com/dp/B07X9SQKL6/ref=cm_sw_r_api_i_5JYD92FH343E04VKPMR5_0)
 for supplying correct voltage to this project’s various components.
 * An I2C level shifter, such as [this one from HiLetgo](https://www.amazon.com/dp/B07F7W91LC/ref=cm_sw_r_api_i_FZPJ7VRY2329ARNQ3W22_0), to
-translate flow meter’s pulses from 5V logic to 3.3V logic for the Swan
+translate the flow meter’s pulses from 5V logic to 3.3V logic for the Swan
 microcontroller.
 * A MOSFET driver, such as this one from [HiLetgo](https://www.amazon.com/dp/B01I1J14MO/ref=cm_sw_r_api_i_8YRY25Q7R9HGV1ZPHERP_0),
 is required to allow the Swan to switch on high-power devices such as the
@@ -98,13 +98,13 @@ to the Notecarrier. If you’re using this project’s recommended hardware, her
 
 <!-- Is it a good idea to put a screenshot of the Miro diagram here? -->
 
-Regardless of which hardware you use you’ll need to you’ll need to make sure to
-have the following pins wired to your Notecarrier.
+Regardless of which hardware you use, you’ll need to have the following pins
+wired to your Notecarrier.
 
 * The solenoid valve’s signal line must be connected to the Notecarrier’s `F_D6`
 pin. The Swan uses this pin to open and close the solenoid.
 * The flow meter’s signal line must be be connected to the Notecarrier’s `F_D10`
-pin. The Swan uses this pin to flow rate from the flow meter.
+pin. The Swan uses this pin to read the flow rate from the flow meter.
 * The Notecarrier’s `F_D13` pin must be wired to the Notecarrier’s `ATTN` pin. The
 Swan uses this to [respond to interrupts](https://dev.blues.io/guides-and-tutorials/notecard-guides/attention-pin-guide/)
 whenever the Notecard receives a command to open or close the solenoid valve.
@@ -113,7 +113,7 @@ When everything is put together your build should look something like this.
 
 <!-- TODO: Final image of the build -->
 
-With the hardware assembled you next need to get the project’s firmware running on
+With the hardware assembled, you next need to get the project’s firmware running on
 your device.
 
 ## Firmware
