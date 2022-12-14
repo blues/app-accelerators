@@ -16,4 +16,6 @@ export interface NotificationsStore {
   getNotifications(): Promise<Notification[]>;
 
   removeNotifications(ids: NotificationID[]): Promise<void>;
+
+  removeNotificationsByType(type: string): Promise<void>;
 }
