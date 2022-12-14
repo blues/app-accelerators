@@ -1,5 +1,4 @@
 import axios from "axios";
-import { sub } from "date-fns";
 import MockAdapter from "axios-mock-adapter";
 import { ERROR_CODES } from "../Errors";
 import AxiosHttpNotehubAccessor from "./AxiosHttpNotehubAccessor";
@@ -13,11 +12,6 @@ let mock: MockAdapter;
 const mockBaseURL = "http://example.io";
 const mockProjectUID = "app:1234";
 const mockDeviceUID = "dev:1234";
-const mockHubHistoricalDataRecentMinutes = 1440;
-const mockedStartDate = sub(new Date(), {
-  minutes: mockHubHistoricalDataRecentMinutes,
-});
-const mockedEpochTimeValue = Math.round(mockedStartDate.getTime() / 1000);
 
 const API_DEVICE_URL = `${mockBaseURL}/v1/projects/${mockProjectUID}/devices/${mockDeviceUID}`;
 const API_DEVICES_URL = `${mockBaseURL}/v1/projects/${mockProjectUID}/devices`;
@@ -200,7 +194,7 @@ describe("Environment variable handling", () => {
   it("should true if the request succeeds", async () => {
     mock.onPut(API_ENV_VAR_URL).reply(200, mockEnvVarResponse);
 
-    const res = await axiosHttpNotehubAccessorMock.setEnvironmentVariables(
+    const res = await axiosHttpNotehubAccessorMock.setEnvironmentVariablesByDevice(
       mockDeviceUID,
       { _sn: "TEST" }
     );
@@ -211,7 +205,7 @@ describe("Environment variable handling", () => {
     mock.onPut(API_ENV_VAR_URL).reply(401, mockEnvVarResponse);
 
     await expect(
-      axiosHttpNotehubAccessorMock.setEnvironmentVariables(mockDeviceUID, {
+      axiosHttpNotehubAccessorMock.setEnvironmentVariablesByDevice(mockDeviceUID, {
         _sn: "TEST",
       })
     ).rejects.toThrow(ERROR_CODES.UNAUTHORIZED);
@@ -221,7 +215,7 @@ describe("Environment variable handling", () => {
     mock.onPut(API_ENV_VAR_URL).reply(403, mockEnvVarResponse);
 
     await expect(
-      axiosHttpNotehubAccessorMock.setEnvironmentVariables(mockDeviceUID, {
+      axiosHttpNotehubAccessorMock.setEnvironmentVariablesByDevice(mockDeviceUID, {
         _sn: "TEST",
       })
     ).rejects.toThrow(ERROR_CODES.FORBIDDEN);
@@ -231,7 +225,7 @@ describe("Environment variable handling", () => {
     mock.onPut(API_ENV_VAR_URL).reply(404, mockEnvVarResponse);
 
     await expect(
-      axiosHttpNotehubAccessorMock.setEnvironmentVariables(mockDeviceUID, {
+      axiosHttpNotehubAccessorMock.setEnvironmentVariablesByDevice(mockDeviceUID, {
         _sn: "TEST",
       })
     ).rejects.toThrow(ERROR_CODES.DEVICE_NOT_FOUND);
@@ -241,7 +235,7 @@ describe("Environment variable handling", () => {
     mock.onPut(API_ENV_VAR_URL).reply(500, mockEnvVarResponse);
 
     await expect(
-      axiosHttpNotehubAccessorMock.setEnvironmentVariables(mockDeviceUID, {
+      axiosHttpNotehubAccessorMock.setEnvironmentVariablesByDevice(mockDeviceUID, {
         _sn: "TEST",
       })
     ).rejects.toThrow(ERROR_CODES.INTERNAL_ERROR);

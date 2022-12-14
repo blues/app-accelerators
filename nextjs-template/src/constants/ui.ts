@@ -17,7 +17,7 @@ const ERROR_MESSAGE = {
   DATABASE_NOT_RUNNING:
     "Can't reach the database server. Please make sure your database is properly connected.",
   NO_PROJECT_ID:
-    "A project ID is required, but none was found. Ensure your environment variables are configured correctly for HUB_PROJECTUID.",
+    "A project ID is required, but none was found. Ensure your environment variables are configured correctly for HUB_PROJECT_UID.",
 };
 
 const getErrorMessage = (errorCode: string) => {

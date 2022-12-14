@@ -1,0 +1,44 @@
+# Container for developing the Reference Web App locally
+
+# Used by VS Code Dev Container (devcontainer.json)
+
+# Define global arguments
+ARG DEBIAN_FRONTEND="noninteractive"
+
+# Base Image
+FROM node:16.14-slim
+
+# Import global arguments
+ARG DEBIAN_FRONTEND
+
+# Execution Environment
+RUN ["dash", "-c", "\
+    apt-get update --quiet \
+ && apt-get install --assume-yes --no-install-recommends --quiet \
+      bash \
+      ca-certificates  `# for yarn install from git` \
+      git \
+      libasound2       `# for cypress` \
+      libgbm-dev       `# for cypress` \
+      libgconf-2-4     `# for cypress` \
+      libgtk2.0-0      `# for cypress` \
+      libgtk-3-0       `# for cypress` \
+      libnotify-dev    `# for cypress` \
+      libnss3          `# for cypress` \
+      libxss1          `# for cypress` \
+      libxtst6         `# for cypress` \
+      nano             `# for git commit --amend` \
+      netcat           `# for dev.db.ephemeral.sh and friends` \
+      ssh              `# for git push` \
+      xauth            `# for cypress` \
+      xvfb             `# for cypress` \
+ && apt-get clean \
+ && apt-get purge \
+ && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+"]
+
+# Runtime Environment
+WORKDIR /var/www/
+
+# Set default launch command
+CMD ["bash"]

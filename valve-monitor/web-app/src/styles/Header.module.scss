@@ -1,0 +1,45 @@
+@import "_variables.scss";
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 32px !important;
+
+  .logo {
+    display: flex;
+    align-items: center;
+  }
+
+  .largeLogo {
+    display: inline-block;
+  }
+
+  .smallLogo {
+    display: none;
+  }
+
+  .headerTitle {
+    color: #fff;
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  .headerText {
+    color: $bw-color--brand1;
+    font-size: 13px;
+  }
+}
+
+@media screen and (max-width: $breakpoints-md) {
+  .header {
+    padding: 0 26px !important;
+
+    .largeLogo {
+      display: none;
+    }
+
+    .smallLogo {
+      display: inline-block;
+    }
+  }
+}
