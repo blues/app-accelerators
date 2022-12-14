@@ -50,15 +50,10 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
   const queryClient = useQueryClient();
 
   // refresh the page
-  const refreshData = async () => {
-    // eslint-disable-next-line no-void
-    void router.replace(router.asPath);
-  };
-
   const refreshDataAndInvalidateCache = async () => {
     // Clear the client-side cache so when we refresh the page
     // it refetches data to get the updated table data.
-    await refreshData();
+    void router.replace(router.asPath);
     await queryClient.invalidateQueries();
   };
 

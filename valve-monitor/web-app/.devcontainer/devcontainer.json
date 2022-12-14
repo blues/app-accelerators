@@ -1,6 +1,6 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
-  "name": "Template Reference Web App Development Dockerfile",
+  "name": "Valve Monitor Web App Development Dockerfile",
 
   // Sets the run context to one level up instead of the .devcontainer folder.
   "context": "..",

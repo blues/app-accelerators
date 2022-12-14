@@ -9,7 +9,7 @@ interface ValidRequest {
   deviceUID: string;
   valveMonitorConfig?: object;
   name?: string;
-  state?: string;
+  valveState?: string;
 }
 
 function validateMethod(req: NextApiRequest, res: NextApiResponse) {
@@ -28,7 +28,7 @@ function validateRequest(
 ): false | ValidRequest {
   const { deviceUID } = req.query;
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const { valveMonitorConfig, name, state } = req.body as ValidRequest;
+  const { valveMonitorConfig, name, valveState } = req.body as ValidRequest;
 
   if (typeof deviceUID !== "string") {
     res.status(StatusCodes.BAD_REQUEST);
@@ -42,7 +42,7 @@ function validateRequest(
     return false;
   }
 
-  if (typeof state !== "string" && typeof state !== "undefined") {
+  if (typeof valveState !== "string" && typeof valveState !== "undefined") {
     res.status(StatusCodes.BAD_REQUEST);
     res.json({ err: HTTP_STATUS.INVALID_VALVE_STATE });
     return false;
@@ -57,14 +57,14 @@ function validateRequest(
     return false;
   }
 
-  return { deviceUID, valveMonitorConfig, name, state };
+  return { deviceUID, valveMonitorConfig, name, valveState };
 }
 
 async function performPostRequest({
   deviceUID,
   valveMonitorConfig,
   name,
-  state,
+  valveState,
 }: ValidRequest) {
   const app = services().getAppService();
 
@@ -75,8 +75,8 @@ async function performPostRequest({
     if (name) {
       await app.setDeviceName(deviceUID, name);
     }
-    if (state) {
-      await app.updateValveState(deviceUID, state);
+    if (valveState) {
+      await app.updateValveState(deviceUID, valveState);
     }
   } catch (cause) {
     throw new ErrorWithCause(

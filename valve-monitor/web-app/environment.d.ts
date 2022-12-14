@@ -3,10 +3,10 @@ declare global {
   namespace NodeJS {
     interface ProcessEnv {
       HUB_AUTH_TOKEN: string;
-      HUB_BASE_URL: string;
-      HUB_GUI_URL: string;
       HUB_PROJECT_UID: string;
-      TEST_NODE_ID: string;
+      HUB_BASE_URL: string;
+      HUB_FLEET_UID: string;
+      HUB_GUI_URL: string;
     }
   }
 }
