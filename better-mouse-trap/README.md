@@ -4,7 +4,7 @@ A smarter mouse trap with SMS alerting.
 
 Find the complete story in the detailed [Hackster.io writeup].
 
-[![Mouse wearing a helmet grabbing cheese from a trap](../app-banners/nf3.png)][hackster.io writeup]
+[![Mouse wearing a helmet grabbing cheese from a trap](../app-banners/03-banner.png)][hackster.io writeup]
 
 _A Better Mousetrap_ is a humane mousetrap that will alert you with an SMS when
 it has caught a mouse.

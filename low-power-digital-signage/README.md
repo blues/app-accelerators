@@ -2,7 +2,7 @@
 
 Use the Notecard and Notehub.io to keep a fleet of digital displays synchronized across a facility.
 
-![](assets/images/nf4.gif)
+![](../app-banners/04-banner.gif)
 
 To run this project yourself you'll need to:
 
@@ -55,7 +55,7 @@ setting up your hardware.
 
 ## Hardware
 
-The following hardware is required to run the Indoor Floor-Level Tracker.
+The following hardware is required to run the Low Power Digital Signage project.
 
 * [Blues Notecard](https://shop.blues.io/collections/notecard)
 * [Blues Notecarrier B](https://shop.blues.io/products/carr-b)
