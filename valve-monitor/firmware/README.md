@@ -96,7 +96,7 @@ at an interval you can configure with the `monitor_interval` environment variabl
 The second, `alarm.qo`, is sent if the measured flow rate falls outside the range
 defined by the `flow_rate_alarm_threshold_min` and `flow_rate_alarm_threshold_max` 
 environment variables, and the valve state is open. Additionally, the firmware sends
-send an alarm if the valve is closed and flow is detected (i.e. it’s leaking).
+an alarm if the valve is closed and flow is detected (i.e. it’s leaking).
 
 ```
 "body": {
