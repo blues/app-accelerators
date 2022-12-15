@@ -1,4 +1,4 @@
-import { ValveMonitorConfig } from "../AppModel";
+import { FlowRateMonitorConfig } from "../AppModel";
 import { AttributeStore } from "../AttributeStore";
 import { DeviceID, FleetID } from "../DomainModel";
 
@@ -16,25 +16,21 @@ export default class CompositeAttributeStore implements AttributeStore {
     return this.apply((store) => store.updateDeviceName(deviceID, name));
   }
 
-  updateDeviceValveMonitorConfig(
+  updateDeviceFlowRateMonitorConfig(
     deviceUID: string,
-    valveMonitorConfig: ValveMonitorConfig
+    flowRateMonitorConfig: FlowRateMonitorConfig
   ) {
     return this.apply((store) =>
-      store.updateDeviceValveMonitorConfig(deviceUID, valveMonitorConfig)
+      store.updateDeviceFlowRateMonitorConfig(deviceUID, flowRateMonitorConfig)
     );
   }
 
-  updateValveMonitorConfig(
+  updateFlowRateMonitorConfig(
     fleetUID: FleetID,
-    valveMonitorConfig: ValveMonitorConfig
+    flowRateMonitorConfig: FlowRateMonitorConfig
   ) {
     return this.apply((store) =>
-      store.updateValveMonitorConfig(fleetUID, valveMonitorConfig)
+      store.updateFlowRateMonitorConfig(fleetUID, flowRateMonitorConfig)
     );
-  }
-
-  updateValveState(deviceUID: string, state: string) {
-    return this.apply((store) => store.updateValveState(deviceUID, state));
   }
 }

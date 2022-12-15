@@ -13,7 +13,7 @@ export interface Project extends DomainModel.Project {
   devices: Device[] | null; // null when devices are not required
 }
 
-export interface ValveMonitorConfig {
+export interface FlowRateMonitorConfig {
   monitorFrequency?: number;
   minFlowThreshold?: number;
   maxFlowThreshold?: number;
@@ -39,11 +39,10 @@ export interface ProjectDataSnapshot {
   project: Project;
 }
 
-export interface ValveMonitorDevice {
+export interface FlowRateMonitorDevice {
   deviceID: string;
   name: string;
   lastActivity?: string;
-  valveState?: string;
   deviceFlowRate?: number | string;
   deviceAlarm?: boolean;
   deviceAlarmReason?: string;

@@ -5,7 +5,7 @@ import { DataProvider } from "../DataProvider";
 import NotehubDataProvider from "../notehub/NotehubDataProvider";
 import { PrismaDataProvider } from "./PrismaDataProvider";
 import { DeviceEnvVars, FleetEnvVars, Fleets } from "../DomainModel";
-import { ValveMonitorDevice } from "../AppModel";
+import { FlowRateMonitorDevice } from "../AppModel";
 
 export default class CompositeDataProvider implements DataProvider {
   constructor(
@@ -13,20 +13,20 @@ export default class CompositeDataProvider implements DataProvider {
     private prismaDataProvider: PrismaDataProvider
   ) {}
 
-  async getValveMonitorDeviceData(): Promise<ValveMonitorDevice[]> {
+  async getFlowRateMonitorDeviceData(): Promise<FlowRateMonitorDevice[]> {
     // get as much device data as is available in Prisma
-    const valveMonitorDevices =
-      await this.prismaDataProvider.getValveMonitorDeviceData();
+    const flowRateMonitorDevices =
+      await this.prismaDataProvider.getFlowRateMonitorDeviceData();
 
     // fetch any env vars for each device
     const deviceEnvVars = await Promise.all(
-      valveMonitorDevices.map((device) =>
+      flowRateMonitorDevices.map((device) =>
         this.getDeviceEnvVars(device.deviceID)
       )
     );
 
     // filter out any devices not assigned to fleets
-    const devicesWithFleets = valveMonitorDevices.filter(
+    const devicesWithFleets = flowRateMonitorDevices.filter(
       (device) => device.deviceFleetID !== undefined
     );
 
@@ -41,7 +41,7 @@ export default class CompositeDataProvider implements DataProvider {
     }
 
     // combine devices with any env vars
-    const normalizedDeviceData = valveMonitorDevices.map((device) => {
+    const normalizedDeviceData = flowRateMonitorDevices.map((device) => {
       const filteredDeviceEnvVars = deviceEnvVars.filter(
         (deviceEnvVar) => deviceEnvVar.deviceID === device.deviceID
       );
@@ -120,7 +120,7 @@ export default class CompositeDataProvider implements DataProvider {
     return this.notehubProvider.getFleetEnvVars(fleetUID);
   }
 
-  getValveMonitorConfig(fleetUID: string) {
-    return this.notehubProvider.getValveMonitorConfig(fleetUID);
+  getFlowRateMonitorConfig(fleetUID: string) {
+    return this.notehubProvider.getFlowRateMonitorConfig(fleetUID);
   }
 }

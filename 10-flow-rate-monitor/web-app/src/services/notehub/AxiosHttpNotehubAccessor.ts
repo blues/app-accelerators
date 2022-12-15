@@ -112,18 +112,4 @@ export default class AxiosHttpNotehubAccessor implements NotehubAccessor {
     }
     return true;
   }
-
-  async addNote(hubDeviceUID: string, file: string, note: object) {
-    const endpoint = `${this.hubBaseURL}/v1/projects/${this.hubProjectUID}/devices/${hubDeviceUID}/notes/${file}`;
-    try {
-      await axios.post(
-        endpoint,
-        { body: note },
-        { headers: this.commonHeaders }
-      );
-    } catch (e) {
-      throw this.errorWithCode(e);
-    }
-    return true;
-  }
 }

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 /* eslint-disable class-methods-use-this */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { ValveMonitorConfig, ValveMonitorDevice } from "../AppModel";
+import { FlowRateMonitorConfig, FlowRateMonitorDevice } from "../AppModel";
 import { DataProvider } from "../DataProvider";
 import { DeviceEnvVars, Fleets, FleetEnvVars } from "../DomainModel";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
@@ -61,11 +61,13 @@ export default class NotehubDataProvider implements DataProvider {
     };
   }
 
-  getValveMonitorDeviceData(): Promise<ValveMonitorDevice[]> {
+  getFlowRateMonitorDeviceData(): Promise<FlowRateMonitorDevice[]> {
     throw new Error("Method not implemented");
   }
 
-  async getValveMonitorConfig(fleetUID: string): Promise<ValveMonitorConfig> {
+  async getFlowRateMonitorConfig(
+    fleetUID: string
+  ): Promise<FlowRateMonitorConfig> {
     const fleetEnvVars =
       await this.notehubAccessor.getEnvironmentVariablesByFleet(fleetUID);
     const environmentVariables = fleetEnvVars.environment_variables;

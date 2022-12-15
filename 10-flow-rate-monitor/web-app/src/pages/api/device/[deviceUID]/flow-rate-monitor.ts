@@ -2,11 +2,13 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { StatusCodes } from "http-status-codes";
 import { ErrorWithCause } from "pony-cause";
-import { HTTP_STATUS } from "../../../constants/http";
-import { services } from "../../../services/ServiceLocatorServer";
+import { HTTP_STATUS } from "../../../../constants/http";
+import { services } from "../../../../services/ServiceLocatorServer";
 
 interface ValidRequest {
-  valveMonitorConfig: object;
+  deviceUID: string;
+  flowRateMonitorConfig?: object;
+  name?: string;
 }
 
 function validateMethod(req: NextApiRequest, res: NextApiResponse) {
@@ -23,26 +25,54 @@ function validateRequest(
   req: NextApiRequest,
   res: NextApiResponse
 ): false | ValidRequest {
+  const { deviceUID } = req.query;
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const valveMonitorConfig = req.body;
+  const { flowRateMonitorConfig, name } = req.body as ValidRequest;
 
-  if (typeof valveMonitorConfig !== "object") {
+  if (typeof deviceUID !== "string") {
     res.status(StatusCodes.BAD_REQUEST);
-    res.json({ err: HTTP_STATUS.INVALID_VALVE_MONITOR_CONFIG });
+    res.json({ err: HTTP_STATUS.INVALID_DEVICE });
     return false;
   }
 
-  return { valveMonitorConfig };
+  if (typeof name !== "string" && typeof name !== "undefined") {
+    res.status(StatusCodes.BAD_REQUEST);
+    res.json({ err: HTTP_STATUS.INVALID_DEVICE_NAME });
+    return false;
+  }
+
+  if (
+    typeof flowRateMonitorConfig !== "object" &&
+    typeof flowRateMonitorConfig !== "undefined"
+  ) {
+    res.status(StatusCodes.BAD_REQUEST);
+    res.json({ err: HTTP_STATUS.INVALID_FLOW_RATE_MONITOR_CONFIG });
+    return false;
+  }
+
+  return { deviceUID, flowRateMonitorConfig, name };
 }
 
-async function performPostRequest({ valveMonitorConfig }: ValidRequest) {
+async function performPostRequest({
+  deviceUID,
+  flowRateMonitorConfig,
+  name,
+}: ValidRequest) {
   const app = services().getAppService();
 
   try {
-    await app.setValveMonitorConfig(valveMonitorConfig);
+    if (flowRateMonitorConfig) {
+      await app.setDeviceFlowRateMonitorConfig(
+        deviceUID,
+        flowRateMonitorConfig
+      );
+    }
+    if (name) {
+      await app.setDeviceName(deviceUID, name);
+    }
   } catch (cause) {
     throw new ErrorWithCause(
-      "Could not access fleet valve monitor configuration",
+      "Could not perform device flow rate monitor configuration",
       {
         cause,
       }
@@ -50,7 +80,7 @@ async function performPostRequest({ valveMonitorConfig }: ValidRequest) {
   }
 }
 
-export default async function valveMonitorConfigHandler(
+export default async function flowRateMonitorConfigHandler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
