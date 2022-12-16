@@ -42,12 +42,13 @@
 
   label {
     font-size: 12px;
+    color: $bw-color--brand4;
   }
 
   :global .ant-input-number {
     border-color: $bw-color--grey3;
   }
-  
+
   :global .ant-input-number:focus,
   :global .ant-input-number:hover {
     border-color: $bw-color--blue3;

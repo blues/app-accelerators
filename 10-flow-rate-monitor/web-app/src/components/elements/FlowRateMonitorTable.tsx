@@ -127,7 +127,6 @@ const EditableCell = ({
   const [editing, setEditing] = useState(false);
   const inputRef = useRef<HTMLInputElement | InputRef | null>(null);
   const [form] = Form.useForm();
-  record.deviceAlarm = true;
 
   useEffect(() => {
     if (editing && inputRef && inputRef.current) {

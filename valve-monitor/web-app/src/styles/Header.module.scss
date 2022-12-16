@@ -14,6 +14,7 @@
     display: inline-block;
   }
 
+  .headerTextSmall,
   .smallLogo {
     display: none;
   }
@@ -40,6 +41,20 @@
 
     .smallLogo {
       display: inline-block;
+    }
+  }
+}
+
+@media screen and (max-width: $breakpoints-xs) {
+  .header {
+    .headerText {
+      display: none;
+    }
+
+    .headerTextSmall {
+      display: inline-block;
+      color: $bw-color--brand1;
+      font-size: 12px;
     }
   }
 }
