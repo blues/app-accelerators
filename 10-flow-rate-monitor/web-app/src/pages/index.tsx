@@ -132,7 +132,7 @@ const Home: NextPage<HomeData> = ({ flowRateMonitorConfig, err }) => {
                     </Col>
                   </Row>
                   <Row gutter={[16, 24]}>
-                    <Col span={24}>
+                    <Col xs={24} sm={24} md={22} lg={20} xl={20}>
                       <div className={styles.tableHeaderRow}>
                         <h3 className={styles.sectionTitle}>
                           Individual Controls
@@ -153,7 +153,7 @@ const Home: NextPage<HomeData> = ({ flowRateMonitorConfig, err }) => {
                     </Col>
                   </Row>
                   <Row gutter={[16, 24]}>
-                    <Col span={24}>
+                    <Col xs={24} sm={24} md={22} lg={20} xl={20}>
                       <FlowRateMonitorTable
                         data={flowRateMonitorDevices}
                         setIsErrored={setIsErrored}

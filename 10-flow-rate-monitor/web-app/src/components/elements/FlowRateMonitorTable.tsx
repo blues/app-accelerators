@@ -43,7 +43,12 @@ const columns = [
     ),
   },
   {
-    title: "Monitoring (min)",
+    title: (
+      <>
+        <div>Monitoring</div>
+        <div>(min)</div>
+      </>
+    ),
     dataIndex: "monitorFrequency",
     key: "monitorFrequency",
     editable: true,
@@ -122,6 +127,7 @@ const EditableCell = ({
   const [editing, setEditing] = useState(false);
   const inputRef = useRef<HTMLInputElement | InputRef | null>(null);
   const [form] = Form.useForm();
+  record.deviceAlarm = true;
 
   useEffect(() => {
     if (editing && inputRef && inputRef.current) {
@@ -237,7 +243,7 @@ const EditableCell = ({
   return (
     // Providing the colors in JavaScript to override the Ant hover styling
     // Errored rows should stay red on hover.
-    <td style={{ backgroundColor: record.deviceAlarm ? "#fbe9e7" : "white" }}>
+    <td style={{ backgroundColor: record.deviceAlarm ? "#fbe9e7" : undefined }}>
       {childNode}
     </td>
   );
