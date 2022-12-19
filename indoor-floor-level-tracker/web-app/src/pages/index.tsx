@@ -24,7 +24,12 @@ type HomeData = {
 
 const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
   const infoMessage = "Deploy message";
-  const MS_REFETCH_INTERVAL = 10000;
+
+  // How often to refetch data from Notehub (in milliseconds). Note that
+  // reading data with the Notehub API uses one consumption credit per event
+  // (see https://blues.io/pricing/).
+  const MS_REFETCH_INTERVAL = 60 * 1000;
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isErrored, setIsErrored] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");

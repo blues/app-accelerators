@@ -7,7 +7,7 @@
 
 [template.environment]
   NEXT_PUBLIC_COMPANY_NAME = "Company name for header"
-  HUB_PROJECTUID = "Project UID of your Notehub project, e.g. app:123-456-789"
+  HUB_PROJECT_UID = "Project UID of your Notehub project, e.g. app:123-456-789"
   HUB_AUTH_TOKEN = "Notehub API authentication token"
   HUB_BASE_URL = "(optional) Base URL representing the Notehub API"
   DEBUG_CONFIG = "(optional) Debug config? If not '', log environment and config on server"

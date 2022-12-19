@@ -1,0 +1,165 @@
+@import "_variables.scss";
+
+.tableContainer {
+  border: 1px solid $bw-color--grey3;
+  border-radius: 6px;
+
+  .rowTitle {
+    display: none;
+  }
+
+  :global .ant-table-thead .ant-table-cell {
+    background-color: $bw-color--grey1;
+    font-weight: 600;
+  }
+
+  :global .ant-table-thead .ant-table-cell::before {
+    background-color: $bw-color--grey1 !important;
+  }
+
+  :global .ant-table-thead > tr:first-child > th {
+    padding: 8px 8px 0 8px;
+  }
+
+  :global .ant-table-thead > tr:nth-child(2) > th {
+    padding: 0 8px 8px 8px;
+  }
+
+  :global .ant-table-tbody tr td > span {
+    color: $bw-color--brand3;
+  }
+
+  :global .ant-table-tbody > tr > td:not(:first-child) {
+    text-align: center;
+  }
+
+  :global .ant-tag {
+    text-transform: capitalize;
+  }
+
+  :global .ant-switch-checked {
+    background-color: $bw-color--green3;
+  }
+
+  :global .editable-button {
+    height: 35px;
+    width: 50px;
+    background-color: #fff;
+    border: 1px solid $bw-color--grey3;
+    border-radius: 2px;
+    white-space: normal;
+    height: auto;
+  }
+
+  :global .ant-table-tbody .editable-input-name,
+  :global .ant-table-tbody .editable-button-name {
+    max-width: 150px;
+    width: 150px;
+    text-align: left;
+    padding: 0.25em 0.5em;
+    margin: auto;
+  }
+
+  :global .ant-input-number {
+    width: 70px;
+    margin: auto;
+  }
+
+  :global .anticon-warning {
+    color: $bw-color--red4;
+    font-size: 20px;
+    margin-left: 5px;
+  }
+}
+
+@media screen and (max-width: 910px) {
+  .tableContainer {
+    margin-bottom: 32px;
+
+    :global .ant-table-thead .ant-table-cell,
+    :global .ant-table-tbody td {
+      font-size: 14px;
+    }
+
+    :global .ant-table-tbody .editable-input-name,
+    :global .ant-table-tbody .editable-button-name {
+      max-width: 120px;
+      width: 120px;
+    }
+  }
+}
+
+@media screen and (max-width: 708px) {
+  .tableContainer {
+    border: none;
+
+    :global .ant-table-thead .ant-table-cell {
+      font-size: 12px;
+      display: none;
+    }
+
+    .rowTitle {
+      display: block;
+      width: 50%;
+      font-weight: 600;
+    }
+
+    :global .ant-table-tbody tr {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 24px;
+    }
+
+    :global .ant-table-tbody tr td,
+    :global .ant-table-tbody tr td button {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+
+      span {
+        display: flex;
+      }
+
+      button {
+        margin: 0 0 0 16px;
+      }
+    }
+
+    :global .ant-table-tbody tr {
+      border: 1px solid $bw-color--grey3;
+      border-radius: 6px;
+    }
+
+    :global .ant-table-tbody tr td {
+      height: 60px;
+    }
+
+    :global .ant-table-tbody > tr > td:not(:first-child) {
+      text-align: left;
+    }
+
+    :global .ant-table-tbody tr td > span:nth-child(odd) {
+      border-right: 1px solid $bw-color--grey2;
+    }
+
+    :global .ant-table-tbody tr td > span:nth-child(even) {
+      margin: 0 0 0 16px;
+    }
+
+    :global .ant-table-tbody tr td:nth-child(even) {
+      background-color: #f3f3f3;
+    }
+
+    :global .ant-table-tbody .editable-input-name,
+    :global .ant-table-tbody .editable-button-name,
+    :global .ant-input-number {
+      margin: 0 0 0 16px;
+    }
+
+    :global .editable-button {
+      height: default;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+  }
+}

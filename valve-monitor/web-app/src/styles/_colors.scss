@@ -1,0 +1,326 @@
+//SOLIDS
+$bw-color--brand0: #eff4f8; //background - because light
+$bw-color--brand1: #9ebacc; //background - because light
+$bw-color--brand2: #6695b4; //main (hightlight or rollover state or accent, depending on contrast)
+$bw-color--brand3: #416681; //main (hightlight or rollover state or accent, depending on contrast)
+$bw-color--brand4: #1b3a52; //default color of text on page
+
+$bw-color--blue0: #e8f9ff; //background - because light
+$bw-color--blue1: #ace8ff; //background - because light
+$bw-color--blue2: #59d2ff; //hover
+$bw-color--blue3: #00b9ff; //active
+$bw-color--blue4: #009ad4; //links
+
+$bw-color--teal0: #f4fcfe; //background
+$bw-color--teal1: #d8f6fc; //background
+$bw-color--teal2: #bde8f0;
+$bw-color--teal3: #4daabb; //highlight state for info content, sometimes numbers, values, sometimes members
+$bw-color--teal4: #3b8b9a; //use darkest one for contrast - main informational, vlaues, numbers
+
+$bw-color--green0: #f1f8e9; //background
+$bw-color--green1: #dcedc8; //foreground hightlight
+$bw-color--green2: #c5e1a5;
+$bw-color--green3: #9ccc65;
+$bw-color--green4: #689f38; //enabled states, members, if a device is online, if a transaction is
+
+$bw-color--yellow0: #fff8e1; //background
+$bw-color--yellow1: #ffecb3; //highlights (e.g. if you highlight a row)
+$bw-color--yellow2: #ffe082; //highlights (e.g. if you highlight a row)
+$bw-color--yellow3: #ffd54f; //highlights (e.g. if you highlight a row)
+$bw-color--yellow4: #ffa000; //cautionary alert
+
+$bw-color--red0: #fdf4f5;
+$bw-color--red1: #ffcdd2;
+$bw-color--red2: #ef9a9a;
+$bw-color--red3: #ef5350; //warning
+$bw-color--red4: #dc3545; //danger! warning!
+
+$bw-color--purple0: #f3e5f5;
+$bw-color--purple1: #e1bee7;
+$bw-color--purple2: #ce93d8;
+$bw-color--purple3: #ba68c8;
+$bw-color--purple4: #7b1fa2; //member state (premium member or access level)
+
+$bw-color--grey0: #f5f5f5;
+$bw-color--grey1: #eceff1;
+$bw-color--grey2: #d8dfe2;
+$bw-color--grey3: #c2c9cb; //muted, disabled, suboptimal text (optional info you can ignore)
+$bw-color--grey4: #7b858a; //border outlines
+
+//GRADIENTS
+//$bw-color--gradient-blue1: linear-gradient(#1B3A52,#416681,#3B8B9A);
+//$bw-color--gradient-blue2: linear-gradient(#0E202E,#1B3A52,#3B8B9A);
+
+//FOREGROUND COLORS
+.bw-fgcolor--brand0 {
+  color: $bw-color--brand0 !important;
+}
+.bw-fgcolor--brand1 {
+  color: $bw-color--brand1 !important;
+}
+.bw-fgcolor--brand2 {
+  color: $bw-color--brand2 !important;
+}
+.bw-fgcolor--brand3 {
+  color: $bw-color--brand3 !important;
+}
+.bw-fgcolor--brand4 {
+  color: $bw-color--brand4 !important;
+}
+
+.bw-fgcolor--blue0 {
+  color: $bw-color--blue0 !important;
+}
+.bw-fgcolor--blue1 {
+  color: $bw-color--blue1 !important;
+}
+.bw-fgcolor--blue2 {
+  color: $bw-color--blue2 !important;
+}
+.bw-fgcolor--blue3 {
+  color: $bw-color--blue3 !important;
+}
+.bw-fgcolor--blue4 {
+  color: $bw-color--blue4 !important;
+}
+
+.bw-fgcolor--teal0 {
+  color: $bw-color--teal0 !important;
+}
+.bw-fgcolor--teal1 {
+  color: $bw-color--teal1 !important;
+}
+.bw-fgcolor--teal2 {
+  color: $bw-color--teal2 !important;
+}
+.bw-fgcolor--teal3 {
+  color: $bw-color--teal3 !important;
+}
+.bw-fgcolor--teal4 {
+  color: $bw-color--teal4 !important;
+}
+
+.bw-fgcolor--green0 {
+  color: $bw-color--green0 !important;
+}
+.bw-fgcolor--green1 {
+  color: $bw-color--green1 !important;
+}
+.bw-fgcolor--green2 {
+  color: $bw-color--green2 !important;
+}
+.bw-fgcolor--green3 {
+  color: $bw-color--green3 !important;
+}
+.bw-fgcolor--green4 {
+  color: $bw-color--green4 !important;
+}
+
+.bw-fgcolor--yellow0 {
+  color: $bw-color--yellow0 !important;
+}
+.bw-fgcolor--yellow1 {
+  color: $bw-color--yellow1 !important;
+}
+.bw-fgcolor--yellow2 {
+  color: $bw-color--yellow2 !important;
+}
+.bw-fgcolor--yellow3 {
+  color: $bw-color--yellow3 !important;
+}
+.bw-fgcolor--yellow4 {
+  color: $bw-color--yellow4 !important;
+}
+
+.bw-fgcolor--red0 {
+  color: $bw-color--red0 !important;
+}
+.bw-fgcolor--red1 {
+  color: $bw-color--red1 !important;
+}
+.bw-fgcolor--red2 {
+  color: $bw-color--red2 !important;
+}
+.bw-fgcolor--red3 {
+  color: $bw-color--red3 !important;
+}
+.bw-fgcolor--red4 {
+  color: $bw-color--red4 !important;
+}
+
+.bw-fgcolor--purple0 {
+  color: $bw-color--purple0 !important;
+}
+.bw-fgcolor--purple1 {
+  color: $bw-color--purple1 !important;
+}
+.bw-fgcolor--purple2 {
+  color: $bw-color--purple2 !important;
+}
+.bw-fgcolor--purple3 {
+  color: $bw-color--purple3 !important;
+}
+.bw-fgcolor--purple4 {
+  color: $bw-color--purple4 !important;
+}
+
+.bw-fgcolor--grey0 {
+  color: $bw-color--grey0 !important;
+}
+.bw-fgcolor--grey1 {
+  color: $bw-color--grey1 !important;
+}
+.bw-fgcolor--grey2 {
+  color: $bw-color--grey2 !important;
+}
+.bw-fgcolor--grey3 {
+  color: $bw-color--grey3 !important;
+}
+.bw-fgcolor--grey4 {
+  color: $bw-color--grey4 !important;
+}
+
+//BACKGROUND COLORS
+.bw-bgcolor--brand0 {
+  background-color: $bw-color--brand0 !important;
+}
+.bw-bgcolor--brand1 {
+  background-color: $bw-color--brand1 !important;
+}
+.bw-bgcolor--brand2 {
+  background-color: $bw-color--brand2 !important;
+}
+.bw-bgcolor--brand3 {
+  background-color: $bw-color--brand3 !important;
+}
+.bw-bgcolor--brand4 {
+  background-color: $bw-color--brand4 !important;
+}
+
+.bw-bgcolor--blue0 {
+  background-color: $bw-color--blue0 !important;
+}
+.bw-bgcolor--blue1 {
+  background-color: $bw-color--blue1 !important;
+}
+.bw-bgcolor--blue2 {
+  background-color: $bw-color--blue2 !important;
+}
+.bw-bgcolor--blue3 {
+  background-color: $bw-color--blue3 !important;
+}
+.bw-bgcolor--blue4 {
+  background-color: $bw-color--blue4 !important;
+}
+
+.bw-bgcolor--teal0 {
+  background-color: $bw-color--teal0 !important;
+}
+.bw-bgcolor--teal1 {
+  background-color: $bw-color--teal1 !important;
+}
+.bw-bgcolor--teal2 {
+  background-color: $bw-color--teal2 !important;
+}
+.bw-bgcolor--teal3 {
+  background-color: $bw-color--teal3 !important;
+}
+.bw-bgcolor--teal4 {
+  background-color: $bw-color--teal4 !important;
+}
+
+.bw-bgcolor--green0 {
+  background-color: $bw-color--green0 !important;
+}
+.bw-bgcolor--green1 {
+  background-color: $bw-color--green1 !important;
+}
+.bw-bgcolor--green2 {
+  background-color: $bw-color--green2 !important;
+}
+.bw-bgcolor--green3 {
+  background-color: $bw-color--green3 !important;
+}
+.bw-bgcolor--green4 {
+  background-color: $bw-color--green4 !important;
+}
+
+.bw-bgcolor--yellow0 {
+  background-color: $bw-color--yellow0 !important;
+}
+.bw-bgcolor--yellow1 {
+  background-color: $bw-color--yellow1 !important;
+}
+.bw-bgcolor--yellow2 {
+  background-color: $bw-color--yellow2 !important;
+}
+.bw-bgcolor--yellow3 {
+  background-color: $bw-color--yellow3 !important;
+}
+.bw-bgcolor--yellow4 {
+  background-color: $bw-color--yellow4 !important;
+}
+
+.bw-bgcolor--red0 {
+  background-color: $bw-color--red0 !important;
+}
+.bw-bgcolor--red1 {
+  background-color: $bw-color--red1 !important;
+}
+.bw-bgcolor--red2 {
+  background-color: $bw-color--red2 !important;
+}
+.bw-bgcolor--red3 {
+  background-color: $bw-color--red3 !important;
+}
+.bw-bgcolor--red4 {
+  background-color: $bw-color--red4 !important;
+}
+
+.bw-bgcolor--purple0 {
+  background-color: $bw-color--purple0 !important;
+}
+.bw-bgcolor--purple1 {
+  background-color: $bw-color--purple1 !important;
+}
+.bw-bgcolor--purple2 {
+  background-color: $bw-color--purple2 !important;
+}
+.bw-bgcolor--purple3 {
+  background-color: $bw-color--purple3 !important;
+}
+.bw-bgcolor--purple4 {
+  background-color: $bw-color--purple4 !important;
+}
+
+.bw-bgcolor--grey0 {
+  background-color: $bw-color--grey0 !important;
+}
+.bw-bgcolor--grey1 {
+  background-color: $bw-color--grey1 !important;
+}
+.bw-bgcolor--grey2 {
+  background-color: $bw-color--grey2 !important;
+}
+.bw-bgcolor--grey3 {
+  background-color: $bw-color--grey3 !important;
+}
+.bw-bgcolor--grey4 {
+  background-color: $bw-color--grey4 !important;
+}
+
+/**
+
+PRIMARY ACTION - $bw-color--blue3;
+ROLLOVER BUTTON STATE
+
+HOVER - $bw-color--grey0;
+
+https://htmlcolorcodes.com/color-chart/material-design-color-chart/
+
+You can use the logo as dark blues blue (#416681) and on hover light blue (#6695B4)
+or dark blue (#009AD4) and light blue (#00B9FF)
+However the dark blue (#1B3A52) is for static unclickable page content, not links 
+The lighter variant (#416681) is for clickable links
+
+**/

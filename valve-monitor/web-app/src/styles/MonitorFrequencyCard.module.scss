@@ -1,0 +1,43 @@
+@import "_variables.scss";
+
+.radioContainer {
+  margin: 13% 0;
+  padding-left: 16px;
+
+  :global .ant-radio-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  :global span.ant-radio + * {
+    font-size: 14px;
+    padding-left: 14px;
+    margin: 10px 0;
+  }
+
+  :global .ant-radio-inner::after {
+    background-color: $bw-color--brand3;
+  }
+
+  :global .ant-radio-inner {
+    border-color: $bw-color--brand3;
+    border-width: 2px;
+  }
+}
+
+@media screen and (max-width: $breakpoints-md) {
+  .radioContainer {
+    margin-top: 10%;
+  }
+}
+
+@media screen and (max-width: $breakpoints-sm) {
+  .radioContainer {
+    margin: 0;
+
+    :global .ant-radio-group {
+      align-items: flex-start;
+      margin-left: 20px;
+    }
+  }
+}
