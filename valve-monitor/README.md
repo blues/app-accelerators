@@ -80,7 +80,7 @@ is required to allow the Swan to switch on high-power devices such as the
 solenoid, without needing to send that power from the microcontroller. (The
 Swan can only send about 0.066 Watts (3.3V*20mA) out of a GPIO.)
 
-Additionally you may wish to also use the following.
+Additionally you may wish to also use the following:
 
 * (Optional) A manual valve such as this [YZM Quick Connector](https://www.amazon.com/dp/B077H2JWSZ/ref=cm_sw_r_api_i_38J4S2VWFKAZBVEA8GCM_0)
 to make it easier to start/stop the flow of liquid while testing.
@@ -88,7 +88,7 @@ to make it easier to start/stop the flow of liquid while testing.
 [outdoor-friendly enclosure from Sixfab](https://sixfab.com/product/raspberry-pi-ip54-outdoor-iot-project-enclosure/).
 
 Once you have all of your hardware you’ll next need to assemble the pieces.
-As a start, complete the [Notecard and Notecarrier-F quickstart guide](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/), which will help
+To start, complete the [Notecard and Notecarrier-F quickstart guide](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/), which will help
 you connect your Notecard, Notecarrier, and Swan.
 
 ![The Notecard, Notecarrier, and Swan connected](images/notecard-and-notecarrier.jpg)
@@ -99,7 +99,7 @@ to the Notecarrier. If you’re using this project’s recommended hardware, her
 ![Wiring diagram of the various valve monitor components](images/wiring-diagram.png)
 
 Regardless of which hardware you use, you’ll need to have the following pins
-wired to your Notecarrier.
+wired to your Notecarrier:
 
 * The solenoid valve’s signal line must be connected to the Notecarrier’s `F_D6`
 pin. The Swan uses this pin to open and close the solenoid.
@@ -113,12 +113,12 @@ When everything is put together your build should look something like this.
 
 ![The Notecarrier connected to the solenoid and the valve monitor](images/full-build-no-case.jpg)
 
-If you’re additionally using a case like the [recommended one from Sixfab](https://sixfab.com/product/raspberry-pi-ip54-outdoor-iot-project-enclosure/),
+If you’re also using a case like the [recommended one from Sixfab](https://sixfab.com/product/raspberry-pi-ip54-outdoor-iot-project-enclosure/),
 your build can look like this when placed within the enclosure.
 
 ![The full build within a Sixfab enclosure](images/full-build-in-case.jpg)
 
-With the hardware assembled, you next need to get the project’s firmware running on
+With the hardware assembled, your next step is getting the project’s firmware running on
 your device.
 
 ## Firmware
@@ -129,7 +129,8 @@ complete the [firmware’s setup guide](firmware/) to get your firmware up and r
 ## Web Application
 
 The Valve Monitor project’s web application allows you to view flow rates, open and
-close solenoid valves, and manage environment variables in a browser.
+close solenoid valves, set alarm thresholds, and manage environment variables in a
+browser.
 
 ![The Valve Monitor project’s web application](images/web-app.png)
 

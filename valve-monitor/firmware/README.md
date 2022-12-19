@@ -30,7 +30,7 @@ and click the **Open "firmware"** button.
 With the firmware project open, you can now make any changes you’d like to the firmware
 source code, and then flash the firmware to your device.
 
-Complete the following steps to upload firmware in in PlatformIO.
+Complete the following steps to upload firmware in PlatformIO.
 
 1. Connect your Swan to your computer using [these steps](https://dev.blues.io/quickstart/swan-quickstart/#programming-swan-platformio).
 
@@ -51,8 +51,8 @@ at the bottom of your Visual Studio Code window.
 
 ## Testing
 
-Once you have the firmware running, you’ll next want to the firmware’s `main.cpp` file,
-uncomment the `#define PRODUCT_UID` line, and replace the hardcoded value with
+Once you have the firmware running, you’ll next want to open the firmware’s `main.cpp`
+file, uncomment the `#define PRODUCT_UID` line, and replace the hardcoded value with
 a ProductUID from the Notehub project you’d like to use.
 
 ```C
@@ -70,7 +70,7 @@ on how to hook everything up).
 meter.
 
 With everything connected and running, the firmware expects to receive `data.qi`
-Notes in the following format to open and close the solenoid valve.
+Notes from Notehub in the following format to open and close the solenoid valve.
 
 ```json
 "body": {
@@ -81,7 +81,7 @@ Notes in the following format to open and close the solenoid valve.
 > **NOTE**: If you’re unsure how to send Notes to a Notecard, check out this
 [tutorial on using the Notehub API](https://dev.blues.io/guides-and-tutorials/using-the-notehub-api/).
 
-The firmware additionally sends two types of outbound Notes.
+The firmware additionally sends two types of outbound Notes back to Notehub.
 
 The first, `data.qo`, reports the current flow rate and valve state, and is sent
 at an interval you can configure with the `monitor_interval` environment variable.
