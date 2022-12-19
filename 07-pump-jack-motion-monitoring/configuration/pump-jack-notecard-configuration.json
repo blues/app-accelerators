@@ -9,8 +9,9 @@
   "req":       "hub.set",
   "mode":      "periodic",
   "align":     true,
-  "voutbound": "usb:10; high:360; normal:720; low:1440; dead:0",
-  "vinbound":  "usb:10; high:180; normal:180; low:360; dead:0"}
+  "voutbound": "usb:10; high:180; normal:180; low:360; dead:0",
+  "vinbound":  "usb:10; high:360; normal:720; low:1440; dead:0"
+}
 
 # Optimize for LiPo Battery
 {
@@ -35,9 +36,11 @@
 }
 
 {
-  "req":     "card.motion.sync",
-  "start":   true,
-  "minutes": 60  # Sync motion every 60 minutes
+  "req":       "card.motion.sync",
+  "start":     true,
+  "minutes":   60,  # Sync motion every 60 minutes
+  "count":     60,
+  "threshold": 1
 }
 
 # Daily sampling of location
