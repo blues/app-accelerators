@@ -58,7 +58,7 @@ First, we will set the serial number (name) of your notecard and the ProductUID.
 }
 ```
 
-> This app uses `periodic` mode to minimize power use so that solution can remain online for longer when mains power fails. For more details, see [`hub.set` requests](https://dev.blues.io/notecard/notecard-walkthrough/essential-requests/#notehub-configuration).
+> This app uses `periodic` mode to minimize power use so that the solution can remain online for longer when mains power fails. For more details, see [`hub.set` requests](https://dev.blues.io/notecard/notecard-walkthrough/essential-requests/#notehub-configuration).
 
 ### Configure Power Outage Alerts
 
