@@ -3,7 +3,7 @@ name: fridge-fleet-monitor/web-app
 on:
   pull_request:
     paths:
-      - "fridge-fleet-monitor/web-app/**"
+      - "02-fridge-fleet-monitor/web-app/**"
   push:
     branches:
       - main
@@ -11,7 +11,7 @@ on:
 defaults:
   run:
     shell: bash
-    working-directory: fridge-fleet-monitor/web-app
+    working-directory: 02-fridge-fleet-monitor/web-app
 
 jobs:
   build-and-test:
