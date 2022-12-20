@@ -1,6 +1,6 @@
 # Refrigerator Monitor
 
-This document describes a solution for monitoring refrigerator temperature, humidity, and power using a Notecard and a BME280 sensor. It incorporates a backup LiPo battery in the event that mains power goes down.
+Monitor refrigerator temperature, humidity, and power using a Notecard and a BME280 sensor.
 
 - [Refrigerator Monitor](#refrigerator-monitor)
   - [You Will Need](#you-will-need)
@@ -49,13 +49,13 @@ The Notecard should use [firmware version 3.5.1](https://dev.blues.io/notecard/n
 
 ### Configure Notehub Project and Connection Mode
 
-Set the ProductUID for the Notecard by pasting the command below into the in-browser terminal. Make sure to replace `com.your-company:your-product-name` with the ProductUID from your Notehub project, which can be found below your project's name in the dashboard at https://notehub.io.
+Set the ProductUID for the Notecard by pasting the command below into the in-browser terminal. Make sure to replace `com.your-company:your-product-name` with the ProductUID from your Notehub project, which can be found below your project's name in the dashboard at https://notehub.io. Also, replace the placeholder serial number (`"sn:" "fridge-location"`) with the location of your fridge (e.g. "kitchen").
 
 ```json
-{ "req": "hub.set", "mode": "periodic", "outbound": 3, "product": "com.your-company:your-product-name" }
+{ "req": "hub.set", "mode": "periodic", "outbound": 3, "product": "com.your-company:your-product-name", "sn": "fridge-location" }
 ```
 
-This app uses `periodic` mode to minimize power use so that solution can remain online for longer when mains power fails. `"outbound": 3` is the max wait time, in minutes, to sync outbound data from the Notecard. For more details, see [our Essential Requests documentation for `hub.set`](https://dev.blues.io/notecard/notecard-walkthrough/essential-requests/#notehub-configuration).
+This app uses `periodic` mode to minimize power use so that the solution can remain online for longer when mains power fails. `"outbound": 3` is the max wait time, in minutes, to sync outbound data from the Notecard. For more details, see [our Essential Requests documentation for `hub.set`](https://dev.blues.io/notecard/notecard-walkthrough/essential-requests/#notehub-configuration).
 
 ### Configure Periodic Environmental Measurements
 
@@ -65,7 +65,9 @@ Paste this command into the in-browser terminal:
 { "req": "card.aux", "mode":"track" }
 ```
 
-Turning on track mode will make augment our environmental data with pressure and humidity readings in addition to temperature. Next, paste this command into the in-browser terminal:
+Turning on track mode will augment the environmental data with pressure and humidity readings in addition to temperature.
+
+Next, paste this command into the in-browser terminal:
 
 ```json
 { "req": "card.temp", "seconds": 180 }
