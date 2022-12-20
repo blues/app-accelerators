@@ -61,7 +61,7 @@ git clone https://github.com/blues/nifty-fifty.git
 ```
 
 With your local project downloaded, you’ll next want to open up the
-`fridge-fleet-monitor/web-app` folder in your text editor or IDE of choice. Once
+`02-fridge-fleet-monitor/web-app` folder in your text editor or IDE of choice. Once
 you have the project open in your editor you’re ready to configure the project’s
 environment variables.
 

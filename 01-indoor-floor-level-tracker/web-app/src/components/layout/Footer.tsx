@@ -21,7 +21,7 @@ const FooterComponent = () => {
           </span>
         </div>
         <div>
-          <a href="https://github.com/blues/app-accelerators/tree/main/valve-monitor">
+          <a href="https://github.com/blues/app-accelerators/tree/main/01-indoor-floor-level-tracker">
             About
           </a>
         </div>

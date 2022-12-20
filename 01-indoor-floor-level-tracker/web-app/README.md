@@ -4,7 +4,7 @@ The Indoor Floor-Level Tracker’s web application allows you to view device dat
 manage environment variables in a browser.
 
 To get started, make sure you have a copy of this project’s repository locally,
-then open up the `indoor-floor-level-tracker/web-app` folder in your text editor or
+then open up the `01-indoor-floor-level-tracker/web-app` folder in your text editor or
 IDE, and then complete the following steps.
 
 - [Dependencies](#dependencies)
