@@ -87,7 +87,13 @@ A host-free low latency notification system to alert attendants in a parking lot
 
 ---
 
-### 7. Coming Soon!
+### 7. ⛽️ Pump Jack Motion Monitoring
+
+A host-free system for monitoring motion on an oil field pump jack with the built-in Notecard accelerometer.
+
+<p>
+  <a href="./07-pump-jack-motion-monitoring/"><b>🔧 Start Building</b></a>
+</p>
 
 ---
 
