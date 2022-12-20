@@ -96,3 +96,23 @@ A host-free system for monitoring motion on an oil field pump jack with the buil
 </p>
 
 ---
+
+### 8. Coming Soon!
+
+---
+
+### 9. 🚰 Valve Monitor
+
+Monitor and control the open/closed state of a valve, and measure liquid flow state.
+
+<p>
+  <a href="./valve-monitor/"><b>🔧 Start Building</b></a>
+</p>
+
+---
+
+<!--
+
+### 10. 💧 Flow-Rate Monitor
+
+-->

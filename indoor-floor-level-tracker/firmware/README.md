@@ -11,7 +11,7 @@ the prerequisites below installed.
 via the Extensions menu of Visual Studio Code.
 ![Visual Studio Code extensions menu with a search of "platformio"](../images/platformio-extension.png)
 
-### Opening
+## Opening
 
 Once you have Visual Studio Code and the PlatformIO extension installed, you next need
 to open the firmware within PlatformIO.
@@ -25,7 +25,7 @@ click the “Open” option under the “PIO Home” menu  and finally “Open P
 and click the **Open "firmware"** button.
 ![How to open the firmware folder in PlatformIO](../images/platformio-open-firmware.png)
 
-### Flashing
+## Flashing
 
 With the firmware project open, you can now make any changes you’d like to the firmware
 source code, and then flash the firmware to your device.
@@ -39,7 +39,7 @@ Complete the following steps to upload firmware in in PlatformIO.
 If you’re not, make sure to open your `platformio.ini` file and change the `upload_protocol`
 to `dfu`.
 
-2. Once you have everything connected, click the checkmark button that appears at the
+2. Once you have everything connected, click the arrow button that appears at the
 bottom of your Visual Studio Code window.
 ![Uploading firmware in PlatformIO](../images/platformio-upload.png)
 
@@ -48,6 +48,8 @@ monitor to view the firmware’s logs. You can do so by clicking the plug button
 at the bottom of your Visual Studio Code window.
 
 ![Opening a serial monitor in PlatformIO](../images/platformio-serial-monitor.png)
+
+## Testing
 
 The firmware has both an idle mode and a live mode, which you can control with your fleet’s
 `live` environment variable.
