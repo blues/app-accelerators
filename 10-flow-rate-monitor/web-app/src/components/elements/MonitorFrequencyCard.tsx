@@ -1,6 +1,6 @@
 import { Card, Radio } from "antd";
 import type { RadioChangeEvent } from "antd/lib/radio";
-import { updateValveMonitorFrequency } from "../../api-client/fleetVariables";
+import { updateFlowRateMonitorFrequency } from "../../api-client/fleetVariables";
 import { ERROR_MESSAGE } from "../../constants/ui";
 import cardStyles from "../../styles/Card.module.scss";
 import monitorFrequencyCardStyles from "../../styles/MonitorFrequencyCard.module.scss";
@@ -35,7 +35,7 @@ const MonitorFrequencyCard = (props: MonitorFrequencyProps) => {
     setIsLoading(true);
 
     try {
-      await updateValveMonitorFrequency(Number(value));
+      await updateFlowRateMonitorFrequency(Number(value));
       setCurrentFrequency(Number(value));
     } catch (e) {
       setIsErrored(true);

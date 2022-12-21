@@ -1,15 +1,14 @@
-import { ValveMonitorConfig } from "./AppModel";
+import { FlowRateMonitorConfig } from "./AppModel";
 import { DeviceID, FleetID } from "./DomainModel";
 
 export interface AttributeStore {
   updateDeviceName: (deviceUID: DeviceID, name: string) => Promise<void>;
-  updateDeviceValveMonitorConfig: (
+  updateDeviceFlowRateMonitorConfig: (
     deviceUID: string,
-    valveMonitorConfig: ValveMonitorConfig
+    flowRateMonitorConfig: FlowRateMonitorConfig
   ) => Promise<void>;
-  updateValveMonitorConfig: (
+  updateFlowRateMonitorConfig: (
     fleetUID: FleetID,
-    valveMonitorConfig: ValveMonitorConfig
+    flowRateMonitorConfig: FlowRateMonitorConfig
   ) => Promise<void>;
-  updateValveState: (deviceUID: string, state: string) => Promise<void>;
 }

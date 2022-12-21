@@ -1,29 +1,22 @@
 import { MutableRefObject, useEffect, useRef, useState } from "react";
-import {
-  Form,
-  Input,
-  InputNumber,
-  InputRef,
-  Switch,
-  Table,
-  Tag,
-  Tooltip,
-} from "antd";
+import { Form, Input, InputNumber, InputRef, Table, Tooltip } from "antd";
 import type { ColumnsType } from "antd/lib/table";
 import { isEmpty } from "lodash";
-import { ValveMonitorDevice } from "../../services/AppModel";
-import { ERROR_MESSAGE, getValveStateAlarmMessage } from "../../constants/ui";
-import {
-  changeDeviceName,
-  updateDeviceValveMonitorConfig,
-  updateValveControl,
-} from "../../api-client/valveDevices";
-import styles from "../../styles/ValveMonitorTable.module.scss";
 import {
   WarningFilled,
   ArrowUpOutlined,
   ArrowDownOutlined,
 } from "@ant-design/icons";
+import { FlowRateMonitorDevice } from "../../services/AppModel";
+import {
+  ERROR_MESSAGE,
+  getFlowRateStateAlarmMessage,
+} from "../../constants/ui";
+import {
+  changeDeviceName,
+  updateDeviceFlowRateMonitorConfig,
+} from "../../api-client/flowRateDevices";
+import styles from "../../styles/FlowRateMonitorTable.module.scss";
 
 const columns = [
   {
@@ -50,7 +43,12 @@ const columns = [
     ),
   },
   {
-    title: "Monitoring (min)",
+    title: (
+      <>
+        <div>Monitoring</div>
+        <div>(min)</div>
+      </>
+    ),
     dataIndex: "monitorFrequency",
     key: "monitorFrequency",
     editable: true,
@@ -90,7 +88,7 @@ const columns = [
           <span>
             {value ? (
               <Tooltip
-                title={getValveStateAlarmMessage(record.deviceAlarmReason)}
+                title={getFlowRateStateAlarmMessage(record.deviceAlarmReason)}
               >
                 {record.deviceAlarmReason === "low" && <ArrowDownOutlined />}
                 {record.deviceAlarmReason === "high" && <ArrowUpOutlined />}
@@ -104,45 +102,17 @@ const columns = [
       );
     },
   },
-  {
-    title: (
-      <>
-        <div>Valve</div>
-        <div>State</div>
-      </>
-    ),
-    render: (_, record) => (
-      <>
-        <span className={styles.rowTitle}>Valve State</span>
-        <Tag color={record.valveState === "open" ? "success" : "warning"}>
-          {record.valveState}
-        </Tag>
-      </>
-    ),
-    align: "center",
-  },
-  {
-    title: (
-      <>
-        <div>Valve Control</div>
-        <div>(open / closed)</div>
-      </>
-    ),
-    align: "center",
-    key: "valveControl",
-    editable: true,
-  },
-] as ColumnsType<ValveMonitorDevice>;
+] as ColumnsType<FlowRateMonitorDevice>;
 
 interface EditableCellProps {
   title: string | { props: { children: any } };
   editable: boolean;
   index: string;
   children: JSX.Element;
-  record: ValveMonitorDevice;
+  record: FlowRateMonitorDevice;
   onChange: (
     deviceUID: string,
-    valveDeviceEnvVarToUpdate: { [key: string]: any }
+    flowRateDeviceEnvVarToUpdate: { [key: string]: any }
   ) => Promise<boolean>;
 }
 
@@ -170,26 +140,26 @@ const EditableCell = ({
   };
 
   const handleSave = () => {
-    const valveDeviceEnvVarToUpdate = form.getFieldsValue([index]) as {
+    const flowRateDeviceEnvVarToUpdate = form.getFieldsValue([index]) as {
       [key: string]: number;
     };
 
-    if (record[index] === valveDeviceEnvVarToUpdate[index]) {
+    if (record[index] === flowRateDeviceEnvVarToUpdate[index]) {
       toggleEdit();
       return;
     }
 
-    onChange(record.deviceID, valveDeviceEnvVarToUpdate)
+    onChange(record.deviceID, flowRateDeviceEnvVarToUpdate)
       .then(toggleEdit)
       .catch(toggleEdit);
   };
 
   const handleBlur = () => {
-    const valveDeviceEnvVarToUpdate = form.getFieldsValue([index]) as {
+    const flowRateDeviceEnvVarToUpdate = form.getFieldsValue([index]) as {
       [key: string]: number;
     };
 
-    if (isEmpty(valveDeviceEnvVarToUpdate[index])) {
+    if (isEmpty(flowRateDeviceEnvVarToUpdate[index])) {
       toggleEdit();
       return;
     }
@@ -210,21 +180,13 @@ const EditableCell = ({
     typeof title !== "string" &&
     title.props &&
     title.props.children &&
-    title?.props?.children[1].props.children === "(open / closed)"
-  ) {
-    rowTitle = "Valve Control (open/closed)";
-  }
-  if (
-    typeof title !== "string" &&
-    title.props &&
-    title.props.children &&
     title?.props?.children[0].props.children === "Monitoring"
   ) {
     rowTitle = "Monitoring (min)";
   }
 
   // Create a custom form for editing cells
-  if (editable && index !== "valveControl") {
+  if (editable) {
     childNode = editing ? (
       <>
         <span className={styles.rowTitle}>{rowTitle}</span>
@@ -277,87 +239,54 @@ const EditableCell = ({
     );
   }
 
-  if (index === "valveControl") {
-    childNode =
-      record.valveState !== "-" ? (
-        <>
-          <span className={styles.rowTitle}>Valve Control (open/closed)</span>
-          <Switch
-            onChange={(value) => {
-              onChange(record.deviceID, {
-                valveControl: value ? "open" : "close",
-              });
-            }}
-            loading={
-              record.valveState === "opening" || record.valveState === "closing"
-            }
-            checked={
-              record.valveState === "open" || record.valveState === "opening"
-            }
-          />
-        </>
-      ) : (
-        <>
-          <span className={styles.rowTitle}>Valve Control (open/closed)</span>-
-        </>
-      );
-  }
-
   return (
     // Providing the colors in JavaScript to override the Ant hover styling
     // Errored rows should stay red on hover.
-    <td style={{ backgroundColor: record.deviceAlarm ? "#fbe9e7" : "white" }}>
+    <td style={{ backgroundColor: record.deviceAlarm ? "#fbe9e7" : undefined }}>
       {childNode}
     </td>
   );
 };
 
-interface ValveMonitorTableProps {
-  data: ValveMonitorDevice[] | undefined;
+interface FlowRateMonitorTableProps {
+  data: FlowRateMonitorDevice[] | undefined;
   setIsErrored: (isErrored: boolean) => void;
   setIsLoading: (isLoading: boolean) => void;
   setErrorMessage: (errorMessage: string) => void;
   refreshData: () => Promise<void>;
 }
 
-interface ValveMonitorConfigChange {
+interface FlowRateMonitorConfigChange {
   name?: string;
   monitorFrequency?: string;
   minFlowThreshold?: string;
   maxFlowThreshold?: string;
-  valveControl?: string;
 }
 
-const ValveMonitorTable = ({
+const FlowRateMonitorTable = ({
   data,
   refreshData,
   setIsErrored,
   setIsLoading,
   setErrorMessage,
-}: ValveMonitorTableProps) => {
-  const onDeviceValveMonitorConfigChange = async (
+}: FlowRateMonitorTableProps) => {
+  const onDeviceFlowRateMonitorConfigChange = async (
     deviceUID: string,
-    valveDeviceEnvVarToUpdate: ValveMonitorConfigChange
+    flowRateDeviceEnvVarToUpdate: FlowRateMonitorConfigChange
   ) => {
     setIsErrored(false);
     setErrorMessage("");
     setIsLoading(true);
 
     try {
-      if (valveDeviceEnvVarToUpdate.name) {
+      if (flowRateDeviceEnvVarToUpdate.name) {
         // Name updates
-        await changeDeviceName(deviceUID, valveDeviceEnvVarToUpdate.name);
-      } else if (valveDeviceEnvVarToUpdate.valveControl) {
-        // Valve control updates
-        await updateValveControl(
-          deviceUID,
-          valveDeviceEnvVarToUpdate.valveControl
-        );
+        await changeDeviceName(deviceUID, flowRateDeviceEnvVarToUpdate.name);
       } else {
         // All other environment variable updates
-        await updateDeviceValveMonitorConfig(
+        await updateDeviceFlowRateMonitorConfig(
           deviceUID,
-          valveDeviceEnvVarToUpdate
+          flowRateDeviceEnvVarToUpdate
         );
       }
     } catch (e) {
@@ -372,12 +301,12 @@ const ValveMonitorTable = ({
   const mapColumns = (col) => {
     const newCol = {
       ...col,
-      onCell: (record: ValveMonitorDevice) => ({
+      onCell: (record: FlowRateMonitorDevice) => ({
         title: col.title,
         editable: col.editable,
         index: col.key,
         record,
-        onChange: onDeviceValveMonitorConfigChange,
+        onChange: onDeviceFlowRateMonitorConfigChange,
       }),
     } as EditableCellProps;
     if (col.children) {
@@ -388,7 +317,7 @@ const ValveMonitorTable = ({
 
   const editableColumns = columns.map(
     mapColumns
-  ) as ColumnsType<ValveMonitorDevice>;
+  ) as ColumnsType<FlowRateMonitorDevice>;
 
   return (
     <div className={styles.tableContainer}>
@@ -407,4 +336,4 @@ const ValveMonitorTable = ({
     </div>
   );
 };
-export default ValveMonitorTable;
+export default FlowRateMonitorTable;

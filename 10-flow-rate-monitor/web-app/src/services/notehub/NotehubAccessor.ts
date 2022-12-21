@@ -17,11 +17,6 @@ interface NotehubAccessor {
     hubDeviceUID: string,
     envVars: NotehubEnvVars
   ) => Promise<boolean>;
-  addNote: (
-    hubDeviceUID: string,
-    file: string,
-    note: object
-  ) => Promise<boolean>;
 }
 
 export type { NotehubAccessor };

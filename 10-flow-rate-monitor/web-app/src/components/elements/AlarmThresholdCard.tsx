@@ -65,7 +65,7 @@ const AlarmThresholdCard = (props: AlarmThresholdProps) => {
           Configure fleet flow rate
           <Tooltip
             color="#416681"
-            title="An alarm is triggered if the valve flow rate falls outside these values."
+            title="An alarm is triggered if the flow rate falls outside these values."
           >
             <InfoCircleFilled />
           </Tooltip>

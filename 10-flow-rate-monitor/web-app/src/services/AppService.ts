@@ -8,8 +8,8 @@ import {
   FleetID,
   DeviceEnvVars,
   FleetEnvVars,
-  ValveMonitorDevice,
-  ValveMonitorConfig,
+  FlowRateMonitorDevice,
+  FlowRateMonitorConfig,
 } from "./AppModel";
 import { IDBuilder } from "./IDBuilder";
 import { NotificationsStore, Notification } from "./NotificationsStore";
@@ -20,21 +20,20 @@ import { ALARM, NOTIFICATION } from "./NotificationEventHandler";
 // this class / interface combo passes data and functions to the service locator file
 interface AppServiceInterface {
   setDeviceName: (deviceUID: string, name: string) => Promise<void>;
-  getValveMonitorDeviceData: () => Promise<ValveMonitorDevice[]>;
-  setDeviceValveMonitorConfig: (
+  getFlowRateMonitorDeviceData: () => Promise<FlowRateMonitorDevice[]>;
+  setDeviceFlowRateMonitorConfig: (
     deviceUID: string,
-    valveMonitorConfig: ValveMonitorConfig
+    flowRateMonitorConfig: FlowRateMonitorConfig
   ) => Promise<void>;
-  updateValveState: (deviceUID: string, state: string) => Promise<void>;
 
   handleEvent(event: AppEvent): Promise<void>;
   getFleetsByDevice: (deviceUID: string) => Promise<Fleets>;
   getDeviceEnvVars: (deviceUID: string) => Promise<DeviceEnvVars>;
   getFleetEnvVars: (fleetUID: string) => Promise<FleetEnvVars>;
 
-  getValveMonitorConfig: () => Promise<ValveMonitorConfig>;
-  setValveMonitorConfig: (
-    valveMonitorConfig: ValveMonitorConfig
+  getFlowRateMonitorConfig: () => Promise<FlowRateMonitorConfig>;
+  setFlowRateMonitorConfig: (
+    flowRateMonitorConfig: FlowRateMonitorConfig
   ) => Promise<void>;
 
   getAppNotifications(): Promise<AppNotification[]>;
@@ -68,17 +67,17 @@ export default class AppService implements AppServiceInterface {
     );
   }
 
-  async getValveMonitorDeviceData() {
-    return this.dataProvider.getValveMonitorDeviceData();
+  async getFlowRateMonitorDeviceData() {
+    return this.dataProvider.getFlowRateMonitorDeviceData();
   }
 
-  async setDeviceValveMonitorConfig(
+  async setDeviceFlowRateMonitorConfig(
     deviceUID: string,
-    valveMonitorConfig: ValveMonitorConfig
+    flowRateMonitorConfig: FlowRateMonitorConfig
   ): Promise<void> {
-    return this.attributeStore.updateDeviceValveMonitorConfig(
+    return this.attributeStore.updateDeviceFlowRateMonitorConfig(
       deviceUID,
-      valveMonitorConfig
+      flowRateMonitorConfig
     );
   }
 
@@ -107,19 +106,15 @@ export default class AppService implements AppServiceInterface {
     return result;
   }
 
-  async getValveMonitorConfig() {
-    return this.dataProvider.getValveMonitorConfig(this.fleetID.fleetUID);
+  async getFlowRateMonitorConfig() {
+    return this.dataProvider.getFlowRateMonitorConfig(this.fleetID.fleetUID);
   }
 
-  async setValveMonitorConfig(valveMonitorConfig: ValveMonitorConfig) {
-    return this.attributeStore.updateValveMonitorConfig(
+  async setFlowRateMonitorConfig(flowRateMonitorConfig: FlowRateMonitorConfig) {
+    return this.attributeStore.updateFlowRateMonitorConfig(
       this.fleetID,
-      valveMonitorConfig
+      flowRateMonitorConfig
     );
-  }
-
-  async updateValveState(deviceUID: string, state: string) {
-    return this.attributeStore.updateValveState(deviceUID, state);
   }
 
   async clearAlarms() {

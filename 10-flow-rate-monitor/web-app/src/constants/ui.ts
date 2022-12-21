@@ -44,20 +44,17 @@ const getErrorMessage = (errorCode: string) => {
   }
 };
 
-const VALVE_STATE_ALARM_MESSAGES = {
+const FLOW_RATE_STATE_ALARM_MESSAGES = {
   HIGH: "The flow rate is above the flow rate threshold for this device.",
   LOW: "The flow rate is below the flow rate threshold for this device.",
-  LEAK: "A flow rate was detected while this valve was closed.",
 };
 
-const getValveStateAlarmMessage = (alarmReason: string) => {
+const getFlowRateStateAlarmMessage = (alarmReason: string) => {
   switch (alarmReason) {
     case "high":
-      return VALVE_STATE_ALARM_MESSAGES.HIGH;
+      return FLOW_RATE_STATE_ALARM_MESSAGES.HIGH;
     case "low":
-      return VALVE_STATE_ALARM_MESSAGES.LOW;
-    case "leak":
-      return VALVE_STATE_ALARM_MESSAGES.LEAK;
+      return FLOW_RATE_STATE_ALARM_MESSAGES.LOW;
     default:
       // eslint-disable-next-line no-console
       console.error(`Unknown alarm cause: ${alarmReason}`);
@@ -68,6 +65,6 @@ const getValveStateAlarmMessage = (alarmReason: string) => {
 export {
   ERROR_MESSAGE,
   getErrorMessage,
-  VALVE_STATE_ALARM_MESSAGES,
-  getValveStateAlarmMessage,
+  FLOW_RATE_STATE_ALARM_MESSAGES,
+  getFlowRateStateAlarmMessage,
 };

@@ -1,7 +1,7 @@
 import { NotificationID } from "../../services/NotificationsStore";
 
 export const NextJsUrlManager = {
-  getValveMonitorDeviceData: () => `/api/valve-device-monitors`,
+  getFlowRateMonitorDeviceData: () => `/api/flow-rate-device-monitors`,
 
   notifications: (...notificationIDs: NotificationID[]) =>
     NextJsUrlManager.notificationsImpl(false, ...notificationIDs),
@@ -25,10 +25,10 @@ export const NextJsUrlManager = {
     return NextJsUrlManager.notificationsImpl(true, ...notificationIDs);
   },
 
-  updateValveMonitorDevice: (deviceUID: string) =>
-    `/api/device/${deviceUID}/valve-monitor`,
+  updateFlowRateMonitorDevice: (deviceUID: string) =>
+    `/api/device/${deviceUID}/flow-rate-monitor`,
 
-  setFleetValveMonitorConfig: () => `/api/fleet/valve-monitor-config`,
+  setFleetFlowRateMonitorConfig: () => `/api/fleet/flow-rate-monitor-config`,
 
   clearAlarms: () => `/api/clear-alarms`,
 };

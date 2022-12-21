@@ -15,6 +15,7 @@
   .tableHeaderRow {
     display: flex;
     width: 100%;
+    flex-direction: row;
     align-items: first baseline;
     justify-content: space-between;
   }
@@ -22,12 +23,24 @@
   :global .ant-alert {
     margin-top: 15px;
   }
+
+  :global .ant-btn {
+    font-size: 14px;
+  }
 }
 
 @media screen and (max-width: $breakpoints-sm) {
   .container {
     .sectionTitle {
       font-size: 16px;
+    }
+
+    .tableHeaderRow {
+      flex-direction: column;
+
+      :global .ant-btn {
+        margin-bottom: 24px;
+      }
     }
   }
 }

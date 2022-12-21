@@ -24,6 +24,7 @@ const HeaderComponent = () => {
       <h2 data-testid="company-name" className={styles.headerText}>
         {config.companyName}
       </h2>
+      <h2 className={styles.headerTextSmall}>BW Demo</h2>
     </Header>
   );
 };

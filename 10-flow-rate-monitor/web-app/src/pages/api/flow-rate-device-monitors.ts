@@ -18,13 +18,13 @@ function validateMethod(req: NextApiRequest, res: NextApiResponse) {
 async function performRequest() {
   const app = services().getAppService();
   try {
-    return await app.getValveMonitorDeviceData();
+    return await app.getFlowRateMonitorDeviceData();
   } catch (cause) {
     throw new ErrorWithCause("Could not perform request", { cause });
   }
 }
 
-export default async function valveMonitorDevicesHandler(
+export default async function flowRateMonitorDevicesHandler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
@@ -33,13 +33,13 @@ export default async function valveMonitorDevicesHandler(
   }
 
   try {
-    const valveMonitorDevices = await performRequest();
-    res.status(StatusCodes.OK).json({ valveMonitorDevices });
+    const flowRateMonitorDevices = await performRequest();
+    res.status(StatusCodes.OK).json({ flowRateMonitorDevices });
   } catch (cause) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR);
     res.json({ err: ReasonPhrases.INTERNAL_SERVER_ERROR });
     const e = new ErrorWithCause(
-      "Could not fetch valve monitor device data: ",
+      "Could not fetch flow rate monitor device data: ",
       {
         cause,
       }

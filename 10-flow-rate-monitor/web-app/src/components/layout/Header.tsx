@@ -20,10 +20,11 @@ const HeaderComponent = () => {
           <Image src={Logomark} height={60} width={37} alt="App Logo" />
         </a>
       </Link>
-      <h1 className={styles.headerTitle}>Valve Monitor</h1>
+      <h1 className={styles.headerTitle}>Flow-Rate Monitor</h1>
       <h2 data-testid="company-name" className={styles.headerText}>
         {config.companyName}
       </h2>
+      <h2 className={styles.headerTextSmall}>BW Demo</h2>
     </Header>
   );
 };

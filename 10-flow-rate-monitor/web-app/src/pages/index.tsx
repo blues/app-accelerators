@@ -4,23 +4,23 @@ import { useRouter } from "next/router";
 import { useQueryClient } from "react-query";
 import { Alert, Button, Col, Row } from "antd";
 import { clearAlarms } from "../api-client/alarms";
-import { useValveMonitorDeviceData } from "../hooks/useValveMonitorDeviceData";
+import { useFlowRateMonitorDeviceData } from "../hooks/useFlowRateMonitorDeviceData";
 import AlarmThresholdCard from "../components/elements/AlarmThresholdCard";
 import MonitorFrequencyCard from "../components/elements/MonitorFrequencyCard";
-import ValveMonitorTable from "../components/elements/ValveMonitorTable";
+import FlowRateMonitorTable from "../components/elements/FlowRateMonitorTable";
 import LoadingSpinner from "../components/layout/LoadingSpinner";
 import { getErrorMessage, ERROR_MESSAGE } from "../constants/ui";
-import { ValveMonitorConfig } from "../services/AppModel";
+import { FlowRateMonitorConfig } from "../services/AppModel";
 import { services } from "../services/ServiceLocatorServer";
 import { ERROR_CODES } from "../services/Errors";
 import styles from "../styles/Home.module.scss";
 
 type HomeData = {
-  valveMonitorConfig: ValveMonitorConfig;
+  flowRateMonitorConfig: FlowRateMonitorConfig;
   err?: string;
 };
 
-const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
+const Home: NextPage<HomeData> = ({ flowRateMonitorConfig, err }) => {
   // How often to refresh that page’s data (in milliseconds)
   const MS_REFETCH_INTERVAL = 60 * 1000;
 
@@ -29,22 +29,24 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
   const [isClearingAlarms, setIsClearingAlarms] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [monitorFrequency, setMonitorFrequency] = useState<number>(
-    valveMonitorConfig.monitorFrequency
+    flowRateMonitorConfig.monitorFrequency
   );
   const [minFlowThreshold, setMinFlowThreshold] = useState<number>(
-    valveMonitorConfig.minFlowThreshold
+    flowRateMonitorConfig.minFlowThreshold
   );
   const [maxFlowThreshold, setMaxFlowThreshold] = useState<number>(
-    valveMonitorConfig.maxFlowThreshold
+    flowRateMonitorConfig.maxFlowThreshold
   );
 
-  const { error: valveMonitorDevicesError, data: valveMonitorDeviceList } =
-    useValveMonitorDeviceData(MS_REFETCH_INTERVAL);
+  const {
+    error: flowRateMonitorDevicesError,
+    data: flowRateMonitorDeviceList,
+  } = useFlowRateMonitorDeviceData(MS_REFETCH_INTERVAL);
   const error =
-    valveMonitorDevicesError &&
-    getErrorMessage(valveMonitorDevicesError.message);
+    flowRateMonitorDevicesError &&
+    getErrorMessage(flowRateMonitorDevicesError.message);
 
-  const valveMonitorDevices = valveMonitorDeviceList;
+  const flowRateMonitorDevices = flowRateMonitorDeviceList;
 
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -90,7 +92,7 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
               <Alert type="error" message={errorMessage} closable />
             )}
             <div>
-              {valveMonitorDevices && (
+              {flowRateMonitorDevices && (
                 <>
                   <Row gutter={[16, 24]}>
                     <Col span={24}>
@@ -130,12 +132,12 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
                     </Col>
                   </Row>
                   <Row gutter={[16, 24]}>
-                    <Col span={24}>
+                    <Col xs={24} sm={24} md={22} lg={20} xl={20}>
                       <div className={styles.tableHeaderRow}>
                         <h3 className={styles.sectionTitle}>
                           Individual Controls
                         </h3>
-                        {valveMonitorDevices.filter(
+                        {flowRateMonitorDevices.filter(
                           (device) => device.deviceAlarm
                         ).length > 0 && (
                           <Button
@@ -151,9 +153,9 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
                     </Col>
                   </Row>
                   <Row gutter={[16, 24]}>
-                    <Col span={24}>
-                      <ValveMonitorTable
-                        data={valveMonitorDevices}
+                    <Col xs={24} sm={24} md={22} lg={20} xl={20}>
+                      <FlowRateMonitorTable
+                        data={flowRateMonitorDevices}
                         setIsErrored={setIsErrored}
                         setIsLoading={setIsLoading}
                         setErrorMessage={setErrorMessage}
@@ -173,15 +175,15 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
 export default Home;
 
 export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
-  let valveMonitorConfig: ValveMonitorConfig = {};
+  let flowRateMonitorConfig: FlowRateMonitorConfig = {};
   let err = "";
 
   try {
     const appService = services().getAppService();
-    valveMonitorConfig = await appService.getValveMonitorConfig();
+    flowRateMonitorConfig = await appService.getFlowRateMonitorConfig();
 
     return {
-      props: { valveMonitorConfig, err },
+      props: { flowRateMonitorConfig, err },
     };
   } catch (e) {
     err = getErrorMessage(
@@ -190,6 +192,6 @@ export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
   }
 
   return {
-    props: { valveMonitorConfig, err },
+    props: { flowRateMonitorConfig, err },
   };
 };

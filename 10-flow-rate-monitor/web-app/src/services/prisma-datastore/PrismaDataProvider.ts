@@ -14,7 +14,7 @@ import {
   FleetEnvVars,
   DeviceEnvVars,
 } from "../DomainModel";
-import { ValveMonitorConfig, ValveMonitorDevice } from "../AppModel";
+import { FlowRateMonitorConfig, FlowRateMonitorDevice } from "../AppModel";
 
 import IDBuilder from "../IDBuilder";
 import { Notification } from "../NotificationsStore";
@@ -38,30 +38,13 @@ function filterAlarmsByDevice(device: Device, alarmList: Notification[]) {
 function assembleDeviceEventsObject(
   device: Device,
   latestDeviceEvent: Event[],
-  latestDeviceControlEvent: Event[],
   alarmNotification: Notification[]
 ) {
-  function determineValveState(deviceEvent: Event, controlEvent: Event) {
-    if (!deviceEvent.value.valve_state) {
-      return "-";
-    }
-    // If the control event is the latest event, the device has not processed
-    // the last valve control command.
-    if (controlEvent.when > deviceEvent.when) {
-      return controlEvent.value.state === "open" ? "opening" : "closing";
-    }
-    return deviceEvent.value.valve_state;
-  }
-
   // there will only ever be one item in the latestDeviceEvent array
-  const updatedValveDeviceMonitorObj = {
+  const updatedFlowRateDeviceMonitorObj = {
     deviceID: device.id.deviceUID,
     name: device.name ? device.name : device.id.deviceUID,
     lastActivity: latestDeviceEvent[0].when ? latestDeviceEvent[0].when : "-",
-    valveState: determineValveState(
-      latestDeviceEvent[0],
-      latestDeviceControlEvent[0]
-    ),
     deviceFlowRate: latestDeviceEvent[0].value.flow_rate
       ? Number(latestDeviceEvent[0].value.flow_rate).toFixed(1)
       : "-",
@@ -70,7 +53,7 @@ function assembleDeviceEventsObject(
     deviceFleetID: device.fleetUIDs[0], // a device can only be assigned to one fleet a time
   };
 
-  return updatedValveDeviceMonitorObj;
+  return updatedFlowRateDeviceMonitorObj;
 }
 
 /**
@@ -118,8 +101,8 @@ export class PrismaDataProvider implements DataProvider {
     return devices.map((device) => this.deviceFromPrismaDevice(device));
   }
 
-  async getValveMonitorDeviceData(): Promise<ValveMonitorDevice[]> {
-    let valveMonitorDevices: ValveMonitorDevice[] = [];
+  async getFlowRateMonitorDeviceData(): Promise<FlowRateMonitorDevice[]> {
+    let flowRateMonitorDevices: FlowRateMonitorDevice[] = [];
 
     // fetch all devices by project
     const devices = await this.getDevices();
@@ -144,29 +127,24 @@ export class PrismaDataProvider implements DataProvider {
     );
 
     // combine data for each device and its latest event
-    valveMonitorDevices = devices.map((device) => {
+    flowRateMonitorDevices = devices.map((device) => {
       const filteredEventsByDevice = filterEventsByDevice(device, deviceEvents);
-      const filteredControlEventsByDevice = filterEventsByDevice(
-        device,
-        controlEvents
-      );
 
       const filteredAlarmsByDevice = filterAlarmsByDevice(
         device,
         deviceAlarms.filter((alarm) => alarm !== undefined)
       );
 
-      const updatedValveDeviceMonitorObj = assembleDeviceEventsObject(
+      const updatedFlowRateDeviceMonitorObj = assembleDeviceEventsObject(
         device,
         filteredEventsByDevice,
-        filteredControlEventsByDevice,
         filteredAlarmsByDevice
       );
 
-      return updatedValveDeviceMonitorObj;
+      return updatedFlowRateDeviceMonitorObj;
     });
 
-    return valveMonitorDevices;
+    return flowRateMonitorDevices;
   }
 
   getFleetsByDevice(deviceID: string): Promise<Fleets> {
@@ -181,7 +159,7 @@ export class PrismaDataProvider implements DataProvider {
     throw new Error("Method not implemented.");
   }
 
-  getValveMonitorConfig(fleetUID: string): Promise<ValveMonitorConfig> {
+  getFlowRateMonitorConfig(fleetUID: string): Promise<FlowRateMonitorConfig> {
     throw new Error("Method not implemented.");
   }
 

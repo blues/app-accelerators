@@ -6,8 +6,7 @@ const HTTP_STATUS = {
   INVALID_REQUEST: "The request is not valid.",
   INVALID_DEVICE: "Invalid Device UID",
   INVALID_DEVICE_NAME: "Invalid Device name",
-  INVALID_VALVE_MONITOR_CONFIG: "Invalid valve monitor configuration",
-  INVALID_VALVE_STATE: "Invalid valve state",
+  INVALID_FLOW_RATE_MONITOR_CONFIG: "Invalid flow rate monitor configuration",
 };
 
 // HTTP headers

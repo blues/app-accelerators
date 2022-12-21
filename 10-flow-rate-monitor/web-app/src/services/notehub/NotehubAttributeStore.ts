@@ -1,4 +1,4 @@
-import { ValveMonitorConfig } from "../AppModel";
+import { FlowRateMonitorConfig } from "../AppModel";
 import { AttributeStore } from "../AttributeStore";
 import { DeviceID, FleetID } from "../DomainModel";
 import NotehubEnvVars from "./models/NotehubEnvVars";
@@ -13,54 +13,50 @@ export default class NotehubAttributeStore implements AttributeStore {
     });
   }
 
-  async updateDeviceValveMonitorConfig(
+  async updateDeviceFlowRateMonitorConfig(
     deviceID: string,
-    deviceValveMonitorConfig: ValveMonitorConfig
+    deviceflowRateMonitorConfig: FlowRateMonitorConfig
   ) {
     const envVars = {} as NotehubEnvVars;
 
-    if (deviceValveMonitorConfig.monitorFrequency !== undefined) {
+    if (deviceflowRateMonitorConfig.monitorFrequency !== undefined) {
       // convert device monitor frequency to seconds for Notehub
       envVars.monitor_interval = `${
-        deviceValveMonitorConfig.monitorFrequency * 60
+        deviceflowRateMonitorConfig.monitorFrequency * 60
       }`;
     }
-    if (deviceValveMonitorConfig.minFlowThreshold !== undefined) {
-      envVars.flow_rate_alarm_threshold_min = `${deviceValveMonitorConfig.minFlowThreshold}`;
+    if (deviceflowRateMonitorConfig.minFlowThreshold !== undefined) {
+      envVars.flow_rate_alarm_threshold_min = `${deviceflowRateMonitorConfig.minFlowThreshold}`;
     }
-    if (deviceValveMonitorConfig.maxFlowThreshold !== undefined) {
-      envVars.flow_rate_alarm_threshold_max = `${deviceValveMonitorConfig.maxFlowThreshold}`;
+    if (deviceflowRateMonitorConfig.maxFlowThreshold !== undefined) {
+      envVars.flow_rate_alarm_threshold_max = `${deviceflowRateMonitorConfig.maxFlowThreshold}`;
     }
 
     await this.accessor.setEnvironmentVariablesByDevice(deviceID, envVars);
   }
 
-  async updateValveMonitorConfig(
+  async updateFlowRateMonitorConfig(
     fleetUID: FleetID,
-    valveMonitorConfig: ValveMonitorConfig
+    flowRateMonitorConfig: FlowRateMonitorConfig
   ) {
     const envVars = {} as NotehubEnvVars;
 
-    if (valveMonitorConfig.monitorFrequency !== undefined) {
+    if (flowRateMonitorConfig.monitorFrequency !== undefined) {
       // convert fleet monitor frequency to seconds for Notehub
       envVars.monitor_interval = `${Number(
-        valveMonitorConfig.monitorFrequency * 60
+        flowRateMonitorConfig.monitorFrequency * 60
       )}`;
     }
-    if (valveMonitorConfig.minFlowThreshold !== undefined) {
-      envVars.flow_rate_alarm_threshold_min = `${valveMonitorConfig.minFlowThreshold}`;
+    if (flowRateMonitorConfig.minFlowThreshold !== undefined) {
+      envVars.flow_rate_alarm_threshold_min = `${flowRateMonitorConfig.minFlowThreshold}`;
     }
-    if (valveMonitorConfig.maxFlowThreshold !== undefined) {
-      envVars.flow_rate_alarm_threshold_max = `${valveMonitorConfig.maxFlowThreshold}`;
+    if (flowRateMonitorConfig.maxFlowThreshold !== undefined) {
+      envVars.flow_rate_alarm_threshold_max = `${flowRateMonitorConfig.maxFlowThreshold}`;
     }
 
     await this.accessor.setEnvironmentVariablesByFleet(
       fleetUID.fleetUID,
       envVars
     );
-  }
-
-  async updateValveState(deviceUID: string, state: string) {
-    await this.accessor.addNote(deviceUID, "data.qi", { state });
   }
 }
