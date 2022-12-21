@@ -3,12 +3,12 @@ name: indoor-floor-level-tracker/web-app
 on:
   pull_request:
     paths:
-      - "indoor-floor-level-tracker/web-app/**"
+      - "01-indoor-floor-level-tracker/web-app/**"
 
 defaults:
   run:
     shell: bash
-    working-directory: indoor-floor-level-tracker/web-app
+    working-directory: 01-indoor-floor-level-tracker/web-app
 
 jobs:
   build-and-test:

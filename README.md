@@ -27,7 +27,7 @@ A highly accurate floor-level tracker for response teams at emergency events.
 
 <p>
   <a href="https://www.hackster.io/blues-wireless/building-an-indoor-floor-level-tracker-for-response-teams-cacf5c"><b>📚 Read About the Project</b></a> •
-  <a href="./indoor-floor-level-tracker/"><b>🔧 Start Building</b></a>
+  <a href="./01-indoor-floor-level-tracker/"><b>🔧 Start Building</b></a>
 </p>
 
 ---
@@ -38,7 +38,7 @@ A LoRa-based temperature, humidity, and door open/close state monitoring system 
 
 <p>
   <a href="https://www.hackster.io/blues-wireless/refrigerator-fleet-monitoring-made-easy-with-lora-e6163e"><b>📚 Read About the Project</b></a> •
-  <a href="./fridge-fleet-monitor/"><b>🔧 Start Building</b></a>
+  <a href="./02-fridge-fleet-monitor/"><b>🔧 Start Building</b></a>
 </p>
 
 ---
@@ -49,7 +49,7 @@ A smarter mouse trap with SMS alerting.
 
 <p>
   <a href="https://www.hackster.io/hendersoncarlton/i-love-checking-on-mousetraps-said-no-one-ever-52c5e7"><b>📚 Read About the Project</b></a> •
-  <a href="./better-mouse-trap/"><b>🔧 Start Building</b></a>
+  <a href="./03-better-mouse-trap/"><b>🔧 Start Building</b></a>
 </p>
 
 ---
@@ -60,7 +60,7 @@ A device to keep a fleet of digital displays synchronized across a facility.
 
 <p>
   <a href="https://www.hackster.io/brandonsatrom/build-a-fleet-of-low-power-cloud-connected-e-ink-displays-d588e7"><b>📚 Read About the Project</b></a> •
-  <a href="./low-power-digital-signage/"><b>🔧 Start Building</b></a>
+  <a href="./04-low-power-digital-signage/"><b>🔧 Start Building</b></a>
 </p>
 
 ---
@@ -71,7 +71,7 @@ Use the Notecard and a Wi-Fi-capable MCU to update character values on an analog
 
 <p>
   <a href="https://www.hackster.io/brandonsatrom/build-a-cellular-powered-fleet-of-split-flap-displays-a8dc0f"><b>📚 Read About the Project</b></a> •
-  <a href="./analog-signage/"><b>🔧 Start Building</b></a>
+  <a href="./05-analog-signage/"><b>🔧 Start Building</b></a>
 </p>
 
 ---
@@ -82,7 +82,37 @@ A host-free low latency notification system to alert attendants in a parking lot
 
 <p>
   <a href="https://www.hackster.io/blues-wireless/host-free-smart-parking-lot-help-request-device-f4a03c"><b>📚 Read About the Project</b></a> •
-  <a href="./parking-lot-help-request/"><b>🔧 Start Building</b></a>
+  <a href="./06-parking-lot-help-request/"><b>🔧 Start Building</b></a>
 </p>
 
 ---
+
+### 7. ⛽️ Pump Jack Motion Monitoring
+
+A host-free system for monitoring motion on an oil field pump jack with the built-in Notecard accelerometer.
+
+<p>
+  <a href="./07-pump-jack-motion-monitoring/"><b>🔧 Start Building</b></a>
+</p>
+
+---
+
+### 8. Coming Soon!
+
+---
+
+### 9. 🚰 Valve Monitor
+
+Monitor and control the open/closed state of a valve, and measure liquid flow state.
+
+<p>
+  <a href="./09-valve-monitor/"><b>🔧 Start Building</b></a>
+</p>
+
+---
+
+<!--
+
+### 10. 💧 Flow-Rate Monitor
+
+-->
