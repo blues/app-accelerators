@@ -1,0 +1,3 @@
+{ "req": "hub.set", "mode": "periodic", "inbound": 1440, "outbound": 60, "product": "com.your-company:your-product-name", "sn": "your-serial-number" }
+{ "req": "card.voltage", "mode": "lipo", "usb": true, "alert": true, "sync": true }
+
