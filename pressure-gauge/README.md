@@ -19,7 +19,7 @@ Bill of Materials
 Firmware
 --------
 
-- [GitHub: Pressure Gauge](https://github.com/zfields/PressureGauge)
+- [GitHub: Pressure Gauge](https://github.com/blues/app-accelerators/tree/main/pressure-gauge)
   - [Arduino Library: Adafruit GFX](https://www.arduino.cc/reference/en/libraries/adafruit-gfx-library/)
   - [Arduino Library: Adafruit SSD1306](https://www.arduino.cc/reference/en/libraries/adafruit-ssd1306/)
 
