@@ -1,0 +1,3 @@
+{ "req": "hub.set", "product" : "com.your-company:your-product-name" }
+{ "req": "card.voltage", "mode": "lipo" }
+{ "req": "card.motion.sync", "start": true, "threshold": 0 }
