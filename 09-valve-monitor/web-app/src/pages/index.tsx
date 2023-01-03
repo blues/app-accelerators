@@ -22,7 +22,7 @@ type HomeData = {
 
 const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
   // How often to refresh that page’s data (in milliseconds)
-  const MS_REFETCH_INTERVAL = 60 * 1000;
+  const MS_REFETCH_INTERVAL = 5 * 1000;
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isErrored, setIsErrored] = useState<boolean>(false);
