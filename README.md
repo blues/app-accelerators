@@ -106,6 +106,7 @@ A host-free system for monitoring motion on an oil field pump jack with the buil
 Monitor and control the open/closed state of a valve, and measure liquid flow state.
 
 <p>
+  <a href="https://www.hackster.io/blues-wireless/open-close-valves-and-monitor-flow-rate-remotely-9ac9fc"><b>📚 Read About the Project</b></a> •
   <a href="./09-valve-monitor/"><b>🔧 Start Building</b></a>
 </p>
 

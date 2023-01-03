@@ -2,7 +2,7 @@
 
 Monitor and control the open/closed state of a valve, and measure liquid flow state.
 
-<!-- Future TODO: Put the Hackster banner image here once we have it. -->
+![The valve monitor project’s web application and hardware](../app-banners/09-banner.png)
 
 To run this project yourself you’ll need to:
 
