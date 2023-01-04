@@ -111,8 +111,13 @@ Monitor and control the open/closed state of a valve, and measure liquid flow st
 
 ---
 
-<!--
-
 ### 10. 💧 Flow-Rate Monitor
 
--->
+Monitor and measure liquid flow rate.
+
+<p>
+  <a href="https://www.hackster.io/blues-wireless/open-close-valves-and-monitor-flow-rate-remotely-9ac9fc"><b>📚 Read About the Project</b></a> •
+  <a href="./10-flow-rate-monitor/"><b>🔧 Start Building</b></a>
+</p>
+
+---
