@@ -6,7 +6,7 @@ To run this project yourself you’ll need to:
 
 * [Configure Notehub](#notehub).
 * [Purchase and assemble the necessary hardware](#hardware).
-* [Flash the project’s firmware](#firmware)
+* [Flash the project’s firmware](#firmware).
 * [Run the project’s web application](#web-application).
 
 ## Notehub
@@ -82,19 +82,19 @@ you connect your Notecard, Notecarrier, and Swan.
 
 ![The Notecard, Notecarrier, and Swan connected](images/notecard-and-notecarrier.jpg)
 
-From there you’ll need to connect  your flow meter to the Notecarrier. If you’re using this project’s recommended hardware, here’s a [wiring diagram that shows how all the components connect](https://miro.com/app/board/uXjVP1OBst0=/).
+From there you’ll need to connect your flow meter to the Notecarrier. If you’re using this project’s recommended hardware, here’s a [wiring diagram that shows how all the components connect](https://miro.com/app/board/uXjVP1OBst0=/).
 
 ![Wiring diagram of the various flow rate monitor components](images/wiring-diagram.png)
 
-Regardless of which hardware you use, you’ll need to have the following pins
+Regardless of which hardware you use, you’ll need to have the following pin
 wired to your Notecarrier:
 
 * The flow meter’s signal line must be be connected to the Notecarrier’s `F_D10`
 pin. The Swan uses this pin to read the flow rate from the flow meter.
 
-When everything is put together your can then place your hardware inside the case like the one we recommended from Sixfab, and you should be good to go.
+When everything is put together your can then place your hardware inside the optional case like the one we recommended from Sixfab, and you should be good to go.
 
-With the hardware assembled, your next step is getting the project’s firmware running on
+Your next step is getting the project’s firmware running on
 your device.
 
 ## Firmware

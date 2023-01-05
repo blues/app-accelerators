@@ -235,8 +235,7 @@ Flow Rate Monitor app.
 
 And with that your route is now complete. When Notehub receives an event it should automatically route that event to your tunnel, and ultimately to your local app.
 
-> **NOTE**: Event routing only happens when Notehub receives an event, therefore your Valve Monitor hardware needs to generate new data and send it to Notehub for Notehub
-to invoke your route.
+> **NOTE**: Event routing only happens when Notehub receives an event, therefore your Flow Rate Monitor hardware needs to generate new data and send it to Notehub for Notehub to invoke your route.
 
 ## Database
 
