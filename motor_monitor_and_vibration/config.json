@@ -1,0 +1,75 @@
+https://dev.blues.io/reference/notecard-api/card-requests/#card-motion-mode
+
+{
+  "req":          "card.motion.mode",
+  "start":        true,
+  "sensitivity":  5,
+  "seconds":      60
+}
+
+https://dev.blues.io/reference/notecard-api/card-requests/#card-motion-track
+{
+  "req":       "card.motion.track",
+  "minutes":   5,
+  "count"      5,
+  "start":     true
+}
+
+
+https://dev.blues.io/reference/notecard-api/card-requests/#card-motion-sync
+
+{
+  "req":      "card.motion.sync",
+  "start":    true,
+  "minutes":  60
+}
+
+
+https://dev.blues.io/notecard/notecard-walkthrough/advanced-notecard-configuration/#monitoring-aux-gpio-state-with-environment-variables
+
+{"req":"card.aux", "mode":"gpio", "usage": [
+  "input-pulldown"
+]}
+
+/* enable GPIO monitoring via environment variables and sync to Notehub */
+{"req": "env.set", "name": "_aux_gpio_report_enable", "text": "sync" }
+
+## Development Config
+
+
+
+{ "req":"hub.set", "mode": "periodic", "product":"com.blues.mat:test" }
+{ "req":"hub.set", "mode": "continuous", "product":"com.blues.mat:test", "sync":"true"}
+
+{
+  "req":          "card.motion.mode",
+  "start":        true,
+  "sensitivity":  5,
+  "seconds":      5
+}
+
+    {
+    "req":       "card.motion.track",
+    "minutes":   1,
+    "count":     12,
+    "start":     true
+    }
+
+{
+  "req":      "card.motion.sync",
+  "start":    true,
+  "minutes":  30
+}
+
+/* use AUX2 as the driver for AUX1 for testing. This is also wired to the IoT relay to control the desk fan. */
+{"req":"card.aux", "mode":"gpio", "usage": [
+  "input-pulldown",
+  "high"
+]}
+
+
+{"req":"card.aux", "mode":"gpio", "usage": [
+  "",
+  "low"
+]}
+
