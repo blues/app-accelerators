@@ -10,6 +10,9 @@ import NotehubEnvVars from "./models/NotehubEnvVars";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import NotehubRoutedEvent from "./models/NotehubRoutedEvent";
 import { NotehubAccessor } from "./NotehubAccessor";
+import Config from "../../../Config";
+
+const NotehubJs = require("notehub-js");
 
 interface HasDeviceId {
   uid: string;
@@ -154,6 +157,29 @@ export default class NotehubDataProvider implements DataProvider {
   async getDeviceTrackerData(): Promise<DeviceTracker[]> {
     const trackerDevices: DeviceTracker[] = [];
     let formattedDeviceTrackerData: DeviceTracker[] = [];
+
+    // todo blocked until Notehub can properly decode URLs where colons become %3A
+    const defaultClient = NotehubJs.ApiClient.instance;
+    // Configure API key authorization: api_key
+    const { api_key } = defaultClient.authentications;
+    api_key.apiKey = "HBjDkNJ4sP7jZ1rrgHyFPThrYqzflLMz";
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    // api_key.apiKeyPrefix = 'Token';
+
+    const apiInstance = new NotehubJs.DevicesApi();
+    const projectUID = Config.hubProjectUID; // String |
+    // const opts = {
+    //   pageSize: 50, // Number |
+    //   pageNum: 1, // Number |
+    // };
+    apiInstance.getProjectDevices(projectUID).then(
+      (data) => {
+        console.log(`API called successfully. Returned data: ${data}`);
+      },
+      (error) => {
+        console.error(error);
+      }
+    );
 
     // get all the devices by fleet ID
     const devicesByFleet = await this.getDevicesByFleet();
