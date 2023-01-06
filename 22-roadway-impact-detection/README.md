@@ -36,10 +36,10 @@ The Notecard should use [firmware version 3.5.2](https://dev.blues.io/notecard/n
 With the Notecarrier connected to your development PC, navigate to https://dev.blues.io open the in-browser terminal, and connect to the Notecard. Then, enter this command in the terminal:
 
 ```json
-{ "req": "hub.set", "product" : "com.your-company:your-product-name" }
+{ "req": "hub.set", "product" : "com.your-company:your-product-name", "sn": "a-serial-number" }
 ```
 
-Make sure to replace `com.your-company:your-product-name` with your ProductUID from [Notehub Setup](#notehub-setup).
+Make sure to replace "com.your-company:your-product-name" with your ProductUID from [Notehub Setup](#notehub-setup). Also, replace "a-serial-number" with a relevant identifier for the object that the Notecard will be attached to (e.g. "mile marker 100", if this were a real world scenario).
 
 Next, enter this command to optimize battery, assuming our power source is the LiPo battery:
 
