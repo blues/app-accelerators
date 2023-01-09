@@ -1,0 +1,27 @@
+@import "_variables.scss";
+
+// this gets the page-level loader to line up when both content loader and layout loader are triggered
+.loader {
+  top: 9% !important;
+}
+
+.mainContent {
+  // required to override default Ant Design component styling
+  min-height: calc(100vh - $header-bar-height - $footer-bar-height) !important;
+  width: clamp($page-content-xs, $page-content-lg, calc(100vw - 79px));
+  margin: 0 auto 32px;
+  background-color: #fff;
+
+  :global .ant-row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}
+
+@media screen and (max-width: $breakpoints-md) {
+  .mainContent {
+    min-height: calc(
+      100vh - $header-bar-height - $tablet-footer-bar-height
+    ) !important;
+  }
+}

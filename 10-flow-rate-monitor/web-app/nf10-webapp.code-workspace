@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"prisma.fileWatcher": true,
+		"nrf-connect.toolchain.path": "PATH"
+	}
+}

@@ -32,7 +32,7 @@
 
 // This is the unique Product Identifier for your device
 #ifndef PRODUCT_UID
-#define PRODUCT_UID "" // "com.my-company.my-name:my-project"
+#define PRODUCT_UID "com.blues.nf_prisma_test_project"
 #pragma message "PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid"
 #endif
 
@@ -225,7 +225,7 @@ void loop()
         if (body != NULL)
         {
           JAddStringToObject(body, "message",
-                            "environment variable update received");
+                             "environment variable update received");
           JAddItemToObject(req, "body", body);
           notecard.sendRequest(req);
         }
@@ -388,7 +388,9 @@ void fetchEnvironmentVariables(applicationState &vars)
       {
         // when the device becomes live, calibrate to the floor level given
         setBaselineFloor = true;
-      } else if (vars.live != wasLive) {
+      }
+      else if (vars.live != wasLive)
+      {
         vars.variablesUpdated = true;
       }
       vars.alarmSent = false;

@@ -1,0 +1,11 @@
+{
+    "mockedDeviceUID": "dev:5678",
+    "mockedDeviceUID2": "dev:1234",
+    "successfulDeviceDataResponse": {
+      "lastSeenAt": "2021-12-14T07:47:29Z",
+      "locationName": "here",
+      "id": { "deviceUID": "dev:1234", "type": "DeviceID" },
+      "name": "9101112",
+      "voltage": 3.8
+    }
+  }
