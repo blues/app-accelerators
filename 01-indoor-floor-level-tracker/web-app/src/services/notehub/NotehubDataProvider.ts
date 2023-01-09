@@ -158,41 +158,59 @@ export default class NotehubDataProvider implements DataProvider {
     const trackerDevices: DeviceTracker[] = [];
     let formattedDeviceTrackerData: DeviceTracker[] = [];
 
-    // todo blocked until Notehub can properly decode URLs where colons become %3A
+    // Notehub Open Generator API
     const defaultClient = NotehubJs.ApiClient.instance;
     // Configure API key authorization: api_key
     const { api_key } = defaultClient.authentications;
-    api_key.apiKey = "HBjDkNJ4sP7jZ1rrgHyFPThrYqzflLMz";
+    api_key.apiKey = Config.hubAuthToken;
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     // api_key.apiKeyPrefix = 'Token';
 
-    const apiInstance = new NotehubJs.DevicesApi();
+    const apiInstance = new NotehubJs.ProjectApi();
     const projectUID = Config.hubProjectUID; // String |
-    // const opts = {
-    //   pageSize: 50, // Number |
-    //   pageNum: 1, // Number |
-    // };
-    apiInstance.getProjectDevices(projectUID).then(
-      (data) => {
-        console.log(`API called successfully. Returned data: ${data}`);
-      },
-      (error) => {
-        console.error(error);
-      }
+    const fleetUID = Config.hubFleetUID;
+
+    const notehubJSDevicesByFleet = await apiInstance.getProjectFleetDevices(
+      projectUID,
+      fleetUID
     );
 
+    // (data) => {
+    console.log(`Devices by Fleet API called successfully. Returned data:`);
+    console.log(notehubJSDevicesByFleet.devices);
+    // },
+    // (error) => {
+    //   console.error(error);
+    // }
+    // );
+
     // get all the devices by fleet ID
-    const devicesByFleet = await this.getDevicesByFleet();
-    devicesByFleet.forEach((device) => {
+    // const devicesByFleet = await this.getDevicesByFleet();
+    // console.log("axios returned data--------------", devicesByFleet);
+
+    // devicesByFleet.forEach((device) => {
+    notehubJSDevicesByFleet.devices.forEach((device) => {
       trackerDevices.push(notehubDeviceToIndoorTracker(device));
     });
+    const unixTimestampMinutesAgo = epochStringMinutesAgo(6);
+
+    const eventOpts = { startDate: unixTimestampMinutesAgo };
+
+    // todo in future handle for if 'has_more: true'
+    const notehubJSEvents = await apiInstance.getProjectEvents(
+      projectUID,
+      eventOpts
+    );
+    console.log(`Events API called successfully. Returned data:`);
+    console.log(notehubJSEvents.events);
 
     // fetch events for the last X minutes from Notehub
-    const MINUTES_OF_NOTEHUB_DATA_TO_FETCH = 6;
-    const rawEvents = await this.getEvents(MINUTES_OF_NOTEHUB_DATA_TO_FETCH);
+    // const MINUTES_OF_NOTEHUB_DATA_TO_FETCH = 6;
+    // const rawEvents = await this.getEvents(MINUTES_OF_NOTEHUB_DATA_TO_FETCH);
+    // console.log("Raw events -------- ", rawEvents);
 
     // filter down to only data.qo events and reverse the order to get the latest event first
-    const filteredEvents = filterEventsData(rawEvents, "floor.qo");
+    const filteredEvents = filterEventsData(notehubJSEvents.events, "floor.qo");
 
     // get unique events by device ID
     const uniqueEvents = uniqBy(filteredEvents, "device");
@@ -214,7 +232,7 @@ export default class NotehubDataProvider implements DataProvider {
     // format the data to round the numbers to 2 decimal places
     formattedDeviceTrackerData = formatDeviceTrackerData(deviceTrackerData);
 
-    const alarmEvents = filterEventsData(rawEvents, "alarm.qo");
+    const alarmEvents = filterEventsData(notehubJSEvents.events, "alarm.qo");
     const uniqueAlarmEvents = uniqBy(alarmEvents, "device");
     this.appendAlarmData(uniqueAlarmEvents, formattedDeviceTrackerData);
 
