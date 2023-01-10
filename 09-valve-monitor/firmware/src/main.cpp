@@ -29,17 +29,13 @@
 
 #define LEAK_THRESHOLD 6
 
-// Define USE_VALVE to compile in valve control support. If not defined, it's
-// turned on by default.
-#ifndef USE_VALVE
-#define USE_VALVE 1
-#endif
-
-// Replace with your product UID.
-// #define PRODUCT_UID "com.my-company.my-name:my-project"
+// Uncomment this line and replace com.your-company:your-product-name with your
+// ProductUID.
+// #define PRODUCT_UID "com.your-company:your-product-name"
 
 #ifndef PRODUCT_UID
-#error "PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://dev.blues.io/tools-and-sdks/samples/product-uid"
+#define PRODUCT_UID "" // "com.my-company.my-name:my-project"
+#pragma message "PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://bit.ly/product-uid"
 #endif
 
 struct AppState {
@@ -87,6 +83,7 @@ void attnArm()
     notecard.sendRequest(req);
 }
 
+#if USE_VALVE == 1
 // Toggle the valve's state. If open, close, If closed, open.
 void valveToggle()
 {
@@ -139,6 +136,7 @@ void handleValveCmd(char *cmd)
 
     state.ackValveCmd = 1;
 }
+#endif // USE_VALVE == 1
 
 // Publish the system status (flow rate, valve state). If alarmReason is not
 // NULL, attach the reason to the outbound note and send it to alarm.qo.
@@ -163,14 +161,14 @@ void publishSystemStatus(uint32_t flowRate, const char *alarmReason)
         if (body != NULL) {
             JAddNumberToObject(body, "flow_rate", flowRate);
 
-        #ifdef USE_VALVE
+        #if USE_VALVE == 1
             if (state.valveOpen) {
                 JAddStringToObject(body, "valve_state", "open");
             }
             else {
                 JAddStringToObject(body, "valve_state", "closed");
             }
-        #endif // USE_VALVE
+        #endif // USE_VALVE == 1
 
             if (alarmReason != NULL) {
                 JAddStringToObject(body, "reason", alarmReason);
@@ -354,7 +352,9 @@ void setup()
     // Configure the productUID and instruct the Notecard to stay connected to
     // the service.
     J *req = notecard.newRequest("hub.set");
-    JAddStringToObject(req, "product", PRODUCT_UID);
+    if (PRODUCT_UID[0]) {
+        JAddStringToObject(req, "product", PRODUCT_UID);
+    }
     JAddStringToObject(req, "mode", "continuous");
     JAddBoolToObject(req, "sync", true);
     notecard.sendRequest(req);
@@ -379,9 +379,11 @@ void setup()
     // handler.
     attachInterrupt(digitalPinToInterrupt(ATTN_INPUT_PIN), attnISR, RISING);
 
-#ifdef USE_VALVE
+#if USE_VALVE == 1
     // Configure valve open pin. Will default to LOW (closed).
     pinMode(VALVE_OPEN_PIN, OUTPUT);
+#else
+    state.valveOpen = 1;
 #endif
 
     pinMode(FLOW_RATE_METER_PIN, INPUT_PULLUP);
@@ -442,7 +444,7 @@ void loop()
 {
     uint32_t currentMs;
 
-#ifdef USE_VALVE
+#if USE_VALVE == 1
     if (state.valveOpen) {
         currentMs = millis();
         if (currentMs - state.valveOpenedMs >= MAX_OPEN_MS) {
@@ -495,7 +497,7 @@ void loop()
             notecard.deleteResponse(rsp);
         }
     }
-#endif // USE_VALVE
+#endif // USE_VALVE == 1
 
     updateEnvVars();
 
@@ -505,6 +507,7 @@ void loop()
         state.lastFlowRateCalcMs = currentMs;
         state.flowMeterPulseCount = 0;
 
+    #if USE_VALVE == 1
         if (!state.valveOpen) {
             // If the valve is closed and flow is detected, increment the
             // leak counter. If a leak is detected on LEAK_THRESHOLD or more
@@ -518,6 +521,7 @@ void loop()
                 state.leakCount = 0;
             }
         }
+    #endif // USE_VALVE == 1
     }
     
     checkAlarm(state.flowRate);

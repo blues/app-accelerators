@@ -98,7 +98,7 @@ defined by the `flow_rate_alarm_threshold_min` and `flow_rate_alarm_threshold_ma
 environment variables, and the valve state is open. Additionally, the firmware sends
 an alarm if the valve is closed and flow is detected (i.e. it’s leaking).
 
-```
+```json
 "body": {
     "flow_rate": 10.0,
     "valve_state": "closed",

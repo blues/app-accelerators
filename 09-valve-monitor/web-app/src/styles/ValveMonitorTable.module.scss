@@ -25,6 +25,10 @@
     padding: 0 8px 8px 8px;
   }
 
+  :global .ant-table-tbody tr td {
+    font-size: 14px;
+  }
+
   :global .ant-table-tbody tr td > span {
     color: $bw-color--brand3;
   }
@@ -100,7 +104,7 @@
 
     .rowTitle {
       display: block;
-      width: 50%;
+      width: 55%;
       font-weight: 600;
     }
 
@@ -142,18 +146,28 @@
       border-right: 1px solid $bw-color--grey2;
     }
 
-    :global .ant-table-tbody tr td > span:nth-child(even) {
-      margin: 0 0 0 16px;
-    }
-
-    :global .ant-table-tbody tr td:nth-child(even) {
-      background-color: #f3f3f3;
-    }
-
+    :global .ant-table-tbody tr td > span:nth-child(even),
     :global .ant-table-tbody .editable-input-name,
     :global .ant-table-tbody .editable-button-name,
     :global .ant-input-number {
       margin: 0 0 0 16px;
+    }
+
+    // ensures only the alarm row is highlighted red in mobile view, not all rows
+    :global .ant-table-tbody tr td:nth-child(2),
+    :global .ant-table-tbody tr td:nth-child(4),
+    :global .ant-table-tbody tr td:nth-child(8) {
+      background-color: $bw-color--grey0 !important;
+    }
+
+    // ensures only the alarm row is highlighted red in mobile view, not all rows
+    :global .ant-table-tbody tr td:nth-child(odd) {
+      background-color: #fff !important;
+    }
+
+    // when no alarm detected, colors all even rows with grey background
+    :global .ant-table-tbody tr td:nth-child(even) {
+      background-color: $bw-color--grey0;
     }
 
     :global .editable-button {
