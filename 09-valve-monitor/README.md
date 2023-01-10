@@ -96,14 +96,14 @@ you connect your Notecard, Notecarrier, and Swan.
 From there you’ll need to connect both your flow meter and solenoid valve
 to the Notecarrier. If you’re using this project’s recommended hardware, here’s a [wiring diagram that shows how all the components connect](https://miro.com/app/board/uXjVPL8v4hE=/).
 
-![Wiring diagram of the various valve monitor components](images/wiring-diagram.png)
+![Wiring diagram of the various valve monitor components](images/valve-app-wiring-diagram.png)
 
 Regardless of which hardware you use, you’ll need to have the following pins
 wired to your Notecarrier:
 
-* The solenoid valve’s signal line must be connected to the Notecarrier’s `F_D6`
+* The solenoid valve’s signal line must be connected to the Notecarrier’s `F_D10`
 pin. The Swan uses this pin to open and close the solenoid.
-* The flow meter’s signal line must be be connected to the Notecarrier’s `F_D10`
+* The flow meter’s signal line must be be connected to the Notecarrier’s `F_D6`
 pin. The Swan uses this pin to read the flow rate from the flow meter.
 * The Notecarrier’s `F_D13` pin must be wired to the Notecarrier’s `ATTN` pin. The
 Swan uses this to [respond to interrupts](https://dev.blues.io/guides-and-tutorials/notecard-guides/attention-pin-guide/)
