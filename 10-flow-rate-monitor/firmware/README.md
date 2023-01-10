@@ -72,7 +72,7 @@ meter.
 > **NOTE**: If you’re unsure how to send Notes to a Notecard, check out this
 [tutorial on using the Notehub API](https://dev.blues.io/guides-and-tutorials/using-the-notehub-api/).
 
-The firmware additionally sends two types of outbound Notes back to Notehub.
+The firmware sends two types of outbound Notes back to Notehub.
 
 The first, `data.qo`, reports the current flow rate, and is sent
 at an interval you can configure with the `monitor_interval` environment variable.
