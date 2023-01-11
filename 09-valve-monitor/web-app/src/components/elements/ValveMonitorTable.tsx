@@ -11,6 +11,11 @@ import {
 } from "antd";
 import type { ColumnsType } from "antd/lib/table";
 import { isEmpty } from "lodash";
+import {
+  WarningFilled,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
+} from "@ant-design/icons";
 import { ValveMonitorDevice } from "../../services/AppModel";
 import { ERROR_MESSAGE, getValveStateAlarmMessage } from "../../constants/ui";
 import {
@@ -19,11 +24,6 @@ import {
   updateValveControl,
 } from "../../api-client/valveDevices";
 import styles from "../../styles/ValveMonitorTable.module.scss";
-import {
-  WarningFilled,
-  ArrowUpOutlined,
-  ArrowDownOutlined,
-} from "@ant-design/icons";
 
 const columns = [
   {
@@ -50,7 +50,12 @@ const columns = [
     ),
   },
   {
-    title: "Monitoring (min)",
+    title: (
+      <>
+        <div>Monitoring</div>
+        <div>(min)</div>
+      </>
+    ),
     dataIndex: "monitorFrequency",
     key: "monitorFrequency",
     editable: true,
@@ -306,7 +311,7 @@ const EditableCell = ({
   return (
     // Providing the colors in JavaScript to override the Ant hover styling
     // Errored rows should stay red on hover.
-    <td style={{ backgroundColor: record.deviceAlarm ? "#fbe9e7" : "white" }}>
+    <td style={{ backgroundColor: record.deviceAlarm ? "#fbe9e7" : undefined }}>
       {childNode}
     </td>
   );

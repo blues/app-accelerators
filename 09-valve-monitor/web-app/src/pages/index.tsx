@@ -90,7 +90,7 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
               <Alert type="error" message={errorMessage} closable />
             )}
             <div>
-              {valveMonitorDevices && (
+              {valveMonitorDevices && valveMonitorDevices.length ? (
                 <>
                   <Row gutter={[16, 24]}>
                     <Col span={24}>
@@ -162,6 +162,12 @@ const Home: NextPage<HomeData> = ({ valveMonitorConfig, err }) => {
                     </Col>
                   </Row>
                 </>
+              ): (
+                <Alert
+                  type="error"
+                  message={ERROR_MESSAGE.DEVICES_NOT_FOUND}
+                  closable
+                />
               )}
             </div>
           </div>
