@@ -118,7 +118,7 @@ according to how much data you wish to use and the responsiveness of alerts requ
 
 ### `card.aux - gpio mode`
 
-The [`card.aux`](https://dev.blues.io/notecard/notecard-walkthrough/advanced-notecard-configuration/#monitoring-aux-gpio-state-with-environment-variables) request configures how the Notecard uses the auxillary GPIO pins.  Here we wish to either monitor or control the motor - which you use depends upon whether the motor provides the activity signal or whether the Notecard controls the motor's activity.
+The [`card.aux`](https://dev.blues.io/notecard/notecard-walkthrough/advanced-notecard-configuration/#monitoring-aux-gpio-state-with-environment-variables) request configures how the Notecard uses the auxiliary GPIO pins.  Here we wish to either monitor or control the motor - which you use depends upon whether the motor provides the activity signal or whether the Notecard controls the motor's activity.
 
 When the motor provides an activity signal, configure `AUX1` as a input.
 
