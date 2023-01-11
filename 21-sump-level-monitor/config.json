@@ -1,0 +1,2 @@
+{ "req": "hub.set", "product": "com.your-company:your-product-name" }
+{ "req": "card.aux", "mode": "gpio", "usage": ["input-pullup", "", "", ""], "sync": true, "file": "switch.qo" }
