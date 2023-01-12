@@ -78,6 +78,16 @@ void loop() {
 
   // Display Results
   displayResults(analog_sample);
+    
+  J *req = NoteNewRequest("note.add");
+  JAddStringToObject(req, "file", "pressure.qo");
+  JAddBoolToObject(req, "sync", true);
+
+  J *body = JCreateObject();
+  JAddNumberToObject(body, "psi", calculatePsi(analog_sample_));
+  JAddItemToObject(req, "body", body);
+
+  NoteRequest(req);
 
   // Slow Screen Refresh
   // to Facilitate Reading
