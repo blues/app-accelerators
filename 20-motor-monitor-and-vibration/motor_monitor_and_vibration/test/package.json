@@ -1,0 +1,14 @@
+{
+  "name": "motor-monitoring-test",
+  "version": "1.0.0",
+  "description": "Test package for the monitor monitoring jsonata script",
+  "scripts": {
+    "test": "jest"
+  },
+  "author": "Matthew McGowan for Blues Inc.",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "jest": "^29.3.1",
+    "jsonata": "^1.5.4"
+  }
+}
