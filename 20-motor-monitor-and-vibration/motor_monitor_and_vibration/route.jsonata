@@ -1,0 +1,56 @@
+(
+    $processEvent := function() {(
+        $gpioState := function($pin) {(
+            $_aux_gpio_report ? $split($_aux_gpio_report, ",")[($pin-1)]="high" : null
+        )};
+
+        $vibrationAggregate := function($movements) {(
+            $base36 := "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            $base36Value := function($char) {(
+                $result := $length($substringBefore($base36, $char))
+            )};
+            $base36Convert := function($val, $acc) {(
+                $length($val) = 0 ? $acc : $base36Convert($substring($val, 1), $append($acc, [$base36Value($substring($val,0,1))]))
+            )};
+            $values := $base36Convert($movements, []);
+            $result := {
+                "min": $min($values),
+                "max": $max($values),
+                "average": $average($values),
+                "values": $values
+            };
+        )};
+
+        $vibrationAlert := function($vibration, $active) {(
+            $vmin := $number($vibration_min);
+            $vmax := $number($vibration_max);
+            $voff := $number($vibration_off);
+            $vvalue := $vibration.average;
+            $index := $active ?
+                (($vibration_min and $vvalue < $vmin ? 1 : 0) + ($vibration_max and $vvalue > $vmax ? 2 : 0))
+                :
+                ($vibration_off and $vvalue > $voff ? 3 : 0);
+        )};
+        $undefinedIfNull := function($v) {
+            $v=null ? undefined : $v
+        };
+
+        $active := $gpioState(1);
+        $vibration := $length(body.movements) ? $vibrationAggregate(body.movements) : null;
+        $transient := $vibration ? ($vibration.min = 0 and $vibration.max > 0) : null;
+        $alertIndex := $transient or $active=null ? 0 : $vibrationAlert($vibration, $active);
+        $messages := ["active-under", "active-over", "inactive-over"];
+        $reason := $alertIndex ? $messages[$alertIndex-1] : null;
+        $additional := {
+            "alertIndex": $alertIndex,
+            "debug": $vibrationAlert($vibration, $active),
+            "active": $undefinedIfNull($active),
+            "transient": $undefinedIfNull($transient),
+            "reason": $undefinedIfNull($reason),
+            "vibration": $undefinedIfNull($vibration)
+        };
+        $merge([$, {"body": $merge([body, $additional])}]);
+    )};
+    $processEvent();
+
+)
