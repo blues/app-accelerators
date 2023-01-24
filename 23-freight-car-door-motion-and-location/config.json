@@ -1,0 +1,14 @@
+# uncomment set your own product UID and serial number
+{ "req": "hub.set", "sn": "my-serial", "product": "com.your-company:your-product-name" }
+{ "req": "hub.set", "mode": "periodic", "inbound": 60, "outbound": 60 }
+{ "req": "card.voltage", "mode": "lipo" }
+
+# track location daily
+{ "req": "card.location.mode", "mode": "periodic", "vseconds": "usb:30;high:86400;normal:86400;low:178200;dead:0" }
+{ "req": "card.location.track", "start": true }
+
+# Monitor door opening via the Hall sensor/reed switch.
+{ "req": "card.aux", "mode": "gpio", "usage": ["count-pulldown"], "file": "door.qo" }
+
+
+
