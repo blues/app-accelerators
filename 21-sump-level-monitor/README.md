@@ -15,10 +15,9 @@ Monitor water level changes in a sump using a Notecard and a float switch.
 ## You Will Need
 
 * USB A to micro USB cable
-* [Notecarrier-A](https://shop.blues.io/products/carr-al)
+* [Notecarrier-A](https://shop.blues.io/products/carr-al) or [Notecarrier-B](https://shop.blues.io/products/carr-b) (for the Notecarrier-B you'll need a separate antenna, which comes with the Notecarrier-B in our shop)
 * [Notecard](https://blues.io/products/notecard/)
 * [Sump Alarm Three Wire Float Switch](https://www.sumpalarm.com/products/float-switch-for-use-septic-system-sump-pump-water-tank-see-all-five-cable-length-options)
-* Breadboard
 * Soldering iron and solder flux
 * Strip of male header pins
 
@@ -28,11 +27,11 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 
 ## Hardware Setup
 
-1. Assemble Notecard and Notecarrier as described [here](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/).
+1. Assemble Notecard and Notecarrier as described [here for the Notecarrier A](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-a/) or [here for the Notecarrier B](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-b/).
 2. Strip ~1/2" of the insulation off the float switch's brown and black wires. Twist the strands of each wire tightly and then use a soldering iron to [tin each wire](https://www.youtube.com/watch?v=pRPF4wpXX9Q). We will not be using the remaining blue wire.
-3. With the float switch wires tinned, break off two male header pins and solder a header onto each switch wire so that you can easily connect the switch to a breadboard.
-4. Connect a jumper from GND on the Notecarrier to one row of the breadboard. Connect one of the float switch's wires (it doesn't matter which one) to this same row.
-5. Connect another jumper from AUX1 on the Notecarrier to a separate row on the breadboard. Connect the remaining float switch wire to this same row. With this configuration, when the switch is closed, AUX1 will be connected go ground.
+3. With the float switch wires tinned, break off two male header pins and solder a header onto each switch wire so that you can easily connect the switch to the Notecarrier's headers.
+4. Plug the header from one of the float switch's wires (it doesn't matter which one) into the GND header on the Notecarrier.
+5. Plug the remaining float switch wire into AUX1 on the Notecarrier. With this configuration, when the switch is closed, AUX1 will be connected go ground.
 
 ## Notecard Firmware Setup
 
