@@ -2,6 +2,22 @@
 
 Track the location of a Freight Car and determine the number of times the door was opened and closed. Battery powered solution with an expected lifespan of 10 years.
 
+- [Freight Car Door Motion and Location](#freight-car-door-motion-and-location)
+  - [You will need](#you-will-need)
+  - [Notehub Setup](#notehub-setup)
+  - [Hardware Setup](#hardware-setup)
+  - [Notecard Firmware](#notecard-firmware)
+  - [Notecard Configuration](#notecard-configuration)
+    - [`card.voltage`](#cardvoltage)
+    - [`card.location.mode`](#cardlocationmode)
+    - [`card.location.track`](#cardlocationtrack)
+    - [`card.aux` GPIO mode](#cardaux-gpio-mode)
+  - [Detecting when the door is opened and closed](#detecting-when-the-door-is-opened-and-closed)
+    - [Hall Effect Sensor](#hall-effect-sensor)
+    - [Magnetic Door Switch](#magnetic-door-switch)
+  - [Notecard CLI](#notecard-cli)
+
+
 ## You will need
 
 * USB A to micro USB cable
@@ -22,7 +38,7 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 
 1. Assemble Notecard and Notecarrier as described [here](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-b).
 2. Plug the LiPo battery's JST cable into the Notecarrier port labeled "LIPO".
-3. Connect the micro USB cable from your development PC to the port on the Notecarrier. This is to both charge the LiPo battery and to configure the Notecard.
+3. Connect the micro USB cable from your development PC to the port on the Notecarrier. This is to both charge the LiPo battery and configure the Notecard.
 
 ## Notecard Firmware
 
@@ -41,14 +57,14 @@ Make sure to replace "com.your-company:your-product-name" with your ProductUID f
 
 ### [`card.voltage`]()
 
-Next, enter this command to optimize battery, assuming our power source is the LiPo battery:
+Next, enter this command to optimize voltage ranges for the LiPo battery
 
 ```json
 { "req": "card.voltage", "mode": "lipo" }
 ```
 
-The final configuration will report the GPS location once every 24 hours. However, for testing, we will use a shorter period.
 
+And then this command
 
 ```json
 { "req": "hub.set", "mode": "periodic", "inbound": 1440, "outbound": 60 }
@@ -61,8 +77,7 @@ You can read more about this command in the [Low Power Design documentation](htt
 
 ### [`card.location.mode`](https://dev.blues.io/reference/notecard-api/card-requests/#card-location-mode)
 
-This command tracks location daily, and one every 2 days when the battery is low.
-When powered via USB, location is reported every 30 minutes.
+This command tracks location daily, switching to once every 2 days when the battery is low. When powered via USB, location is reported every 30 minutes, since power use is not a concern.
 
 ```json
 {
@@ -109,9 +124,9 @@ Which you use in your implementation will depend upon the mounting options avail
 
 The sensor is attached to the Notecarrier using this pinout:
 
-* Brown to `VMAIN`
-* Black to `AUX1`
-* Blue to `GND`
+* Brown (V+) to `VMAIN`
+* Black (Signal) to `AUX1`
+* Blue (V-) to `GND`
 
 You may choose to crimp your own cable ends, or simply splice the wires on the sensor with a Dupont female connectors.
 
@@ -128,12 +143,10 @@ The door switch is wired to the Notecarrier as follows:
 
 Once the wiring is complete, test the connection as follows:
 
-* bring the two parts of the switch into close proximity
-* simulate opening and closing the door by moving one part away and then back again to make contact.
+1. bring the two parts of the switch into close proximity
+2. simulate opening and closing the door by moving one part away and then back again to make contact.
 
 You should see events posted to `door.qo` in Notehub. If you don't, you may need to perform a manual `sync` by typing `sync` into the in-browser terminal, or alternatively adding `"sync":true` to the `card.aux` command so that the Notecard syncs with Notehub when the door is opened.
-
-
 
 ## Notecard CLI
 
