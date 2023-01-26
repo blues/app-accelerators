@@ -22,7 +22,7 @@ Track the location of a Freight Car and determine the number of times the door w
 
 * USB A to micro USB cable
 * [LiPo battery with JST cable](https://shop.blues.io/products/5-000-mah-lipo-battery)
-* [Notecarrier-B](https://shop.blues.io/products/carr-b)
+* [Notecarrier-A](https://shop.blues.io/products/carr-al) or [Notecarrier-B](https://shop.blues.io/products/carr-b)
 * [Notecard WBNA](https://shop.blues.io/collections/notecard/products/note-wbna-500)
 * To sense the door opening, either
   * [Hall Effect Sensor](https://www.amazon.com/HiLetgo-NJK-5002C-Proximity-3-Wires-Normally/dp/B01MZYYCLH/)
@@ -55,7 +55,7 @@ With the Notecarrier connected to your development PC, navigate to https://dev.b
 
 Make sure to replace "com.your-company:your-product-name" with your ProductUID from [Notehub Setup](#notehub-setup). Also, replace "a-serial-number" with the serial number of other relevant identifier for this particular tracker (e.g. "freight car 2").
 
-### [`card.voltage`]()
+### [`card.voltage`](https://dev.blues.io/reference/notecard-api/card-requests/#card-voltage)
 
 Next, enter this command to optimize voltage ranges for the LiPo battery
 
@@ -72,7 +72,7 @@ And then this command
 
 This will have the notecard send any outbound messages once per hour. If there are no messages to send, the Notecard does not power on the modem, preserving battery life. It also checks for incoming messages once per day.
 
-You can read more about this command in the [Low Power Design documentation](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/#customizing-voltage-variable-behaviors
+You can read more about this command in the [Low Power Design documentation](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/#customizing-voltage-variable-behaviors)
 
 
 ### [`card.location.mode`](https://dev.blues.io/reference/notecard-api/card-requests/#card-location-mode)
@@ -115,7 +115,7 @@ This command uses AUX GPIO mode to configure the notecard to count the number of
 
 ## Detecting when the door is opened and closed
 
-Detecting whether the car door is open can be done using either a Hall Effect sensor and a magnet, or a magnetic door switch.
+Detecting whether the car door is open or not can be done using either a Hall Effect sensor and a magnet, or a magnetic door switch.
 
 Which you use in your implementation will depend upon the mounting options available for each type of sensor. All other things being equal, the magnetic door switch is a better choice since it consumes no current while the door is closed. The Hall Effect sensor has a built-in LED which will drain the battery quicker.
 
@@ -128,7 +128,7 @@ The sensor is attached to the Notecarrier using this pinout:
 * Black (Signal) to `AUX1`
 * Blue (V-) to `GND`
 
-You may choose to crimp your own cable ends, or simply splice the wires on the sensor with a Dupont female connectors.
+You may choose to crimp your own cable ends, or simply splice the wires on the sensor with a Dupont Connector aappropriate for your Notecarrier.
 
 Note that the Hall Effect sensor only detects one pole of the magnet, usually the North pole. Be sure to test your sensor with the magnet by moving the magnet up to the sensor and away, and verify that you see events posted to `door.qo` in Notehub, confirming that the sensor detected the "open/close" event.
 
