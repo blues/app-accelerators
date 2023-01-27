@@ -1,0 +1,25 @@
+name: note-c CI Pipeline
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  run_unit_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Run unit tests
+        uses: ./.github/actions/run_unit_tests
+  run_astyle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Install astyle
+        run: sudo apt-get install -y astyle
+      - name: Check formatting
+        run: ./scripts/run_astyle.sh
