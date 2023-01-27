@@ -1,6 +1,0 @@
-name: 'Run Unit Tests'
-author: 'Hayden Roche'
-description: 'Run unit tests inside Docker container.'
-runs:
-  using: 'docker'
-  image: 'Dockerfile'
