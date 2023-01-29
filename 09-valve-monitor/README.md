@@ -123,8 +123,12 @@ your device.
 
 ## Firmware
 
-The Valve Monitor project has custom firmware that runs on the Swan. As a next step,
-complete the [firmware’s setup guide](firmware/) to get your firmware up and running.
+This project has firmware implemented with both Arduino and Zephyr. To get your
+firmware up and running on the Swan, you can follow the documentation for either
+implementation:
+
+- [Arduino](firmware/arduino)
+- [Zephyr](firmware/zephyr)
 
 ## Web Application
 
