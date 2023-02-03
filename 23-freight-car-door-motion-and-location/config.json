@@ -1,5 +1,5 @@
 # set your own product UID and serial number
-{ "req": "hub.set", "sn": "nf23", "product": "com.blues.mat:test" }
+{ "req": "hub.set", "sn": "my-serial", "product": "my-product-uid" }
 { "req": "hub.set", "mode": "periodic", "inbound": 60, "outbound": 60 }
 { "req": "card.voltage", "mode": "lipo" }
 
