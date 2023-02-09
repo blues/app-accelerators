@@ -157,7 +157,7 @@
     :global .ant-table-tbody tr td:nth-child(2),
     :global .ant-table-tbody tr td:nth-child(4),
     :global .ant-table-tbody tr td:nth-child(8) {
-      background-color: #f3f3f3 !important;
+      background-color: $bw-color--grey0 !important;
     }
 
     // ensures only the alarm row is highlighted red in mobile view, not all rows
@@ -167,7 +167,7 @@
 
     // when no alarm detected, colors all even rows with grey background
     :global .ant-table-tbody tr td:nth-child(even) {
-      background-color: #f3f3f3;
+      background-color: $bw-color--grey0;
     }
 
     :global .editable-button {

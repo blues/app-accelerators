@@ -9,7 +9,7 @@ the prerequisites below installed.
 1. Download and install [Visual Studio Code](https://code.visualstudio.com/).
 1. Install the [PlatformIO IDE extension](https://marketplace.visualstudio.com/items?itemName=platformio.platformio-ide)
 via the Extensions menu of Visual Studio Code.
-![Visual Studio Code extensions menu with a search of "platformio"](../images/platformio-extension.png)
+![Visual Studio Code extensions menu with a search of "platformio"](../../images/platformio-extension.png)
 
 ## Opening
 
@@ -20,10 +20,10 @@ to open the firmware within PlatformIO.
 code locally.
 1. Open the PlatformIO extension by clicking on the PlatformIO logo in the menu bar. Next,
 click the “Open” option under the “PIO Home” menu  and finally “Open Project”.
-![Instructions on how to open a project in PlatformIO](../images/platformio-open-project.png)
+![Instructions on how to open a project in PlatformIO](../../images/platformio-open-project.png)
 1. Select the `firmware` folder from within your local copy of this repository,
 and click the **Open "firmware"** button.
-![How to open the firmware folder in PlatformIO](../images/platformio-open-firmware.png)
+![How to open the firmware folder in PlatformIO](../../images/platformio-open-firmware.png)
 
 ## Flashing
 
@@ -41,13 +41,13 @@ to `dfu`.
 
 2. Once you have everything connected, click the arrow button that appears at the
 bottom of your Visual Studio Code window.
-![Uploading firmware in PlatformIO](../images/platformio-upload.png)
+![Uploading firmware in PlatformIO](../../images/platformio-upload.png)
 
 Once the firmware is running on your device, you might additionally want to open a serial
 monitor to view the firmware’s logs. You can do so by clicking the plug button that appears
 at the bottom of your Visual Studio Code window.
 
-![Opening a serial monitor in PlatformIO](../images/platformio-serial-monitor.png)
+![Opening a serial monitor in PlatformIO](../../images/platformio-serial-monitor.png)
 
 ## Testing
 
@@ -61,7 +61,7 @@ a ProductUID from the Notehub project you’d like to use.
 ```
 
 Next, ensure you have you have the following connections in place in your hardware.
-(And if you don’t, refer back to the [hardware setup guide](../#hardware) for details
+(And if you don’t, refer back to the [hardware setup guide](../../#hardware) for details
 on how to hook everything up).
 
 - Connect the `ATTN` and `F_D13` pins on the Notecarrier.
@@ -98,7 +98,7 @@ defined by the `flow_rate_alarm_threshold_min` and `flow_rate_alarm_threshold_ma
 environment variables, and the valve state is open. Additionally, the firmware sends
 an alarm if the valve is closed and flow is detected (i.e. it’s leaking).
 
-```
+```json
 "body": {
     "flow_rate": 10.0,
     "valve_state": "closed",

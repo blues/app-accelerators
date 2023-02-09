@@ -47,8 +47,7 @@ export default class PrismaDatastoreEventHandler implements AppEventHandler {
   }
 
   /**
-   * Insert or update the gateway based on the unique device ID.  If the gateway exists but is in a different project,
-   * the project is updated.
+   * Insert or update the device based on the unique device ID.
    *
    * @param project
    * @param deviceUID

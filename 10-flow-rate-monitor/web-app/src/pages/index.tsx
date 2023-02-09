@@ -92,7 +92,7 @@ const Home: NextPage<HomeData> = ({ flowRateMonitorConfig, err }) => {
               <Alert type="error" message={errorMessage} closable />
             )}
             <div>
-              {flowRateMonitorDevices && (
+              {flowRateMonitorDevices && flowRateMonitorDevices.length ? (
                 <>
                   <Row gutter={[16, 24]}>
                     <Col span={24}>
@@ -164,6 +164,12 @@ const Home: NextPage<HomeData> = ({ flowRateMonitorConfig, err }) => {
                     </Col>
                   </Row>
                 </>
+              ) : (
+                <Alert
+                  type="error"
+                  message={ERROR_MESSAGE.DEVICES_NOT_FOUND}
+                  closable
+                />
               )}
             </div>
           </div>
