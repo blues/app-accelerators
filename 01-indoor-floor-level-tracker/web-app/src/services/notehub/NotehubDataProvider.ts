@@ -2,6 +2,7 @@
 /* eslint-disable class-methods-use-this */
 import { sub, formatDistanceToNow, parseISO } from "date-fns";
 import { uniqBy } from "lodash";
+import NotehubJs from "@blues-inc/notehub-js";
 import { DeviceTracker, TrackerConfig } from "../AppModel";
 import { DataProvider } from "../DataProvider";
 import { Device, DeviceID, FleetID, Project, ProjectID } from "../DomainModel";
@@ -11,8 +12,6 @@ import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import NotehubRoutedEvent from "./models/NotehubRoutedEvent";
 import { NotehubAccessor } from "./NotehubAccessor";
 import Config from "../../../Config";
-
-const NotehubJs = require("notehub-js");
 
 interface HasDeviceId {
   uid: string;
