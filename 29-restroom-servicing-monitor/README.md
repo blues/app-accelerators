@@ -45,17 +45,13 @@ The labels off the breadboard (A1-A3 and GND) correspond to pins on the referenc
 
 Next, we need to flash the reference node with the restroom servicing monitor firmware.
 
-1. Before we do anything, we need to pull in some dependencies for the firmware to work. After cloning this repository, run `git submodule update --init`. This will pull in the note-c and sparrow-lora submodules that this project depends on.
-1. Install [Visual Studio Code](https://code.visualstudio.com/). We will program the reference node from VS Code.
-1. Add the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) to VS Code. Building and flashing the firmware will take place inside a Docker container specifically designed for these tasks (refer to firmware/Dockerfile for details of what's in the container).
+1. Before we do anything, we need to pull in some dependencies for the firmware to work. After cloning this repository, run these commands: `git submodule update --init 29-restroom-servicing-monitor/firmware/note-c` and `git submodule update --init 29-restroom-servicing-monitor/firmware/sparrow-lora`. This will pull in the note-c and sparrow-lora submodules that this project depends on.
+1. There are a few ways to build and flash the firmware onto the reference node. These are covered in the [Sparrow Builder's Guide](https://dev.blues.io/sparrow/sparrow-builders-guide/). Follow the steps in that guide and then return to these instructions.
 1. Connect the STLINK-V3MINI to your development PC with a USB A to micro USB cable.
 1. Connect the STLINK to your reference node with the 2x7 JTAG ribbon cable.
-1. Navigate to File > Open Folder and select the firmware folder.
-1. In the bottom left corner, click the lavender icon (it looks like "><") and hit Reopen in Container. The first time you do this, the Docker container will have to be built, which will take several minutes.
-1. Once the container is built, build the firmware with the hotkey `CTRL + SHIFT + B`. Alternatively, you can navigate to Terminal > Run Task > Sparrow: Build Firmware using CMake and Make to accomplish the same thing.
-1. Navigate to Terminal > Run Task > Sparrow: Flash Firmware using STM32_Programmer_CLI to flash the firmware onto the reference node. If you get an error about not being able to find the device to program, try clicking the lavender >< icon in the bottom right again and selecting Rebuild Container. This error can occur if the reference node was connected to the STLINK _after_ opening the container.
+1. Build and flash the code using whichever method you selected when following the Sparrow Builder's Guide.
 1. Open a terminal emulator and connect to the STLINK's serial connection to view logs. See the documentation [here](https://dev.blues.io/sparrow/sparrow-builders-guide/#collecting-firmware-logs). 
-1. Open the Run and Debug view on the left-hand toolbar (or use the hotkey `CTRL + SHIFT + D`) and hit the green play button next to Cortex Debug. This restarts the firmware in debug mode, which enables logging. In your terminal emulator's output, you should see something like this:
+1. Start the program in debug mode (again, how you do this depends on the IDE: VS Code or STM32CubeIDE). In your terminal emulator's output, you should see something like this:
 
 ```
 ===================
@@ -94,5 +90,4 @@ We’d love to hear about you and your project on the [Blues Community Forum](ht
 ## Additional Resources
 
 * [Sparrow Datasheet](https://dev.blues.io/hardware/sparrow-datasheet/)
-* [Sparrow Builder's Guide](https://dev.blues.io/sparrow/sparrow-builders-guide/)
 * [Sparrow Hardware Behavior](https://dev.blues.io/sparrow/sparrow-hardware-behavior/) (e.g. what do the various Sparrow LEDs indicate?)
