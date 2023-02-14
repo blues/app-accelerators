@@ -2,16 +2,15 @@
 /* eslint-disable class-methods-use-this */
 import { sub, formatDistanceToNow, parseISO } from "date-fns";
 import { uniqBy } from "lodash";
-import NotehubJs from "@blues-inc/notehub-js";
+import * as NotehubJs from "@blues-inc/notehub-js";
 import { DeviceTracker, TrackerConfig } from "../AppModel";
 import { DataProvider } from "../DataProvider";
-import { Device, DeviceID, FleetID, Project, ProjectID } from "../DomainModel";
+import { FleetID, ProjectID } from "../DomainModel";
 import NotehubDevice from "./models/NotehubDevice";
 import NotehubEnvVars from "./models/NotehubEnvVars";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import NotehubRoutedEvent from "./models/NotehubRoutedEvent";
-import { NotehubAccessor } from "./NotehubAccessor";
-import Config from "../../../Config";
+import NotehubEnvVarsResponse from "./models/NotehubEnvVarsResponse";
 
 interface HasDeviceId {
   uid: string;
@@ -112,7 +111,10 @@ export function trackerConfigToEnvironmentVariables(
     envVars.live = String(trackerConfig.live);
   }
   if (trackerConfig.noMovementThreshold !== undefined) {
-    envVars.no_movement_threshold = String(trackerConfig.noMovementThreshold);
+    // convert notehub no_move_threshold from seconds to mins for UI
+    envVars.no_movement_threshold = String(
+      trackerConfig.noMovementThreshold / 60
+    );
   }
   return envVars;
 }
@@ -122,7 +124,9 @@ export function environmentVariablesToTrackerConfig(envVars: NotehubEnvVars) {
     live: envVars.live === "true",
     baseFloor: Number(envVars.baseline_floor) || 1,
     floorHeight: Number(envVars.floor_height) || 4.2672,
-    noMovementThreshold: Number(envVars.no_movement_threshold) || 5,
+    // convert UI no_move_threshold from minutes to seconds for Notehub
+    noMovementThreshold:
+      Number(Number(envVars.no_movement_threshold) * 60) || 300,
   } as TrackerConfig;
 }
 
@@ -137,79 +141,48 @@ export function epochStringMinutesAgo(minutesToConvert: number) {
 
 export default class NotehubDataProvider implements DataProvider {
   constructor(
-    private readonly notehubAccessor: NotehubAccessor,
     private readonly projectID: ProjectID,
-    private readonly fleetID: FleetID
+    private readonly fleetID: FleetID,
+    private readonly hubAuthToken: string,
+    private readonly notehubJsClient: any
   ) {}
-
-  async getDevicesByFleet(): Promise<NotehubDevice[]> {
-    const devicesByFleet = await this.notehubAccessor.getDevicesByFleet();
-    return devicesByFleet;
-  }
-
-  async getEvents(minutesAgo: number): Promise<NotehubRoutedEvent[]> {
-    const epochDateMinutesAgo = epochStringMinutesAgo(minutesAgo);
-    const events = await this.notehubAccessor.getEvents(epochDateMinutesAgo);
-    return events;
-  }
 
   async getDeviceTrackerData(): Promise<DeviceTracker[]> {
     const trackerDevices: DeviceTracker[] = [];
     let formattedDeviceTrackerData: DeviceTracker[] = [];
 
-    // Notehub Open Generator API
-    const defaultClient = NotehubJs.ApiClient.instance;
-    // Configure API key authorization: api_key
-    const { api_key } = defaultClient.authentications;
-    api_key.apiKey = Config.hubAuthToken;
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    // api_key.apiKeyPrefix = 'Token';
+    const { notehubJsClient } = this;
+    const { api_key } = notehubJsClient.authentications;
+    api_key.apiKey = this.hubAuthToken;
 
-    const apiInstance = new NotehubJs.ProjectApi();
-    const projectUID = Config.hubProjectUID; // String |
-    const fleetUID = Config.hubFleetUID;
+    const projectApiInstance = new NotehubJs.ProjectApi();
+    const { projectUID } = this.projectID;
+    const { fleetUID } = this.fleetID;
 
-    const notehubJSDevicesByFleet = await apiInstance.getProjectFleetDevices(
+    const devicesByFleet = await projectApiInstance.getProjectFleetDevices(
       projectUID,
       fleetUID
     );
 
-    // (data) => {
-    console.log(`Devices by Fleet API called successfully. Returned data:`);
-    console.log(notehubJSDevicesByFleet.devices);
-    // },
-    // (error) => {
-    //   console.error(error);
-    // }
-    // );
-
     // get all the devices by fleet ID
-    // const devicesByFleet = await this.getDevicesByFleet();
-    // console.log("axios returned data--------------", devicesByFleet);
-
-    // devicesByFleet.forEach((device) => {
-    notehubJSDevicesByFleet.devices.forEach((device) => {
+    devicesByFleet.devices.forEach((device: NotehubDevice) => {
       trackerDevices.push(notehubDeviceToIndoorTracker(device));
     });
-    const unixTimestampMinutesAgo = epochStringMinutesAgo(6);
 
+    // fetch all events for the last X minutes from Notehub
+    const MINUTES_OF_NOTEHUB_DATA_TO_FETCH = 6;
+    const unixTimestampMinutesAgo = epochStringMinutesAgo(
+      MINUTES_OF_NOTEHUB_DATA_TO_FETCH
+    );
     const eventOpts = { startDate: unixTimestampMinutesAgo };
 
-    // todo in future handle for if 'has_more: true'
-    const notehubJSEvents = await apiInstance.getProjectEvents(
+    const rawEvents = await projectApiInstance.getProjectEvents(
       projectUID,
       eventOpts
     );
-    console.log(`Events API called successfully. Returned data:`);
-    console.log(notehubJSEvents.events);
-
-    // fetch events for the last X minutes from Notehub
-    // const MINUTES_OF_NOTEHUB_DATA_TO_FETCH = 6;
-    // const rawEvents = await this.getEvents(MINUTES_OF_NOTEHUB_DATA_TO_FETCH);
-    // console.log("Raw events -------- ", rawEvents);
 
     // filter down to only data.qo events and reverse the order to get the latest event first
-    const filteredEvents = filterEventsData(notehubJSEvents.events, "floor.qo");
+    const filteredEvents = filterEventsData(rawEvents.events, "floor.qo");
 
     // get unique events by device ID
     const uniqueEvents = uniqBy(filteredEvents, "device");
@@ -231,7 +204,7 @@ export default class NotehubDataProvider implements DataProvider {
     // format the data to round the numbers to 2 decimal places
     formattedDeviceTrackerData = formatDeviceTrackerData(deviceTrackerData);
 
-    const alarmEvents = filterEventsData(notehubJSEvents.events, "alarm.qo");
+    const alarmEvents = filterEventsData(rawEvents.events, "alarm.qo");
     const uniqueAlarmEvents = uniqBy(alarmEvents, "device");
     this.appendAlarmData(uniqueAlarmEvents, formattedDeviceTrackerData);
 
@@ -253,11 +226,17 @@ export default class NotehubDataProvider implements DataProvider {
   }
 
   async getTrackerConfig(): Promise<TrackerConfig> {
-    const envVarResponse =
-      await this.notehubAccessor.getEnvironmentVariablesByFleet(
-        this.fleetID.fleetUID
-      );
-    const envVars = envVarResponse.environment_variables;
+    const { notehubJsClient } = this;
+    const { api_key } = notehubJsClient.authentications;
+    api_key.apiKey = this.hubAuthToken;
+
+    const fleetApiInstance = new NotehubJs.FleetApi();
+    const { projectUID } = this.projectID;
+    const { fleetUID } = this.fleetID;
+
+    const envVarResponse: NotehubEnvVarsResponse =
+      await fleetApiInstance.getFleetEnvironmentVariables(projectUID, fleetUID);
+    const envVars = envVarResponse?.environment_variables;
     return environmentVariablesToTrackerConfig(envVars);
   }
 }
