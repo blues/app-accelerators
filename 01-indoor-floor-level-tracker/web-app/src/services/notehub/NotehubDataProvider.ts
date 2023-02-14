@@ -236,7 +236,7 @@ export default class NotehubDataProvider implements DataProvider {
 
     const envVarResponse: NotehubEnvVarsResponse =
       await fleetApiInstance.getFleetEnvironmentVariables(projectUID, fleetUID);
-    const envVars = envVarResponse?.environment_variables;
+    const envVars = envVarResponse.environment_variables;
     return environmentVariablesToTrackerConfig(envVars);
   }
 }
