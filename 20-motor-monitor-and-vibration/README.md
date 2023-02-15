@@ -48,7 +48,7 @@ During initial testing and evaluation, you probably don't have an industrial mot
 
 ## Setup overview
 
-With the motor and activity line already setup and ready, you will first connect the Notecarrier to a computer to configure the Notecard. Once that is complete, the Notecarrier is disconnected from the computer and is securely mounted onto the motor. The motor activity signal is connected to the Notecarrier from the motor and the the Notecarrier is supplied via a USB power brick.
+With the motor and activity line already set up and ready, you will first connect the Notecarrier to a computer to configure the Notecard. Once that is complete, the Notecarrier is disconnected from the computer and is securely mounted onto the motor. The motor activity signal is connected to the Notecarrier from the motor and the Notecarrier is supplied via a USB power brick.
 
 ## Hardware Initial Setup
 
