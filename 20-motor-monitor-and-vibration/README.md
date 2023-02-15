@@ -187,7 +187,7 @@ For more details Notehub and routes, see [Routing Data with Notehub](https://dev
 
 ## Configure Vibration Alerts in Notehub
 
-Vibration alerts are sent when the detected vibration is out of range compared to what is expected when motor is active or not.
+Vibration alerts are sent when the detected vibration is out of range compared to what is expected when the motor is active or not.
 
 The vibration thresholds are set with these environment variables:
 
