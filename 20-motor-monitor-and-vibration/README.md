@@ -177,7 +177,7 @@ That completes the Notecard configuration. Now you can disconnect the Notecarrie
 
 ## Create a Route with JSONata
 
-The app uses a JSONata transform in a Notehub route to determine the amount of vibration and to signal an alert when vibration is out of range for the current state of the motor.
+The app uses a JSONata transform in a Notehub route to determine the amount of vibration, and to signal an alert when vibration is out of range for the current state of the motor.
 
 1. Create a new route (such as an HTTP route) with notefile `_motion.qo`. Copy the contents of the `route.jsonata` from this project into the JSONata transformation text input in the route setup page.
 
