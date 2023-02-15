@@ -25,13 +25,13 @@ Monitor refrigerator temperature, humidity, and power using a Notecard and a BME
 * [Notecarrier-A](https://shop.blues.io/collections/notecarrier/products/carr-al)
 * [Notecard](https://blues.io/products/notecard/)
 * [SparkFun Atmospheric Sensor Breakout - BME280 (Qwiic)](https://www.sparkfun.com/products/15440)
-* [Qwiic Cable - Breadboard Jumper (4-pin)](https://www.sparkfun.com/products/14425)
+* [Qwiic Cable](https://www.sparkfun.com/products/14426)
 
 ## Hardware Setup
 
 1. Assemble Notecard and Notecarrier as described [here](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-a/).
 2. Keep the Notecard connected to the computer with the in-browser terminal active until you have completed [Notecard Setup](#notecard-setup).
-3. Plug the Qwiic connector into either Qwiic port on the BME280 breakout board. Connect the yellow jumper wire to the SCL pin of the Notecarrier, the blue wire to SDA, the red wire to VIO, and the black wire to GND.
+3. Plug one end of the Qwiic cable into one of the Notecarrier Qwiic ports and the other end into one of the Qwiic ports on the BME280 breakout board.
 4. Connect the Notecarrier to your PC via the micro USB cable.
 5. (OPTIONAL) The BME280 breakout has an LED to indicate that its powered on. This draws a significant amount of current, especially compared to the sensor itself. To maximize battery life, you can disconnect this LED by [cutting the JP1 jumper trace](https://learn.sparkfun.com/tutorials/how-to-work-with-jumper-pads-and-pcb-traces/cutting-a-trace-between-jumper-pads) (see [the schematic](https://cdn.sparkfun.com/assets/0/9/6/b/4/Qwiic_BME280_Schematic_attempt2.pdf)) on the back of the board with a hobby knife.
 
