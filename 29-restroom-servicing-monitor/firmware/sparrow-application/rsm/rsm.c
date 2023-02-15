@@ -2,7 +2,6 @@
 // Use of this source code is governed by licenses granted by the
 // copyright holder including that found in the LICENSE file.
 
-
 // Firmware for a restroom servicing monitor ("rsm").
 
 #include "rsm.h"
@@ -18,20 +17,28 @@ static void rsmPoll(int appID, int state, void *appCtx);
 static void rsmISR(int appID, uint16_t pins, void *appCtx);
 static void sendRating(uint8_t rating);
 
-// PB2
+// The Sparrow reference node exposes GPIO pins A1, A2, and A3. This app
+// connects each of these to a push button that corresponds to a different
+// "rating" of restroom cleanliness. A1 is a bad rating, A2 is an ok rating, and
+// A3 is a good rating.
+
+// A1 corresponds to pin PB2 on the node's STM32 MCU.
 #define BUTTON_BAD_PORT  A1_GPIO_Port
 #define BUTTON_BAD_PIN   A1_Pin
 #define BUTTON_BAD_IRQN  EXTI2_IRQn
 
-// PA10
+// A2 -> PA10
 #define BUTTON_OK_PORT   A2_GPIO_Port
 #define BUTTON_OK_PIN    A2_Pin
 #define BUTTON_OK_IRQN   EXTI15_10_IRQn
 
-// PA15
+// A3 -> PA15
 #define BUTTON_GOOD_PORT A3_GPIO_Port
 #define BUTTON_GOOD_PIN  A3_Pin
 #define BUTTON_GOOD_IRQN EXTI15_10_IRQn
+
+#define ACTIVATION_PERIOD_SECS (60 * 24)
+#define POLL_PERIOD_SECS 15
 
 enum {
     NONE = 0,
@@ -41,17 +48,18 @@ enum {
 };
 
 typedef struct {
+    // The rating is set in an ISR, so it needs to be marked volatile.
     volatile uint8_t rating;
 } AppState;
 
-AppState appState = {0};
+static AppState appState = {0};
 
 bool rsmInit()
 {
     schedAppConfig config = {
         .name = "rsm",
-        .activationPeriodSecs = 60 * 24,
-        .pollPeriodSecs = 15,
+        .activationPeriodSecs = ACTIVATION_PERIOD_SECS,
+        .pollPeriodSecs = POLL_PERIOD_SECS,
         .activateFn = NULL,
         .interruptFn = rsmISR,
         .pollFn = rsmPoll,
@@ -63,6 +71,10 @@ bool rsmInit()
         return false;
     }
 
+    // All three buttons are configured to trigger an interrupt on a falling
+    // edge, when they're pressed and the connection to the corresponding GPIO
+    // pin is driven to GND. Each also has an internal pull-up so that when the
+    // button isn't pressed, the logic level is high.
     HAL_GPIO_DeInit(BUTTON_BAD_PORT, BUTTON_BAD_PIN);
     GPIO_InitTypeDef gpioInit = {0};
     gpioInit.Pin = BUTTON_BAD_PIN;
@@ -100,7 +112,7 @@ static void rsmPoll(int appID, int state, void *appCtx)
 
     switch (state) {
         case STATE_ACTIVATED:
-            schedSetState(appID, STATE_DEACTIVATED, "rsm: nothing to do");
+            schedSetState(appID, STATE_DEACTIVATED, "Nothing to do.");
             break;
         case STATE_SEND_RATING:
             atpMaximizePowerLevel();
@@ -164,7 +176,7 @@ static void sendRating(uint8_t rating)
             ratingStr = "good";
             break;
         default:
-            APP_PRINTF("Undefined rating.\r\n");
+            APP_PRINTF("rsm: Undefined rating.\r\n");
             break;
     }
     if (ratingStr == NULL) {
@@ -181,7 +193,7 @@ static void sendRating(uint8_t rating)
     JAddItemToObject(req, "body", body);
     JAddBoolToObject(req, "sync", true);
 
-    APP_PRINTF("Sent %s rating.\r\n", ratingStr);
+    APP_PRINTF("rsm: Sent %s rating.\r\n", ratingStr);
 
     noteSendToGatewayAsync(req, false);
 }
