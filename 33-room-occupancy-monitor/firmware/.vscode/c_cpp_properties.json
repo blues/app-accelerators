@@ -1,0 +1,37 @@
+{
+    "env": {
+        "myDefaultIncludePath": [
+            "${workspaceFolder}/**"
+        ]
+    },
+    "configurations": [
+        {
+            // "name": "ARM",
+            "name": "Linux",
+            // "intelliSenseMode": "gcc-arm",
+            "intelliSenseMode": "linux-gcc-arm",
+            // The non-CMAKE defines in the this list only aid Intellesense, and do not influence the compiler.
+            // You must update defines intended for the compiler in the appropriate `CMakeLists.txt` file.
+            "defines": [
+                "CMAKE_TOOLCHAIN_FILE=${workspaceFolder}/arm-gcc-toolchain.cmake",
+                "CORE_CM4",
+                "CURRENT_BOARD=2", // Sparrow v1.1
+                "STM32WLE5xx"
+            ],
+            "includePath": [
+                "${myDefaultIncludePath}",
+                "/opt/st/stm32cubeide_1.11.2/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.linux64_1.0.100.202210260954/tools/arm-none-eabi/include"
+            ],
+            "compilerPath": "/opt/st/stm32cubeide_1.11.2/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.linux64_1.0.100.202210260954/tools/bin/arm-none-eabi-gcc",
+            "cStandard": "c11",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/**"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            }
+        }
+    ],
+    "version": 4
+}
