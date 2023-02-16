@@ -3,6 +3,7 @@
 	url = https://github.com/blues/note-c
 [submodule "29-restroom-servicing-monitor/firmware/sparrow-lora"]
 	path = 29-restroom-servicing-monitor/firmware/sparrow-lora
+	url = https://github.com/blues/sparrow-lora.git
 [submodule "28-door-state-monitor/firmware/note-c"]
 	path = 28-door-state-monitor/firmware/note-c
 	url = https://github.com/blues/note-c
