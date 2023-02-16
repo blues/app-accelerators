@@ -18,7 +18,7 @@ Monitor the power state of a piece of construction equipment as well as its loca
 * USB A to micro USB cable
 * [Notecarrier-A](https://shop.blues.io/products/carr-al)
 * [Notecard](https://blues.io/products/notecard/)
-* Scoop board with JST cable
+* [LiPo battery with JST cable](https://shop.blues.io/collections/accessories/products/5-000-mah-lipo-battery)
 * Portable USB battery pack/charger OR USB car lighter adapter
 
 ## Notehub Setup
@@ -28,7 +28,7 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 ## Hardware Setup
 
 1. Assemble Notecard and Notecarrier as described [here](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-a).
-2. Plug the Scoop's JST cable into the Notecarrier port labeled "LIPO".
+2. Plug the LiPo battery's JST cable into the Notecarrier port labeled "LIPO".
 3. Connect the micro USB cable from your development PC to the port on the Notecarrier.
 
 ## Testing
@@ -93,7 +93,7 @@ If you chose option 1, pack up the hardware and go for a walk, preferably outsid
 
 Here, the `inside_fence` field is set to true. This means the Notecard is inside the geofence. If the Notecard is outside the geofence, instead of having `inside_fence` as false, it won't show up at all. This is an optimization of the Notecard firmware where fields that are 0 (or false) aren't transmitted and can be assumed to be 0. You can read more about that [here](https://dev.blues.io/notecard/notecard-walkthrough/json-fundamentals/#how-the-notecard-works-with-json). If you're interested in the precise latitude and longitude of the Notecard, you can examine the `best_lat` and `best_lon` fields (these are in the higher-level JSON object, not the `body`). Note that you won't see additional locations.qo notes until the Notecard moves again.
 
-If you chose option 1, unplug the battery pack from the Notecarrier to cut power. If you chose option 2, power should have been cut when you turned the car off. Now, the Notecard should be able to draw enough power from the Scoop board to send a note to Notehub in \_health.qo indicating that main USB power was lost. Here's an example:
+If you chose option 1, unplug the battery pack from the Notecarrier to cut power. If you chose option 2, power should have been cut when you turned the car off. Now, the Notecard should be powered by the battery and will send a note to Notehub in \_health.qo indicating that main USB power was lost. Here's an example:
 
 ```json
 {"text":"USB power OFF {usb-disabled}"}
