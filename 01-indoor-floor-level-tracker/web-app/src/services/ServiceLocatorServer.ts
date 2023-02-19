@@ -1,10 +1,9 @@
 /* eslint-disable max-classes-per-file */
-import AxiosHttpNotehubAccessor from "./notehub/AxiosHttpNotehubAccessor";
+import * as NotehubJs from "@blues-inc/notehub-js";
 import AppService, { AppServiceInterface } from "./AppService";
 import Config from "../../Config";
 import { UrlManager } from "../components/presentation/UrlManager";
 import { NextJsUrlManager } from "../adapters/nextjs/NextJsUrlManager";
-import { NotehubAccessor } from "./notehub/NotehubAccessor";
 import { DataProvider } from "./DataProvider";
 import IDBuilder, { SimpleIDBuilder } from "./IDBuilder";
 import NotehubDataProvider from "./notehub/NotehubDataProvider";
@@ -22,8 +21,6 @@ class ServiceLocatorServer {
 
   private attributeStore?: AttributeStore;
 
-  private notehubAccessor?: NotehubAccessor;
-
   getAppService(): AppServiceInterface {
     if (!this.appService) {
       this.appService = new AppService(
@@ -40,32 +37,26 @@ class ServiceLocatorServer {
     if (!this.dataProvider) {
       const projectID = IDBuilder.buildProjectID(Config.hubProjectUID);
       const fleetID = IDBuilder.buildFleetID(Config.hubFleetUID);
+      const notehubJsClient = NotehubJs.ApiClient.instance;
       const notehubProvider = new NotehubDataProvider(
-        this.getNotehubAccessor(),
         projectID,
-        fleetID
+        fleetID,
+        Config.hubAuthToken,
+        notehubJsClient
       );
       this.dataProvider = notehubProvider;
     }
     return this.dataProvider;
   }
 
-  private getNotehubAccessor(): NotehubAccessor {
-    if (!this.notehubAccessor) {
-      this.notehubAccessor = new AxiosHttpNotehubAccessor(
-        Config.hubBaseURL,
-        Config.hubProjectUID,
-        Config.hubAuthToken,
-        Config.hubFleetUID
-      );
-    }
-    return this.notehubAccessor;
-  }
-
   getAttributeStore(): AttributeStore {
     if (!this.attributeStore) {
+      const projectID = IDBuilder.buildProjectID(Config.hubProjectUID);
+      const notehubJsClient = NotehubJs.ApiClient.instance;
       const notehubStore: AttributeStore = new NotehubAttributeStore(
-        this.getNotehubAccessor()
+        projectID,
+        Config.hubAuthToken,
+        notehubJsClient
       );
       this.attributeStore = notehubStore;
     }

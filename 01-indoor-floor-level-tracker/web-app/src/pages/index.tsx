@@ -23,8 +23,6 @@ type HomeData = {
 };
 
 const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
-  const infoMessage = "Deploy message";
-
   // How often to refetch data from Notehub (in milliseconds). Note that
   // reading data with the Notehub API uses one consumption credit per event
   // (see https://blues.io/pricing/).
@@ -151,9 +149,6 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
                 </Row>
               </>
             )}
-            {Config.isBuildVersionSet() ? (
-              <Alert description={infoMessage} type="info" closable />
-            ) : null}
           </div>
         </LoadingSpinner>
       )}

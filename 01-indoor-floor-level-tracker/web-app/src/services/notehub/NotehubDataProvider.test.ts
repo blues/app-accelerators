@@ -15,7 +15,7 @@ describe("environment variable parsing", () => {
       live: "false",
       baseline_floor: "7",
       floor_height: "3.1234",
-      no_movement_threshold: "6",
+      no_movement_threshold: "0.1",
     });
   });
 
@@ -38,7 +38,7 @@ describe("environment variable parsing", () => {
       live: false,
       baseFloor: 3,
       floorHeight: 42,
-      noMovementThreshold: 9,
+      noMovementThreshold: 540,
     });
   });
 
@@ -48,7 +48,7 @@ describe("environment variable parsing", () => {
       live: false,
       baseFloor: 1,
       floorHeight: 4.2672,
-      noMovementThreshold: 5,
+      noMovementThreshold: 300,
     });
   });
 });

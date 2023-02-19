@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@ant-design/icons": "^4.7.0",
+    "@blues-inc/notehub-js": "^1.0.7",
     "@types/lodash": "^4.14.178",
     "antd": "^4.19.1",
     "axios": "^0.24.0",
@@ -25,10 +26,10 @@
     "next": "12.1.0",
     "next-plugin-antd-less": "^1.8.0",
     "pony-cause": "^1.1.1",
+    "rc-field-form": "^1.22.0",
     "react": "17.0.2",
     "react-dom": "17.0.2",
     "react-query": "^3.39.2",
-    "rc-field-form": "^1.22.0",
     "sass": "^1.43.4",
     "ts-node": "^10.5.0"
   },

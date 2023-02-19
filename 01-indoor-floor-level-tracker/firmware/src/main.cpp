@@ -225,7 +225,7 @@ void loop()
         if (body != NULL)
         {
           JAddStringToObject(body, "message",
-                            "environment variable update received");
+                             "environment variable update received");
           JAddItemToObject(req, "body", body);
           notecard.sendRequest(req);
         }
@@ -388,7 +388,9 @@ void fetchEnvironmentVariables(applicationState &vars)
       {
         // when the device becomes live, calibrate to the floor level given
         setBaselineFloor = true;
-      } else if (vars.live != wasLive) {
+      }
+      else if (vars.live != wasLive)
+      {
         vars.variablesUpdated = true;
       }
       vars.alarmSent = false;
