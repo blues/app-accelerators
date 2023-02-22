@@ -92,9 +92,11 @@ static void dsmISR(int appID, uint16_t pins, void *appCtx)
     (void)pins;
     (void)appCtx;
 
-    // On a door state change (open -> closed, or vice-versa), send a
-    // notification.
-    schedActivateNowFromISR(appID, true, STATE_DOOR_TRANSITION);
+    if ((pins & DOOR_1_PIN) != 0) {
+        // On a door state change (open -> closed, or vice-versa), send a
+        // notification.
+        schedActivateNowFromISR(appID, true, STATE_DOOR_TRANSITION);
+    }
 }
 
 static void sendNotification(int appID, bool open)
