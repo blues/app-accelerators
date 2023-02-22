@@ -24,7 +24,6 @@ Monitor machine AC power use and send alerts on monitored changes.
   - [Configure Monitoring](#configure-monitoring)
   - [Events](#events)
     - [Alerts](#alerts)
-- [References](#references)
 
 
 ## Problem Description
@@ -190,7 +189,7 @@ With the Dr. Wattson board looped into the flow of power, the machine to be moni
 
 ![](images/power_quality_monitor_electrical.png)
 
-During development and testing, you will typically power the Notecarrier and Swan via USB cables from your computer. When the application is deployed, you can use a USB power adapter plugged into the 18-guage outlet.
+During development and testing, you will typically power the Notecarrier and Swan via USB cables from your computer. When the application is deployed, you can use a USB power adapter plugged into the 18-gauge outlet.
 
 ## Testing
 
@@ -243,27 +242,10 @@ The event body also includes these fields:
 
 When the device detects over or under voltage, current or power, or detects a change in these greater than the configured percentage, a power monitoring event is sent as above, with an additional property `alert` that lists the comma-separated reason(s) for the alert. Depending upon the cause of the alert, you may see one or more of these values present:
 
-* `undervoltage`, `overvoltage`: the measured RMS voltage is not within the specified bounds given by the environment variables.
+* `undervoltage`, `overvoltage`: the measured RMS voltage is not within the bounds given by the environment variables.
 
 * `voltage`: the measured voltage changed by more than the specified percent (either an increase or decrease.)
 
 * (Similarly, `current` and `power` generate alerts when these power aspects are too high or low, or change by the configured percentage.
 
 When an alert is triggered, it is immediately synched to Notehub.
-
-
-
-
-compiler.cpp.extra_flags=-DSERIAL_RX_BUFFER_SIZE=4096
-
-* platformIO - already present in platform.ini
-* Arduino for VSCode - present in ./vscode/arduino.json
-* Arduino IDE - requires editing boards.txt for the STM32Duino package.
-
-For vibration sensing, the notecard should be oriented face up and level.
-
-
-
-
-# References
-
