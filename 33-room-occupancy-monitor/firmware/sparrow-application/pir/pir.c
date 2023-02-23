@@ -33,8 +33,8 @@ static int64_t lastInterruptMs = 0;
 // NOTE: The Gateway will replace `*` with the originating node's ID.
 #define APPLICATION_NOTEFILE "*#motion.qo"
 
-#ifndef PIR_THRESHOLD
-#define PIR_THRESHOLD 100
+#ifndef PIR_THRESHOLD_DEFAULT
+#define PIR_THRESHOLD_DEFAULT 100
 #endif
 
 // TRUE if we've successfully registered the template
@@ -44,14 +44,19 @@ static bool templateRegistered = false;
 static uint32_t motionEvents = 0;
 static uint32_t motionEventsTotal = 0;
 
-// Our scheduled app's ID
-static int appID = -1;
-
 // Forwards
 static void addNote(bool immediate);
 static inline bool isSparrowReferenceSensorBoard(void);
 static bool registerNotefileTemplate(void);
 static void resetInterrupt(void);
+
+typedef struct {
+    uint8_t sensorThreshold;
+} AppState;
+
+static AppState appState = {
+    .sensorThreshold = PIR_THRESHOLD_DEFAULT
+};
 
 // Scheduled App One-Time Init
 bool pirInit()
@@ -71,10 +76,9 @@ bool pirInit()
         .interruptFn = pirISR,
         .pollFn = pirPoll,
         .responseFn = pirResponse,
-        .appContext = NULL,
+        .appContext = &appState,
     };
-    appID = schedRegisterApp(&config);
-    if (appID < 0) {
+    if (schedRegisterApp(&config) < 0) {
         return false;
     }
 
@@ -97,7 +101,7 @@ bool pirInit()
     // Lower threshold means longer detection range, higher threshold means shorter detection range. You want the
     // threshold to be set as high as possible to avoid false triggers, but you want it set low enough so you get
     // the detection range you need to achieve.
-    uint32_t threshold = PIR_THRESHOLD;
+    uint32_t threshold = appState.sensorThreshold;
     configurationRegister |= ((threshold & 0xff) << 17);
 
     // Blind Time [16:13] 4 bits (0.5 s + [Reg Val] * 0.5 s)

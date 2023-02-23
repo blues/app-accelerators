@@ -68,11 +68,11 @@ You may also see a message like this:
 pir: 1 motion events sensed
 ```
 
-At startup, the PIR sensor may detect motion even if there is none. This is a one-off false positive that can be ignored, and the sensor should work as intended thereafter. If you encounter additional false positives, you may want to try increasing the sensor's threshold value, which makes the sensor less sensitive. This can be done by defining the macro `PIR_THRESHOLD` at build-time (e.g. via `-DCMAKE_C_FLAGS="-DPIR_THRESHOLD=50"`). If this macro isn't defined by the user, it'll default to 100 in pir.c:
+At startup, the PIR sensor may detect motion even if there is none. This is a one-off false positive that can be ignored, and the sensor should work as intended thereafter. If you encounter additional false positives, you may want to try increasing the sensor's threshold value, which makes the sensor less sensitive. This can be done by defining the macro `PIR_THRESHOLD_DEFAULT` at build-time (e.g. via `-DCMAKE_C_FLAGS="-DPIR_THRESHOLD_DEFAULT=50"`). If this macro isn't defined by the user, it'll default to 100 in pir.c:
 
 ```C
-#ifndef PIR_THRESHOLD
-#define PIR_THRESHOLD 100
+#ifndef PIR_THRESHOLD_DEFAULT
+#define PIR_THRESHOLD_DEFAULT 100
 #endif
 ```
 
