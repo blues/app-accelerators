@@ -13,7 +13,7 @@ Monitor machine AC power use and send alerts on monitored changes.
     - [PlatformIO extension for VS Code](#platformio-extension-for-vs-code)
     - [Arduino Extension for VS Code](#arduino-extension-for-vs-code)
     - [Arduino IDE](#arduino-ide)
-      - [Configuring the Serial Buffer Size](#configuring-the-serial-buffer-size)
+      - [Increasing the Serial Receive Buffer Size](#increasing-the-serial-receive-buffer-size)
       - [Libraries](#libraries)
       - [Arduino IDE - Compiling/Uploading](#arduino-ide---compilinguploading)
     - [Configuring the ProductUID](#configuring-the-productuid)
@@ -43,12 +43,12 @@ This app provides a simple to construct power monitoring device that can be plac
   * [Notecard](https://shop.blues.io/collections/notecard)
   * [Molex Cellular Antenna](https://shop.blues.io/collections/accessories/products/flexible-cellular-or-wi-fi-antenna)
   * [Dr. Wattson Energy Monitoring Board](https://www.upbeatlabs.com/wattson/)
-  * [ProtoStax Enclosure for Dr. Wattson](https://www.protostax.com/products/ or similar enclosure
+  * [ProtoStax Enclosure for Dr. Wattson](https://www.protostax.com/products/) or similar enclosure
   * A [female to JST qwiic cable assembly](https://www.adafruit.com/product/4397)
 
 For the Dr. Wattson energy monitor build you will also need
 
-  * Male to female grounded extension cable or suitable cables to wire an IEC or NEMA AC inlet and outlet receptacles to Dr. Wattson. 16 gauge is recommended as the minimum dimension. Please select suitable wiring gauge for the maximum load used by your machine.
+  * Male to female grounded extension cable or suitable cables to wire an IEC or NEMA AC inlet and outlet to Dr. Wattson. 16 gauge is recommended as the minimum dimension. Please select suitable wiring gauge for the maximum load used by your machine.
   * (optional but recommended) Corded female NEMA socket for USB power, 18-gauge diameter minimum, such as a spliced male-to-female 18-gauge extension cable
   * 2 18-gauge color-coded insulated wires to power the Dr. Wattson board. (This can be taken from the extension cable used to build the USB power outlet.)
   * Soldering iron (to melt and bridge solder jumpers on the Dr. Wattson board for I2C address configuration.)
@@ -66,7 +66,8 @@ Please see [Dr. Wattson Energy Monitor build](drwattson-build.md) for build inst
 
 With the build complete, you will have a power monitor with an AC inlet and two AC outlets, like this
 
-<img alt="Dr. Wattson monitor complete" title="Dr. Wattson Monitor complete" src="./images/wiring-14-complete.jpg" width="30%" height="30%"/>
+
+<img alt="Dr. Wattson monitor complete" title="Dr. Wattson Monitor complete" src="./images/wiring-10-complete.jpg" width="30%" height="30%"/>
 
 
 ## Hardware Setup
@@ -104,7 +105,7 @@ The application firmware found under the [firmware](./firmware/) folder can be b
 * Arduino extension for Visual Studio Code
 * Arduino IDE
 
-We recommend using one of the VS Code extensions, since they are easier to setup and use, and provide a comprehensive development experience. However, if you're familiar with the Arduino IDE, that can be used as well, but requires a little more setup.
+We recommend using one of the VS Code extensions, since they are easier to setup and use, and provide a comprehensive development experience. However, if you're familiar with the Arduino IDE, that can be used as well but requires a little more setup.
 
 ### PlatformIO extension for VS Code
 
@@ -121,14 +122,18 @@ Before building the project, you will need to install the required [libraries](#
 
 ### Arduino IDE
 
-#### Configuring the Serial Buffer Size
+Before compiling and uploading the sketch, be sure to install the STM32Duino board support package. The tutorial [Using the Arduino IDE](https://dev.blues.io/quickstart/swan-quickstart/#using-the-arduino-ide) in the Swan Quickstart shows how to install support for Swan in Arduino IDE and how to compile and upload firmware.
+
+You will also need to install the required libraries, and increase the serial receive buffer size, detailed below.
+
+#### Increasing the Serial Receive Buffer Size
 
 The Arduino framework by default provides a very small Serial input buffer, which means that if a developer wishes to use the serial port in a way that receives a large volume of data quickly, the data will be truncated and missed.
 
 The workaround, which is required by this sketch, is to add a compiler flag that increases the serial buffer size.
 
   1. Close the Arduino IDE if it is currently open.
-  2. Find the location of the `platform.txt` file for the board that you are building for. When building for Swan, which is supported by STM32Duino, this is located at
+  2. Find the location of the `platform.txt` file for the board that you are building for. When building for Swan, which is an STM32 board supported by STM32Duino, this is located at
       Mac: `~/Library/Arduino15/packages/STMicroelectronics/hardware/stm32/2.3.0`
       Windows: `%HOME$/AppData/Local/Arduino15/packages/STMicroelectronics/hardware/stm32/2.3.0`
 
@@ -149,15 +154,13 @@ When using the Arduino extension for VS Code, or the Arduino IDE, install these 
 
 #### Arduino IDE - Compiling/Uploading
 
-The tutorial [Using the Arduino IDE](https://dev.blues.io/quickstart/swan-quickstart/#using-the-arduino-ide) in the Swan Quickstart shows how to install support for Swan in Arduino IDE and how to compile and upload firmware.
-
 To compile and upload the power monitoring firmware, open the sketch at [`firmware/notepower/notepower.ino`](firmware/notepower/notepower.ino) from this repo.
 
 
 
 ### Configuring the ProductUID
 
-There are two ways to configure ProductUID created in the Notehub setup above - either using the in-browser terminal to send a request to the Notecard, or by editing the firmware source code.
+There are two ways to configure the ProductUID created in the Notehub setup above - either using the in-browser terminal to send a request to the Notecard, or by editing the firmware source code. For more details on what the ProductUID is and how it set it please see [this guide](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid).
 
 #### Using the In-browser terminal
 
@@ -172,7 +175,11 @@ There are two ways to configure ProductUID created in the Notehub setup above - 
 {"req":"hub.set", "product":"<your-productUID-from-notehub>", "sn":"<machine-name>-monitor"}
 ```
 
-You can also omit the serial number use Notehub to set it.
+You can also omit the serial number use Notehub to set it:
+
+* open the project in notehub
+* from the list of devices, double click the device you want to set the serial number
+* in the "Summary" tab, use the pencil icon to edit the Serial Number field.
 
 #### Editing the Source Code
 
@@ -182,7 +189,7 @@ You can also set the ProductUID in the source code. Open `app.h` in your IDE and
 #define PRODUCT_UID ""		// "com.my-company.my-name:my-project"
 ```
 
-and paste in the ProductUID from your notehub project between the first pair of quotes.
+pasting in the ProductUID from your notehub project between the first pair of quotes.
 
 
 ## Electrical Connections
@@ -191,7 +198,7 @@ With the Dr. Wattson board looped into the flow of power, the machine to be moni
 
 ![](images/power_quality_monitor_electrical.png)
 
-During development and testing, you will typically power the Notecarrier and Swan via USB cables from your computer. When the application is deployed, you can use a USB power adapter plugged into the 18-gauge outlet.
+During development and testing, you will typically power the Notecarrier and Swan via USB cables from your computer. When the application is deployed, you can use a USB power adapter plugged into the 18-gauge wired outlet.
 
 ## Testing
 
@@ -222,14 +229,16 @@ Please see our tutorial [Understanding Environment Variables](https://dev.blues.
 A power monitoring event is sent every `heartbeat_mins` minutes or when an alert is sent.
 Events are sent to the notefile `power.qo`, and have this structure in the event body:
 
+```json
 {
     "current": 0.2846,      // Line RMS current (A)
     "frequency": 59.8125,   // Line AC frequency (Hz)
     "power": 7.9,           // Line Power (Watts)
     "voltage": 118.6,       // Line RMS voltage (V)
 }
+```
 
-Regular monitoring events are not immediately synched to Notehub, but are sent once per hour, as given by the `outbound` property in the `hub.set` request. You can change this behavior by setting the preprocessor symbol 
+Regular monitoring events are not immediately synched to Notehub, but are sent once per hour, as given by the `outbound` property in the `hub.set` request. You can change this behavior by setting the preprocessor symbol `SYNC_POWER_MONITORING_NOTES` in [`app.h`](./firmware/notepower/app.h#L20).
 
 The event body also includes these fields:
 
@@ -244,17 +253,24 @@ The event body also includes these fields:
 
 When the device detects over or under voltage, current or power, or detects a change in these greater than the configured percentage, a power monitoring event is sent as above, with an additional property `alert` that lists the comma-separated reason(s) for the alert. Depending upon the cause of the alert, you may see one or more of these values present:
 
-* `undervoltage`, `overvoltage`: the measured RMS voltage is not within the bounds given by the environment variables.
+* `undervoltage`, `overvoltage`: the measured RMS voltage is not within the bounds set by the environment variables `alert_under_voltage` and `alert_over_voltage`.
 
-* `voltage`: the measured voltage changed by more than the specified percent (either an increase or decrease.)
+* `voltage`: the measured voltage changed by more than the percent specified in the environment variable `alert_change_voltage_percent`.
 
-* (Similarly, `current` and `power` generate alerts when these power aspects are too high or low, or change by the configured percentage.
+* `undercurrent`, `overcurrent`: the measured RMS current is not within the bounds set by the environment variables `alert_under_current_amps`, `alert_over_current_amps`.
+
+* `current`: the measured current changed by more than the percent specified in the environment variable `alert_change_current_percent`.
+
+* `underpower`, `overpower`: the measured active power is not within the bounds set by the environment variables  `alert_under_power_watts` and `alert_over_power_watts`.
+
+* `power`: the measured active power changed by more than the percent specified in the environment variable `alert_change_power_percent`.
 
 When an alert is triggered, it is immediately synched to Notehub.
 
+
 ## Routing Data out of Notehub
 
-Notehub supports a wide range of API endpoints by using the Route feature. This can be used to forward your power monitoring data to external dashboards and alerts to a realtime notification service.  Here we will use Twilio SMS API to send a notification to a phone number.
+Notehub supports forwarding data a wide range of API endpoints by using the Route feature. This can be used to forward your power monitoring data to external dashboards and alerts to a realtime notification service.  Here we will use Twilio SMS API to send a notification to a phone number.
 
 For an introduction to Twilio SMS routes, please see our [Twilio SMS Guide](https://dev.blues.io/guides-and-tutorials/twilio-sms-guide/).
 
@@ -268,7 +284,7 @@ For an introduction to Twilio SMS routes, please see our [Twilio SMS Guide](http
 
 ### Testing the Route
 
-The ideal test is to use the app firmware to generate events. However, it's also possible to simulate an event by pasting these JSON snippets into the the in-browser terminal.
+The ideal test is to use the app firmware to generate alerts. However, it's also possible to simulate an event by pasting these JSON snippets into the the in-browser terminal.
 
 This is a regular power monitoring event. It does not generate an SMS alert.
 
@@ -278,7 +294,7 @@ This is a regular power monitoring event. It does not generate an SMS alert.
 }}
 ```
 
-This is an alert event, which will result in an SMS message being sent to the phone number in the "to" field.
+This is an alert event (due to the presence of the `alert` property), which will result in an SMS message being sent to the phone number in the "to" field.
 
 ```json
 { "req": "note.add", "file":"power.qo", "sync": true, "body": {

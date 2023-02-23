@@ -37,7 +37,7 @@ For more details on I2C address configuration, please see section 7, "Configurin
 
 ## Wiring
 
-This section describes the build steps to create an energy monitor based on the Dr. Wattson energy monitoring board.
+This section describes the wiring changes required to create an energy monitor based on the Dr. Wattson energy monitoring board.
 
 > We recommend you read Section 5, "Instructions for Wiring Dr. Wattson" in the [Dr. Wattson User Manual] AND these instructions fully before commencing wiring. Mistakes can be time-consuming and potentially fatal!
 
@@ -53,11 +53,11 @@ Before commencing, you should consider these things:
 
 > WARNING: electrical power MUST always be delivered via a female connector and consumed via male connector so that power always flows from female to male connector. An exposed male connector must never be live as doing so may result in electrical shock and fatal injury. If you are not familiar with mains electrical wiring, please seek a qualified electrician for assistance.
 
-### Step 1: Plan the wiring
+### Step 1: Plan the Wiring
 
 Before you begin, be sure to have clear understanding of how the wiring will be once completed. We made notes after reviewing the wiring guide in Section 5 of the [Dr. Wattson User Manual].
 
-In addition to the wiring shown, we also chose to also wire in a NEMA AC socket for a USB power supply.
+In addition to the wiring shown in the manual, we also chose to also wire in a NEMA AC socket for a USB power supply.
 
 ![](images/wiring-01-notes.jpg)
 
@@ -67,7 +67,7 @@ In addition to the wiring shown, we also chose to also wire in a NEMA AC socket 
 Assemble the hardware and tools required to complete the build:
 
 * Dr. Wattson energy monitor
-* AC cable with inlet for the source of power used by the machine to monitor
+* AC cable with inlet for the source of power for the monitoring board, the machine to monitor and the USB power adapter.
 * AC cable with outlet to power the machine being monitored
   * (in our case, inlet and outlet had the same type of electrical connector, so we spliced an extension cable to create both inlet and outlet.)
 
@@ -95,9 +95,9 @@ With the outer cable insulation removed, use the wire strippers to remove half a
 
 When using solder to join sections of cable, Heat shrink tubing is used to cover the exposed wires in the join so that it is completely insulated.
 
-You may not need the heat shrink tubing if you are using a different method for joining the spliced cables (such as spade connectors, or a terminal block) that provides sufficient insulation, in which case you can skip this step.
+You may not need the heat shrink tubing if you are using a different method for joining the spliced cables (such as spade connectors, or a terminal block) that provides sufficient insulation, in which case you can skip adding heat shrink tubing to the individual conductors.
 
-3 pieces of heat shrink tubing are used to insulate the individual conductors and one larger piece is used to secure the entire cable.
+Otherwise, 3 pieces of heat shrink tubing are used to insulate the individual conductors and one larger piece is used to secure the entire cable.
 
 The tubing needs to be slipped over the wires before they are joined. This may sound obvious, but it's an easy step to skip!
 
@@ -119,8 +119,10 @@ Thread the white neutral wire through the current transformer on the Dr. Wattson
 
 This step, you will join the wires from the outlet for USB power, wires to power for the Dr. Wattson board and wires from the inlet cable. At this stage, joning can be done by gently twisting the wires together - they will later be soldered in place.
 
+The wires joined all have the same electrical function, neutral is joined to neutral and live to live.
+
 #### Earth
-The green protective earth cable isn't joined yet, and is left as is.
+The green protective earth cable isn't joined yet, and is left as is. We will do this later.
 
 #### Neutral
 
@@ -136,7 +138,7 @@ Once this is done, you will have 3 wires joined:
 
 #### Live
 
-1. Join the black live wire from the inlet cable ( with the color-coded live 18-gauge power wire (shown as red in the photo below.)
+1. Join the black live wire from the inlet cable with the color-coded live 18-gauge power wire (shown as red in the photo below.)
 
 2. Join the black live wire from the 18-gauge USB outlet cable to the join made in Step 1.
 
@@ -172,13 +174,13 @@ With all the electrical joins complete, we can now apply heat to shrink the heat
 
 ![](images/wiring-09-outlet-heatshrink.jpg)
 
-### Step 10: AC power to the board
+### Step 10: AC Power to the Dr. Wattson Monitoring Board
 
 Using the phillips screwdriver, loosen the neutral screw on the green terminal block so that the metal grip lowers.
 
 Insert the neutral wire (black in our photo above), and while holding it in place, tighten the neutral screw. Tug on the wire to ensure it is gripped well.
 
-Repeat for the live wire (line), which is red in our photo above.
+Repeat for the live wire, shown in red in our photo above.
 
 ### Complete
 
