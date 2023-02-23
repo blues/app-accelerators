@@ -2,11 +2,11 @@
 
 ## Build Outline
 
-The [Dr. Wattson Energy Montiring Board] is the key component used for energy monitoring in this solution. Some setup is required before it can be put to use:
+The [Dr. Wattson Energy Monitoring Board] is the key component used for energy monitoring in this solution. Some setup is required before it can be put to use:
 
 * [I2C Configuration](#i2c-configuration): The I2C address of the monitor must be configured by melting the solder on two solder jumpers. It's easier to do this before wiring up the board.
 
-* [Wiring](#wiring): the energy monitoring board is placed electrically inline between an AC inlet plug (line) and an outlet socket (load). Optionally, a low-power outlet may also be added for USB power to the Notecarrier.
+* [Wiring](#wiring): The energy monitoring board is placed electrically inline between an AC inlet plug (line) and an outlet socket (load). Optionally, a low-power outlet may also be added for USB power to the Notecarrier.
 
 
 ## Tools and Hardware
@@ -77,7 +77,7 @@ Assemble the hardware and tools required to complete the build:
 
 If you are using extension cables to provide the inlet and outlet hardware, these need to be spliced using the wire cutters.
 
-Here you see the 16-gauge extension cable spliced to provide a corded inlet and outlet, plus an 18-guage cable spliced for the USB power outlet.
+Here you see the 16-gauge extension cable spliced to provide a corded inlet and outlet, plus an 18-gauge cable spliced for the USB power outlet.
 
 ![](images/wiring-03-splice-cables.jpg)
 
@@ -168,9 +168,9 @@ Repeat once more for for the live wire, soldering the live wire of the outlet ca
 
 With all the electrical joins complete, we can now apply heat to shrink the heat shrink tubing over the joints on the neutral, live and ground joins.
 
-1. gently slip the tubing over the joints
-2. using a heat gun, heat up the heat shrink tubing until it starts to contract
-3. rotate the heat gun around the tubing so that it shrinks on all sides
+1. Gently slip the tubing over the joints.
+2. Using a heat gun, heat up the heat shrink tubing until it starts to contract.
+3. Rotate the heat gun around the tubing so that it shrinks on all sides.
 
 ![](images/wiring-09-outlet-heatshrink.jpg)
 
@@ -192,7 +192,7 @@ Your completed board should look similar to this.
 
 # References
 
- * [Dr. Wattson Energy Montiring Board]
+ * [Dr. Wattson Energy Monitoring Board]
  * [Dr. Wattson User Manual]
 
 

@@ -5,7 +5,7 @@ Monitor machine AC power use and send alerts on monitored changes.
 - [Power Quality Monitor](#power-quality-monitor)
   - [Problem Description](#problem-description)
   - [Solution Summary](#solution-summary)
-  - [You will need](#you-will-need)
+  - [You Will Need](#you-will-need)
   - [Dr. Wattson Energy Monitor Build](#dr-wattson-energy-monitor-build)
   - [Hardware Setup](#hardware-setup)
   - [Notehub](#notehub)
@@ -36,12 +36,12 @@ For organizations that rely on machinery for their day-to-day operations, an out
 
 This app provides a simple to construct power monitoring device that can be placed in-line with any AC-based machine. Using off-the-shelf hardware and modular components, this solution can be used to add monitoring to a machine regardless of its age or on-board monitoring capability. The hardware and firmware monitor AC energy data (RMS Current, RMS Voltage, Power Factor, Line Frequency, Active/Reactive/Apparent Power) and send regular readings, changes, and configurable alerts to the Notecard and on to Notehub.
 
-## You will need
-
-  * [Notecarrier F](https://shop.blues.io/products/notecarrier-f)
-  * [Swan](https://shop.blues.io/collections/swan)
-  * [Notecard](https://shop.blues.io/collections/notecard)
-  * [Molex Cellular Antenna](https://shop.blues.io/collections/accessories/products/flexible-cellular-or-wi-fi-antenna)
+## You Will Need
+  * A [Blues Starter Kit](https://shop.blues.io/collections/blues-starter-kits), that contains amongst other things
+    * [Notecarrier F](https://shop.blues.io/products/notecarrier-f)
+    * [Swan](https://shop.blues.io/collections/swan)
+    * [Notecard](https://shop.blues.io/collections/notecard)
+    * [Molex Cellular Antenna](https://shop.blues.io/collections/accessories/products/flexible-cellular-or-wi-fi-antenna)
   * [Dr. Wattson Energy Monitoring Board](https://www.upbeatlabs.com/wattson/)
   * [ProtoStax Enclosure for Dr. Wattson](https://www.protostax.com/products/) or similar enclosure
   * A [female to JST qwiic cable assembly](https://www.adafruit.com/product/4397)
@@ -214,15 +214,18 @@ These are the environment variables that should be configured according your use
 
 * `heartbeat_mins`: how many minutes between sending power notifications. The default is 0 which means do not sent regular power monitoring events, only send alerts. Sending a heartbeat event allows normal operation of the machine to be monitored.
 
-* `alert_under_voltage`, `alert_over_voltage`, `alert_change_voltage_percent`: send an alert when voltage is outside the range specified, or changes more than the given percent. The default sends an alert with a greater than 15% change with no over or under voltage given.
+* `alert_under_voltage`, `alert_over_voltage`: send an alert when the measured voltage is above or below the specified values in Volts. The default setting is 0 where no alerts are sent regardless of the measured voltage.
+* `alert_change_voltage_percent`: send an alert when the voltage changes by more than the given percent. The default value is 15, which sends an alert when a 15% or greater change is detected. Set to 0 to disable percentage change alerts.
 
-* `alert_under_current_amps`, `alert_over_current_amps`, `alert_change_current_percent`: as above, measuring current.
+* `alert_under_current_amps`, `alert_over_current_amps`: send an alert when the measured current is above or below the specified values in Amps. The default setting is 0 where no alerts are sent regardless of the measured current.
+`alert_change_current_percent`: send an alert when the measured current changes by more than the given percent. The default value is 15, which sends an alert when a 15% or greater change is detected. Set to 0 to disable percentage change alerts.
 
-* `alert_under_power_watts`, `alert_over_power_watts`, `alert_change_power_percent`: as above measuring active power.
+* `alert_under_power_watts`, `alert_over_power_watts`: send an alert when the measured power is above or below the specified values in Watts. The default setting is 0 where no alerts are sent regardless of the measured power.
+* `alert_change_power_percent`: send an alert when the measured power changes by more than the given percent. The default value is 15, which sends an alert when a 15% or greater change is detected. Set to 0 to disable percentage change alerts.
 
 These environment variables are set in Notehub, either per-device, per-fleet or per-project. For example, if you want all machines to send power monitoring events every 5 minutes, you would set `heartbeat_mins` to `5` at the project level in Notehub.
 
-Please see our tutorial [Understanding Environment Variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) for a fuller description of how environment variables are set.
+Please see our tutorial [Understanding Environment Variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) for a fuller description of how to set environment variables in Notehub.
 
 ## Events
 
@@ -246,7 +249,7 @@ The event body also includes these fields:
 * `apparentPower`: The measured apparent power (in VA).
 * `powerFactor`: The power factor - active power divided by apparent power.
 
-> Note: that when a property in an event is zero, or false, it is not present in the event routed to notehub. For more details see [How the Notecard works with JSON](https://dev.blues.io/notecard/notecard-walkthrough/json-fundamentals/#how-the-notecard-works-with-json).
+> Note: When a property in an event is zero, or false, it is not present in the event routed to notehub. For more details see [How the Notecard works with JSON](https://dev.blues.io/notecard/notecard-walkthrough/json-fundamentals/#how-the-notecard-works-with-json).
 
 
 ### Alerts
@@ -270,7 +273,7 @@ When an alert is triggered, it is immediately synched to Notehub.
 
 ## Routing Data out of Notehub
 
-Notehub supports forwarding data a wide range of API endpoints by using the Route feature. This can be used to forward your power monitoring data to external dashboards and alerts to a realtime notification service.  Here we will use Twilio SMS API to send a notification to a phone number.
+Notehub supports forwarding data to a wide range of API endpoints by using the Route feature. This can be used to forward your power monitoring data to external dashboards and alerts to a realtime notification service.  Here, we will use Twilio SMS API to send a notification to a phone number.
 
 For an introduction to Twilio SMS routes, please see our [Twilio SMS Guide](https://dev.blues.io/guides-and-tutorials/twilio-sms-guide/).
 
