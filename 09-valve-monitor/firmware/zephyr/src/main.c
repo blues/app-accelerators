@@ -44,7 +44,7 @@
  * Uncomment this line and replace com.your-company:your-product-name with your
  * ProductUID.
  */
-/* #define PRODUCT_UID "com.your-company:your-product-name" */
+// #define PRODUCT_UID "com.your-company:your-product-name"
 
 #ifndef PRODUCT_UID
 #define PRODUCT_UID ""
@@ -219,12 +219,12 @@ K_TIMER_DEFINE(valveSafetyTimer, valveSafetyTimerCb, NULL);
 void attnArm(void)
 {
     /*
-     * Once ATTN has triggered, it stays set until explicitly reset. Reset it
+     * Once ATTN has triggered, it stays set until explicitly rearm. Rearm it
      * here. It will trigger again after a change to the watched Notefile.
      */
     state.attnTriggered = false;
     J *req = NoteNewRequest("card.attn");
-    JAddStringToObject(req, "mode", "reset");
+    JAddStringToObject(req, "mode", "rearm");
     NoteRequest(req);
 }
 
