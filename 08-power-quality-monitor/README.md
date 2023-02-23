@@ -24,6 +24,8 @@ Monitor machine AC power use and send alerts on monitored changes.
   - [Configure Monitoring](#configure-monitoring)
   - [Events](#events)
     - [Alerts](#alerts)
+  - [Routing Data out of Notehub](#routing-data-out-of-notehub)
+    - [Testing the Route](#testing-the-route)
 
 
 ## Problem Description
@@ -249,3 +251,37 @@ When the device detects over or under voltage, current or power, or detects a ch
 * (Similarly, `current` and `power` generate alerts when these power aspects are too high or low, or change by the configured percentage.
 
 When an alert is triggered, it is immediately synched to Notehub.
+
+## Routing Data out of Notehub
+
+Notehub supports a wide range of API endpoints by using the Route feature. This can be used to forward your power monitoring data to external dashboards and alerts to a realtime notification service.  Here we will use Twilio SMS API to send a notification to a phone number.
+
+For an introduction to Twilio SMS routes, please see our [Twilio SMS Guide](https://dev.blues.io/guides-and-tutorials/twilio-sms-guide/).
+
+1. Fill out the required fields for the Twilio SMS route, including "from" and "to" phone numbers, where "from" is your virtual Twilio number, and "to" is the number of the phone that receives the alerts. We will not be using placeholders for these numbers, but will use a placeholder for the message, so set the message field to `[.body.customMessage]`.
+
+2. Under "Notefiles", choose "Selected Notefiles", and check `power.qo` from "Include These Notefiles".
+
+3. Under "Data", select "JSONata Expression" and copy and paste the contents of [jsonata/route.jsonata](jsonata/route.jsonata) into the text field "Insert your JSONata expression here".
+
+4. Click "Save Changes".
+
+### Testing the Route
+
+The ideal test is to use the app firmware to generate events. However, it's also possible to simulate an event by pasting these JSON snippets into the the in-browser terminal.
+
+This is a regular power monitoring event. It does not generate an SMS alert.
+
+```json
+{ "req": "note.add", "file":"power.qo", "sync": true, "body": {
+  "current":2.34, "frequency":60, "power":56.67, "voltage":230.12
+}}
+```
+
+This is an alert event, which will result in an SMS message being sent to the phone number in the "to" field.
+
+```json
+{ "req": "note.add", "file":"power.qo", "sync": true, "body": {
+  "current":2.34, "frequency":60, "power":56.67, "voltage":230.12, "alert":"overcurrent,power"
+}}
+```
