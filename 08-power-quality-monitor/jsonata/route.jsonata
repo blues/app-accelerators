@@ -1,0 +1,9 @@
+(
+    $alertMessage := function($e) {(
+        $msg := 'Power alert from ' & ($e.sn ? $e.sn : $e.device) & ': ' & $e.body.alert & ". ";
+        $msg := $msg & $e.body.voltage & "V, " & $e.body.current & "A, " & $e.body.power & "W.";
+        $result := { "customMessage": $msg };
+    )};
+    $additional := $exists($.body.alert) ? $alertMessage($) : $doNotRoute($);
+    $merge([$, {"body": $merge([body, $additional])}]);
+)
