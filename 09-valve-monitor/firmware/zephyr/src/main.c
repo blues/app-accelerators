@@ -67,11 +67,21 @@ typedef struct {
 
 AppState state = {0};
 
-/* Calculate the flow rate in mL/min. */
-uint32_t calculateFlowRate(uint32_t currentMs)
+/*
+ * Calculate the flow rate (Q) in mL/min:
+ * Datasheet: F=(38*Q)±3%, Q=L/Min, error: ±3%
+ * pulse_count = 0.75mL
+ * volume (mL) => (pulse_count * (3/4)(mL))
+ * duration (ms) => (now_ms - last_sample_ms)
+ * duration (s) => (now_ms - last_sample_ms) / 1000
+ * duration (min) => (now_ms - last_sample_ms) / (1000 * 60)
+ */
+#define MS_IN_MIN 60000
+
+static uint32_t calculateFlowRate(uint32_t currentMs)
 {
-    return 60000 * (state.flowMeterPulseCount * 2.25) /
-           (currentMs - state.lastFlowRateCalcMs);
+    return (state.flowMeterPulseCount * MS_IN_MIN * 3) /
+           ((currentMs - state.lastFlowRateCalcMs) * 4);
 }
 
 /* Forward declarations */
