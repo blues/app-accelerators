@@ -21,7 +21,7 @@
 /* Notecard node-c helper methods */
 #include "notecard.h"
 
-/* 
+/*
  * Don't keep valve open for longer than 10 minutes to prevent overheating of
  * its solenoid.
  */
@@ -124,7 +124,7 @@ static const struct gpio_dt_spec attn = GPIO_DT_SPEC_GET_OR(ATTN_NODE, gpios, {0
 static struct gpio_callback attnCbData;
 static void attnCb(const struct device *, struct gpio_callback *, uint32_t)
 {
-    /* 
+    /*
      * This flag will be read in the main loop. We keep the ISR lean and do all
      * the logic in the main loop.
      */
@@ -334,13 +334,11 @@ void publishSystemStatus(bool alarm)
             NoteRequest(req);
         }
         else {
-            printk("Failed to create body for system status "
-                "update.\n");
+            printk("Failed to create body for system status update.\n");
         }
     }
     else {
-        printk("Failed to create note.add request for system status "
-            "update.\n");        
+        printk("Failed to create note.add request for system status update.\n");
     }
 }
 
@@ -449,8 +447,7 @@ bool fetchEnvVars(void)
                 }
             }
             else {
-                printk("NULL body in response to env.get request."
-                    "\n");
+                printk("NULL body in response to env.get request.\n");
             }
         }
 
@@ -463,7 +460,7 @@ bool fetchEnvVars(void)
     return updated;
 }
 
-/* 
+/*
  * Used in the main loop to check for and accept environment variable updates.
  * If any variables are updated, this function sends a note to Notehub to
  * acknowledge the update.
@@ -724,14 +721,13 @@ void main(void)
                              * we want to publish the system status immediately
                              * in response, regardless of if it's time to do so
                              * based on the monitor interval. This acts as a
-                             * sort of acknowledgment so that the controller 
+                             * sort of acknowledgment so that the controller
                              * knows their valve command was received.
                              */
                             publishSystemStatus(false);
                         }
                         else {
-                            printk("Unable to get valve command from note."
-                                "\n");
+                            printk("Unable to get valve command from note.\n");
                         }
                     }
                     else {
@@ -743,7 +739,7 @@ void main(void)
             }
         }
     #endif /* USE_VALVE == 1 */
-        
+
         checkAlarm();
     }
 }
