@@ -62,6 +62,7 @@ typedef struct {
     volatile uint32_t leakCount;
     volatile bool notecardLocked;
     volatile bool attnTriggered;
+    volatile bool publishRequired;
     bool valveOpen;
 } AppState;
 
@@ -165,7 +166,11 @@ K_TIMER_DEFINE(publishSystemStatusTimer, publishSystemStatusTimerCb, NULL);
 static void flowRateCalcTimerCb(struct k_timer *)
 {
     uint32_t currentMs = NoteGetMs();
-    state.flowRate = calculateFlowRate(currentMs);
+    uint32_t flowRate = calculateFlowRate(currentMs);
+    if (state.flowRate != flowRate) {
+        state.flowRate = flowRate;
+        state.publishRequired = true;
+    }
     state.lastFlowRateCalcMs = currentMs;
     state.flowMeterPulseCount = 0;
 
@@ -310,6 +315,7 @@ void valveToggle(void)
     // Adjust valve position
     gpio_pin_toggle_dt(&valve);
     state.valveOpen = !state.valveOpen;
+    state.publishRequired = true;
 
     // Begin flow rate calculation for new state
     k_sleep(K_MSEC(250));  // valve state change cool-down
@@ -356,6 +362,9 @@ void handleValveCmd(char *cmd)
 // send the note to data.qo.
 void publishSystemStatus(bool alarm)
 {
+    // Only publish when necessary to preserve prepaid data
+    if (!state.publishRequired && !alarm) { return; }
+
     const char *file;
 
     if (alarm) {
@@ -392,6 +401,7 @@ void publishSystemStatus(bool alarm)
             JAddItemToObject(req, "body", body);
 
             NoteRequest(req);
+            state.publishRequired = false;
         }
         else {
             printk("Failed to create body for system status update.\n");
@@ -736,6 +746,7 @@ void main(void)
                             // based on the monitor interval. This acts as a
                             // sort of acknowledgment so that the controller
                             // knows their valve command was received.
+                            state.publishRequired = true;
                             publishSystemStatus(false);
                         }
                         else {
