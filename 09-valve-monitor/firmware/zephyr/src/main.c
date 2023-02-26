@@ -243,6 +243,10 @@ void attnArm(void)
 /* Toggle the valve's state. If open, close. If closed, open. */
 void valveToggle(void)
 {
+    // Finalize flow rate calculation for previous state
+    k_timer_stop(&flowRateCalcTimer);
+
+    // Update safety timer (prevents overheating of solenoid)
     if (state.valveOpen) {
         k_timer_stop(&valveSafetyTimer);
     }
@@ -255,8 +259,18 @@ void valveToggle(void)
         state.leakCount = 0;
     }
 
+    // Adjust valve position
     gpio_pin_toggle_dt(&valve);
     state.valveOpen = !state.valveOpen;
+
+    // Begin flow rate calculation for new state
+    k_sleep(K_MSEC(250));  // valve state change cool-down
+    k_timer_start(&flowRateCalcTimer, K_MSEC(FLOW_CALC_INTERVAL_MS),
+                  K_MSEC(FLOW_CALC_INTERVAL_MS));
+
+    // Reset variable used to calculate flow rate
+    state.lastFlowRateCalcMs = NoteGetMs();
+    state.flowMeterPulseCount = 0;
 }
 
 /*
