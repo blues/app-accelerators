@@ -1,0 +1,8 @@
+{
+    "configuration": "pnum=SWAN_R5,upload_method=swdMethod,xserial=generic,usb=CDCgen,xusb=FS,opt=osstd,dbg=none,rtlib=nano",
+    "board": "STMicroelectronics:stm32:BluesW",
+    "sketch": "notepower/notepower.ino",
+    "buildPreferences": [
+        ["compiler.cpp.extra_flags", "-DSERIAL_RX_BUFFER_SIZE=4096"]
+    ]
+}
