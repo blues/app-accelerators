@@ -28,6 +28,9 @@ Monitor a generator’s input and output AC supply, alert on anomalies and power
   - [Events](#events)
     - [Alerts](#alerts)
       - [Power Activity Alerts](#power-activity-alerts)
+  - [Routing Data out of Notehub](#routing-data-out-of-notehub)
+    - [Testing the Route](#testing-the-route)
+  - [Blues Community](#blues-community)
 
 
 ## You Will Need
@@ -354,3 +357,61 @@ These alerts are produced for a given instance when the corresponding [`alert_po
 * `novoltage`,`nocurrent`: no voltage or current is detected when the activity pin is high, indicating a supply or load should be active, but isn't.
 
 * `inactivevoltage`, `inactivecurrent`: voltage or current is detected when the activity pin is low, indicating the supply or load should be inactive, but isn't.
+
+
+
+## Routing Data out of Notehub
+
+Now that we have power monitoring events and alerts available, routing them from Notehub is our next step.
+
+Notehub supports forwarding data to a wide range of API endpoints by using the Route feature. This can be used to forward your power monitoring data to external dashboards and alerts to a realtime notification service.  Here, we will use Twilio SMS API to send a notification of an alert to a phone number.
+
+For an introduction to Twilio SMS routes, please see our [Twilio SMS Guide](https://dev.blues.io/guides-and-tutorials/twilio-sms-guide/).
+
+1. Fill out the required fields for the Twilio SMS route, including "from" and "to" phone numbers, where "from" is your virtual Twilio number, and "to" is the number of the phone that receives the alerts. We will not be using placeholders for these numbers, but will use a placeholder for the message, so set the message field to `[.body.customMessage]`.
+
+2. Under "Notefiles", choose "Selected Notefiles", and check `power.qo` from "Include These Notefiles".
+
+3. Under "Data", select "JSONata Expression" and copy and paste the contents of [jsonata/route.jsonata](jsonata/route.jsonata) into the text field "Insert your JSONata expression here".
+
+4. Click "Save Changes".
+
+### Testing the Route
+
+The ideal test is to use the app firmware to generate alerts. However, it's also possible to simulate an event by pasting these JSON snippets into the the in-browser terminal.
+
+This is a regular power monitoring event. It does not generate an SMS alert.
+
+```json
+{ "req": "note.add", "file":"power.qo", "sync": true, "body": {
+  "current":2.34, "frequency":60, "power":56.67, "voltage":230.12, "instance":2, "active":true,
+}}
+```
+
+This is an alert event (due to the presence of the `alert` property), which will result in an SMS message being sent to the phone number in the "to" field.
+
+```json
+{ "req": "note.add", "file":"power.qo", "sync": true, "body": {
+  "current":2.34, "frequency":60, "power":56.67, "voltage":230.12, "alert":"overcurrent,power", "instance":2, "active":true
+}}
+```
+
+This will send a SMS that looks like this:
+
+> Power alert from facility-1 generator active: yes: overcurrent,power. 120V, 25A, 3000W.
+
+These are the parts of the message:
+
+* The first part of the message indicates which device/facility the alert pertains to by its serial number, here "faility-1".
+
+* The next part indicates which monitor instance generated the alert, here it is "generator", with "utility supply" as the other option. These names relate to the instance numbers, and here we are using 1 and 2 for utility supply and generator. If your monitors are configured with different I2C addresses, you will need to edit the names "instance-3" and "instance-4" in the jsonata script.
+
+* The activity state comes next, indicating that the generator signals that it is active.
+
+* The alerts are next, here "overcurrent" and "power" alerts, indicating that the measured current was higher than the `alert_over_current_amps` environment variable, and that power changed by more than `alert_change_power_percent`.
+
+* Finally, we have the power information, showing the measured voltage, current and power at the time of the alert.
+
+## Blues Community
+
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
