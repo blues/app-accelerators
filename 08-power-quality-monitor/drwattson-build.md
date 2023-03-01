@@ -196,9 +196,9 @@ Your completed board should look similar to this.
 
 # References
 
- * [Dr. Wattson Energy Montiring Board]
+ * [Dr. Wattson Energy Monitoring Board]
  * [Dr. Wattson User Manual]
 
 
-[Dr. Wattson Energy Montiring Board]: https://www.upbeatlabs.com/wattson/
+[Dr. Wattson Energy Monitoring Board]: https://www.upbeatlabs.com/wattson/
 [Dr. Wattson User Manual]: ./docs/DrWattsonUserManual.pdf
