@@ -17,7 +17,7 @@
 #include "note.h"
 
 // Notecard node-c helper methods
-#include "notecard.h"
+#include "note_c_hooks.h"
 
 // Don't keep valve open for longer than 10 minutes to prevent overheating of
 // its solenoid.

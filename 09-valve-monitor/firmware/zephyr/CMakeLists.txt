@@ -57,7 +57,7 @@ target_sources(app
     PRIVATE ${NOTE_C}/n_str.c
     PRIVATE ${NOTE_C}/n_ua.c
     PRIVATE ${SRC}/main.c
-    PRIVATE ${SRC}/notecard.c
+    PRIVATE ${SRC}/note_c_hooks.c
 )
 
 target_include_directories(app
