@@ -23,7 +23,7 @@ Monitor a generator’s input and output AC supply, alert on anomalies and power
   - [Configure Monitoring](#configure-monitoring)
     - [Instance number](#instance-number)
   - [Activity GPIOs](#activity-gpios)
-- [Configuring Power Activity Alerts](#configuring-power-activity-alerts)
+  - [Configuring Power Activity Alerts](#configuring-power-activity-alerts)
   - [Example Configuration](#example-configuration)
   - [Events](#events)
     - [Alerts](#alerts)
@@ -42,11 +42,11 @@ Monitor a generator’s input and output AC supply, alert on anomalies and power
   * [LiPo battery](https://shop.blues.io/collections/accessories/products/5-000-mah-lipo-battery)
   * 2 x [Dr. Wattson Energy Monitoring Board](https://www.upbeatlabs.com/wattson/)
   * 2 x [ProtoStax Enclosure for Dr. Wattson](https://www.protostax.com/products/) or similar enclosure
-  * 2 x [female to JST qwiic cable assembly](https://www.adafruit.com/product/4397)
+  * 2 x [female-to-JST qwiic cable assembly](https://www.adafruit.com/product/4397)
 
 For each Dr. Wattson energy monitor board you will need:
 
-  * Male to female grounded extension cable or suitable cables to wire an IEC or NEMA AC inlet and outlet to Dr. Wattson. 16 gauge is recommended as the minimum dimension. Please select suitable wiring gauge for the maximum load expected from the generator.
+  * Male-to-female grounded extension cable or suitable cables to wire an IEC or NEMA AC inlet and outlet to Dr. Wattson. 16 gauge is recommended as the minimum dimension. Please select suitable wiring gauge for the maximum load expected from the generator.
 
   * Corded female NEMA socket for USB power, 18-gauge diameter minimum, such as a spliced male-to-female 18-gauge extension cable
 
@@ -54,7 +54,7 @@ For each Dr. Wattson energy monitor board you will need:
 
 Tools required:
 
-  * Soldering iron (to melt and bridge solder jumpers on the Dr. Wattson board for I2C address configuration.)
+  * Soldering iron (to melt and bridge solder jumpers on the Dr. Wattson board for I2C address configuration)
   * Wire cutter and stripper
   * Spade connectors or solder
   * Crimper to crimp AC wires to spade connectors (if used)
@@ -72,11 +72,11 @@ The solution comprises hardware, firmware, and Notehub environment variables and
 
 The Dr. Wattson energy monitoring board monitors power by being looped into the mains AC wiring both for input and output of the generator being monitored. Additionally, solder jumpers are configured to select the I2C address of the Dr. Wattson board.
 
-> Note: The solution uses 2 Dr. Wattson boards connected to one Notecard - both boards must be configured with different I2C address.  In this guide we use address `0x74` for utility power and address `0x75` for generator output power, which corresponds with monitor instance 1 and monitor instance 2.
+> **Note**: As the solution uses two Dr. Wattson boards connected to one Notecard, both boards must be configured with different I2C address.  In this guide we use address `0x74` for utility power and address `0x75` for generator output power, which corresponds with monitor instance 1 and monitor instance 2.
 
 Please see [Dr. Wattson Energy Monitor build](../08-power-quality-monitor/drwattson-build.md) for build instructions.
 
-With the build complete, you will have a 2 power monitors, each with an AC inlet and two AC outlets, like this
+With the build complete, you will have two power monitors, each with an AC inlet and two AC outlets, like this
 
 <img alt="Dr. Wattson monitor complete" title="Dr. Wattson Monitor complete" src="./images/wiring-10-complete.jpg" width="30%" height="30%"/>
 
@@ -87,21 +87,21 @@ With the build complete, you will have a 2 power monitors, each with an AC inlet
 
 2. On the Notecarrier, ensure the `DFU` DIP switch set to `ON`, which maps `AUX RX/TX` over to `F_TX/F_RX` so that notifications can be sent to the host via a serial connection. (see [`card.aux.serial`](https://dev.blues.io/reference/notecard-api/card-requests/#card-aux-serial))
 
-3. Similarly, set the `SWITCHED` DIP switch to the `ON` position.
+3. Similarly, set the Notecarrier's `SWITCHED` DIP switch to the `ON` position.
 
-4. Connect the 2 I2C Qwiic cables between the Notecarrier and Dr. Wattson boards:
+4. Connect the two I2C Qwiic cables between the Notecarrier and Dr. Wattson boards:
 
-   * with the Dr. Wattson board laid out with the 8 pins pointing at you, connect the jumper connectors as follows:
+   * With the Dr. Wattson board laid out with the 8 pins pointing at you, connect the jumper connectors as follows:
       ```
       BLACK  RED  NC  NC  NC  NC  BLUE  YELLOW
       ```
-    ![](images/drwattson-i2c.jpg)
+    ![](../08-power-quality-monitor/images/drwattson-i2c.jpg)
 
     * Insert the Qwiic JST connector into one of the `F_I2C` connectors on the edge of the Notecarrier-F next to the USB port. You may also connect it to the I2C connector on the Swan.
 
 5. Connect the Swan to your computer using a micro-USB cable. This is so that the firmware can be uploaded to the Swan.
 
-6. Connect the Notecarrier to your computer using a micro-USB cable. This emulates the deployed setup where the Notecarrier and Swan are powered by 2 USB connections for redundancy.
+6. Connect the Notecarrier to your computer using a micro-USB cable. This emulates the deployed setup where the Notecarrier and Swan are powered by two USB connections for redundancy.
 
 7. Insert the JST connector on the LiPo battery into the socket marked "LIPO" on the Notecard.
 
@@ -110,7 +110,7 @@ With the build complete, you will have a 2 power monitors, each with an AC inlet
 
 Sign up for a free account on [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub).
 
-You may choose to deploy one instance fo this solution, or deploy several instances to monitor multiple generators at a facility. When monitoring multiple generators, it is useful to group the devices at a facility into a Fleet. For more details, see [The Fleet Administrator's Guide](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/).
+You may choose to deploy one instance of this solution, or deploy several instances to monitor multiple generators at a facility. When monitoring multiple generators, it is useful to group the devices at a facility into a Fleet. For more details, see [The Fleet Administrator's Guide](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/).
 
 ## Application Firmware
 
@@ -120,7 +120,7 @@ The application firmware found under the [firmware](./firmware/) folder can be b
 * Arduino extension for Visual Studio Code
 * Arduino IDE
 
-We recommend using one of the VS Code extensions, since they are easier to setup and use, and provide a comprehensive development experience. However, if you're familiar with the Arduino IDE, that can be used as well but requires a little more setup.
+We recommend using one of the VS Code extensions, since they are easier to set up and use, and provide a comprehensive development experience. However, if you're familiar with the Arduino IDE, that can be used as well but requires a little more setup.
 
 ### PlatformIO extension for VS Code
 
@@ -190,9 +190,9 @@ There are two ways to configure the ProductUID created in the Notehub setup abov
 
 You can also omit the serial number and use Notehub to set it:
 
-* open the project in notehub
-* from the list of devices, double click the device who's serial number you want to set
-* in the "Summary" tab, use the pencil icon to edit the Serial Number field.
+1. Open the project in Notehub.
+2. From the list of devices, double click the device that has the serial number you want to set.
+3. In the "Summary" tab, use the pencil icon to edit the Serial Number field.
 
 #### Editing the Source Code
 
@@ -207,7 +207,7 @@ pasting in the ProductUID from your notehub project between the first pair of qu
 
 ## Electrical Connections
 
-With the Dr. Wattson boards looped into the flow of power via extension cables, the generator you want to monitor has its electrical input connected to one monitor board, and it's electrical output connected to the other.
+With the Dr. Wattson boards looped into the flow of power via extension cables, the generator you want to monitor has its electrical input connected to one monitor board, and its electrical output connected to the other.
 
 For ease of identification, use the board with the lower I2C address to monitor input power, and the higher I2C address to monitor generator output. We recommend using addresses `0x74` and `0x75`.
 
@@ -215,11 +215,11 @@ The solution can make use of a 3.3v-5v "generator active" signal, which may or m
 
 ![](images/electrical_schematic_activity_signal.png)
 
-Otherwise, you can simulate a generator active signal by connecting the Notecarrier to the Generator monitor's USB output and using a jumper wire to connect `N_VUSB` to `D11`. Please note that not all pins are 5v-tolerant, so use caution and check the datasheet for your MCU. On Swan, D11 and D12 are 5v-tolerant, but not D10 or D13.
+Otherwise, you can simulate a generator active signal by connecting the Notecarrier to the Generator monitor's USB output and using a jumper wire to connect `N_VUSB` to `D11`. Please note that not all pins are 5v-tolerant, so use caution and check the datasheet for your MCU. On Swan, D11 and D12 are 5v-tolerant, but D10 and D13 are not.
 
 ![](images/electrical_schematic_retrofit.png)
 
-During development and testing, you will typically power the Notecarrier and Swan via USB cables from your computer. When the application is deployed, you will use a USB power adapter plugged into each of the 18-gauge wired outlets that you added to the 2 Dr. Wattson monitoring boards.
+During development and testing, you will typically power the Notecarrier and Swan via USB cables from your computer. When the application is deployed, you will use a USB power adapter plugged into each of the 18-gauge wired outlets that you added to the two Dr. Wattson monitoring boards.
 
 ## Testing
 
@@ -235,15 +235,15 @@ The app is configured using a number of environment variables. Configuration inc
 
 Alerts are generated when the current, voltage, or power use is outside the configured range or when a change greater than a given percent is detected.
 
-These are the environment variables that should be configured according your use case:
+These are the environment variables that can be configured according your use case:
 
-* `heartbeat_mins`: how many minutes between sending power notifications. The default is 0 which means do not sent regular power monitoring events, only send alerts. Sending a heartbeat event allows operation of the power source and generator output to be monitored.
+* `heartbeat_mins`: how many minutes between sending power notifications. The default is 0 which means do not send regular power monitoring events, only send alerts. Sending a heartbeat event allows operation of the power source and generator output to be monitored.
 
-* `alert_under_voltage`, `alert_over_voltage`: send an alert when the measured voltage is above or below the specified values in Volts. The default setting is 0 where no alerts are sent regardless of the measured voltage.
-* `alert_change_voltage_percent`: send an alert when the voltage changes by more than the given percent. The default value is 15, which sends an alert when a 15% or greater change is detected. Set to 0 to disable percentage change alerts.
+* `alert_under_voltage`, `alert_over_voltage`: send an alert when the measured voltage is above or below the specified values in Volts. The default setting is `0`, where no alerts are sent regardless of the measured voltage.
+* `alert_change_voltage_percent`: send an alert when the voltage changes by more than the given percent. The default value is `15`, which sends an alert when a 15% or greater change is detected. Set to `0` to disable percentage change alerts.
 
-* `alert_under_current_amps`, `alert_over_current_amps`: send an alert when the measured current is above or below the specified values in Amps. The default setting is 0 where no alerts are sent regardless of the measured current.
-`alert_change_current_percent`: send an alert when the measured current changes by more than the given percent. The default value is 15, which sends an alert when a 15% or greater change is detected. Set to 0 to disable percentage change alerts.
+* `alert_under_current_amps`, `alert_over_current_amps`: send an alert when the measured current is above or below the specified values in Amps. The default setting is `0`, where no alerts are sent regardless of the measured current.
+`alert_change_current_percent`: send an alert when the measured current changes by more than the given percent. The default value is `15`, which sends an alert when a 15% or greater change is detected. Set to `0` to disable percentage change alerts.
 
 * `alert_under_power_watts`, `alert_over_power_watts`: send an alert when the measured power is above or below the specified values in Watts. The default setting is 0 where no alerts are sent regardless of the measured power.
 * `alert_change_power_percent`: send an alert when the measured power changes by more than the given percent. The default value is 15, which sends an alert when a 15% or greater change is detected. Set to 0 to disable percentage change alerts.
@@ -280,17 +280,17 @@ To configure an activity pin as input, set the environment variable `inputX=true
 
 To configure an activity pin as output, set the environment variable `switchX=1` to drive the pin high, or `switchX=0` to drive the pin low, replacing X with the monitor's instance number. As with input, the `active` property in monitoring events shows the current state of the pin.
 
-# Configuring Power Activity Alerts
+## Configuring Power Activity Alerts
 
-In addition to simply monitoring the activity level of a line, environment variables can be used to add additional behaviors that correlate the measured power with the expected line activity:
+In addition to simply monitoring the activity level of a line, you can use environment variables to add additional behaviors that correlate the measured power with the expected line activity:
 
 * `alert_power_activity_[1-4]`: Accepted values are `load` or `source`.  When set to `load`, the corresponding line power is checked against the activity state of the corresponding pin. When the pin is low, line current and power are expected to be zero and voltage is expected to be within the over/under voltage configuration, since the load is continuously powered, but does not consume power when inactive. Setting the value to `supply` indicates the line is a source of power with the expectation that voltage, current and power are all zero when the pin is low, and within the configured ranges when the pin is on.
 
 These variables describe how long it takes for a generator to startup or shutdown, or for a load to reach steady state. Activity alerts are suppressed during the startup and shutdown period.
 
-* `power_activity_startup_secs_[1-4]`: the duration in seconds for how long it takes the power level to stabilize on becoming active. Alerts are suppressed for this period when a line goes from inactive to active. The default value is 0.
+* `power_activity_startup_secs_[1-4]`: the duration in seconds for how long it takes the power level to stabilize on becoming active. Alerts are suppressed for this period when a line goes from inactive to active. The default value is `0`.
 
-* `power_activity_shutdown_secs_[1-4]`: the duration in seconds for how long it takes for the power level to stabilize on becoming inactive.  Alerts are suppressed for this period when a line goes from active to inactive. The default value is 0.
+* `power_activity_shutdown_secs_[1-4]`: the duration in seconds for how long it takes for the power level to stabilize on becoming inactive.  Alerts are suppressed for this period when a line goes from active to inactive. The default value is `0`.
 
 
 ## Example Configuration
@@ -299,11 +299,11 @@ With a 120v supply and generator, this configuration monitors utility power and 
 
 | Environment variable name | Value  | Description                                    |
 | :------------------------ | :----: | :------------------------------------------------------------|
-| heartbeat_mins            | 5      | Send power monitoring events every 5 minutes. |
-| alert_under_voltage       | 100    | Send an alert when voltage is < 100v. |
-| alert_over_voltage        | 135    | Send an alert when voltage is above 135v. |
-| input2                    | true   | Sense monitor 2 (generator) activity, reported in monitoring events |
-| alert_power_activity_2    | supply | Monitor the generator GPIO and alert when line voltage does not match gneerator activity |
+| `heartbeat_mins`          | 5      | Send power monitoring events every 5 minutes. |
+| `alert_under_voltage`     | 100    | Send an alert when voltage is < 100v. |
+| `alert_over_voltage`      | 135    | Send an alert when voltage is above 135v. |
+| `input2`                  | true   | Sense monitor 2 (generator) activity, reported in monitoring events. |
+| `alert_power_activity_2`  | supply | Monitor the generator GPIO and alert when line voltage does not match generator activity. |
 
 Additionally, if you wanted to ensure that the load is always operational and consuming power (for loads that run continuously), set `alert_power_activity_2` to `load`. For loads that are not running continuously, you can use a 3rd power monitor instance to independently monitor the load against its expected activity state.
 
@@ -329,7 +329,7 @@ The event body also includes these named values:
 * `reactivePower`: The measured reactive power (in VAR).
 * `apparentPower`: The measured apparent power (in VA).
 * `powerFactor`: The power factor - active power divided by apparent power.
-* `active`: set to True to indicate the corresponding instance pin is active.
+* `active`: has the values `true` or `false` to indicate whether the corresponding instance pin is active.
 
 > Note: When a property in an event is zero, or false, it is not present in the event routed to notehub. For more details see [How the Notecard works with JSON](https://dev.blues.io/notecard/notecard-walkthrough/json-fundamentals/#how-the-notecard-works-with-json).
 
@@ -402,13 +402,13 @@ This will send a SMS that looks like this:
 
 These are the parts of the message:
 
-* The first part of the message indicates which device/facility the alert pertains to by its serial number, here "faility-1".
+* The first part of the message indicates which device/facility the alert pertains to by its serial number, here "facility-1".
 
 * The next part indicates which monitor instance generated the alert, here it is "generator", with "utility supply" as the other option. These names relate to the instance numbers, and here we are using 1 and 2 for utility supply and generator. If your monitors are configured with different I2C addresses, you will need to edit the names "instance-3" and "instance-4" in the jsonata script.
 
 * The activity state comes next, indicating that the generator signals that it is active.
 
-* The alerts are next, here "overcurrent" and "power" alerts, indicating that the measured current was higher than the `alert_over_current_amps` environment variable, and that power changed by more than `alert_change_power_percent`.
+* The alerts are next. Here "overcurrent" and "power" alerts indicate that the measured current was higher than the `alert_over_current_amps` environment variable, and that power changed by more than `alert_change_power_percent`.
 
 * Finally, we have the power information, showing the measured voltage, current and power at the time of the alert.
 

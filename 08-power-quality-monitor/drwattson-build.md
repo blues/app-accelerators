@@ -133,7 +133,9 @@ The green protective earth cable isn't joined yet, and is left as is. We will do
 Once this is done, you will have 3 wires joined:
 
 1. the neutral from the inlet cable, after it passes through the current transformer
+
 2. the neutral wire used to power the monitoring board
+
 3. the neutral wire to the USB power outlet
 
 #### Live
@@ -145,7 +147,9 @@ Once this is done, you will have 3 wires joined:
 Once this is done, you will have 3 wires joined:
 
 1. the live from the inlet cable
+
 2. the live wire used to power the monitoring board
+
 3. the live wire to the USB power outlet
 
 ![](images/wiring-07-usb-receptacle-and-monitor-power.jpg)
@@ -192,7 +196,7 @@ Your completed board should look similar to this.
 
 # References
 
- * [Dr. Wattson Energy Monitoring Board]
+ * [Dr. Wattson Energy Montiring Board]
  * [Dr. Wattson User Manual]
 
 
