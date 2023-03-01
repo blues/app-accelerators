@@ -24,8 +24,8 @@
 #define MAX_OPEN_S (10 * 60)
 // Check for environment variable changes every 5 seconds.
 #define ENV_POLL_S 5
-// Check alarm conditions every 10 seconds.
-#define ALARM_CHECK_S 10
+// This value specifies how frequently the alarm conditions should be checked.
+#define ALARM_CHECK_S 1
 // After triggering an alarm, we won't publish another until this cooldown has
 // expired.
 #define ALARM_COOLDOWN_S 30
@@ -34,7 +34,11 @@
 // too small, its possible we won't have enough sensor data (i.e. pulses) to
 // produce an accurate flow rate measurement.
 #define FLOW_CALC_INTERVAL_MS 500
-
+// The `lockNotecard` function is a spin lock, and this value is responsible for
+// controlling the polling frequency.
+#define NOTECARD_LOCK_POLLS_MS 10
+// This value serves as a low-pass filter to protect against spurious
+// leak warnings.
 #define LEAK_THRESHOLD 6
 
 // Uncomment the define below and replace com.your-company:your-product-name
@@ -56,6 +60,7 @@ typedef struct {
     uint32_t flowRateAlarmMin;
     uint32_t flowRateAlarmMax;
     volatile uint32_t leakCount;
+    volatile bool notecardLocked;
     volatile bool attnTriggered;
     bool valveOpen;
 } AppState;
@@ -64,8 +69,8 @@ AppState state = {0};
 
 // Calculate the flow rate (Q) in mL/min:
 // Datasheet: F=(38*Q)±3%, Q=L/Min, error: ±3%
-// pulse_count = 0.75mL
-// volume (mL) => (pulse_count * (3/4)(mL))
+// pulse_count = ~0.50mL
+// volume (mL) => (pulse_count * (1/2)(mL))
 // duration (ms) => (now_ms - last_sample_ms)
 // duration (s) => (now_ms - last_sample_ms) / 1000
 // duration (min) => (now_ms - last_sample_ms) / (1000 * 60)
@@ -73,8 +78,8 @@ AppState state = {0};
 
 static uint32_t calculateFlowRate(uint32_t currentMs)
 {
-    return (state.flowMeterPulseCount * MS_IN_MIN * 3) /
-           ((currentMs - state.lastFlowRateCalcMs) * 4);
+    return (state.flowMeterPulseCount * MS_IN_MIN * 1) /
+           ((currentMs - state.lastFlowRateCalcMs) * 2);
 }
 
 // Forward declarations
@@ -256,29 +261,21 @@ K_TIMER_DEFINE(valveSafetyTimer, valveSafetyTimerCb, NULL);
 
 // END TIMERS
 
-#ifndef USE_SERIAL
-
-static bool notecardLocked = false;
-
-#define NOTECARD_LOCK_POLLS_MS 10
-
 // Attempt to get a lock on the I2C bus. This will spin forever until the lock
 // is released.
 void lockNotecard(void)
 {
-    while (notecardLocked) {
+    while (state.notecardLocked) {
         NoteDelayMs(NOTECARD_LOCK_POLLS_MS);
     }
 
-    notecardLocked = true;
+    state.notecardLocked = true;
 }
 
 void unlockNotecard(void)
 {
-    notecardLocked = false;
+    state.notecardLocked = false;
 }
-
-#endif // !USE_SERIAL
 
 // Arm the ATTN interrupt.
 void attnArm(void)
@@ -314,14 +311,14 @@ void valveToggle(void)
     gpio_pin_toggle_dt(&valve);
     state.valveOpen = !state.valveOpen;
 
-    // Reset variable used to calculate flow rate
-    state.lastFlowRateCalcMs = NoteGetMs();
-    state.flowMeterPulseCount = 0;
-
     // Begin flow rate calculation for new state
     k_sleep(K_MSEC(250));  // valve state change cool-down
     k_timer_start(&flowRateCalcTimer, K_MSEC(FLOW_CALC_INTERVAL_MS),
                   K_MSEC(FLOW_CALC_INTERVAL_MS));
+
+    // Reset variable used to calculate flow rate
+    state.lastFlowRateCalcMs = NoteGetMs();
+    state.flowMeterPulseCount = 0;
 }
 
 // Handle a valve command from Notehub. Supported commands are "open" and
@@ -704,6 +701,9 @@ void main(void)
     while (true) {
     #if USE_VALVE == 1
         if (state.attnTriggered) {
+            // Re-arm the ATTN interrupt.
+            attnArm();
+
             // Process all pending inbound requests.
             while (true) {
                 // Pop the next available note from data.qi.
@@ -749,9 +749,6 @@ void main(void)
 
                 NoteDeleteResponse(rsp);
             }
-
-            // Re-arm the ATTN interrupt.
-            attnArm();
         }
     #endif // USE_VALVE == 1
     }
