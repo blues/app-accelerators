@@ -298,7 +298,9 @@ void attnArm(void)
 // Toggle the valve's state. If open, close. If closed, open.
 void valveToggle(void)
 {
-    // Finalize flow rate calculation for previous state
+    // Halt timers related to flow rate, publish and alarms
+    k_timer_stop(&checkAlarmTimer);
+    k_timer_stop(&publishSystemStatusTimer);
     k_timer_stop(&flowRateCalcTimer);
 
     // Update safety timer (prevents overheating of solenoid)
@@ -319,12 +321,20 @@ void valveToggle(void)
 
     // Begin flow rate calculation for new state
     k_sleep(K_MSEC(250));  // valve state change cool-down
-    k_timer_start(&flowRateCalcTimer, K_MSEC(FLOW_CALC_INTERVAL_MS),
-                  K_MSEC(FLOW_CALC_INTERVAL_MS));
 
-    // Reset variable used to calculate flow rate
+    // Reset variables used to calculate flow rate
+    state.flowRate = 0;
     state.lastFlowRateCalcMs = NoteGetMs();
     state.flowMeterPulseCount = 0;
+
+    // Restart flow rate, publish, alarm timers
+    k_timer_start(&flowRateCalcTimer, K_MSEC(FLOW_CALC_INTERVAL_MS),
+                  K_MSEC(FLOW_CALC_INTERVAL_MS));
+    k_timer_start(&publishSystemStatusTimer,
+                    K_SECONDS(state.monitorInterval),
+                    K_SECONDS(state.monitorInterval));
+    k_timer_start(&checkAlarmTimer, K_SECONDS(ALARM_CHECK_S),
+                  K_SECONDS(ALARM_CHECK_S));
 }
 
 // Handle a valve command from Notehub. Supported commands are "open" and
