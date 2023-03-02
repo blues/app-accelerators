@@ -317,7 +317,6 @@ void valveToggle(void)
     // Adjust valve position
     gpio_pin_toggle_dt(&valve);
     state.valveOpen = !state.valveOpen;
-    state.publishRequired = true;
 
     // Begin flow rate calculation for new state
     k_sleep(K_MSEC(250));  // valve state change cool-down
@@ -341,6 +340,10 @@ void valveToggle(void)
 // "close".
 void handleValveCmd(char *cmd)
 {
+    // We must publish to acknowledge the controller
+    // so it knows the valve command was received.
+    state.publishRequired = true;
+
     if (!strcmp(cmd, "open")) {
         printk("Received valve open cmd.\n");
         if (state.valveOpen) {
@@ -756,7 +759,6 @@ void main(void)
                             // based on the monitor interval. This acts as a
                             // sort of acknowledgment so that the controller
                             // knows their valve command was received.
-                            state.publishRequired = true;
                             publishSystemStatus(false);
                         }
                         else {
