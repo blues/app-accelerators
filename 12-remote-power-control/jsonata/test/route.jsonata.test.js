@@ -15,7 +15,7 @@ const power_monitoring_event = {
 
 const overcurrent_alert = {
   "device": "dev:1234",
-  "sn": "facility-1",
+  "sn": "machine-1",
   "body": {
     "current": 5,           // Line RMS current (A)
     "frequency": 59.8125,   // Line AC frequency (Hz)
@@ -155,7 +155,7 @@ describe("route jsonata", () => {
     describe("instance", () => {
       const instance_not_present = {
         "device": "dev:1234",
-        "sn": "facility-1",
+        "sn": "machine-1",
         "body": {
           "current": 5,           // Line RMS current (A)
           "frequency": 59.8125,   // Line AC frequency (Hz)
@@ -167,7 +167,7 @@ describe("route jsonata", () => {
 
       const instance_1_present = {
         "device": "dev:1234",
-        "sn": "facility-1",
+        "sn": "machine-1",
         "body": {
           "current": 5,           // Line RMS current (A)
           "frequency": 59.8125,   // Line AC frequency (Hz)
@@ -180,7 +180,7 @@ describe("route jsonata", () => {
 
       const instance_2_present = {
         "device": "dev:1234",
-        "sn": "facility-1",
+        "sn": "machine-1",
         "body": {
           "current": 5,           // Line RMS current (A)
           "frequency": 59.8125,   // Line AC frequency (Hz)
@@ -193,7 +193,7 @@ describe("route jsonata", () => {
 
       const instance_3_present = {
         "device": "dev:1234",
-        "sn": "facility-1",
+        "sn": "machine-1",
         "body": {
           "current": 5,           // Line RMS current (A)
           "frequency": 59.8125,   // Line AC frequency (Hz)
@@ -206,7 +206,7 @@ describe("route jsonata", () => {
 
       const instance_4_present = {
         "device": "dev:1234",
-        "sn": "facility-1",
+        "sn": "machine-1",
         "body": {
           "current": 5,           // Line RMS current (A)
           "frequency": 59.8125,   // Line AC frequency (Hz)
@@ -230,7 +230,7 @@ describe("route jsonata", () => {
 
       it("2", () => {
         const result = evaluateEnvironment(instance_2_present);
-        expect(result.body.customMessage).toMatch("generator: ");
+        expect(result.body.customMessage).toMatch("equipment: ");
       });
 
       it("3", () => {
@@ -247,7 +247,7 @@ describe("route jsonata", () => {
     describe("activity", () => {
       const instance_2_active = {
         "device": "dev:1234",
-        "sn": "facility-1",
+        "sn": "machine-1",
         "body": {
           "current": 5,           // Line RMS current (A)
           "frequency": 59.8125,   // Line AC frequency (Hz)
@@ -261,7 +261,7 @@ describe("route jsonata", () => {
 
       const instance_2_inactive = {
         "device": "dev:1234",
-        "sn": "facility-1",
+        "sn": "machine-1",
         "body": {
           "current": 5,           // Line RMS current (A)
           "frequency": 59.8125,   // Line AC frequency (Hz)
@@ -290,7 +290,7 @@ describe("route jsonata", () => {
 
       it("makes the complete message", () => {
         const result = evaluateEnvironment(instance_2_active);
-        expect(result.body.customMessage).toBe("Power alert from facility-1 generator active: yes: overcurrent,power. 120V, 5A, 600W.");
+        expect(result.body.customMessage).toBe("Power alert from machine-1 equipment active: yes: overcurrent,power. 120V, 5A, 600W.");
       });
     });
   });

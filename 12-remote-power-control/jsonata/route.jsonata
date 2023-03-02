@@ -1,6 +1,6 @@
 (
     $alertMessage := function($e) {(
-        $instanceNames := ["unknown-0", "utility supply", "generator", "instance-3", "instance-4"];
+        $instanceNames := ["unknown-0", "utility supply", "equipment", "instance-3", "instance-4"];
         $instanceMsg := $e.body.instance ? $instanceNames[$e.body.instance] : "unknown";
         $activeMsg := $exists($e.body.active) ? (
             " active: " & ($e.body.active ? "yes" : "no")
