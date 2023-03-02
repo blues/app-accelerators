@@ -1,0 +1,14 @@
+(
+    $alertMessage := function($e) {(
+        $instanceNames := ["unknown-0", "utility supply", "equipment", "instance-3", "instance-4"];
+        $instanceMsg := $e.body.instance ? $instanceNames[$e.body.instance] : "unknown";
+        $activeMsg := $exists($e.body.active) ? (
+            " active: " & ($e.body.active ? "yes" : "no")
+        ) : "";
+        $msg := 'Power alert from ' & ($e.sn ? $e.sn : $e.device) & ' ' & $instanceMsg & $activeMsg & ': ' & $e.body.alert & ". ";
+        $msg := $msg & $e.body.voltage & "V, " & $e.body.current & "A, " & $e.body.power & "W.";
+        $result := { "customMessage": $msg };
+    )};
+    $additional := $exists($.body.alert) ? $alertMessage($) : $doNotRoute($);
+    $merge([$, {"body": $merge([body, $additional])}]);
+)
