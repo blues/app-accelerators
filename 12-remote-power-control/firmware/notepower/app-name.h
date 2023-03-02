@@ -1,2 +1,2 @@
 #pragma once
-#define APP_NAME "nf11"
+#define APP_NAME "nf12"
