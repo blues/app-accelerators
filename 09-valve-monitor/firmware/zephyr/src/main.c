@@ -43,7 +43,7 @@
 
 // Uncomment the define below and replace com.your-company:your-product-name
 // with your ProductUID.
-// #define PRODUCT_UID "com.your-company:your-product-name"
+#define PRODUCT_UID "com.blues.valve_monitor_nf9"
 
 #ifndef PRODUCT_UID
 #define PRODUCT_UID ""
@@ -611,6 +611,7 @@ void main(void)
     if (PRODUCT_UID[0]) {
         JAddStringToObject(req, "product", PRODUCT_UID);
     }
+    JAddStringToObject(req, "sn", "NF09_Sink");
     JAddStringToObject(req, "mode", "continuous");
     JAddBoolToObject(req, "sync", true);
     if (NoteRequest(req)) {
