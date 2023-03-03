@@ -1,5 +1,5 @@
-#ifndef NOTECARD_H
-#define NOTECARD_H
+#ifndef NOTE_C_HOOKS_H
+#define NOTE_C_HOOKS_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -19,4 +19,4 @@ char noteSerialReceive(void);
 bool noteSerialReset(void);
 void noteSerialTransmit(uint8_t *text_, size_t len_, bool flush_);
 
-#endif // NOTECARD_H
+#endif // NOTE_C_HOOKS_H
