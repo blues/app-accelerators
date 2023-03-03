@@ -26,6 +26,22 @@ const overcurrent_alert = {
   }
 };
 
+const overcurrent_alert_with_normal_vibration = {
+  "device": "dev:1234",
+  "sn": "machine-1",
+  "body": {
+    "current": 5,           // Line RMS current (A)
+    "frequency": 59.8125,   // Line AC frequency (Hz)
+    "power": 600,           // Line Power (Watts)
+    "voltage": 120,         // Line RMS voltage (V)
+    "alert": "overcurrent,power",  // alert reasons
+    "instance": 1,
+    "vibration_raw": 123.45,
+    "vibration": "normal"
+  }
+};
+
+
 describe("route jsonata", () => {
 
   let expression;
@@ -149,7 +165,7 @@ describe("route jsonata", () => {
 
     it("includes the instance name", () => {
       const result = evaluateEnvironment(overcurrent_alert);
-      expect(result.body.customMessage).toMatch("utility supply: ");
+      expect(result.body.customMessage).toMatch("tool-1: ");
     });
 
     describe("instance", () => {
@@ -225,22 +241,22 @@ describe("route jsonata", () => {
 
       it("1", () => {
         const result = evaluateEnvironment(instance_1_present);
-        expect(result.body.customMessage).toMatch("utility supply: ");
+        expect(result.body.customMessage).toMatch("tool-1: ");
       });
 
       it("2", () => {
         const result = evaluateEnvironment(instance_2_present);
-        expect(result.body.customMessage).toMatch("equipment: ");
+        expect(result.body.customMessage).toMatch("tool-2: ");
       });
 
       it("3", () => {
         const result = evaluateEnvironment(instance_3_present);
-        expect(result.body.customMessage).toMatch("instance-3: ");
+        expect(result.body.customMessage).toMatch("tool-3: ");
       });
 
       it("4", () => {
         const result = evaluateEnvironment(instance_4_present);
-        expect(result.body.customMessage).toMatch("instance-4: ");
+        expect(result.body.customMessage).toMatch("tool-4: ");
       });
     });
 
@@ -290,8 +306,26 @@ describe("route jsonata", () => {
 
       it("makes the complete message", () => {
         const result = evaluateEnvironment(instance_2_active);
-        expect(result.body.customMessage).toBe("Power alert from machine-1 equipment active: yes: overcurrent,power. 120V, 5A, 600W.");
+        expect(result.body.customMessage).toBe("Power alert from machine-1 tool-2 active: yes: overcurrent,power. 120V, 5A, 600W.");
       });
     });
   });
+
+  describe("vibration", () => {
+    it('does not include vibration in the message when there is no vibration alert', () => {
+      const result = evaluateEnvironment(overcurrent_alert);
+      expect(result.body.customMessage).not.toMatch("vibration");
+    });
+
+    it('includes the vibration state when that is present', () => {
+      const result = evaluateEnvironment(overcurrent_alert_with_normal_vibration);
+      expect(result.body.customMessage).not.toMatch("vib.: normal,123.45");
+    });
+
+    it('is included in the complete message', () => {
+      const result = evaluateEnvironment(overcurrent_alert_with_normal_vibration);
+      expect(result.body.customMessage).toBe("Power alert from machine-1 tool-1: overcurrent,power. 120V, 5A, 600W. vib.: normal");
+    });
+  });
 });
+

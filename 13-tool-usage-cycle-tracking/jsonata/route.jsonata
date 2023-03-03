@@ -1,12 +1,15 @@
 (
     $alertMessage := function($e) {(
-        $instanceNames := ["unknown-0", "utility supply", "equipment", "instance-3", "instance-4"];
+        $instanceNames := ["unknown-0", "tool-1", "tool-2", "tool-3", "tool-4"];
         $instanceMsg := $e.body.instance ? $instanceNames[$e.body.instance] : "unknown";
         $activeMsg := $exists($e.body.active) ? (
             " active: " & ($e.body.active ? "yes" : "no")
         ) : "";
-        $msg := 'Power alert from ' & ($e.sn ? $e.sn : $e.device) & ' ' & $instanceMsg & $activeMsg & ': ' & $e.body.alert & ". ";
-        $msg := $msg & $e.body.voltage & "V, " & $e.body.current & "A, " & $e.body.power & "W.";
+        $vibrationMsg := $exists($e.body.vibration) ? (
+            " vib.: " & ($e.body.vibration) & ($exists(e.body.vibration_raw) ? "(" & e.body.vibration_raw & ")")
+        ) : "";
+        $msg := 'Power alert from ' & ($e.sn ? $e.sn : $e.device) & ' ' & $instanceMsg & $activeMsg  & ': ' & $e.body.alert & ". ";
+        $msg := $msg & $e.body.voltage & "V, " & $e.body.current & "A, " & $e.body.power & "W." & $vibrationMsg;
         $result := { "customMessage": $msg };
     )};
     $additional := $exists($.body.alert) ? $alertMessage($) : $doNotRoute($);

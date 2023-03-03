@@ -1,15 +1,13 @@
-# Remote Power Control
+# Tool Cycle-Usage Tracking
 
-Remote Control power, and monitor line and load power quality and report power failures.
-
+Monitor digital inputs, monitor power inputs, monitor vibration, optionally alert when vibration is out of range when the tool is active.
 ## Solution Overview
 
-This solution uses two Dr. Wattson monitoring boards to monitor AC line power and AC load power, with the load power switched on or off using a remote controllable relay. If you do not wish to monitor AC line power going into the relay this solution can be deployed with just one Dr. Wattson instance to monitor load power and report power failures.
+This solution uses a [Dr. Wattson energy monitoring board] to monitor a tool's power supply and power usage. The tool, or a component connected to the tool, provides a 3.3-5v digital signal indicating when the tool is active. You can configure the solution with upper and lower thresholds for voltage, current and power and receive alerts when the monitor detects values out of range. The solution also senses vibration using the Notecard's built-in accelerometer, and this too can be used to generate alerts for over vibration.
 
-The solution comprises hardware, firmware, Notehub environment variables and jsonata scripts to provide power quality monitoring, power control and power quality alerts.
+The solution comprises hardware, firmware, Notehub environment variables and jsonata scripts.
 
-
-- [Remote Power Control](#remote-power-control)
+- [Tool Cycle-Usage Tracking](#tool-cycle-usage-tracking)
   - [Solution Overview](#solution-overview)
   - [You Will Need](#you-will-need)
   - [Dr. Wattson Energy Monitor Build](#dr-wattson-energy-monitor-build)
@@ -27,14 +25,19 @@ The solution comprises hardware, firmware, Notehub environment variables and jso
       - [Editing the Source Code](#editing-the-source-code)
   - [Electrical Connections](#electrical-connections)
   - [Testing](#testing)
-  - [Configure Monitoring](#configure-monitoring)
+  - [Configure Vibration and Power Monitoring](#configure-vibration-and-power-monitoring)
+    - [Vibration Monitoring and Alerts](#vibration-monitoring-and-alerts)
     - [Instance number](#instance-number)
-  - [Equipment Control Lines](#equipment-control-lines)
-  - [Configuring Power Control Alerts](#configuring-power-control-alerts)
+  - [Tool Activity Lines](#tool-activity-lines)
+  - [Power Alerts and Tool Activity](#power-alerts-and-tool-activity)
+    - [Vibration Alerts and Tool Activity](#vibration-alerts-and-tool-activity)
+    - [Tool Startup and Shutdown Duration](#tool-startup-and-shutdown-duration)
+    - [Determining Vibration Thresholds](#determining-vibration-thresholds)
   - [Example Configuration](#example-configuration)
   - [Events](#events)
     - [Alerts](#alerts)
       - [Power Control Alerts](#power-control-alerts)
+      - [Vibration Anomaly Alert](#vibration-anomaly-alert)
   - [Routing Data out of Notehub](#routing-data-out-of-notehub)
     - [Testing the Route](#testing-the-route)
   - [Blues Community](#blues-community)
@@ -46,13 +49,12 @@ The solution comprises hardware, firmware, Notehub environment variables and jso
     * [Swan](https://shop.blues.io/collections/swan)
     * [Notecard](https://shop.blues.io/collections/notecard)
     * [Molex Cellular Antenna](https://shop.blues.io/collections/accessories/products/flexible-cellular-or-wi-fi-antenna)
-  * [LiPo battery](https://shop.blues.io/collections/accessories/products/5-000-mah-lipo-battery)
-  * [Digital Loggers IoT Relay](https://www.digital-loggers.com/iot2.html) or similar.
-  * 2 x [Dr. Wattson Energy Monitoring Board](https://www.upbeatlabs.com/wattson/)
-  * 2 x [ProtoStax Enclosure for Dr. Wattson](https://www.protostax.com/products/) or similar enclosure
-  * 2 x [female-to-JST qwiic cable assembly](https://www.adafruit.com/product/4397)
+  * [Dr. Wattson Energy Monitoring Board](https://www.upbeatlabs.com/wattson/)
+  * [ProtoStax Enclosure for Dr. Wattson](https://www.protostax.com/products/) or similar enclosure
+  * [female-to-JST qwiic cable assembly](https://www.adafruit.com/product/4397)
+  * USB power brick and micro-USB cable
 
-For each Dr. Wattson energy monitor board you will need:
+To create a power monitor around the Dr. Wattson energy monitor board you will need:
 
   * Male-to-female grounded extension cable or suitable cables to wire an IEC or NEMA AC inlet and outlet to Dr. Wattson. 16 gauge is recommended as the minimum dimension. Please select a suitable wiring gauge for the maximum load required from the equipment being monitored.
 
@@ -72,9 +74,7 @@ Tools required:
 
 ## Dr. Wattson Energy Monitor Build
 
-The Dr. Wattson energy monitoring board monitors power by being looped into the mains AC wiring both for input and output of the relay used to control power to your equipment. Additionally, solder jumpers are configured to select the I2C address of the Dr. Wattson board.
-
-> **Note**: As the solution uses two Dr. Wattson boards connected to one Notecard, both boards must be configured with different I2C address.  In this guide we use address `0x74` for AC input (line) power and address `0x75` for AC output (load) power, which corresponds with monitor instance 1 and monitor instance 2.
+The Dr. Wattson energy monitoring board monitors power by being looped into the mains AC wiring that powers the tool you want to monitor. Additionally, solder jumpers are configured to select the I2C address of the Dr. Wattson board.
 
 Please see [Dr. Wattson Energy Monitor build](../08-power-quality-monitor/drwattson-build.md) for build instructions.
 
@@ -111,8 +111,6 @@ With the build complete, you will have two power monitors, each with an AC inlet
 ## Notehub
 
 Sign up for a free account on [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub).
-
-You may choose to deploy one instance of this solution, or deploy several instances to monitor and control multiple devices. When monitoring multiple devices at a facility, it is useful to group them into a Fleet. For more details, see [The Fleet Administrator's Guide](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/).
 
 ## Application Firmware
 
@@ -187,7 +185,7 @@ There are two ways to configure the ProductUID created in the Notehub setup abov
 6. You can now enter a request to set the ProductUID and Serial Number of the device.
 
 ```json
-{"req":"hub.set", "product":"<your-productUID-from-notehub>", "sn":"<facility-equipment>-monitor"}
+{"req":"hub.set", "product":"<your-productUID-from-notehub>", "sn":"<tool-name>-monitor"}
 ```
 
 You can also omit the serial number and use Notehub to set it:
@@ -209,25 +207,23 @@ pasting in the ProductUID from your notehub project between the first pair of qu
 
 ## Electrical Connections
 
-With the Dr. Wattson boards looped into the flow of power via extension cables, the supply is connected to the first monitor board, which supplies power to the relay. The relay output provides power to the equipment you want to monitor and control, via the second monitor board.
-
-For ease of identification, use the board with the lower I2C address to monitor input power, and the higher I2C address to monitor output power. We recommend using addresses `0x74` and `0x75`.
+The primary electrical connections are based around the Dr. Wattson monitoring board. The board's line input is plugged into your AC outlet and the tool is plugged into the board's AC load outlet. A USB power brick is also connected to the 18-guage USB power outlet that you added to the board.
 
 ![](./images/electrical-schematic.png)
 
-During development and testing, you will typically power the Notecarrier and Swan via USB cables from your computer. When the application is deployed, you will use a USB power adapter plugged into the first monitor USB outlet.
+During development and testing, you will typically power the Notecarrier and Swan via USB cables from your computer. When the application is deployed, you will use the USB power adapter plugged into monitor's USB power outlet.
 
 ## Testing
 
 To ensure the setup is working as expected, it's a good idea to test the application before deploying it in a real-world setting.
 
-For testing, you will need a suitable load as the equipment to monitor and control. We used a desk lamp with off, low, medium and high settings that allows easy visual indication when the relay is off, and has variable power settings for power use and quality monitoring.
+For testing, you will need a suitable tool to monitor and optionally measure the vibration of . We used a desk fan with off, low, medium and high settings that allows power consumption to be regulated with increasing vibration at higher speeds.
 
-## Configure Monitoring
+## Configure Vibration and Power Monitoring
 
-You configure the app using a number of environment variables. Configuration includes how often regular power monitoring events are sent, and the thresholds for anomalous behavior that trigger an alert.
+You configure the app using a number of environment variables. Configuration includes how often regular power monitoring events are sent, and the thresholds for anomalous vibration and electrical behavior that trigger an alert.
 
-Alerts are sent when the current, voltage, or power use is outside the configured range or when a change greater than a given percent is detected.
+Alerts are sent when the current, voltage, power or vibration is outside the configured range or when a change greater than a given percent is detected.
 
 These are the environment variables that you can configure according your use case:
 
@@ -246,6 +242,34 @@ These environment variables are set in Notehub, either per-device, per-fleet or 
 
 Please see our tutorial [Understanding Environment Variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) for a fuller description of how to set environment variables in Notehub.
 
+
+### Vibration Monitoring and Alerts
+
+The Notecard accelerometer is used to sense vibration. Tool usage can be inferred from the measured vibration using environment variables that define the expected vibration characteristics. The vibration environment variables define thresholds of vibration for when the tool is inactive and active.
+
+* `alert_off_vibration`: the *maximum* vibration expected when the tool is *inactive*. Minimum value is `0`, which is also the default. Must be less than or equal to `alert_under_vibration`.
+
+* `alert_under_vibration`: the *minimum* vibration expected when the tool is *active*. Must be equal or greater than `alert_off_vibration` and less than `alert_over_vibration`. The default value is `0`.
+
+* `alert_over_vibration`: the *maximum* vibration expected when the tool is *active*. Must be greater than `alert_under_vibration`.
+
+<a name="vibration-category"></a>
+With these variables defined, the measured vibration is classified into into one these vibration categories:
+
+* `none`: when vibration is less than or equal to `alert_off_vibration`
+
+* `low`: when vibration is between `alert_off_vibration` and `alert_under_vibration`
+
+* `normal`: when vibration is between `alert_under_vibration` and `alert_over_vibration`
+
+* `high`: when vibration is greater than `alert_over_vibration`
+
+The `vibration` property is added to power events with the values `none`, `low`, `normal`, `high` corresponding to the vibration categories above. The raw vibration value is also included, as `vibration_raw: 123.45`.
+
+When `alert_off_vibration`, `alert_under_vibration` and `alert_over_vibration` are all undefined or `0`, vibration is not sensed. Otherwise, vibration is sensed and vibration data is included with power monitoring events and alerts.
+
+An alert is sent when the vibration is classified as `low` or `high` which indicates vibration is outside of expected operating parameters. When a vibration alert is triggered, the `alert` property includes the word `vibration`, indicating the alert happened because of too little or too much vibration.
+
 ### Instance number
 
 Each power monitor is given an instance number from 1-4. The instance numbers correspond to the I2C address of the monitoring board:
@@ -257,28 +281,71 @@ Each power monitor is given an instance number from 1-4. The instance numbers co
 
 For example, should your two monitors be configured at addresses `0x74` and `0x75` then these will be reported as instance 1 and instance 2.
 
-## Equipment Control Lines
+## Tool Activity Lines
 
-4 digital outputs act as control lines. Each Dr. Wattson instance is associated with a GPIO pin that controls power to that monitor:
+Four digital inputs act as activity sensors. Each Dr. Wattson instance is associated with a GPIO pin that indicates activity of the tool monitored by that instance:
 
-* instance 1: pin D10
-* instance 2: pin D11
-* instance 3: pin D12
-* instance 4: pin D13
+* instance 1: pin D10, 3.3v tolerant
+* instance 2: pin D11, 5v tolerant
+* instance 3: pin D12, 5v tolerant
+* instance 4: pin D13, 3.3v tolerant
 
-In this solution, we want to control power to instance 2 via the relay. This is why D11 (control line 2) is connected to the relay's control signal in the schematic above.
+In this solution, we configured our monitor with the I2C address `0x75` which corresponds to instance 2. This is why `D11` was labelled as the activity line for the tool in the [electrical schematic](#electrical-connections) above. If your monitor board is configured to a different address, then use the corresponding pin as described above.
 
-To use a the relay's control line, set the environment variable `switch2=1` to drive the pin high and close the relay, supplying power to the equipment, or `switch2=0` to drive the pin low, opening the relay and cutting power. When a control line is configured, events from that monitoring instance will include an `active` property indicating whether the control line is high (`true`) or low (`false`).
+To monitor a given activity line, you set the environment variable `inputX=true` to enable sensing on that line, where `X` is the instance number. For example `input2=true` sets `D11` as a GPIO input, and the logic level sensed on that pin is reported in monitoring events (from instance 2) via the `active` property.
 
-## Configuring Power Control Alerts
+## Power Alerts and Tool Activity
 
-In addition to setting the state of a control line, you can use environment variables to add additional behaviors that correlate the measured power with the state of the relay.  Specifically, setting the environment variable `alert_power_activity_2=source` indicates that monitor 2 is a source of power with the expectation that voltage, current and power are all zero when the pin is low, and within the configured ranges when the pin is high. Without this, the monitor would send undervoltage/current/power alert when the relay is switched off.
+In addition to monitoring the activity level of the tool with (`inputX=true`), you can configure the app to add additional behaviors that correlate the measured power with activity:
 
-These variables describe how long it takes for the monitored equipment to startup or shutdown. Power monitoring alerts are suppressed during the startup and shutdown period after a control line changes state.
+* `alert_power_activity_[1-4]=load`: Correlates alerts for a given instance with the state of the instance's activity pin. With the `load` setting, the line power is checked against the activity state. When the pin is low, which indicates the tool is not active, line current and power are expected to be close to zero and voltage is expected to be within the over/under voltage configuration, since the load is continuously powered, but does not consume power when inactive. When the activity pin is high, line voltage, current and power are expected to be within the voltage, current and power ranges configured.
 
-* `power_activity_startup_secs_[1-4]`: the duration in seconds for how long it takes the power level to stabilize when the equipment is started. Alerts are suppressed for this period when a line goes from inactive to active. The default value is `0`.
+In this solution, the tool is monitored by instance 2, using the corresponding activity line (`D11`) to indicate when the tool is active, and so `alert_power_activity_2=load` is the setting used.
 
-* `power_activity_shutdown_secs_[1-4]`: the duration in seconds for how long it takes for the power level to stabilize when the equipment is stopped. Alerts are suppressed for this period when a line goes from active to inactive. The default value is `0`.
+### Vibration Alerts and Tool Activity
+
+For a tool that is on continuously, the vibration configuration described [above](#vibration-monitoring-and-alerts) is sufficient to monitor vibration and send alerts for `low` or `high` vibration.
+
+However, when monitoring a tool that is only active some of the time, it makes little sense to report a vibration alert due to low vibration when the tool is inactive. The `alert_vibration_activity_line` environment variable can be used to correlate the activity of the tool with the measured vibration:
+
+ * `alert_vibration_activity_line` 1-4: indicates which activity line shows the activity of the tool. When this environment variable is defined, it correlates vibration alerts based on the activity of the tool and the vibration sensed: 
+
+  * when the tool is inactive, a vibration alert is sent when the vibration is not `none`.
+  * when the tool is active, a vibration alert is sent when the vibration is not `normal`.
+
+The alert is triggered on the instance specified in `alert_vibration_activity_line`.  When `alert_vibration_activity_line` is `0` or undefined, the vibration data and alerts are present on all lines.
+
+Vibration alerts are suppressed for the startup and shutdown period given for the corresponding line.
+
+
+### Tool Startup and Shutdown Duration
+
+These variables describe how long it takes for the tool to startup or shutdown, or equivalently, for the electrical load and vibration to reach steady state. Power and vibration alerts related to activity are suppressed during the startup and shutdown period to avoid false alerts.
+
+* `power_activity_startup_secs_[1-4]`: the duration in seconds for how long it takes the power level to stabilize on becoming active. Alerts are suppressed for this period when a line goes from inactive to active. The default value is `0`.
+
+* `power_activity_shutdown_secs_[1-4]`: the duration in seconds for how long it takes for the power level to stabilize on becoming inactive.  Alerts are suppressed for this period when a line goes from active to inactive. The default value is `0`.
+
+
+### Determining Vibration Thresholds
+
+The raw vibration measurement is used to determine the vibration level is derived from the movements of the accelerometer. The value is somewhat arbitrary and not calibrated, although it is consistent.
+
+The simplest way to find out the values for the vibration variables is to measure the vibration reported when the tool is off and during normal use. Here's an outline of the process:
+
+1. Start with none of the vibration environment variables defined, and the tool inactive.
+2. Set `heartbeat_mins` to `1` to enable more frequent monitoring.
+3. Enable vibration sensing by setting `alert_under_vibration` to `1`.
+4. With the tool still inactive, inspect the events in Notehub sent to `power.qo`, in particular the `vibration_raw` value.
+5. Make a note of the highest reported `vibration_raw` value. This will serve as a guide for setting the `alert_off_vibration` variable.
+6. Switch on the tool, and when fully started, continue monitoring the events for a number of minutes, using the tool in it's normal modes of operation.
+7. Make a note of the highest and lowest `vibration_raw` values reported. These will serve as a guide for setting the `alert_under_vibration` and `alert_over_vibration` variables.
+
+> **Note**: In order to accurately sense vibration, the Notecarrier must be secured to the tool and must be level with the ground. This is so the acceleration due to gravity can be accounted for when determining vibration from the accelerometer data.
+
+Using the vibration values collected above, set the `alert_off_vibration`, `alert_under_vibration` and `alert_over_vibration` values. Again, with the tool inactive, and in normal use, inspect the `vibration` property to ensure it is `none` when the tool is not in use, and `normal` when it is in use.
+
+Should you see any vibration measurements of `low` or `high`, then adjust the vibration thresholds accordingly. You may need to set `power_activity_startup_secs_X` and `power_activity_shutdown_secs_X` variables to avoid spurious `low` or `high` values as the tool is starting up or shutting down.
 
 
 ## Example Configuration
@@ -290,8 +357,15 @@ With a 120v supply, this configuration monitors input power to the relay, and th
 | `heartbeat_mins`          | 5      | Send power monitoring events every 5 minutes. |
 | `alert_under_voltage`     | 100    | Send an alert when voltage is less than 100v. |
 | `alert_over_voltage`      | 135    | Send an alert when voltage is above 135v. |
-| `switch2`                 | true/false | Control power to the equipment to be on or off. |
-| `alert_power_activity_2`  | supply | Correlate the equipment power with the state of the relay. |
+| `input2`                  | true   | Sense load activity via input 2 (`D11`) |
+| `alert_power_activity_2`  | supply | Correlate the tool power with activity |
+| `power_activity_startup_secs_2` | 10 | allow 10 seconds for the tool to start up |
+| `power_activity_shutdown_secs_2` | 10 | allow 10 seconds for the tool to shut down |
+| `alert_off_vibration` | 10 | minimal vibration when the tool is not in use |
+| `alert_under_vibration` | 100 | vibration level with a margin below the lowest vibration sensed when the tool is active |
+| `alert_over_vibration` | 150 | vibration level with a margin above the highest vibration sensed when the tool is active |
+| `alert_vibration_activity_line` | 2 | Correlate sensed vibration with tool activity from input 2 |
+
 
 ## Events
 
@@ -316,6 +390,8 @@ The event body also includes these named values:
 * `apparentPower`: The measured apparent power (in VA).
 * `powerFactor`: The power factor - active power divided by apparent power.
 * `active`: set to True to indicate the corresponding instance pin is active.
+* `vibration_raw`: the amount of vibration sensed
+* `vibration`: the vibration category (when [vibration thresholds](#vibration-monitoring-and-alerts) are configured.)
 
 > Note: When a property in an event is zero, or false, it is not present in the event routed to notehub. For more details see [How the Notecard works with JSON](https://dev.blues.io/notecard/notecard-walkthrough/json-fundamentals/#how-the-notecard-works-with-json).
 
@@ -344,6 +420,9 @@ These alerts are produced for a given instance when the corresponding [`alert_po
 
 * `inactivevoltage`, `inactivecurrent`: voltage or current is detected when the control pin is low, indicating the supply or load should be off, but isn't.
 
+#### Vibration Anomaly Alert
+
+The `vibration` alert is sent when the vibration thresholds are set and the measured vibration does not match the 
 
 ## Routing Data out of Notehub
 
@@ -377,28 +456,29 @@ This is an alert event (due to the presence of the `alert` property), which will
 
 ```json
 { "req": "note.add", "file":"power.qo", "sync": true, "body": {
-  "current":2.34, "frequency":60, "power":56.67, "voltage":230.12, "alert":"overcurrent,power", "instance":2, "active":true
+  "current":2.34, "frequency":60, "power":56.67, "voltage":230.12, "alert":"overcurrent,power", "instance":2, "active":true, "vibration":"normal", "vibration_raw":123
 }}
 ```
 
 This will send a SMS that looks like this:
 
-> Power alert from machine-12 equipment powered: yes: overcurrent,power. 120V, 25A, 3000W.
+> Power alert from <serial-number> tool active: yes: overcurrent,power. 120V, 25A, 3000W. vib.: normal,123.
 
 These are the parts of the message:
 
-* The first part of the message indicates which device the alert pertains to by its serial number, here "machine-12".
+* The first part of the message indicates which device the alert pertains to by its serial number, here <serial-number>.
 
-* The next part indicates which monitor instance generated the alert, here it is "equipment", with "utility supply" as the other option. These names relate to the instance numbers, and here we are using 1 and 2 for utility supply and equipment respectively. If your monitors are configured with different I2C addresses, you will need to edit the names "instance-3" and "instance-4" in the jsonata script.
-
-* The activity state comes next, indicating the state of the relay.
+* The activity state comes next, indicating whether the tool is in use or not.
 
 * The alerts are next. Here, "overcurrent" and "power" alerts indicate that the measured current was higher than the `alert_over_current_amps` environment variable, and that power changed by more than `alert_change_power_percent`.
 
-* Finally, we have the power information, showing the measured voltage, current and power at the time of the alert.
+* Then we have the power information, showing the measured voltage, current and power at the time of the alert.
 
-When utility power fails, you will receive an `undervoltage` alert from instance 1 (utility supply) with the measured voltage close to 0. If the equipment is also active at that time you will receive a `novoltage` alert from instance 2 (equipment).
+* Finally, the vibration details, showing the [vibration category](#vibration-category)
 
 ## Blues Community
 
 We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+
+
+[Dr. Wattson Energy Monitoring Board]: https://www.upbeatlabs.com/wattson/
