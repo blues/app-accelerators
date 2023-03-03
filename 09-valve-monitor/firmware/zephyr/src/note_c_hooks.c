@@ -1,4 +1,4 @@
-#include "notecard.h"
+#include "note_c_hooks.h"
 
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/drivers/uart.h>
