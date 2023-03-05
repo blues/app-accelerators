@@ -261,7 +261,7 @@ K_TIMER_DEFINE(checkAlarmTimer, checkAlarmTimerCb, NULL);
 // Valve safety timer (close valve if open too long)
 static void valveSafetyTimerCb(struct k_timer *)
 {
-    if (state.valveOpen) {
+    if (!state.valveOpen) {
         valveToggle();
     }
 }
@@ -310,7 +310,7 @@ void valveToggle(void)
     k_timer_stop(&flowRateCalcTimer);
 
     // Update safety timer (prevents overheating of solenoid)
-    if (state.valveOpen) {
+    if (!state.valveOpen) {
         k_timer_stop(&valveSafetyTimer);
     }
     else {
@@ -658,7 +658,7 @@ void main(void)
         return;
     }
 
-    state.valveOpen = false;
+    state.valveOpen = true;
     printk("Set up valve control at %s pin %d\n", valve.port->name, valve.pin);
 
     // Flow meter pin setup
