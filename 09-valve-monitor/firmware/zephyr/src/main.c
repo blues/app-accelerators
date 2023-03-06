@@ -413,8 +413,10 @@ void publishSystemStatus(bool alarm)
             JAddStringToObject(body, "app", "nf9");
             JAddItemToObject(req, "body", body);
 
-            NoteRequest(req);
-            state.publishRequired = false;
+            const bool success = NoteRequest(req);
+            if (success && !alarm) {
+                state.publishRequired = false;
+            }
         }
         else {
             printk("Failed to create body for system status update.\n");
@@ -642,14 +644,15 @@ void main(void)
         return;
     }
 
-    int ret = gpio_pin_configure_dt(&valve, GPIO_OUTPUT_LOW);
+    int ret = gpio_pin_configure_dt(&valve, GPIO_OUTPUT_INACTIVE);
     if (ret != 0) {
         printk("Error %d: failed to configure %s pin %d\n",
                ret, valve.port->name, valve.pin);
         return;
     }
 
-    printk("Set up valve open at %s pin %d\n", valve.port->name, valve.pin);
+    state.valveOpen = false;
+    printk("Set up valve control at %s pin %d\n", valve.port->name, valve.pin);
 
     // Flow meter pin setup
     if (!device_is_ready(flowMeter.port)) {
@@ -665,7 +668,7 @@ void main(void)
         return;
     }
 
-    ret = gpio_pin_interrupt_configure_dt(&flowMeter, GPIO_INT_EDGE_FALLING);
+    ret = gpio_pin_interrupt_configure_dt(&flowMeter, GPIO_INT_EDGE_TO_ACTIVE);
     if (ret != 0) {
         printk("Error %d: failed to configure interrupt on %s pin %d\n",
                ret, flowMeter.port->name, flowMeter.pin);
@@ -675,6 +678,9 @@ void main(void)
     gpio_init_callback(&flowMeterCbData, flowMeterCb, BIT(flowMeter.pin));
     gpio_add_callback(flowMeter.port, &flowMeterCbData);
 
+    state.flowRate = 0;
+    state.lastFlowRateCalcMs = NoteGetMs();
+    state.flowMeterPulseCount = 0;
     printk("Set up flow meter at %s pin %d\n", flowMeter.port->name,
            flowMeter.pin);
 
