@@ -131,11 +131,6 @@ describe("route jsonata", () => {
       expect(result.body.customMessage).toMatch(`Power alert from ${overcurrent_alert.sn}`);
     });
 
-    it("mentions the device serial number when present", () => {
-      const result = evaluateEnvironment(overcurrent_alert);
-      expect(result.body.customMessage).toMatch(`Power alert from ${overcurrent_alert.sn}`);
-    });
-
     it("mentions the device id when serial number is not present", () => {
       let event = Object.assign({}, overcurrent_alert);
       delete event.sn;
