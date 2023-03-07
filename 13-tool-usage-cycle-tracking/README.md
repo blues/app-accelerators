@@ -3,7 +3,7 @@
 Monitor digital inputs, monitor power inputs, monitor vibration, optionally alert when vibration is out of range when the tool is active.
 ## Solution Overview
 
-This solution uses a [Dr. Wattson energy monitoring board] to monitor a tool's power supply and power usage. The tool, or a component connected to the tool, provides a 3.3-5v digital signal indicating when the tool is active. You can configure the solution with upper and lower thresholds for voltage, current and power and receive alerts when the monitor detects values out of range. The solution also senses vibration using the Notecard's built-in accelerometer, and this too can be used to generate alerts for over vibration.
+This solution uses a [Dr. Wattson energy monitoring board] to monitor a tool's power supply and power usage. The tool, or a component connected to the tool, provides a 3.3-5v digital signal indicating when the tool is active. You can configure the solution with upper and lower thresholds for voltage, current and power, and receive alerts when the monitor detects values out of range. The solution also senses vibration using the Notecard's built-in accelerometer, and this too can be used to generate alerts for over vibration.
 
 The solution comprises hardware, firmware, Notehub environment variables and jsonata scripts.
 
@@ -245,7 +245,9 @@ Please see our tutorial [Understanding Environment Variables](https://dev.blues.
 
 ### Vibration Monitoring and Alerts
 
-The Notecard accelerometer is used to sense vibration. Tool usage can be inferred from the measured vibration using environment variables that define the expected vibration characteristics. The vibration environment variables define thresholds of vibration for when the tool is inactive and active.
+The Notecard accelerometer is used to sense vibration. Tool usage can be inferred from the measured vibration by setting environment variables that define the expected vibration characteristics. These variables define thresholds of vibration for when the tool is inactive and active. For details on how to determine the appropriate vibration thresholds, see [Determining Vibration Thresholds](#determining-vibration-thresholds) below.
+
+These environment variables define the vibration thresholds:
 
 * `alert_off_vibration`: the *maximum* vibration expected when the tool is *inactive*. Minimum value is `0`, which is also the default. Must be less than or equal to `alert_under_vibration`.
 
@@ -268,7 +270,7 @@ The `vibration` property is added to power events with the values `none`, `low`,
 
 When `alert_off_vibration`, `alert_under_vibration` and `alert_over_vibration` are all undefined or `0`, vibration is not sensed. Otherwise, vibration is sensed and vibration data is included with power monitoring events and alerts.
 
-An alert is sent when the vibration is classified as `low` or `high` which indicates vibration is outside of expected operating parameters. When a vibration alert is triggered, the `alert` property includes the word `vibration`, indicating the alert happened because of too little or too much vibration.
+An alert is sent when the vibration is classified as `low` or `high`, which indicates vibration is outside of expected operating parameters. When a vibration alert is triggered, the `alert` property includes the word `vibration`, indicating the alert happened because of too little or too much vibration.
 
 ### Instance number
 
@@ -308,10 +310,10 @@ For a tool that is on continuously, the vibration configuration described [above
 
 However, when monitoring a tool that is only active some of the time, it makes little sense to report a vibration alert due to low vibration when the tool is inactive. The `alert_vibration_activity_line` environment variable can be used to correlate the activity of the tool with the measured vibration:
 
- * `alert_vibration_activity_line` 1-4: indicates which activity line shows the activity of the tool. When this environment variable is defined, it correlates vibration alerts based on the activity of the tool and the vibration sensed: 
+ * `alert_vibration_activity_line` 1-4: indicates which activity line shows the activity of the tool. When this environment variable is defined, it correlates vibration alerts based on the activity of the tool and the vibration sensed:
 
-  * when the tool is inactive, a vibration alert is sent when the vibration is not `none`.
-  * when the tool is active, a vibration alert is sent when the vibration is not `normal`.
+  * When the tool is inactive, a vibration alert is sent when the vibration is not `none`.
+  * When the tool is active, a vibration alert is sent when the vibration is not `normal`.
 
 The alert is triggered on the instance specified in `alert_vibration_activity_line`.  When `alert_vibration_activity_line` is `0` or undefined, the vibration data and alerts are present on all lines.
 
@@ -322,9 +324,9 @@ Vibration alerts are suppressed for the startup and shutdown period given for th
 
 These variables describe how long it takes for the tool to startup or shutdown, or equivalently, for the electrical load and vibration to reach steady state. Power and vibration alerts related to activity are suppressed during the startup and shutdown period to avoid false alerts.
 
-* `power_activity_startup_secs_[1-4]`: the duration in seconds for how long it takes the power level to stabilize on becoming active. Alerts are suppressed for this period when a line goes from inactive to active. The default value is `0`.
+* `power_activity_startup_secs_[1-4]`: the duration, in seconds, for how long it takes the power level to stabilize on becoming active. Alerts are suppressed for this period when a line goes from inactive to active. The default value is `0`.
 
-* `power_activity_shutdown_secs_[1-4]`: the duration in seconds for how long it takes for the power level to stabilize on becoming inactive.  Alerts are suppressed for this period when a line goes from active to inactive. The default value is `0`.
+* `power_activity_shutdown_secs_[1-4]`: the duration, in seconds, for how long it takes for the power level to stabilize on becoming inactive.  Alerts are suppressed for this period when a line goes from active to inactive. The default value is `0`.
 
 
 ### Determining Vibration Thresholds
@@ -338,7 +340,7 @@ The simplest way to find out the values for the vibration variables is to measur
 3. Enable vibration sensing by setting `alert_under_vibration` to `1`.
 4. With the tool still inactive, inspect the events in Notehub sent to `power.qo`, in particular the `vibration_raw` value.
 5. Make a note of the highest reported `vibration_raw` value. This will serve as a guide for setting the `alert_off_vibration` variable.
-6. Switch on the tool, and when fully started, continue monitoring the events for a number of minutes, using the tool in it's normal modes of operation.
+6. Switch on the tool, and when fully started, continue monitoring the events for a number of minutes, using the tool in its normal modes of operation.
 7. Make a note of the highest and lowest `vibration_raw` values reported. These will serve as a guide for setting the `alert_under_vibration` and `alert_over_vibration` variables.
 
 > **Note**: In order to accurately sense vibration, the Notecarrier must be secured to the tool and must be level with the ground. This is so the acceleration due to gravity can be accounted for when determining vibration from the accelerometer data.
@@ -357,14 +359,14 @@ With a 120v supply, this configuration monitors input power to the relay, and th
 | `heartbeat_mins`          | 5      | Send power monitoring events every 5 minutes. |
 | `alert_under_voltage`     | 100    | Send an alert when voltage is less than 100v. |
 | `alert_over_voltage`      | 135    | Send an alert when voltage is above 135v. |
-| `input2`                  | true   | Sense load activity via input 2 (`D11`) |
-| `alert_power_activity_2`  | supply | Correlate the tool power with activity |
-| `power_activity_startup_secs_2` | 10 | allow 10 seconds for the tool to start up |
-| `power_activity_shutdown_secs_2` | 10 | allow 10 seconds for the tool to shut down |
-| `alert_off_vibration` | 10 | minimal vibration when the tool is not in use |
-| `alert_under_vibration` | 100 | vibration level with a margin below the lowest vibration sensed when the tool is active |
-| `alert_over_vibration` | 150 | vibration level with a margin above the highest vibration sensed when the tool is active |
-| `alert_vibration_activity_line` | 2 | Correlate sensed vibration with tool activity from input 2 |
+| `input2`                  | true   | Sense load activity via input 2 (`D11`). |
+| `alert_power_activity_2`  | supply | Correlate the tool power with activity. |
+| `power_activity_startup_secs_2` | 10 | Allow 10 seconds for the tool to start up. |
+| `power_activity_shutdown_secs_2` | 10 | Allow 10 seconds for the tool to shut down. |
+| `alert_off_vibration` | 10 | Minimal vibration when the tool is not in use. |
+| `alert_under_vibration` | 100 | Vibration level with a margin below the lowest vibration sensed when the tool is active. |
+| `alert_over_vibration` | 150 | Vibration level with a margin above the highest vibration sensed when the tool is active. |
+| `alert_vibration_activity_line` | 2 | Correlate sensed vibration with tool activity from input 2. |
 
 
 ## Events
@@ -389,9 +391,9 @@ The event body also includes these named values:
 * `reactivePower`: The measured reactive power (in VAR).
 * `apparentPower`: The measured apparent power (in VA).
 * `powerFactor`: The power factor - active power divided by apparent power.
-* `active`: set to True to indicate the corresponding instance pin is active.
-* `vibration_raw`: the amount of vibration sensed
-* `vibration`: the vibration category (when [vibration thresholds](#vibration-monitoring-and-alerts) are configured.)
+* `active`: Set to True to indicate the corresponding instance pin is active.
+* `vibration_raw`: The amount of vibration sensed.
+* `vibration`: The vibration category (when [vibration thresholds](#vibration-monitoring-and-alerts) are configured).
 
 > Note: When a property in an event is zero, or false, it is not present in the event routed to notehub. For more details see [How the Notecard works with JSON](https://dev.blues.io/notecard/notecard-walkthrough/json-fundamentals/#how-the-notecard-works-with-json).
 
@@ -422,7 +424,7 @@ These alerts are produced for a given instance when the corresponding [`alert_po
 
 #### Vibration Anomaly Alert
 
-The `vibration` alert is sent when the vibration thresholds are set and the measured vibration does not match the 
+The `vibration` alert is sent when the vibration thresholds are set and the measured vibration does not correspond with what is expected. See [Vibration Monitoring and Alerts](#vibration-monitoring-and-alerts) and [Vibration Alerts and Tool Activity](#vibration-alerts-and-tool-activity).
 
 ## Routing Data out of Notehub
 
@@ -462,19 +464,19 @@ This is an alert event (due to the presence of the `alert` property), which will
 
 This will send a SMS that looks like this:
 
-> Power alert from <serial-number> tool active: yes: overcurrent,power. 120V, 25A, 3000W. vib.: normal,123.
+> Power alert from &lt;serial-number&gt; tool active: yes: overcurrent,power. 120V, 25A, 3000W. vib.: normal,123.
 
 These are the parts of the message:
 
-* The first part of the message indicates which device the alert pertains to by its serial number, here <serial-number>.
+* The first part of the message indicates which device the alert pertains to by its serial number, here &lt;serial-number&gt;.
 
 * The activity state comes next, indicating whether the tool is in use or not.
 
 * The alerts are next. Here, "overcurrent" and "power" alerts indicate that the measured current was higher than the `alert_over_current_amps` environment variable, and that power changed by more than `alert_change_power_percent`.
 
-* Then we have the power information, showing the measured voltage, current and power at the time of the alert.
+* After that we have the power information, showing the measured voltage, current and power at the time of the alert.
 
-* Finally, the vibration details, showing the [vibration category](#vibration-category)
+* Lastly come the vibration details, showing the [vibration category](#vibration-category)
 
 ## Blues Community
 
