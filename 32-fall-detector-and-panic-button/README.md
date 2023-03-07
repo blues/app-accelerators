@@ -48,7 +48,15 @@ The button will be wired to a GPIO pin on the reference node. This pin uses an i
 
 Now, when the button is pressed, it will connect A2 to GND.
 
-The accelerometer board has a hole on it labeled INT1. This is the interrupt line that our app will use to detect a fall event, so we need to connect it to the reference node. To do that, grab a male to male jumper wire that will fit in the hole. Stick one end of the wire as far as it'll go through the hole, so that when it's soldered in, we can plug it into the breadboard. Using your soldering iron and flux, solder the jumper into place. Seat the accelerometer onto the breadboard using the exposed end of the wire sticking out under the accelerometer board. Then, connect the other end of the wire to pin A1 on the reference node.  The accelerometer also has a Qwiic port that needs to be wired up to the Sparrow reference node. Plug the Qwiic breadboard jumper cable into this port, and then on the other end make the following connections:
+The accelerometer board has a hole on it labeled INT1. This is the interrupt line that our app will use to detect a fall event, so we need to connect it to the reference node. To do that:
+
+1. Take a male-to-male jumper wire that fits the hole. We've found that a [standard DuPont jumper wire](https://www.amazon.com/SUNKEE-Dupont-Color-Jumper-2-54mm/dp/B00AX3PHV6) with a square shape may not fit this hole. If that's the case, you can try using a [jumper wire with a rounded shape](https://www.amazon.com/Breadboard-Jumper-Wire-75pcs-pack/dp/B0040DEI9M).
+2. Push one end of the wire as far as it'll go through the hole. This is so that when it's soldered in, we can plug it into the breadboard.
+3. Using your soldering iron and flux, solder the jumper into place.
+4. Seat the accelerometer onto the breadboard using the exposed end of the wire sticking out under the accelerometer board.
+5. Connect the other end of the wire to pin A1 on the reference node.
+
+The accelerometer also has a Qwiic port that needs to be wired up to the Sparrow reference node. Plug the Qwiic breadboard jumper cable into this port, and then on the other end make the following connections:
 
 * Connect the black wire to GND via the breadboard's minus rail.
 * Connect the red wire to VIO on the node.
