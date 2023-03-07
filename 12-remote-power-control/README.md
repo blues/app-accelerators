@@ -1,6 +1,6 @@
 # Remote Power Control
 
-Remote Control power, and monitor line and load power quality and report power failures.
+Remote control power, and monitor line and load power quality and report power failures.
 
 ## Solution Overview
 
@@ -272,7 +272,7 @@ To use a the relay's control line, set the environment variable `switch2=1` to d
 
 ## Configuring Power Control Alerts
 
-In addition to setting the state of a control line, you can use environment variables to add additional behaviors that correlate the measured power with the state of the relay.  Specifically, setting the environment variable `alert_power_activity_2=source` indicates that monitor 2 is a source of power with the expectation that voltage, current and power are all zero when the pin is low, and within the configured ranges when the pin is high. Without this, the monitor would send undervoltage/current/power alert when the relay is switched off.
+In addition to setting the state of a control line, you can use environment variables to add additional behaviors that correlate the measured power with the state of the relay.  Specifically, setting the environment variable `alert_power_activity_2=source` indicates that monitor 2 is a source of power with the expectation that voltage, current and power are all zero when the pin is low, and within the configured ranges when the pin is high. Without this, the monitor would send undervoltage/current/power alerts when the relay is switched off.
 
 These variables describe how long it takes for the monitored equipment to startup or shutdown. Power monitoring alerts are suppressed during the startup and shutdown period after a control line changes state.
 
@@ -389,7 +389,7 @@ These are the parts of the message:
 
 * The first part of the message indicates which device the alert pertains to by its serial number, here "machine-12".
 
-* The next part indicates which monitor instance generated the alert, here it is "equipment", with "utility supply" as the other option. These names relate to the instance numbers, and here we are using 1 and 2 for utility supply and equipment respectively. If your monitors are configured with different I2C addresses, you will need to edit the names "instance-3" and "instance-4" in the jsonata script.
+* The next part indicates which monitor instance generated the alert, here it is "equipment", with "utility supply" as the other option. These names relate to the instance numbers, and here we are using 1 and 2 for utility supply and equipment, respectively. If your monitors are configured with different I2C addresses, you will need to edit the names "instance-3" and "instance-4" in the jsonata script.
 
 * The activity state comes next, indicating the state of the relay.
 
