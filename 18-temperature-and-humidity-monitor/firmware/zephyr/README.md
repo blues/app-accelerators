@@ -1,44 +1,14 @@
-# Temperature and Humidity Monitor
+# Zephyr Firmware
 
-Monitor temperature and humidity and send alerts using a Notecard and a BME280 sensor.
+This is a Zephyr-based implementation of the temperature and humidity monitor project's firmware.
 
-- [Temperature and Humidity Monitor](#temperature-and-humidity-monitor)
-  - [You Will Need](#you-will-need)
-    - [Hardware](#hardware)
-    - [Software](#software)
-  - [Notehub Setup](#notehub-setup)
-  - [Hardware Setup](#hardware-setup)
-  - [Notecard Firmware Setup](#notecard-firmware-setup)
-  - [Swan Firmware Setup](#swan-firmware-setup)
-  - [Operation](#operation)
-    - [data.qo](#dataqo)
-    - [alarm.qo](#alarmqo)
-    - [_health.qo](#_healthqo)
-    - [Simulating a Power Outage](#simulating-a-power-outage)
+## Setup
 
-## You Will Need
-
-### Hardware
-
-* AC to USB adapter (power brick)
-* USB A to micro USB cable
-* [LiPo battery with JST cable](https://shop.blues.io/products/5-000-mah-lipo-battery)
-* [Notecarrier-F](https://shop.blues.io/collections/notecarrier/products/notecarrier-f)
-* [Notecard](https://blues.io/products/notecard/)
-* [Swan MCU](https://blues.io/products/swan/)
-* [SparkFun Atmospheric Sensor Breakout - BME280 (Qwiic)](https://www.sparkfun.com/products/15440)
-* [Qwiic Cable](https://www.sparkfun.com/products/14426)
-
-### Software
-
-* [Visual Studio Code](https://code.visualstudio.com/)
-* [PlatformIO](https://platformio.org/)
-
-## Notehub Setup
+### Notehub Setup
 
 Sign up for a free account on [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub).
 
-## Hardware Setup
+### Hardware Setup
 
 1. Assemble Notecard and Notecarrier as described [here](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/).
 2. Plug the Swan into the Notecarrier, aligning the Swan's male headers with the Notecarrier's female headers.
@@ -47,25 +17,31 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 5. Plug the LiPo battery's JST cable into the Notecarrier port labeled "LIPO".
 6. Connect the micro USB cable from your development PC to the Swan.
 
-## Notecard Firmware Setup
+### Notecard Firmware Setup
 
 The Notecard should use [firmware version 3.5.1](https://dev.blues.io/notecard/notecard-firmware-updates/#v3-5-1-october-7th-2022) or higher. The simplest way to update firmware is to do an [over-the-air update](https://dev.blues.io/notecard/notecard-firmware-updates/#ota-dfu-with-notehub).
 
-## Swan Firmware Setup
+### Swan Firmware Setup
 
-1. Open Visual Studio Code.
-2. Click the PlatformIO icon on the left hand side and open this project's `firmware` folder with Quick Access > PIO Home > Open > Open Project.
-3. Open the file `src/main.cpp`. Uncomment this line
+From the command line, you'll need to pull in the [note-c](https://github.com/blues/note-c) submodule that the firmware depends on for Notecard communication:
 
-```c
-#define PRODUCT_UID "com.your-company:your-product-name"
+```sh
+git submodule update --init 18-temperature-and-humidity-monitor/firmware/zephyr/note-c
 ```
 
-and replace `com.your-company:your-product-name` with your ProductUID from [Notehub Setup](#notehub-setup).
+To build, flash, and debug the firmware, you will need
 
-4. Click the PlatformIO icon on the left hand side again and click "Build" under Project Tasks > bw_swan_r5 > General. You should see "SUCCESS" in the terminal output pane. The firmware image is now ready to be flashed to the Swan.
-5. Press and hold the button labeled "BOOT" on the Swan, and, while holding BOOT, press and release the button labeled "RST", and finally release the BOOT button. The Swan is now ready to be flashed.
-6. Click "Upload" under Project Tasks > bw_swan_r5 > General. You should see "SUCCESS" in the terminal output pane.
+* [Visual Studio Code (VS Code)](https://code.visualstudio.com/).
+* [Docker and the VS Code Dev Containers extension](https://code.visualstudio.com/docs/devcontainers/containers). The Dev Containers documentation will take you through the process of installing both Docker and the extension for VS Code.
+
+These instructions will defer parts of the build process to the [Blues Zephyr SDK documentation](https://dev.blues.io/tools-and-sdks/firmware-libraries/zephyr-sdk) (the "Zephyr SDK docs"). Though these instructions are for the [note-zephyr repo](https://github.com/blues/note-zephyr), the same patterns for building the code are used here.
+
+1. Start VS Code and select File > Open Folder and pick this folder (`18-temperature-and-humidity-monitor/firmware/zephyr`).
+1. Follow the instructions for your OS in the [Zephyr SDK docs' "Building the Dev Container" section](https://dev.blues.io/tools-and-sdks/firmware-libraries/zephyr-sdk/#building-the-dev-container).
+1. Edit `src/main.c` to associate the firmware with your Notehub project. Uncomment `// #define PRODUCT_UID "com.your-company:your-product-name"` and replace `com.your-company:your-product-name` with [your project's ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid).
+1. Follow the [Zephyr SDK docs' "Building and Running" section](https://dev.blues.io/tools-and-sdks/firmware-libraries/zephyr-sdk/#building-and-running).
+
+Now, the code should be running on the Swan. If you want to look at the serial logs or debug the code, check out the [Zephyr SDK docs' "Debugging" section](https://dev.blues.io/tools-and-sdks/firmware-libraries/zephyr-sdk/#debugging).
 
 ## Operation
 
@@ -73,7 +49,7 @@ At this point, the Swan firmware should be running and you should start to see e
 
 ### `data.qo`
 
-By default, the Swan will publish temperature and humidity data from the BME280 to this file every 3 minutes. For example:
+By default, the Swan will publish temperature and humidity data from the BME280 to this file every 2 minutes. For example:
 
 ```json
 { 
@@ -82,7 +58,7 @@ By default, the Swan will publish temperature and humidity data from the BME280 
 }
 ```
 
-You can change this interval by setting the environment variable `monitor_interval`. The unit for `monitor_interval` is seconds. The firmware reads from the BME280 every minute, so it's not particularly useful to set `monitor_interval` lower than 60 seconds. Note: If you modify any environment variables, wait at least 30 seconds for the changes to propagate to the Swan.
+You can change this interval by setting the [environment variable](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) `monitor_interval`. The unit for `monitor_interval` is seconds. The firmware reads from the BME280 every 30 seconds, so it's not particularly useful to set `monitor_interval` lower than 30 seconds. Note: If you modify any environment variables, wait at least a minute for the changes to propagate to the Swan.
 
 ### `alarm.qo`
 
@@ -93,7 +69,7 @@ By default, the firmware will send an alarm if the temperature falls outside the
 {
     "humidity":
     {
-        "status": "high", 
+        "status": "high",
         "value": 31.19921875
     },
     "temperature":
@@ -140,3 +116,11 @@ The LiPo battery acts as backup power in the event that USB power is lost. Once 
 3. After a short time, you will see a "USB power OFF" note in `_health.qo` on Notehub as mentioned in the previous section.
 4. Reinsert the power brick into a suitable electrical outlet to simulate power being restored.
 5. After a short time, you will see a "USB power ON" note in `_health.qo` on Notehub as mentioned in the previous section.
+
+## Additional Resources
+
+Though we only support using the VS Code + Dev Containers workflow described here, you can also install Zephyr and its dependencies locally. You can build, flash, and debug code in your native environment using Zephyr's [`west` tool](https://docs.zephyrproject.org/latest/develop/west/index.html). See [Zephyr's Getting Started Guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html) for more information.
+
+## Developer Notes
+
+The Notecard hooks in `src/notecard.c` come from [note-zephyr](https://github.com/blues/note-zephyr).
