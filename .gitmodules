@@ -16,3 +16,12 @@
 [submodule "33-room-occupancy-monitor/firmware/note-c"]
 	path = 33-room-occupancy-monitor/firmware/note-c
 	url = https://github.com/blues/note-c
+[submodule "33-room-occupancy-monitor/firmware/sparrow-lora"]
+	path = 33-room-occupancy-monitor/firmware/sparrow-lora
+	url = https://github.com/blues/sparrow-lora.git
+[submodule "30-air-quality-and-gas-leak/firmware/note-c"]
+	path = 30-indoor-air-quality-and-gas-leak/firmware/note-c
+	url = https://github.com/blues/note-c
+[submodule "30-air-quality-and-gas-leak/firmware/sparrow-lora"]
+	path = 30-indoor-air-quality-and-gas-leak/firmware/sparrow-lora
+	url = https://github.com/blues/sparrow-lora
