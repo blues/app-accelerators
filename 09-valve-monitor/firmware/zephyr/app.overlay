@@ -23,19 +23,25 @@
 		gpios = <&gpioa 5 GPIO_ACTIVE_HIGH>;
 	};
 
-	valve_pin: valve_pin {
-		label = "Valve";
-		gpios = <&gpioa 4 GPIO_ACTIVE_HIGH>;
-	};
-
 	flow_meter_pin: flow_meter_pin {
 		label = "Flow meter";
 		gpios = <&gpioe 9 GPIO_ACTIVE_LOW>;
+	};
+
+	pump_pin: pump_pin {
+		label = "Pump";
+		gpios = <&gpiod 15 GPIO_ACTIVE_HIGH>;
+	};
+
+	valve_pin: valve_pin {
+		label = "Valve";
+		gpios = <&gpioa 4 GPIO_ACTIVE_HIGH>;
 	};
 };
 
 &{/aliases} {
 	attn = &attn_pin;
-	valve = &valve_pin;
 	flow-meter = &flow_meter_pin;
+	pump = &pump_pin;
+	valve = &valve_pin;
 };

@@ -91,13 +91,21 @@ void publishSystemStatus(bool, uint32_t);
 
 // BEGIN GPIOS
 
-// Valve open pin
+// Valve pin
 #define VALVE_NODE DT_ALIAS(valve)
 #if !DT_NODE_HAS_STATUS(VALVE_NODE, okay)
 #error "Unsupported board: valve devicetree alias is not defined"
 #endif
 
 static const struct gpio_dt_spec valve = GPIO_DT_SPEC_GET_OR(VALVE_NODE, gpios, {0});
+
+// Pump pin
+#define PUMP_NODE DT_ALIAS(pump)
+#if !DT_NODE_HAS_STATUS(PUMP_NODE, okay)
+#error "Unsupported board: pump devicetree alias is not defined"
+#endif
+
+static const struct gpio_dt_spec pump = GPIO_DT_SPEC_GET_OR(PUMP_NODE, gpios, {0});
 
 // Flow meter pin
 #define FLOW_METER_NODE DT_ALIAS(flow_meter)
@@ -321,11 +329,19 @@ void valveToggle(void)
     }
 
     // Adjust valve position
-    gpio_pin_toggle_dt(&valve);
+    if (state.valveOpen) {
+        gpio_pin_toggle_dt(&pump);
+        k_sleep(K_MSEC(100));  // let voltage stabilize before solenoid surge
+        gpio_pin_toggle_dt(&valve);
+    } else {
+        gpio_pin_toggle_dt(&valve);
+        k_sleep(K_MSEC(100));  // let voltage stabilize before motor surge
+        gpio_pin_toggle_dt(&pump);
+    }
     state.valveOpen = !state.valveOpen;
 
     // Begin flow rate calculation for new state
-    k_sleep(K_MSEC(250));  // valve state change cool-down
+    k_sleep(K_MSEC(250));  // let flow rate stabilize
 
     // Reset variables used to calculate flow rate
     state.flowRate = 0;
@@ -645,7 +661,7 @@ void main(void)
         printk("Notecard card.attn config failed.\n");
     }
 
-    // Valve open pin setup
+    // Valve pin setup
     if (!device_is_ready(valve.port)) {
         printk("Error: Valve GPIO device %s is not ready\n", valve.port->name);
         return;
@@ -660,6 +676,21 @@ void main(void)
 
     state.valveOpen = true;
     printk("Set up valve control at %s pin %d\n", valve.port->name, valve.pin);
+
+    // Pump pin setup
+    if (!device_is_ready(pump.port)) {
+        printk("Error: Valve GPIO device %s is not ready\n", pump.port->name);
+        return;
+    }
+
+    ret = gpio_pin_configure_dt(&pump, GPIO_OUTPUT_ACTIVE);
+    if (ret != 0) {
+        printk("Error %d: failed to configure %s pin %d\n",
+               ret, pump.port->name, pump.pin);
+        return;
+    }
+
+    printk("Set up pump control at %s pin %d\n", pump.port->name, pump.pin);
 
     // Flow meter pin setup
     if (!device_is_ready(flowMeter.port)) {
