@@ -90,7 +90,7 @@ The firmware periodically monitors air quality and gas concentrations, and posts
 
 Air quality events are posted to the Notefile `*#aqi.qo`, where `*` is replaced with the unique ID of the Sparrow node. An air quality event has these properties:
 
-```json
+```cpp
 {
   "app" : "nf30",       // the application name
   "aqi" : 1,            // Air Quality Index (1-5)
@@ -101,7 +101,7 @@ Air quality events are posted to the Notefile `*#aqi.qo`, where `*` is replaced 
 
 Each air quality reading is checked against the [configured thresholds](#configuration). If any reading is higher than the corresponding threshold, the event is sent immediately to Notehub as an alert. Alerts are distinguished from regular monitoring events by the `alert` property.
 
-```json
+```cpp
 {
   "alert" : 1,          // Signifies an alert
   "app" : "nf30",       // the application name
