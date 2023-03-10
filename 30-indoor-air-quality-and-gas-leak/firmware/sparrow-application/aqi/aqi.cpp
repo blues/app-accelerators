@@ -80,7 +80,7 @@ extern "C" {
  * @brief An alert has been sent. Subsequent alerts are suppressed although AQI events continue to be sent
  * for monitoring purposes. When an AQI reading is not an alert, an "alert stand down" event is sent (alert=2)
  * to indicate the gas levels are within normal parameters again. When the event is successfully sent,
- * transitions back to STATE_AQI_MONITORING, otherwise remain in teh STATE_AQI_ALERTING.
+ * transitions back to STATE_AQI_MONITORING, otherwise remain in STATE_AQI_ALERTING.
  */
 #define STATE_AQI_ALERTING             1
 
@@ -241,11 +241,7 @@ public:
                     APP_PRINTF("aqi: ERROR reading is 0.\r\n");
                 }
             }
-            //this->setOperatingMode(SFE_ENS160_IDLE);
             bus.deinit();
-        }
-        else {
-
         }
         return success;
     }
@@ -253,37 +249,6 @@ public:
 
 AQISensor aqiSensor;
 
-
-// Addresses of the BME sensor used to identify
-// the Sparrow Reference Sensor Board
-#define BME280_I2C_ADDR_PRIM        UINT8_C(0x76)
-#define BME280_I2C_ADDR_SEC         UINT8_C(0x77)
-#define BME280_I2C_RETRY_COUNT      3
-#define BME280_I2C_TIMEOUT_MS       100
-
-
-
-// We have no viable way of detecting whether or not the PIR sensor
-// hardware is present, so we use the presence of the BME280 as a proxy.
-bool isSparrowReferenceSensorBoard (void) {
-    bool result;
-
-    // Power on the sensor to see if it's here
-    GPIO_InitTypeDef init;
-    memset(&init, 0, sizeof(init));
-    init.Speed = GPIO_SPEED_FREQ_LOW;
-    init.Pin = BME_POWER_Pin;
-    init.Mode = GPIO_MODE_OUTPUT_PP;
-    init.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(BME_POWER_GPIO_Port, &init);
-    HAL_GPIO_WritePin(BME_POWER_GPIO_Port, BME_POWER_Pin, GPIO_PIN_SET);
-    MX_I2C2_Init();
-    result = (MY_I2C2_Ping(BME280_I2C_ADDR_PRIM, BME280_I2C_TIMEOUT_MS, BME280_I2C_RETRY_COUNT)
-           || MY_I2C2_Ping(BME280_I2C_ADDR_SEC, BME280_I2C_TIMEOUT_MS, BME280_I2C_RETRY_COUNT));
-    MX_I2C2_DeInit();
-
-    return result;
-}
 
 // Scheduled App One-Time Init
 bool aqiInit()

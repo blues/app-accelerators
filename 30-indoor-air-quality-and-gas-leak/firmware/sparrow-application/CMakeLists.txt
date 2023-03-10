@@ -9,8 +9,6 @@ add_library(sparrow-application STATIC
 )
 
 target_include_directories(sparrow-application
-    PUBLIC ${CMAKE_CURRENT_LIST_DIR}/dsm
-    PUBLIC ${CMAKE_CURRENT_LIST_DIR}/pir
     PUBLIC ${CMAKE_CURRENT_LIST_DIR}/ens160
 )
 

@@ -34,7 +34,7 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 
 ### Quickstart
 
-Follow the [Sparrow Quickstart](https://dev.blues.io/quickstart/sparrow-quickstart/) pair your Sparrow reference node with the gateway and associate it with the Notehub project you just created. Note also that you only need one reference node for this project, so you don't need to pair both nodes that came with the dev kit. Make sure that you use the ProductUID generated in [Notehub Setup](#notehub-setup) when it comes time to issue the `hub.set` command in the quickstart.
+Follow the [Sparrow Quickstart](https://dev.blues.io/quickstart/sparrow-quickstart/) pair your Sparrow reference node with the gateway and associate it with the Notehub project you just created. Note also that you only need one reference node for this project, so you don't need to pair both nodes that came with the dev kit. Make sure that you use the ProductUID generated in [Notehub Setup](#notehub-setup) when it comes time to issue the [`hub.set`](https://dev.blues.io/reference/notecard-api/hub-requests/#hub-set) command in the quickstart.
 
 After you've completed the quickstart, leave the Notecarrier and Sparrow Essentials board powered and connected. These two devices will act as our gateway to Notehub, and you won't need to touch them again. The rest of this guide will focus on the Sparrow Reference Sensor node.
 
@@ -152,12 +152,13 @@ For an introduction to Twilio SMS routes, please see our [Twilio SMS Guide](http
 
 You can optionally create a more recognizable name for the air quality monitors in the project, which is used in SMS alerts. To do this, configure an environment variable that lists the Node IDs and their names:
 
-1. In Notehub, click the Notecard Device corresponding to the gateway.
-2. Click the "Environment" tab.
-3. Add an environment variable with the name `node_names`. The value of the environment variable should follow the format `NodeID:FriendlyName;NoteID2:FriendlyName2;`. For example `203733589236550300220032:Main Office;203733589236550300220033:Workshop`.
+1. In Notehub, click "Events" and inspect the `*#aqi` events. The event filename looks like `<NodeID>#aqi.qo` ) - the node's ID is the string of characters before the `#` sign. Make a note of the node ID, or copy it to be pasted later.
+2. Click the Notecard Device corresponding to the gateway.
+3. Click the "Environment" tab.
+4. Add an environment variable with the name `node_names`. The value of the environment variable should follow the format `NodeID:FriendlyName;NoteID2:FriendlyName2;`, that is, the node ID followed by a colon (`:`) followed by the name and finally a semi-colon (`;`). For example setting `node_names` to `203733589236550300220032:Main Office;203733589236550300220033:Workshop` names the node with ID ending `32` as "Main Office" and the node with ID ending `33` as "Workshop".
 5. Click "Save".
 
-Once configured, the name rather than the Node ID will be used in SMS alerts.
+Once the node names are configured, the name rather than the node ID will be used in SMS alerts.
 
 ### Testing the Route
 
