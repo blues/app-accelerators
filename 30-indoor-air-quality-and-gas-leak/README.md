@@ -1,6 +1,8 @@
 # Indoor Air Quality and Gas Leak
 
-Monitor air quality information, including Air Quality Index, and send alerts when a potential gas leak is detected.
+Monitor air quality, including Air Quality Index, CO2 and VOC concentration, and send alerts when a potential gas leak is detected.
+
+![](images/sms.png)
 
 - [Indoor Air Quality and Gas Leak](#indoor-air-quality-and-gas-leak)
   - [You Will Need](#you-will-need)
@@ -8,8 +10,8 @@ Monitor air quality information, including Air Quality Index, and send alerts wh
   - [Sparrow Setup](#sparrow-setup)
     - [Quickstart](#quickstart)
     - [Air Quality Sensor Connection](#air-quality-sensor-connection)
-    - [Firmware](#firmware)
-  - [Firmware Air Quality Monitoring and Alerting Behavior](#firmware-air-quality-monitoring-and-alerting-behavior)
+  - [Firmware](#firmware)
+  - [Air Quality Monitoring and Alerting Behavior](#air-quality-monitoring-and-alerting-behavior)
     - [Configuration](#configuration)
   - [Routing Data out of Notehub](#routing-data-out-of-notehub)
     - [Naming Air Quality Monitors](#naming-air-quality-monitors)
@@ -22,7 +24,7 @@ Monitor air quality information, including Air Quality Index, and send alerts wh
 * [Sparrow Development Kit](https://shop.blues.io/products/sparrow-dev-kit)
 * 2 USB A to micro USB cables
 * [Sparkfun Indoor Air Quality Sensor - ENS160](https://www.sparkfun.com/products/20844)
-* [Qwiic cable][(https://www.sparkfun.com/products/17912](https://www.sparkfun.com/products/14427))
+* [Qwiic cable](https://www.sparkfun.com/products/14427)
 
 ## Notehub Setup
 
@@ -32,24 +34,24 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 
 ### Quickstart
 
-Follow the [Sparrow Quickstart](https://dev.blues.io/quickstart/sparrow-quickstart/) to get your Sparrow reference node paired with the gateway and associated with the Notehub project you just created. Note also that we'll only need one reference node for this project, so you don't need to pair both nodes that came with the dev kit. Make sure that you use the ProductUID generated in [Notehub Setup](#notehub-setup) when it comes time to issue the `hub.set` command in the quickstart.
+Follow the [Sparrow Quickstart](https://dev.blues.io/quickstart/sparrow-quickstart/) pair your Sparrow reference node with the gateway and associate it with the Notehub project you just created. Note also that you only need one reference node for this project, so you don't need to pair both nodes that came with the dev kit. Make sure that you use the ProductUID generated in [Notehub Setup](#notehub-setup) when it comes time to issue the `hub.set` command in the quickstart.
 
-After you've completed the quickstart, leave the Notecarrier and essentials board powered and connected. These two devices will act as our gateway to Notehub, and we won't need to touch them again. The rest of this guide will focus on the reference node.
+After you've completed the quickstart, leave the Notecarrier and Sparrow Essentials board powered and connected. These two devices will act as our gateway to Notehub, and you won't need to touch them again. The rest of this guide will focus on the Sparrow Reference Sensor node.
 
 ### Air Quality Sensor Connection
 
-This solution makes use of the ENS160 sensor board, which measures Indoor Air Quality. Connect the ENS160 sensor to the Sparrow Reference Sensor board using the Qwiic cable:
+This solution makes use of the ENS160 sensor board, which measures indoor air quality. Connect the ENS160 sensor to the Sparrow Reference Sensor board using the Qwiic cable:
 
 1. Insert one end of the Qwiic cable into the port labelled Qwiic on the Sparrow Reference Sensor board
-2. Insert the other end of the Qwiic cable into one of the Qwiic sockets on the ENS160 sensor board.
+2. Insert the other end of the Qwiic cable into either of the Qwiic sockets on the ENS160 sensor board.
 
-With the Sparrow Reference Sensor powered on, you will see a red LED light up on the ENS160 board, indicating that it is receiving power.
+With the Sparrow Reference Sensor powered on, you will see a red LED light up on the ENS160 board, indicating that it is receiving power. To improve battery life, you may wish to cut the LED jumper to disable the LED. For more details, see the "LED Jumper" section in the [Sparkfun ENS160 Qwiic Hookup Guide](https://learn.sparkfun.com/tutorials/sparkfun-indoor-air-quality-sensor---ens160-qwiic-hookup-guide).
 
-### Firmware
+## Firmware
 
-In this section we will build the Indoor Air Quality firmware and flash it to the reference node.
+This section shows how you build the Indoor Air Quality firmware and flash it to the reference node.
 
-1. First, we need to pull in some dependencies needed by the firmware to compile. After cloning this repository, run these commands: `git submodule update --init 30-indoor-air-quality-and-gas-leak/firmware/note-c` and `git submodule update --init 30-indoor-air-quality-and-gas-leak/firmware/sparrow-lora`. This will pull in the `note-c` and `sparrow-lora` submodules that this project depends on.
+1. You will need to fetch the dependencies required by the firmware. After cloning this repository, run these commands: `git submodule update --init 30-indoor-air-quality-and-gas-leak/firmware/note-c` and `git submodule update --init 30-indoor-air-quality-and-gas-leak/firmware/sparrow-lora`. This will fetch the `note-c` and `sparrow-lora` submodules that this project depends on.
 
 2. Connect the STLINK-V3MINI to your development PC with a USB A to micro USB cable.
 
@@ -57,13 +59,13 @@ In this section we will build the Indoor Air Quality firmware and flash it to th
 
 4. There are a few ways to build and flash the firmware onto the reference node. These are covered in the [Sparrow Builder's Guide](https://dev.blues.io/sparrow/sparrow-builders-guide/). Follow the steps in that guide and then return to these instructions.
 
-> **Note**: When building the firmware with VSCode, be sure the `firmware` folder is added at the root of the workspace.
+> **Note**: When building the firmware with VSCode, be sure the `firmware` folder is added at the root of the workspace. This ensures the project's tasks to compile the firmware are recognized by VSCode.
 
-5. Build and flash the code using whichever method you selected when following the Sparrow Builder's Guide.
+5. Build and flash the firmware using whichever method you chose when following the Sparrow Builder's Guide.
 
-6. Open a terminal emulator and connect to the STLINK's serial connection to view logs. See the documentation [here](https://dev.blues.io/sparrow/sparrow-builders-guide/#collecting-firmware-logs).
+6. Open a terminal emulator and connect to the STLINK's serial connection to view the logs from the device. See the documentation [here](https://dev.blues.io/sparrow/sparrow-builders-guide/#collecting-firmware-logs).
 
-7. Start the program in debug mode (again, how you do this depends on the IDE: VS Code or STM32CubeIDE). In your terminal emulator's output, you should see something like this:
+7. Start the program in debug mode (again, how you do this depends on the IDE: VS Code or STM32CubeIDE). In your terminal emulator, you should see something like this:
 
 ```
 ===================
@@ -82,9 +84,9 @@ If the ENS160 sensor is functioning correctly, you will see a message like this 
 aqi: note sent. aqi 1, eco2 400, tvoc: 23
 ```
 
-## Firmware Air Quality Monitoring and Alerting Behavior
+## Air Quality Monitoring and Alerting Behavior
 
-The firmware periodically monitors air quality and gas levels, and posts events with this information. Regular monitoring events are not synced immediately to Notehub, and will appear as often as the Notecard is configured to sync with Notehub via the `hub.set` request.
+The firmware periodically monitors air quality and gas concentrations, and posts events with this information. Regular air quality monitoring events are not synced immediately to Notehub, and will be delivered as often as the Notecard is configured to sync with Notehub via the `hub.set` request.
 
 Air quality events are posted to the Notefile `*#aqi.qo`, where `*` is replaced with the unique ID of the Sparrow node. An air quality event has these properties:
 
@@ -97,7 +99,7 @@ Air quality events are posted to the Notefile `*#aqi.qo`, where `*` is replaced 
 }
 ```
 
-Each air quality reading is checked against the [configured thresholds]. If any reading is higher than the corresponding threshold, the event is sent immediately to Notehub as an alert. Alerts are distinguished from regular monitoring events by the `alert` property.
+Each air quality reading is checked against the [configured thresholds](#configuration). If any reading is higher than the corresponding threshold, the event is sent immediately to Notehub as an alert. Alerts are distinguished from regular monitoring events by the `alert` property.
 
 ```json
 {
@@ -113,11 +115,11 @@ The `alert` property has these values:
 
 * `alert:1`: Indicates an alert condition regarding air quality has been detected. The event is immediately synced to Notehub. You can use this to signal an alert externally, such as notifying a pager other messaging service.
 
-* `alert:2`: Signifies that the alert is still ongoing and that air quality is . Subsequent alerts after the initial alert have the `alert` property set to `2`, indicating that the alert is ongoing because air quality hasn't returned to normal levels. These events are not immediately sent to notehub, and are provided for continuous monitoring of air quality.
+* `alert:2`: Signifies that the alert is still ongoing. Subsequent alerts after the initial alert have the `alert` property set to `2`, indicating that the alert is ongoing because air quality hasn't returned to normal levels. These events are not immediately sent to notehub, and are provided for continuous monitoring of air quality.
 
 * `alert:3`: Signifies a stand-down alert and that air quality has returned to normal levels. These events are sent immediately to notehub. This is typically used to send an external notification that air quality has returned to normal levels.
 
-When air quality returns to normal, `alert:3` is the last event sent with the `alert` property present. Subsequent events monitoring normal air quality do not have the `alert` property present until a new alert condition is detected.
+When air quality returns to normal, `alert:3` is the last event sent with the `alert` property present. Subsequent events monitoring air quality do not have the `alert` property present until a new alert condition is detected.
 
 
 ### Configuration
@@ -140,7 +142,7 @@ For an introduction to Twilio SMS routes, please see our [Twilio SMS Guide](http
 
 1. Fill out the required fields for the Twilio SMS route, including "from" and "to" phone numbers, where "from" is your virtual Twilio number, and "to" is the number of the phone that receives the alerts. We will not be using placeholders for these numbers, but will use a placeholder for the message, so set the message field to `[.body.customMessage]`.
 
-2. Under "Notefiles", leave the default of "All Notefiles", from "Include These Notefiles".
+2. Under the "Filters" section, set "Notefiles" to "All Notefiles" (the default value.)
 
 3. Under "Data", select "JSONata Expression" and copy and paste the contents of [jsonata/route.jsonata](jsonata/route.jsonata) into the text field "Insert your JSONata expression here".
 
@@ -148,15 +150,14 @@ For an introduction to Twilio SMS routes, please see our [Twilio SMS Guide](http
 
 ### Naming Air Quality Monitors
 
-You can optionally create a more recognizable name for the air quality monitors in the project that appears in SMS alerts. To do this, you configure an environment variable that lists the Node IDs and their names:
+You can optionally create a more recognizable name for the air quality monitors in the project, which is used in SMS alerts. To do this, configure an environment variable that lists the Node IDs and their names:
 
 1. In Notehub, click the Notecard Device corresponding to the gateway.
 2. Click the "Environment" tab.
-3. Add an environment variable with the name `node_names`.
-4. The value of the environment variable should follow the format `NodeID:FriendlyName;NoteID2:FriendlyName2;`. For example `203733589236550300220032:Main Office;203733589236550300220033:Workshop`.
+3. Add an environment variable with the name `node_names`. The value of the environment variable should follow the format `NodeID:FriendlyName;NoteID2:FriendlyName2;`. For example `203733589236550300220032:Main Office;203733589236550300220033:Workshop`.
 5. Click "Save".
 
-Once configured, the name rather than the Node ID is in SMS alerts.
+Once configured, the name rather than the Node ID will be used in SMS alerts.
 
 ### Testing the Route
 
@@ -170,7 +171,7 @@ This is a regular air quality monitoring event. It does not generate an SMS aler
 }}
 ```
 
-This is an alert event (due to the presence of the `alert` property), which will result in an SMS message being sent to the phone number in the "to" field.  Before sending the event, replace `1234` in the file property with the unique ID of your Node (which you can find in the `*#aqi` events in Notehub.)
+This is an alert event (due to the presence of the `alert` property), which will result in an SMS message being sent to the phone number in the "to" field.  Before sending the event, replace `1234` in the `file` property with the unique ID of your Node (which you can find in the `*#aqi` events in Notehub.)
 
 ```json
 { "req": "note.add", "file":"1234#aqi.qo", "sync": true, "body": {
@@ -178,7 +179,7 @@ This is an alert event (due to the presence of the `alert` property), which will
 }}
 ```
 
-This will send an SMS that looks like this:
+This event will send an SMS that looks like this:
 
 > ALERT! Air quality alert in main conference room. AQI: 3, CO2: 500ppm, TVOC: 200ppb.
 
@@ -188,9 +189,7 @@ These are the parts of the message:
 
 * Following that is the AQI, indicating air quality (1-5), and the concentration of CO2 and TVOCs.
 
-Once the air quality returns to normal, another SMS is sent. 
-
-This can be simulated by sending the event below. As before, replace `1234` with your air quality monitor's ID:
+Once the air quality returns to normal, another SMS is sent. This can be simulated by sending the event below. As before, replace `1234` with your air quality monitor's ID:
 
 ```json
 { "req": "note.add", "file":"1234#aqi.qo", "sync": true, "body": {
@@ -198,7 +197,7 @@ This can be simulated by sending the event below. As before, replace `1234` with
 }}
 ```
 
-Which results in the message
+Sending this event results in the message
 
 > Air quality normal in main conference room. AQI: 1, CO2: 400ppm, TVOC: 50ppb.
 
