@@ -2,11 +2,14 @@
 
 A host-free system for monitoring motion on an oil field pump jack with the built-in Notecard accelerometer.
 
+![The pump jack monitor project’s web dashboard and hardware](../app-banners/07-banner.png)
+
 To run this project yourself you’ll need to:
 
 * [Configure Notehub](#notehub).
 * [Purchase the necessary hardware](#hardware).
 * [Configure the Notecard](#configure-notecard).
+* [Build a Cloud Dashboard with Datacake](#dashboard)
 
 ## Notehub
 
@@ -146,3 +149,13 @@ Additionally, because you set up your project for GPS/GNSS tracking, every 24 ho
     "best_timezone": "America/Chicago",
 }
 ```
+## Dashboard
+
+This project features a [Datacake](https://datacake.co) to utilize event processing with the built-in payload decoder feature.
+
+You'll first want to set-up a free account with Datacake, and then [follow this guide](https://dev.blues.io/guides-and-tutorials/routing-data-to-cloud/datacake/?&utm_source=hackster&utm_medium=web&utm_campaign=nf&utm_content=nf7) to create a Notehub Route that sends your project's data to your Datacake dashboard.
+
+Once created navigate to the Configuration tab of your Datacake project and paste the contents of the [pumpjack-payload-decoder.js file](dashboard/pumpjack-payload-decoder.js) into the HTTP Payload Decoder section. Click Save and as data flows into Datacake from your Notehub project, you can construct a dashboard to show current
+and historical information like in the screenshot below.
+
+![Image of completed Datacake Dashboard](images/datacake-dashboard.png)

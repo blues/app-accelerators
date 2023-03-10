@@ -92,12 +92,19 @@ A host-free low latency notification system to alert attendants in a parking lot
 A host-free system for monitoring motion on an oil field pump jack with the built-in Notecard accelerometer.
 
 <p>
+  <a href="https://www.hackster.io/brandonsatrom/no-frills-motion-monitoring-with-the-notecard-16450f"><b>📚 Read About the Project</b></a> •
   <a href="./07-pump-jack-motion-monitoring/"><b>🔧 Start Building</b></a>
 </p>
 
 ---
 
-### 8. Coming Soon!
+### 8. Power Quality Monitor
+
+Monitor input AC power, AC output power, and give alerts on changes.
+
+<p>
+  <a href="./08-power-quality-monitoring/"><b>🔧 Start Building</b></a>
+</p>
 
 ---
 
