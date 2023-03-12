@@ -1,8 +1,6 @@
-# Pump Jack Motion Monitoring
+# Piston Pump Motion Monitoring
 
-A host-free system for monitoring motion on an oil field pump jack with the built-in Notecard accelerometer.
-
-![The pump jack monitor project’s web dashboard and hardware](../app-banners/07-banner.png)
+A host-free system for monitoring motion on an piston pump with the built-in Notecard accelerometer.
 
 To run this project yourself you’ll need to:
 
@@ -13,17 +11,17 @@ To run this project yourself you’ll need to:
 
 ## Notehub
 
-The Pump Jack Motion Monitor runs on top of Notehub. As such, to run this sample you’ll need to create a Notehub account and start a new Notehub project.
+The Piston Pump Motion Monitor runs on top of Notehub. As such, to run this sample you’ll need to create a Notehub account and start a new Notehub project.
 
 ### Creating a New Project
 
 1. Sign up for a free [Notehub](https://notehub.io) account, if you don’t have one already.
 1. Click the blue **Create Project** button in the top-right corner of the screen.
-1. Give the project a name, such as “PumpJackMonitor”, and then click the next **Create Project** button.
+1. Give the project a name, such as “PistonPumpMonitor”, and then click the next **Create Project** button.
 
 ## Hardware
 
-The following hardware is required to run the Pump Jack Motion Monitor.
+The following hardware is required to run the Piston Pump Motion Monitor.
 
 * [Blues Notecard](https://shop.blues.io/collections/notecard)
 * [Blues Notecarrier B](https://shop.blues.io/products/carr-b)
@@ -49,10 +47,10 @@ This guide will walk you through using the Notecard CLI, but you can also enter 
 
 1. Download and install the [Notecard CLI](https://dev.blues.io/tools-and-sdks/notecard-cli/#installation) from the Blues Developer Experience site.
 1. Plug the Notecarrier containing the Notecard into your computer with a USB-A to micro USB cable.
-1. Copy the JSON file example in this folder named [`pump-jack-notecard-configuration.json`](./configuration/pump-jack-notecard-configuration.json) to your local machine.
+1. Copy the JSON file example in this folder named [`pump-notecard-configuration.json`](./configuration/pump-notecard-configuration.json) to your local machine.
 1. Remove all the # comments describing what each command does, [add your `product`](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) in the `hub.set` request, and save the file. It will resemble the code snippet below when you're done.
 ```json
-{"req":"env.default","name":"pump_jack_notecard_configuration_version","text":"1.0.0"}
+{"req":"env.default","name":"pump_notecard_configuration_version","text":"1.0.0"}
 {"req":"hub.set","mode":"periodic","align":true,"voutbound":"usb:10;high:180;normal:180; low:360; dead:0","vinbound":"usb:10;high:360;normal:720;low:1440;dead:0"}
 {"req":"card.voltage","mode":"lipo"}
 {"req":"card.motion.mode","start":true,"sensitivity": -1,"seconds":60}
@@ -63,7 +61,7 @@ This guide will walk you through using the Notecard CLI, but you can also enter 
 ```
 1. Upload the configuration script to the Notecard via the Notecard CLI by running the following command from the command line:
 ```bash
-$ notecard -setup pump-jack-motion-monitoring.json
+$ notecard -setup pump-notecard-configruation.json
 ```
 1. This executes each command on your connected Notecard, one at a time. When the setup completes, your Notecard's configuration is complete.
 1. To confirm your Notecard is now attached to your project in Notehub, navigate to the project in the browser, click the **Devices** tab and see if your Notecard has appeared. Once the Notecard connects to Notehub, you'll see a device with the preferred name of your Notecard (provided by the setup script) under the **Best ID** column.

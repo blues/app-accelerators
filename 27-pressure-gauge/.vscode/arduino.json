@@ -1,7 +1,0 @@
-{
-    "sketch": "pressure-gauge.ino",
-    "board": "STMicroelectronics:stm32:BluesW",
-    "configuration": "pnum=SWAN_R5,upload_method=swdMethod,xserial=generic,usb=CDCgen,xusb=FS,opt=ogstd,dbg=enable_sym,rtlib=nano",
-    "output": "build",
-    "port": "/dev/ttyACM0"
-}
