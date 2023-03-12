@@ -57,6 +57,7 @@ typedef struct {
     uint32_t envLastModTime;
     volatile uint32_t flowMeterPulseCount;
     volatile uint32_t flowRate;
+    volatile uint32_t alarmFlowRate;
     uint32_t flowRateAlarmMin;
     uint32_t flowRateAlarmMax;
     volatile uint32_t leakCount;
@@ -86,7 +87,7 @@ static uint32_t calculateFlowRate(uint32_t currentMs)
 // Forward declarations
 void updateEnvVars(void);
 void valveToggle(void);
-void publishSystemStatus(bool);
+void publishSystemStatus(bool, uint32_t);
 
 // BEGIN GPIOS
 
@@ -150,7 +151,7 @@ K_TIMER_DEFINE(envVarUpdateTimer, envVarUpdateTimerCb, NULL);
 // Publish system status timer
 static void publishSystemStatusWorkCb(struct k_work *)
 {
-    publishSystemStatus(false);
+    publishSystemStatus(false, state.flowRate);
 }
 
 K_WORK_DEFINE(publishSystemStatusWorkItem, publishSystemStatusWorkCb);
@@ -205,7 +206,7 @@ K_TIMER_DEFINE(alarmCooldownTimer, alarmCooldownTimerCb, NULL);
 // Work item for publishing an alarm.
 static void alarmPublishWorkCb(struct k_work *)
 {
-    publishSystemStatus(true);
+    publishSystemStatus(true, state.alarmFlowRate);
     // This timer limits the frequency of alarms we publish to one every
     // ALARM_COOLDOWN_S seconds. Specifying K_FOREVER for the period means
     // this timer fires only once, until it's started again (i.e. it's not
@@ -224,10 +225,15 @@ static void checkAlarmTimerCb(struct k_timer *)
         return;
     }
 
+    // state.alarmFlowRate is a snapshot of state.flowRate. This way, if there
+    // is an alarm, we have the flow rate value that caused it. We can't just
+    // use state.flowRate because it may change between the time of alarm
+    // detection and alarm publication.
+    state.alarmFlowRate = state.flowRate;
     bool flowRateHigh = state.valveOpen &&
-                        state.flowRate > state.flowRateAlarmMax;
+                        state.alarmFlowRate > state.flowRateAlarmMax;
     bool flowRateLow = state.valveOpen &&
-                       state.flowRate < state.flowRateAlarmMin;
+                       state.alarmFlowRate < state.flowRateAlarmMin;
     bool leaking = state.leakCount >= LEAK_THRESHOLD;
 
     const char* reason = NULL;
@@ -373,7 +379,7 @@ void handleValveCmd(char *cmd)
 // Publish the system status (flow rate, valve state). If alarm is true, attach
 // the alarm reason to the outbound note and send it to alarm.qo. Otherwise,
 // send the note to data.qo.
-void publishSystemStatus(bool alarm)
+void publishSystemStatus(bool alarm, uint32_t flowRate)
 {
     // Only publish when necessary to preserve prepaid data
     if (!state.publishRequired && !alarm) { return; }
@@ -394,7 +400,7 @@ void publishSystemStatus(bool alarm)
 
         J *body = JCreateObject();
         if (body != NULL) {
-            JAddNumberToObject(body, "flow_rate", state.flowRate);
+            JAddNumberToObject(body, "flow_rate", flowRate);
 
         #if USE_VALVE == 1
             if (state.valveOpen) {
@@ -765,7 +771,7 @@ void main(void)
                             // based on the monitor interval. This acts as a
                             // sort of acknowledgment so that the controller
                             // knows their valve command was received.
-                            publishSystemStatus(false);
+                            publishSystemStatus(false, state.flowRate);
                         }
                         else {
                             printk("Unable to get valve command from note.\n");
