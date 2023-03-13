@@ -87,17 +87,23 @@ A host-free low latency notification system to alert attendants in a parking lot
 
 ---
 
-### 7. ⛽️ Pump Jack Motion Monitoring
+### 7. ⛽️ Piston Pump Motion Monitoring
 
-A host-free system for monitoring motion on an oil field pump jack with the built-in Notecard accelerometer.
+A host-free system for monitoring motion on a piston pump jack with the built-in Notecard accelerometer.
 
 <p>
-  <a href="./07-pump-jack-motion-monitoring/"><b>🔧 Start Building</b></a>
+  <a href="./07-piston-pump-motion-monitoring/"><b>🔧 Start Building</b></a>
 </p>
 
 ---
 
-### 8. Coming Soon!
+### 8. Power Quality Monitor
+
+Monitor input AC power, AC output power, and give alerts on changes.
+
+<p>
+  <a href="./08-power-quality-monitoring/"><b>🔧 Start Building</b></a>
+</p>
 
 ---
 
