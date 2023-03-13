@@ -149,11 +149,11 @@ Additionally, because you set up your project for GPS/GNSS tracking, every 24 ho
 ```
 ## Dashboard
 
-This project features a [Datacake](https://datacake.co) to utilize event processing with the built-in payload decoder feature.
+This project features a [Datacake](https://datacake.co) dashboard to utilize event processing with the built-in payload decoder feature.
 
 You'll first want to set-up a free account with Datacake, and then [follow this guide](https://dev.blues.io/guides-and-tutorials/routing-data-to-cloud/datacake/?&utm_source=github&utm_medium=web&utm_campaign=nf&utm_content=nf7) to create a Notehub Route that sends your project's data to your Datacake dashboard.
 
-Once created navigate to the Configuration tab of your Datacake project and paste the contents of the [pumpjack-payload-decoder.js file](dashboard/pumpjack-payload-decoder.js) into the HTTP Payload Decoder section. Click Save and as data flows into Datacake from your Notehub project, you can construct a dashboard to show current
+Once created navigate to the Configuration tab of your Datacake project and paste the contents of the [pumpjack-payload-decoder.js file](dashboard/pump-payload-decoder.js) into the HTTP Payload Decoder section, and then click the **Save** button. As data flows into Datacake from your Notehub project, you can construct a dashboard to show current
 and historical information like in the screenshot below.
 
 ![Image of completed Datacake Dashboard](images/datacake-dashboard.png)
