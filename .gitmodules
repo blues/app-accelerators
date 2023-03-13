@@ -28,3 +28,9 @@
 [submodule "30-air-quality-and-gas-leak/firmware/sparrow-lora"]
 	path = 30-indoor-air-quality-and-gas-leak/firmware/sparrow-lora
 	url = https://github.com/blues/sparrow-lora
+[submodule "31-temperature-and-smoke-detector/firmware/sparrow-lora"]
+	path = 31-temperature-and-smoke-detector/firmware/sparrow-lora
+	url = https://github.com/blues/sparrow-lora
+[submodule "31-temperature-and-smoke-detector/firmware/note-c"]
+	path = 31-temperature-and-smoke-detector/firmware/note-c
+	url = https://github.com/blues/note-c
