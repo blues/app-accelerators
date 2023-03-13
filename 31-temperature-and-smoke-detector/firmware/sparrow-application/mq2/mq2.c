@@ -160,7 +160,7 @@ void mq2Poll(int appID, int state, void *appContext)
 {
     // Unused parameter(s)
     (void)appContext;
-    (void)appID;
+
     MQ2SensorReading sensorReading;
 
     // Switch based upon state

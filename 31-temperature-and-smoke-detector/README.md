@@ -86,7 +86,7 @@ mq2: note sent. gas: 4226, temperature: 20.2C, humidity: 35.26%
 
 ## Temperature Monitoring and Smoke Alerting Behavior
 
-The firmware periodically monitors temperature and gas concentrations, and posts events with this information. Regular monitoring events are not synced immediately to Notehub, and will be delivered as often as the Notecard is configured to sync with Notehub via the [`hub.set`]((https://dev.blues.io/reference/notecard-api/hub-requests/#hub-set) request.
+The firmware periodically monitors temperature and gas concentrations, and posts events with this information. Regular monitoring events are not synced immediately to Notehub, and will be delivered as often as the Notecard is configured to sync with Notehub via the [`hub.set`](https://dev.blues.io/reference/notecard-api/hub-requests/#hub-set) request.
 
 Temperature and Gas measurements are posted to the Notefile `*#mq2.qo`, where `*` is replaced with the unique ID of the Sparrow node. An event has these properties:
 
@@ -115,7 +115,7 @@ The `alert` property has these values:
 
 * `alert:1`: Indicates an alert condition regarding temperature or presence of smoke or gas has been detected. The event is immediately synced to Notehub. You can use this to signal an alert externally, such as notifying a pager other messaging service.
 
-* `alert:2`: Signifies that the alert is still ongoing. Subsequent alerts after the initial alert have the `alert` property set to `2`, indicating that the alert is ongoing because temperature or gas levels hasn't returned to normal. These events are not immediately sent to notehub, and are provided for continuous monitoring.
+* `alert:2`: Signifies that the alert is still ongoing. Subsequent alerts after the initial alert have the `alert` property set to `2`, indicating that the alert is ongoing because temperature or gas levels haven't returned to normal. These events are not immediately sent to notehub, and are provided for continuous monitoring.
 
 * `alert:3`: Signifies a stand-down alert and that temperature and gas levels have returned to normal. These events are sent immediately to notehub. This is typically used to send an external notification that normal temperature and gas levels have been reached.
 
