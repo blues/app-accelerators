@@ -6,3 +6,7 @@ env
 .pio
 
 build/
+
+# STM32CubeIDE files
+*.launch
+.settings
