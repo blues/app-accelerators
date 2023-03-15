@@ -40,7 +40,7 @@
 // The following classes specify the behavior for communicating
 // over the respective data buses: Inter-Integrated Circuit (I2C)
 // and Serial Peripheral Interface (SPI). 
-
+#ifdef ARDUINO
 #include "sfe_bus.h"
 #include <Arduino.h>
 
@@ -397,3 +397,5 @@ int SfeSPI::readRegisterRegion(uint8_t addr, uint8_t reg, uint8_t *data, uint16_
 }
 
 }
+#endif
+
