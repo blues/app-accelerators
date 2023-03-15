@@ -19,7 +19,7 @@ Use Notecard with a mains-powered USB power brick and LiPo battery to build a gl
   - [Routing Data out of Notehub](#routing-data-out-of-notehub)
     - [Testing the Route](#testing-the-route)
       - [Testing Power Failure](#testing-power-failure)
-      - [testing Power Restored](#testing-power-restored)
+      - [Testing Power Restored](#testing-power-restored)
       - [Testing Power Restored after the LiPo battery has discharged](#testing-power-restored-after-the-lipo-battery-has-discharged)
     - [Blues Wireless Community](#blues-wireless-community)
 
@@ -151,7 +151,7 @@ ALERT! Power has failed to device Refrigerator.
 
 This indicates a mains power failure on the Notecard with serial number "Refrigerator".
 
-#### testing Power Restored
+#### Testing Power Restored
 
 Using the same setup as above, reconnect the USB power supply to the Notecard. Another SMS message is sent that looks like this:
 
