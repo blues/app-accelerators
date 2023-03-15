@@ -31,6 +31,7 @@
 		<nature>com.st.stm32cube.ide.mcu.MCURootProjectNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
+		<nature>org.eclipse.cdt.core.ccnature</nature>
 	</natures>
 	<linkedResources>
 		<link>
@@ -114,34 +115,14 @@
 			<locationURI>PARENT-1-PROJECT_LOC/note-c/n_ua.c</locationURI>
 		</link>
 		<link>
-			<name>sparrow-application/bme</name>
+			<name>sparrow-application/aqi</name>
 			<type>2</type>
-			<locationURI>PARENT-1-PROJECT_LOC/sparrow-application/bme</locationURI>
-		</link>
-		<link>
-			<name>sparrow-application/button</name>
-			<type>2</type>
-			<locationURI>PARENT-1-PROJECT_LOC/sparrow-application/button</locationURI>
-		</link>
-		<link>
-			<name>sparrow-application/diag</name>
-			<type>2</type>
-			<locationURI>PARENT-1-PROJECT_LOC/sparrow-application/diag</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/sparrow-application/aqi</locationURI>
 		</link>
 		<link>
 			<name>sparrow-application/init.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/sparrow-application/init.c</locationURI>
-		</link>
-		<link>
-			<name>sparrow-application/ping</name>
-			<type>2</type>
-			<locationURI>PARENT-1-PROJECT_LOC/sparrow-application/ping</locationURI>
-		</link>
-		<link>
-			<name>sparrow-application/pir</name>
-			<type>2</type>
-			<locationURI>PARENT-1-PROJECT_LOC/sparrow-application/pir</locationURI>
 		</link>
 		<link>
 			<name>sys/startup_stm32wl55jcix.s.save</name>
