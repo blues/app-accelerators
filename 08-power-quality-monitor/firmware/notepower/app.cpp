@@ -824,3 +824,7 @@ void updateEnvironment(J *body)
         }
     }
 }
+
+void NoteUserAgentUpdate(J *ua) {
+    JAddStringToObject(ua, DATA_FIELD_APP, APP_NAME);
+}
