@@ -114,34 +114,19 @@
 			<locationURI>PARENT-1-PROJECT_LOC/note-c/n_ua.c</locationURI>
 		</link>
 		<link>
-			<name>sparrow-application/bme</name>
-			<type>2</type>
-			<locationURI>PARENT-1-PROJECT_LOC/sparrow-application/bme</locationURI>
-		</link>
-		<link>
-			<name>sparrow-application/button</name>
-			<type>2</type>
-			<locationURI>PARENT-1-PROJECT_LOC/sparrow-application/button</locationURI>
-		</link>
-		<link>
-			<name>sparrow-application/diag</name>
-			<type>2</type>
-			<locationURI>PARENT-1-PROJECT_LOC/sparrow-application/diag</locationURI>
-		</link>
-		<link>
 			<name>sparrow-application/init.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/sparrow-application/init.c</locationURI>
 		</link>
 		<link>
-			<name>sparrow-application/ping</name>
+			<name>sparrow-application/fall_detector</name>
 			<type>2</type>
-			<locationURI>PARENT-1-PROJECT_LOC/sparrow-application/ping</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/sparrow-application/fall_detector</locationURI>
 		</link>
 		<link>
-			<name>sparrow-application/pir</name>
+			<name>sparrow-application/panic</name>
 			<type>2</type>
-			<locationURI>PARENT-1-PROJECT_LOC/sparrow-application/pir</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/sparrow-application/panic</locationURI>
 		</link>
 		<link>
 			<name>sys/startup_stm32wl55jcix.s.save</name>
