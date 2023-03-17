@@ -1,0 +1,17 @@
+(
+    $alertMessage := function($e, $nodeID) {(
+        $texts := [
+            {"text":"USB power OFF", "msg":"ALERT! Power has failed to device "},
+            {"text":"USB power ON", "msg":"Power restored to device "},
+            {"text":"brown-out", "msg":"Power restored (LiPo battery discharged) to device "}
+        ];
+        $findPowerStatus := function($text, $index) <sn:s> {(
+            $index >= $count($texts) ? "" :
+                $contains($text, $texts[$index].text) ? $texts[$index].msg : $findPowerStatus($text, $index+1);
+        )};
+        $msg := $findPowerStatus($.body.text, 0);
+        $result := $msg ? { "customMessage": $msg & $.best_id & "."} : {};
+    )};
+    $additional := $alertMessage($);
+    $additional.customMessage ? $merge([$, {"body": $merge([body, $additional])}]) : $doNotRoute($);
+)

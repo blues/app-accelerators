@@ -57,8 +57,8 @@
 
   :global .ant-table-tbody .editable-input-name,
   :global .ant-table-tbody .editable-button-name {
-    max-width: 150px;
-    width: 150px;
+    max-width: 155px;
+    width: 155px;
     text-align: left;
     padding: 0.25em 0.5em;
     margin: auto;
@@ -151,6 +151,12 @@
     :global .ant-table-tbody .editable-button-name,
     :global .ant-input-number {
       margin: 0 0 0 16px;
+    }
+
+    :global .ant-table-tbody .editable-input-name,
+    :global .ant-table-tbody .editable-button-name {
+      max-width: 155px;
+      width: 155px;
     }
 
     // ensures only the alarm row is highlighted red in mobile view, not all rows

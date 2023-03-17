@@ -2,6 +2,8 @@
 
 Use Notecard with a mains-powered USB power brick and LiPo battery to build a globally available power outage detector.
 
+![](images/SMS_alert.png)
+
 - [Power Outage Detector](#power-outage-detector)
   - [You will need](#you-will-need)
   - [Hardware Setup](#hardware-setup)
@@ -14,6 +16,11 @@ Use Notecard with a mains-powered USB power brick and LiPo battery to build a gl
   - [System Test](#system-test)
     - [Setup](#setup)
     - [Simulating a Power Outage](#simulating-a-power-outage)
+  - [Routing Data out of Notehub](#routing-data-out-of-notehub)
+    - [Testing the Route](#testing-the-route)
+      - [Testing Power Failure](#testing-power-failure)
+      - [Testing Power Restored](#testing-power-restored)
+      - [Testing Power Restored after the LiPo battery has discharged](#testing-power-restored-after-the-lipo-battery-has-discharged)
     - [Blues Wireless Community](#blues-wireless-community)
 
 ## You will need
@@ -33,7 +40,7 @@ Use Notecard with a mains-powered USB power brick and LiPo battery to build a gl
 
 ## Notecard Firmware
 
-Your notecard should be running [firmware version 3.5.1](https://dev.blues.io/notecard/notecard-firmware-updates/#v3-5-1-october-7th-2022) or higher. The simplest way to update firmware is to do an [over-the-air update](https://dev.blues.io/notecard/notecard-firmware-updates/#ota-dfu-with-notehub)
+Your notecard should be running [firmware version 4.2.1](https://dev.blues.io/notecard/notecard-firmware-updates/#lts-v4-2-1-march-3-2023) or higher. The simplest way to update firmware is to do an [over-the-air update](https://dev.blues.io/notecard/notecard-firmware-updates/#ota-dfu-with-notehub)
 
 ## Cloud Setup
 
@@ -114,6 +121,60 @@ This event indicates that the Notecard is no longer powered from the power brick
 
 This event indicates that the Notecard is again powered by the power brick.
 
+## Routing Data out of Notehub
+
+Notehub supports forwarding data to a wide range of API endpoints by using the Route feature. This can be used to forward your power monitoring events to external dashboards and alerts to a realtime notification service.  Here, we will use Twilio SMS API to send a notification of an alert to a phone number.
+
+For an introduction to Twilio SMS routes, please see our [Twilio SMS Guide](https://dev.blues.io/guides-and-tutorials/twilio-sms-guide/).
+
+1. Fill out the required fields for the Twilio SMS route, including "from" and "to" phone numbers, where "from" is your virtual Twilio number, and "to" is the number of the phone that receives the power outage alerts. We will not be using placeholders for these numbers, but will use a placeholder for the message, so set the message field to `[.body.customMessage]`.
+
+2. Under the "Filters" section, set "Notefiles" to "Selected Notefiles" and type `_health.qo` in the text input area below the list of notefiles. 
+
+3. Under "Data", select "JSONata Expression" and copy and paste the contents of [jsonata/route.jsonata](jsonata/route.jsonata) into the text field "Insert your JSONata expression here".
+
+4. Click "Save Changes".
+
+### Testing the Route
+
+The ideal test is to use the app Notecard to generate alerts.
+
+#### Testing Power Failure
+
+With the Notecard connected to USB power, and the LiPo connected, simulate a power outage by unplugging the USB power supply. Within a few seconds, an SMS will be sent to the `to` number you configured in the route above.
+
+The message looks like this:
+
+```
+ALERT! Power has failed to device Refrigerator.
+```
+
+This indicates a mains power failure on the Notecard with serial number "Refrigerator".
+
+#### Testing Power Restored
+
+Using the same setup as above, reconnect the USB power supply to the Notecard. Another SMS message is sent that looks like this:
+
+```
+Power restored to device Refrigerator.
+```
+
+#### Testing Power Restored after the LiPo battery has discharged
+
+Should power be out for long enough, the LiPo battery will discharge and will be unable to power the Notecard. When this happens, the Notecard will power off and resume when utility power is restored.
+
+To test this:
+
+1. Disconnect the USB power supply. This will generate a power failure alert as before.
+2. Disconnect the LiPo battery.  No events are sent at this point.
+3. Reconnect the USB power supply, simulating mains power being restored.
+4. Reconnect the LiPo battery.
+
+You will see a message that looks like this:
+
+```
+Power restored (LiPo battery discharged) to device Refrigerator.
+```
 
 ### Blues Wireless Community
 

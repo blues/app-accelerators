@@ -26,6 +26,7 @@ Monitor machine AC power use and send alerts on monitored changes.
     - [Alerts](#alerts)
   - [Routing Data out of Notehub](#routing-data-out-of-notehub)
     - [Testing the Route](#testing-the-route)
+  - [Blues Community](#blues-community)
 
 
 ## Problem Description
@@ -44,14 +45,14 @@ This app provides a simple to construct power monitoring device that can be plac
     * [Molex Cellular Antenna](https://shop.blues.io/collections/accessories/products/flexible-cellular-or-wi-fi-antenna)
   * [Dr. Wattson Energy Monitoring Board](https://www.upbeatlabs.com/wattson/)
   * [ProtoStax Enclosure for Dr. Wattson](https://www.protostax.com/products/) or similar enclosure
-  * A [female to JST qwiic cable assembly](https://www.adafruit.com/product/4397)
+  * A [female-to-JST qwiic cable assembly](https://www.adafruit.com/product/4397)
 
 For the Dr. Wattson energy monitor build you will also need
 
-  * Male to female grounded extension cable or suitable cables to wire an IEC or NEMA AC inlet and outlet to Dr. Wattson. 16 gauge is recommended as the minimum dimension. Please select suitable wiring gauge for the maximum load used by your machine.
+  * Male-to-female grounded extension cable or suitable cables to wire an IEC or NEMA AC inlet and outlet to Dr. Wattson. 16 gauge is recommended as the minimum dimension. Please select suitable wiring gauge for the maximum load used by your machine.
   * (optional but recommended) Corded female NEMA socket for USB power, 18-gauge diameter minimum, such as a spliced male-to-female 18-gauge extension cable
-  * 2 18-gauge color-coded insulated wires to power the Dr. Wattson board. (This can be taken from the extension cable used to build the USB power outlet.)
-  * Soldering iron (to melt and bridge solder jumpers on the Dr. Wattson board for I2C address configuration.)
+  * 2 18-gauge color-coded insulated wires to power the Dr. Wattson board. (This can be taken from the extension cable used to build the USB power outlet)
+  * Soldering iron (to melt and bridge solder jumpers on the Dr. Wattson board for I2C address configuration)
   * Wire cutter and stripper
   * Spade connectors or solder
   * Crimper to crimp AC wires to spade connectors (if used)
@@ -80,7 +81,7 @@ With the build complete, you will have a power monitor with an AC inlet and two 
 
 4. Connect the I2C Qwiic cable between the Notecarrier and Dr. Wattson board:
 
-   * with the Dr. Wattson board laid out with the 8 pins pointing at you, connect the jumper connectors as follows:
+   * With the Dr. Wattson board laid out with the 8 pins pointing at you, connect the jumper connectors as follows:
       ```
       BLACK  RED  NC  NC  NC  NC  BLUE  YELLOW
       ```
@@ -105,7 +106,7 @@ The application firmware found under the [firmware](./firmware/) folder can be b
 * Arduino extension for Visual Studio Code
 * Arduino IDE
 
-We recommend using one of the VS Code extensions, since they are easier to setup and use, and provide a comprehensive development experience. However, if you're familiar with the Arduino IDE, that can be used as well but requires a little more setup.
+We recommend using one of the VS Code extensions, since they are easier to set up and use, and provide a comprehensive development experience. However, if you're familiar with the Arduino IDE, that can be used as well but requires a little more setup.
 
 ### PlatformIO extension for VS Code
 
@@ -177,9 +178,9 @@ There are two ways to configure the ProductUID created in the Notehub setup abov
 
 You can also omit the serial number use Notehub to set it:
 
-* open the project in notehub
-* from the list of devices, double click the device you want to set the serial number
-* in the "Summary" tab, use the pencil icon to edit the Serial Number field.
+1. Open the project in Notehub.
+2. From the list of devices, double click the device that has the serial number you want to set.
+3. In the "Summary" tab, use the pencil icon to edit the Serial Number field.
 
 #### Editing the Source Code
 
@@ -210,18 +211,18 @@ The app is configured using a number of environment variables. Configuration inc
 
 Alerts are generated when the current, voltage, or power use is outside the configured range or if a change greater than a given percent is detected.
 
-These are the environment variables that should be configured according your use case:
+These are the environment variables that you can configure according your use case:
 
-* `heartbeat_mins`: how many minutes between sending power notifications. The default is 0 which means do not sent regular power monitoring events, only send alerts. Sending a heartbeat event allows normal operation of the machine to be monitored.
+* `heartbeat_mins`: how many minutes between sending power notifications. The default is`0` which means do not send regular power monitoring events, only send alerts. Sending a heartbeat event periodically provides regular monitoring of the source supply and equipment supply.
 
-* `alert_under_voltage`, `alert_over_voltage`: send an alert when the measured voltage is above or below the specified values in Volts. The default setting is 0 where no alerts are sent regardless of the measured voltage.
-* `alert_change_voltage_percent`: send an alert when the voltage changes by more than the given percent. The default value is 15, which sends an alert when a 15% or greater change is detected. Set to 0 to disable percentage change alerts.
+* `alert_under_voltage`, `alert_over_voltage`: send an alert when the measured voltage is above or below the specified values in Volts. The default setting is `0` where no alerts are sent regardless of the measured voltage.
+* `alert_change_voltage_percent`: send an alert when the voltage changes by more than the given percent. The default value is `15`, which sends an alert when a 15% or greater change is detected. Set to `0` to disable percentage change alerts.
 
-* `alert_under_current_amps`, `alert_over_current_amps`: send an alert when the measured current is above or below the specified values in Amps. The default setting is 0 where no alerts are sent regardless of the measured current.
-`alert_change_current_percent`: send an alert when the measured current changes by more than the given percent. The default value is 15, which sends an alert when a 15% or greater change is detected. Set to 0 to disable percentage change alerts.
+* `alert_under_current_amps`, `alert_over_current_amps`: send an alert when the measured current is above or below the specified values in Amps. The default setting is `0` where no alerts are sent regardless of the measured current.
+`alert_change_current_percent`: send an alert when the measured current changes by more than the given percent. The default value is `15`, which sends an alert when a 15% or greater change is detected. Set to `0` to disable percentage change alerts.
 
-* `alert_under_power_watts`, `alert_over_power_watts`: send an alert when the measured power is above or below the specified values in Watts. The default setting is 0 where no alerts are sent regardless of the measured power.
-* `alert_change_power_percent`: send an alert when the measured power changes by more than the given percent. The default value is 15, which sends an alert when a 15% or greater change is detected. Set to 0 to disable percentage change alerts.
+* `alert_under_power_watts`, `alert_over_power_watts`: send an alert when the measured power is above or below the specified values in Watts. The default setting is `0` where no alerts are sent regardless of the measured power.
+* `alert_change_power_percent`: send an alert when the measured power changes by more than the given percent. The default value is `15`, which sends an alert when a 15% or greater change is detected. Set to `0` to disable percentage change alerts.
 
 These environment variables are set in Notehub, either per-device, per-fleet or per-project. For example, if you want all machines to send power monitoring events every 5 minutes, you would set `heartbeat_mins` to `5` at the project level in Notehub.
 
@@ -270,10 +271,11 @@ When the device detects over or under voltage, current or power, or detects a ch
 
 When an alert is triggered, it is immediately synched to Notehub.
 
-
 ## Routing Data out of Notehub
 
-Notehub supports forwarding data to a wide range of API endpoints by using the Route feature. This can be used to forward your power monitoring data to external dashboards and alerts to a realtime notification service.  Here, we will use Twilio SMS API to send a notification to a phone number.
+Now that we have power monitoring events and alerts available, routing them from Notehub is our next step.
+
+Notehub supports forwarding data to a wide range of API endpoints by using the Route feature. This can be used to forward your power monitoring data to external dashboards and alerts to a realtime notification service.  Here, we will use Twilio SMS API to send a notification of an alert to a phone number.
 
 For an introduction to Twilio SMS routes, please see our [Twilio SMS Guide](https://dev.blues.io/guides-and-tutorials/twilio-sms-guide/).
 
@@ -293,7 +295,7 @@ This is a regular power monitoring event. It does not generate an SMS alert.
 
 ```json
 { "req": "note.add", "file":"power.qo", "sync": true, "body": {
-  "current":2.34, "frequency":60, "power":56.67, "voltage":230.12
+  "current":2.34, "frequency":60, "power":56.67, "voltage":230.12, "instance":1,
 }}
 ```
 
@@ -301,6 +303,22 @@ This is an alert event (due to the presence of the `alert` property), which will
 
 ```json
 { "req": "note.add", "file":"power.qo", "sync": true, "body": {
-  "current":2.34, "frequency":60, "power":56.67, "voltage":230.12, "alert":"overcurrent,power"
+  "current":2.34, "frequency":60, "power":56.67, "voltage":230.12, "alert":"overcurrent,power", "instance":1,
 }}
 ```
+
+This will send a SMS that looks like this:
+
+> Power alert from machine-12: overcurrent,power. 120V, 25A, 3000W.
+
+These are the parts of the message:
+
+* The first part of the message indicates which monitored machine the alert pertains to by its serial number, here "machine-12".
+
+* The alerts are next. Here, "overcurrent" and "power" alerts indicate that the measured current was higher than the `alert_over_current_amps` environment variable, and that power changed by more than `alert_change_power_percent`.
+
+* Finally, we have the power information, showing the measured voltage, current and power at the time of the alert.
+
+## Blues Community
+
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!

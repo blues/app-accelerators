@@ -30,7 +30,7 @@
 
 	flow_meter_pin: flow_meter_pin {
 		label = "Flow meter";
-		gpios = <&gpioe 9 GPIO_ACTIVE_HIGH>;
+		gpios = <&gpioe 9 GPIO_ACTIVE_LOW>;
 	};
 };
 

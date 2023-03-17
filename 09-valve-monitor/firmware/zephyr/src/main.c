@@ -1,8 +1,6 @@
-/*
- * Copyright 2023 Blues Inc.  All rights reserved.
- * Use of this source code is governed by licenses granted by the
- * copyright holder including that found in the LICENSE file.
- */
+// Copyright 2023 Blues Inc.  All rights reserved.
+// Use of this source code is governed by licenses granted by the
+// copyright holder including that found in the LICENSE file.
 
 #include <inttypes.h>
 #include <stdlib.h>
@@ -15,36 +13,37 @@
 #include <zephyr/sys/printk.h>
 #include <zephyr/usb/usb_device.h>
 
-/* Include Notecard note-c library */
+// Include Notecard note-c library
 #include "note.h"
 
-/* Notecard node-c helper methods */
-#include "notecard.h"
+// Notecard node-c helper methods
+#include "note_c_hooks.h"
 
-/* 
- * Don't keep valve open for longer than 10 minutes to prevent overheating of
- * its solenoid.
- */
+// Don't keep valve open for longer than 10 minutes to prevent overheating of
+// its solenoid.
 #define MAX_OPEN_S (10 * 60)
-/* Check for environment variable changes every 5 seconds. */
+// Check for environment variable changes every 5 seconds.
 #define ENV_POLL_S 5
-/* After triggering an alarm, raise the alarm every 30 seconds after that. */
-#define ALARM_REFRESH_S 30
-/*
- * Calculate the flow rate every 500 ms. We want to allow a little time between
- * measurements for the sensor's signal line to pulse. If we make this interval
- * too small, its possible we won't have enough sensor data (i.e. pulses) to
- * produce an accurate flow rate measurement.
- */
+// This value specifies how frequently the alarm conditions should be checked.
+#define ALARM_CHECK_S 1
+// After triggering an alarm, we won't publish another until this cooldown has
+// expired.
+#define ALARM_COOLDOWN_S 30
+// Calculate the flow rate every 500 ms. We want to allow a little time between
+// measurements for the sensor's signal line to pulse. If we make this interval
+// too small, its possible we won't have enough sensor data (i.e. pulses) to
+// produce an accurate flow rate measurement.
 #define FLOW_CALC_INTERVAL_MS 500
-
+// The `lockNotecard` function is a spin lock, and this value is responsible for
+// controlling the polling frequency.
+#define NOTECARD_LOCK_POLLS_MS 10
+// This value serves as a low-pass filter to protect against spurious
+// leak warnings.
 #define LEAK_THRESHOLD 6
 
-/*
- * Uncomment this line and replace com.your-company:your-product-name with your
- * ProductUID.
- */
-/* #define PRODUCT_UID "com.your-company:your-product-name" */
+// Uncomment the define below and replace com.your-company:your-product-name
+// with your ProductUID.
+// #define PRODUCT_UID "com.your-company:your-product-name"
 
 #ifndef PRODUCT_UID
 #define PRODUCT_UID ""
@@ -52,36 +51,47 @@
 #endif
 
 typedef struct {
-    const char *alarmReason;
+    volatile const char *alarmReason;
     uint32_t monitorInterval;
-    uint32_t lastFlowRateCalcMs;
+    volatile uint32_t lastFlowRateCalcMs;
     uint32_t envLastModTime;
     volatile uint32_t flowMeterPulseCount;
-    uint32_t flowRate;
+    volatile uint32_t flowRate;
+    volatile uint32_t alarmFlowRate;
     uint32_t flowRateAlarmMin;
     uint32_t flowRateAlarmMax;
-    uint32_t leakCount;
+    volatile uint32_t leakCount;
+    volatile bool notecardLocked;
     volatile bool attnTriggered;
+    volatile bool publishRequired;
     bool valveOpen;
 } AppState;
 
 AppState state = {0};
 
-/* Calculate the flow rate in mL/min. */
-uint32_t calculateFlowRate(uint32_t currentMs)
+// Calculate the flow rate (Q) in mL/min:
+// Datasheet: F=(38*Q)±3%, Q=L/Min, error: ±3%
+// pulse_count = ~0.50mL
+// volume (mL) => (pulse_count * (1/2)(mL))
+// duration (ms) => (now_ms - last_sample_ms)
+// duration (s) => (now_ms - last_sample_ms) / 1000
+// duration (min) => (now_ms - last_sample_ms) / (1000 * 60)
+#define MS_IN_MIN 60000
+
+static uint32_t calculateFlowRate(uint32_t currentMs)
 {
-    return 60000 * (state.flowMeterPulseCount * 2.25) /
-           (currentMs - state.lastFlowRateCalcMs);
+    return (state.flowMeterPulseCount * MS_IN_MIN * 1) /
+           ((currentMs - state.lastFlowRateCalcMs) * 2);
 }
 
-/* Forward declarations */
+// Forward declarations
 void updateEnvVars(void);
 void valveToggle(void);
-void publishSystemStatus(bool);
+void publishSystemStatus(bool, uint32_t);
 
-/* BEGIN GPIOS ****************************************************************/
+// BEGIN GPIOS
 
-/* Valve open pin */
+// Valve open pin
 #define VALVE_NODE DT_ALIAS(valve)
 #if !DT_NODE_HAS_STATUS(VALVE_NODE, okay)
 #error "Unsupported board: valve devicetree alias is not defined"
@@ -89,7 +99,7 @@ void publishSystemStatus(bool);
 
 static const struct gpio_dt_spec valve = GPIO_DT_SPEC_GET_OR(VALVE_NODE, gpios, {0});
 
-/* Flow meter pin */
+// Flow meter pin
 #define FLOW_METER_NODE DT_ALIAS(flow_meter)
 #if !DT_NODE_HAS_STATUS(FLOW_METER_NODE, okay)
 #error "Unsupported board: flow meter devicetree alias is not defined"
@@ -103,7 +113,7 @@ static void flowMeterCb(const struct device *, struct gpio_callback *, uint32_t)
     ++state.flowMeterPulseCount;
 }
 
-/* ATTN pin */
+// ATTN pin
 #define ATTN_NODE DT_ALIAS(attn)
 #if !DT_NODE_HAS_STATUS(ATTN_NODE, okay)
 #error "Unsupported board: attn devicetree alias is not defined"
@@ -114,18 +124,16 @@ static const struct gpio_dt_spec attn = GPIO_DT_SPEC_GET_OR(ATTN_NODE, gpios, {0
 static struct gpio_callback attnCbData;
 static void attnCb(const struct device *, struct gpio_callback *, uint32_t)
 {
-    /* 
-     * This flag will be read in the main loop. We keep the ISR lean and do all
-     * the logic in the main loop.
-     */
+    // This flag will be read in the main loop. We keep the ISR lean and do all
+    // the logic in the main loop.
     state.attnTriggered = true;
 }
 
-/* END GPIOS ******************************************************************/
+// END GPIOS
 
-/* BEGIN TIMERS ***************************************************************/
+// BEGIN TIMERS
 
-/* Env var update timer */
+// Env var update timer
 static void envVarUpdateWorkCb(struct k_work *)
 {
     updateEnvVars();
@@ -140,10 +148,10 @@ static void envVarUpdateTimerCb(struct k_timer *)
 
 K_TIMER_DEFINE(envVarUpdateTimer, envVarUpdateTimerCb, NULL);
 
-/* Publish system status timer */
+// Publish system status timer
 static void publishSystemStatusWorkCb(struct k_work *)
 {
-    publishSystemStatus(false);
+    publishSystemStatus(false, state.flowRate);
 }
 
 K_WORK_DEFINE(publishSystemStatusWorkItem, publishSystemStatusWorkCb);
@@ -155,38 +163,25 @@ static void publishSystemStatusTimerCb(struct k_timer *)
 
 K_TIMER_DEFINE(publishSystemStatusTimer, publishSystemStatusTimerCb, NULL);
 
-/* Alarm refresh timer */
-static void alarmRefreshWorkCb(struct k_work *)
-{
-    publishSystemStatus(true);
-}
-
-K_WORK_DEFINE(alarmRefreshWorkItem, alarmRefreshWorkCb);
-
-static void alarmRefreshTimerCb(struct k_timer *)
-{
-    k_work_submit(&alarmRefreshWorkItem);
-}
-
-K_TIMER_DEFINE(alarmRefreshTimer, alarmRefreshTimerCb, NULL);
-
-/* Flow rate calculation timer */
+// Flow rate calculation timer
 static void flowRateCalcTimerCb(struct k_timer *)
 {
     uint32_t currentMs = NoteGetMs();
-    state.flowRate = calculateFlowRate(currentMs);
+    uint32_t flowRate = calculateFlowRate(currentMs);
+    if (state.flowRate != flowRate) {
+        state.flowRate = flowRate;
+        state.publishRequired = true;
+    }
     state.lastFlowRateCalcMs = currentMs;
     state.flowMeterPulseCount = 0;
 
 #if USE_VALVE == 1
     if (!state.valveOpen) {
-        /*
-         * If the valve is closed and flow is detected, increment the leak
-         * counter. If a leak is detected on LEAK_THRESHOLD or more consecutive
-         * measurements, a leak alarm will be published. This filter prevents
-         * spurious leak alarms shortly after the valve is closed while the flow
-         * meter's spinner is still slowing down.
-         */
+         // If the valve is closed and flow is detected, increment the leak
+         // counter. If a leak is detected on LEAK_THRESHOLD or more consecutive
+         // measurements, a leak alarm will be published. This filter prevents
+         // spurious leak alarms shortly after the valve is closed while the
+         // flow meter's spinner is still slowing down.
         if (state.flowRate > 0) {
             ++state.leakCount;
         }
@@ -194,14 +189,76 @@ static void flowRateCalcTimerCb(struct k_timer *)
             state.leakCount = 0;
         }
     }
-#endif /* USE_VALVE == 1 */
+#endif // USE_VALVE == 1
 }
 
 K_TIMER_DEFINE(flowRateCalcTimer, flowRateCalcTimerCb, NULL);
 
+// Alarm cooldown timer
+static void alarmCooldownTimerCb(struct k_timer *)
+{
+    // Clear the alarm reason so that a new alarm can be published, if needed.
+    state.alarmReason = NULL;
+}
+
+K_TIMER_DEFINE(alarmCooldownTimer, alarmCooldownTimerCb, NULL);
+
+// Work item for publishing an alarm.
+static void alarmPublishWorkCb(struct k_work *)
+{
+    publishSystemStatus(true, state.alarmFlowRate);
+    // This timer limits the frequency of alarms we publish to one every
+    // ALARM_COOLDOWN_S seconds. Specifying K_FOREVER for the period means
+    // this timer fires only once, until it's started again (i.e. it's not
+    // periodic).
+    k_timer_start(&alarmCooldownTimer,
+                  K_SECONDS(ALARM_COOLDOWN_S), K_FOREVER);
+}
+
+K_WORK_DEFINE(alarmPublishWorkItem, alarmPublishWorkCb);
+
+// Check alarm timer
+static void checkAlarmTimerCb(struct k_timer *)
+{
+    // Don't do anything if there's an active alarm.
+    if (state.alarmReason != NULL) {
+        return;
+    }
+
+    // state.alarmFlowRate is a snapshot of state.flowRate. This way, if there
+    // is an alarm, we have the flow rate value that caused it. We can't just
+    // use state.flowRate because it may change between the time of alarm
+    // detection and alarm publication.
+    state.alarmFlowRate = state.flowRate;
+    bool flowRateHigh = state.valveOpen &&
+                        state.alarmFlowRate > state.flowRateAlarmMax;
+    bool flowRateLow = state.valveOpen &&
+                       state.alarmFlowRate < state.flowRateAlarmMin;
+    bool leaking = state.leakCount >= LEAK_THRESHOLD;
+
+    const char* reason = NULL;
+    if (flowRateHigh) {
+        reason = "high";
+    }
+    else if (flowRateLow) {
+        reason = "low";
+    }
+    else if (leaking) {
+        reason = "leak";
+    }
+
+    if (reason != NULL) {
+        state.alarmReason = reason;
+        // Add an item to the work queue to publish the alarm to Notehub.
+        k_work_submit(&alarmPublishWorkItem);
+    }
+}
+
+K_TIMER_DEFINE(checkAlarmTimer, checkAlarmTimerCb, NULL);
+
 #if USE_VALVE == 1
 
-/* Valve safety timer (close valve if open too long) */
+// Valve safety timer (close valve if open too long)
 static void valveSafetyTimerCb(struct k_timer *)
 {
     if (state.valveOpen) {
@@ -211,50 +268,88 @@ static void valveSafetyTimerCb(struct k_timer *)
 
 K_TIMER_DEFINE(valveSafetyTimer, valveSafetyTimerCb, NULL);
 
-#endif /* USE_VALVE == 1 */
+#endif // USE_VALVE == 1
 
-/* END TIMERS *****************************************************************/
+// END TIMERS
 
-/* Arm the ATTN interrupt. */
+// Attempt to get a lock on the I2C bus. This will spin forever until the lock
+// is released.
+void lockNotecard(void)
+{
+    while (state.notecardLocked) {
+        NoteDelayMs(NOTECARD_LOCK_POLLS_MS);
+    }
+
+    state.notecardLocked = true;
+}
+
+void unlockNotecard(void)
+{
+    state.notecardLocked = false;
+}
+
+// Arm the ATTN interrupt.
 void attnArm(void)
 {
-    /*
-     * Once ATTN has triggered, it stays set until explicitly reset. Reset it
-     * here. It will trigger again after a change to the watched Notefile.
-     */
+    // Once ATTN has triggered, it stays set until explicitly rearmed. Rearm it
+    // here. It will trigger again after a change to the watched Notefile.
     state.attnTriggered = false;
     J *req = NoteNewRequest("card.attn");
-    JAddStringToObject(req, "mode", "reset");
+    JAddStringToObject(req, "mode", "rearm");
     NoteRequest(req);
 }
 
 #if USE_VALVE == 1
 
-/* Toggle the valve's state. If open, close. If closed, open. */
+// Toggle the valve's state. If open, close. If closed, open.
 void valveToggle(void)
 {
+    // Halt timers related to flow rate, publish and alarms
+    k_timer_stop(&checkAlarmTimer);
+    k_timer_stop(&publishSystemStatusTimer);
+    k_timer_stop(&flowRateCalcTimer);
+
+    // Update safety timer (prevents overheating of solenoid)
     if (state.valveOpen) {
         k_timer_stop(&valveSafetyTimer);
     }
     else {
         k_timer_start(&valveSafetyTimer, K_SECONDS(MAX_OPEN_S), K_FOREVER);
-        /*
-         * Clear leak counter. By definition, we can't have a leak if the valve
-         * is open.
-         */
+        // Clear leak counter. By definition, we can't have a leak if the valve
+        // is open.
         state.leakCount = 0;
     }
 
+    // Adjust valve position
     gpio_pin_toggle_dt(&valve);
     state.valveOpen = !state.valveOpen;
+
+    // Begin flow rate calculation for new state
+    k_sleep(K_MSEC(250));  // valve state change cool-down
+
+    // Reset variables used to calculate flow rate
+    state.flowRate = 0;
+    state.lastFlowRateCalcMs = NoteGetMs();
+    state.flowMeterPulseCount = 0;
+
+    // Restart flow rate, publish, alarm timers
+    k_timer_start(&flowRateCalcTimer, K_MSEC(FLOW_CALC_INTERVAL_MS),
+                  K_MSEC(FLOW_CALC_INTERVAL_MS));
+    k_timer_start(&publishSystemStatusTimer,
+                    K_SECONDS(state.monitorInterval),
+                    K_SECONDS(state.monitorInterval));
+    k_timer_start(&checkAlarmTimer, K_SECONDS(ALARM_CHECK_S),
+                  K_SECONDS(ALARM_CHECK_S));
 }
 
-/*
- * Handle a valve command from Notehub. Supported commands are "open" and
- * "close".
- */
+// Handle a valve command from Notehub. Supported commands are "open" and
+// "close".
 void handleValveCmd(char *cmd)
 {
+    // We must publish to acknowledge the controller
+    // so it knows the valve command was received.
+    state.publishRequired = true;
+
     if (!strcmp(cmd, "open")) {
         printk("Received valve open cmd.\n");
         if (state.valveOpen) {
@@ -278,15 +373,17 @@ void handleValveCmd(char *cmd)
     }
 }
 
-#endif /* USE_VALVE == 1 */
+#endif // USE_VALVE == 1
 
-/*
- * Publish the system status (flow rate, valve state). If alarm is true, attach
- * the alarm reason to the outbound note and send it to alarm.qo. Otherwise,
- * send the note to data.qo.
- */
-void publishSystemStatus(bool alarm)
+
+// Publish the system status (flow rate, valve state). If alarm is true, attach
+// the alarm reason to the outbound note and send it to alarm.qo. Otherwise,
+// send the note to data.qo.
+void publishSystemStatus(bool alarm, uint32_t flowRate)
 {
+    // Only publish when necessary to preserve prepaid data
+    if (!state.publishRequired && !alarm) { return; }
+
     const char *file;
 
     if (alarm) {
@@ -303,7 +400,7 @@ void publishSystemStatus(bool alarm)
 
         J *body = JCreateObject();
         if (body != NULL) {
-            JAddNumberToObject(body, "flow_rate", state.flowRate);
+            JAddNumberToObject(body, "flow_rate", flowRate);
 
         #if USE_VALVE == 1
             if (state.valveOpen) {
@@ -312,32 +409,32 @@ void publishSystemStatus(bool alarm)
             else {
                 JAddStringToObject(body, "valve_state", "closed");
             }
-        #endif /* USE_VALVE == 1 */
+        #endif // USE_VALVE == 1
 
             if (alarm) {
-                JAddStringToObject(body, "reason", state.alarmReason);
+                JAddStringToObject(body, "reason",
+                                   (const char * const)state.alarmReason);
             }
 
             JAddStringToObject(body, "app", "nf9");
             JAddItemToObject(req, "body", body);
 
-            NoteRequest(req);
+            const bool success = NoteRequest(req);
+            if (success && !alarm) {
+                state.publishRequired = false;
+            }
         }
         else {
-            printk("Failed to create body for system status "
-                "update.\n");
+            printk("Failed to create body for system status update.\n");
         }
     }
     else {
-        printk("Failed to create note.add request for system status "
-            "update.\n");        
+        printk("Failed to create note.add request for system status update.\n");
     }
 }
 
-/*
- * Check for environment variable changes. Returns true if there are changes and
- * false otherwise.
- */
+// Check for environment variable changes. Returns true if there are changes and
+// false otherwise.
 bool pollEnvVars(void)
 {
     J *rsp = NoteRequestResponse(NoteNewRequest("env.modified"));
@@ -348,10 +445,8 @@ bool pollEnvVars(void)
 
     uint32_t modifiedTime = JGetInt(rsp, "time");
     NoteDeleteResponse(rsp);
-    /*
-     * If the last modified timestamp is the same as the one we've got saved,
-     * there have been no changes.
-     */
+    // If the last modified timestamp is the same as the one we've got saved,
+    // there have been no changes.
     if (state.envLastModTime == modifiedTime) {
         return false;
     }
@@ -363,7 +458,7 @@ bool pollEnvVars(void)
     return true;
 }
 
-/* Returns true if any variables were updated and false otherwise. */
+// Returns true if any variables were updated and false otherwise.
 bool fetchEnvVars(void)
 {
     bool updated = false;
@@ -397,10 +492,8 @@ bool fetchEnvVars(void)
                         printk("Monitor interval set to %u s.\n",
                             state.monitorInterval);
 
-                        /*
-                         * If the monitor interval changed, we need to restart
-                         * the timer using the new interval value.
-                         */
+                        // If the monitor interval changed, we need to restart
+                        // the timer using the new interval value.
                         k_timer_stop(&publishSystemStatusTimer);
                         k_timer_start(&publishSystemStatusTimer,
                                       K_SECONDS(state.monitorInterval),
@@ -439,8 +532,7 @@ bool fetchEnvVars(void)
                 }
             }
             else {
-                printk("NULL body in response to env.get request."
-                    "\n");
+                printk("NULL body in response to env.get request.\n");
             }
         }
 
@@ -453,11 +545,10 @@ bool fetchEnvVars(void)
     return updated;
 }
 
-/* 
- * Used in the main loop to check for and accept environment variable updates.
- * If any variables are updated, this function sends a note to Notehub to
- * acknowledge the update.
- */
+
+// Used in the main loop to check for and accept environment variable updates.
+// If any variables are updated, this function sends a note to Notehub to
+// acknowledge the update.
 void updateEnvVars(void)
 {
     if (pollEnvVars()) {
@@ -487,46 +578,9 @@ void updateEnvVars(void)
     }
 }
 
-void checkAlarm(void)
-{
-    bool flowRateHigh = state.valveOpen && state.flowRate > state.flowRateAlarmMax;
-    bool flowRateLow = state.valveOpen && state.flowRate < state.flowRateAlarmMin;
-    bool leaking = state.leakCount >= LEAK_THRESHOLD;
-
-    const char* reason = NULL;
-    if (flowRateHigh) {
-        reason = "high";
-    }
-    else if (flowRateLow) {
-        reason = "low";
-    }
-    else if (leaking) {
-        reason = "leak";
-    }
-
-    if (reason != NULL) {
-        if (state.alarmReason == NULL) {
-            state.alarmReason = reason;
-            /*
-             * Publish the system status with the alarm now and every
-             * ALARM_REFRESH_S seconds thereafter until the alarm conditions are
-             * cleared.
-             */
-            k_timer_start(&alarmRefreshTimer,
-                          K_SECONDS(0), K_SECONDS(ALARM_REFRESH_S));
-        }
-    }
-    else {
-        if (state.alarmReason != NULL) {
-            state.alarmReason = NULL;
-            k_timer_stop(&alarmRefreshTimer);
-        }
-    }
-}
-
 void main(void)
 {
-    /* Configure USB Serial for Console output */
+    // Configure USB Serial for Console output.
     const struct device *usb_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
     uint32_t dtr = 0;
 
@@ -534,27 +588,25 @@ void main(void)
         return;
     }
 
-    /* Sleep to wait for a terminal connection. */
+    // Sleep to wait for a terminal connection.
     k_sleep(K_MSEC(2500));
     uart_line_ctrl_get(usb_dev, UART_LINE_CTRL_DTR, &dtr);
 
-    /* Initialize note-c references */
+    // Initialize note-c references.
     NoteSetFnDefault(malloc, free, platform_delay, platform_millis);
     NoteSetFnDebugOutput(noteLogPrint);
 
+    NoteSetFnMutex(NULL, NULL, lockNotecard, unlockNotecard);
 #ifdef USE_SERIAL
     NoteSetFnSerial(noteSerialReset, noteSerialTransmit,
                     noteSerialAvailable, noteSerialReceive);
 #else
     NoteSetFnI2C(NOTE_I2C_ADDR_DEFAULT, NOTE_I2C_MAX_DEFAULT, noteI2cReset,
                  noteI2cTransmit, noteI2cReceive);
-
 #endif
 
-    /*
-     * Configure the productUID and instruct the Notecard to stay connected to
-     * the service.
-     */
+    // Configure the productUID and instruct the Notecard to stay connected to
+    // the service.
     J *req = NoteNewRequest("hub.set");
     if (PRODUCT_UID[0]) {
         JAddStringToObject(req, "product", PRODUCT_UID);
@@ -568,7 +620,7 @@ void main(void)
         printk("Notecard hub.set failed.\n");
     }
 
-    /* Disarm ATTN to clear any previous state before re-arming. */
+    // Disarm ATTN to clear any previous state before re-arming.
     req = NoteNewRequest("card.attn");
     JAddStringToObject(req, "mode", "disarm,-files");
     if (NoteRequest(req)) {
@@ -578,7 +630,7 @@ void main(void)
         printk("Notecard card.attn disarm failed.\n");
     }
 
-    /* Configure ATTN to watch for changes to data.qi. */
+    // Configure ATTN to watch for changes to data.qi.
     req = NoteNewRequest("card.attn");
     const char *filesToWatch[] = {"data.qi"};
     int numFilesToWatch = sizeof(filesToWatch) / sizeof(const char *);
@@ -592,22 +644,23 @@ void main(void)
         printk("Notecard card.attn config failed.\n");
     }
 
-    /* Valve open pin setup */
+    // Valve open pin setup
     if (!device_is_ready(valve.port)) {
         printk("Error: Valve GPIO device %s is not ready\n", valve.port->name);
         return;
     }
 
-    int ret = gpio_pin_configure_dt(&valve, GPIO_OUTPUT_LOW);
+    int ret = gpio_pin_configure_dt(&valve, GPIO_OUTPUT_INACTIVE);
     if (ret != 0) {
         printk("Error %d: failed to configure %s pin %d\n",
                ret, valve.port->name, valve.pin);
         return;
     }
 
-    printk("Set up valve open at %s pin %d\n", valve.port->name, valve.pin);
+    state.valveOpen = false;
+    printk("Set up valve control at %s pin %d\n", valve.port->name, valve.pin);
 
-    /* Flow meter pin setup */
+    // Flow meter pin setup
     if (!device_is_ready(flowMeter.port)) {
         printk("Error: Flow meter GPIO device %s is not ready\n",
                flowMeter.port->name);
@@ -621,7 +674,7 @@ void main(void)
         return;
     }
 
-    ret = gpio_pin_interrupt_configure_dt(&flowMeter, GPIO_INT_EDGE_FALLING);
+    ret = gpio_pin_interrupt_configure_dt(&flowMeter, GPIO_INT_EDGE_TO_ACTIVE);
     if (ret != 0) {
         printk("Error %d: failed to configure interrupt on %s pin %d\n",
                ret, flowMeter.port->name, flowMeter.pin);
@@ -631,10 +684,13 @@ void main(void)
     gpio_init_callback(&flowMeterCbData, flowMeterCb, BIT(flowMeter.pin));
     gpio_add_callback(flowMeter.port, &flowMeterCbData);
 
+    state.flowRate = 0;
+    state.lastFlowRateCalcMs = NoteGetMs();
+    state.flowMeterPulseCount = 0;
     printk("Set up flow meter at %s pin %d\n", flowMeter.port->name,
            flowMeter.pin);
 
-    /* ATTN pin setup */
+    // ATTN pin setup
     if (!device_is_ready(attn.port)) {
         printk("Error: ATTN GPIO device %s is not ready\n", attn.port->name);
         return;
@@ -661,8 +717,8 @@ void main(void)
 
     attnArm();
 
-    /* Default values. */
-    state.monitorInterval = 10; /* 10 seconds */
+    // Default values.
+    state.monitorInterval = 10; // 10 seconds
     state.flowRateAlarmMin = 500;
     state.flowRateAlarmMax = 1500;
 
@@ -674,54 +730,51 @@ void main(void)
                   K_SECONDS(state.monitorInterval));
     k_timer_start(&flowRateCalcTimer, K_MSEC(FLOW_CALC_INTERVAL_MS),
                   K_MSEC(FLOW_CALC_INTERVAL_MS));
+    k_timer_start(&checkAlarmTimer, K_SECONDS(ALARM_CHECK_S),
+                  K_SECONDS(ALARM_CHECK_S));
 
     while (true) {
     #if USE_VALVE == 1
         if (state.attnTriggered) {
-            /* Re-arm the ATTN interrupt. */
+            // Re-arm the ATTN interrupt.
             attnArm();
 
-            /* Process all pending inbound requests. */
+            // Process all pending inbound requests.
             while (true) {
-                /* Pop the next available note from data.qi. */
+                // Pop the next available note from data.qi.
                 J *req = NoteNewRequest("note.get");
                 JAddStringToObject(req, "file", "data.qi");
                 JAddBoolToObject(req, "delete", true);
                 J *rsp = NoteRequestResponse(req);
                 if (rsp != NULL) {
 
-                    /*
-                     * If an error is returned, this means that no response is
-                     * pending. Note that it's expected that this might return
-                     * either a "note does not exist" error if there are no
-                     * pending inbound notes, or a "file does not exist" error
-                     * if the inbound queue hasn't yet been created on the
-                     * service.
-                     */
+                    // If an error is returned, this means that no response is
+                    // pending. Note that it's expected that this might return
+                    // either a "note does not exist" error if there are no
+                    // pending inbound notes, or a "file does not exist" error
+                    // if the inbound queue hasn't yet been created on the
+                    // service.
                     if (NoteResponseError(rsp)) {
                         NoteDeleteResponse(rsp);
                         break;
                     }
 
-                    /* Get the note's body. */
+                    // Get the note's body.
                     J *body = JGetObject(rsp, "body");
                     if (body != NULL) {
                         char *cmd = JGetString(body, "state");
                         if (cmd != NULL && strlen(cmd) != 0) {
                             handleValveCmd(cmd);
-                            /*
-                             * If we received a valve command (open or close),
-                             * we want to publish the system status immediately
-                             * in response, regardless of if it's time to do so
-                             * based on the monitor interval. This acts as a
-                             * sort of acknowledgment so that the controller 
-                             * knows their valve command was received.
-                             */
-                            publishSystemStatus(false);
+                            // If we received a valve command (open or close),
+                            // we want to publish the system status immediately
+                            // in response, regardless of if it's time to do so
+                            // based on the monitor interval. This acts as a
+                            // sort of acknowledgment so that the controller
+                            // knows their valve command was received.
+                            publishSystemStatus(false, state.flowRate);
                         }
                         else {
-                            printk("Unable to get valve command from note."
-                                "\n");
+                            printk("Unable to get valve command from note.\n");
                         }
                     }
                     else {
@@ -732,8 +785,6 @@ void main(void)
                 NoteDeleteResponse(rsp);
             }
         }
-    #endif /* USE_VALVE == 1 */
-        
-        checkAlarm();
+    #endif // USE_VALVE == 1
     }
 }

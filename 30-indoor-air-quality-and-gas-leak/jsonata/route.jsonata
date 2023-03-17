@@ -1,0 +1,18 @@
+(
+    $alertMessage := function($e, $nodeID) {(
+        $findName := function($names, $nodeID) {(
+            $first := $substringBefore($names, ";");
+            $idName := $split($first, ":");
+            $result := $count($idName)!=2 ? $nodeID : $idName[0]=$nodeID ? $idName[1] : $findName($substringAfter($names,";"), $nodeID); 
+        )};
+        $name := $findName($node_names, $nodeID);
+        $alertType := $e.body.alert=3 ? "" : "ALERT! ";
+        $alertType2 := $e.body.alert=3 ? "normal" : "alert";
+        $msg := $alertType & 'Air quality ' & $alertType2 & ' in ' & $name & '. ';
+        $msg := $msg & "AQI: " & $e.body.aqi & ", CO2: " & $e.body.eco2 &  "ppm, TVOC: " & $e.body.tvoc & "ppb.";
+        $result := { "customMessage": $msg };
+    )};
+    $fileParts := $split($.file, "#");
+    $additional := $count($fileParts)=2 and $fileParts[1]="aqi.qo" and $exists($.body.alert) and ($.body.alert % 2)=1 ? $alertMessage($, $fileParts[0]) : $doNotRoute($);
+    $merge([$, {"body": $merge([body, $additional])}]);
+)
