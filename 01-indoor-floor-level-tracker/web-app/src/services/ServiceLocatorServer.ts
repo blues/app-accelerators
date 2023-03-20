@@ -41,7 +41,10 @@ class ServiceLocatorServer {
       const notehubProvider = new NotehubDataProvider(
         projectID,
         fleetID,
+        // todo remove when no longer in use
         Config.hubAuthToken,
+        Config.hubClientId,
+        Config.hubClientSecret,
         notehubJsClient
       );
       this.dataProvider = notehubProvider;

@@ -12,6 +12,8 @@ import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import NotehubRoutedEvent from "./models/NotehubRoutedEvent";
 import NotehubEnvVarsResponse from "./models/NotehubEnvVarsResponse";
 
+const NotehubJsLocal = require("notehub-js");
+
 interface HasDeviceId {
   uid: string;
 }
@@ -130,6 +132,25 @@ export function environmentVariablesToTrackerConfig(envVars: NotehubEnvVars) {
   } as TrackerConfig;
 }
 
+export async function generateNotehubAuthToken(
+  hubClientId: string,
+  hubClientSecret: string
+) {
+  const apiInstance = new NotehubJsLocal.AuthorizationApi();
+  const opts = {
+    // todo make this a constant somewhere
+    grantType: "client_credentials", // String |
+    clientId: hubClientId, // String |
+    clientSecret: hubClientSecret, // String |
+  };
+  console.log("Generate Token API instance");
+  console.log(opts);
+  const authToken = await apiInstance.generateAuthToken(opts);
+  console.log(`API called successfully. Returned data: `);
+  console.log(JSON.stringify(authToken));
+  return authToken;
+}
+
 export function epochStringMinutesAgo(minutesToConvert: number) {
   const date = new Date();
   const rawEpochDate = sub(date, { minutes: minutesToConvert });
@@ -144,12 +165,20 @@ export default class NotehubDataProvider implements DataProvider {
     private readonly projectID: ProjectID,
     private readonly fleetID: FleetID,
     private readonly hubAuthToken: string,
+    private readonly hubClientId: string,
+    private readonly hubClientSecret: string,
     private readonly notehubJsClient: any
   ) {}
 
   async getDeviceTrackerData(): Promise<DeviceTracker[]> {
     const trackerDevices: DeviceTracker[] = [];
     let formattedDeviceTrackerData: DeviceTracker[] = [];
+
+    const authToken = await generateNotehubAuthToken(
+      this.hubClientId,
+      this.hubClientSecret
+    );
+    console.log("Auth token ------------", authToken);
 
     const { notehubJsClient } = this;
     const { api_key } = notehubJsClient.authentications;
