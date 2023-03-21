@@ -1,6 +1,6 @@
 # Indoor Floor-Level Tracker Web App
 
-The Indoor Floor-Level Tracker’s web application allows you to view device data and 
+The Indoor Floor-Level Tracker’s web application allows you to view device data and
 manage environment variables in a browser.
 
 To get started, make sure you have a copy of this project’s repository locally,
@@ -12,10 +12,10 @@ IDE, and then complete the following steps.
 - [Development](#development)
 
 > **NOTE**: The Indoor Floor-Level Tracker’s web app uses the [Notehub API](https://dev.blues.io/guides-and-tutorials/using-the-notehub-api/)
-to retrieve event data, which consumes [Notehub consumption credits](https://blues.io/pricing/).
-You can change how frequently the app refreshes data from Notehub by altering
-the `MS_REFETCH_INTERVAL` constant in the [`src/pages/index.tsx`](src/pages/index.tsx)
-file.
+> to retrieve event data, which consumes [Notehub consumption credits](https://blues.io/pricing/).
+> You can change how frequently the app refreshes data from Notehub by altering
+> the `MS_REFETCH_INTERVAL` constant in the [`src/pages/index.tsx`](src/pages/index.tsx)
+> file.
 
 ## Dependencies
 
@@ -34,7 +34,7 @@ checking the following.
 
 - **Windows**: Check for the docker (whale) icon in the system tray.
 - **Linux/Mac**: Run the command `docker run hello-world` from your terminal. If everything
-is working correctly you’ll see a confirmation message.
+  is working correctly you’ll see a confirmation message.
 
 With Docker running, next open your web application in VS Code. Once you do, you will see
 boxes that prompt you to install the extension **Remote - Containers**, and then to “Reopen
@@ -86,33 +86,22 @@ steps to do so.
 
 1. Create a new `.env` file in the root folder of your project.
 1. Copy the contents of your web app’s `.env.example` file, and paste
-it in your new `.env` file.
+   it in your new `.env` file.
 1. Change the required values in your `.env` to your own values using the steps
    below.
 
-### HUB_AUTH_TOKEN
+### HUB_CLIENT_ID and HUB_CLIENT_SECRET
 
 Blues reference web apps need access to your Notehub project in order to
-access the Notehub API. An access token is used to authenticate the app.
+access the Notehub API. A **client ID** and **client secret** unique to each Notehub user and Notehub project are used to generate an OAuth bearer token which is sent along with every request to the Notehub API.
 
-To find retrieve an authentication token, execute the following command in your
-terminal, replacing `YOUR_NOTEHUB_EMAIL` & `NOTEHUB_PASSWORD` with your own values.
+To generate an authentication token, you'll need to supply a `client_id` and `client_secret` for the project in your `.env` file. You can follow these [instructions](https://dev.blues.io/reference/notehub-api/api-introduction/#authentication-with-oauth-bearer-tokens) to access a `client_id` and `client_secret` for your Notehub project.
 
-```
-curl -X POST -L 'https://api.notefile.net/auth/login' \
-    -d '{"username":"YOUR_NOTEHUB_EMAIL", "password": "NOTEHUB_PASSWORD"}'
-```
-
-When successful, you will see a response like
+Copy the values for each variable and set the appropriate environment variable in `.env`, e.g.
 
 ```
-{"session_token":"BYj0bhMJwd3JucXE18f14Y3zMjQIoRfD"}
-```
-
-Copy the value after the colon to set the appropriate environment variable in `.env`, e.g.
-
-```
-HUB_AUTH_TOKEN=BYj0bhMJwd3JucXE18f14Y3zMjQIoRfD
+HUB_CLIENT_ID=3c0df26d-f9f4-4fd4-8a8d-847149a35790
+HUB_CLIENT_SECRET=f7cfa681e4f471186fbd0bcf0abae08d4b5966d4afb1056f2355293df64d3aaa
 ```
 
 ### HUB_PROJECT_UID
@@ -163,4 +152,4 @@ a change, save the file, and notice how your browser automatically updates with
 the change.
 
 > **NOTE**: Changes to `.env` are **not** automatically reloaded, and require you
-to stop the `yarn dev` with `ctrl+c` and to start `yarn dev` back up.
+> to stop the `yarn dev` with `ctrl+c` and to start `yarn dev` back up.

@@ -2,7 +2,8 @@
 declare global {
   namespace NodeJS {
     interface ProcessEnv {
-      HUB_AUTH_TOKEN: string;
+      HUB_CLIENT_ID: string;
+      HUB_CLIENT_SECRET: string;
       HUB_BASE_URL: string;
       HUB_GUI_URL: string;
       HUB_PROJECT_UID: string;

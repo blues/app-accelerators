@@ -8,8 +8,6 @@ const debugLog = console.log; // eslint-disable-line no-console
 */
 const env = {
   DEBUG_CONFIG: process.env.DEBUG_CONFIG,
-  // todo remove this when no longer in use
-  HUB_AUTH_TOKEN: process.env.HUB_AUTH_TOKEN,
   HUB_BASE_URL: process.env.HUB_BASE_URL,
   HUB_GUI_URL: process.env.HUB_GUI_URL,
   HUB_PROJECT_UID: process.env.HUB_PROJECT_UID,
@@ -65,10 +63,6 @@ const Config = {
   },
   get hubFleetUID() {
     return requiredEnvVar("HUB_FLEET_UID");
-  },
-  // todo remove when no longer in use
-  get hubAuthToken() {
-    return requiredEnvVar("HUB_AUTH_TOKEN");
   },
   get hubClientId() {
     return requiredEnvVar("HUB_CLIENT_ID");
