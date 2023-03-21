@@ -3,19 +3,25 @@ import * as NotehubJs from "@blues-inc/notehub-js";
 import { AttributeStore } from "../AttributeStore";
 import { ProjectID, TrackerConfig } from "../AppModel";
 import { DeviceID, FleetID } from "../DomainModel";
-import { trackerConfigToEnvironmentVariables } from "./NotehubDataProvider";
+import {
+  trackerConfigToEnvironmentVariables,
+  generateNotehubAuthToken,
+} from "./NotehubDataProvider";
 
 export default class NotehubAttributeStore implements AttributeStore {
   constructor(
     private readonly projectID: ProjectID,
-    private readonly hubAuthToken: string,
+    private readonly hubClientId: string,
+    private readonly hubClientSecret: string,
     private notehubJsClient: any
   ) {}
 
   async updateDeviceName(deviceID: DeviceID, name: string) {
-    const { notehubJsClient } = this;
-    const { api_key } = notehubJsClient.authentications;
-    api_key.apiKey = this.hubAuthToken;
+    await generateNotehubAuthToken(
+      this.notehubJsClient,
+      this.hubClientId,
+      this.hubClientSecret
+    );
 
     const envVarApiInstance = new NotehubJs.EnvironmentVariablesApi();
     const { projectUID } = this.projectID;
@@ -32,9 +38,11 @@ export default class NotehubAttributeStore implements AttributeStore {
   }
 
   async updateTrackerConfig(fleetUID: FleetID, trackerConfig: TrackerConfig) {
-    const { notehubJsClient } = this;
-    const { api_key } = notehubJsClient.authentications;
-    api_key.apiKey = this.hubAuthToken;
+    await generateNotehubAuthToken(
+      this.notehubJsClient,
+      this.hubClientId,
+      this.hubClientSecret
+    );
 
     const envVarApiInstance = new NotehubJs.EnvironmentVariablesApi();
     const { projectUID } = this.projectID;

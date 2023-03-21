@@ -11,8 +11,8 @@ import NotehubEnvVars from "./models/NotehubEnvVars";
 import { NotehubLocationAlternatives } from "./models/NotehubLocation";
 import NotehubRoutedEvent from "./models/NotehubRoutedEvent";
 import NotehubEnvVarsResponse from "./models/NotehubEnvVarsResponse";
-
-const NotehubJsLocal = require("notehub-js");
+import NotehubAccessToken from "./models/NotehubAccessToken";
+import { HTTP_AUTH } from "../../constants/http";
 
 interface HasDeviceId {
   uid: string;
@@ -132,25 +132,6 @@ export function environmentVariablesToTrackerConfig(envVars: NotehubEnvVars) {
   } as TrackerConfig;
 }
 
-export async function generateNotehubAuthToken(
-  hubClientId: string,
-  hubClientSecret: string
-) {
-  const apiInstance = new NotehubJsLocal.AuthorizationApi();
-  const opts = {
-    // todo make this a constant somewhere
-    grantType: "client_credentials", // String |
-    clientId: hubClientId, // String |
-    clientSecret: hubClientSecret, // String |
-  };
-  console.log("Generate Token API instance");
-  console.log(opts);
-  const authToken = await apiInstance.generateAuthToken(opts);
-  console.log(`API called successfully. Returned data: `);
-  console.log(JSON.stringify(authToken));
-  return authToken;
-}
-
 export function epochStringMinutesAgo(minutesToConvert: number) {
   const date = new Date();
   const rawEpochDate = sub(date, { minutes: minutesToConvert });
@@ -160,11 +141,30 @@ export function epochStringMinutesAgo(minutesToConvert: number) {
   return formattedEpochDate;
 }
 
+export async function generateNotehubAuthToken(
+  notehubJsClient: any,
+  hubClientId: string,
+  hubClientSecret: string
+) {
+  const authApiInstance = new NotehubJs.AuthorizationApi();
+
+  const opts = {
+    grantType: HTTP_AUTH.GRANT_TYPE,
+    clientId: hubClientId,
+    clientSecret: hubClientSecret,
+  };
+  const accessToken: NotehubAccessToken =
+    await authApiInstance.generateAuthToken(opts);
+
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  const { bearer_access_token } = notehubJsClient.authentications;
+  bearer_access_token.accessToken = accessToken.access_token;
+}
+
 export default class NotehubDataProvider implements DataProvider {
   constructor(
     private readonly projectID: ProjectID,
     private readonly fleetID: FleetID,
-    private readonly hubAuthToken: string,
     private readonly hubClientId: string,
     private readonly hubClientSecret: string,
     private readonly notehubJsClient: any
@@ -174,15 +174,11 @@ export default class NotehubDataProvider implements DataProvider {
     const trackerDevices: DeviceTracker[] = [];
     let formattedDeviceTrackerData: DeviceTracker[] = [];
 
-    const authToken = await generateNotehubAuthToken(
+    await generateNotehubAuthToken(
+      this.notehubJsClient,
       this.hubClientId,
       this.hubClientSecret
     );
-    console.log("Auth token ------------", authToken);
-
-    const { notehubJsClient } = this;
-    const { api_key } = notehubJsClient.authentications;
-    api_key.apiKey = this.hubAuthToken;
 
     const projectApiInstance = new NotehubJs.ProjectApi();
     const { projectUID } = this.projectID;
@@ -228,7 +224,9 @@ export default class NotehubDataProvider implements DataProvider {
       .values();
 
     // transform the Map iterator obj into plain array
-    const deviceTrackerData: any[] = Array.from(reducedEventsIterator);
+    const deviceTrackerData: DeviceTracker[] = Array.from(
+      reducedEventsIterator
+    );
 
     // format the data to round the numbers to 2 decimal places
     formattedDeviceTrackerData = formatDeviceTrackerData(deviceTrackerData);
@@ -255,9 +253,11 @@ export default class NotehubDataProvider implements DataProvider {
   }
 
   async getTrackerConfig(): Promise<TrackerConfig> {
-    const { notehubJsClient } = this;
-    const { api_key } = notehubJsClient.authentications;
-    api_key.apiKey = this.hubAuthToken;
+    await generateNotehubAuthToken(
+      this.notehubJsClient,
+      this.hubClientId,
+      this.hubClientSecret
+    );
 
     const fleetApiInstance = new NotehubJs.FleetApi();
     const { projectUID } = this.projectID;

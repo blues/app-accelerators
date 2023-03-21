@@ -10,10 +10,8 @@ const HTTP_STATUS = {
 };
 
 // HTTP headers
-const HTTP_HEADER = {
-  CONTENT_TYPE: "Content-Type",
-  CONTENT_TYPE_JSON: "application/json",
-  SESSION_TOKEN: "X-SESSION-TOKEN",
+const HTTP_AUTH = {
+  GRANT_TYPE: "client_credentials",
 };
 
-export { HTTP_STATUS, HTTP_HEADER };
+export { HTTP_STATUS, HTTP_AUTH };
