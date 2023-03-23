@@ -367,10 +367,10 @@
   resolved "https://registry.npmjs.org/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@blues-inc/notehub-js@^1.0.10":
-  version "1.0.10"
-  resolved "https://registry.yarnpkg.com/@blues-inc/notehub-js/-/notehub-js-1.0.10.tgz#d73037ce7dfdcd33dbc2744a74cb93259b7b74d5"
-  integrity sha512-pV2UcO3tmlGHNtYxQ1QHWrGbjzR+t6CBipa6NtknB3sl6NgxoWvNpaXJ5CQIUBySk/+A7Gwu3mais9hZymIQFQ==
+"@blues-inc/notehub-js@^1.0.11":
+  version "1.0.11"
+  resolved "https://registry.yarnpkg.com/@blues-inc/notehub-js/-/notehub-js-1.0.11.tgz#f38349553e8bea784f3c3d8ec1529c692ae903fc"
+  integrity sha512-k/vKjtTy1drTCLUZR2k8W8e1gpg8Hc8BIgBPEKVt5Z0S47KDh8MNR4YZTHpmOQBCvz/aNiNa8Gc/1qqMphy+bg==
   dependencies:
     "@babel/cli" "^7.0.0"
     querystring "^0.2.1"
@@ -3984,13 +3984,6 @@ normalize-path@^3.0.0, normalize-path@~3.0.0:
   version "3.0.0"
   resolved "https://registry.npmjs.org/normalize-path/-/normalize-path-3.0.0.tgz"
   integrity sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==
-
-notehub-js@../../../notehub-js/src:
-  version "1.0.10"
-  dependencies:
-    "@babel/cli" "^7.0.0"
-    querystring "^0.2.1"
-    superagent "^5.3.0"
 
 npm-run-path@^4.0.1:
   version "4.0.1"
