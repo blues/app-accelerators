@@ -11,7 +11,7 @@
   HUB_CLIENT_ID = "Notehub API project ID"
   HUB_CLIENT_SECRET = "Notehub API project secret"
   HUB_BASE_URL = "(optional) Base URL representing the Notehub API"
-  HUB_FLEET_UID "Fleet UID for your Notehub project, e.g. fleet:987-654-321"
+  HUB_FLEET_UID = "Fleet UID for your Notehub project, e.g. fleet:987-654-321"
   DEBUG_CONFIG = "(optional) Debug config? If not '', log environment and config on server"
 
 [context.production]
