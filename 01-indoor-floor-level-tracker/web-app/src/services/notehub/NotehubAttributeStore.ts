@@ -5,7 +5,7 @@ import { ProjectID, TrackerConfig } from "../AppModel";
 import { DeviceID, FleetID } from "../DomainModel";
 import {
   trackerConfigToEnvironmentVariables,
-  generateNotehubAuthToken,
+  checkAuthTokenValidity,
 } from "./NotehubDataProvider";
 
 export default class NotehubAttributeStore implements AttributeStore {
@@ -17,7 +17,7 @@ export default class NotehubAttributeStore implements AttributeStore {
   ) {}
 
   async updateDeviceName(deviceID: DeviceID, name: string) {
-    await generateNotehubAuthToken(
+    await checkAuthTokenValidity(
       this.notehubJsClient,
       this.hubClientId,
       this.hubClientSecret
@@ -38,7 +38,7 @@ export default class NotehubAttributeStore implements AttributeStore {
   }
 
   async updateTrackerConfig(fleetUID: FleetID, trackerConfig: TrackerConfig) {
-    await generateNotehubAuthToken(
+    await checkAuthTokenValidity(
       this.notehubJsClient,
       this.hubClientId,
       this.hubClientSecret

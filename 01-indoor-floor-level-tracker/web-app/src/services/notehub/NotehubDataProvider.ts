@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable class-methods-use-this */
-import { sub, formatDistanceToNow, parseISO } from "date-fns";
+import { sub, formatDistanceToNow, parseISO, isPast } from "date-fns";
 import { uniqBy } from "lodash";
 import * as NotehubJs from "@blues-inc/notehub-js";
 import { DeviceTracker, TrackerConfig } from "../AppModel";
@@ -141,7 +141,10 @@ export function epochStringMinutesAgo(minutesToConvert: number) {
   return formattedEpochDate;
 }
 
-export async function generateNotehubAuthToken(
+// todo make this variable persist with whatever data it has between page refreshes/updates
+export let expirationDate: number | Date | undefined;
+
+async function generateNotehubAuthToken(
   notehubJsClient: any,
   hubClientId: string,
   hubClientSecret: string
@@ -159,6 +162,37 @@ export async function generateNotehubAuthToken(
   // eslint-disable-next-line @typescript-eslint/naming-convention
   const { bearer_access_token } = notehubJsClient.authentications;
   bearer_access_token.accessToken = accessToken.access_token;
+  const thirtyMinutesFromNowInSeconds =
+    (Math.floor(Date.now() / 1000) + accessToken.expires_in) * 1000;
+  // todo store expiration date somewhere where it can be retrieved
+  expirationDate = thirtyMinutesFromNowInSeconds;
+}
+
+export async function checkAuthTokenValidity(
+  notehubJsClient: any,
+  hubClientId: string,
+  hubClientSecret: string
+) {
+  console.log("checking auth token validity");
+  // todo check if there's a stored expiration date object somewhere
+  console.log(expirationDate);
+  if (!expirationDate) {
+    console.log("No OAuth token expiration present, generate one now");
+    await generateNotehubAuthToken(
+      notehubJsClient,
+      hubClientId,
+      hubClientSecret
+    );
+  } else if (expirationDate && isPast(expirationDate)) {
+    console.log("Time to generate a new OAuth token, this one is expired!");
+    await generateNotehubAuthToken(
+      notehubJsClient,
+      hubClientId,
+      hubClientSecret
+    );
+  } else {
+    console.log("No action needed, OAuth token is still valid");
+  }
 }
 
 export default class NotehubDataProvider implements DataProvider {
@@ -174,7 +208,7 @@ export default class NotehubDataProvider implements DataProvider {
     const trackerDevices: DeviceTracker[] = [];
     let formattedDeviceTrackerData: DeviceTracker[] = [];
 
-    await generateNotehubAuthToken(
+    await checkAuthTokenValidity(
       this.notehubJsClient,
       this.hubClientId,
       this.hubClientSecret
@@ -253,7 +287,7 @@ export default class NotehubDataProvider implements DataProvider {
   }
 
   async getTrackerConfig(): Promise<TrackerConfig> {
-    await generateNotehubAuthToken(
+    await checkAuthTokenValidity(
       this.notehubJsClient,
       this.hubClientId,
       this.hubClientSecret
