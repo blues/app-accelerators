@@ -1,6 +1,6 @@
-# Toy Ambulance Vehicle Monitor
+# Ambulance Vehicle Monitor
 
-- [Toy Ambulance Vehicle Monitor](#toy-ambulance-vehicle-monitor)
+- [Ambulance Vehicle Monitor](#ambulance-vehicle-monitor)
   - [You Will Need](#you-will-need)
   - [The Build](#the-build)
     - [Collect the Parts and Tools Needed](#collect-the-parts-and-tools-needed)
@@ -25,7 +25,7 @@
 * [Notecarrier-B](https://shop.blues.io/products/carr-b)
 * [Notecard](https://blues.io/products/notecard/)
 * [Toy ambulance with light and siren effects](https://www.amazon.com/gp/product/B07KT8WXXW/)
-* [200mm/8in. Dupont jumper cables](https://www.amazon.com/Elegoo-EL-CP-004-Multicolored-Breadboard-arduino/dp/B01EV70C78/) - Female to Male or Female (one end will be cut off, leaving just the female connector on one end and bare wire on the other.)
+* [300mm/12in. Dupont jumper cables](https://www.amazon.com/DiGiYes-Breadboard-Multicolored-Raspberry-Electronic/dp/B0BKPDGZDL) - Female to Male or Female (one end will be cut off, leaving just the female connector on one end and bare wire on the other.)
 * [Soldering iron and solder](https://www.amazon.com/gp/product/B08R3515SF/)
 * [Wire cutters/strippers](https://www.amazon.com/IRWIN-VISE-GRIP-2078300-Self-Adjusting-Stripper/dp/B000OQ21CA/)
 * Phillips PH4 screwdriver
