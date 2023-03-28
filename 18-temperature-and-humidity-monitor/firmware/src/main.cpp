@@ -65,7 +65,8 @@ void publishSystemStatus()
         J *body = JCreateObject();
         if (body != NULL) {
             JAddNumberToObject(body, "temperature", state.temperature);
-            JAddNumberToObject(body, "humidity", state.humidity);            
+            JAddNumberToObject(body, "humidity", state.humidity);
+            JAddStringToObject(body, "app", "nf18");
             JAddItemToObject(req, "body", body);
 
             notecard.sendRequest(req);
@@ -424,3 +425,8 @@ void loop()
         publishSystemStatus();
     }
 }
+
+void NoteUserAgentUpdate(J *ua) {
+    JAddStringToObject(ua, "app", "nf18");
+}
+

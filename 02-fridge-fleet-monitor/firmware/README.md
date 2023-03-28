@@ -1,6 +1,6 @@
 # Fridge Fleet Monitor Firmware
 
-This project's firware is a variant of the [Blues Wireless Sparrow Reference Firware](https://github.com/blues/sparrow-reference-firmware).
+This project's firmware is a variant of the [Blues Wireless Sparrow Reference Firmware](https://github.com/blues/sparrow-reference-firmware).
 
 To run the firmware, start by ensuring you have the prerequisites below installed.
 
@@ -34,9 +34,9 @@ void schedAppInit (void) {
 4. Open up VS Code's task runner using `Terminal > Run Task` in your computer's menu bar, and build the firmware by running the task `Sparrow build firmware using CMake and Make`
 ![VS Code build firmware command toolbar](./readme-build-firmware.png)
 
-### Flashing firmware
+### Flashing Firmware
 
-With the firmware opened, modified, and built locally, it's time to flash the new firware to each Sparrow node.
+With the firmware opened, modified, and built locally, it's time to flash the new firmware to each Sparrow node.
 
 Complete the following steps to flash the Sparrow reference firmware to each Sparrow node.
 

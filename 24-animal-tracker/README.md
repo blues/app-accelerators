@@ -37,7 +37,7 @@ With the Notecarrier connected to your development PC, navigate to https://dev.b
 ### [`hub.set`](https://dev.blues.io/reference/notecard-api/hub-requests/#hub-set)
 
 ```json
-{ "req": "hub.set", "product" : "com.your-company:your-product-name", "sn": "a-serial-number", "mode": "periodic", "outbound": 30 }
+{ "req": "hub.set", "product" : "com.your-company:your-product-name", "sn": "a-serial-number", "mode": "periodic", "outbound": 30, "body":{"app":"nf24"} }
 ```
 
 This command sets the Notecard's ProductUID and serial number. Make sure to replace "com.your-company:your-product-name" with your ProductUID from [Notehub Setup](#notehub-setup). Also, replace "a-serial-number" with a relevant identifier for the object that the Notecard will be attached to (e.g. "cow 257", if this were a real world scenario). Setting the `mode` to `periodic` and `outbound` to 30 makes it so the Notecard will periodically sync notes to Notehub every 30 minutes.
