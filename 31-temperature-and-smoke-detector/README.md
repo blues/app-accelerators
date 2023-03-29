@@ -124,7 +124,7 @@ When temperature and gas levels return to normal, `alert:3` is the last event se
 
 ### Configuration
 
-The file [`./firmware/sparrow-application/mq2/mq2.cpp`](./firmware/sparrow-application/mq2/mq2.cpp) contains a number of `#define`s that are used to configure how often temperature and gas levels are measured and the thresholds that trigger an alert:
+The file [`./firmware/sparrow-application/mq2/mq2.c`](./firmware/sparrow-application/mq2/mq2.c) contains a number of `#define`s that are used to configure how often temperature and gas levels are measured and the thresholds that trigger an alert:
 
 | Name     | Default  | Unit    | Description |
 |----------|----------|---------|-------------|
