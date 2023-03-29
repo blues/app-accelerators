@@ -2,6 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { ErrorWithCause } from "pony-cause";
+import { getCookie, setCookie, CookieValueTypes } from "cookies-next";
 import { serverLogError } from "./log";
 import { services } from "../../services/ServiceLocatorServer";
 
@@ -15,10 +16,24 @@ function validateMethod(req: NextApiRequest, res: NextApiResponse) {
   return true;
 }
 
-async function performRequest() {
-  const app = services().getAppService();
+async function performRequest(authStringObj: CookieValueTypes) {
+  const appService = services().getAppService();
   try {
-    return await app.getDeviceTrackerData();
+    let authObj;
+    if (authStringObj === undefined) {
+      authObj = await appService.getAuthToken();
+      authStringObj = JSON.stringify(authObj);
+    }
+    const isAuthTokenValid = appService.checkAuthTokenValidity(authStringObj);
+    if (!isAuthTokenValid) {
+      authObj = await appService.getAuthToken();
+      authStringObj = JSON.stringify(authObj);
+    }
+
+    authObj = JSON.parse(authStringObj);
+    setCookie("authTokenObj", authStringObj);
+
+    return await appService.getDeviceTrackerData(authObj);
   } catch (cause) {
     throw new ErrorWithCause("Could not perform request", { cause });
   }
@@ -28,12 +43,14 @@ export default async function deviceTrackersHandler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  const authStringObj = getCookie("authTokenObj", { req, res });
+
   if (!validateMethod(req, res)) {
     return;
   }
 
   try {
-    const deviceTrackers = await performRequest();
+    const deviceTrackers = await performRequest(authStringObj);
     res.status(StatusCodes.OK).json({ deviceTrackers });
   } catch (cause) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR);

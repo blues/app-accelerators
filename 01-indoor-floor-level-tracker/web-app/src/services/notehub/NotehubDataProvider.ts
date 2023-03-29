@@ -3,7 +3,7 @@
 import { sub, formatDistanceToNow, parseISO, isPast } from "date-fns";
 import { uniqBy } from "lodash";
 import * as NotehubJs from "@blues-inc/notehub-js";
-import { DeviceTracker, TrackerConfig } from "../AppModel";
+import { DeviceTracker, TrackerConfig, AuthToken } from "../AppModel";
 import { DataProvider } from "../DataProvider";
 import { FleetID, ProjectID } from "../DomainModel";
 import NotehubDevice from "./models/NotehubDevice";
@@ -37,7 +37,6 @@ export function notehubDeviceToIndoorTracker(device: NotehubDevice) {
 
 export function filterEventsData(events: NotehubRoutedEvent[], file: string) {
   const dataEvent = events.filter((event) => event.file === file).reverse();
-
   return dataEvent;
 }
 
@@ -141,58 +140,13 @@ export function epochStringMinutesAgo(minutesToConvert: number) {
   return formattedEpochDate;
 }
 
-// todo make this variable persist with whatever data it has between page refreshes/updates
-export let expirationDate: number | Date | undefined;
-
-async function generateNotehubAuthToken(
-  notehubJsClient: any,
-  hubClientId: string,
-  hubClientSecret: string
-) {
-  const authApiInstance = new NotehubJs.AuthorizationApi();
-
-  const opts = {
-    grantType: HTTP_AUTH.GRANT_TYPE,
-    clientId: hubClientId,
-    clientSecret: hubClientSecret,
-  };
-  const accessToken: NotehubAccessToken =
-    await authApiInstance.generateAuthToken(opts);
-
-  // eslint-disable-next-line @typescript-eslint/naming-convention
-  const { bearer_access_token } = notehubJsClient.authentications;
-  bearer_access_token.accessToken = accessToken.access_token;
-  const thirtyMinutesFromNowInSeconds =
-    (Math.floor(Date.now() / 1000) + accessToken.expires_in) * 1000;
-  // todo store expiration date somewhere where it can be retrieved
-  expirationDate = thirtyMinutesFromNowInSeconds;
-}
-
-export async function checkAuthTokenValidity(
-  notehubJsClient: any,
-  hubClientId: string,
-  hubClientSecret: string
-) {
-  console.log("checking auth token validity");
-  // todo check if there's a stored expiration date object somewhere
-  console.log(expirationDate);
-  if (!expirationDate) {
-    console.log("No OAuth token expiration present, generate one now");
-    await generateNotehubAuthToken(
-      notehubJsClient,
-      hubClientId,
-      hubClientSecret
-    );
-  } else if (expirationDate && isPast(expirationDate)) {
-    console.log("Time to generate a new OAuth token, this one is expired!");
-    await generateNotehubAuthToken(
-      notehubJsClient,
-      hubClientId,
-      hubClientSecret
-    );
-  } else {
-    console.log("No action needed, OAuth token is still valid");
+// todo fix this any / figure out if this function needs to remain
+function normalizeAuthToken(authToken: any) {
+  if (typeof authToken === "string") {
+    const parsedAuthToken = JSON.parse(authToken);
+    return parseInt(parsedAuthToken.token_expiration_date, 10);
   }
+  return parseInt(authToken.token_expiration_date, 10);
 }
 
 export default class NotehubDataProvider implements DataProvider {
@@ -204,15 +158,51 @@ export default class NotehubDataProvider implements DataProvider {
     private readonly notehubJsClient: any
   ) {}
 
-  async getDeviceTrackerData(): Promise<DeviceTracker[]> {
+  async getAuthToken(): Promise<AuthToken> {
+    const authApiInstance = new NotehubJs.AuthorizationApi();
+
+    const opts = {
+      grantType: HTTP_AUTH.GRANT_TYPE,
+      clientId: this.hubClientId,
+      clientSecret: this.hubClientSecret,
+    };
+    const accessToken: NotehubAccessToken =
+      await authApiInstance.generateAuthToken(opts);
+
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    const thirtyMinutesFromNowInSeconds =
+      (Math.floor(Date.now() / 1000) + accessToken.expires_in) * 1000;
+    return {
+      token_expiration_date: `${thirtyMinutesFromNowInSeconds}`,
+      ...accessToken,
+    };
+  }
+
+  // todo fix this any
+  checkAuthTokenValidity(authToken: any): boolean {
+    console.log("checking auth token validity");
+    if (authToken === undefined) {
+      console.log("No auth token found, generate a new one");
+      return false;
+    }
+    console.log(authToken);
+    const normalizedTokenExpiration = normalizeAuthToken(authToken);
+    console.log(normalizedTokenExpiration);
+    if (isPast(normalizedTokenExpiration)) {
+      console.log("Time to generate a new OAuth token, this one is expired!");
+      return false;
+    }
+
+    console.log("No action needed, OAuth token is still valid");
+    return true;
+  }
+
+  async getDeviceTrackerData(authToken: AuthToken): Promise<DeviceTracker[]> {
     const trackerDevices: DeviceTracker[] = [];
     let formattedDeviceTrackerData: DeviceTracker[] = [];
 
-    await checkAuthTokenValidity(
-      this.notehubJsClient,
-      this.hubClientId,
-      this.hubClientSecret
-    );
+    const { bearer_access_token } = this.notehubJsClient.authentications;
+    bearer_access_token.accessToken = authToken.access_token;
 
     const projectApiInstance = new NotehubJs.ProjectApi();
     const { projectUID } = this.projectID;
@@ -234,6 +224,8 @@ export default class NotehubDataProvider implements DataProvider {
       MINUTES_OF_NOTEHUB_DATA_TO_FETCH
     );
     const eventOpts = { startDate: unixTimestampMinutesAgo };
+
+    bearer_access_token.accessToken = authToken.access_token;
 
     const rawEvents = await projectApiInstance.getProjectEvents(
       projectUID,
@@ -286,13 +278,9 @@ export default class NotehubDataProvider implements DataProvider {
     });
   }
 
-  async getTrackerConfig(): Promise<TrackerConfig> {
-    await checkAuthTokenValidity(
-      this.notehubJsClient,
-      this.hubClientId,
-      this.hubClientSecret
-    );
-
+  async getTrackerConfig(authToken: AuthToken): Promise<TrackerConfig> {
+    const { bearer_access_token } = this.notehubJsClient.authentications;
+    bearer_access_token.accessToken = authToken.access_token;
     const fleetApiInstance = new NotehubJs.FleetApi();
     const { projectUID } = this.projectID;
     const { fleetUID } = this.fleetID;
@@ -300,6 +288,10 @@ export default class NotehubDataProvider implements DataProvider {
     const envVarResponse: NotehubEnvVarsResponse =
       await fleetApiInstance.getFleetEnvironmentVariables(projectUID, fleetUID);
     const envVars = envVarResponse.environment_variables;
-    return environmentVariablesToTrackerConfig(envVars);
+
+    const envVarsInTrackerConfigFormat =
+      environmentVariablesToTrackerConfig(envVars);
+
+    return envVarsInTrackerConfigFormat;
   }
 }

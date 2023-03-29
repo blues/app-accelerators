@@ -4,6 +4,14 @@ export type ProjectID = DomainModel.ProjectID;
 export type FleetID = DomainModel.FleetID;
 export type DeviceID = DomainModel.DeviceID;
 
+export interface AuthToken {
+  access_token?: string;
+  scope?: string;
+  expires_in?: number;
+  token_type?: string;
+  token_expiration_date?: string;
+}
+
 export interface TrackerConfig {
   live?: boolean;
   baseFloor?: number;

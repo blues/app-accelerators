@@ -1,6 +1,9 @@
-import { DeviceTracker, TrackerConfig } from "./AppModel";
+import { DeviceTracker, TrackerConfig, AuthToken } from "./AppModel";
 
 export interface DataProvider {
-  getDeviceTrackerData(): Promise<DeviceTracker[]>;
-  getTrackerConfig(): Promise<TrackerConfig>;
+  getAuthToken(): Promise<AuthToken>;
+  // todo fix this any
+  checkAuthTokenValidity(authToken: any): boolean;
+  getDeviceTrackerData(authToken: AuthToken): Promise<DeviceTracker[]>;
+  getTrackerConfig(authToken: AuthToken): Promise<TrackerConfig>;
 }

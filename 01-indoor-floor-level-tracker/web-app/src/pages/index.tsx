@@ -3,10 +3,10 @@ import { useRouter } from "next/router";
 import { Alert, Button, Col, Row } from "antd";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "react-query";
+import { setCookie, getCookie, CookieValueTypes } from "cookies-next";
 import { getErrorMessage } from "../constants/ui";
 import { ERROR_CODES } from "../services/Errors";
-import { DeviceTracker, TrackerConfig } from "../services/AppModel";
-import Config from "../../Config";
+import { AuthToken, DeviceTracker, TrackerConfig } from "../services/AppModel";
 import { useDeviceTrackerData } from "../hooks/useDeviceTrackerData";
 import { services } from "../services/ServiceLocatorServer";
 import { services as clientSideServices } from "../services/ServiceLocatorClient";
@@ -157,13 +157,34 @@ const Home: NextPage<HomeData> = ({ fleetTrackerConfig, error }) => {
 };
 export default Home;
 
-export const getServerSideProps: GetServerSideProps<HomeData> = async () => {
+export const getServerSideProps: GetServerSideProps<HomeData> = async ({
+  req,
+  res,
+}) => {
   let fleetTrackerConfig: TrackerConfig = {};
+  let authStringObj: CookieValueTypes;
   let error = "";
 
   try {
     const appService = services().getAppService();
-    fleetTrackerConfig = await appService.getTrackerConfig();
+
+    authStringObj = getCookie("authTokenObj", { req, res });
+    let authObj: AuthToken = {};
+    if (authStringObj === undefined) {
+      authObj = await appService.getAuthToken();
+      authStringObj = JSON.stringify(authObj);
+    }
+    const isAuthTokenValid = appService.checkAuthTokenValidity(authStringObj);
+    if (!isAuthTokenValid) {
+      authObj = await appService.getAuthToken();
+      authStringObj = JSON.stringify(authObj);
+    }
+    setCookie("authTokenObj", authStringObj, {
+      req,
+      res,
+    });
+
+    fleetTrackerConfig = await appService.getTrackerConfig(authObj);
 
     return {
       props: { fleetTrackerConfig, error },
