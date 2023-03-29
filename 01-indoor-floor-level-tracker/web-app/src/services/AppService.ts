@@ -9,7 +9,11 @@ interface AppServiceInterface {
   getAuthToken: () => Promise<AuthToken>;
   // todo fix this any
   checkAuthTokenValidity: (authToken: any) => boolean;
-  setDeviceName: (deviceUID: string, name: string) => Promise<void>;
+  setDeviceName: (
+    authToken: AuthToken,
+    deviceUID: string,
+    name: string
+  ) => Promise<void>;
   getDeviceTrackerData: (authToken: AuthToken) => Promise<DeviceTracker[]>;
   getTrackerConfig: (authToken: AuthToken) => Promise<TrackerConfig>;
   setTrackerConfig: (
@@ -41,8 +45,13 @@ export default class AppService implements AppServiceInterface {
     return this.dataProvider.checkAuthTokenValidity(authToken);
   }
 
-  async setDeviceName(deviceUID: string, name: string): Promise<void> {
+  async setDeviceName(
+    authToken: AuthToken,
+    deviceUID: string,
+    name: string
+  ): Promise<void> {
     return this.attributeStore.updateDeviceName(
+      authToken,
       this.idBuilder.buildDeviceID(deviceUID),
       name
     );
@@ -59,6 +68,7 @@ export default class AppService implements AppServiceInterface {
   async setTrackerConfig(authToken: AuthToken, trackerConfig: TrackerConfig) {
     const { fleetUID } = this.fleetID;
     return this.attributeStore.updateTrackerConfig(
+      authToken,
       this.idBuilder.buildFleetID(fleetUID),
       trackerConfig
     );

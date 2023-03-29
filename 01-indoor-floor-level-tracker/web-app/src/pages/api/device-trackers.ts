@@ -5,6 +5,7 @@ import { ErrorWithCause } from "pony-cause";
 import { getCookie, setCookie, CookieValueTypes } from "cookies-next";
 import { serverLogError } from "./log";
 import { services } from "../../services/ServiceLocatorServer";
+import { AuthToken } from "../../services/AppModel";
 
 function validateMethod(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
@@ -18,8 +19,9 @@ function validateMethod(req: NextApiRequest, res: NextApiResponse) {
 
 async function performRequest(authStringObj: CookieValueTypes) {
   const appService = services().getAppService();
+
   try {
-    let authObj;
+    let authObj: AuthToken = {};
     if (authStringObj === undefined) {
       authObj = await appService.getAuthToken();
       authStringObj = JSON.stringify(authObj);

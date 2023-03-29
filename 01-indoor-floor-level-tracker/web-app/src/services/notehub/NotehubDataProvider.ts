@@ -281,6 +281,7 @@ export default class NotehubDataProvider implements DataProvider {
   async getTrackerConfig(authToken: AuthToken): Promise<TrackerConfig> {
     const { bearer_access_token } = this.notehubJsClient.authentications;
     bearer_access_token.accessToken = authToken.access_token;
+
     const fleetApiInstance = new NotehubJs.FleetApi();
     const { projectUID } = this.projectID;
     const { fleetUID } = this.fleetID;
@@ -289,9 +290,6 @@ export default class NotehubDataProvider implements DataProvider {
       await fleetApiInstance.getFleetEnvironmentVariables(projectUID, fleetUID);
     const envVars = envVarResponse.environment_variables;
 
-    const envVarsInTrackerConfigFormat =
-      environmentVariablesToTrackerConfig(envVars);
-
-    return envVarsInTrackerConfigFormat;
+    return environmentVariablesToTrackerConfig(envVars);
   }
 }

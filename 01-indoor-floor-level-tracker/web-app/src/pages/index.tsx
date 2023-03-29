@@ -184,6 +184,7 @@ export const getServerSideProps: GetServerSideProps<HomeData> = async ({
       res,
     });
 
+    authObj = JSON.parse(authStringObj);
     fleetTrackerConfig = await appService.getTrackerConfig(authObj);
 
     return {

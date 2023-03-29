@@ -7,7 +7,6 @@ async function updateFleetEnvVar(fleetEnvVarToUpdate: object) {
   const endpoint = services().getUrlManager().setFleetTrackerConfig();
 
   const response = await axios.post<object>(endpoint, fleetEnvVarToUpdate);
-
   return response.data;
 }
 
@@ -28,7 +27,6 @@ export async function updateNoMovementThreshold(
   };
 
   const response = await updateFleetEnvVar(updateNoMovementThresholdObj);
-
   return response;
 }
 
@@ -38,6 +36,5 @@ export async function updateFloorHeightConfig(newFloorHeight: number) {
   };
 
   const response = await updateFleetEnvVar(updateFloorHeightConfigObj);
-
   return response;
 }

@@ -56,8 +56,6 @@ class ServiceLocatorServer {
       const notehubJsClient = NotehubJs.ApiClient.instance;
       const notehubStore: AttributeStore = new NotehubAttributeStore(
         projectID,
-        Config.hubClientId,
-        Config.hubClientSecret,
         notehubJsClient
       );
       this.attributeStore = notehubStore;

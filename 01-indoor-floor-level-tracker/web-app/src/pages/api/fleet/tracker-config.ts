@@ -2,6 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { StatusCodes } from "http-status-codes";
 import { ErrorWithCause } from "pony-cause";
+import { getCookie, setCookie, CookieValueTypes } from "cookies-next";
 import { HTTP_STATUS } from "../../../constants/http";
 import { services } from "../../../services/ServiceLocatorServer";
 
@@ -35,11 +36,33 @@ function validateRequest(
   return { trackerConfig };
 }
 
-async function performPostRequest({ trackerConfig }: ValidRequest) {
-  const app = services().getAppService();
+async function performPostRequest(
+  authStringObj: CookieValueTypes,
+  { trackerConfig }: ValidRequest
+) {
+  const appService = services().getAppService();
 
   try {
-    await app.setTrackerConfig(trackerConfig);
+    let authObj;
+    if (authStringObj === undefined) {
+      authObj = await appService.getAuthToken();
+      authStringObj = JSON.stringify(authObj);
+    }
+    const isAuthTokenValid = appService.checkAuthTokenValidity(authStringObj);
+    if (!isAuthTokenValid) {
+      authObj = await appService.getAuthToken();
+      authStringObj = JSON.stringify(authObj);
+    }
+
+    authObj = JSON.parse(authStringObj);
+    setCookie("authTokenObj", authStringObj);
+    console.log(
+      "token and tracker config in tracker config file ",
+      authObj,
+      trackerConfig
+    );
+
+    await appService.setTrackerConfig(authObj, trackerConfig);
   } catch (cause) {
     throw new ErrorWithCause("Could not access tracker configuration", {
       cause,
@@ -51,6 +74,8 @@ export default async function trackerConfigHandler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  const authStringObj = getCookie("authTokenObj", { req, res });
+
   if (!validateMethod(req, res)) {
     return;
   }
@@ -62,8 +87,7 @@ export default async function trackerConfigHandler(
         if (!validRequest) {
           return;
         }
-
-        await performPostRequest(validRequest);
+        await performPostRequest(authStringObj, validRequest);
         res.status(StatusCodes.OK).json({});
       }
       break;
