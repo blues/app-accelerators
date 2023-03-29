@@ -48,21 +48,18 @@ async function performPostRequest(
       authObj = await appService.getAuthToken();
       authStringObj = JSON.stringify(authObj);
     }
-    const isAuthTokenValid = appService.checkAuthTokenValidity(authStringObj);
-    if (!isAuthTokenValid) {
-      authObj = await appService.getAuthToken();
-      authStringObj = JSON.stringify(authObj);
+    if (typeof authStringObj === "string") {
+      const isAuthTokenValid = appService.checkAuthTokenValidity(authStringObj);
+      if (!isAuthTokenValid) {
+        authObj = await appService.getAuthToken();
+        authStringObj = JSON.stringify(authObj);
+      }
+
+      authObj = JSON.parse(authStringObj);
+      setCookie("authTokenObj", authStringObj);
+
+      await appService.setTrackerConfig(authObj, trackerConfig);
     }
-
-    authObj = JSON.parse(authStringObj);
-    setCookie("authTokenObj", authStringObj);
-    console.log(
-      "token and tracker config in tracker config file ",
-      authObj,
-      trackerConfig
-    );
-
-    await appService.setTrackerConfig(authObj, trackerConfig);
   } catch (cause) {
     throw new ErrorWithCause("Could not access tracker configuration", {
       cause,

@@ -146,19 +146,21 @@ export const getServerSideProps: GetServerSideProps<SettingsData> = async ({
       authObj = await appService.getAuthToken();
       authStringObj = JSON.stringify(authObj);
     }
-    const isAuthTokenValid = appService.checkAuthTokenValidity(authStringObj);
-    if (!isAuthTokenValid) {
-      authObj = await appService.getAuthToken();
-      authStringObj = JSON.stringify(authObj);
+    if (typeof authStringObj === "string") {
+      const isAuthTokenValid = appService.checkAuthTokenValidity(authStringObj);
+      if (!isAuthTokenValid) {
+        authObj = await appService.getAuthToken();
+        authStringObj = JSON.stringify(authObj);
+      }
+
+      authObj = JSON.parse(authStringObj);
+      setCookie("authTokenObj", authStringObj, {
+        req,
+        res,
+      });
+
+      fleetTrackerConfig = await appService.getTrackerConfig(authObj);
     }
-
-    authObj = JSON.parse(authStringObj);
-    setCookie("authTokenObj", authStringObj, {
-      req,
-      res,
-    });
-
-    fleetTrackerConfig = await appService.getTrackerConfig(authObj);
 
     return {
       props: { fleetTrackerConfig, error },

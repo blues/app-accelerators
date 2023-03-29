@@ -56,16 +56,18 @@ async function performRequest(
       authObj = await appService.getAuthToken();
       authStringObj = JSON.stringify(authObj);
     }
-    const isAuthTokenValid = appService.checkAuthTokenValidity(authStringObj);
-    if (!isAuthTokenValid) {
-      authObj = await appService.getAuthToken();
-      authStringObj = JSON.stringify(authObj);
+    if (typeof authStringObj === "string") {
+      const isAuthTokenValid = appService.checkAuthTokenValidity(authStringObj);
+      if (!isAuthTokenValid) {
+        authObj = await appService.getAuthToken();
+        authStringObj = JSON.stringify(authObj);
+      }
+
+      authObj = JSON.parse(authStringObj);
+      setCookie("authTokenObj", authStringObj);
+
+      await appService.setDeviceName(authObj, deviceUID, name);
     }
-
-    authObj = JSON.parse(authStringObj);
-    setCookie("authTokenObj", authStringObj);
-
-    await appService.setDeviceName(authObj, deviceUID, name);
   } catch (cause) {
     throw new ErrorWithCause("Could not perform request", { cause });
   }

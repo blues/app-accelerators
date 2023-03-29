@@ -26,16 +26,18 @@ async function performRequest(authStringObj: CookieValueTypes) {
       authObj = await appService.getAuthToken();
       authStringObj = JSON.stringify(authObj);
     }
-    const isAuthTokenValid = appService.checkAuthTokenValidity(authStringObj);
-    if (!isAuthTokenValid) {
-      authObj = await appService.getAuthToken();
-      authStringObj = JSON.stringify(authObj);
+    if (typeof authStringObj === "string") {
+      const isAuthTokenValid = appService.checkAuthTokenValidity(authStringObj);
+      if (!isAuthTokenValid) {
+        authObj = await appService.getAuthToken();
+        authStringObj = JSON.stringify(authObj);
+      }
+
+      authObj = JSON.parse(authStringObj);
+      setCookie("authTokenObj", authStringObj);
+
+      return await appService.getDeviceTrackerData(authObj);
     }
-
-    authObj = JSON.parse(authStringObj);
-    setCookie("authTokenObj", authStringObj);
-
-    return await appService.getDeviceTrackerData(authObj);
   } catch (cause) {
     throw new ErrorWithCause("Could not perform request", { cause });
   }

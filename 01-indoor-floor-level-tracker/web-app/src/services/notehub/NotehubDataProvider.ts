@@ -140,15 +140,6 @@ export function epochStringMinutesAgo(minutesToConvert: number) {
   return formattedEpochDate;
 }
 
-// todo fix this any / figure out if this function needs to remain
-function normalizeAuthToken(authToken: any) {
-  if (typeof authToken === "string") {
-    const parsedAuthToken = JSON.parse(authToken);
-    return parseInt(parsedAuthToken.token_expiration_date, 10);
-  }
-  return parseInt(authToken.token_expiration_date, 10);
-}
-
 export default class NotehubDataProvider implements DataProvider {
   constructor(
     private readonly projectID: ProjectID,
@@ -178,22 +169,23 @@ export default class NotehubDataProvider implements DataProvider {
     };
   }
 
-  // todo fix this any
-  checkAuthTokenValidity(authToken: any): boolean {
-    console.log("checking auth token validity");
-    if (authToken === undefined) {
-      console.log("No auth token found, generate a new one");
-      return false;
-    }
-    console.log(authToken);
-    const normalizedTokenExpiration = normalizeAuthToken(authToken);
-    console.log(normalizedTokenExpiration);
-    if (isPast(normalizedTokenExpiration)) {
-      console.log("Time to generate a new OAuth token, this one is expired!");
-      return false;
+  checkAuthTokenValidity(authTokenString: string): boolean {
+    // no auth token found, generate a new one
+    if (authTokenString === undefined) {
+      false;
     }
 
-    console.log("No action needed, OAuth token is still valid");
+    // extract token expiration date from authTokenString to check if its past or not
+    const parsedAuthTokenObj = JSON.parse(authTokenString);
+    const normalizedTokenExpiration = parseInt(
+      parsedAuthTokenObj.token_expiration_date,
+      10
+    );
+    // auth token expired, generate a new one
+    if (isPast(normalizedTokenExpiration)) {
+      false;
+    }
+    // current auth token still valid
     return true;
   }
 

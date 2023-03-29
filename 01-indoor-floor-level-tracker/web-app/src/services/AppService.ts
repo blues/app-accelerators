@@ -7,8 +7,7 @@ import { FleetID } from "./DomainModel";
 // this class / interface combo passes data and functions to the service locator file
 interface AppServiceInterface {
   getAuthToken: () => Promise<AuthToken>;
-  // todo fix this any
-  checkAuthTokenValidity: (authToken: any) => boolean;
+  checkAuthTokenValidity: (authTokenString: string) => boolean;
   setDeviceName: (
     authToken: AuthToken,
     deviceUID: string,
@@ -40,9 +39,8 @@ export default class AppService implements AppServiceInterface {
     return this.dataProvider.getAuthToken();
   }
 
-  // todo fix this any
-  checkAuthTokenValidity(authToken: any): boolean {
-    return this.dataProvider.checkAuthTokenValidity(authToken);
+  checkAuthTokenValidity(authTokenString: string): boolean {
+    return this.dataProvider.checkAuthTokenValidity(authTokenString);
   }
 
   async setDeviceName(
