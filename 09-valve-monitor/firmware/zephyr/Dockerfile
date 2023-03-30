@@ -1,7 +1,7 @@
 # Container for Developing Zephyr Applications
 
 # Build development environment
-# $ docker build --file Dockerfile.zephyr --tag west .
+# $ docker build --tag west .
 
 # Launch `west` CLI
 # (be sure to place the binary in your local ~/Downloads folder)
@@ -10,6 +10,7 @@
 
 # Global Argument(s)
 ARG DEBIAN_FRONTEND="noninteractive"
+ARG HOST_ARCH="x86_64"
 ARG UID=1000
 ARG USER="blues"
 
@@ -18,6 +19,7 @@ FROM ubuntu:22.04
 
 # Import Global Argument(s)
 ARG DEBIAN_FRONTEND
+ARG HOST_ARCH
 ARG UID
 ARG USER
 
@@ -53,9 +55,7 @@ RUN ["dash", "-c", "\
      device-tree-compiler \
      dfu-util \
      file \
-     g++-multilib \
      gcc \
-     gcc-multilib \
      git \
      gperf \
      libmagic1 \
@@ -71,7 +71,28 @@ RUN ["dash", "-c", "\
      tree \
      wget \
      xz-utils \
- && apt-get clean \
+"]
+
+# Tailor Environment to `amd64` or `arm64`
+RUN ["dash", "-c", "\
+    case \"${HOST_ARCH}\" in \
+      aarch64) \
+        apt-get install --assume-yes --no-install-recommends --quiet \
+         g++ \
+         g++-multilib-x86-64-linux-gnu \
+         gcc-multilib-x86-64-linux-gnu \
+        ;; \
+      *) \
+        apt-get install --assume-yes --no-install-recommends --quiet \
+         g++-multilib \
+         gcc-multilib \
+        ;; \
+    esac; \
+"]
+
+# Clean `apt-get` Cache
+RUN ["dash", "-c", "\
+    apt-get clean \
  && apt-get purge \
  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
 "]
@@ -96,17 +117,17 @@ WORKDIR /usr/local/
 
 # Install Zephyr SDK and Tools
 RUN ["dash", "-c", "\
-    wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZEPHYR_TOOLCHAIN_VERSION}/zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION}_linux-x86_64.tar.gz \
+    wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZEPHYR_TOOLCHAIN_VERSION}/zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION}_linux-${HOST_ARCH}.tar.gz \
  && wget -O - https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZEPHYR_TOOLCHAIN_VERSION}/sha256.sum | shasum --check --ignore-missing \
- && tar xvf zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION}_linux-x86_64.tar.gz \
- && rm zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION}_linux-x86_64.tar.gz \
+ && tar xvf zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION}_linux-${HOST_ARCH}.tar.gz \
+ && rm zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION}_linux-${HOST_ARCH}.tar.gz \
  && cd zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION} \
  && printf \"y\\nY\\n\" | ./setup.sh \
 "]
 
 # Update Path (gdb and openocd) and Environment Variables
 ENV PATH="/usr/local/zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION}/arm-zephyr-eabi/bin:${PATH}"
-ENV PATH="/usr/local/zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION}/sysroots/x86_64-pokysdk-linux/usr/bin:${PATH}"
+ENV PATH="/usr/local/zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION}/sysroots/${HOST_ARCH}-pokysdk-linux/usr/bin:${PATH}"
 ENV ZEPHYR_BASE="/home/${USER}/zephyrproject/zephyr"
 WORKDIR /host-volume
 
