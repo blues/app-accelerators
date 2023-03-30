@@ -1,0 +1,93 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Zephyr: Build Application",
+            "type": "shell",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "command": [
+                "west build --board ${config:board} --pristine=always ${workspaceFolder}"
+            ]
+        },
+        {
+            "label": "Zephyr: Rebuild Application",
+            "type": "shell",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build"
+            },
+            "command": [
+                "west build --board ${config:board} ${workspaceFolder}"
+            ]
+        },
+        {
+            "label": "Zephyr: Flash Firmware (Container)",
+            "type": "shell",
+            "problemMatcher": [],
+            "command": [
+                "west flash"
+            ]
+        },
+        {
+            "label": "Zephyr: Flash Firmware (External)",
+            "type": "shell",
+            "problemMatcher": [],
+            "command": [
+                "{ echo \"reset halt; program {${hostWorkspaceFolder}/build/zephyr/zephyr.elf} verify reset; sleep 0; exit;\" >&3; cat <&3-; } 3<> /dev/tcp/host.docker.internal/4444"
+            ]
+        },
+        {
+            "label": "Zephyr: Rebuild and Flash Firmware (Container)",
+            "type": "shell",
+            "problemMatcher": [],
+            "dependsOn": [
+                "Zephyr: Rebuild Application",
+                "Zephyr: Flash Firmware (Container)"
+            ],
+            "dependsOrder": "sequence"
+        },
+        {
+            "label": "Zephyr: Rebuild and Flash Firmware (External)",
+            "type": "shell",
+            "problemMatcher": [],
+            "dependsOn": [
+                "Zephyr: Rebuild Application",
+                "Zephyr: Flash Firmware (External)"
+            ],
+            "dependsOrder": "sequence"
+        },
+        {
+            "label": "Zephyr: List Boards",
+            "type": "shell",
+            "problemMatcher": [],
+            "command": [
+                "west boards"
+            ]
+        },
+        {
+            "label": "Zephyr: Menu Config",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}/build",
+                "env": {
+                    "BOARD": "${config:board}",
+                    "LC_ALL": "C"
+                }
+            },
+            "problemMatcher": [],
+            "command": [
+                "ninja menuconfig"
+            ]
+        }
+    ]
+}
