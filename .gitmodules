@@ -34,3 +34,6 @@
 [submodule "31-temperature-and-smoke-detector/firmware/note-c"]
 	path = 31-temperature-and-smoke-detector/firmware/note-c
 	url = https://github.com/blues/note-c
+[submodule "09-valve-monitor/firmware/zephyr/note-c"]
+	path = 09-valve-monitor/firmware/zephyr/note-c
+	url = https://github.com/blues/note-c
