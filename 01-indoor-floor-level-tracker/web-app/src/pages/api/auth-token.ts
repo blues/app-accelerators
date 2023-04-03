@@ -7,7 +7,7 @@ import { serverLogError } from "./log";
 import { services } from "../../services/ServiceLocatorServer";
 import {
   fetchCookieAuthToken,
-  normalizeStringToAuthToken,
+  setCookieAuthToken,
 } from "../../authorization/cookieAuth";
 
 function validateMethod(req: NextApiRequest, res: NextApiResponse) {
@@ -20,20 +20,39 @@ function validateMethod(req: NextApiRequest, res: NextApiResponse) {
   return true;
 }
 
-async function performRequest(authStringObj: CookieValueTypes) {
+export function doesAuthTokenExist(authToken: CookieValueTypes) {
+  if (authToken === undefined) {
+    return false;
+  }
+  return true;
+}
+
+export function isAuthTokenStillValid(authToken: CookieValueTypes) {
+  if (typeof authToken === "string") {
+    const appService = services().getAppService();
+    try {
+      const isAuthTokenValid = appService.checkAuthTokenValidity(authToken);
+      return isAuthTokenValid;
+    } catch (cause) {
+      throw new ErrorWithCause("Could not verify auth token validity ", {
+        cause,
+      });
+    }
+  }
+  return false;
+}
+
+async function performRequest() {
   const appService = services().getAppService();
 
   try {
-    if (typeof authStringObj === "string") {
-      const authObj = normalizeStringToAuthToken(authStringObj);
-      return await appService.getDeviceTrackerData(authObj);
-    }
+    return await appService.getAuthToken();
   } catch (cause) {
     throw new ErrorWithCause("Could not perform request", { cause });
   }
 }
 
-export default async function deviceTrackersHandler(
+export default async function authTokenHandler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
@@ -43,13 +62,26 @@ export default async function deviceTrackersHandler(
     return;
   }
 
+  // check if auth token exists, if it does, don't call the api
+  const authTokenExists = doesAuthTokenExist(authStringObj);
+  if (!authTokenExists) {
+    return;
+  }
+
+  // check if auth token is still valid, if it is, don't call the api
+  const authTokenStillValid = isAuthTokenStillValid(authStringObj);
+  if (!authTokenStillValid) {
+    return;
+  }
+
   try {
-    const deviceTrackers = await performRequest(authStringObj);
-    res.status(StatusCodes.OK).json({ deviceTrackers });
+    const authToken = await performRequest();
+    setCookieAuthToken(authToken, req, res);
+    res.status(StatusCodes.OK).json({});
   } catch (cause) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR);
     res.json({ err: ReasonPhrases.INTERNAL_SERVER_ERROR });
-    const e = new ErrorWithCause("Could not fetch device tracker data: ", {
+    const e = new ErrorWithCause("Could not fetch auth token: ", {
       cause,
     });
     serverLogError(e);

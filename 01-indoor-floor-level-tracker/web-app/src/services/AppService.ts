@@ -64,10 +64,9 @@ export default class AppService implements AppServiceInterface {
   }
 
   async setTrackerConfig(authToken: AuthToken, trackerConfig: TrackerConfig) {
-    const { fleetUID } = this.fleetID;
     return this.attributeStore.updateTrackerConfig(
       authToken,
-      this.idBuilder.buildFleetID(fleetUID),
+      this.fleetID,
       trackerConfig
     );
   }

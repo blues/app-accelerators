@@ -2,10 +2,14 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { ErrorWithCause } from "pony-cause";
-import { getCookie, setCookie, CookieValueTypes } from "cookies-next";
+import { CookieValueTypes } from "cookies-next";
 import { HTTP_STATUS } from "../../../../constants/http";
 import { services } from "../../../../services/ServiceLocatorServer";
 import { serverLogError } from "../../log";
+import {
+  fetchCookieAuthToken,
+  normalizeStringToAuthToken,
+} from "../../../../authorization/cookieAuth";
 
 interface ValidRequest {
   deviceUID: string;
@@ -51,21 +55,8 @@ async function performRequest(
 ) {
   const appService = services().getAppService();
   try {
-    let authObj;
-    if (authStringObj === undefined) {
-      authObj = await appService.getAuthToken();
-      authStringObj = JSON.stringify(authObj);
-    }
     if (typeof authStringObj === "string") {
-      const isAuthTokenValid = appService.checkAuthTokenValidity(authStringObj);
-      if (!isAuthTokenValid) {
-        authObj = await appService.getAuthToken();
-        authStringObj = JSON.stringify(authObj);
-      }
-
-      authObj = JSON.parse(authStringObj);
-      setCookie("authTokenObj", authStringObj);
-
+      const authObj = normalizeStringToAuthToken(authStringObj);
       await appService.setDeviceName(authObj, deviceUID, name);
     }
   } catch (cause) {
@@ -77,7 +68,7 @@ export default async function deviceNameHandler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const authStringObj = getCookie("authTokenObj", { req, res });
+  const authStringObj = fetchCookieAuthToken(req, res);
 
   if (!validateMethod(req, res)) {
     return;

@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { Alert, Button, Col, Row } from "antd";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "react-query";
-import { setCookie, getCookie, CookieValueTypes } from "cookies-next";
+import { CookieValueTypes } from "cookies-next";
 import { getErrorMessage } from "../constants/ui";
 import { ERROR_CODES } from "../services/Errors";
 import { AuthToken, DeviceTracker, TrackerConfig } from "../services/AppModel";
@@ -15,6 +15,12 @@ import LiveTrackCard from "../components/elements/LiveTrackCard";
 import RespondersByFloorTable from "../components/elements/RespondersByFloorTable";
 import TrackerTable from "../components/elements/TrackerTable";
 import MotionAlertConfigCard from "../components/elements/MotionAlertConfigCard";
+import { doesAuthTokenExist, isAuthTokenStillValid } from "./api/auth-token";
+import {
+  fetchCookieAuthToken,
+  normalizeStringToAuthToken,
+  setCookieAuthToken,
+} from "../authorization/cookieAuth";
 import styles from "../styles/Home.module.scss";
 
 type HomeData = {
@@ -162,30 +168,23 @@ export const getServerSideProps: GetServerSideProps<HomeData> = async ({
   res,
 }) => {
   let fleetTrackerConfig: TrackerConfig = {};
-  let authStringObj: CookieValueTypes;
   let error = "";
 
   try {
     const appService = services().getAppService();
+    let authObj: AuthToken;
 
-    authStringObj = getCookie("authTokenObj", { req, res });
-    let authObj: AuthToken = {};
-    if (authStringObj === undefined) {
+    const authStringObj: CookieValueTypes = fetchCookieAuthToken(req, res);
+    const authTokenExists = doesAuthTokenExist(authStringObj);
+    const authTokenStillValid = isAuthTokenStillValid(authStringObj);
+
+    if (!authTokenExists || authTokenStillValid) {
       authObj = await appService.getAuthToken();
-      authStringObj = JSON.stringify(authObj);
+      setCookieAuthToken(authObj, req, res);
     }
-    if (typeof authStringObj === "string") {
-      const isAuthTokenValid = appService.checkAuthTokenValidity(authStringObj);
-      if (!isAuthTokenValid) {
-        authObj = await appService.getAuthToken();
-        authStringObj = JSON.stringify(authObj);
-      }
-      setCookie("authTokenObj", authStringObj, {
-        req,
-        res,
-      });
 
-      authObj = JSON.parse(authStringObj);
+    if (typeof authStringObj === "string") {
+      authObj = normalizeStringToAuthToken(authStringObj);
       fleetTrackerConfig = await appService.getTrackerConfig(authObj);
     }
     return {

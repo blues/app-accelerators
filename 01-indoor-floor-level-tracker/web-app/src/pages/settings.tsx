@@ -4,7 +4,6 @@ import { useRouter } from "next/router";
 import { Button, Row, Col, Alert, Card, InputNumber } from "antd";
 import { Store } from "antd/lib/form/interface";
 import { ValidateErrorEntity } from "rc-field-form/lib/interface";
-import { setCookie, getCookie, CookieValueTypes } from "cookies-next";
 import { AuthToken, TrackerConfig } from "../services/AppModel";
 import { ERROR_MESSAGE, getErrorMessage } from "../constants/ui";
 import { ERROR_CODES } from "../services/Errors";
@@ -12,6 +11,12 @@ import { services } from "../services/ServiceLocatorServer";
 import Form, { FormProps } from "../components/elements/Form";
 import { LoadingSpinner } from "../components/layout/LoadingSpinner";
 import { updateFloorHeightConfig } from "../api-client/fleetVariables";
+import { doesAuthTokenExist, isAuthTokenStillValid } from "./api/auth-token";
+import {
+  fetchCookieAuthToken,
+  normalizeStringToAuthToken,
+  setCookieAuthToken,
+} from "../authorization/cookieAuth";
 import styles from "../styles/Settings.module.scss";
 
 type SettingsData = {
@@ -134,31 +139,23 @@ export const getServerSideProps: GetServerSideProps<SettingsData> = async ({
   res,
 }) => {
   let fleetTrackerConfig: TrackerConfig = {};
-  let authStringObj: CookieValueTypes;
   let error = "";
 
   try {
     const appService = services().getAppService();
+    let authObj: AuthToken;
 
-    authStringObj = getCookie("authTokenObj", { req, res });
-    let authObj: AuthToken = {};
-    if (authStringObj === undefined) {
-      authObj = await appService.getAuthToken();
-      authStringObj = JSON.stringify(authObj);
+    let authStringObj: any = fetchCookieAuthToken(req, res);
+    const authTokenExists = doesAuthTokenExist(authStringObj);
+    const authTokenStillValid = isAuthTokenStillValid(authStringObj);
+
+    if (!authTokenExists || authTokenStillValid) {
+      authStringObj = await appService.getAuthToken();
+      setCookieAuthToken(authStringObj, req, res);
     }
+
     if (typeof authStringObj === "string") {
-      const isAuthTokenValid = appService.checkAuthTokenValidity(authStringObj);
-      if (!isAuthTokenValid) {
-        authObj = await appService.getAuthToken();
-        authStringObj = JSON.stringify(authObj);
-      }
-
-      authObj = JSON.parse(authStringObj);
-      setCookie("authTokenObj", authStringObj, {
-        req,
-        res,
-      });
-
+      authObj = normalizeStringToAuthToken(authStringObj);
       fleetTrackerConfig = await appService.getTrackerConfig(authObj);
     }
 
