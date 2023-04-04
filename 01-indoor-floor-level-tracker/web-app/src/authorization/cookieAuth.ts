@@ -8,7 +8,6 @@ export function fetchCookieAuthToken(
   req: NextApiRequest | (IncomingMessage & { cookies: NextApiRequestCookies }),
   res: NextApiResponse | ServerResponse
 ) {
-  console.log("Fetching auth token string from cookie");
   return getCookie("authTokenObj", { req, res });
 }
 
@@ -22,7 +21,6 @@ export function setCookieAuthToken(
   req: NextApiRequest | (IncomingMessage & { cookies: NextApiRequestCookies }),
   res: NextApiResponse | ServerResponse
 ) {
-  console.log("Setting auth token string from cookie");
   let authStringObj = authToken;
   if (typeof authToken === "object") {
     authStringObj = JSON.stringify(authToken);
