@@ -1,8 +1,0 @@
-.DS_Store
-Doxyfile.bak
-latex/
-html/
-
-# VS Code workspace files
-*.code-workspace
-*.orig
