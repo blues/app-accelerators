@@ -18,7 +18,7 @@ Monitor temperature, humidity, and heat index and send alerts using a solar-powe
 
 ### Hardware
 
-- [Adafruit BME280 board](https://www.adafruit.com/product/2652)
+- [Adafruit BME280 board with Qwiic cable](https://www.adafruit.com/product/2652)
 - [Lithium Ion Battery - 3.7V 2000mAh](https://www.adafruit.com/product/2011)
 - [Seeed Studio 3W Solar Panel with JST Connector](https://www.seeedstudio.com/3W-Solar-Panel-138X160.html)
 - [Notecarrier F](https://shop.blues.io/products/notecarrier-f)
@@ -48,6 +48,8 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 1. Plug the LiPo battery's JST cable into the Notecarrier port labeled "LIPO".
 1. Connect one end of the JTAG ribbon cable that came with the STLINK to the STLINK and the other end to the Swan.
 1. Connect the STLINK to your development PC with a micro USB cable.
+
+![Hardware before installation in housing](images/hardware_before_installation.jpg)
 
 The battery will begin charging once the Swan is connected to USB power. You do not need to connect the solar panel, yet.
 
@@ -93,7 +95,7 @@ You can change this interval by setting the [environment variable](https://dev.b
 
 ### `alarm.qo`
 
-By default, the firmware will send an alarm in the following situations:
+By default, the firmware will send an `alarm.qo` Note in the following situations:
 
 - The temperature falls outside the range `[32, 95]`F.
 - The humidity falls outside the range `[5, 80]`%.
@@ -128,7 +130,7 @@ Here's an example `alarm.qo` note:
 
 The `status` field indicates the reason for the alarm. `low` means the value is below the minimum, `high` means the value is above the maximum, and `ok` means the value is in range. You should only ever see an `alarm.qo` note if at least one of the values is not `ok`. In this case, the `humidity_max` was set to 35, and the measured humidity breached that level, resulting in a `high` humidity alarm.
 
-Note: Alarm notes are sent at a maximum rate of 1 every 5 minutes.
+**Note**: Alarm notes are sent at a maximum rate of 1 every 5 minutes.
 
 ### Testing
 
@@ -150,6 +152,7 @@ With an understanding of the Notefiles used in this project, you're now ready to
     }
     ```
 1.  Click Devices on the left hand side, double-click the entry for your device, and click the Environment tab. Add a new variable under "Device environment variables" with the name `heat_index_max` and a value a few degrees below the heat_index you just saw in the `data.qo` note. Click Save. This will create the conditions for an `alarm.qo` note, because the heat index is above the max.
+![Setting heat_index_max on Notehub](images/heat_index_max_notehub.jpeg)
 1. Wait at least a minute for the environment variable update to propagate to the Notecard. Soon after, you should see an `alarm.qo` note back on the Events tab of your Notehub project.
     ```json
     {
@@ -167,7 +170,7 @@ With an understanding of the Notefiles used in this project, you're now ready to
         }
     }
     ```
-Here, the `heat_index_max` was set to 60, and we see a `high` heat index alarm note, as expected.
+Here, the `heat_index_max` was set to 50, and we see a `high` heat index alarm note, as expected.
 
 ## Additional Resources
 
