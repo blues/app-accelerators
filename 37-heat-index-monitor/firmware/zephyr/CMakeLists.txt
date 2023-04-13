@@ -2,11 +2,11 @@ cmake_minimum_required(VERSION 3.20.0)
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
-project(temp_and_humidity_monitor)
+project(heat_index_monitor)
 
 set(SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src)
 set(NOTE_C_DIR ${SRC_DIR}/note-c)
-set(NOTECARD_ENV_VAR_MANAGER_DIR ${SRC_DIR}/notecard_env_var_manager)
+set(NEVM_SRC_DIR ${SRC_DIR}/notecard_env_var_manager/src)
 
 target_sources(
     app
@@ -35,11 +35,11 @@ target_sources(
         ${NOTE_C_DIR}/n_request.c
         ${NOTE_C_DIR}/n_str.c
         # note_env_var_manager sources.
-        ${NOTECARD_ENV_VAR_MANAGER_DIR}/NotecardEnvVarManager.c
+        ${NEVM_SRC_DIR}/NotecardEnvVarManager.c
 )
 target_include_directories(
     app
     PRIVATE
         ${SRC_DIR}
-        ${NOTECARD_ENV_VAR_MANAGER_DIR}
+        ${NEVM_SRC_DIR}
 )

@@ -55,10 +55,11 @@ The battery will begin charging once the Swan is connected to USB power. You do 
 
 ## Firmware Setup
 
-From the command line, you'll need to pull in the [note-c](https://github.com/blues/note-c) submodule that the firmware depends on for Notecard communication:
+From the command line, you'll need to pull in the [note-c](https://github.com/blues/note-c) and [notecard-env-var-manager](https://github.com/blues/notecard-env-var-manager) submodules that the firmware depends on:
 
 ```sh
-git submodule update --init firmware/zephyr/src/note-c
+$ git submodule update --init 37-heat-index-monitor/firmware/zephyr/src/note-c
+$ git submodule update --init 37-heat-index-monitor/firmware/zephyr/src/notecard_env_var_manager
 ```
 
 To build, flash, and debug the firmware, you will need
