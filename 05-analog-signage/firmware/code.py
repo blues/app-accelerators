@@ -26,8 +26,8 @@ feathers2.enable_LDO2(True)
 
 i2c = board.I2C()
 card = notecard.OpenI2C(i2c, 0, 0, debug=False)
-
-req = {"req": "hub.set", "mode": "continuous", "sync": True, "body": {"app":"nf5"}}
+card.SetAppUserAgent({"app":"nf5"})
+req = {"req": "hub.set", "mode": "continuous", "sync": True}
 card.Transaction(req)
 
 
