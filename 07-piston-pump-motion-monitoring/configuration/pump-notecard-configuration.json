@@ -10,7 +10,8 @@
   "mode":      "periodic",
   "align":     true,
   "voutbound": "usb:10; high:180; normal:180; low:360; dead:0",
-  "vinbound":  "usb:10; high:360; normal:720; low:1440; dead:0"
+  "vinbound":  "usb:10; high:360; normal:720; low:1440; dead:0",
+  "body": {"app": "nf7"}
 }
 
 # Optimize for LiPo Battery

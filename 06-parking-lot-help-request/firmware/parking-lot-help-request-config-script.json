@@ -3,7 +3,7 @@
 {"req":"env.default","name":"parking_lot_help_request_config_script_version","text":"1.1.1"}
 
 # Set product UID to one that's registered to our product and give it a preferred serial number
-{"req":"hub.set","product":"com.your-company.your-name:your_product", "sn":"preferred_device_name_here"}
+{"req":"hub.set","product":"com.your-company.your-name:your_product", "sn":"preferred_device_name_here", "body":{"app":"nf6"}}
 
 # Set Notehub to minimum mode for battery conservation
 {"req":"hub.set","mode":"minimum","outbound":1440,"inbound":10080}

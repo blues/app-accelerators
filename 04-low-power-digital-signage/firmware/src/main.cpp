@@ -125,6 +125,10 @@ void loop() {
   rotateContent();
 }
 
+void NoteUserAgentUpdate(J *ua) {
+    JAddStringToObject(ua, "app", "nf4");
+}
+
 void rotateContent() {
   //Rotate items on the display based on interval
   J *itemsToDisplay = state.displayObject->child;

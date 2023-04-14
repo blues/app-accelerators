@@ -11,6 +11,7 @@ Monitor refrigerator temperature, humidity, and power using a Notecard and a BME
     - [Configure Notehub Project and Connection Mode](#configure-notehub-project-and-connection-mode)
     - [Configure Periodic Environmental Measurements](#configure-periodic-environmental-measurements)
     - [Configure Power Outage Alerts](#configure-power-outage-alerts)
+    - [Notecard CLI](#notecard-cli)
   - [System Test](#system-test)
     - [Setup](#setup)
     - [Viewing Environmental Data](#viewing-environmental-data)
@@ -52,7 +53,7 @@ The Notecard should use [firmware version 3.5.1](https://dev.blues.io/notecard/n
 Set the ProductUID for the Notecard by pasting the command below into the in-browser terminal. Make sure to replace `com.your-company:your-product-name` with the ProductUID from your Notehub project, which can be found below your project's name in the dashboard at https://notehub.io. Also, replace the placeholder serial number (`"sn:" "fridge-location"`) with the location of your fridge (e.g. "kitchen").
 
 ```json
-{ "req": "hub.set", "mode": "periodic", "outbound": 3, "product": "com.your-company:your-product-name", "sn": "fridge-location" }
+{ "req": "hub.set", "mode": "periodic", "outbound": 3, "product": "com.your-company:your-product-name", "sn": "fridge-location", "body":{"app":"nf17"} }
 ```
 
 This app uses `periodic` mode to minimize power use so that the solution can remain online for longer when mains power fails. `"outbound": 3` is the max wait time, in minutes, to sync outbound data from the Notecard. For more details, see [our Essential Requests documentation for `hub.set`](https://dev.blues.io/notecard/notecard-walkthrough/essential-requests/#notehub-configuration).

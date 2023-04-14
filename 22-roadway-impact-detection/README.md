@@ -8,6 +8,10 @@ Detect when a vehicle or other object collides with another object on a roadway.
   - [Hardware Setup](#hardware-setup)
   - [Notecard Firmware](#notecard-firmware)
   - [Testing](#testing)
+    - [`hub.set`](#hubset)
+    - [`card.voltage`](#cardvoltage)
+    - [`card.motion.mode`](#cardmotionmode)
+    - [`card.motion.sync`](#cardmotionsync)
     - [Notecard CLI](#notecard-cli)
 
 ## You Will Need
@@ -38,7 +42,7 @@ With the Notecarrier connected to your development PC, navigate to https://dev.b
 ### [`hub.set`](https://dev.blues.io/reference/notecard-api/hub-requests/#hub-set)
 
 ```json
-{ "req": "hub.set", "product" : "com.your-company:your-product-name", "sn": "a-serial-number" }
+{ "req": "hub.set", "product" : "com.your-company:your-product-name", "sn": "a-serial-number", "body":{"app":"nf22"} }
 ```
 
 This command sets the Notecard's ProductUID and serial number. Make sure to replace "com.your-company:your-product-name" with your ProductUID from [Notehub Setup](#notehub-setup). Also, replace "a-serial-number" with a relevant identifier for the object that the Notecard will be attached to (e.g. "mile marker 100", if this were a real world scenario).

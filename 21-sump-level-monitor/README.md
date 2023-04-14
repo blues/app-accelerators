@@ -46,7 +46,7 @@ With the hardware assembled and firmware updated, it's time to configure the Not
 ### [`hub.set`](https://dev.blues.io/reference/notecard-api/hub-requests/#hub-set)
 
 ```json
-{ "req": "hub.set", "product": "com.your-company:your-product-name" }
+{ "req": "hub.set", "product": "com.your-company:your-product-name", "body":{"app":"nf21"} }
 ```
 
 Make sure to replace `com.your-company:your-product-name` with your ProductUID from [Notehub Setup](#notehub-setup).

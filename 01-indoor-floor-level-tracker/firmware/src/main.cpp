@@ -558,3 +558,8 @@ void displayReadings(const sensorReadings &readings)
   display.display();
 #endif
 }
+
+void NoteUserAgentUpdate(J *ua) {
+    JAddStringToObject(ua, "app", "nf1");
+}
+

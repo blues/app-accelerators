@@ -74,7 +74,7 @@ The Notecard should use [firmware version 3.5.1](https://dev.blues.io/notecard/n
 Set the ProductUID for the Notecard by pasting the command below into the in-browser terminal. Make sure to replace `com.your-company:your-product-name` with the ProductUID from your Notehub project, which can be found below your project's name in the dashboard at https://notehub.io. Also, replace the placeholder serial number (`"sn":"motor-location"`) with the location or other identifier for your motor.
 
 ```json
-{ "req": "hub.set", "mode": "periodic", "outbound": 5, "product": "com.your-company:your-product-name", "sn": "motor-location" }
+{ "req": "hub.set", "mode": "periodic", "outbound": 5, "product": "com.your-company:your-product-name", "sn": "motor-location", "body":{"app":"nf20"} }
 ```
 
 This app uses `continuous` mode with immediate sync for maximum responsiveness and minimal wait time sending data to the cloud. For more details, see [our Essential Requests documentation for `hub.set`](https://dev.blues.io/notecard/notecard-walkthrough/essential-requests/#notehub-configuration).
