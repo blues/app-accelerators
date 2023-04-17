@@ -1,0 +1,76 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Zephyr: Build Application",
+            "type": "shell",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "command": [
+                "west build --board ${config:board} --pristine=always ${workspaceRoot}"
+            ]
+        },
+        {
+            "label": "Zephyr: Rebuild Application",
+            "type": "shell",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build"
+            },
+            "command": [
+                "west build --board ${config:board} ${workspaceRoot}"
+            ]
+        },
+        {
+            "label": "Zephyr: Flash Firmware",
+            "type": "shell",
+            "problemMatcher": [],
+            "command": [
+                "west flash"
+            ]
+        },
+        {
+            "label": "Zephyr: Rebuild and Flash Firmware",
+            "type": "shell",
+            "problemMatcher": [],
+            "command": [
+                "west flash"
+            ],
+            "dependsOn": [
+                "Zephyr: Rebuild Application"
+            ]
+        },
+        {
+            "label": "Zephyr: List Boards",
+            "type": "shell",
+            "problemMatcher": [],
+            "command": [
+                "west boards"
+            ]
+        },
+        {
+            "label": "Zephyr: Menu Config",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}/build",
+                "env": {
+                    "BOARD": "${config:board}",
+                    "LC_ALL": "C"
+                }
+            },
+            "problemMatcher": [],
+            "command": [
+                "ninja menuconfig"
+            ]
+        }
+    ]
+}
