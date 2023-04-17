@@ -6,7 +6,7 @@
 #include <zephyr/kernel.h>
 
 // Notecard headers.
-#include "note.h"
+#include "NotecardEnvVarManager.h"
 
 // Application headers.
 #include "env_updater.h"
@@ -15,6 +15,7 @@
 struct EnvUpdaterCtx {
     PublisherCtx *publisherCtx;
     AlarmPublisherCtx *alarmPublisherCtx;
+    NotecardEnvVarManager *envVarManager;
     struct k_work envUpdateWorkItem;
     struct k_timer envUpdateTimer;
     uint32_t envLastModTime;
@@ -25,194 +26,53 @@ struct EnvUpdaterCtx {
 static void envUpdateTimerCb(struct k_timer *timer);
 static void envUpdateWorkCb(struct k_work *item);
 
-static bool envUpdate(EnvUpdaterCtx* ctx)
+static const char *watchVars[] = {
+    "monitor_interval",
+    "temperature_min",
+    "temperature_max",
+    "humidity_min",
+    "humidity_max"
+};
+static const size_t numWatchVars = sizeof(watchVars) / sizeof(watchVars[0]);
+
+static void envVarManagerCb(const char *var, const char *val, void *userCtx)
 {
-    if (ctx == NULL) {
-        printk("envUpdate: error: Called with NULL ctx.\n");
-        return false;
-    }
-    if (ctx->publisherCtx == NULL) {
-        printk("envUpdate: error: Called with NULL ctx->publisherCtx.\n");
-        return false;
-    }
+    EnvUpdaterCtx* envUpdaterCtx = (EnvUpdaterCtx*)userCtx;
+    float value;
+    char *endPtr;
 
-    J *rsp = NoteRequestResponse(NoteNewRequest("env.modified"));
-    if (rsp == NULL) {
-        printk("envUpdate: error: NULL response to env.modified.\n");
-        return false;
+    value = strtof(val, &endPtr);
+    if ((value == 0 && val == endPtr) || value < 0) {
+        printk("envVarManagerCb: error: Failed to convert %s to positive float "
+            "for %s.\n", val, var);
+        return;
     }
 
-    uint32_t modifiedTime = JGetInt(rsp, "time");
-    NoteDeleteResponse(rsp);
-    // If the last modified timestamp is the same as the one we've got saved,
-    // there have been no changes.
-    if (ctx->envLastModTime == modifiedTime) {
-        return true;
+    if (strcmp(var, "monitor_interval") == 0) {
+        uint32_t interval = (uint32_t)(value);
+        printk("envVarManagerCb: Monitor interval set to %u seconds.\n",
+            interval);
+        // If the monitor interval changed, we need to restart the publisher
+        // using the new interval value.
+        publisherStop(envUpdaterCtx->publisherCtx);
+        publisherStart(envUpdaterCtx->publisherCtx, interval);
     }
-
-    ctx->envLastModTime = modifiedTime;
-
-    printk("envUpdate: Environment variable changed detected.\n");
-
-    bool updated = false;
-    J *req = NoteNewRequest("env.get");
-    if (req == NULL) {
-        printk("envUpdate: error: Failed to allocate env.get Note.\n");
-        return false;
+    else if (strcmp(var, "temperature_min") == 0) {
+        alarmPublisherUpdateTempMin(envUpdaterCtx->alarmPublisherCtx, value);
+        printk("envVarManagerCb: Temperature min set to %sF.\n", val);
     }
-
-    J *names = JAddArrayToObject(req, "names");
-    JAddItemToArray(names, JCreateString("monitor_interval"));
-    JAddItemToArray(names, JCreateString("temperature_threshold_min"));
-    JAddItemToArray(names, JCreateString("temperature_threshold_max"));
-    JAddItemToArray(names, JCreateString("humidity_threshold_min"));
-    JAddItemToArray(names, JCreateString("humidity_threshold_max"));
-
-    rsp = NoteRequestResponse(req);
-    if (rsp != NULL) {
-        if (NoteResponseError(rsp)) {
-            NoteDeleteResponse(rsp);
-            printk("envUpdate: error: Error in env.get response.\n");
-            return false;
-        }
-        else {
-            J *body = JGetObject(rsp, "body");
-            if (body != NULL) {
-                char *valueStr = JGetString(body, "monitor_interval");
-                float value;
-                char *endPtr;
-
-                if (valueStr != NULL && strlen(valueStr) > 0) {
-                    value = strtof(valueStr, &endPtr);
-                    if ((value == 0 && valueStr == endPtr) || value < 0) {
-                        printk("envUpdate: error: Failed to convert %s to "
-                            "positive float for monitor interval.\n", valueStr);
-                    }
-                    else {
-                        uint32_t interval = (uint32_t)(value);
-                        updated = true;
-                        printk("envUpdate: Monitor interval set to %u seconds."
-                            "\n", interval);
-
-                        // If the monitor interval changed, we need to restart
-                        // the publisher using the new interval value.
-                        publisherStop(ctx->publisherCtx);
-                        publisherStart(ctx->publisherCtx, interval);
-                    }
-                }
-
-                valueStr = JGetString(body, "temperature_threshold_min");
-                if (valueStr != NULL && strlen(valueStr) > 0) {
-                    value = strtof(valueStr, &endPtr);
-                    if ((value == 0 && valueStr == endPtr) || value < 0) {
-                        printk("envUpdate: error: Failed to convert %s to "
-                            "positive float for temperature min.\n", valueStr);
-                    }
-                    else {
-                        alarmPublisherUpdateTempMin(ctx->alarmPublisherCtx,
-                            value);
-                        updated = true;
-                        printk("envUpdate: Temperature min set to %sC.\n",
-                            valueStr);
-                    }
-                }
-
-                valueStr = JGetString(body, "temperature_threshold_max");
-                if (valueStr != NULL && strlen(valueStr) > 0) {
-                    value = strtof(valueStr, &endPtr);
-                    if ((value == 0 && valueStr == endPtr) || value < 0) {
-                        printk("envUpdate: error: Failed to convert %s to "
-                            "positive float for temperature max.\n", valueStr);
-                    }
-                    else {
-                        alarmPublisherUpdateTempMax(ctx->alarmPublisherCtx,
-                            value);
-                        updated = true;
-                        printk("envUpdate: Temperature max set to %sC.\n",
-                            valueStr);
-                    }
-                }
-
-                valueStr = JGetString(body, "humidity_threshold_min");
-                if (valueStr != NULL && strlen(valueStr) > 0) {
-                    value = strtof(valueStr, &endPtr);
-                    if ((value == 0 && valueStr == endPtr) || value < 0) {
-                        printk("envUpdate: error: Failed to convert %s to "
-                            "positive float for humidity min.\n", valueStr);
-                    }
-                    else {
-                        alarmPublisherUpdateHumidMin(ctx->alarmPublisherCtx,
-                            value);
-                        updated = true;
-                        printk("envUpdate: Humidity min set to %s%%.\n",
-                            valueStr);
-                    }
-                }
-
-                valueStr = JGetString(body, "humidity_threshold_max");
-                if (valueStr != NULL && strlen(valueStr) > 0) {
-                    value = strtof(valueStr, &endPtr);
-                    if ((value == 0 && valueStr == endPtr) || value < 0) {
-                        printk("envUpdate: error: Failed to convert %s to "
-                            "positive float for humidity max.\n", valueStr);
-                    }
-                    else {
-                        alarmPublisherUpdateHumidMax(ctx->alarmPublisherCtx,
-                            value);
-                        updated = true;
-                        printk("envUpdate: Humidity max set to %s%%.\n",
-                            valueStr);
-                    }
-                }
-            }
-            else {
-                printk("envUpdate: error: NULL body in response to env.get "
-                    "request.\n");
-                NoteDeleteResponse(rsp);
-                return false;
-            }
-        }
-
-        NoteDeleteResponse(rsp);
+    else if (strcmp(var, "temperature_max") == 0) {
+        alarmPublisherUpdateTempMax(envUpdaterCtx->alarmPublisherCtx, value);
+        printk("envVarManagerCb: Temperature max set to %sF.\n", val);
     }
-    else {
-        printk("envUpdate: error: NULL response to env.get request.\n");
-        return false;
+    else if (strcmp(var, "humidity_min") == 0) {
+        alarmPublisherUpdateHumidMin(envUpdaterCtx->alarmPublisherCtx, value);
+        printk("envVarManagerCb: Humidity min set to %s%%.\n", val);
     }
-
-    if (updated) {
-        // Acknowledge the update.
-        req = NoteNewRequest("note.add");
-        if (req != NULL) {
-            JAddStringToObject(req, "file", "notify.qo");
-            JAddBoolToObject(req, "sync", true);
-
-            J *body = JCreateObject();
-            if (body != NULL) {
-                JAddStringToObject(body, "message", "environment variable "
-                    "update received");
-                JAddItemToObject(req, "body", body);
-                if (!NoteRequest(req)) {
-                    printk("envUpdate: error: Failed to send update "
-                        "acknowledgment.\n");
-                    return false;
-                }
-            }
-            else {
-                JDelete(req);
-                printk("envUpdate: error: Failed to create note body for update"
-                    " acknowledgment.\n");
-                return false;
-            }
-        }
-        else {
-            printk("envUpdate: error: Failed to create note.add request for "
-                "update acknowledgment.\n");
-            return false;
-        }
+    else if (strcmp(var, "humidity_max") == 0) {
+        alarmPublisherUpdateHumidMax(envUpdaterCtx->alarmPublisherCtx, value);
+        printk("envVarManagerCb: Humidity max set to %s%%.\n", val);
     }
-
-    return true;
 }
 
 /**
@@ -237,6 +97,29 @@ EnvUpdaterCtx *envUpdaterInit(PublisherCtx* publisherCtx,
         return NULL;
     }
     memset(ctx, 0, sizeof(*ctx));
+
+    ctx->envVarManager = NotecardEnvVarManager_alloc();
+    if (ctx->envVarManager == NULL) {
+        printk("envUpdaterInit: error: NotecardEnvVarManager_new failed.\n");
+        free(ctx);
+        return NULL;
+    }
+    if (NotecardEnvVarManager_setEnvVarCb(ctx->envVarManager, envVarManagerCb,
+            ctx) != NEVM_SUCCESS) {
+        printk("envUpdaterInit: error: NotecardEnvVarManager_setEnvVarCb "
+            "failed.\n");
+        NotecardEnvVarManager_free(ctx->envVarManager);
+        free(ctx);
+        return NULL;
+    }
+    if (NotecardEnvVarManager_setWatchVars(ctx->envVarManager, watchVars,
+            numWatchVars) != NEVM_SUCCESS) {
+        printk("envUpdaterInit: error: NotecardEnvVarManager_setWatchVars "
+            "failed.\n");
+        NotecardEnvVarManager_free(ctx->envVarManager);
+        free(ctx);
+        return NULL;
+    }
 
     ctx->publisherCtx = publisherCtx;
     ctx->alarmPublisherCtx = alarmPublisherCtx;
@@ -316,5 +199,5 @@ static void envUpdateTimerCb(struct k_timer *timer)
 static void envUpdateWorkCb(struct k_work *item)
 {
     EnvUpdaterCtx *ctx = CONTAINER_OF(item, EnvUpdaterCtx, envUpdateWorkItem);
-    envUpdate(ctx);
+    NotecardEnvVarManager_process(ctx->envVarManager);
 }

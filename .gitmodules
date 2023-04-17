@@ -40,3 +40,6 @@
 [submodule "18-temperature-and-humidity-monitor/firmware/zephyr/src/note-c"]
 	path = 18-temperature-and-humidity-monitor/firmware/zephyr/src/note-c
 	url = https://github.com/blues/note-c
+[submodule "18-temperature-and-humidity-monitor/firmware/zephyr/src/notecard_env_var_manager"]
+	path = 18-temperature-and-humidity-monitor/firmware/zephyr/src/notecard_env_var_manager
+	url = https://github.com/blues/notecard-env-var-manager.git

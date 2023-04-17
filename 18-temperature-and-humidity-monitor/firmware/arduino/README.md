@@ -54,7 +54,7 @@ The Notecard should use [firmware version 3.5.1](https://dev.blues.io/notecard/n
 ## Swan Firmware Setup
 
 1. Open Visual Studio Code.
-2. Click the PlatformIO icon on the left hand side and open this project's `firmware` folder with Quick Access > PIO Home > Open > Open Project.
+2. Click the PlatformIO icon on the left hand side and open this project's `firmware/arduino` folder with Quick Access > PIO Home > Open > Open Project.
 3. Open the file `src/main.cpp`. Uncomment this line
 
 ```c

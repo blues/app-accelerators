@@ -98,7 +98,7 @@ void main(void)
     // Initialize note-c references.
     NoteSetFnDefault(malloc, free, platform_delay, platform_millis);
     NoteSetFnDebugOutput(noteLogPrint);
-    NoteSetFnMutex(NULL, NULL, lockNotecard, unlockNotecard);
+    NoteSetFnNoteMutex(lockNotecard, unlockNotecard);
     NoteSetFnI2C(NOTE_I2C_ADDR_DEFAULT, NOTE_I2C_MAX_DEFAULT, noteI2cReset,
                  noteI2cTransmit, noteI2cReceive);
 
@@ -110,7 +110,6 @@ void main(void)
     // Sync outbound data every OUTBOUND_SYNC_INTERVAL minutes. Alarm notes will
     // still be synced immediately.
     JAddNumberToObject(req, "outbound", OUTBOUND_SYNC_INTERVAL);
-    JAddBoolToObject(req, "sync", true);
     // The hub.set request may fail if it's sent shortly after power up. We use
     // NoteRequestWithRetry to give it a chance to succeed.
     if (!NoteRequestWithRetry(req, HUB_SET_TIMEOUT)) {
