@@ -26,7 +26,7 @@ struct EnvUpdaterCtx {
 static void envUpdateTimerCb(struct k_timer *timer);
 static void envUpdateWorkCb(struct k_work *item);
 
-static const char *watchVars[] = {
+static const char *envVars[] = {
     "monitor_interval",
     "temperature_min",
     "temperature_max",
@@ -34,7 +34,7 @@ static const char *watchVars[] = {
     "humidity_max",
     "heat_index_max"
 };
-static const size_t numWatchVars = sizeof(watchVars) / sizeof(watchVars[0]);
+static const size_t numEnvVars = sizeof(envVars) / sizeof(envVars[0]);
 
 static void envVarManagerCb(const char *var, const char *val, void *userCtx)
 {
@@ -113,14 +113,6 @@ EnvUpdaterCtx *envUpdaterInit(PublisherCtx* publisherCtx,
     if (NotecardEnvVarManager_setEnvVarCb(ctx->envVarManager, envVarManagerCb,
             ctx) != NEVM_SUCCESS) {
         printk("envUpdaterInit: error: NotecardEnvVarManager_setEnvVarCb "
-            "failed.\n");
-        NotecardEnvVarManager_free(ctx->envVarManager);
-        free(ctx);
-        return NULL;
-    }
-    if (NotecardEnvVarManager_setWatchVars(ctx->envVarManager, watchVars,
-            numWatchVars) != NEVM_SUCCESS) {
-        printk("envUpdaterInit: error: NotecardEnvVarManager_setWatchVars "
             "failed.\n");
         NotecardEnvVarManager_free(ctx->envVarManager);
         free(ctx);
@@ -205,5 +197,5 @@ static void envUpdateTimerCb(struct k_timer *timer)
 static void envUpdateWorkCb(struct k_work *item)
 {
     EnvUpdaterCtx *ctx = CONTAINER_OF(item, EnvUpdaterCtx, envUpdateWorkItem);
-    NotecardEnvVarManager_process(ctx->envVarManager);
+    NotecardEnvVarManager_fetch(ctx->envVarManager, envVars, numEnvVars);
 }
