@@ -217,8 +217,13 @@ public:
 
     template <typename S> void toStream(S& s, J* item) {
         char buf[256];
-        JPrintPreallocated(item, buf, sizeof(buf), false);
-        s.println(buf);
+        if (hasChildren(item)) {
+            JPrintPreallocated(item, buf, sizeof(buf), false);
+            s.println(buf);
+        }
+        else {
+            s.println("none");
+        }
     }
 };
 

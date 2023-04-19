@@ -1,7 +1,7 @@
 # Greenhouse Monitor
 
 Monitor ambient light and temperature, soil moisture and soil temperature and send alerts
-when these fall outside specified ranges.
+when any of these fall outside specified ranges.
 
 - [Greenhouse Monitor](#greenhouse-monitor)
   - [Solution Summary](#solution-summary)
@@ -30,7 +30,7 @@ when these fall outside specified ranges.
 
 ## Solution Summary
 
-This app provides a simple to construct greenhouse monitoring device that can be deployed inside greenhouse to monitor soil moisture and temperature and ambient light and temperature. Using off-the-shelf hardware and modular components, this solution can be used to add monitoring to an existing greenhouse.
+This app provides a simple to construct greenhouse monitoring device that can be deployed inside a greenhouse to monitor soil moisture and temperature and ambient light and temperature. Using off-the-shelf hardware and modular components, this solution can be used to add monitoring to an existing greenhouse.
 
 ## You Will Need
   * A [Blues Starter Kit](https://shop.blues.io/collections/blues-starter-kits), that contains amongst other things
@@ -56,53 +56,57 @@ This app provides a simple to construct greenhouse monitoring device that can be
 
     1. Insert the Qwiic JST cable connector into one of the `F_I2C` connectors on the edge of the Notecarrier-F next to the USB port. You may also connect it to the I2C connector on the Swan.
 
-    2. Insert the other end of the qwiic JST cable into the BM280 breakout board
+    2. Insert the other end of the Qwiic JST cable into one of the JST connectors on the BM280 breakout board.
 
-3. Connect the phototransistor:
+3. Connect the photo transistor:
 
-   1. Connect the 3 jumper wires as follows
+   1. Connect the 3 jumper wires between the Notecarrier and breadboard as follows
       * `GND` on Notecarrier to the negative rail at the edge of the breadboard
       * `VMAIN` on Notecarrier to the positive power rail at the edge the breadboard
-      * `A0` on Notecarrier to a row of points on the breadboard
+      * `A1` on Notecarrier to a row of points on the breadboard
 
-    2. Insert one leg of the 1k&Omega; resistor into the ground rail and the other leg to the same row of points connected to A0 in last step above.
+    2. Insert one leg of the 1k&Omega; resistor into the ground rail and the other leg to the same row of points connected to `A1` in last step above.
 
-    3. Insert the longer leg of the phototransistor into the positive power rail and the shorter leg into the same row of points as the A0 wire.
+    3. Insert the longer leg of the photo transistor into the positive power rail and the shorter leg into the same row of points as the A1 wire.
 
     ![](./assets/phototransistor.png)
 
 4. Connect the STEMMA connector to the soil sensor. Connect the colored male jumper wires at the other end of the cable as follows:
 
-   * <span style="color:black;background:white">BLACK</span> to the negative power rail on the breadboard
-   * <span style="color:red">RED</span> to the positive power rail on the breadboard
-   * <span style="color:white;background:grey">WHITE</span> to SDA on the Notecarrier
-   * <span style="color:green">GREEN</span> to SCL on the Notecarrier
+   * <span style="color:black;background:white">BLACK</span> to the negative power rail on the breadboard.
+   * <span style="color:red">RED</span> to the positive power rail on the breadboard.
+   * <span style="color:white;background:grey">WHITE</span> to `SDA` on the Notecarrier.
+   * <span style="color:green">GREEN</span> to `SCL` on the Notecarrier.
 
-5. Connect the Swan to your computer using a micro-USB cable. This is so that the firmware can be uploaded to the Swan.
+  The assembled hardware should look similar to this:
+  ![](assets/hardware.jpg)
+  ![](./assets/breadboard.jpg)
 
+5. Connect the Swan to your computer using a micro-USB cable. This is so that the firmware can be uploaded and allows the app to be monitored over USB serial.
+
+6. Optionally, connect an SWD programmer, such as ST-Link Mini, to the Swan using the ribbon cable, and to your computer using a micro-USB cable. This makes it possible to upload firmware without needing to press buttons on the Swan and enables step debugging with the VSCode IDE.
 
 ## Notehub
 
 Sign up for a free account on [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub).
 
-This solution can be used to monitor a single greenhouse, or monitor multiple greenhouses at a facility. When monitoring multiple greenhouses at a facility, it can be useful to group the monitors at a facility into a Fleet. For more details, see [The Fleet Administrator's Guide](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/).
+This solution can be used to monitor a single greenhouse, or monitor multiple greenhouses at a facility by deploying multiple instances of this app. When monitoring multiple greenhouses at a facility, it can be useful to group the monitors at a facility into a Fleet. For more details, see [The Fleet Administrator's Guide](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/).
 
 ## Application Firmware
 
-The application firmware found under the [firmware](./firmware/) folder can be built using these development environments:
+The application firmware is found under the [firmware](./firmware/) folder and can be built and uploaded to Swan using these development environments:
 
 * PlatformIO extension for Visual Studio Code
 * Arduino extension for Visual Studio Code
 * Arduino IDE
 
-We recommend using one of the VS Code extensions, since they are easier to set up and use, and provide a comprehensive development experience. However, if you're familiar with the Arduino IDE, that can be used as well but requires a little more setup.
+We recommend using the PlatformIO extension for Visual Studio Code, as this is the easiest to set up and use, and provides a comprehensive development experience. However, if you're familiar with the Arduino IDE, that can be used as well but requires a little more setup.
 
 ### PlatformIO extension for VS Code
 
-There is no special setup required for the project beyond what is normally required to configure a PlatformIO project in VSCode.
-[This tutorial](https://dev.blues.io/quickstart/swan-quickstart/#using-the-vs-code-platformio-extension) explains how to install and use the PlatformIO.
+There is no special setup required for the project beyond what is normally required to configure a PlatformIO project in VSCode. [This tutorial](https://dev.blues.io/quickstart/swan-quickstart/#using-the-vs-code-platformio-extension) explains how to install and use the PlatformIO.
 
-The PlatformIO project is located in the `firmware` folder, where you'll find `platformio.ini` that configures the project, including libraries required, location of the sources and compile-time definitions required.
+The PlatformIO project is located in the `firmware` folder, where you'll find `platformio.ini` that configures the project, including the libraries required, location of the sources and compile-time definitions required.
 
 ### Arduino Extension for VS Code
 
@@ -128,18 +132,18 @@ When using the Arduino extension for VS Code, or the Arduino IDE, install these 
 
 #### Arduino IDE - Compiling/Uploading
 
-To compile and upload the power monitoring firmware, open the sketch at [`firmware/greenhouse/greenhouse.ino`](firmware/greenhouse/greenhouse.ino) from this repo.
+To compile and upload the app firmware, open the sketch at [`firmware/greenhouse/greenhouse.ino`](firmware/greenhouse/greenhouse.ino) in the Arduino IDE.
 
 
 ### Configuring the ProductUID
 
-Before uploading the firmware to Swan, you should set the `ProductUID` to correspond to the project you created in [Notehub setup](#notehub) earlier.
+Before uploading the app firmware, you should set the `ProductUID` to correspond to the project you created in [Notehub setup](#notehub) earlier.
 
 There are two ways to configure the `ProductUID`, either using the in-browser terminal to send a request to the Notecard, or by editing the firmware source code. For more details on what the `ProductUID` is and how it set it please see [this guide](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid).
 
 #### Using the In-browser terminal
 
-1. Connect the Notecarrier to your computer using a micro USB cable.
+1. Connect the Notecarrier to your computer using a micro-USB cable.
 2. Launch the in-browser terminal at [blues.dev](https://dev.blues.io/notecard-playground/)
 3. Click the "USB Notecard" button under "Connect a Notecard".
 4. Select the Notecard to connect to and click "Connect".
@@ -153,8 +157,8 @@ There are two ways to configure the `ProductUID`, either using the in-browser te
 You can also omit the serial number use Notehub to set it:
 
 1. Open the project in Notehub.
-2. From the list of devices, double click the device that has the serial number you want to set.
-3. In the "Summary" tab, use the pencil icon to edit the Serial Number field.
+2. From the list of devices, double click the device whose serial number you want to set.
+3. In the "Summary" tab, use the pencil icon to edit the "Serial Number" field.
 
 #### Editing the Source Code
 
@@ -164,16 +168,22 @@ You can also set the `ProductUID` in the source code. Open `app.h` in your IDE a
 #define PRODUCT_UID ""		// "com.my-company.my-name:my-project"
 ```
 
-pasting in the `ProductUID` from your notehub project between the first pair of quotes.
+pasting in the `ProductUID` from your Notehub project between the first pair of quotes.
 
 
 ## Testing
 
-To ensure the setup is working as expected, it's a good idea to test the application before deploying it in a real-life setting.
+To ensure the setup is working as expected, it's a good idea to test the application before deploying it in a real-life setting. The following sections describe how to configure and use the app.
 
 ### App Configuration
 
-The app is configured using environment variables. Configuration includes how often the sensors are read and checked for alerts, how often monitoring events are sent and how often environment variables checked and how often the sensors are read.
+The app is configured using environment variables to set
+
+* how often environment variables are checked,
+* how often the sensors are read and checked for alerts, and
+* how often monitoring events are sent.
+
+These variables control the overall app behavior:
 
 * `environment_update_mins` How often (in minutes) to check for environment variable updates from the Notecard. When not set, the default value is 5 minutes.
 
@@ -200,11 +210,11 @@ The app senses and reports these values:
 
 * `light_level`: an indication of the ambient light level. A higher value means more ambient light, a lower value means less ambient light.
 
-The sensor names are used both to report the values in monitoring and alert events, and as environment variable names to configure alert thresholds.
+The sensor names are used both to report the values in monitoring and alert events, and as part of the environment variable names that you use to configure [alert thresholds](#alerts).
 
 ### Monitoring Events
 
-Every `report_mins` mins, a monitoring event is sent to `greenhouse.qo`. The event contains
+The app sends a monitoring event to `greenhouse.qo` every `report_mins` minutes. The event contains
 the readings of all sensors.
 
 ```json
@@ -219,18 +229,20 @@ the readings of all sensors.
 }
 ```
 
+When alert thresholds are configured, and one or more sensor readings is outside of the normal range, the event also includes `alert` and `alert_seq` properties to indicate the severity of the alert and the progress of the alert. See the section on [Alerts](#alerts) for details about these properties.
+
 ### Configuration Updates and Errors
 
 When environment variables are changed, the app posts an event to `notify.qo`. The event contains details of which values changed and any configuration errors.
 
-For example, setting the environment variable `environment_update_mins` to 60 produces this notification:
+For example, setting the environment variable `environment_update_mins` to 1 produces this notification, indicating that the environment variable changed from the default of 5 minutes to 1 minute.
 
 ```json
 {
     "updates": {
         "environment_update_mins": {
-            "new_value": 60,
-            "old_value": 300
+            "new_value": 1,
+            "old_value": 5
         }
     }
 }
@@ -252,10 +264,10 @@ Changing several variables, with some of them set incorrectly leads to both upda
     },
     "updates": {
         "light_level_normal_high": {
-            "new_value": 80
+            "new_value": 2000
         },
         "light_level_normal_low": {
-            "new_value": 31
+            "new_value": 20
         }
     }
 }
@@ -263,26 +275,26 @@ Changing several variables, with some of them set incorrectly leads to both upda
 
 ## Alerts
 
-In addition to reporting the sensor values, the app can send an alert should a particular sensor value be too high or too low. The app uses environment variables to configure alert ranges, and each sensor has its own set of alert ranges. The alert ranges are:
+In addition to reporting the sensor values, the app can send an alert should a particular sensor value be too high or too low. The app uses environment variables to configure alert ranges for each sensor. The alert ranges are:
 
-* `normal`: describes the normal range of values for the sensor. The app sends a `warning` alert when the measured value falls outside this range.
+* `normal`: Describes the normal range of values for the sensor. The app sends a `warning` alert when the sensor value is higher than the `high` threshold or lower than the `low` threshold.
 
-* `warning`: describes the range of values for which the app sends a `warning` alert. When defined, values falling outside the `warning` range produce a `critical` alert. Values outside the `normal` range but within the `warning` range produce a `warning` alert.
+* `warning`: Describes the range of values for which the app sends a `warning` alert. When defined, values falling outside the `warning` range produce a `critical` alert. Values inside the `warning` range but outside the `normal` range produce a `warning` alert.
 
-The ranges are configured using environment variables that include the sensor name and  range to set, following this format:
+You configure the ranges using environment variables that include the sensor name and range to set, following this format:
 
-  * `<sensor-name>_<range>_low`: configures the lower bound of a range for the named sensor
-  * `<sensor-name>_<range>_high`: configures the upper bound of the range for the named sensor
+  * `<sensor-name>_<range>_low`: Configures the lower bound of a range for the named sensor.
+  * `<sensor-name>_<range>_high`: Configures the upper bound of the range for the named sensor.
 
-> **Note**: You don't have to configure both `high` an `low` values for a range - the application only checks the thresholds provided.
+> **Note**: You don't have to configure both `high` an `low` values for a range - the application checks just the thresholds provided.
 
 Some examples:
 
-* `light_level_normal_low=100`: sets the lower bound of the normal readings from the `light_level` sensor to 100. An alert is produced when the `light_level` value falls below 100.
+* `light_level_normal_low=100`: sets the lower bound of normal readings from the `light_level` sensor to 100. A `warning` alert is produced when the `light_level` value is below 100.
 
 * `soil_temp_normal_high=40`, `soil_temp_warning_high=50`: sets the upper bound for normal and warning ranges for the `soil_temp` sensor. With this configuration, alerts are produced as follows:
 
-  * Ao alert is produced when the soil temperature is below 40.
+  * No alert is produced when the soil temperature is below 40.
 
   * A warning alert is produced when the soil temperature is between 40 and 50.
 
@@ -328,28 +340,29 @@ When the app detects an alert condition, it captures details of the alert and se
 
 The event has these properties:
 
-* `alert`: Describes the overall alert level. This is the combined alert level of all of the sensors. Values are `warning`, `critical` or not present, meaning no alert, such as when a previous alert condition has been cleared.
+* `alert`: Describes the overall alert level. This is the combined alert level of all of the sensors. Values are `warning`, `critical` or not present, meaning no alert, which happens when sensor readings return to normal.
 
-* `alert_seq`: Distinguishes between the start of an alert, when an alert is ongoing and when an alert has been cleared because the values have returned to normal.
+* `alert_seq`: Distinguishes between the start of an alert, an ongoing alert, and when an alert has been cleared. The property has these values:
 
-  * `first`: this is set when an alert condition is first detected. The event is sent immediately.
+  * `first`: This is set when the first alert event is sent. The event is sent immediately.
 
-  * `ongoing`: this is set when the alert condition is still present and the alert is ongoing. The event is sent every `report_mins` as long as the alert condition is still present.
+  * `ongoing`: This is set when the alert condition is still present and the alert is ongoing. An event is sent every `report_mins` minutes for as long as the alert condition is still present.
 
-  * `cleared`: this is set when the alert condition is no longer present and the alert is cleared. The event is sent immediately at the end of the alert.
+  * `cleared`: This is set when the alert condition is no longer present and the alert is cleared. The event is sent immediately at the end of the alert.
 
- * `status`: describes the status of the sensor value:
+ * `status`: Describes the status of a sensor value:
 
-   * `ok`: the sensor value is in normal range, that is, above any configured low threshold and lower than any configured high threshold.
-   * `low`: the value is too low.
-   * `high`: the value is too high.
+   * `ok`: The sensor value is in normal range, that is, above any configured low threshold and lower than any configured high threshold.
 
->**Note**: The `alert_seq` field makes it easy to detect when an alert starts and stops. You can use this to send external notifications when an alert is detected and when it is cleared, as well as providing reminders that the alert is ongoing.
+   * `low`: The sensor value is too low.
 
+   * `high`: The sensor value is too high.
+
+>**Note**: The `alert_seq` field makes it easy to detect when an alert starts and stops. You can use this to send external notifications immediately when an alert is detected and when it is cleared. Events with `alert_seq` set to `ongoing` provide periodic reminders that the alert is still ongoing.
 
 ### Soil Moisture and Light Level
 
-The `soil_moisture` and `light_level` are scalar readings that provide an indication about soil moisture and the amount of light, with more moisture and more light resulting is higher values, and less moisture and less light resulting in lower values. We suggest you use the app in the greenhouse for a few days, and use the monitoring data to determine the normal ranges for these values. You can then set the environment variables `soil_moisture_normal_low` etc.. to reflect the expected normal range of values.
+The `soil_moisture` and `light_level` are scalar readings that correlate to the amount of moisture in the soil and the amount of light, with more moisture and more light resulting is higher values, and less moisture and less light resulting in lower values. We suggest you use the app in the greenhouse for a few days, and use the monitoring data send to `greenhouse.qo` to determine the normal ranges for these values. You can then set the environment variables `soil_moisture_normal_low` etc.. to reflect the expected normal range of values.
 
 ## Blues Community
 

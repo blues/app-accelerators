@@ -62,7 +62,11 @@ struct AlertSequence {
         return e==FIRST || e==LAST;
     }
 
-    static inline bool isAlert(Enum e) {
+    static inline bool isAlerting(Enum e) {
+        return e!=NONE;
+    }
+
+    static inline bool isActiveAlert(Enum e) {
         return e==FIRST || e==SUBSEQUENT;
     }
 };
@@ -233,6 +237,10 @@ struct AlertIntervals {
  */
 class SensorMonitor: public Environmental {
 
+    inline bool compare_float(double a, double b, double epsilon=0.01) {
+        return (fabs(a - b) < epsilon);
+    }
+
     /**
      * @brief Retrieve the value for an internal limit
      * 
@@ -252,9 +260,9 @@ class SensorMonitor: public Environmental {
             char* end;
             r = strtod(value, &end);
             if (end-value==strlen(value)) { // all characters parsed
-                if (result!=r) {
-                    result = r;
+                if (!compare_float(result, r)) {
                     update.notifyChanged(varname, result, r);
+                    result = r;
                 }
                 success = true;
             }
@@ -443,7 +451,7 @@ struct Report {
     }
 
     void endUpdate() {
-        bool wasAlerting = AlertSequence::isAlert(alertSequence);
+        bool wasAlerting = AlertSequence::isActiveAlert(alertSequence);
         alertSequence = AlertLevel::isAlert(alertLevel)
             ? (wasAlerting ? AlertSequence::SUBSEQUENT : AlertSequence::FIRST)
             : (wasAlerting ? AlertSequence::LAST : AlertSequence::NONE);
@@ -555,7 +563,7 @@ class ReportEvents {
 
     bool buildAndSendEvent(const Report& report) {
         bool success = sendMonitorEvent(report);
-        if (AlertLevel::isAlert(report.alertLevel)) {
+        if (AlertSequence::isAlerting(report.alertSequence)) {
             success = sendAlert(report);
         }
         return success;

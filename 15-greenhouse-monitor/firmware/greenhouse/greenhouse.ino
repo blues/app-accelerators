@@ -93,7 +93,7 @@ private:
 Monitor monitor;
 SeesawPeripheral seesaw;
 BME280Peripheral bme280;
-AnalogSensor light("light_level", "V", A0);
+AnalogSensor light("light_level", "V", A1);
 
 
 // adds app info to each event
@@ -184,7 +184,7 @@ void environmentUpdated(void* arg, J* environment) {
 
     setTaskIntervalFromEnvironment(update, taskPollEnvironment, "environment_update_mins", 1000*60, DEFAULT_POLL_ENVIRONMENT_INTERVAL);
     setTaskIntervalFromEnvironment(update, taskReadSensors, "monitor_secs", 1000, DEFAULT_POLL_SENSORS_INTERVAL);
-    setTaskIntervalFromEnvironment(update, taskReport, "report_mins", 1000*60, DEFAULT_POLL_SENSORS_INTERVAL);
+    setTaskIntervalFromEnvironment(update, taskReport, "report_mins", 1000*60, DEFAULT_REPORT_INTERVAL);
 
     monitor.environmentUpdated(update);
 
@@ -220,6 +220,7 @@ void setup()
     J *req = notecard.newRequest("hub.set");
     JAddStringToObject(req, "product", PRODUCT_UID);
     JAddStringToObject(req, "mode", "continuous");
+    JAddBoolToObject(req, "sync", true);
     notecard.sendRequest(req);
 
     pollEnvironment.begin();     // update the app state from the environment
