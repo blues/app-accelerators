@@ -68,8 +68,8 @@ This app provides a simple to construct greenhouse monitoring device that can be
     2. Insert one leg of the 1k&Omega; resistor into the ground rail and the other leg to the same row of points connected to A0 in last step above.
 
     3. Insert the longer leg of the phototransistor into the positive power rail and the shorter leg into the same row of points as the A0 wire.
-    
-    ![](./images/phototransistor.png)
+
+    ![](./assets/phototransistor.png)
 
 4. Connect the STEMMA connector to the soil sensor. Connect the colored male jumper wires at the other end of the cable as follows:
 
