@@ -31,7 +31,7 @@ when any of these fall outside specified ranges.
 
 ## Solution Summary
 
-This app provides a simple to construct greenhouse monitoring device that can be deployed inside a greenhouse to monitor soil moisture and temperature and ambient light and temperature. Using off-the-shelf hardware and modular components, this solution can be used to add monitoring to an existing greenhouse.
+This app provides a simple to construct greenhouse monitoring device that can be deployed inside a greenhouse. The app monitors soil moisture and soil temperature as well as ambient light and ambient temperature. Using off-the-shelf hardware and modular components, you can use this solution to add monitoring to an existing greenhouse.
 
 ## You Will Need
   * A [Blues Starter Kit](https://shop.blues.io/collections/blues-starter-kits), that contains amongst other things
@@ -66,9 +66,9 @@ This app provides a simple to construct greenhouse monitoring device that can be
       * `VMAIN` on Notecarrier to the positive power rail at the edge the breadboard
       * `A1` on Notecarrier to a row of points on the breadboard
 
-    2. Insert one leg of the 1k&Omega; resistor into the ground rail and the other leg to the same row of points connected to `A1` in last step above.
+    2. Insert one leg of the 1k&Omega; resistor into the ground rail, and the other leg to the same row of points connected to `A1` in last step above.
 
-    3. Insert the longer leg of the photo transistor into the positive power rail and the shorter leg into the same row of points as the A1 wire.
+    3. Insert the longer leg of the photo transistor into the positive power rail, and the shorter leg into the same row of points as the A1 wire.
 
     ![](./assets/phototransistor.png)
 
@@ -105,7 +105,7 @@ We recommend using the PlatformIO extension for Visual Studio Code, as this is t
 
 ### PlatformIO extension for VS Code
 
-There is no special setup required for the project beyond what is normally required to configure a PlatformIO project in VSCode. [This tutorial](https://dev.blues.io/quickstart/swan-quickstart/#using-the-vs-code-platformio-extension) explains how to install and use the PlatformIO.
+There is no special setup required for the project beyond what is normally required to configure a PlatformIO project in VSCode. [This tutorial](https://dev.blues.io/quickstart/swan-quickstart/#using-the-vs-code-platformio-extension) explains how to install and use PlatformIO.
 
 The PlatformIO project is located in the `firmware` folder, where you'll find `platformio.ini` that configures the project, including the libraries required, location of the sources and compile-time definitions required.
 
@@ -148,14 +148,14 @@ There are two ways to configure the `ProductUID`, either using the in-browser te
 2. Launch the in-browser terminal at [blues.dev](https://dev.blues.io/notecard-playground/)
 3. Click the "USB Notecard" button under "Connect a Notecard".
 4. Select the Notecard to connect to and click "Connect".
-5. The terminal will display the firmware version of Notecard.
+5. The terminal will display the firmware version of the Notecard.
 6. You can now enter a request to set the ProductUID and Serial Number of the device.
 
 ```json
 {"req":"hub.set", "product":"<your-productUID-from-notehub>", "sn":"greenhouse-monitor"}
 ```
 
-You can also omit the serial number use Notehub to set it:
+You can also omit the serial number and use Notehub to set it:
 
 1. Open the project in Notehub.
 2. From the list of devices, double click the device whose serial number you want to set.
@@ -205,11 +205,11 @@ The app senses and reports these values:
 
 * `air_pressure`: the air pressure in kPa
 
-* `soil_moisture`: an indication of how much moisture is in the soil. A higher value means more moisture, a lower value means less moisture.
+* `soil_moisture`: an indication of how much moisture is in the soil. A higher value means more moisture, a lower value means less moisture. For more details, see [Soil Moisture and Light Level](#soil-moisture-and-light-level).
 
-* `soil_temp`: the approximate soil temperature
+* `soil_temp`: the approximate soil temperature from the soil moisture sensor.
 
-* `light_level`: an indication of the ambient light level. A higher value means more ambient light, a lower value means less ambient light.
+* `light_level`: an indication of the ambient light level. A higher value means more ambient light, a lower value means less ambient light. For more details, see [Soil Moisture and Light Level](#soil-moisture-and-light-level).
 
 The sensor names are used both to report the values in monitoring and alert events, and as part of the environment variable names that you use to configure [alert thresholds](#alerts).
 
@@ -230,7 +230,7 @@ the readings of all sensors.
 }
 ```
 
-When alert thresholds are configured, and one or more sensor readings is outside of the normal range, the event also includes `alert` and `alert_seq` properties to indicate the severity of the alert and the progress of the alert. See the section on [Alerts](#alerts) for details about these properties.
+When alert thresholds are configured, and one or more sensor readings are outside of the normal range, the event also includes `alert` and `alert_seq` properties to indicate the severity of the alert and the progress of the alert. See the section on [Alerts](#alerts) for details about these properties.
 
 ### Configuration Updates and Errors
 
@@ -276,7 +276,7 @@ Changing several variables, with some of them set incorrectly leads to both upda
 
 ## Alerts
 
-In addition to reporting the sensor values, the app can send an alert should a particular sensor value be too high or too low. The app uses environment variables to configure alert ranges for each sensor. The alert ranges are:
+In addition to reporting the sensor values, the app can send an alert when a particular sensor value is too high or too low. The app uses environment variables to configure alert ranges for each sensor. The alert ranges are:
 
 * `normal`: Describes the normal range of values for the sensor. The app sends a `warning` alert when the sensor value is higher than the `high` threshold or lower than the `low` threshold.
 
@@ -341,7 +341,7 @@ When the app detects an alert condition, it captures details of the alert and se
 
 The event has these properties:
 
-* `alert`: Describes the overall alert level. This is the combined alert level of all of the sensors. Values are `warning`, `critical` or not present, meaning no alert, which happens when sensor readings return to normal.
+* `alert`: Describes the overall alert level. This is the highest alert level of all of the sensors. Values are `warning`, `critical`, or not present, meaning no alert, which happens when sensor readings return to normal.
 
 * `alert_seq`: Distinguishes between the start of an alert, an ongoing alert, and when an alert has been cleared. The property has these values:
 
@@ -363,7 +363,7 @@ The event has these properties:
 
 ### Soil Moisture and Light Level
 
-The `soil_moisture` and `light_level` are scalar readings that correlate to the amount of moisture in the soil and the amount of light, with more moisture and more light resulting is higher values, and less moisture and less light resulting in lower values. We suggest you use the app in the greenhouse for a few days, and use the monitoring data send to `greenhouse.qo` to determine the normal ranges for these values. You can then set the environment variables `soil_moisture_normal_low` etc.. to reflect the expected normal range of values.
+The `soil_moisture` and `light_level` are scalar readings that correlate to the amount of moisture in the soil and the amount of light, with more moisture and more light resulting is higher values, and less moisture and less light resulting in lower values. We suggest you use the app in the greenhouse for a few days, and t to `greenhouse.qo` to determine the normal ranges for these values. You can then set the environment variables `soil_moisture_normal_low` etc.. to reflect the expected normal range of values.
 
 ## Deploying to a Greenhouse
 
