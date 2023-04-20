@@ -25,6 +25,7 @@ when any of these fall outside specified ranges.
   - [Alerts](#alerts)
     - [Alert Events](#alert-events)
     - [Soil Moisture and Light Level](#soil-moisture-and-light-level)
+  - [Deploying to a Greenhouse](#deploying-to-a-greenhouse)
   - [Blues Community](#blues-community)
 
 
@@ -363,6 +364,17 @@ The event has these properties:
 ### Soil Moisture and Light Level
 
 The `soil_moisture` and `light_level` are scalar readings that correlate to the amount of moisture in the soil and the amount of light, with more moisture and more light resulting is higher values, and less moisture and less light resulting in lower values. We suggest you use the app in the greenhouse for a few days, and use the monitoring data send to `greenhouse.qo` to determine the normal ranges for these values. You can then set the environment variables `soil_moisture_normal_low` etc.. to reflect the expected normal range of values.
+
+## Deploying to a Greenhouse
+
+When you deploy the solution in your greenhouse, you will power the Notecarrier from a USB power brick. Additionally you may want to waterproof all of the electronics. Here are some suggestions:
+
+* Waterproof the soil moisture sensor using heat shrink tubing over the top part of the sensor where the electronics are located, and make watertight using smaller gauge heat shrink tubing and/or waterproof tape to seal any small openings.
+
+* Place the breadboard and Notecarrier in a waterproof project box or tupperware container, using rubber cable glands to waterproof the USB cable and soil sensor cable bundle where they exit the enclosure.
+
+* Use heat shrink tubing over the BME280 sensor and/or waterproof tape. You may also place the BME280 sensor in the waterproof box housing the other electronics, although the heat produced by the electronics may slightly raise the temperature inside the box.
+
 
 ## Blues Community
 

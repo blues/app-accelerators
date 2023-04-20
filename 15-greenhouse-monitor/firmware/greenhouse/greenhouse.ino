@@ -196,7 +196,8 @@ void setup()
 {
     // Initialize debug IO
     pinMode(LED_BUILTIN, OUTPUT);
-    while (!debug) {};
+    // uncomment to have the app wait for a Serial connection
+    // while (!debug) {};
     debug.begin(115200);
     debug.println("*** " __DATE__ " " __TIME__ " ***");
 
