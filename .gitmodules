@@ -49,3 +49,9 @@
 [submodule "37-heat-index-monitor/firmware/zephyr/src/notecard_env_var_manager"]
 	path = 37-heat-index-monitor/firmware/zephyr/src/notecard_env_var_manager
 	url = https://github.com/blues/notecard-env-var-manager.git
+[submodule "08-power-quality-monitor/firmware/zephyr/src/note-c"]
+	path = 08-power-quality-monitor/firmware/zephyr/src/note-c
+	url = https://github.com/blues/note-c
+[submodule "08-power-quality-monitor/firmware/zephyr/src/notecard_env_var_manager"]
+	path = 08-power-quality-monitor/firmware/zephyr/src/notecard_env_var_manager
+	url = https://github.com/blues/notecard-env-var-manager.git
