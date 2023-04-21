@@ -5,7 +5,6 @@
 // Uncomment this line and replace com.your-company:your-product-name with your
 // ProductUID.
 // #define PRODUCT_UID "com.my-company.my-name:my-project"
-#define PRODUCT_UID "com.blues.hroche:can_vehicle_monitor"
 
 #ifndef PRODUCT_UID
 #define PRODUCT_UID ""
