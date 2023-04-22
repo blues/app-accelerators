@@ -11,7 +11,14 @@
 #define serialDebugOut Serial
 // Uncomment to view Note requests from the Host
 #define DEBUG_NOTECARD
-#define PRODUCT_UID "com.blues.sense_hat_sample"
+
+// Uncomment this line and replace com.your-company:your-product-name with your
+// ProductUID.
+// #define PRODUCT_UID "com.your-company:your-product-name"
+#ifndef PRODUCT_UID
+#define PRODUCT_UID ""
+#pragma message "PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://bit.ly/product-uid"
+#endif
 
 #define UPDATE_PERIOD (15000) // (1000 * 60 * 5)
 #define VOLUME_UPDATE_PERIOD (1000)
