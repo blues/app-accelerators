@@ -8,9 +8,6 @@
 #include "note.h"
 #include "note_c_hooks.h"
 
-// Application headers.
-#include "env_updater.h"
-
 // Uncomment this line and replace com.your-company:your-product-name with your
 // ProductUID.
 // #define PRODUCT_UID "com.your-company:your-product-name"
@@ -77,18 +74,6 @@ void main(void)
     // NoteRequestWithRetry to give it a chance to succeed.
     if (!NoteRequestWithRetry(req, HUB_SET_TIMEOUT)) {
         printk("hub.set failed, aborting.\n");
-        return;
-    }
-
-    EnvUpdaterCtx* envUpdaterCtx;
-    // Check for environment variable updates every minute.
-    if ((envUpdaterCtx = envUpdaterInit(publisherCtx, alarmPublisherCtx))
-        == NULL) {
-        printk("envUpdaterInit failed, aborting.\n");
-        return;
-    }
-    if (!envUpdaterStart(envUpdaterCtx, ENV_VAR_CHECK_INTERVAL)) {
-        printk("envUpdaterStart failed, aborting.\n");
         return;
     }
 

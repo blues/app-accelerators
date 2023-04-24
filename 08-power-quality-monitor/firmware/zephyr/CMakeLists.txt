@@ -12,8 +12,9 @@ target_sources(
     app
     PRIVATE
         # Application sources.
-        ${SRC_DIR}/env_updater.c
+        ${SRC_DIR}/note_c_hooks.c
         ${SRC_DIR}/main.c
+        # ${SRC_DIR}/UpbeatLabs_MCP39F521.cpp
         # note-c sources.
         ${NOTE_C_SRC_DIR}/n_atof.c
         ${NOTE_C_SRC_DIR}/n_cjson.c
