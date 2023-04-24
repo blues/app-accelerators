@@ -295,7 +295,6 @@ void setup()
     }
     JAddStringToObject(req, "mode", "periodic");
     JAddNumberToObject(req, "outbound", OUTBOUND_SYNC_MINS);
-    JAddBoolToObject(req, "sync", true);
     notecard.sendRequest(req);
 
     // Send a note to _health.qo when USB power is lost or restored.
