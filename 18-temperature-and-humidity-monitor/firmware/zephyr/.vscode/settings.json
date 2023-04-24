@@ -1,0 +1,20 @@
+{
+    // Update the `board` value to the board type you wish to target.
+    // For a list of supported boards, run the "Zephyr: List Boards" task.
+    "board":"swan_r5",
+
+    // If necessary, update the value of `zephyr_base` to match your
+    // environment. The value provided has been selected based on the
+    // instructions provided by the Zephyr Project regarding tool
+    // installation, see:
+    // https://docs.zephyrproject.org/latest/develop/getting_started/index.html#get-zephyr-and-install-python-dependencies
+    // https://docs.zephyrproject.org/latest/develop/west/config.html#built-in-configuration-options
+    "zephyr_base":"${env:HOME}/zephyrproject/zephyr",
+
+    // If necessary, update the value of `zephyr_sdk_path` to match your
+    // environment. The value provided has been selected based on the
+    // instructions provided by the Zephyr Project regarding tool
+    // installation, see:
+    // https://docs.zephyrproject.org/latest/develop/getting_started/index.html#install-zephyr-sdk
+    "zephyr_sdk_path":"/usr/local/zephyr-sdk-0.15.2"
+}

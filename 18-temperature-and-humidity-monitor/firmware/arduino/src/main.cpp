@@ -65,7 +65,8 @@ void publishSystemStatus()
         J *body = JCreateObject();
         if (body != NULL) {
             JAddNumberToObject(body, "temperature", state.temperature);
-            JAddNumberToObject(body, "humidity", state.humidity);            
+            JAddNumberToObject(body, "humidity", state.humidity);
+            JAddStringToObject(body, "app", "nf18");
             JAddItemToObject(req, "body", body);
 
             notecard.sendRequest(req);
@@ -294,7 +295,6 @@ void setup()
     }
     JAddStringToObject(req, "mode", "periodic");
     JAddNumberToObject(req, "outbound", OUTBOUND_SYNC_MINS);
-    JAddBoolToObject(req, "sync", true);
     notecard.sendRequest(req);
 
     // Send a note to _health.qo when USB power is lost or restored.
@@ -424,3 +424,8 @@ void loop()
         publishSystemStatus();
     }
 }
+
+void NoteUserAgentUpdate(J *ua) {
+    JAddStringToObject(ua, "app", "nf18");
+}
+

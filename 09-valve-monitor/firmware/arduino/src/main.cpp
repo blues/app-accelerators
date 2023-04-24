@@ -38,6 +38,10 @@
 #pragma message "PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://bit.ly/product-uid"
 #endif
 
+#ifndef APP_NAME
+#define APP_NAME "nf9"
+#endif
+
 struct AppState {
     uint32_t lastEnvVarPollMs;
     uint32_t monitorIntervalMs;
@@ -174,7 +178,7 @@ void publishSystemStatus(uint32_t flowRate, const char *alarmReason)
                 JAddStringToObject(body, "reason", alarmReason);
             }
 
-            JAddStringToObject(body, "app", "nf9");
+            JAddStringToObject(body, "app", APP_NAME);
             JAddItemToObject(req, "body", body);
 
             notecard.sendRequest(req);
@@ -399,6 +403,11 @@ void setup()
 
     fetchEnvVars();
 }
+
+void NoteUserAgentUpdate(J *ua) {
+    JAddStringToObject(ua, "app", APP_NAME);
+}
+
 
 // Calculate the flow rate in mL/min.
 uint32_t calculateFlowRate(uint32_t currentMs)

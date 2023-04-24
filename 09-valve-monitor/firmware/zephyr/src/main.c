@@ -433,6 +433,10 @@ void publishSystemStatus(bool alarm, uint32_t flowRate)
     }
 }
 
+void NoteUserAgentUpdate(J *ua) {
+    JAddStringToObject(ua, "app", "nf9");
+}
+
 // Check for environment variable changes. Returns true if there are changes and
 // false otherwise.
 bool pollEnvVars(void)

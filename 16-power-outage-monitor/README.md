@@ -61,7 +61,8 @@ First, we will set the serial number (name) of your notecard and the ProductUID.
   "inbound": 1440,
   "outbound": 60,
   "product": "com.your-company:your-product-name",
-  "sn": "your-serial-number"
+  "sn": "your-serial-number",
+  "body": { "app": "nf16" }
 }
 ```
 

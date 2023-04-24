@@ -1,0 +1,9 @@
+- One task taking measurements and updating temp and humidity state. This can run like once every 10 seconds.
+    - Put this and other sensor initialization stuff in sensor.c.
+- Another task publishing those measurements periodically, according to monitor_interval env var.
+    - Put this in a source file called status.c.
+- Another task checking for env var updates. This can run every 30 seconds.
+    - Put this in a source file called env.c.
+- Another task publishing alarms if measurements in state are out of range. Maximum of 1 alarm every 5 minutes. Check for alarms every 30 seconds.
+    - Put this in alarm.c.
+- Try to rely on global state as little as possible. Maybe each task that needs a view of temp and humidity just has a pointer to the corresponding variable and they read that. That's a bit cleaner.

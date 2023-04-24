@@ -1,4 +1,4 @@
-{ "req": "hub.set", "product" : "com.your-company:your-product-name", "sn": "a-serial-number", "mode": "periodic", "outbound": 30 }
+{ "req": "hub.set", "product" : "com.your-company:your-product-name", "sn": "a-serial-number", "mode": "periodic", "outbound": 30, "body": {"app":"nf14"} }
 { "req": "card.voltage", "mode": "lipo" }
 { "req": "card.location.mode", "mode": "periodic", "seconds": 180, "lat": 34.0782, "lon": -118.2606, "max": 500 }
 { "req": "card.location.track", "start": true, "file": "locations.qo" }

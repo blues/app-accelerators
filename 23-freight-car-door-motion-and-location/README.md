@@ -50,7 +50,7 @@ The Notecard should use [firmware version 3.5.2](https://dev.blues.io/notecard/n
 With the Notecarrier connected to your development PC, navigate to https://dev.blues.io, open the in-browser terminal and connect to the Notecard. Then enter this command in the terminal:
 
 ```json
-{ "req": "hub.set", "product" : "com.your-company:your-product-name", "sn": "a-serial-number" }
+{ "req": "hub.set", "product" : "com.your-company:your-product-name", "sn": "a-serial-number", "body":{"app":"nf23"} }
 ```
 
 Make sure to replace "com.your-company:your-product-name" with your ProductUID from [Notehub Setup](#notehub-setup). Also, replace "a-serial-number" with the serial number of other relevant identifier for this particular tracker (e.g. "freight car 2").
