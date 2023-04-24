@@ -1,0 +1,12 @@
+{
+  "org": "Acme Inc",
+  "target": "RPi",
+  "product": "Cellular Connected Electronic Kiosk",
+  "version": "2022-04-24 Updates",
+  "ver_major": 3,
+  "ver_minor": 2,
+  "ver_patch": 1,
+  "ver_build": 12345,
+  "built": "2023-04-24T13:45:00Z",
+  "builder": "pniedringhaus"
+}

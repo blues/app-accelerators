@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Blues Weather App</title>
+    <script type="module">
+      async function loadScript(scriptId, scriptPath) {
+        return new Promise((resolve, reject) => {
+          try {
+            // remove any previously existing scripts from head
+            if (document.getElementById(scriptId)) {
+              document.getElementById(scriptId).remove();
+            }
+            const head = document.getElementsByTagName("head")[0];
+
+            const script = document.createElement("script");
+            script.id = scriptId;
+            script.src = scriptPath;
+
+            script.addEventListener("load", (ev) => {
+              resolve({ status: true });
+            });
+
+            script.addEventListener("error", (ev) => {
+              reject({
+                status: false,
+                message: "Failed to load the script",
+              });
+            });
+
+            head.appendChild(script);
+          } catch (error) {
+            reject(error);
+          }
+        });
+      }
+
+      // todo make this a secret
+      const WEATHER_API_KEY = "2c95768ba2ed4080828162953231204";
+
+      const DAYS = 8; // fetch one more day in the future to get the week ahead
+
+      const BASE_URL = "http://api.weatherapi.com/v1";
+
+      async function getForecastWeather(city) {
+        const response = await fetch(
+          `${BASE_URL}/forecast.json?key=${WEATHER_API_KEY}&q=${city}&days=${DAYS}&aqi=no&alerts=no`
+        );
+        const forecastWeather = await response.json();
+        return forecastWeather;
+      }
+
+      // get weather data as soon as the page loads
+      // load city list list
+      await loadScript("cityList", "./data.js");
+      const weatherList = await Promise.all(
+        cityList.cities.map((city) => getForecastWeather(city))
+      );
+      renderWeatherHTML(weatherList);
+
+      // time to refetch fresh weather data in milliseconds
+      const refreshInterval = 20000;
+
+      // fetch fresh weather data & cities every X number of milliseconds
+      setInterval(async function () {
+        await loadScript("cityList", "./data.js");
+        const weatherList = await Promise.all(
+          cityList.cities.map((city) => getForecastWeather(city))
+        );
+        renderWeatherHTML(weatherList);
+      }, refreshInterval);
+
+      function renderWeatherHTML(weatherList) {
+        // remove previously rendered templates
+        if (document.getElementsByClassName("weather-template")) {
+          const prevTemplates = document.querySelectorAll(".weather-template");
+          prevTemplates.forEach((template) => {
+            template.remove();
+          });
+        }
+
+        // identify html template
+        const template = document.querySelector("#template");
+        // make a template clone function
+        const clone = template.content.cloneNode(true);
+        // clone the weather template's contents
+        const weatherTemplate = clone.querySelector(".weather-template");
+        // identify where to place new template clones when complete
+        const weatherForecastContainer = document.querySelector(
+          ".weather-forecast-container"
+        );
+
+        // list of weather from list of cities fetched from weather API
+        weatherList.forEach((weather) => {
+          let weatherTemplateClone = weatherTemplate.cloneNode(true);
+
+          // location
+          weatherTemplateClone.querySelector(
+            ".location"
+          ).innerHTML = `Current weather for: ${weather.location.name}, ${weather.location.region}`;
+
+          // current temperature
+          weatherTemplateClone.querySelector(
+            ".currentTemp"
+          ).innerHTML = `Temperature: ${weather.current.feelslike_f} °f`;
+
+          const splitIconString = weather.current.condition.icon.split("/");
+          const imgPng = splitIconString[6];
+          if (weather.current.is_day === 1) {
+            // condition icon daytime
+            weatherTemplateClone.querySelector(
+              ".conditionIcon"
+            ).src = `./images/weather-icons/day/${imgPng}`;
+          } else {
+            // condition icon nighttime
+            weatherTemplateClone.querySelector(
+              ".conditionIcon"
+            ).src = `./images/weather-icons/night/${imgPng}`;
+          }
+
+          // condition text
+          weatherTemplateClone.querySelector(
+            ".conditionText"
+          ).innerHTML = `${weather.current.condition.text}`;
+
+          // high temp
+          weatherTemplateClone.querySelector(
+            ".highTemp"
+          ).innerHTML = `High: ${weather.forecast.forecastday[0].day.maxtemp_f} °f`;
+
+          // low temp
+          weatherTemplateClone.querySelector(
+            ".lowTemp"
+          ).innerHTML = `Low: ${weather.forecast.forecastday[0].day.mintemp_f} °f`;
+
+          // future forecast table
+          const tbody = weatherTemplateClone.querySelector(".future-forecast");
+          // remove first element from forecast array - we don't want today's info
+          const shortenedWeatherForecast =
+            weather.forecast.forecastday.slice(1);
+          shortenedWeatherForecast.forEach((day) => {
+            const splitIconString = day.day.condition.icon.split("/");
+            const imgPng = splitIconString[6];
+            const imgSrc = `./images/weather-icons/day/${imgPng}`;
+
+            const tr = tbody.insertRow();
+            tr.insertCell().innerText = day.date;
+            tr.insertCell().innerHTML = `<img src=${imgSrc} />`;
+            tr.insertCell().innerText = `Low: ${day.day.mintemp_f} °f`;
+            tr.insertCell().innerText = `High: ${day.day.maxtemp_f} °f`;
+          });
+
+          weatherForecastContainer.append(weatherTemplateClone);
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root">
+      <h1>Blues Weather App</h1>
+      <section class="weather-carousel" aria-label="Gallery">
+        <div class="weather-forecast-container"></div>
+      </section>
+    </div>
+
+    <template id="template">
+      <div class="weather-template">
+        <div class="weather-carousel-snapper">
+          <h2 class="location">Loading current weather...</h2>
+          <h3 class="currentTemp"></h3>
+          <h3>Current conditions:</h3>
+          <div>
+            <span>
+              <img class="conditionIcon" src="" />
+              <span class="conditionText" />
+            </span>
+          </div>
+          <div>
+            <span class="lowTemp"></span>
+            <span class="highTemp"></span>
+          </div>
+          <h3>Future Cast:</h3>
+          <table>
+            <tbody class="future-forecast"></tbody>
+          </table>
+        </div>
+      </div>
+    </template>
+  </body>
+</html>
