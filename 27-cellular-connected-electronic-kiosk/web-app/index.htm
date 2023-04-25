@@ -82,6 +82,12 @@
           });
         }
 
+        const currentOptions = { weekday: "long" };
+        const currentDateTimeFormat = new Intl.DateTimeFormat(
+          "en-US",
+          currentOptions
+        );
+
         // identify html template
         const template = document.querySelector("#template");
         // make a template clone function
@@ -96,6 +102,13 @@
         // list of weather from list of cities fetched from weather API
         weatherList.forEach((weather) => {
           let weatherTemplateClone = weatherTemplate.cloneNode(true);
+
+          // current day
+          const currentDate = new Date(weather.forecast.forecastday[0].date);
+          const formattedDate = currentDateTimeFormat.format(currentDate);
+          weatherTemplateClone.querySelector(
+            ".current-date"
+          ).innerHTML = ` ${formattedDate}`;
 
           // location
           weatherTemplateClone.querySelector(
@@ -143,8 +156,11 @@
 
           // future forecast table
           const tbody = weatherTemplateClone.querySelector(".future-forecast");
-          const options = { weekday: "short", month: "short", day: "numeric" };
-          const dateTimeFormat = new Intl.DateTimeFormat("en-US", options);
+          const tableOptions = { weekday: "short" };
+          const tableDateTimeFormat = new Intl.DateTimeFormat(
+            "en-US",
+            tableOptions
+          );
           // remove first element from forecast array - we don't want today's info
           const shortenedWeatherForecast =
             weather.forecast.forecastday.slice(1);
@@ -155,7 +171,7 @@
             const date = new Date(day.date);
 
             const tr = tbody.insertRow();
-            tr.insertCell().innerText = dateTimeFormat.format(date);
+            tr.insertCell().innerText = tableDateTimeFormat.format(date);
             tr.insertCell().innerHTML = `<img src=${imgSrc} />`;
             tr.insertCell().innerText = `${day.day.avgtemp_f} °f`;
           });
@@ -178,7 +194,10 @@
 
     <template id="template">
       <div class="weather-template">
-        <h2 class="location">Loading current weather...</h2>
+        <div class="current-header-wrapper">
+          <div class="current-date"></div>
+          <h2 class="location">Loading current weather...</h2>
+        </div>
         <div class="current-conditions">
           <div>
             <span class="conditions">

@@ -12,6 +12,7 @@ cp data.js ../resources/data.js
 cp styles.css ../resources/styles.css
 cp -vr images/weather-icons/day/* ../resources/images/weather-icons/day
 cp -vr images/weather-icons/night/* ../resources/images/weather-icons/night
+cp images/kiosk_background.webp ../resources/images/kiosk_background.webp
 pushd ..
 ./package.sh
 popd

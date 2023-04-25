@@ -7,7 +7,7 @@ body {
   font-family: Barlow, sans-serif;
   width: 100%;
   margin: 0;
-  color: #1b3a52;
+  color: white;
 }
 
 * {
@@ -22,7 +22,6 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: white;
   background-color: #1b3a52;
   height: 64px;
 }
@@ -60,13 +59,18 @@ p {
 .weather-template {
   position: relative;
   flex: 0 0 100%;
-  background-color: #d8dfe2;
+  background: url("./images/kiosk_background.webp");
+  background-size: 780px 400px;
+  background-repeat: no-repeat;
   border: 1px solid rgba(0, 0, 0, 0.25);
   border-radius: 4px;
+  padding: 0 10px;
 }
 
-.weather-template:nth-child(even) {
-  background-color: #eceff1;
+.current-header-wrapper {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  align-items: center;
 }
 
 .location {
@@ -120,6 +124,9 @@ tr {
 
 tr {
   flex-direction: column;
+  background: rgba(255, 255, 255, 0.3); /* transparent, opaque background */
+  padding: 10px 18px;
+  border-radius: 4px;
 }
 
 .weather-carousel-snapper {
