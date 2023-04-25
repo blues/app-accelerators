@@ -1,29 +1,40 @@
+html,
 body {
-  margin: 0 auto;
-  font-family: sans-serif;
+  height: 100%;
+}
+
+body {
+  font-family: Barlow, sans-serif;
+  width: 100%;
+  margin: 0;
+  color: #1b3a52;
 }
 
 * {
   box-sizing: border-box;
-  scrollbar-color: transparent transparent; /* thumb and track color */
-  scrollbar-width: 0px;
 }
 
 *::-webkit-scrollbar {
   width: 0;
 }
 
-*::-webkit-scrollbar-track {
-  background: transparent;
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: white;
+  background-color: #1b3a52;
+  height: 64px;
 }
 
-*::-webkit-scrollbar-thumb {
-  background: transparent;
-  border: none;
+h1 {
+  margin-left: 20px;
+  font-size: 24px;
 }
 
-* {
-  -ms-overflow-style: none;
+p {
+  margin-right: 20px;
+  color: #9ebacc;
 }
 
 .weather-carousel {
@@ -41,17 +52,74 @@ body {
   overflow-x: scroll;
   scroll-behavior: smooth;
   scroll-snap-type: x mandatory;
+  height: 400px;
+  max-width: 780px;
+  margin: 20px auto;
 }
 
 .weather-template {
   position: relative;
   flex: 0 0 100%;
-  width: 100%;
-  background-color: #ced9e1;
+  background-color: #d8dfe2;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
 }
 
 .weather-template:nth-child(even) {
-  background-color: #a0afb9;
+  background-color: #eceff1;
+}
+
+.location {
+  text-align: center;
+}
+
+.current-conditions {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  margin: 24px 0;
+}
+
+.conditions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.wind-speed,
+.rainfall,
+.pressure,
+.current-temp {
+  margin: 4px 0;
+}
+
+.current-temp {
+  font-size: 32px;
+}
+
+.condition-icon {
+  height: 128px;
+}
+
+table {
+  width: 100%;
+}
+
+.future-forecast,
+tr {
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+}
+
+tr {
+  flex-direction: column;
 }
 
 .weather-carousel-snapper {
@@ -59,7 +127,6 @@ body {
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
   scroll-snap-align: center;
 }
 
@@ -97,10 +164,10 @@ body {
     left: 0;
   }
   95% {
-    left: -500%;
+    left: -300%;
   }
   98% {
-    left: -500%;
+    left: -300%;
   }
   99% {
     left: 0;

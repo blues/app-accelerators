@@ -62,7 +62,7 @@
       renderWeatherHTML(weatherList);
 
       // time to refetch fresh weather data in milliseconds
-      const refreshInterval = 20000;
+      const refreshInterval = 600000;
 
       // fetch fresh weather data & cities every X number of milliseconds
       setInterval(async function () {
@@ -100,44 +100,51 @@
           // location
           weatherTemplateClone.querySelector(
             ".location"
-          ).innerHTML = `Current weather for: ${weather.location.name}, ${weather.location.region}`;
+          ).innerHTML = `${weather.location.name}, ${weather.location.country}`;
 
           // current temperature
           weatherTemplateClone.querySelector(
-            ".currentTemp"
-          ).innerHTML = `Temperature: ${weather.current.feelslike_f} °f`;
+            ".current-temp"
+          ).innerHTML = `${weather.current.feelslike_f} °f`;
 
           const splitIconString = weather.current.condition.icon.split("/");
           const imgPng = splitIconString[6];
           if (weather.current.is_day === 1) {
             // condition icon daytime
             weatherTemplateClone.querySelector(
-              ".conditionIcon"
+              ".condition-icon"
             ).src = `./images/weather-icons/day/${imgPng}`;
           } else {
             // condition icon nighttime
             weatherTemplateClone.querySelector(
-              ".conditionIcon"
+              ".condition-icon"
             ).src = `./images/weather-icons/night/${imgPng}`;
           }
 
           // condition text
           weatherTemplateClone.querySelector(
-            ".conditionText"
+            ".condition-text"
           ).innerHTML = `${weather.current.condition.text}`;
 
-          // high temp
+          // wind speed
           weatherTemplateClone.querySelector(
-            ".highTemp"
-          ).innerHTML = `High: ${weather.forecast.forecastday[0].day.maxtemp_f} °f`;
+            ".wind-speed"
+          ).innerHTML = `Wind: ${weather.current.wind_mph} mph`;
 
-          // low temp
+          // rainfall
           weatherTemplateClone.querySelector(
-            ".lowTemp"
-          ).innerHTML = `Low: ${weather.forecast.forecastday[0].day.mintemp_f} °f`;
+            ".rainfall"
+          ).innerHTML = `Rainfall: ${weather.current.precip_in} in`;
+
+          // pressure
+          weatherTemplateClone.querySelector(
+            ".pressure"
+          ).innerHTML = `Pressure: ${weather.current.pressure_in} in`;
 
           // future forecast table
           const tbody = weatherTemplateClone.querySelector(".future-forecast");
+          const options = { weekday: "short", month: "short", day: "numeric" };
+          const dateTimeFormat = new Intl.DateTimeFormat("en-US", options);
           // remove first element from forecast array - we don't want today's info
           const shortenedWeatherForecast =
             weather.forecast.forecastday.slice(1);
@@ -145,12 +152,12 @@
             const splitIconString = day.day.condition.icon.split("/");
             const imgPng = splitIconString[6];
             const imgSrc = `./images/weather-icons/day/${imgPng}`;
+            const date = new Date(day.date);
 
             const tr = tbody.insertRow();
-            tr.insertCell().innerText = day.date;
+            tr.insertCell().innerText = dateTimeFormat.format(date);
             tr.insertCell().innerHTML = `<img src=${imgSrc} />`;
-            tr.insertCell().innerText = `Low: ${day.day.mintemp_f} °f`;
-            tr.insertCell().innerText = `High: ${day.day.maxtemp_f} °f`;
+            tr.insertCell().innerText = `${day.day.avgtemp_f} °f`;
           });
 
           weatherForecastContainer.append(weatherTemplateClone);
@@ -160,7 +167,10 @@
   </head>
   <body>
     <div id="root">
-      <h1>Blues Weather App</h1>
+      <header class="header">
+        <h1>Cellular Connected Electronic Kiosk</h1>
+        <p>Blues Wireless Demo</p>
+      </header>
       <section class="weather-carousel" aria-label="Gallery">
         <div class="weather-forecast-container"></div>
       </section>
@@ -168,25 +178,25 @@
 
     <template id="template">
       <div class="weather-template">
-        <div class="weather-carousel-snapper">
-          <h2 class="location">Loading current weather...</h2>
-          <h3 class="currentTemp"></h3>
-          <h3>Current conditions:</h3>
+        <h2 class="location">Loading current weather...</h2>
+        <div class="current-conditions">
           <div>
-            <span>
-              <img class="conditionIcon" src="" />
-              <span class="conditionText" />
+            <span class="conditions">
+              <img class="condition-icon" src="" />
+              <span class="condition-text" />
             </span>
           </div>
-          <div>
-            <span class="lowTemp"></span>
-            <span class="highTemp"></span>
+          <div class="details">
+            <div class="wind-speed"></div>
+            <div class="rainfall"></div>
+            <div class="pressure"></div>
+            <div class="current-temp"></div>
           </div>
-          <h3>Future Cast:</h3>
-          <table>
-            <tbody class="future-forecast"></tbody>
-          </table>
         </div>
+        <table>
+          <tbody class="future-forecast"></tbody>
+        </table>
+        <div class="weather-carousel-snapper"></div>
       </div>
     </template>
   </body>
