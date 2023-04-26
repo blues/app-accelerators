@@ -23,12 +23,11 @@ body {
   align-items: center;
   justify-content: space-between;
   background-color: #1b3a52;
-  height: 64px;
 }
 
 h1 {
-  margin-left: 20px;
   font-size: 24px;
+  margin: 10px 0 10px 20px;
 }
 
 p {
@@ -51,16 +50,16 @@ p {
   overflow-x: scroll;
   scroll-behavior: smooth;
   scroll-snap-type: x mandatory;
-  height: 400px;
+  height: 290px;
   max-width: 780px;
-  margin: 20px auto;
+  margin: 8px 20px auto;
 }
 
 .weather-template {
   position: relative;
   flex: 0 0 100%;
   background: url("./images/kiosk_background.webp");
-  background-size: 780px 400px;
+  background-size: 780px 290px;
   background-repeat: no-repeat;
   border: 1px solid rgba(0, 0, 0, 0.25);
   border-radius: 4px;
@@ -75,12 +74,14 @@ p {
 
 .location {
   text-align: center;
+  margin: 10px 0;
 }
 
 .current-conditions {
   display: grid;
-  grid-template-columns: repeat(2, auto);
-  margin: 24px 0;
+  grid-template-columns: repeat(3, auto);
+  margin: 4px 0;
+  align-items: center;
 }
 
 .conditions {
@@ -104,11 +105,8 @@ p {
 }
 
 .current-temp {
-  font-size: 32px;
-}
-
-.condition-icon {
-  height: 128px;
+  font-size: 30px;
+  text-align: center;
 }
 
 table {
@@ -125,7 +123,7 @@ tr {
 tr {
   flex-direction: column;
   background: rgba(255, 255, 255, 0.1); /* transparent, opaque background */
-  padding: 10px 18px;
+  padding: 5px 18px;
   border-radius: 4px;
 }
 
@@ -137,7 +135,7 @@ tr {
   scroll-snap-align: center;
 }
 
-@media (hover: hover) {
+/* @media (hover: hover) {
   .weather-carousel-snapper {
     animation-name: tonext, snap;
     animation-timing-function: ease;
@@ -148,7 +146,7 @@ tr {
   .weather-template:last-child .weather-carousel-snapper {
     animation-name: tostart, snap;
   }
-}
+} */
 
 /* carousel animation reference article: https://css-tricks.com/css-only-carousel/ */
 @keyframes tonext {
