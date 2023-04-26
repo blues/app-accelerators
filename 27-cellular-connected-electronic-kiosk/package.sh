@@ -23,6 +23,7 @@ cat kiosk.json
 echo ""
 zip kiosk.zip -0 metadata/*
 zip kiosk.zip resources/*
+zip kiosk.zip resources/images/*
 zip kiosk.zip resources/images/weather-icons/day/*
 zip kiosk.zip resources/images/weather-icons/night/*
 

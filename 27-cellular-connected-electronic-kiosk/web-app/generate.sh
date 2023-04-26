@@ -2,7 +2,7 @@
 [ -e kiosk.json ] && rm kiosk.json
 rm -r ../resources/* 2>/dev/null
 
-cp kiosk.json ../kiosk.json
+cp connected-kiosk.json ../kiosk.json
 # create a new resources folder
 mkdir -p ../resources
 mkdir -p ../resources/images/weather-icons/day
