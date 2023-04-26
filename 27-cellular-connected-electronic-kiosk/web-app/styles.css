@@ -135,7 +135,7 @@ tr {
   scroll-snap-align: center;
 }
 
-/* @media (hover: hover) {
+@media (hover: hover) {
   .weather-carousel-snapper {
     animation-name: tonext, snap;
     animation-timing-function: ease;
@@ -146,7 +146,7 @@ tr {
   .weather-template:last-child .weather-carousel-snapper {
     animation-name: tostart, snap;
   }
-} */
+}
 
 /* carousel animation reference article: https://css-tricks.com/css-only-carousel/ */
 @keyframes tonext {
