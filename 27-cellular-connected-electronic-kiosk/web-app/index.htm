@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="./styles.css" />
-    <title>Blues Weather App</title>
+    <title>Cellular Connected Electronic Kiosk</title>
     <script type="module">
       async function loadScript(scriptId, scriptPath) {
         return new Promise((resolve, reject) => {
@@ -38,7 +38,7 @@
         });
       }
 
-      // todo make this a secret
+      // make this a secret
       const WEATHER_API_KEY = "2c95768ba2ed4080828162953231204";
 
       const DAYS = 8; // fetch one more day in the future to get the week ahead
@@ -54,14 +54,13 @@
       }
 
       // get weather data as soon as the page loads
-      // load city list list
       await loadScript("cityList", "./data.js");
       const weatherList = await Promise.all(
         cityList.cities.map((city) => getForecastWeather(city))
       );
       renderWeatherHTML(weatherList);
 
-      // time to refetch fresh weather data in milliseconds
+      // time to refetch fresh weather data in milliseconds (10 minutes)
       const refreshInterval = 600000;
 
       // fetch fresh weather data & cities every X number of milliseconds

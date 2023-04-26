@@ -124,7 +124,7 @@ tr {
 
 tr {
   flex-direction: column;
-  background: rgba(255, 255, 255, 0.3); /* transparent, opaque background */
+  background: rgba(255, 255, 255, 0.1); /* transparent, opaque background */
   padding: 10px 18px;
   border-radius: 4px;
 }
