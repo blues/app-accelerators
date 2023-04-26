@@ -54,9 +54,9 @@
       }
 
       // get weather data as soon as the page loads
-      await loadScript("cityList", "./data.js");
+      await loadScript("data", "./data.js");
       const weatherList = await Promise.all(
-        cityList.cities.map((city) => getForecastWeather(city))
+        data.cities.map((city) => getForecastWeather(city))
       );
       renderWeatherHTML(weatherList);
 
@@ -65,9 +65,9 @@
 
       // fetch fresh weather data & cities every X number of milliseconds
       setInterval(async function () {
-        await loadScript("cityList", "./data.js");
+        await loadScript("data", "./data.js");
         const weatherList = await Promise.all(
-          cityList.cities.map((city) => getForecastWeather(city))
+          data.cities.map((city) => getForecastWeather(city))
         );
         renderWeatherHTML(weatherList);
       }, refreshInterval);
