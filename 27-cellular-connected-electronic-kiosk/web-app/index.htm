@@ -60,8 +60,8 @@
       );
       renderWeatherHTML(weatherList);
 
-      // time to refetch fresh weather data in milliseconds (600000 = 10 minutes)
-      const refreshInterval = 600000;
+      // time to refetch fresh weather data in milliseconds (30000 = 30 seconds)
+      const refreshInterval = 30000;
 
       // fetch fresh weather data & cities every X number of milliseconds
       setInterval(async function () {
