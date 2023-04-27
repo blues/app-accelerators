@@ -60,7 +60,7 @@
       );
       renderWeatherHTML(weatherList);
 
-      // time to refetch fresh weather data in milliseconds (10 minutes)
+      // time to refetch fresh weather data in milliseconds (600000 = 10 minutes)
       const refreshInterval = 600000;
 
       // fetch fresh weather data & cities every X number of milliseconds
@@ -126,11 +126,16 @@
             weatherTemplateClone.querySelector(
               ".condition-icon"
             ).src = `./images/weather-icons/day/${imgPng}`;
+            // background of template daytime
+            weatherTemplateClone.style.backgroundImage="url('./images/kiosk_daytime_background.webp')";
           } else {
             // condition icon nighttime
             weatherTemplateClone.querySelector(
               ".condition-icon"
             ).src = `./images/weather-icons/night/${imgPng}`;
+             // background of template nighttime
+             weatherTemplateClone.style.backgroundImage="url('./images/kiosk_nighttime_background.webp')";
+
           }
 
           // condition text
