@@ -5,7 +5,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <Notecard.h>
-#include "NoteRTOS.h"
+#include "UpbeatLabs_MCP39F521.h"
 
 #pragma once
 
@@ -20,35 +20,27 @@
 #define SYNC_POWER_MONITORING_NOTES        (false)
 #endif
 
-// Define this when using USB serial, and comment it out when using the ST-Link V3
-// (See USING_SWAN.txt for more info.)
-// #define debug Serial
+// Notefile/Note definitions
+#define	DATA_FILENAME			        "power.qo"
+#define DATA_FIELD_APP			      "app"
+#define DATA_FIELD_MAX_VOLTAGE    "max_voltage"
+#define DATA_FIELD_MAX_CURRENT    "max_current"
+#define DATA_FIELD_MAX_POWER      "max_power"
+#define DATA_FIELD_VOLTAGE		    "last_voltage"
+#define DATA_FIELD_CURRENT		    "last_current"
+#define DATA_FIELD_POWER		      "last_power"
+#define DATA_FIELD_FREQUENCY	    "frequency"
+#define DATA_FIELD_REACTIVE       "reactivePower"
+#define DATA_FIELD_APPARENT       "apparentPower"
+#define DATA_FIELD_POWERFACTOR    "powerFactor"
+#define DATA_FIELD_APP_NAME       "nf8"
 
-// Define the debug output stream device, as well as a method enabling us
-// to determine whether or not the Serial device is available for app usage.
-#ifdef debug
-#define	serialIsAvailable() false
-#else
-#define	serialIsAvailable() true
-#ifdef APP_MAIN
-HardwareSerial debug(PG8, PG7);
-#else
-extern HardwareSerial debug;
-#endif
-#endif
+#define ALERT_FILENAME            "alert.qo"
+#define ALERT_FIELD_REASON        "reason"
 
-// Notecard definition
-#ifdef APP_MAIN
-Notecard notecard;
-#else
-extern Notecard notecard;
-#endif
+#define	MCP_I2C_ADDRESS_BASE	0x74
 
-// app.cpp
-uint32_t appTasks(uint32_t **taskSchedMs, uint8_t **contextBase, uint32_t *contextSize);
-bool appSetup(void);
-uint32_t appLoop(void);
-bool taskSetup(void *mcp);
-uint32_t taskLoop(void *mcp);
-
-#include "app-name.h"
+// Nominal voltage/current for 0.  Detection is not totally precise and there is some inherent noise/drift so these are 
+// set to be just above 0.
+#define ZERO_VOLTS (5)
+#define ZERO_AMPS (0.3)
