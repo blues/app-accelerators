@@ -10,6 +10,7 @@ Download and run a kiosk application without an Internet connection, using a sim
       - [`kiosk_content`](#kiosk-content)
       - [`kiosk_content_version`](#kiosk-content-version)
       - [`kiosk_download_time`](#kiosk-download-time)
+      - [`kiosk_data`](#kiosk-data)
   - [microSd Card Setup](#microsd-card-setup)
   - [Hardware Setup](#hardware-setup)
     - [Notecard and Notecarrier](#notecard-and-notecarrier)
@@ -39,13 +40,13 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 
 ### Route
 
-Next, you need to create a [proxy route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) in order to download the kiosk web app. The web app should be bundled in a .zip file. Unzipping the .zip file should produce, at minimum, a directory named `resources` with an HTML page to display named `index.htm`. Read [this guide](https://dev.blues.io/notecard/notecard-walkthrough/web-transactions/) to set up the route.
+Next, you need to create a [proxy route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) in order to download the kiosk web app. The web app should be bundled in a .zip file and stored online somewhere (e.g. in an AWS S3 bucket). Unzipping the .zip file should produce, at minimum, a directory named `resources` with an HTML page to display named `index.htm`. Read [this guide](https://dev.blues.io/notecard/notecard-walkthrough/web-transactions/) to set up the route.
 
 ![Route config](images/route.png)
 
 ### Environment Variables
 
-There are 4 [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) used in this project. You can set them by navigating to your Notehub project page > Devices > double-click your device > Environment:
+There are 4 [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) used in this project. You can set them by navigating to your Notehub project page > select your fleet name from under Fleets > Settings > Environment:
 
 ![Environment variables](images/env_vars.png)
 
@@ -61,7 +62,7 @@ This is a version number for the file specified by `kiosk_content`. If you updat
 
 This variable specifies the hour of the day (using 24-hour time) when the Python script should check for updates to the `kiosk_content`. If, for example, `kiosk_download_time` is set to 9, the script will check for updates to the content at 9:00 AM local time. If the content file name or version has changed, the script will download and use the new content. If this variable is set to the special value `now`, any change to the content file name or version will cause an immediate download of the new content, instead of waiting for a specific hour of the day.
 
-#### `kisok_data`
+#### `kiosk_data`
 
 This can be set to any valid JSON object. It will then be stored in the `resources` directory alongside `index.htm` in the file `data.js`. The contents of `data.js` looks like this:
 
@@ -75,7 +76,7 @@ For example, if you set `kiosk_data` to `{"message":"Hello world!"}`, `data.js` 
 var data = {"message":"Hello world!"}
 ````
 
-Your web application can then access and use this data however you want. In this way, `kiosk_data` acts as a way of passing dynamic data to the web app without triggering a full download of the .zip file.
+Your web application can then access and use this data however you want. In this way, `kiosk_data` acts as a way of passing dynamic data to the web app without needing to modify the contents of the .zip file and re-download the whole thing.
 
 ## microSD Card Setup
 
@@ -95,11 +96,11 @@ To connect the Notecard and Pi Hat to the Pi, follow [the section "Connect Your 
 
 To put together the Pi, display, and case, you will follow [this documentation from Smarti Pi](https://cdn.shopify.com/s/files/1/0793/8029/files/touch_pro_assembly_instructions.pdf?v=1640377735), with a few additional steps to accommodate the Notecard hardware.
 
-At Step 7, make sure to install the Notecarrier Pi Hat with the Notecard onto the Pi's headers:
+At Step 7, make sure to install the Notecarrier Pi Hat with the Notecard onto the Pi's headers (don't forget to attach the antenna to the Notecard as well):
 
 ![Pi Hat on Pi's headers](images/pi_hat.jpg)
 
-Everything should fit, even with the standoffs attached to the Pi. You will also need to use the micro USB cable to connect the Notecarrier's micro USB port to one of the Pi's USB ports:
+Everything should fit, even with the standoffs attached to the Pi. If you want to manually send commands to the Notecard for any reason (e.g. debugging) via the [Notecard CLI](https://dev.blues.io/tools-and-sdks/notecard-cli/), you will also need to use the micro USB cable to connect the Notecarrier's micro USB port to one of the Pi's USB ports:
 
 ![Notecarrier USB connection](images/notecarrier_usb_connection.jpg)
 
@@ -119,7 +120,9 @@ Plug the USB-C power supply into the exposed USB-C port on the case and let the 
 
 ## Notecard Firmware
 
-The Notecard should use [firmware version 5.1.1](https://dev.blues.io/notecard/notecard-firmware-updates/#v5-1-1-april-5th-2023) or higher. The simplest way to update firmware is to do an [over-the-air update](https://dev.blues.io/notecard/notecard-firmware-updates/#ota-dfu-with-notehub).
+The Notecard should use [firmware version 5.1.1](https://dev.blues.io/notecard/notecard-firmware-updates/#v5-1-1-april-5th-2023) or higher. The simplest way to update firmware is to do an [over-the-air (OTA) update](https://dev.blues.io/notecard/notecard-firmware-updates/#ota-dfu-with-notehub) via Notehub.
+
+Please note: Your [Notecard will need to be assigned to your Notehub project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notecard) to update its firmware OTA.
 
 ## Kiosk Software
 
