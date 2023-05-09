@@ -2,194 +2,547 @@
 // Use of this source code is governed by licenses granted by the
 // copyright holder including that found in the LICENSE file.
 
-// App definitions
-#define APP_MAIN
-#include "app.h"
-#include "monitor.h"
-#include "monitor_tasks.h"
+#include <Arduino.h>
+#include <string.h>
+#include "Notecard.h"
 #include "Adafruit_BME280.h"
 #include "Adafruit_seesaw.h"
-#include "analog_sensor.h"
-#include "TaskScheduler.h"
+#include "greenhouse.h"
 
-/**
- * @brief Provides the readings from a Seesaw soil sensor.
- */
-struct SeesawPeripheral : public MultiSensorPeripheral<2, SeesawPeripheral> {
+#define LIGHT_SENSOR_PIN (A1)
+#define DATA_FILE_NOTIFY "notify.qo"
+#define DATA_FILE_MONITOR "greenhouse.qo"
+#define DATA_FILE_ALERT "alert.qo"
 
-    SeesawPeripheral() : base({
-        Sensor("soil_temp", "C"),
-        Sensor("soil_moisture", "")
-        }) {};
+#define DATA_FIELD_APP "app"
+#define DATA_FIELD_ALERT_SEQUENCE "alert_seq"
+#define DATA_FIELD_ALERT_LEVEL "alert"
+#define DATA_FIELD_AIR_TEMP "air_temp"
+#define DATA_FIELD_AIR_HUMIDITY "air_humidity"
+#define DATA_FIELD_AIR_PRESSURE "air_pressure"
+#define DATA_FIELD_LIGHT_LEVEL "light_level"
+#define DATA_FIELD_SOIL_TEMP "soil_temp"
+#define DATA_FIELD_SOIL_MOISTURE "soil_moisture"
 
-    bool readValues() {
-        // unfortunately the seesaw library doesn't include error checking.
-        setValue(0, ss.getTemp());
-        setValue(1, ss.touchRead(0));
-        return true;
+#ifndef PRODUCT_UID
+#define PRODUCT_UID ""		// "com.my-company.my-name:my-project"
+#pragma message "PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://bit.ly/product-uid"
+#endif
+
+// When set to true, all monitoring notes are synced immediately to Notehub.
+// When set to false, only alerts are synched immediately.
+#ifndef SYNC_MONITORING_NOTES
+#define SYNC_MONITORING_NOTES        (false)
+#endif
+
+#ifndef DEFAULT_REPORT_INTERVAL
+#define DEFAULT_REPORT_INTERVAL (1000*60*5)
+#endif
+
+#ifndef DEFAULT_POLL_ENVIRONMENT_INTERVAL
+#define DEFAULT_POLL_ENVIRONMENT_INTERVAL (1000*60*5)
+#endif
+
+#ifndef DEFAULT_POLL_SENSORS_INTERVAL
+#define DEFAULT_POLL_SENSORS_INTERVAL (1000*15)
+#endif
+
+#ifndef APP_NAME
+#define APP_NAME    "nf15"
+#endif
+
+
+void outputInterval(Stream& out, float vmin, float vmax) {
+    out.print('[');
+    if (isValueSet(vmin)) out.print(vmin);
+    out.print(',');
+    if (isValueSet(vmax)) out.print(vmax);
+    out.print(']');
+}
+
+inline bool isEmptyInterval(float vmin, float vmax) {
+    return vmin==vmax || (!isValueSet(vmin) && !isValueSet(vmax));
+}
+
+void outputThresholdAlert(Stream& out, const ThresholdAlert* a) {
+    out.print(alertLevelString(a->alertLevel));
+    if (a->threshold!=THRESHOLD_NONE) {
+        out.print(": threshold ");
+        out.print(thresholdString(a->threshold));
     }
+}
 
-    bool initialize(bool first) {
-        bool started = ss.begin(0x36);
-        if (started) {
-            debug.print("seesaw started! version: ");
-            debug.println(ss.getVersion(), HEX);
-        }
-        else if (first) {
-            debug.println("ERROR! seesaw not found");
-        }
-        return started;
-    }
 
-private:
-    Adafruit_seesaw ss;
+#define debug Serial
 
-    using base = MultiSensorPeripheral<2, SeesawPeripheral>;
-};
+Notecard notecard;
 
-/**
- * @brief Reads temperature, humidity and pressure from a BME280
- */
-struct BME280Peripheral : public MultiSensorPeripheral<3, BME280Peripheral> {
+Adafruit_BME280 bme280;
+bool bme280Initialized;
+bool bme280Messaged;
+float air_temp;
+float air_humidity;
+float air_pressure;
+AlertIntervals air_temp_intervals;
+AlertIntervals air_humidity_intervals;
+AlertIntervals air_pressure_intervals;
+ThresholdAlert air_temp_alert;
+ThresholdAlert air_humidity_alert;
+ThresholdAlert air_pressure_alert;
 
-    BME280Peripheral() : base(
-        {
-        Sensor("air_temp", "C"),
-        Sensor("air_humidity", "%"),
-        Sensor("air_pressure", "hPa")
-        }) {};
+Adafruit_seesaw seesaw;
+bool seesawInitialized;
+bool seesawMessaged;
+float soil_temp;
+float soil_moisture;
+AlertIntervals soil_temp_intervals;
+AlertIntervals soil_moisture_intervals;
+ThresholdAlert soil_temp_alert;
+ThresholdAlert soil_moisture_alert;
 
-    bool readValues() {
-        setValue(0, bme.readTemperature());
-        setValue(1, bme.readHumidity());
-        setValue(2, bme.readPressure()/100.0);
-        return true;
-    }
+float light_level;
+AlertIntervals light_level_intervals;
+ThresholdAlert light_level_alert;
 
-    bool initialize(bool first) {
-        unsigned status = bme.begin();
-        if (!status && first) {
-            messaged = true;
+AlertLevel alertLevel;
+AlertSequence alertSequence;
+
+uint32_t readSensorsInterval = DEFAULT_POLL_SENSORS_INTERVAL;
+uint32_t readSensorsMs;
+uint32_t sendReportInterval = DEFAULT_REPORT_INTERVAL;
+uint32_t sendReportMs;
+uint32_t pollEnvironmentInterval = DEFAULT_POLL_ENVIRONMENT_INTERVAL;
+uint32_t pollEnvironmentMs;
+int64_t environmentModifiedTime;
+
+void readSensors() {
+
+    if (!bme280Initialized) {
+        unsigned status = bme280.begin();
+        if (!status && !bme280Messaged) {
+            bme280Messaged = true;
             debug.println("Could not find a valid BME280 sensor, check wiring, address, sensor ID!");
-            debug.print("SensorID was: 0x"); debug.println(bme.sensorID(),16);
+            debug.print("SensorID was: 0x"); debug.println(bme280.sensorID(),16);
             debug.print("        ID of 0xFF probably means a bad address, a BMP 180 or BMP 085\n");
             debug.print("   ID of 0x56-0x58 represents a BMP 280,\n");
             debug.print("        ID of 0x60 represents a BME 280.\n");
             debug.print("        ID of 0x61 represents a BME 680.\n");
         }
-        return status;
+        bme280Initialized = status;
+    }
+    if (bme280Initialized) {
+        air_temp = bme280.readTemperature();
+        air_humidity = bme280.readHumidity();
+        air_pressure = bme280.readPressure()/100.0;
+        bme280Messaged = false; // re-print the message after a successful read should the sensor connection fail
+        if (!isValueSet(air_temp) && !isValueSet(air_humidity) && !isValueSet(air_pressure)) {
+            bme280Initialized = false;
+        }
+    }
+    else {
+        air_temp = SENSOR_VALUE_UNDEFINED;
+        air_humidity = SENSOR_VALUE_UNDEFINED;
+        air_pressure = SENSOR_VALUE_UNDEFINED;
     }
 
-private:
-    Adafruit_BME280 bme;
-    bool started;
-    bool messaged;
+    if (!seesawInitialized) {
+        seesawInitialized = seesaw.begin(0x36);
+        if (seesawInitialized) {
+            debug.print("seesaw started! version: ");
+            debug.println(seesaw.getVersion(), HEX);
+        }
+        else if (!seesawMessaged) {
+            debug.println("ERROR! seesaw not found");
+            seesawMessaged = true;
+        }
+    }
+    if (seesawInitialized) {
+        soil_temp = seesaw.getTemp();
+        soil_moisture = seesaw.touchRead(0);
+        seesawMessaged = false;
+        if (!isValueSet(soil_temp) && !isValueSet(soil_moisture)) {
+            seesawInitialized = false;
+        }
+    }
 
-    using base = MultiSensorPeripheral<3, BME280Peripheral>;
-};
-
-
-// The app's sensors that are monitored and reported
-Monitor monitor;
-SeesawPeripheral seesaw;
-BME280Peripheral bme280;
-AnalogSensor light("light_level", "V", A1);
-
-
-// adds app info to each event
-AppReporter reporterConfig;
-ReportEvents reporter(notecard, monitor, reporterConfig);
-
-// poll the environment and respond to updates
-void environmentUpdated(void* arg, J* environment);
-auto pollEnvironment = create_environment_poller(notecard, environmentUpdated);
-
-// manages the tasks in the app
-Scheduler tasks;
-
-void readSensors() {
-    bme280.read();
-    seesaw.read();
-    light.read();
+    light_level = analogRead(LIGHT_SENSOR_PIN);
 }
 
-void reportToStream(Stream& out, const Report& report) {
+void outputSensorValue(Stream& s, const char* name, float value) {
+    s.print(name);
+    s.print(": ");
+    if (isValueSet(value)) {
+        s.print(value);
+    }
+    else {
+        s.print("N/A");
+    }
+}
+
+void outputAlertInterval(Stream& out, const char* name, const Interval* interval) {
+    if (!isEmptyInterval(interval->vmin, interval->vmax)) {
+        out.print(name);
+        outputInterval(out, interval->vmin, interval->vmax);
+        out.print(' ');
+    }
+}
+
+void outputAlertIntervals(Stream& out, const AlertIntervals* intervals) {
+    outputAlertInterval(out, "normal", &intervals->normal);
+    outputAlertInterval(out, "warning", &intervals->warning);
+}
+
+void outputSensorReport(Stream& out, const char* name, float value, const ThresholdAlert* alert, const AlertIntervals* intervals) {
+    outputSensorValue(out, name, value);
+    out.print(' ');
+    outputThresholdAlert(out, alert);
+    out.print(' ');
+    outputAlertIntervals(out, intervals);
+    out.println();
+}
+
+void outputReport(Stream& out) {
     out.println("sensor readings:");
-    report.forEachSensor([&](const SensorReport& sr) {
-        sr.toStream(out);
-        out.println();
-    });
+    outputSensorReport(out, DATA_FIELD_SOIL_TEMP, soil_temp, &soil_temp_alert, &soil_temp_intervals);
+    outputSensorReport(out, DATA_FIELD_SOIL_MOISTURE, soil_moisture, &soil_moisture_alert, &soil_moisture_intervals);
+    outputSensorReport(out, DATA_FIELD_AIR_TEMP, air_temp, &air_temp_alert, &air_temp_intervals);
+    outputSensorReport(out, DATA_FIELD_AIR_PRESSURE, air_pressure, &air_pressure_alert, &air_pressure_intervals);
+    outputSensorReport(out, DATA_FIELD_AIR_HUMIDITY, air_humidity, &air_humidity_alert, &air_humidity_intervals);
+    outputSensorReport(out, DATA_FIELD_LIGHT_LEVEL, light_level, &light_level_alert, &light_level_intervals);
+    out.println();
 }
 
-/**
- * @brief Build a report from the monitored sensor values.
- * 
- * @param alwaysSend
- */
-void sendReport(bool alwaysSend=false) {
-    const Report report = monitor.checkReadings();
-    reportToStream(debug, report);
-    if (alwaysSend || report.reportImmediately()) {
-        debug.println("sending report");
-        reporter.sendReport(report);
+ThresholdAlert checkAlertThresholds(double v, const AlertIntervals* a) {
+    ThresholdAlert result = NORMAL;
+    if (isValueSet(v)) {
+        Threshold t = checkInterval(a->warning.vmin, a->warning.vmax, v);
+        if (t) {
+            result.alertLevel = ALERT_LEVEL_CRITICAL;
+        }
+        else {
+            t = checkInterval(a->normal.vmin, a->normal.vmax, v);
+            if (t) {
+                result.alertLevel = ALERT_LEVEL_WARNING;
+            }
+        }
+        result.threshold = t;
+    }
+    return result;
+}
+
+inline void updateSensorAlert(float v, const AlertIntervals* intervals, ThresholdAlert* alert, AlertLevel* level) {
+    *alert = checkAlertThresholds(v, intervals);
+    *level = highestAlertLevel(*level, alert->alertLevel);
+}
+
+void checkAlerts() {
+    // the overall alert level
+    alertLevel = ALERT_LEVEL_NORMAL;
+
+    updateSensorAlert(soil_temp, &soil_temp_intervals, &soil_temp_alert, &alertLevel);
+    updateSensorAlert(soil_moisture, &soil_moisture_intervals, &soil_moisture_alert, &alertLevel);
+    updateSensorAlert(air_temp, &air_temp_intervals, &air_temp_alert, &alertLevel);
+    updateSensorAlert(air_humidity, &air_humidity_intervals, &air_humidity_alert, &alertLevel);
+    updateSensorAlert(air_pressure, &air_pressure_intervals, &air_pressure_alert, &alertLevel);
+    updateSensorAlert(light_level, &light_level_intervals, &light_level_alert, &alertLevel);
+
+    bool wasAlerting = isAlertSequenceOngoing(alertSequence);
+    bool nowAlerting = isAlertLevel(alertLevel);
+    alertSequence = nowAlerting
+        ? (wasAlerting ? ALERT_SEQ_SUBSEQUENT : ALERT_SEQ_FIRST)
+        : (wasAlerting ? ALERT_SEQ_LAST : ALERT_SEQ_NONE);
+
+    outputReport(debug);
+}
+
+void readAndCheckSensors() {
+    readSensors();
+    checkAlerts();
+}
+
+J* buildNote(J* req, bool immediate) {
+    J* body = NoteNewBody();
+    if (isAlertSequence(alertSequence)) {
+        JAddStringToObject(body, DATA_FIELD_ALERT_SEQUENCE, alertSequenceString(alertSequence));
+    }
+    if (isAlertLevel(alertLevel)) {
+        JAddStringToObject(body, DATA_FIELD_ALERT_LEVEL, alertLevelString(alertLevel));
     }
 
+    JAddStringToObject(body, DATA_FIELD_APP, APP_NAME);
+
+    if (immediate) {
+        JAddBoolToObject(req, "sync", true);
+    }
+    NoteAddBodyToObject(req, body);
+    return body;
 }
 
-/**
- * @brief THe monitoring task function. Reads all the sensors in the app and reports alerts.
- */
-void task_monitor_sensors() {
-    readSensors();
-    sendReport();
+void addSensorValue(J* body, const char* name, float value) {
+    if (isValueSet(value)) {
+        JAddNumberToObject(body, name, value);
+    }
 }
 
-/**
- * @brief The polling environment task's function. Calls the app's environment poller to look for
- * environment updates, and process them. See `environmentUpdated()` below.
- */
-void task_poll_environment() {
-    debug.println("checking environment...");
-    pollEnvironment.poll();
+bool sendMonitorEvent(bool immediate) {
+    J *req = notecard.newRequest("note.add");
+    JAddStringToObject(req, "file", DATA_FILE_MONITOR);
+    J* body = buildNote(req, immediate);
+    addSensorValue(body, DATA_FIELD_SOIL_TEMP, soil_temp);
+    addSensorValue(body, DATA_FIELD_SOIL_MOISTURE, soil_moisture);
+    addSensorValue(body, DATA_FIELD_AIR_TEMP, air_temp);
+    addSensorValue(body, DATA_FIELD_AIR_HUMIDITY, air_humidity);
+    addSensorValue(body, DATA_FIELD_AIR_PRESSURE, air_pressure);
+    addSensorValue(body, DATA_FIELD_LIGHT_LEVEL, light_level);
+    return notecard.sendRequest(req);
 }
 
-/**
- * @brief The reporting task. Ensures that an event is sent at the configured interval.
- */
-void task_send_report() {
-    sendReport(true);
+void buildAlert(J* body, const char* sensor_name, float value, const ThresholdAlert* alert) {
+    J* r = JAddObjectToObject(body, sensor_name);
+    if (alert->alertLevel) {
+        JAddStringToObject(r, DATA_FIELD_ALERT_LEVEL, alertLevelString(alert->alertLevel));
+    }
+    JAddStringToObject(r, "status", thresholdStatusString(alert->threshold));
+    JAddNumberToObject(r, "value", value);
 }
 
-/**
- * @brief Poll the environment periodically. Always enabled.
- */
-Task taskPollEnvironment(DEFAULT_POLL_ENVIRONMENT_INTERVAL, TASK_FOREVER, task_poll_environment, &tasks, true);
+bool sendAlertThresholds(bool immediate) {
+    J *req = notecard.newRequest("note.add");
+    JAddStringToObject(req, "file", DATA_FILE_ALERT);
 
-/**
- * @brief Poll the sensors for their current readings. Always enabled.
- */
-Task taskReadSensors(DEFAULT_POLL_SENSORS_INTERVAL, TASK_FOREVER, task_monitor_sensors, &tasks, true);
+    J* body = buildNote(req, immediate);
 
-/**
- * @brief Send a heartbeat monitoring event. Enabled when `report_mins` environment is non-zero.
- */
-Task taskReport(DEFAULT_REPORT_INTERVAL, TASK_FOREVER, task_send_report, &tasks, false);
+    buildAlert(body, DATA_FIELD_SOIL_TEMP, soil_temp, &soil_temp_alert);
+    buildAlert(body, DATA_FIELD_SOIL_MOISTURE, soil_moisture, &soil_moisture_alert);
+    buildAlert(body, DATA_FIELD_AIR_TEMP, air_temp, &air_temp_alert);
+    buildAlert(body, DATA_FIELD_AIR_HUMIDITY, air_humidity, &air_humidity_alert);
+    buildAlert(body, DATA_FIELD_AIR_PRESSURE, air_pressure, &air_pressure_alert);
+    buildAlert(body, DATA_FIELD_LIGHT_LEVEL, light_level, &light_level_alert);
 
+    return notecard.sendRequest(req);
+}
+
+bool buildAndSendEvents(boolean immediate) {
+    bool success = sendMonitorEvent(immediate);
+    if (isAlertSequence(alertSequence)) {
+        success = sendAlertThresholds(immediate);
+    }
+    return success;
+}
+
+bool sendIfAlert() {
+    bool done = false;
+    if (isAlertSequenceImmediate(alertSequence)) {
+        debug.println("sending immediate alert");
+        done = buildAndSendEvents(true);
+    }
+    return done;
+}
+
+bool sendReport() {
+    debug.println("sending monitoring report");
+    return buildAndSendEvents(isAlertSequenceImmediate(alertSequence));
+}
+
+void registerNoteTemplate() {
+    static bool registered = false;
+    if (registered) {
+        return;
+    }
+    J *body = JCreateObject();
+    JAddStringToObject(body, DATA_FIELD_ALERT_SEQUENCE, TSTRINGV);
+    JAddStringToObject(body, DATA_FIELD_ALERT_LEVEL, TSTRINGV);
+    JAddStringToObject(body, DATA_FIELD_APP, TSTRINGV);
+    JAddNumberToObject(body, DATA_FIELD_SOIL_TEMP, TFLOAT32);
+    JAddNumberToObject(body, DATA_FIELD_SOIL_MOISTURE, TFLOAT32);
+    JAddNumberToObject(body, DATA_FIELD_AIR_TEMP, TFLOAT32);
+    JAddNumberToObject(body, DATA_FIELD_AIR_HUMIDITY, TFLOAT32);
+    JAddNumberToObject(body, DATA_FIELD_AIR_PRESSURE, TFLOAT32);
+    JAddNumberToObject(body, DATA_FIELD_LIGHT_LEVEL, TFLOAT32);
+
+    J* req = notecard.newCommand("note.template");
+    JAddStringToObject(req, "file", DATA_FILE_MONITOR);
+    JAddItemToObject(req, "body", body);
+    registered = notecard.sendRequest(req);
+    if (!registered) {
+        notecard.logDebug("Unable to register note template.\n");
+    }
+}
+
+bool hasEnvironmentChanged() {
+    bool changed = false;
+    J *rsp = notecard.requestAndResponse(notecard.newRequest("env.modified"));
+    if (rsp != NULL) {
+        int64_t modified = (int64_t) JGetNumber(rsp, "time");
+        changed = (!notecard.responseError(rsp) && environmentModifiedTime != modified);
+        notecard.deleteResponse(rsp);
+    }
+    return changed;
+}
+
+bool notifyEnvironmentChanged(J* changed, const char* name, double oldValue, double newValue) {
+    J* item = JCreateObject();
+    if (!isnan(oldValue)) {
+        JAddNumberToObject(item, "old_value", oldValue);
+    }
+    if (!isnan(newValue)) {
+        JAddNumberToObject(item, "new_value", newValue);
+    }
+    JAddItemToObject(changed, name, item);
+    return item;
+}
+
+bool notifyEnvironmentError(J* errors, const char* name, const char* text, const char* value) {
+    J* item = JCreateObject();
+    JAddStringToObject(item, "error", text);
+    JAddStringToObject(item, "value", value);
+    JAddItemToObject(errors, name, item);
+    return item;
+}
+
+void setTaskIntervalFromEnvironment(J* env, J* changed, J* error, uint32_t* interval_result, const char* envVar, uint32_t multiplier, uint32_t defaultInterval) {
+    const char* interval_str = JGetString(env, envVar);
+    uint32_t interval = defaultInterval;
+    if (interval_str && *interval_str) {    // variable is defined
+        char *endptr;
+        long value = strtol(interval_str, &endptr, 10);
+        if (*endptr || value<0) {
+            notifyEnvironmentError(error, envVar, "not a valid whole positive number.", interval_str);
+        }
+        else {
+            interval = value * multiplier;
+            if (*interval_result!=interval) {
+                notifyEnvironmentChanged(changed, envVar, *interval_result/multiplier, value);
+            }
+        }
+    }
+    *interval_result = interval;
+}
+
+inline bool compare_float(float a, float b, double epsilon=0.0001) {
+    return (fabs(a - b) < epsilon);
+}
+
+bool updateIntervalThresholdFromEnvrionment(J* env, J* changed, J* errors, const char* sensor_name, const char* range_name, const char* threshold, float* result) {
+    char varname[256];
+    snprintf(varname, sizeof(varname), "%s_%s_%s", sensor_name, range_name, threshold);
+    bool success = false;
+    float r = SENSOR_VALUE_UNDEFINED;
+    const char* value = JGetString(env, varname);
+    if (value && *value) {          // environment variable has been set
+        char* end;
+        r = strtod(value, &end);
+        if (end-value==strlen(value)) { // all characters parsed
+            if (!compare_float(*result, r)) {
+                notifyEnvironmentChanged(changed, varname, *result, r);
+                *result = r;
+            }
+            success = true;
+        }
+        else {
+            notifyEnvironmentError(errors, varname, "Value is not a number.", value);
+        }
+    }
+    else {      // environment variable removed or unset
+        *result = r;
+        success = true;
+    }
+    return success;
+}
+
+// Updates the low and high thresholds for an interval on a sensor
+void updateIntervalFromEnvironment(J* env, J* changed, J* errors,  const char* sensor_name, const char* range_name, Interval* interval) {
+    updateIntervalThresholdFromEnvrionment(env, changed, errors, sensor_name, range_name, "low", &interval->vmin);
+    updateIntervalThresholdFromEnvrionment(env, changed, errors, sensor_name, range_name, "high", &interval->vmax);
+}
+
+void updateAlertThresholdsFromEnvironment(J* env, J* changed, J* errors, const char* sensor_name, AlertIntervals* intervals) {
+    updateIntervalFromEnvironment(env, changed, errors, sensor_name, "normal", &intervals->normal);
+    updateIntervalFromEnvironment(env, changed, errors, sensor_name, "warning", &intervals->warning);
+}
 
 /**
  * @brief Handles updates to the environment for the app's tasks and report intervals.
  */
-void environmentUpdated(void* arg, J* environment) {
-    EnvironmentUpdate update(environment);
+void environmentUpdated(J* env) {
+    J* changed = JCreateObject();
+    J* errors = JCreateObject();
 
-    setTaskIntervalFromEnvironment(update, taskPollEnvironment, "environment_update_mins", 1000*60, DEFAULT_POLL_ENVIRONMENT_INTERVAL);
-    setTaskIntervalFromEnvironment(update, taskReadSensors, "monitor_secs", 1000, DEFAULT_POLL_SENSORS_INTERVAL);
-    setTaskIntervalFromEnvironment(update, taskReport, "report_mins", 1000*60, DEFAULT_REPORT_INTERVAL);
+    setTaskIntervalFromEnvironment(env, changed, errors, &pollEnvironmentInterval, "environment_update_mins", 1000*60, DEFAULT_POLL_ENVIRONMENT_INTERVAL);
+    setTaskIntervalFromEnvironment(env, changed, errors, &readSensorsInterval, "monitor_secs", 1000, DEFAULT_POLL_SENSORS_INTERVAL);
+    setTaskIntervalFromEnvironment(env, changed, errors, &sendReportInterval, "report_mins", 1000*60, DEFAULT_REPORT_INTERVAL);
 
-    monitor.environmentUpdated(update);
+    updateAlertThresholdsFromEnvironment(env, changed, errors, DATA_FIELD_SOIL_TEMP, &soil_temp_intervals);
+    updateAlertThresholdsFromEnvironment(env, changed, errors, DATA_FIELD_SOIL_MOISTURE, &soil_moisture_intervals);
 
-    update.toStream(debug);
-    reporter.notifyUpdate(update);
+    updateAlertThresholdsFromEnvironment(env, changed, errors, DATA_FIELD_AIR_TEMP, &air_temp_intervals);
+    updateAlertThresholdsFromEnvironment(env, changed, errors, DATA_FIELD_AIR_HUMIDITY, &air_humidity_intervals);
+    updateAlertThresholdsFromEnvironment(env, changed, errors, DATA_FIELD_AIR_PRESSURE, &air_pressure_intervals);
+
+    updateAlertThresholdsFromEnvironment(env, changed, errors, DATA_FIELD_LIGHT_LEVEL, &light_level_intervals);
+
+    char buf[256];
+    debug.println("environment updates:");
+    if (changed->child) {
+        JPrintPreallocated(changed, buf, sizeof(buf), false);
+        debug.println(buf);
+    }
+    else {
+        debug.println("none");
+    }
+    debug.println("environment errors:");
+    if (errors->child) {
+        JPrintPreallocated(errors, buf, sizeof(buf), false);
+        debug.println(buf);
+    }
+    else {
+        debug.println("none");
+    }
+    debug.println();
+
+    if (changed->child || errors->child) {
+        J* req = notecard.newRequest("note.add");
+        JAddStringToObject(req, "file", DATA_FILE_NOTIFY);
+        J* body = NoteNewBody();
+        if (changed->child) {
+            JAddItemToObject(body, "updates", changed);
+            changed = nullptr;
+        }
+        if (errors->child) {
+            JAddItemToObject(body, "errors", errors);
+            errors = nullptr;
+        }
+        JAddStringToObject(body, DATA_FIELD_APP, APP_NAME);
+        NoteAddBodyToObject(req, body);
+        notecard.sendRequest(req);
+    }
+    JDelete(changed);
+    JDelete(errors);
+}
+
+bool readEnvironment() {
+    // Read all env vars from the notecard in one transaction
+    J *rsp = notecard.requestAndResponse(notecard.newRequest("env.get"));
+    if (rsp == NULL) {
+        return false;
+    }
+    if (notecard.responseError(rsp)) {
+        notecard.deleteResponse(rsp);
+        return false;
+    }
+
+    // Update the env modified time
+    environmentModifiedTime = JGetNumber(rsp, "time");
+
+    // Update the environment
+    J *body = JGetObject(rsp, "body");
+    if (body != NULL) {
+        environmentUpdated(body);
+    }
+
+    // Done
+    notecard.deleteResponse(rsp);
+    return true;
 }
 
 void setup()
@@ -197,7 +550,7 @@ void setup()
     // Initialize debug IO
     pinMode(LED_BUILTIN, OUTPUT);
     // uncomment to have the app wait for a Serial connection
-    // while (!debug) {};
+    while (!debug) {};
     debug.begin(115200);
     debug.println("*** " __DATE__ " " __TIME__ " ***");
 
@@ -208,24 +561,20 @@ void setup()
     notecard.setDebugOutputStream(debug);
     notecard.begin();
 
-    // Initialize sensors
-    seesaw.begin();
-    bme280.begin();
-    light.begin();
-
-    // add the sensor values to the monitor
-    monitor.addSensor(light);
-    monitor.addSensors(bme280.values);
-    monitor.addSensors(seesaw.values);
-
     J *req = notecard.newRequest("hub.set");
     JAddStringToObject(req, "product", PRODUCT_UID);
     JAddStringToObject(req, "mode", "continuous");
     JAddBoolToObject(req, "sync", true);
     notecard.sendRequest(req);
 
-    pollEnvironment.begin();     // update the app state from the environment
-    reporter.begin();
+    readEnvironment();
+
+    pinMode(LIGHT_SENSOR_PIN, INPUT);
+
+    registerNoteTemplate();
+
+    // initialize and read sensors
+    readSensors();
 }
 
 bool sync() {
@@ -238,12 +587,42 @@ void loop()
     // allow manual triggering of tasks
     int c = Serial.read();
     switch (c) {
-        case 'E': pollEnvironment.fetchEnvironment(); break;
-        case 'e': sync(); task_poll_environment(); break;
-        case 'm': task_monitor_sensors(); break;
-        case 'r': sendReport(true); break;
+        // update environment
+        case 'e': readEnvironment(); break;
+        // monitor sensors - sends only alerts immediately
+        case 'm': readAndCheckSensors(); sendIfAlert(); break;
+        // report sensors - always sends a report
+        case 'r': readAndCheckSensors(); sendReport(); break;
         case 's': sync();
     }
-    tasks.execute();
+
+    uint32_t now = millis();
+    bool sensorsUpdated = false;
+    if (readSensorsInterval && (now-readSensorsMs)>readSensorsInterval) {
+        readSensorsMs = now;
+        readAndCheckSensors();
+        sensorsUpdated = true;
+        if (sendIfAlert()) {          // alert just sent, no need for a regular monitoring report
+            sendReportMs = now;
+        }
+    }
+
+    if (sendReportInterval && (now-sendReportMs)>sendReportInterval) {
+        sendReportMs = now;
+        if (!sensorsUpdated) {
+            readAndCheckSensors();
+            readSensorsMs = now;
+        }
+        sendReport();
+    }
+
+    if (pollEnvironmentInterval && (now-pollEnvironmentMs)>pollEnvironmentInterval) {
+        pollEnvironmentMs = now;
+        debug.println("checking environment...");
+        readEnvironment();
+    }
 }
 
+void NoteUserAgentUpdate(J *ua) {
+   JAddStringToObject(ua, DATA_FIELD_APP, APP_NAME);
+}

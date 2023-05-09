@@ -129,7 +129,6 @@ When using the Arduino extension for VS Code, or the Arduino IDE, install these 
 * Adafruit Seesaw
 * Adafruit BusIO (dependency of Adafruit seesaw)
 * Adafruit BME280 sensor
-* TaskScheduler
 
 #### Arduino IDE - Compiling/Uploading
 
