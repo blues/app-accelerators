@@ -208,3 +208,7 @@ void loop() {
         }
     }
 }
+
+void NoteUserAgentUpdate(J *ua) {
+    JAddStringToObject(ua, "app", "nf35");
+}

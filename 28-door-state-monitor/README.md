@@ -44,7 +44,7 @@ Next, we need to flash the reference node with the door state monitor firmware.
 1. Connect the STLINK-V3MINI to your development PC with a USB A to micro USB cable.
 1. Connect the STLINK to your reference node with the 2x7 JTAG ribbon cable.
 1. Build and flash the code using whichever method you selected when following the Sparrow Builder's Guide.
-1. Open a terminal emulator and connect to the STLINK's serial connection to view logs. See the documentation [here](https://dev.blues.io/sparrow/sparrow-builders-guide/#collecting-firmware-logs). 
+1. Open a terminal emulator and connect to the STLINK's serial connection to view logs. See the documentation [here](https://dev.blues.io/sparrow/sparrow-builders-guide/#collecting-firmware-logs).
 1. Start the program in debug mode (again, how you do this depends on the IDE: VS Code or STM32CubeIDE). In your terminal emulator's output, you should see something like this:
 
 ```
