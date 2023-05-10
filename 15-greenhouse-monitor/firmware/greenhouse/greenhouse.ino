@@ -30,7 +30,7 @@
 #endif
 
 // When set to true, all monitoring notes are synced immediately to Notehub.
-// When set to false, only alerts are synched immediately.
+// When set to false, only alerts are synced immediately.
 #ifndef SYNC_MONITORING_NOTES
 #define SYNC_MONITORING_NOTES        (false)
 #endif
@@ -115,8 +115,7 @@ uint32_t pollEnvironmentInterval = DEFAULT_POLL_ENVIRONMENT_INTERVAL;
 uint32_t pollEnvironmentMs;
 int64_t environmentModifiedTime;
 
-void readSensors() {
-
+bool initializeBME280() {
     if (!bme280Initialized) {
         unsigned status = bme280.begin();
         if (!status && !bme280Messaged) {
@@ -130,21 +129,10 @@ void readSensors() {
         }
         bme280Initialized = status;
     }
-    if (bme280Initialized) {
-        air_temp = bme280.readTemperature();
-        air_humidity = bme280.readHumidity();
-        air_pressure = bme280.readPressure()/100.0;
-        bme280Messaged = false; // re-print the message after a successful read should the sensor connection fail
-        if (!isValueSet(air_temp) && !isValueSet(air_humidity) && !isValueSet(air_pressure)) {
-            bme280Initialized = false;
-        }
-    }
-    else {
-        air_temp = SENSOR_VALUE_UNDEFINED;
-        air_humidity = SENSOR_VALUE_UNDEFINED;
-        air_pressure = SENSOR_VALUE_UNDEFINED;
-    }
+    return bme280Initialized;
+}
 
+bool initializeSeesaw() {
     if (!seesawInitialized) {
         seesawInitialized = seesaw.begin(0x36);
         if (seesawInitialized) {
@@ -156,7 +144,28 @@ void readSensors() {
             seesawMessaged = true;
         }
     }
-    if (seesawInitialized) {
+    return seesawInitialized;
+}
+
+void readBME280() {
+    if (initializeBME280()) {
+        air_temp = bme280.readTemperature();
+        air_humidity = bme280.readHumidity();
+        air_pressure = bme280.readPressure()/100.0; // convert from Pascals hecto-Pascals which is more commonly used when reporting atmospheric pressure
+        bme280Messaged = false; // re-print the message after a successful read should the sensor connection fail
+        if (!isValueSet(air_temp) && !isValueSet(air_humidity) && !isValueSet(air_pressure)) {
+            bme280Initialized = false;
+        }
+    }
+    else {
+        air_temp = SENSOR_VALUE_UNDEFINED;
+        air_humidity = SENSOR_VALUE_UNDEFINED;
+        air_pressure = SENSOR_VALUE_UNDEFINED;
+    }
+}
+
+void readSeesaw() {
+    if (initializeSeesaw()) {
         soil_temp = seesaw.getTemp();
         soil_moisture = seesaw.touchRead(0);
         seesawMessaged = false;
@@ -164,8 +173,16 @@ void readSensors() {
             seesawInitialized = false;
         }
     }
+}
 
+void readPhotosensor() {
     light_level = analogRead(LIGHT_SENSOR_PIN);
+}
+
+void readSensors() {
+    readBME280();
+    readSeesaw();
+    readPhotosensor();
 }
 
 void outputSensorValue(Stream& s, const char* name, float value) {
@@ -547,15 +564,10 @@ bool readEnvironment() {
 
 void setup()
 {
-    // Initialize debug IO
-    pinMode(LED_BUILTIN, OUTPUT);
     // uncomment to have the app wait for a Serial connection
-    while (!debug) {};
+    // while (!debug) {};
     debug.begin(115200);
     debug.println("*** " __DATE__ " " __TIME__ " ***");
-
-    // Initialize I2C
-    Wire.begin();
 
     // Initialize Notecard library (without doing any I/O on this task)
     notecard.setDebugOutputStream(debug);
@@ -593,7 +605,7 @@ void loop()
         case 'm': readAndCheckSensors(); sendIfAlert(); break;
         // report sensors - always sends a report
         case 'r': readAndCheckSensors(); sendReport(); break;
-        case 's': sync();
+        case 's': sync(); break;
     }
 
     uint32_t now = millis();

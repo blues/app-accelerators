@@ -25,7 +25,9 @@ when any of these fall outside specified ranges.
   - [Alerts](#alerts)
     - [Alert Events](#alert-events)
     - [Soil Moisture and Light Level](#soil-moisture-and-light-level)
+  - [Manual Testing](#manual-testing)
   - [Deploying to a Greenhouse](#deploying-to-a-greenhouse)
+    - [Synchronization Mode](#synchronization-mode)
   - [Blues Community](#blues-community)
 
 
@@ -364,6 +366,20 @@ The event has these properties:
 
 The `soil_moisture` and `light_level` are scalar readings that correlate to the amount of moisture in the soil and the amount of light, with more moisture and more light resulting is higher values, and less moisture and less light resulting in lower values. We suggest you use the app in the greenhouse for a few days, and t to `greenhouse.qo` to determine the normal ranges for these values. You can then set the environment variables `soil_moisture_normal_low` etc.. to reflect the expected normal range of values.
 
+## Manual Testing
+
+The app features a simple command-control interface via the USB serial connection. These commands are supported:
+
+* `s`: Sync with Notehub. This flushes any outbound data and receives any inbound updates from Notehub, such as environment variable changes.
+
+* `e`: Environment refresh. (Typically used after sync.) Fetches the current values of environment variables and applies these to the app.
+
+* `m`: Monitor. Reads sensors and sends an event when an immediate alert is first detected or when the alert is cleared. This is the same action that is performed every `monitor_secs` seconds.
+
+* `r`: Report. Reads sensors and sends an event always. This is the same action that is performed every `report_mins` minutes.
+
+You can use these commands to rapidly evaluate environment variable changes and check alert thresholds, or otherwise experiment with the app with immediate responsiveness.
+
 ## Deploying to a Greenhouse
 
 When you deploy the solution in your greenhouse, you will power the Notecarrier from a USB power brick. Additionally you may want to waterproof all of the electronics. Here are some suggestions:
@@ -374,6 +390,11 @@ When you deploy the solution in your greenhouse, you will power the Notecarrier 
 
 * Use heat shrink tubing over the BME280 sensor and/or waterproof tape. You may also place the BME280 sensor in the waterproof box housing the other electronics, although the heat produced by the electronics may slightly raise the temperature inside the box.
 
+### Synchronization Mode
+
+To consume less power and potentially less bandwidth, you may want to consider changing the `hub.set` request from `continuous` mode to `periodic` mode with appropriate values for `inbound` and `outbound`. See [Configuring Synchronization Modes](https://dev.blues.io/notecard/notecard-walkthrough/essential-requests/#configuring-synchronization-modes) for more details. When using periodic mode, set the environment variable polling interval to half of the `inbound` value.
+
+Initial alerts and cleared alerts are always sent immediately to Notehub, and are not affected by the `outbound` latency.
 
 ## Blues Community
 
