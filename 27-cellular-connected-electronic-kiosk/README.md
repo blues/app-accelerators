@@ -1,6 +1,6 @@
 # Cellular-Connected Electronic Kiosk
 
-A cellular-based solution for downloading resources for an electronic kiosk display without an Internet connectiod, using a simple Python script.
+A cellular-based solution for downloading resources for an electronic kiosk display without an Internet connected, using a simple Python script.
 
 This project is designed to be run on a Raspberry Pi computer with no Internet connection via a Python script. In an effort to keep the required download size for the Pi small, the hardware and Notehub cloud setup is included in this repo, and the code required to run the app on the Pi and a sample web app to demonstrate how to zip up a project are located in a [separate repository](https://github.com/blues/accelerators-cellular-connected-electronic-kiosk).
 
@@ -13,7 +13,7 @@ To run this project yourself you'll need to:
 
 ## Notehub
 
-The Cellular-Connected Electonic Kiosk Python scripts require data from a Notehub project in order to run. 
+The Cellular-Connected Electronic Kiosk Python scripts require data from a Notehub project in order to run. 
 
 ### Create a New Project
 
@@ -53,7 +53,7 @@ This variable specifies the hour of the day (using 24-hour time) when the Python
 
 #### `kiosk_data`
 
-This is an optional environment variable that can be set to any valid JSON object. It can be used to overwite the contents of the `data.js` file in the ZIP. For instance, if the contents of `data.js` looks like this:
+This is an optional environment variable that can be set to any valid JSON object. It can be used to overwrite the contents of the `data.js` file in the ZIP. For instance, if the contents of `data.js` looks like this:
 
 ```javascript
 var data = <value of kiosk_data goes here>
@@ -83,7 +83,7 @@ The following hardware is required to run the Cellular-Connected Electronic Kios
 - Micro USB cable
 - [7" Touchscreen Display for Raspberry Pi](https://www.adafruit.com/product/2718)
 - [Wireless Keyboard and Mouse Combo](https://www.adafruit.com/product/1738)
-- [Smarti Pi Touch Pro for Raspberry Pi and Official 7" Display](https://www.adafruit.com/product/4951)
+- [SmartiPi Touch Pro for Raspberry Pi and Official 7" Display](https://www.adafruit.com/product/4951)
 
 Once you have all your hardware you'll need to install the Raspberry Pi OS and assemble the pieces.
 ### Raspberry Pi microSD Card Setup
@@ -102,7 +102,7 @@ Next, connect the Notecard and Pi Hat to the Pi by following [the section "Conne
 
 Put together the Pi, display, and case by following [this documentation from SmartiPi](https://cdn.shopify.com/s/files/1/0793/8029/files/touch_pro_assembly_instructions.pdf?v=1640377735), with a few additional steps to accommodate the Notecard hardware.
 
-At Step 7, make sure to install the Notecarrier Pi Hat with the Notecard onto the Pi's headers (don't forget to attach the antenna to the Notecard as well):
+At Step 7 in the documentation, make sure to install the Notecarrier Pi Hat with the Notecard onto the Pi's headers (don't forget to attach the antenna to the Notecard as well):
 
 ![Pi Hat on Pi's headers](images/pi_hat.jpg)
 
