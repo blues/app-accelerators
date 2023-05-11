@@ -1,4 +1,4 @@
-#include <Arduino.h> // TODO: Needed?
+#include <Arduino.h>
 #include <MEMSAudioCapture.h>
 
 MEMSAudioCapture mic;
