@@ -106,8 +106,6 @@ From here, follow the ["Build a dataset" section of the Edge Impulse tutorial](h
 
 Follow the steps [here](https://docs.edgeimpulse.com/docs/pre-built-datasets/running-faucet) to upload the prebuilt dataset to your project.
 
-TODO: Should we provide a pretrained model based on this dataset, too?
-
 ### Training the Model
 
 Once you've collecting your training data, complete sections 4-9 of the Edge Impulse tutorial to train the model. Note that if you created a custom dataset, you may see a warning about having an empty testing set (i.e. all your data is in the training set). You can ignore this for now. Section 8 of the tutorial gives you an opportunity to collect data for your test set.

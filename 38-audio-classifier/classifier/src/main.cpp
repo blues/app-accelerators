@@ -32,8 +32,7 @@
 
 // Fetch environment variables every 5 minutes.
 #ifndef ENV_FETCH_INTERVAL_MS
-#define ENV_FETCH_INTERVAL_MS (15 * 1000)
-// #define ENV_FETCH_INTERVAL_MS (5 * 60 * 1000)
+#define ENV_FETCH_INTERVAL_MS (5 * 60 * 1000)
 #endif
 
 #ifndef NUM_PCM_BUFS
