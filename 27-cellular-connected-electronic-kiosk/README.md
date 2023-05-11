@@ -1,17 +1,73 @@
 # Cellular-Connected Electronic Kiosk
 
-A cellular-based solution for downloading resources for an electronic kiosk display without an Internet connected, using a simple Python script.
+A cellular-based solution for downloading resources for an electronic kiosk display without an Internet connection, using a simple Python script.
 
 https://github.com/blues/app-accelerators/assets/20400845/04f94b74-fea8-4829-b673-e29d8782cf8c
 
-This project is designed to be run on a Raspberry Pi computer with no Internet connection via a Python script. In an effort to keep the required download size for the Pi small, the hardware and Notehub cloud setup is included in this repo, and the code required to run the app on the Pi and a sample web app to demonstrate how to zip up a project are located in a [separate repository](https://github.com/blues/accelerators-cellular-connected-electronic-kiosk).
+In an effort to keep the required download size for the Raspberry Pi small, the hardware and Notehub cloud setup is covered in this repo, and the code required to run the app on the Pi and a sample web app to demonstrate how to zip up a project are located in a [separate repository](https://github.com/blues/accelerators-cellular-connected-electronic-kiosk).
 
-To run this project yourself you'll need to:
+To run this project you'll need to:
 
-* [Configure Notehub](#notehub).
 * [Purchase and assemble the necessary Raspberry Pi hardware](#hardware).
+* [Configure Notehub](#notehub).
 * [Download the Python scripts to the Raspberry Pi](https://github.com/blues/accelerators-cellular-connected-electronic-kiosk/tree/main/scripts).
 * [Zip up and download the sample web app to the Pi](https://github.com/blues/accelerators-cellular-connected-electronic-kiosk/tree/main/web-app).
+
+## Hardware
+
+The following hardware is required to run the Cellular-Connected Electronic Kiosk project.
+
+- [Raspberry Pi 4B](https://www.raspberrypi.com/products/raspberry-pi-4-model-b/)
+- [CanaKit 3.5A Raspberry Pi 4 Power Supply (USB-C)](https://www.amazon.com/CanaKit-Raspberry-Power-Supply-USB-C/dp/B07TYQRXTK/)
+- microSD Card (8GB minimum) and a MicroSD to SD Memory Card Adapter (your development PC must have an SD card reader slot)
+- [Notecard](https://shop.blues.io/collections/notecard/products/note-wbna-500)
+- [Notecarrier Pi Hat](https://shop.blues.io/products/carr-pi)
+- Micro USB cable
+- [7" Touchscreen Display for Raspberry Pi](https://www.adafruit.com/product/2718)
+- [Wireless Keyboard and Mouse Combo](https://www.adafruit.com/product/1738)
+- [SmartiPi Touch Pro for Raspberry Pi and Official 7" Display](https://www.adafruit.com/product/4951)
+
+Once you have all your hardware you'll need to install the Raspberry Pi OS and assemble the pieces.
+
+### Raspberry Pi microSD Card Setup
+
+Before installing the Raspberry Pi into the SmartiPi case, you need to install [Raspberry Pi OS](https://www.raspberrypi.com/software/) onto the microSD card by following the steps in [this official video](https://www.youtube.com/watch?v=ntaXWS8Lk34) from the Raspberry Pi Foundation. Alternatively, you can follow text-based documentation [here](https://projects.raspberrypi.org/en/projects/raspberry-pi-setting-up/2).
+
+With the microSD card ready to go, plug it into the Pi:
+
+![microSD card installation](images/pi-sd.png)
+
+### Notecard and Notecarrier
+
+Next, connect the Notecard and Pi Hat to the Pi by following [the section "Connect Your Notecard and Notecarrier" from the Blues Quickstart guide](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#connect-your-notecard-and-notecarrier).
+
+### SmartiPi Case and Display
+
+Put together the Pi, display, and case by following [this documentation from SmartiPi](https://cdn.shopify.com/s/files/1/0793/8029/files/touch_pro_assembly_instructions.pdf?v=1640377735), with a few additional steps to accommodate the Notecard hardware.
+
+At Step 7 in the documentation, make sure to install the Notecarrier Pi Hat with the Notecard onto the Pi's headers (don't forget to attach the antenna to the Notecard as well):
+
+![Pi Hat on Pi's headers](images/pi_hat.jpg)
+
+Everything should fit, even with the standoffs attached to the Pi. If you want to manually send commands to the Notecard for any reason (e.g. debugging) via the [Notecard CLI](https://dev.blues.io/tools-and-sdks/notecard-cli/), you will also need to use the micro USB cable to connect the Notecarrier's micro USB port to one of the Pi's USB ports:
+
+![Notecarrier USB connection](images/notecarrier_usb_connection.jpg)
+
+At this point, the assembly should look something like this:
+
+![Fully assembled](images/full_assembly.jpg)
+
+From here, you can continue with the rest of the steps in the SmartiPi documentation.
+
+### Keyboard and Mouse
+
+Install the AAA batteries into the keyboard and mouse, and plug the USB dongle into a free USB port on the Pi. Note that this single dongle is used for both the keyboard and mouse.
+
+### Booting for the First Time
+
+Plug the USB-C power supply into the exposed USB-C port on the case and let the Pi boot up. Complete the setup steps as described in [this documentation](https://projects.raspberrypi.org/en/projects/raspberry-pi-setting-up/4).
+
+The next step after assembling the Raspberry Pi and its peripherals is to configure the Notehub cloud to be able to communicate with the Notecard attached to the Pi.
 
 ## Notehub
 
@@ -24,7 +80,7 @@ As such, to run this sample sign up for a free account on [notehub.io](https://n
 
 ### Create a Proxy Route
 
-In the Notehub project, you'll need to create a [proxy route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) in order to download the kiosk web app to the Pi. The web app should be bundled in a ZIP file and stored online somewhere (e.g. in an AWS S3 bucket). Unzipping the ZIP file should produce, at minimum, a directory named `resources/` with an HTML page to display named `index.htm`, and a `metadata/` directory with a `kiosk.json` file that contains information for Notehub.
+In the Notehub project, you'll need to create a [proxy route](https://dev.blues.io/notecard/notecard-walkthrough/web-transactions/) in order to download the kiosk web app to the Pi. The web app should be bundled in a ZIP file and stored online somewhere (e.g. in an AWS S3 bucket). Unzipping the ZIP file should produce, at minimum, a directory named `resources/` with an HTML page to display named `index.htm`, and a `metadata/` directory with a `kiosk.json` file that contains information for Notehub.
 
 For a more in-depth example of the required files, web app structure, and how to zip the project and store it in AWS for retrieval by Notehub, see the [separate repo's documentation](https://github.com/blues/accelerators-cellular-connected-electronic-kiosk).
 
@@ -73,60 +129,7 @@ To see this in action with actual code examples, see the [related sample repo](h
 
 ![Environment variables](images/env_vars.png)
 
-## Hardware
-
-The following hardware is required to run the Cellular-Connected Electronic Kiosk project.
-
-- [Raspberry Pi 4B](https://www.raspberrypi.com/products/raspberry-pi-4-model-b/)
-- [CanaKit 3.5A Raspberry Pi 4 Power Supply (USB-C)](https://www.amazon.com/CanaKit-Raspberry-Power-Supply-USB-C/dp/B07TYQRXTK/)
-- microSD Card (8GB minimum) and a MicroSD to SD Memory Card Adapter (your development PC must have an SD card reader slot)
-- [Notecard](https://shop.blues.io/collections/notecard/products/note-wbna-500)
-- [Notecarrier Pi Hat](https://shop.blues.io/products/carr-pi)
-- Micro USB cable
-- [7" Touchscreen Display for Raspberry Pi](https://www.adafruit.com/product/2718)
-- [Wireless Keyboard and Mouse Combo](https://www.adafruit.com/product/1738)
-- [SmartiPi Touch Pro for Raspberry Pi and Official 7" Display](https://www.adafruit.com/product/4951)
-
-Once you have all your hardware you'll need to install the Raspberry Pi OS and assemble the pieces.
-### Raspberry Pi microSD Card Setup
-
-Before installing the Raspberry Pi into the SmartiPi case, you need to install [Raspberry Pi OS](https://www.raspberrypi.com/software/) onto the microSD card by following the steps in [this official video](https://www.youtube.com/watch?v=ntaXWS8Lk34) from the Raspberry Pi Foundation. Alternatively, you can follow text-based documentation [here](https://projects.raspberrypi.org/en/projects/raspberry-pi-setting-up/2).
-
-With the microSD card ready to go, plug it into the Pi:
-
-![microSD card installation](images/pi-sd.png)
-
-### Notecard and Notecarrier
-
-Next, connect the Notecard and Pi Hat to the Pi by following [the section "Connect Your Notecard and Notecarrier" from the Blues Quickstart guide](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#connect-your-notecard-and-notecarrier).
-
-### SmartiPi Case and Display
-
-Put together the Pi, display, and case by following [this documentation from SmartiPi](https://cdn.shopify.com/s/files/1/0793/8029/files/touch_pro_assembly_instructions.pdf?v=1640377735), with a few additional steps to accommodate the Notecard hardware.
-
-At Step 7 in the documentation, make sure to install the Notecarrier Pi Hat with the Notecard onto the Pi's headers (don't forget to attach the antenna to the Notecard as well):
-
-![Pi Hat on Pi's headers](images/pi_hat.jpg)
-
-Everything should fit, even with the standoffs attached to the Pi. If you want to manually send commands to the Notecard for any reason (e.g. debugging) via the [Notecard CLI](https://dev.blues.io/tools-and-sdks/notecard-cli/), you will also need to use the micro USB cable to connect the Notecarrier's micro USB port to one of the Pi's USB ports:
-
-![Notecarrier USB connection](images/notecarrier_usb_connection.jpg)
-
-At this point, the assembly should look something like this:
-
-![Fully assembled](images/full_assembly.jpg)
-
-From here, you can continue with the rest of the steps in the SmartiPi documentation.
-
-### Keyboard and Mouse
-
-Install the AAA batteries into the keyboard and mouse, and plug the USB dongle into a free USB port on the Pi. Note that this single dongle is used for both the keyboard and mouse.
-
-### Booting for the First Time
-
-Plug the USB-C power supply into the exposed USB-C port on the case and let the Pi boot up. Complete the setup steps as described in [this documentation](https://projects.raspberrypi.org/en/projects/raspberry-pi-setting-up/4).
-
-With the hardware assembled, your next step is getting the project's Python scripts downloaded to the Raspberry Pi and providing a zipped web app for the Pi to download.
+With the hardware assembled and Notehub cloud configured, your next step is getting the project's Python scripts downloaded to the Raspberry Pi and providing a zipped web app for the Pi to download.
 
 ## Raspberry Pi Python Scripts and Sample Web App
 
