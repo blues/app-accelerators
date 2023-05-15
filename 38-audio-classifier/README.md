@@ -23,7 +23,9 @@ Monitor the environment for a particular sound and publish the detections to Not
 
 ## Overview
 
-In this application, you'll build a binary audio classifier. "Binary" here means there are two classes of audio the model will be able to classify: the sound you're interested in and everything else. In this README, we'll use the example of a "running faucet" detector, leveraging [this audio recognition tutorial](https://docs.edgeimpulse.com/docs/tutorials/audio-classification) from Edge Impulse. However, you can easily apply the principals described here to any other binary audio classification task (we even built a cat meow detector!). You'll use Edge Impulse to collect data, train the model, and download the model as as Arduino library for use in your Swan firmware. The firmware continually collects 1 second clips of audio via the microphone and feeds them into your audio classifier model, publishing a note to Notehub if it detects that the faucet is running.
+In this application, you'll build a binary audio classifier. "Binary" here means there are two classes of audio the model will be able to classify: the sound you're interested in and everything else. In this README, we'll use the example of a "running faucet" detector. However, you can easily apply the principals described here to any other binary audio classification task (we even built a cat meow detector!).
+
+You'll use [Edge Impulse](https://www.edgeimpulse.com/), a free edge AI platform, to collect data, train the model, and download the model as as Arduino library for use in your Swan firmware. The firmware continually collects 1 second clips of audio via the microphone and feeds them into your audio classifier model, publishing a note to Notehub if it detects that the faucet is running.
 
 ## You Will Need
 
@@ -65,7 +67,10 @@ In this application, you'll build a binary audio classifier. "Binary" here means
 
 ## Building the Audio Classifier Model
 
-First, sign up for an [Edge Impulse](https://studio.edgeimpulse.com/) account and log in. Click "Create new project", enter a project name and click "Create new project".
+1. Sign up for a free [Edge Impulse](https://studio.edgeimpulse.com/) account and log in.
+2. Click "Create new project".
+3. Enter a project name.
+4. Click "Create new project".
 
 ### Collecting Data
 
@@ -100,7 +105,7 @@ Now, you're ready to stream audio data to Edge Impulse.
 
 ![Collect data form](images/collect_data.png)
 
-From here, follow the ["Build a dataset" section of the Edge Impulse tutorial](https://docs.edgeimpulse.com/docs/tutorials/audio-classification#3.-build-a-dataset). Make sure to change the label and sample length before recording each scenario. For example, for the "2 minutes of background noise without much additional activity", make sure to set sample length to 120000 milliseconds and the label to "noise". Once you've set the label and sample length, click "Start sampling" to collect the audio data. Repeat this for each scenario described in the Edge Impulse tutorial to create your custom dataset.
+From here, follow the ["Build a dataset" section of this Edge Impulse tutorial](https://docs.edgeimpulse.com/docs/tutorials/audio-classification#3.-build-a-dataset). Make sure to change the label and sample length before recording each scenario. For example, for the "2 minutes of background noise without much additional activity", make sure to set sample length to 120000 milliseconds and the label to "noise". Once you've set the label and sample length, click "Start sampling" to collect the audio data. Repeat this for each scenario described in the Edge Impulse tutorial to create your custom dataset.
 
 #### Prebuilt Dataset
 
@@ -108,7 +113,7 @@ Follow the steps [here](https://docs.edgeimpulse.com/docs/pre-built-datasets/run
 
 ### Training the Model
 
-Once you've collecting your training data, complete sections 4-9 of the Edge Impulse tutorial to train the model. Note that if you created a custom dataset, you may see a warning about having an empty testing set (i.e. all your data is in the training set). You can ignore this for now. Section 8 of the tutorial gives you an opportunity to collect data for your test set.
+Once you've collecting your training data, complete [sections 4-9 of the Edge Impulse tutorial](https://docs.edgeimpulse.com/docs/tutorials/audio-classification#4.-design-an-impulse) to train the model. Note that if you created a custom dataset, you may see a warning about having an empty testing set (i.e. all your data is in the training set). You can ignore this for now. Section 8 of the tutorial gives you an opportunity to collect data for your test set.
 
 ### Downloading the Model
 
@@ -193,7 +198,7 @@ is purely diagnostic and indicates how long the digital signal processing (DSP) 
 
 ## Testing
 
-Move your laptop and the hardware so that the microphone is in range of the sound of a faucet. Start the Monitor task in VS Code so you can see the serial log. Turn on the faucet, and you should see this in the log, if detection was successful:
+Move your laptop and the hardware so that the microphone is in range of the sound of a faucet. Start the Monitor task in VS Code so you can see the serial log. Turn on the faucet, and you should see this in the log if detection was successful:
 
 ```
 (DSP: 107 ms., Classification: 11 ms.)
