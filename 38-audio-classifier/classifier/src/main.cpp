@@ -19,6 +19,11 @@
 #define HUB_SET_TIMEOUT_SECS 5
 #endif
 
+// Sync inbound data from Notehub every 3 minutes.
+#ifndef INBOUND_SYNC_MINS
+#define INBOUND_SYNC_MINS 3
+#endif
+
 #ifndef MIN
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #endif
@@ -180,6 +185,7 @@ void setup()
        JAddStringToObject(req, "product", PRODUCT_UID);
     }
     JAddStringToObject(req, "mode", "periodic");
+    JAddNumberToObject(req, "inbound", INBOUND_SYNC_MINS);
     if (!notecard.sendRequestWithRetry(req, HUB_SET_TIMEOUT_SECS)) {
         Serial.println("Failed to send hub.set request to Notecard.");
     }
