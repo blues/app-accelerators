@@ -58,7 +58,7 @@ The converter's male RS232 connector plugs into the second part, a small PCB wit
 - Plug the CANL wire into the port labeled L on the MCU's terminal block.
 - Plug the CANH wire into the port labeled H.
 
-![Complete hardware](../images/complete_hardware.jpg)
+![Complete hardware](images/complete_hardware.jpg)
 
 ## Notehub Setup
 
