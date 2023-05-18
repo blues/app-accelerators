@@ -1,0 +1,2 @@
+- How to feed data at inference time: https://forum.edgeimpulse.com/t/data-format-for-audio-recogniton/2096/10
+- 
