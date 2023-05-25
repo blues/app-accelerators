@@ -2,6 +2,8 @@
 
 Monitor machine AC power use and send alerts on monitored changes.
 
+![](../app-banners/08-banner.png)
+
 - [Power Quality Monitor](#power-quality-monitor)
   - [Problem Description](#problem-description)
   - [Solution Summary](#solution-summary)
