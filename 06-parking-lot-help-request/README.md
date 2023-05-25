@@ -6,7 +6,7 @@ Host-free low latency notification system to alert attendants in a parking lot o
 
 https://user-images.githubusercontent.com/20400845/207144197-c4e99d29-cd9c-4e8f-9dfc-2e0ae0103c1c.mp4
 
-To run this project youself you'll need to:
+To run this project yourself you'll need to:
 
 * [Purchase the necessary hardware and configure it](#hardware).
 * [Configure Notehub](#notehub).
