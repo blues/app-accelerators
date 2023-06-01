@@ -1,6 +1,6 @@
 # Arduino Firmware
 
-This is a Arduino-based implementation of the temperature and humidity monitor project's firmware.
+This is an Arduino-based implementation of the temperature and humidity monitor project's firmware.
 
 ## Usage
 
@@ -18,4 +18,4 @@ and replace `com.your-company:your-product-name` with your ProductUID from [Note
 5. Press and hold the button labeled "BOOT" on the Swan, and, while holding BOOT, press and release the button labeled "RST", and finally release the BOOT button. The Swan is now ready to be flashed.
 6. Click "Upload" under Project Tasks > bw_swan_r5 > General. You should see "SUCCESS" in the terminal output pane.
 
-With the firmware returning, refer to this project's [Operation documentation](../../README.md#operation) for details on the data your device is now sending.
+With the firmware running, refer to this project's [Operation documentation](../../README.md#operation) for details on the data your device is now sending.

@@ -25,7 +25,7 @@ These instructions will defer parts of the build process to the [Blues Zephyr SD
 
 Now, the code should be running on the Swan. If you want to look at the serial logs or debug the code, check out the [Zephyr SDK docs' "Debugging" section](https://dev.blues.io/tools-and-sdks/firmware-libraries/zephyr-sdk/#debugging).
 
-And refer to this project's [Operation documentation](../../README.md#operation) for details on the data your device is now sending.
+Refer to this project's [Operation documentation](../../README.md#operation) for details on the data your device is now sending.
 
 ## Additional Resources
 
