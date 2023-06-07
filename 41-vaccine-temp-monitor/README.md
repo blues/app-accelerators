@@ -1,11 +1,25 @@
-Vaccine Temperature Monitor
-===========================
+Cold Chain Monitor
+==================
 
 The shelf life of vaccines (and other temperature sensitive medicine), can be
 prolonged by monitoring temperature and location using an ESP32, Notecard, and
 LM75A sensor. When an alert condition is sensed (the temperature exceeds a
 predefined threshold), this device will send a Twilio SMS alert with the exact
 location of the vaccine, so it can be rescued before it is ruined.
+
+![Cold Chain Graphic](https://intelsius.com/wp-content/uploads/2021/04/How-a-Cold-Chain-Works-Info.jpg)
+
+The starting point for all medicines is, "Controlled Room Temperature (CRT)"
+
+> U.S. Pharmacopeia (USP) USP <659> "Packaging and Storage Requirements"
+>
+> Controlled room temperature: The temperature maintained thermostatically
+> that encompasses at the usual and customary working environment of 20°-25°
+> (68°-77° F). Excursions between 15° and 30° (59° and 86° F) that are
+> experienced in pharmacies, hospitals, and warehouses, and during shipping
+> are allowed. Provided the mean kinetic temperature does not exceed 25°,
+> transient spikes up to 40° are permitted as long as they do not exceed 24h.
+> Spikes above 40° may be permitted only if the manufacturer so instructs.
 
 **Feature Tags:**
 |ESP32|Arduino|Wi-Fi Triangulation|GPS (GNSS)|Tracking|Low-Power|
@@ -14,7 +28,7 @@ location of the vaccine, so it can be rescued before it is ruined.
 Table of Contents
 -----------------
 
-- [Vaccine Temperature Monitor](#vaccine-temperature-monitor)
+- [Cold Chain Monitor](#cold-chain-monitor)
   - [Table of Contents](#table-of-contents)
   - [Prerequisites](#prerequisites)
     - [Hardware](#hardware)
@@ -27,6 +41,8 @@ Table of Contents
   - [Environment Variables](#environment-variables)
   - [Operation](#operation)
     - [Normal Operation](#normal-operation)
+      - [Temperature Sampling](#temperature-sampling)
+      - [Location Sampling](#location-sampling)
     - [Alarm Conditions](#alarm-conditions)
       - [Thermal Event](#thermal-event)
         - [Thermal Event Operation](#thermal-event-operation)
@@ -64,15 +80,15 @@ Sign up for a free account on [notehub.io](https://notehub.io) and
 ### Twilio Route
 
 When an alert condition is detected a Note is immediately sent to Notehub. In
-order for you to be informed this event occurred, a Twilio route has been
-enabled.
+order for you to be informed this event occurred, you must configure a Twilio
+route.
 
 Follow the
 [Twilio SMS Guide on https://blues.dev](https://dev.blues.io/guides-and-tutorials/twilio-sms-guide/)
 to learn the steps required to link your Twilio account to Notehub.
 
-Once you are familiarized with the Twilio route, then create a new route and set
-the following fields to forward alert information from the vaccine temperature
+Once you are familiar with the Twilio route, create a new route and set the
+following fields to forward alert information from the vaccine temperature
 monitoring solution to your SMS capable endpoint.
 
 #### Configuration
@@ -214,6 +230,9 @@ _**NOTE:** If you modify any environment variables, you must wait until the next
 synchronization event (max wait: inbound frequency) for the changes to propagate
 to the host._
 
+_**NOTE:** A table describing the "inbound frequency" can be found in the
+temperature sampling section below._
+
 Operation
 ---------
 
@@ -253,10 +272,12 @@ Normal data:
 }
 ```
 
-#### Location sampling
+_**NOTE:** Temperature is rendered in Celcius._
 
-The device is configured to use motion based GPS tracking. When motion is
-detected, the device will report its location periodically; every 15 minutes.
+#### Location Sampling
+
+The device is configured to use motion based GPS tracking. As long as motion has
+been detected, the device will report its location once every 15 minutes.
 Regardless of whether or not the device moves, it will also report a heartbeat
 location every 12 hours.
 
@@ -269,7 +290,7 @@ exceeds `alarm_temperature`. An alarm condition will cause the LM75A will trip
 the `OS` pin, which alerts the Notecard and causes it to wake the host from
 sleep.
 
-Temp alert data:
+Temperature alert data:
 
 ```json
 {
@@ -295,8 +316,12 @@ a GPS fix or timeout after 95 seconds.
 
 #### Low Battery
 
-When `card.voltage` returns `"mode":"low"`, then the `low_batt` key is added to
-the JSON object.
+The battery voltage is sampled each time the device wakes. During the
+configuration step of the firmware, the Notecard is provided the battery
+chemistry of the device. This allows the Notecard to be aware of voltages in
+relation to overall charge. When the battery is sampled using the `card.voltage`
+API, it will return charge of the battery as `mode`. When `"mode":"low"` is
+encountered, then the `low_batt` key is added to the JSON object.
 
 Battery alert data:
 
@@ -313,9 +338,13 @@ the voltage is forwared to Twilio. Again, a text message is generated and sent
 to the phone number specified in the `alarm_sms_number` environment variable.
 
 _**NOTE:** The low battery alert IS NOT considered to be a high-priority alert
-and will be sent at the regular sync'ing interval._
+and will be sent at the regular syncing interval._
 
 Related Topics
 --------------
 
+- [Wikipedia: Cold Chain](https://en.wikipedia.org/wiki/Cold_chain)
+- [Intelsius: What is Cold Chain](https://intelsius.com/news/what-is-cold-chain/)
+- [GMP Compliance: Regulatory Definitions](https://www.gmp-compliance.org/gmp-news/what-are-the-regulatory-definitions-for-ambient-room-temperature-and-cold-chain)
+- [NPR: What Is A Cold Chain? And Why Do So Many Vaccines Need It?](https://www.npr.org/sections/goatsandsoda/2021/02/24/965835993/what-is-a-cold-chain-and-why-do-so-many-vaccines-need-it)
 - [Hackster.io: EpiCAT](https://www.hackster.io/zachary_fields/introducing-the-epinephrine-climate-aware-tracker-epicat-414a0d)

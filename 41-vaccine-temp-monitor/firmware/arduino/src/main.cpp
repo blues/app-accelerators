@@ -97,10 +97,10 @@ void logNoteF(const char *format_, ...)
     va_start(args, format_);
     vsnprintf(log, sizeof(log), format_, args);
 
-    if (J *cmd = notecard.newCommand("hub.log"))
+    if (J *req = notecard.newRequest("hub.log"))
     {
-        JAddStringToObject(cmd, "text", log);
-        if (!notecard.sendRequest(cmd))
+        JAddStringToObject(req, "text", log);
+        if (!notecard.sendRequest(req))
         {
             notecard.logDebug("Failed to submit log to Notehub.\r\n");
         }
@@ -131,10 +131,10 @@ int acquireGPSLocation(size_t timeout_s_ = 95)
     }
 
     // Halt periodic tracking, before active sync is performed
-    if (J *cmd = notecard.newCommand("card.location.mode"))
+    if (J *req = notecard.newRequest("card.location.mode"))
     {
-        JAddStringToObject(cmd, "mode", "off");
-        notecard.sendRequest(cmd);
+        JAddStringToObject(req, "mode", "off");
+        notecard.sendRequest(req);
     }
 
     // Gather timestamp of previous location information
@@ -151,10 +151,10 @@ int acquireGPSLocation(size_t timeout_s_ = 95)
     }
 
     // Activate GPS
-    if (J *cmd = notecard.newCommand("card.location.mode"))
+    if (J *req = notecard.newRequest("card.location.mode"))
     {
-        JAddStringToObject(cmd, "mode", "continuous");
-        notecard.sendRequest(cmd);
+        JAddStringToObject(req, "mode", "continuous");
+        notecard.sendRequest(req);
     }
 
     // Block while resolving GPS location
@@ -198,10 +198,10 @@ int acquireGPSLocation(size_t timeout_s_ = 95)
     }
 
     // Restore Previous Configuration
-    if (J *cmd = notecard.newCommand("card.location.mode"))
+    if (J *req = notecard.newRequest("card.location.mode"))
     {
-        JAddStringToObject(cmd, "mode", gps_mode);
-        notecard.sendRequest(cmd);
+        JAddStringToObject(req, "mode", gps_mode);
+        notecard.sendRequest(req);
     }
 
     // Clean up and exit
@@ -212,7 +212,7 @@ void configureNotecard(void)
 {
     // Configure Notecard to synchronize with Notehub periodically, as well as
     // adjust the frequency based on the battery level
-    if (J *req = notecard.newCommand("hub.set"))
+    if (J *req = notecard.newRequest("hub.set"))
     {
         JAddStringToObject(req, "sn", "EpiCAT");
         if (PRODUCT_UID[0])
@@ -226,41 +226,41 @@ void configureNotecard(void)
     }
 
     // Optimize voltage variable behaviors for LiPo battery
-    if (J *cmd = notecard.newCommand("card.voltage"))
+    if (J *req = notecard.newRequest("card.voltage"))
     {
-        JAddStringToObject(cmd, "mode", "lipo");
-        notecard.sendRequest(cmd);
+        JAddStringToObject(req, "mode", "lipo");
+        notecard.sendRequest(req);
     }
 
     // Ensure the accelerometer has been activated
-    if (J *cmd = notecard.newCommand("card.motion.mode"))
+    if (J *req = notecard.newRequest("card.motion.mode"))
     {
-        JAddBoolToObject(cmd, "start", true);
-        JAddNumberToObject(cmd, "sensitivity", 1);
-        notecard.sendRequest(cmd);
+        JAddBoolToObject(req, "start", true);
+        JAddNumberToObject(req, "sensitivity", 1);
+        notecard.sendRequest(req);
     }
 
     // Configure GPS heartbeat to verify last location reported
-    if (J *cmd = notecard.newCommand("card.location.track"))
+    if (J *req = notecard.newRequest("card.location.track"))
     {
-        JAddBoolToObject(cmd, "start", true);
-        JAddBoolToObject(cmd, "sync", true);
-        JAddBoolToObject(cmd, "heartbeat", true);
-        JAddNumberToObject(cmd, "hours", 12);
-        notecard.sendRequest(cmd);
+        JAddBoolToObject(req, "start", true);
+        JAddBoolToObject(req, "sync", true);
+        JAddBoolToObject(req, "heartbeat", true);
+        JAddNumberToObject(req, "hours", 12);
+        notecard.sendRequest(req);
     }
 
     // Establish a template to optimize queue size and data usage
-    if (J *cmd = notecard.newCommand("note.template"))
+    if (J *req = notecard.newRequest("note.template"))
     {
-        JAddStringToObject(cmd, "file", "status.qo");
-        if (J *body = JAddObjectToObject(cmd, "body"))
+        JAddStringToObject(req, "file", "status.qo");
+        if (J *body = JAddObjectToObject(req, "body"))
         {
             JAddBoolToObject(body, "alert", TBOOL);
             JAddBoolToObject(body, "low_batt", TBOOL);
             JAddNumberToObject(body, "temp", TFLOAT16);
             JAddNumberToObject(body, "voltage", TFLOAT16);
-            notecard.sendRequest(cmd);
+            notecard.sendRequest(req);
         }
     }
 }
@@ -271,11 +271,11 @@ bool currentlyMoving(void)
     uint32_t movementTimeSecs = 0;
 
     // Increase motion sensitivity to help detect movement
-    if (J *cmd = notecard.newCommand("card.motion.mode"))
+    if (J *req = notecard.newRequest("card.motion.mode"))
     {
-        JAddBoolToObject(cmd, "start", true);
-        JAddNumberToObject(cmd, "sensitivity", 5);
-        notecard.sendRequest(cmd);
+        JAddBoolToObject(req, "start", true);
+        JAddNumberToObject(req, "sensitivity", 5);
+        notecard.sendRequest(req);
     }
 
     // Determine whether or not the module is moving.
@@ -300,11 +300,11 @@ bool currentlyMoving(void)
     }
 
     // Restore motion sensitivity to preserve battery life
-    if (J *cmd = notecard.newCommand("card.motion.mode"))
+    if (J *req = notecard.newRequest("card.motion.mode"))
     {
-        JAddBoolToObject(cmd, "start", true);
-        JAddNumberToObject(cmd, "sensitivity", 1);
-        notecard.sendRequest(cmd);
+        JAddBoolToObject(req, "start", true);
+        JAddNumberToObject(req, "sensitivity", 1);
+        notecard.sendRequest(req);
     }
 
     return moving;
@@ -485,10 +485,10 @@ void setup()
     if (ACTIVE_ALARM)
     {
         // Halt periodic tracking when alarm is active
-        if (J *cmd = notecard.newCommand("card.location.mode"))
+        if (J *req = notecard.newRequest("card.location.mode"))
         {
-            JAddStringToObject(cmd, "mode", "off");
-            notecard.sendRequest(cmd);
+            JAddStringToObject(req, "mode", "off");
+            notecard.sendRequest(req);
         }
 
         // Update Current Location (via GPS)
@@ -514,24 +514,24 @@ void setup()
 #endif
 
         // Configure GPS to update only when device is in motion
-        if (J *cmd = notecard.newCommand("card.location.mode"))
+        if (J *req = notecard.newRequest("card.location.mode"))
         {
-            JAddStringToObject(cmd, "mode", "periodic");
-            JAddNumberToObject(cmd, "threshold", 5);
-            JAddNumberToObject(cmd, "seconds", 900); // Fifteen (15) minutes
-            notecard.sendRequest(cmd);
+            JAddStringToObject(req, "mode", "periodic");
+            JAddNumberToObject(req, "threshold", 5);
+            JAddNumberToObject(req, "seconds", 900); // Fifteen (15) minutes
+            notecard.sendRequest(req);
         }
     }
 
     // Send results to Notehub
-    if (J *cmd = notecard.newCommand("note.add"))
+    if (J *req = notecard.newRequest("note.add"))
     {
-        JAddStringToObject(cmd, "file", "status.qo");
-        if (J *body = JAddObjectToObject(cmd, "body"))
+        JAddStringToObject(req, "file", "status.qo");
+        if (J *body = JAddObjectToObject(req, "body"))
         {
             if (ACTIVE_ALARM)
             {
-                JAddBoolToObject(cmd, "sync", true);
+                JAddBoolToObject(req, "sync", true);
                 JAddBoolToObject(body, "alert", true);
             }
             if (low_battery)
@@ -540,7 +540,7 @@ void setup()
             }
             JAddNumberToObject(body, "temp", temperature);
             JAddNumberToObject(body, "voltage", voltage);
-            notecard.sendRequest(cmd);
+            notecard.sendRequest(req);
         }
     }
 }
