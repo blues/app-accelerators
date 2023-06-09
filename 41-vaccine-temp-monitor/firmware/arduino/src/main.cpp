@@ -33,7 +33,7 @@
 
 // Uncomment this line and replace com.your-company:your-product-name with your
 // ProductUID.
-// #define PRODUCT_UID "com.my-company.my-name:my-project"
+#define PRODUCT_UID "com.zakoverflow.test"
 
 #ifndef PRODUCT_UID
 #define PRODUCT_UID ""
@@ -198,7 +198,7 @@ void configureNotecard(void)
     // adjust the frequency based on the battery level
     if (J *req = notecard.newRequest("hub.set"))
     {
-        JAddStringToObject(req, "sn", "Cold Chain Monitor");
+        JAddStringToObject(req, "sn", "EpiCAT");
         if (PRODUCT_UID[0])
         {
             JAddStringToObject(req, "product", PRODUCT_UID);
@@ -404,11 +404,6 @@ bool inMotion(void)
     }
 
     return moving;
-}
-
-void NoteUserAgentUpdate(J *ua)
-{
-    JAddStringToObject(ua, "app", "nf41");
 }
 
   /************************
