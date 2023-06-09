@@ -144,7 +144,7 @@ int acquireGPSLocation(size_t timeout_s_ = 95)
     {
         if (timeout_s_)
         {
-            if (::millis() >= (start_ms + (timeout_s_ * 1000)))
+            if ((::millis() - start_ms) >= (timeout_s_ * 1000))
             {
                 logNoteF("WARNING: GPS user timeout expired!");
                 result = -3; // User timeout has expired
@@ -159,12 +159,14 @@ int acquireGPSLocation(size_t timeout_s_ = 95)
             if (current_gps_time_s != gps_time_s)
             {
                 notecard.logDebugf("INFO: Current GPS time (seconds): %u", current_gps_time_s);
+                notecard.deleteResponse(rsp);
                 result = 0; // GPS has fixed on position
                 break;
             }
             if (JGetObjectItem(rsp, "stop"))
             {
                 logNoteF("WARNING: GPS internal timeout expired!");
+                notecard.deleteResponse(rsp);
                 result = -2; // Notecard has signaled polling should stop,
                              // most likely caused by internal GPS timeout
                 break;

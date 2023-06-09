@@ -272,7 +272,7 @@ Normal data:
 }
 ```
 
-_**NOTE:** Temperature is rendered in Celcius._
+_**NOTE:** Temperature is rendered in Celsius._
 
 #### Location Sampling
 
