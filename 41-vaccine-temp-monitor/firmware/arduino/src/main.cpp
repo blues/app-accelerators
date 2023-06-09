@@ -71,25 +71,6 @@ volatile int alarm_hysteresis = CRT_SAFE_TEMP_C;
 volatile int alarm_temperature = CRT_MAX_TEMP_C;
 volatile size_t sample_interval_s = DEFAULT_SAMPLE_INTERVAL_S;
 
-// TODO: Remove with `note-arduino` v1.4.2
-J *JGetArray(J *rsp, const char *field)
-{
-    if (rsp == NULL)
-    {
-        return NULL;
-    }
-    J *item = JGetObjectItem(rsp, field);
-    if (item == NULL)
-    {
-        return NULL;
-    }
-    if (!JIsArray(item))
-    {
-        return NULL;
-    }
-    return item;
-}
-
 void logNoteF(const char *format_, ...)
 {
     char log[256];
@@ -118,8 +99,9 @@ int acquireGPSLocation(size_t timeout_s_ = 95)
     // Get Current Configuration
     if (J *rsp = notecard.requestAndResponse(notecard.newRequest("card.location.mode")))
     {
-        const char * gps_mode_ptr = JGetString(rsp, "mode");
-        if (gps_mode_ptr) {
+        const char *gps_mode_ptr = JGetString(rsp, "mode");
+        if (gps_mode_ptr)
+        {
             ::strlcpy(gps_mode, gps_mode_ptr, sizeof(gps_mode));
         }
         notecard.deleteResponse(rsp);
@@ -236,7 +218,7 @@ void configureNotecard(void)
     if (J *req = notecard.newRequest("card.motion.mode"))
     {
         JAddBoolToObject(req, "start", true);
-        JAddNumberToObject(req, "sensitivity", -1);  // 1.6Hz, +/-2G range, 1 milli-G sensitivity (default)
+        JAddNumberToObject(req, "sensitivity", -1); // 1.6Hz, +/-2G range, 1 milli-G sensitivity (default)
         notecard.sendRequest(req);
     }
 
@@ -270,17 +252,38 @@ void envVarManagerCb(const char *var, const char *val, void *user_ctx)
     (void)user_ctx;
 
     // Cache the values for each variable.
-    if (strcmp(var, "alarm_temperature") == 0 && atoi(val))
+    if (strcmp(var, "alarm_temperature") == 0)
     {
-        alarm_temperature = atoi(val);
+        if (int value = atoi(val))
+        {
+            alarm_temperature = value;
+        }
+        else
+        {
+            logNoteF("ERROR: Unable to parse `alarm_temperature` environment variable (int): \"%s\". Default value retained: %i", val, CRT_MAX_TEMP_C);
+        }
     }
-    else if (strcmp(var, "alarm_hysteresis") == 0 && atoi(val))
+    else if (strcmp(var, "alarm_hysteresis") == 0)
     {
-        alarm_hysteresis = atoi(val);
+        if (int value = atoi(val))
+        {
+            alarm_hysteresis = value;
+        }
+        else
+        {
+            logNoteF("ERROR: Unable to parse `alarm_hysteresis` environment variable (int): \"%s\". Default value retained: %i", val, CRT_SAFE_TEMP_C);
+        }
     }
-    else if (strcmp(var, "sample_interval_s") == 0 && atoi(val))
+    else if (strcmp(var, "sample_interval_s") == 0)
     {
-        sample_interval_s = atoi(val);
+        if (int value = atoi(val))
+        {
+            sample_interval_s = value;
+        }
+        else
+        {
+            logNoteF("ERROR: Unable to parse `sample_interval_s` environment variable (int): \"%s\". Default value retained: %i", val, DEFAULT_SAMPLE_INTERVAL_S);
+        }
     }
 }
 
@@ -373,32 +376,36 @@ bool inHysteresis(void)
     return result;
 }
 
-bool inMotion (void)
+bool inMotion(void)
 {
     bool moving = false; // prioritize battery life on error
     uint32_t currentTimeSecs = 0, motionTimeSecs = 0;
 
     // Fetch the current time from the Notecard.
-    if (J *rsp = notecard.requestAndResponse(notecard.newRequest("card.time"))) {
+    if (J *rsp = notecard.requestAndResponse(notecard.newRequest("card.time")))
+    {
         currentTimeSecs = JGetInt(rsp, "time");
         notecard.deleteResponse(rsp);
     }
 
     // Fetch last movement time from the Notecard.
-    if (J *rsp = notecard.requestAndResponse(notecard.newRequest("card.motion"))) {
+    if (J *rsp = notecard.requestAndResponse(notecard.newRequest("card.motion")))
+    {
         motionTimeSecs = JGetInt(rsp, "motion");
         notecard.deleteResponse(rsp);
     }
 
     // If the Notecard has moved in the last 15 minutes, we're moving.
-    if (currentTimeSecs - motionTimeSecs < 900) {
+    if (currentTimeSecs - motionTimeSecs < 900)
+    {
         moving = true;
     }
 
     return moving;
 }
 
-void NoteUserAgentUpdate (J *ua) {
+void NoteUserAgentUpdate(J *ua)
+{
     JAddStringToObject(ua, "app", "nf41");
 }
 
