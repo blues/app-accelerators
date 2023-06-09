@@ -214,7 +214,7 @@ void configureNotecard(void)
     // adjust the frequency based on the battery level
     if (J *req = notecard.newRequest("hub.set"))
     {
-        JAddStringToObject(req, "sn", "EpiCAT");
+        JAddStringToObject(req, "sn", "Cold Chain Monitor");
         if (PRODUCT_UID[0])
         {
             JAddStringToObject(req, "product", PRODUCT_UID);
@@ -236,7 +236,7 @@ void configureNotecard(void)
     if (J *req = notecard.newRequest("card.motion.mode"))
     {
         JAddBoolToObject(req, "start", true);
-        JAddNumberToObject(req, "sensitivity", 1);
+        JAddNumberToObject(req, "sensitivity", -1);  // 1.6Hz, +/-2G range, 1 milli-G sensitivity (default)
         notecard.sendRequest(req);
     }
 
@@ -263,51 +263,6 @@ void configureNotecard(void)
             notecard.sendRequest(req);
         }
     }
-}
-
-bool currentlyMoving(void)
-{
-    bool moving = false; // prioritize battery life on error
-    uint32_t movementTimeSecs = 0;
-
-    // Increase motion sensitivity to help detect movement
-    if (J *req = notecard.newRequest("card.motion.mode"))
-    {
-        JAddBoolToObject(req, "start", true);
-        JAddNumberToObject(req, "sensitivity", 5);
-        notecard.sendRequest(req);
-    }
-
-    // Determine whether or not the module is moving.
-    J *rsp = notecard.requestAndResponse(notecard.newRequest("card.triangulate"));
-    if (rsp)
-    {
-        movementTimeSecs = JGetInt(rsp, "motion");
-        notecard.deleteResponse(rsp);
-
-        // Wait long enough for the accelerometer to record a new timestamp.
-        ::delay(1500);
-
-        rsp = notecard.requestAndResponse(notecard.newRequest("card.triangulate"));
-        if (rsp)
-        {
-            if (movementTimeSecs != JGetInt(rsp, "motion"))
-            {
-                moving = true;
-            }
-            notecard.deleteResponse(rsp);
-        }
-    }
-
-    // Restore motion sensitivity to preserve battery life
-    if (J *req = notecard.newRequest("card.motion.mode"))
-    {
-        JAddBoolToObject(req, "start", true);
-        JAddNumberToObject(req, "sensitivity", 1);
-        notecard.sendRequest(req);
-    }
-
-    return moving;
 }
 
 void envVarManagerCb(const char *var, const char *val, void *user_ctx)
@@ -418,6 +373,39 @@ bool inHysteresis(void)
     return result;
 }
 
+bool inMotion (void)
+{
+    bool moving = false; // prioritize battery life on error
+    uint32_t currentTimeSecs = 0, motionTimeSecs = 0;
+
+    // Fetch the current time from the Notecard.
+    if (J *rsp = notecard.requestAndResponse(notecard.newRequest("card.time"))) {
+        currentTimeSecs = JGetInt(rsp, "time");
+        notecard.deleteResponse(rsp);
+    }
+
+    // Fetch last movement time from the Notecard.
+    if (J *rsp = notecard.requestAndResponse(notecard.newRequest("card.motion"))) {
+        motionTimeSecs = JGetInt(rsp, "motion");
+        notecard.deleteResponse(rsp);
+    }
+
+    // If the Notecard has moved in the last 15 minutes, we're moving.
+    if (currentTimeSecs - motionTimeSecs < 900) {
+        moving = true;
+    }
+
+    return moving;
+}
+
+void NoteUserAgentUpdate (J *ua) {
+    JAddStringToObject(ua, "app", "nf41");
+}
+
+  /************************
+ * Application Execution *
+************************/
+
 void setup()
 {
     // Provide visual signal when the Host MCU is powered
@@ -506,7 +494,7 @@ void setup()
     {
 #ifdef ARDUINO_ARCH_ESP32
         // Check if actively moving before updating Wi-Fi location
-        if (!currentlyMoving())
+        if (!inMotion())
         {
             aux_wifi.updateTriangulationData(true); // Update Current Location (via Wi-Fi)
             aux_wifi.logCachedSsids();              // Log SSIDs used in calculation
