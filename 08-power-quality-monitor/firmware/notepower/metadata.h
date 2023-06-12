@@ -3,10 +3,10 @@
 
 #define PRODUCT_ORG_NAME        ""
 #define PRODUCT_DISPLAY_NAME    "Power Quality Monitior"
-#define PRODUCT_FIRMWARE_ID     "nf8-0.3.0.0"
+#define PRODUCT_FIRMWARE_ID     "nf8-0.5.0.0"
 #define PRODUCT_DESC      ""
 #define PRODUCT_MAJOR     0
-#define PRODUCT_MINOR     3
+#define PRODUCT_MINOR     5
 #define PRODUCT_PATCH     0
 #define PRODUCT_BUILD     0
 #define PRODUCT_BUILT     __DATE__ " " __TIME__

@@ -22,6 +22,8 @@ typedef struct {
 
 typedef struct {
   uint32_t envHeartbeatMins;
+  bool envIsDemoMode;
+  bool toggleMode;
   float envVoltageUnder;
   float envVoltageOver;
   float envVoltageChange;

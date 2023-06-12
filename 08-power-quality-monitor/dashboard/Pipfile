@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+altair = "*"
+pandas = "*"
+streamlit = "*"
+snowflake-connector-python = "==2.7.6"
+matplotlib = "*"
+streamlit-option-menu = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"

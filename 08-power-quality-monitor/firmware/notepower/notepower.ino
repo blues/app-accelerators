@@ -77,9 +77,8 @@ void setup()
     state.envPowerUnder = 0;
     state.envPowerOver = 0;
     state.envPowerChange = 0;
-
-    // Load the environment vars for the first time
-    fetchEnvironmentVariables(state);
+    state.envIsDemoMode = false;
+    state.toggleMode = false;
 
     lastUpdateMs = millis();
 }
@@ -92,6 +91,22 @@ void loop()
     if (pollEnvVars())
     {
         fetchEnvironmentVariables(state);
+    }
+
+    if (state.toggleMode) {
+        J *req = notecard.newRequest("hub.set");
+        if (state.envIsDemoMode) {
+            JAddStringToObject(req, "mode", "continuous");
+            JAddNumberToObject(req, "outbound", 1);
+        } else {
+            JAddStringToObject(req, "mode", "periodic");
+            JAddNumberToObject(req, "outbound", state.envHeartbeatMins > 0 ? state.envHeartbeatMins : 10);
+        }
+        if (!notecard.sendRequest(req)) {
+            Serial.printf("notecard not responding\n");
+        }
+
+        state.toggleMode = false;
     }
 
     // Read from MCP
@@ -296,7 +311,6 @@ bool notecardSetup(void)
 
     // Done
     return true;
-
 }
 
 void fetchEnvironmentVariables(applicationState &vars)
@@ -305,6 +319,7 @@ void fetchEnvironmentVariables(applicationState &vars)
 
   J *names = JAddArrayToObject(req, "names");
   JAddItemToArray(names, JCreateString("heartbeat_mins"));
+  JAddItemToArray(names, JCreateString("demo_mode"));
   JAddItemToArray(names, JCreateString("alert_under_voltage"));
   JAddItemToArray(names, JCreateString("alert_over_voltage"));
   JAddItemToArray(names, JCreateString("alert_change_voltage_percent"));
@@ -331,6 +346,13 @@ void fetchEnvironmentVariables(applicationState &vars)
     {
         // Update heartbeat period
         vars.envHeartbeatMins = JAtoN(JGetString(body, "heartbeat_mins"), NULL);
+
+        char *demoMode = JGetString(body, "demo_mode");
+        bool lastDemoMode = vars.envIsDemoMode;
+        vars.envIsDemoMode = (strcmp(demoMode, "true") == 0 || strcmp(demoMode, "1") == 0);
+        if (vars.envIsDemoMode != lastDemoMode) {
+            vars.toggleMode = true;
+        }
 
         // Update the voltage monitoring-related env vars
         vars.envVoltageUnder = JAtoN(JGetString(body, "alert_under_voltage"), NULL);
