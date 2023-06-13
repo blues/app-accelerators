@@ -46,7 +46,7 @@ Send requests and receive responses from Modbus servers via cellular.
 
 ## Hardware Setup
 
-This application uses Modbus RTU with RS-485 for Modbus communication between the client and server. The RS-485 transceiver breakout is used by the client running on the Swan to send and receive Modbus messages. The USB to RS-485 converter is used by the server running on your development PC to send and receive Modbus messages.
+This application uses [Modbus RTU](https://en.wikipedia.org/wiki/Modbus#Modbus_RTU_frame_format) with RS-485 for Modbus communication between the client and server. The RS-485 transceiver breakout is used by the client running on the Swan to send and receive Modbus messages. The USB to RS-485 converter is used by the server running on your development PC to send and receive Modbus messages.
 
 ### RS-485 Transceiver Breakout
 

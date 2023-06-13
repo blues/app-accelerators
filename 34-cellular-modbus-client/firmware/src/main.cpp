@@ -4,6 +4,7 @@
 
 // This is the GPIO pin that will be connected to the Notecard's ATTN pin.
 #ifndef ATTN_INPUT_PIN
+// PA5 is the pin labeled F_D13 on the Notecarrier F.
 #define ATTN_INPUT_PIN PA5
 #endif
 
