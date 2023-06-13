@@ -2,12 +2,16 @@ Cold Chain Monitor
 ==================
 
 The shelf life of vaccines (and other temperature sensitive medicine), can be
-prolonged by monitoring temperature and location using an ESP32, Notecard, and
-LM75A sensor. When an alert condition is sensed (the temperature exceeds a
-predefined threshold), this device will send a Twilio SMS alert with the exact
-location of the vaccine, so it can be rescued before it is ruined.
+prolonged by monitoring temperature and location. It takes a chain of precisely
+coordinated events in temperature-controlled environments to store, manage and
+transport these life-saving products. This is called a cold chain.
 
 ![Cold Chain Graphic](https://intelsius.com/wp-content/uploads/2021/04/How-a-Cold-Chain-Works-Info.jpg)
+
+Using a Notecard, ESP32 and LM75A sensor, an alert condition can be sensed
+(e.g. the temperature exceeds a predefined threshold). This device will send
+a Twilio SMS alert providing the exact location of the cold chain asset, so
+it can be rescued before it is ruined.
 
 The starting point for all medicines is, "Controlled Room Temperature (CRT)"
 
@@ -21,9 +25,12 @@ The starting point for all medicines is, "Controlled Room Temperature (CRT)"
 > transient spikes up to 40° are permitted as long as they do not exceed 24h.
 > Spikes above 40° may be permitted only if the manufacturer so instructs.
 
+_**NOTE:** By default, our device will monitor for CRT, but those thresholds
+can be dynamically modified using cloud-based environment variables._
+
 **Feature Tags:**
-|ESP32|Arduino|Wi-Fi Triangulation|GPS (GNSS)|Tracking|Low-Power|
-|Environment Variables|SMS Alerts|
+| ESP32 | Arduino | Wi-Fi Triangulation | GPS (GNSS) | Tracking | Low-Power
+| Environment Variables | SMS Alerts |
 
 Table of Contents
 -----------------
