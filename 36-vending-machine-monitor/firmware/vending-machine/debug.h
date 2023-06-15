@@ -2,7 +2,7 @@
 
 // `debug` is the Stream interface to send debugging/logging separate from the app's serial output.
 // Comment-in this when using USB serial for debugging, and comment it out when using the ST-Link V3
-#define debug Serial
+#define debug SerialUSB
 
 // Define the debug output stream device, as well as a method enabling us
 // to determine whether or not the Serial device is available for app usage.

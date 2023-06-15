@@ -7,7 +7,6 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <Notecard.h>
-#include "monitor.h"
 #include "debug.h"
 
 #ifndef PRODUCT_UID
@@ -22,7 +21,7 @@
 #endif
 
 #ifndef DEFAULT_REPORT_INTERVAL
-#define DEFAULT_REPORT_INTERVAL (1000*60*5)
+#define DEFAULT_REPORT_INTERVAL (0)
 #endif
 
 #ifndef DEFAULT_POLL_ENVIRONMENT_INTERVAL
@@ -30,7 +29,7 @@
 #endif
 
 #ifndef DEFAULT_POLL_SENSORS_INTERVAL
-#define DEFAULT_POLL_SENSORS_INTERVAL (1000*15)
+#define DEFAULT_POLL_SENSORS_INTERVAL (1000*5)
 #endif
 
 #ifndef APP_NAME
@@ -43,25 +42,6 @@ Notecard notecard;
 #else
 extern Notecard notecard;
 #endif
-
-class AppReporter : public ReportEventsConfig {
-
-    virtual const char* monitorNotefile() {
-        return "soda.qo";
-    }
-
-    virtual void updateNoteTemplate(J* noteTemplate) {
-        JAddStringToObject(noteTemplate, "app", TSTRINGV);
-    };
-
-    virtual void updateNote(J* note) {
-        JAddStringToObject(note, "app", APP_NAME);
-    };
-
-    virtual bool syncMonitoringNotes() {
-        return SYNC_MONITORING_NOTES;
-    }
-};
 
 void NoteUserAgentUpdate(J *ua) {
    JAddStringToObject(ua, "app", APP_NAME);
