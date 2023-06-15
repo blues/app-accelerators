@@ -10,7 +10,7 @@
 
 // Uncomment this line and replace com.your-company:your-product-name with your
 // ProductUID.
-// #define PRODUCT_UID "com.your-company:your-product-name"
+// #define PRODUCT_UID "com.my-company.my-name:my-project"
 
 #ifndef PRODUCT_UID
 #define PRODUCT_UID "" // "com.my-company.my-name:my-project"
@@ -18,6 +18,7 @@
 #endif
 #define usbSerial Serial
 #define txRxPinsSerial Serial1
+HardwareSerial stlinkSerial(PIN_VCP_RX, PIN_VCP_TX);
 
 // Sync outbound notes to Notehub a minimum of every 3 minutes.
 #define OUTBOUND_SYNC_MINS 3
@@ -28,7 +29,7 @@
 // Read the sensor every minute.
 #define SENSOR_READ_INTERVAL_MS (60 * 1000)
 // Publish temperature and humidity every 3 minutes.
-#define MONITOR_INTERVAL_DEFAULT_MS (180 * 1000)
+#define REPORT_INTERVAL_DEFAULT_MS (180 * 1000)
 // Temperature in C.
 #define TEMPERATURE_MIN_DEFAULT 5
 #define TEMPERATURE_MAX_DEFAULT 33
@@ -39,8 +40,8 @@
 struct AppState {
     uint32_t lastEnvVarPollMs;
     uint32_t envLastModTime;
-    uint32_t monitorIntervalMs;
-    uint32_t monitorLastUpdateMs;
+    uint32_t reportIntervalMs;
+    uint32_t reportLastUpdateMs;
     uint32_t sensorLastReadMs;
     uint32_t lastAlarmMs;
     float temperatureMin;
@@ -52,7 +53,7 @@ struct AppState {
 };
 
 static const char *envVarNames[] = {
-    "monitor_interval",
+    "report_interval",
     "temperature_threshold_min",
     "temperature_threshold_max",
     "humidity_threshold_min",
@@ -79,11 +80,11 @@ void envVarManagerCb(const char *var, const char *val, void *ctx) {
     }
 
     // Cache the values for each variable.
-    if (strcmp(var, "monitor_interval") == 0)
+    if (strcmp(var, "report_interval") == 0)
     {
-        state->monitorIntervalMs = (uint32_t)(value * 1000);
+        state->reportIntervalMs = (uint32_t)(value * 1000);
         notecard.logDebugf("Monitor interval set to %u ms.\n",
-            state->monitorIntervalMs);
+            state->reportIntervalMs);
     }
     else if (strcmp(var, "temperature_threshold_min") == 0)
     {
@@ -246,7 +247,7 @@ void setup()
     }
 
     // Set defaults.
-    state.monitorIntervalMs = MONITOR_INTERVAL_DEFAULT_MS;
+    state.reportIntervalMs = REPORT_INTERVAL_DEFAULT_MS;
     state.temperatureMin = TEMPERATURE_MIN_DEFAULT;
     state.temperatureMax = TEMPERATURE_MAX_DEFAULT;
     state.humidityMin = HUMIDITY_MIN_DEFAULT;
@@ -258,6 +259,7 @@ void setup()
     if (PRODUCT_UID[0]) {
        JAddStringToObject(req, "product", PRODUCT_UID);
     }
+    JAddStringToObject(req, "sn", "NF18");
     JAddStringToObject(req, "mode", "periodic");
     JAddNumberToObject(req, "outbound", OUTBOUND_SYNC_MINS);
     notecard.sendRequest(req);
@@ -269,7 +271,7 @@ void setup()
     JAddBoolToObject(req, "sync", true);
     notecard.sendRequest(req);
 
-    NotecardEnvVarManager_fetch(envVarManager, envVarNames, (sizeof(envVarNames) / sizeof(envVarNames[0])));
+    updateEnvVars();
 }
 
 void readSensor()
@@ -384,8 +386,8 @@ void loop()
     checkAlarm();
 
     currentMs = millis();
-    if (currentMs - state.monitorLastUpdateMs >= state.monitorIntervalMs) {
-        state.monitorLastUpdateMs = currentMs;
+    if (currentMs - state.reportLastUpdateMs >= state.reportIntervalMs) {
+        state.reportLastUpdateMs = currentMs;
         publishSystemStatus();
     }
 }
