@@ -12,12 +12,8 @@ target_sources(
     app
     PRIVATE
         # Application sources.
-        ${SRC_DIR}/alarm_publisher.c
-        ${SRC_DIR}/bme280.c
-        ${SRC_DIR}/env_updater.c
         ${SRC_DIR}/main.c
         ${SRC_DIR}/note_c_hooks.c
-        ${SRC_DIR}/publisher.c
         # note-c sources.
         ${NOTE_C_SRC_DIR}/n_atof.c
         ${NOTE_C_SRC_DIR}/n_cjson.c
