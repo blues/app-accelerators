@@ -11,6 +11,10 @@
 
 #include <math.h>
 
+#ifndef NOTECARD_TIMEOUT
+#define NOTECARD_TIMEOUT (1000*60)
+#endif
+
 // When set to false, only alerts are synced immediately.
 #ifndef SYNC_MONITORING_NOTES
 #define SYNC_MONITORING_NOTES        (false)
@@ -40,8 +44,9 @@
 #define DEFAULT_TILT_ALERT_DEGREES (10)
 #endif
 
+// The duration to wait before putting the notecard and host to sleep when power fails.
 #ifndef DEFAULT_WAIT_BEFORE_SLEEP_MS
-#define DEFAULT_WAIT_BEFORE_SLEEP_MS (1000*5)
+#define DEFAULT_WAIT_BEFORE_SLEEP_MS (1000*30)
 #endif
 
 #ifndef DEFAULT_SLEEP_PERIOD_MS
@@ -271,7 +276,7 @@ struct DispensingItems {
 
 #define TEXT_SENSOR_OFFLINE "Distance sensor offline"
 #define TEXT_SENSOR_ONLINE "Distance sensor online"
-#define DISTANCE_SENSOR_OFFLINE_TIMEOUT_MS (10*1000)
+#define DISTANCE_SENSOR_OFFLINE_TIMEOUT_MS (30*1000)
 
 /**
  * @brief Monitors the state of a dispensing column. Reads the distance sensor and determines
@@ -330,7 +335,8 @@ class DispensingColumn {
      */
     uint32_t lastSuccessfulRead;
     /**
-     * @brief When false, the sensor needs initializing.
+     * @brief When false, the sensor needs initializing. When true, the sensor has been initialized
+     * although readings may not be available.
      */
     bool sensorOnline;
 
@@ -354,11 +360,10 @@ class DispensingColumn {
     }
 
     int initializeDistanceSensor() {
-        // Configure VL53L4CD satellite component.
-        int status = distanceSensor.begin();
+        distanceSensor.VL53L4CD_Off();
 
         //Initialize VL53L4CD satellite component.
-        status = status || distanceSensor.InitSensor(sensorAddress);
+        int status = distanceSensor.InitSensor(sensorAddress);
 
         // Program the highest possible TimingBudget, without enabling the
         // low power mode. This should give the best accuracy
@@ -504,11 +509,12 @@ public:
     {
         items.reset();
         setName(nullptr);   // use the default name until configured by the environment
+        distanceSensor.begin(); // set XSHUT low
     }
 
     ~DispensingColumn() {
         updateEnabled(false);
-        distanceSensor.end();
+        distanceSensor.end();   // release XSHUT pin
     }
 
     const char* columnName() const { return this->name; }
@@ -558,9 +564,10 @@ public:
         }
         if (!error && distance.distance_mm) {
             lastSuccessfulRead = millis();
+            printSensorReport(columnNumber(), distance, debug);
         }
 
-        bool offlineTimeout = (millis()-lastSuccessfulRead)>=DISTANCE_SENSOR_OFFLINE_TIMEOUT_MS;
+        bool offlineTimeout = !sensorOnline || (millis()-lastSuccessfulRead)>=DISTANCE_SENSOR_OFFLINE_TIMEOUT_MS;
         bool alertChanged = sensorOfflineAlert.setActive(offlineTimeout);
         if (alertChanged && offlineTimeout) {
             sensorOnline = false;
@@ -568,7 +575,7 @@ public:
             debug.printf("col %d: alert. ToF sensor offline.", columnNumber());
             debug.println();
         }
-        if (sensorOnline || alertChanged) {
+        if ((sensorOnline && !error) || alertChanged) {
             updateColumnState();
         }
         return !error;
@@ -596,10 +603,6 @@ void ColumnAlert::buildEvent(J* event) {
  * @brief AuxSerial notifications are received over TX/RX, aka Serial1
  */
 auto& auxSerialStream = Serial1;
-
-/*
- * Create the aux-serial manager over TX/RX
- */
 NotecardAuxSerial auxSerial(auxSerialStream);
 
 NotecardTiltSensor tiltSensor(auxSerial);
@@ -612,9 +615,9 @@ NotecardSleep notecardSleep(DEFAULT_WAIT_BEFORE_SLEEP_MS, DEFAULT_SLEEP_PERIOD_M
 DispensingColumn* columns = nullptr;
 
 // Application alerts
-Alert batteryLowAlert("battery low", "");
-Alert tiltAlert("excessive tilt", "normal tilt");
-Alert powerAlert("power failure", "power restored");
+Alert batteryLowAlert("Battery low", "Battery charging");
+Alert tiltAlert("Excessive tilt", "No tilt");
+Alert powerAlert("Power failure", "Power restored");
 
 uint32_t tiltAlertDegrees = DEFAULT_TILT_ALERT_DEGREES;
 double notecardVoltage;
@@ -652,15 +655,27 @@ void initializeDispensingColumns(uint8_t count) {
         // clear out any current columns
         initializeDispensingColumns(0);
 
-        uint8_t i2cAddress = 0x53;      // start with the default address, and increase for subsequent columns
-        uint8_t col = 0;
-
         if (count > COLUMN_COUNT_MAX) {
             count = COLUMN_COUNT_MAX;
         }
 
+        // ensure all XSHUT pins are pulled low, in case col_count is less than the number of actual sensors
+        for (int i=0; i<COLUMN_COUNT_MAX; i++) {
+            uint8_t pin = COLUMN_PINS[i];
+            pinMode(pin, OUTPUT);
+            digitalWrite(pin, LOW);
+        }
+
+        // I2C addresses of the ToF sensors must be an even number for host to sensor communication. 
+        // The LSB is used to signal direction.
+        uint8_t i2cAddress = 0x54;          // start with one more than the default of 0x52. This ensures that
+                                            // should a sensor "forget" its address, it can be contacted at a known address that doesn't collide with other sensors.
+        uint8_t col = 0;
         while (count --> 0) {
-            DispensingColumn* column = new DispensingColumn(Wire, i2cAddress++, COLUMN_PINS[col], ++col);
+            DispensingColumn* column = new DispensingColumn(Wire, i2cAddress, COLUMN_PINS[col], col+1);
+            column->setEnabled(usbPower);
+            i2cAddress += 2;
+            col++;
             column->next = columns;
             columns = column;
         }
@@ -684,20 +699,19 @@ void initializeDispensingColumns(uint8_t count) {
 void powerStateChanged(bool powered) {
     // enable/disable aux.serial
     auxSerial.setEnabled(powered);
-    tiltSensor.setEnabled(usbPower);
+    tiltSensor.setEnabled(powered);
 
     // disable/enable monitoring of all dispensing columns
     for (DispensingColumn* column = columns; column != nullptr; column = column->next) {
         column->setEnabled(powered);
     }
 
-    powerAlert.setActive(!usbPower);
+    powerAlert.setActive(!powered);
     notecardSleep.setEnabled(!powered);
 }
 
 /**
  * @brief Sends monitoring events for all the columns.
- * 
  */
 void sendReport() {
     if (!usbPower)
@@ -709,10 +723,10 @@ void sendReport() {
 }
 
 /**
- * @brief Updates notecardVoltage, usbPower values by sending a `card.voltage` request.
+ * @brief Updates `notecardVoltage` and `usbPower` values by sending a `card.voltage` request.
  * 
- * @return true If the request was successful 
- * @return false 
+ * @return true the request was successful
+ * @return false the request was not successful. Values were not updated.
  */
 bool readNotecardVoltage() {
     J* req = notecard.newRequest("card.voltage");
@@ -723,23 +737,22 @@ bool readNotecardVoltage() {
             return false;
         usbPower = JGetBool(rsp, "usb");
         notecard.deleteResponse(rsp);
-
-        // if (notecardVoltage >= 4.5) {
-        //     usbPower = true;
-        // }
     }
     return rsp;
 }
 
 /**
- * @brief The tilt sensor is read more frequently, so is pulled out to it's own function.
- * 
+ * @brief Updates the tilt alert based on the angle from the tilt sensor.
  */
 void readTiltSensor() {
     bool tilted = tiltAlertDegrees && tiltSensor.isTiltSensed() && (tiltSensor.angleFromNormal()*180/PI)>tiltAlertDegrees;
     tiltAlert.setActive(tilted);
 }
 
+/**
+ * @brief Polls all the sensors - notecard voltage and power state, notecard tilt
+ * and distance sensors on all the columns.
+ */
 void readSensors() {
     bool wasPowered = usbPower;
     if (readNotecardVoltage()) {
@@ -766,6 +779,13 @@ void readSensors() {
     }
 }
 
+/**
+ * @brief Uses an `env.modified` request to determine if there are any environment variable
+ * changes since the last update.
+ * 
+ * @return true     The environment has changed.
+ * @return false    The environment has not changed.
+ */
 bool hasEnvironmentChanged() {
     bool changed = false;
     J *rsp = notecard.requestAndResponse(notecard.newRequest("env.modified"));
@@ -810,6 +830,18 @@ J* notifyEnvironmentError(J* errors, const char* name, const char* text, const c
     return item;
 }
 
+/**
+ * @brief Updates an integer variable from the value in the environment.
+ * 
+ * @param env       The environment variables
+ * @param changed   Receives notifications of variables that changed.
+ * @param error     Receives notificiations of environment errors.
+ * @param result    The variable to store the value
+ * @param envVar    The name of the environment variable to read.
+ * @param multiplier A multiplier to use after fetching the value from the environment. This is useful
+ *  when the variable value and internal value use different units. (Such as seconds vs milliseconds.)
+ * @param defaultValue The default value to use when the value is not defined in the environment.
+ */
 void setIntValueFromEnvironment(J* env, J* changed, J* error, uint32_t* result, const char* envVar, uint32_t multiplier, uint32_t defaultValue) {
     const char* value_str = JGetString(env, envVar);
     uint32_t value = defaultValue;
@@ -829,17 +861,32 @@ void setIntValueFromEnvironment(J* env, J* changed, J* error, uint32_t* result, 
     *result = value;
 }
 
+// placeholder variable names for later interpolation
 #define ENV_COL_NAME_FMT "col_%d_name"
 #define ENV_COL_EMPTY_FMT "col%sempty_mm"
 #define ENV_COL_LOW_FMT "col%slow_mm"
 #define ENV_COL_FULL_FMT "col%sfull_mm"
 #define ENV_COL_ITEM_FMT "col%sitem_mm"
 
+/**
+ * @brief The default column sizes defined by the environment.
+ */
 SodaStack defaultColumnSize;
 const SodaStack INITIAL_STACK_SIZE; // zero as the default
 
+/**
+ * @brief Updates a single size value.
+ * 
+ * @param changed   Receives details about environment variable changes.
+ * @param errors    Receives details about environment variable errors.
+ * @param env       THe environment variables.
+ * @param fmt       The format of the environment variable, using %d as a placeholder for the column ID.
+ * @param colId     The value of the placeholder as a string.
+ * @param newValue  The result of the update.
+ * @param defaultValue  The default value to use when not defined by the environment.
+ */
 void updateSize(J* changed, J* errors, J* env, const char* fmt, const char* colId, uint16_t& newValue, uint16_t defaultValue) {
-    // first refresh the common column definition
+    // interpolate the variable name
     char varName[32];
     snprintf(varName, sizeof(varName), fmt, colId);
     uint32_t value = newValue;
@@ -852,6 +899,16 @@ void updateSize(J* changed, J* errors, J* env, const char* fmt, const char* colI
     }
 }
 
+/**
+ * @brief Updates the dispensing column distances from the environment.
+ * 
+ * @param changed       Receives notification of environment changes
+ * @param errors        Receives environment errorrs
+ * @param env           The environment variables to apply
+ * @param colId         The column ID to update
+ * @param newSize       Where the column lengths are stored
+ * @param defaultSize   THe default values to use when the environment doesn't configure a value for this specific column.
+ */
 void environmentUpdateColumnSize(J* changed, J* errors, J* env, const char* colId, SodaStack& newSize, const SodaStack& defaultSize) {
     updateSize(changed, errors, env, ENV_COL_EMPTY_FMT, colId, newSize.emptyDistance,defaultSize.emptyDistance);
     updateSize(changed, errors, env, ENV_COL_LOW_FMT, colId, newSize.lowDistance, defaultSize.lowDistance);
@@ -859,6 +916,9 @@ void environmentUpdateColumnSize(J* changed, J* errors, J* env, const char* colI
     updateSize(changed, errors, env, ENV_COL_ITEM_FMT, colId, newSize.canHeight, defaultSize.canHeight);
 }
 
+/**
+ * @brief Updates the configuration for a dispensing column from the environment.
+ */
 void environmentUpdateDispensingColumn(J* changed, J* errors, J* env, DispensingColumn* column) {
     char buf[32];
     snprintf(buf, sizeof(buf), ENV_COL_NAME_FMT, column->columnNumber());
@@ -868,6 +928,7 @@ void environmentUpdateDispensingColumn(J* changed, J* errors, J* env, Dispensing
     if (strcmp(prevName.c_str(), column->columnName())) {
         addEnvironmentChangedNotification(changed, buf, JCreateString(prevName.c_str()), JCreateString(column->columnName()));
     }
+
     snprintf(buf, sizeof(buf), "_%d_", column->columnNumber());
     environmentUpdateColumnSize(changed, errors, env, buf, column->size(), defaultColumnSize);
 }
@@ -876,19 +937,31 @@ void environmentUpdateDispensingColumn(J* changed, J* errors, J* env, Dispensing
 #define ENV_TILT_ALERT_DEG "tilt_alert_deg"
 
 /**
- * @brief Handles updates to the environment for the app's tasks and report intervals.
+ * @brief Handles updates to the environment for the app's configuration.
  */
 void environmentUpdated(J* env) {
     J* changed = JCreateObject();
     J* errors = JCreateObject();
 
+    // configure task intervals
     setIntValueFromEnvironment(env, changed, errors, &pollEnvironmentInterval, "environment_update_mins", 1000*60, DEFAULT_POLL_ENVIRONMENT_INTERVAL);
     setIntValueFromEnvironment(env, changed, errors, &readSensorsInterval, "monitor_secs", 1000, DEFAULT_POLL_SENSORS_INTERVAL);
     setIntValueFromEnvironment(env, changed, errors, &sendReportInterval, "report_mins", 1000*60, DEFAULT_REPORT_INTERVAL);
 
+    uint32_t watchdogPeriod = readSensorsInterval || sendReportInterval || pollEnvironmentInterval;
+    if (watchdogPeriod) {
+        J* req = notecard.newRequest("card.attn");
+        JAddNumberToObject(req, "seconds", max(int(watchdogPeriod * 2 / 1000), 60));
+        JAddStringToObject(req, "mode", "watchdog");
+        if (!notecard.sendRequestWithRetry(req, NOTECARD_TIMEOUT)) {
+            debug.println("Unable to set watchdog");
+        }
+    }
+
+    // configure dispensing column count
     uint32_t col_count = getDispensingColumnCount();
     uint32_t new_count = col_count;
-    setIntValueFromEnvironment(env, changed, errors, &new_count, ENV_COL_COUNT,1, 1);
+    setIntValueFromEnvironment(env, changed, errors, &new_count, ENV_COL_COUNT, 1, 1);
     if (new_count != col_count) {
         if (new_count > COLUMN_COUNT_MAX) {
             notifyEnvironmentError(errors, ENV_COL_COUNT, "Too many columns.", JGetString(env, ENV_COL_COUNT));
@@ -897,7 +970,7 @@ void environmentUpdated(J* env) {
             initializeDispensingColumns(new_count);
         }
     }
-
+    // configure tilt alert
     setIntValueFromEnvironment(env, changed, errors, &tiltAlertDegrees, ENV_TILT_ALERT_DEG, 1, DEFAULT_TILT_ALERT_DEGREES);
 
     // update the default column size
@@ -928,6 +1001,12 @@ void environmentUpdated(J* env) {
     JDelete(errors);
 }
 
+/**
+ * @brief Fetch the environment from Notecard and configures this app.
+ * 
+ * @return true     The environment was successfully read and applied.
+ * @return false    The environment couldn't be read.
+ */
 bool readEnvironment() {
     // Read all env vars from the notecard in one transaction
     J *rsp = notecard.requestAndResponse(notecard.newRequest("env.get"));
@@ -957,7 +1036,6 @@ bool readEnvironment() {
 void setup()
 {
     pinMode(LED_BUILTIN, OUTPUT);
-    while (!debug) {};
     debug.begin(115200);
     debug.println("*** " __DATE__ " " __TIME__ " ***");
 
@@ -968,21 +1046,19 @@ void setup()
     notecard.setDebugOutputStream(debug);
     notecard.begin();
 
-    // todo - add voltage-variable inbound/outbound
     J* req = notecard.newRequest("card.voltage");
     JAddBoolToObject(req, "usb", true);
     JAddBoolToObject(req, "alert", true);   // add a note to health.qo
     JAddStringToObject(req, "mode", "lipo");
-    notecard.sendRequest(req);
+    notecard.sendRequestWithRetry(req, NOTECARD_TIMEOUT);
 
-    // todo - 
-    // "voutbound": "usb:30;high:60;normal:90;low:120;dead:0",
-    // "vinbound": "usb:60;high:120;normal:240;low:480;dead:0
     req = notecard.newRequest("hub.set");
     JAddStringToObject(req, "product", PRODUCT_UID);
-    JAddStringToObject(req, "mode", "continuous");
+    JAddStringToObject(req, "mode", "periodic");
+    JAddStringToObject(req, "voutbound", "usb:1;high:15;normal:30;low:60;dead:0");
+    JAddStringToObject(req, "vinbound", "usb:1;high:15;normal:30;low:60;dead:0");
     JAddBoolToObject(req, "sync", true);
-    notecard.sendRequest(req);
+    notecard.sendRequestWithRetry(req, NOTECARD_TIMEOUT);
 
     auxSerialStream.begin(auxSerial.baudRate);
 
@@ -998,15 +1074,17 @@ void setup()
     powerStateChanged(usbPower);
 }
 
-bool sync() {
-    J* req = notecard.newRequest("hub.sync");
-    return notecard.sendRequest(req);
-}
-
-
-void printReport(VL53L4CD_Result_t& results, Stream& output) {
+/**
+ * @brief Print distance sensor results to a stream.
+ * 
+ * @param colId     The column ID the results pertain to.
+ * @param results   The distance results from the VL53L4CD sensor.
+ * @param output    The stream to print the results to.
+ */
+void printSensorReport(int colId, VL53L4CD_Result_t& results, Stream& output) {
     char report[64];
-    snprintf(report, sizeof(report), "Status = %3u, Distance = %5u mm, Signal = %6u kcps/spad",
+    snprintf(report, sizeof(report), "col %d: Status = %3u, Distance = %5u mm, Signal = %6u kcps/spad",
+            colId,
              results.range_status,
              results.distance_mm,
              results.signal_per_spad_kcps);
@@ -1044,10 +1122,4 @@ void loop()
         debug.println("checking environment...");
         readEnvironment();
     }
-
-    // // allow manual triggering of tasks
-    // int c = Serial.read();
-    // switch (c) {
-    //     case 's': sync(); break;
-    // }
 }

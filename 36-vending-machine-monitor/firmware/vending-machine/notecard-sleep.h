@@ -27,7 +27,7 @@ class NotecardSleep {
 
         uint32_t start = millis();
         bool notecardSleep = false;
-        while ((millis()-start)<duration) {
+        while ((millis()-start)<30*1000) {
             for (int i=0; i<3; i++)
             {
                 delay(850);
@@ -37,8 +37,9 @@ class NotecardSleep {
             }
             if (!notecardSleep) {
                 J* rsp = notecard.requestAndResponse(notecard.newRequest("card.voltage"));
-                if (rsp && notecard.responseError(rsp)) {
+                if (!rsp || notecard.responseError(rsp)) {
                     debug.println("Notecard has shutdown.");
+                    notecardSleep = true;
                 }
             }
             else {
@@ -47,11 +48,11 @@ class NotecardSleep {
                     debug.println("Notecard has started.");
                     notecardSleep = false;
                 }
+                break;
             }
-
-            debug.println("waiting for shutdown...");
+            debug.println("waiting for Host shutdown...");
         }
-        debug.println("shutdown didn't happen!");
+        debug.println("Host shutdown didn't happen!");
     }
 
 public:

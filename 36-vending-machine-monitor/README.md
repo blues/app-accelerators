@@ -1,368 +1,318 @@
-# Greenhouse Monitor
+# Overview
 
-Monitor ambient light and temperature, soil moisture and soil temperature and send alerts
-when any of these fall outside specified ranges.
+Soda vending machines, especially older models, are typically not internet connected. This project shows how to retrofit a regular soda vending machine to make it internet connected using a Notecard.
 
-- [Greenhouse Monitor](#greenhouse-monitor)
-  - [Solution Summary](#solution-summary)
-  - [You Will Need](#you-will-need)
-  - [Hardware Setup](#hardware-setup)
-  - [Notehub](#notehub)
-  - [Application Firmware](#application-firmware)
-    - [PlatformIO extension for VS Code](#platformio-extension-for-vs-code)
-    - [Arduino Extension for VS Code](#arduino-extension-for-vs-code)
-    - [Arduino IDE](#arduino-ide)
-      - [Libraries](#libraries)
-      - [Arduino IDE - Compiling/Uploading](#arduino-ide---compilinguploading)
-    - [Configuring the ProductUID](#configuring-the-productuid)
-      - [Using the In-browser terminal](#using-the-in-browser-terminal)
-      - [Editing the Source Code](#editing-the-source-code)
-  - [Testing](#testing)
-    - [App Configuration](#app-configuration)
-    - [Sensor Names](#sensor-names)
-    - [Monitoring Events](#monitoring-events)
-    - [Configuration Updates and Errors](#configuration-updates-and-errors)
-  - [Alerts](#alerts)
-    - [Alert Events](#alert-events)
-    - [Soil Moisture and Light Level](#soil-moisture-and-light-level)
-  - [Blues Community](#blues-community)
+By using a distance sensor placed at the top of each column of soda cans, the Soda Vending Machine Monitor App provides notification when items are vended, when a particular item is running low or empty and when the column has been restocked.
 
+## App features
 
-## Solution Summary
+* The app monitors the items in one or more dispensing columns using a distance sensor placed above the column. The app detects when an item is vended, when the column is running low or empty and when it has been restocked.
 
-This app provides a simple to construct greenhouse monitoring device that can be deployed inside a greenhouse to monitor soil moisture and temperature and ambient light and temperature. Using off-the-shelf hardware and modular components, this solution can be used to add monitoring to an existing greenhouse.
+* Tilt sensing: the app sends an alert when the vending machine is tilted.
 
-## You Will Need
-  * A [Blues Starter Kit](https://shop.blues.io/collections/blues-starter-kits), that contains amongst other things
-    * [Notecarrier F](https://shop.blues.io/products/notecarrier-f)
-    * [Swan](https://shop.blues.io/collections/swan)
-    * [Notecard](https://shop.blues.io/collections/notecard)
-    * [Molex Cellular Antenna](https://shop.blues.io/collections/accessories/products/flexible-cellular-or-wi-fi-antenna)
-  * [Adafruit BME280](https://www.adafruit.com/product/2652)
-  * [Photo transistor](https://www.adafruit.com/product/2831)
-  * [Adafruit STEMMA Soil Sensor](https://www.adafruit.com/product/4026)
-  * [JST PH 2mm 4-pin male header cable](https://www.adafruit.com/product/3955)
-  * [Qwiic 4-pin JST connector cable](https://www.adafruit.com/product/4399)
-  * 1k&Omega; resistor
-  * 3 [male-to-male jumper cables](https://www.adafruit.com/product/1957)
-  * [half size breadboard](https://www.adafruit.com/product/4539)
+* Low power mode: detects power failure and puts the app in low power mode until power resumes. Should the battery run low, the app goes to sleep, waking periodically to check the battery charge. The app sends an alert when mains power fails, and also when battery power is low.
 
+* The app is configurable via environment variables, with notifications about variable changes and errors sent to Notehub.
+
+## You will Need
+### Hardware
+- [Notecard](https://shop.blues.io/collections/notecard/products/note-wbna-500)
+- [Notecarrier F](https://blues.io/products/notecarrier/notecarrier-f/)
+- [Swan](https://shop.blues.io/collections/swan/products/swan)
+- USB-A to Micro-USB cable
+
+For each dispensing column:
+  * [Adafruit VL53LCD sensor breakout](https://www.adafruit.com/product/5396)
+  * [Quiic connect cable](https://www.adafruit.com/product/4401)
+  * Male-to-female jumper cable (optional when using just one sensor)
+
+For Assembly:
+* Soldering iron and solder to solder the 5-pin header to each ToF sensor
+* Zip ties, or a metal bracket, or some other means of fastening the Notecarrier to your vending machine.
+
+### Software
+
+- [Visual Studio Code (VS Code)](https://code.visualstudio.com/)
+- [PlatformIO extension for VS Code](https://platformio.org/install/ide?install=vscode)
 
 ## Hardware Setup
 
-1. Assemble the Notecard, Notecarrier and antenna as described in our [quickstart tutorial](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/).
+1. Assemble Notecard and Notecarrier as described [here](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/).
+2. Plug the Swan into the Notecarrier, aligning the Swan's male headers with the Notecarrier's female headers.
+3. Ensure the Notecarrier-F DIP-switch `Feather PWR` is set to the `SWITCHED` setting. This is so the Notecard can shut down the host when battery power is low. Also ensure that the `DFU` switch is in the `ON` position. This connects `AUXTX`/`AUXRX` on the Notecard to `RX/TX` on the Swan.
+4. Solder the 5-pin male header that comes with each VL53L4CD sensor breakout. The header can be soldered to either side of the board, choose the side that will be compatible with how you mount the sensors in the vending machine.
 
-2. Connect the I2C Qwiic cable between the Notecarrier and the BME280 breakout board:
+<div style="text-align:center">
+<img src="./assets/VL53L4CD_sensor_and_header.jpg" width="30%"/>
+<img src="./assets/VL53L4CD_sensor_soldered.jpg" width="14.9%" />
+</div>
 
-    1. Insert the Qwiic JST cable connector into one of the `F_I2C` connectors on the edge of the Notecarrier-F next to the USB port. You may also connect it to the I2C connector on the Swan.
+5. Using male-to-feamle jumper cables, connect the `XSHUT` pin of each VL53L4CD sensor to a pin on the Notecarrier corresponding to the column number shown in the table below. For ease of recognition, we suggest numbering columns from left to right. The app supports up to 7 columns.
 
-    2. Insert the other end of the Qwiic JST cable into one of the JST connectors on the BM280 breakout board.
+    | Column # | Notecarrier Pin |
+    |:--------:|:---------------:|
+    | 1        | D5              |
+    | 2        | D6              |
+    | 3        | D9              |
+    | 4        | D10             |
+    | 5        | D11             |
+    | 6        | D12             |
+    | 7        | D13             |
 
-3. Connect the photo transistor:
+The app can support more than 7 columns. To add additional columns, increase the value of `COLUMN_COUNT_MAX` in the source, and add the additional pins to the `COLUMN_PINS` array.
 
-   1. Connect the 3 jumper wires between the Notecarrier and breadboard as follows
-      * `GND` on Notecarrier to the negative rail at the edge of the breadboard
-      * `VMAIN` on Notecarrier to the positive power rail at the edge the breadboard
-      * `A1` on Notecarrier to a row of points on the breadboard
+6. Connect the Swan to your development PC with the micro USB cable.
 
-    2. Insert one leg of the 1k&Omega; resistor into the ground rail and the other leg to the same row of points connected to `A1` in last step above.
+## Time of Flight Sensor
 
-    3. Insert the longer leg of the photo transistor into the positive power rail and the shorter leg into the same row of points as the A1 wire.
+This app uses the `VL53L4CD` sensor, which senses objects up to about 1200mm (47") away. The distance sensor uses the Time of Flight (ToF) of a reflected IR beam to determine the distance to the nearest object in the line of sight of the sensor.
 
-    ![](./assets/phototransistor.png)
+The sensors have a 5-pin male header, and Qwiic connectors for I2C. This app requires just the `XSHUT` pin from the header to be connected, as described above.
 
-4. Connect the STEMMA connector to the soil sensor. Connect the colored male jumper wires at the other end of the cable as follows:
+### The `XSHUT` Pin
 
-   * <span style="color:black;background:white">BLACK</span> to the negative power rail on the breadboard.
-   * <span style="color:red">RED</span> to the positive power rail on the breadboard.
-   * <span style="color:white;background:grey">WHITE</span> to `SDA` on the Notecarrier.
-   * <span style="color:green">GREEN</span> to `SCL` on the Notecarrier.
+The `XSHUT` pin controls whether the sensor is active, or on standby, allowing the sensor to be switched on or off from the host.  This serves two purposes:
 
-  The assembled hardware should look similar to this:
-  ![](assets/hardware.jpg)
-  ![](./assets/breadboard.jpg)
+1. The host can power-down the ToF sensors to conserve power. The app does this when mains power is out.
 
-5. Connect the Swan to your computer using a micro-USB cable. This is so that the firmware can be uploaded and allows the app to be monitored over USB serial.
+2. Each sensor can be specifically addressed even though they all initially have the same I2C address (`0x52`) when first powered on. You do not need to manually set the I2C address of each sensor, this is done automatically by the app when setting up the dispensing columns.
 
-6. Optionally, connect an SWD programmer, such as ST-Link Mini, to the Swan using the ribbon cable, and to your computer using a micro-USB cable. This makes it possible to upload firmware without needing to press buttons on the Swan and enables step debugging with the VSCode IDE.
-
-## Notehub
-
-Sign up for a free account on [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub).
-
-This solution can be used to monitor a single greenhouse, or monitor multiple greenhouses at a facility by deploying multiple instances of this app. When monitoring multiple greenhouses at a facility, it can be useful to group the monitors at a facility into a Fleet. For more details, see [The Fleet Administrator's Guide](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/).
-
-## Application Firmware
-
-The application firmware is found under the [firmware](./firmware/) folder and can be built and uploaded to Swan using these development environments:
-
-* PlatformIO extension for Visual Studio Code
-* Arduino extension for Visual Studio Code
-* Arduino IDE
-
-We recommend using the PlatformIO extension for Visual Studio Code, as this is the easiest to set up and use, and provides a comprehensive development experience. However, if you're familiar with the Arduino IDE, that can be used as well but requires a little more setup.
-
-### PlatformIO extension for VS Code
-
-There is no special setup required for the project beyond what is normally required to configure a PlatformIO project in VSCode. [This tutorial](https://dev.blues.io/quickstart/swan-quickstart/#using-the-vs-code-platformio-extension) explains how to install and use the PlatformIO.
-
-The PlatformIO project is located in the `firmware` folder, where you'll find `platformio.ini` that configures the project, including the libraries required, location of the sources and compile-time definitions required.
-
-### Arduino Extension for VS Code
-
-The source code for the Arduino project is under [`firmware/greenhouse/`](firmware/greenhouse/) in this repository folder. We have included the correct configuration in `.vscode/arduino.json` which selects the Swan board as the build target and configures the required compiler options.
-
-Before building the project, you will need to install the required [libraries](#libraries) listed below.
-
-### Arduino IDE
-
-Before compiling and uploading the sketch, be sure to install the STM32Duino board support package. The tutorial [Using the Arduino IDE](https://dev.blues.io/quickstart/swan-quickstart/#using-the-arduino-ide) in the Swan Quickstart shows how to install support for Swan in Arduino IDE and how to compile and upload firmware.
-
-You will also need to install the required libraries.
-
-#### Libraries
-
-When using the Arduino extension for VS Code, or the Arduino IDE, install these libraries using the Library Manager before building the sketch:
-
-* Blues Wireless Notecard
-* Adafruit Seesaw
-* Adafruit BusIO (dependency of Adafruit seesaw)
-* Adafruit BME280 sensor
-* TaskScheduler
-
-#### Arduino IDE - Compiling/Uploading
-
-To compile and upload the app firmware, open the sketch at [`firmware/greenhouse/greenhouse.ino`](firmware/greenhouse/greenhouse.ino) in the Arduino IDE.
+> **Note**: If you are using only one sensor to monitor a single column, you don't need to connect the `XSHUT` pin.
 
 
-### Configuring the ProductUID
+## Firmware
 
-Before uploading the app firmware, you should set the `ProductUID` to correspond to the project you created in [Notehub setup](#notehub) earlier.
+The firmware, found in the `firmware` folder, implements the Host functionality of the app that runs on your Swan. This section describes the Notecard APIs used, and how to upload the firmware to your Swan.
 
-There are two ways to configure the `ProductUID`, either using the in-browser terminal to send a request to the Notecard, or by editing the firmware source code. For more details on what the `ProductUID` is and how it set it please see [this guide](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid).
+### Notecard APIs Used
 
-#### Using the In-browser terminal
+The host app makes use of these Notecard APIs:
 
-1. Connect the Notecarrier to your computer using a micro-USB cable.
-2. Launch the in-browser terminal at [blues.dev](https://dev.blues.io/notecard-playground/)
-3. Click the "USB Notecard" button under "Connect a Notecard".
-4. Select the Notecard to connect to and click "Connect".
-5. The terminal will display the firmware version of Notecard.
-6. You can now enter a request to set the ProductUID and Serial Number of the device.
+* `card.voltage` is used to check the power supply voltage and detect when mains power has failed.
+
+* `card.aux.serial` is used with `notify,accel` to receive accelerometer readings once per second. These accelerometer readings are used to detect the initial orientation and any subsequent tilt of the vending machine.
+
+* `note.add` is used to send monitoring events and alerts to Notehub.
+
+* `card.attn` is used with `mode` set to `sleep,usb` to put the notecard and host to sleep when mains power fails, and wake up when mains power resumes. Also, watchdog mode is used to reset the host when requests are not received within a timeout.
+
+### Building and Uploading Swan Firmware
+
+1. Make sure you've installed [Visual Studio Code (VS Code)](https://code.visualstudio.com/) and the [PlatformIO extension](https://platformio.org/install/ide?install=vscode).
+
+2. Open VS Code, click the PlatformIO icon on the left side of VS Code, click "Pick a folder", and select the directory `36-vending-machine-monitor/firmware`.
+
+3. Click the PlatformIO icon again, and under the Project Tasks menu, click "Build" to build the firmware image.
+
+4. Prepare the Swan to receive the firmware image via DFU by following these instructions from the [Swan Quickstart](https://dev.blues.io/quickstart/swan-quickstart/#programming-swan-the-stlink-v3mini).
+
+5. Under the Project Tasks menu, click "Upload" to upload the firmware image to the Swan. Note that this step can fail if 1) you already have a serial connection open to the Swan or 2) the micro USB cable is for charging only.
+
+6. (Optional) Under the Project Tasks menu, click "Monitor" to view the debug output from the app. This can be useful when troubleshooting. A few seconds after startup, you should see logs like this in the serial monitor:
+
+```
+notification: {"type":"accel","x":-1016,"y":-106,"z":41}
+notification: {"type":"accel","x":-1016,"y":-104,"z":41}
+{"req":"card.voltage","crc":"0192:D020FD9E"}
+{"usb":true,"alert":true,"mode":"usb","value":4.9092861151414208}
+col 1: Status =   0, Distance =   275 mm, Signal =    287 kcps/
+```
+
+With the firmware is running, the next step is to configure the app using environment variables.
+
+
+## Environment Variables
+
+There are a number of [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) that configures the app behavior and provides the name and distance configuration for each dispensing column.
+
+### App Control Variables
+
+* `tilt_alert_deg`: The app sends an alert when the tilt angle is greater than this value. When set to 0, tilt alerts are not produced. The default value is 10 degrees.
+
+* `environment_update_mins`: How often (in minutes) to check for environment variable updates. The default value is 5 minutes.
+
+* `monitor_secs`: How often (in seconds) to read the sensors in the app. The default value is 2 seconds.
+
+* `report_mins`: How often (in minutes) to report the state of each dispensing column to `vending.qo`. The default is 0, meaning only notifications corresponding to vending changes are sent. (See [Vending Notifications](#vending-notifications) for more details.)
+
+
+### Dispensing Column Variables
+
+* `col_count`: the number of dispensing columns that have been fitted with distance sensors. The default value is 1.
+
+Dispensing column configuration specifies various lengths, which allows the app determine the number of items in a column, and when it is full/low/empty.
+
+These values provide defaults for all columns, which is useful when all or the majority of columns are dispensing similarly sized soda cans:
+
+* `col_full_mm`: The distance threshold in millimeters corresponding to when the column is fully stocked. The column is full when the sensed distance is equal or less than this value.
+
+* `col_low_mm`: The distance threshold in millimeters corresponding to a low level of stock in the column. Must be less than `col_empty_mm`.
+
+* `col_empty_mm`:  The distance threshold in millimeters corresponding to when the column is empty. The column is empty when the sensed distance is equal or greater than this value.
+
+* `col_item_mm`: The height in millimeters of each item in the column. As items are dispensed, the height of the column decreases by this amount. This allows the app to determine how many items are presently in the column and when an item has been dispensed.
+
+In addition to the default values for all columns, you can override the defaults for one or more columns by using these environment variables, where X is the number of the column.
+
+* `col_X_full_mm`: As `col_full_mm` above, but specifically for column X.
+* `col_X_low_mm`: As `col_low_mm` above, but specifically for column X.
+* `col_X_empty_mm`: As `col_empty_mm` above, but specifically for column X.
+* `col_X_item_mm`: As `col_item_mm` above, but specifically for column X.
+
+Finally, each column can be given a name via the variable `col_X_name`. The name is present in vending events, which can serve as a useful reminder of the product being vended from that column. If no name is given for a particular column, the name defaults to `col X` where X is the number of the column.
+
+## Events
+
+The app publishes several types of events:
+
+* Tilt alerts
+* Power failure alerts
+* Low Battery alerts
+* Sensor offline alerts for each column
+* Vending notifications for each column
+* Environment variable change notifications
+
+### Alerts
+
+Alerts are sent to the outbound queue `alert.qo`. An alert is sent when an alert condition becomes active, and once again when the alert condition is cleared.
+
+All alerts have these properties in common:
+
+* `active`: `true` or `false` to indicate whether the alert condition has just occurred or has been cleared.
+* `text`: A short description of the state of the alert.
+
+In addition to these properties, the Sensor Offline Alert also includes a `col` property with the column number that has gone offline.
+
+#### Tilt Alerts
+
+The app sends a tilt alert when vending machine is tilted past the angle given by the environment variable `tilt_alert_deg`.
 
 ```json
-{"req":"hub.set", "product":"<your-productUID-from-notehub>", "sn":"greenhouse-monitor"}
+{ "active": true, "text": "excessive tilt" }
 ```
 
-You can also omit the serial number use Notehub to set it:
-
-1. Open the project in Notehub.
-2. From the list of devices, double click the device whose serial number you want to set.
-3. In the "Summary" tab, use the pencil icon to edit the "Serial Number" field.
-
-#### Editing the Source Code
-
-You can also set the `ProductUID` in the source code. Open `app.h` in your IDE and edit the line
-
-```c++
-#define PRODUCT_UID ""		// "com.my-company.my-name:my-project"
-```
-
-pasting in the `ProductUID` from your Notehub project between the first pair of quotes.
-
-
-## Testing
-
-To ensure the setup is working as expected, it's a good idea to test the application before deploying it in a real-life setting. The following sections describe how to configure and use the app.
-
-### App Configuration
-
-The app is configured using environment variables to set
-
-* how often environment variables are checked,
-* how often the sensors are read and checked for alerts, and
-* how often monitoring events are sent.
-
-These variables control the overall app behavior:
-
-* `environment_update_mins` How often (in minutes) to check for environment variable updates from the Notecard. When not set, the default value is 5 minutes.
-
-* `monitor_secs`: How often (in seconds) to read the current values from the sensors and check for alerts. When not set, the default value is 15 seconds.
-
-* `report_mins` How often (in minutes) to report the current values from sensors to `greenhouse.qo`. When not set, the default value is 5 minutes.
-
-You set these environment variables in Notehub. See our tutorial [Understanding Environment Variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) for a fuller description of how to set environment variables in Notehub.
-
-
-### Sensor Names
-
-The app senses and reports these values:
-
-* `air_temp`: the air temperature in Celsius
-
-* `air_humidity`: the relative humidity as a percent
-
-* `air_pressure`: the air pressure in kPa
-
-* `soil_moisture`: an indication of how much moisture is in the soil. A higher value means more moisture, a lower value means less moisture.
-
-* `soil_temp`: the approximate soil temperature
-
-* `light_level`: an indication of the ambient light level. A higher value means more ambient light, a lower value means less ambient light.
-
-The sensor names are used both to report the values in monitoring and alert events, and as part of the environment variable names that you use to configure [alert thresholds](#alerts).
-
-### Monitoring Events
-
-The app sends a monitoring event to `greenhouse.qo` every `report_mins` minutes. The event contains
-the readings of all sensors.
+When the vending machine tilt returns to normal, the alert is cleared with:
 
 ```json
-{
-      "air_humidity": 34.414062,
-      "air_pressure": 1016.3697,
-      "air_temp": 24.15,
-      "app": "nf15",
-      "light_level": 273,
-      "soil_moisture": 344,
-      "soil_temp": 26.489365
-}
+{ "active": false, "text": "no tilt" }
 ```
 
-When alert thresholds are configured, and one or more sensor readings is outside of the normal range, the event also includes `alert` and `alert_seq` properties to indicate the severity of the alert and the progress of the alert. See the section on [Alerts](#alerts) for details about these properties.
+Tilt is detected using accelerometer readings from the Notecard, via the `card.aux.serial` API with the `mode` set to `notify,accel`, and `duration` set to 1000. This configures the Notecard to send accelerometer readings over the `TX/RX` serial connection once per second.
 
-### Configuration Updates and Errors
+When the app is first powered on, the normal orientation of the Notecard is determined from 10 seconds of accelerometer readings. While the Notecard (and Vending Machine) is stationary, the `x`, `y`, `z` readings from the accelerometer constitute a 3d vector that is the acceleration due to gravity, i.e. straight downwards. Depending upon the orientation of the Notecard inside the Vending Machine, the vector could be straight down, straight up, to the left, or any other direction that corresponds to the force of gravity relative to the Notecard.
 
-When environment variables are changed, the app posts an event to `notify.qo`. The event contains details of which values changed and any configuration errors.
+Once the downward vector has been determined, the app continues to receive accelerometer readings, and uses these to compute the current downward vector. The angle between the current downward vector and the original downward vector is computed to determine the current tilt of the vending machine, which is used to fire or clear the excessive tilt alert.
 
-For example, setting the environment variable `environment_update_mins` to 1 produces this notification, indicating that the environment variable changed from the default of 5 minutes to 1 minute.
+#### Power failure alerts
+
+A power failure alert is sent when USB power fails and the app is running from the LiPo battery.
 
 ```json
-{
-    "updates": {
-        "environment_update_mins": {
-            "new_value": 1,
-            "old_value": 5
-        }
-    }
-}
+{ "active": true, "text": "Power failure" }
 ```
 
-Changing several variables, with some of them set incorrectly leads to both updates and errors being present:
+On power failure, the app waits `DEFAULT_WAIT_BEFORE_SLEEP_MS` in case it's just a brief power glitch. Should power resume during that time, the alert is cleared and the app continues operating normally. Otherwise, the Notecard and Host sleep for 5 minute intervals (`DEFAULT_SLEEP_PERIOD_MS`), or until power is restored and the alert is cleared.
 
 ```json
-{
-    "errors": {
-        "environment_update_mins": {
-            "error": "not a valid whole positive number.",
-            "value": "1e"
-        },
-        "soil_temp_warning_high": {
-            "error": "Value is not a number.",
-            "value": "abc"
-        }
-    },
-    "updates": {
-        "light_level_normal_high": {
-            "new_value": 2000
-        },
-        "light_level_normal_low": {
-            "new_value": 20
-        }
-    }
-}
+{ "active": false, "text": "Power restored" }
 ```
 
-## Alerts
+#### Battery Low Alerts
 
-In addition to reporting the sensor values, the app can send an alert should a particular sensor value be too high or too low. The app uses environment variables to configure alert ranges for each sensor. The alert ranges are:
-
-* `normal`: Describes the normal range of values for the sensor. The app sends a `warning` alert when the sensor value is higher than the `high` threshold or lower than the `low` threshold.
-
-* `warning`: Describes the range of values for which the app sends a `warning` alert. When defined, values falling outside the `warning` range produce a `critical` alert. Values inside the `warning` range but outside the `normal` range produce a `warning` alert.
-
-You configure the ranges using environment variables that include the sensor name and range to set, following this format:
-
-  * `<sensor-name>_<range>_low`: Configures the lower bound of a range for the named sensor.
-  * `<sensor-name>_<range>_high`: Configures the upper bound of the range for the named sensor.
-
-> **Note**: You don't have to configure both `high` an `low` values for a range - the application checks just the thresholds provided.
-
-Some examples:
-
-* `light_level_normal_low=100`: sets the lower bound of normal readings from the `light_level` sensor to 100. A `warning` alert is produced when the `light_level` value is below 100.
-
-* `soil_temp_normal_high=40`, `soil_temp_warning_high=50`: sets the upper bound for normal and warning ranges for the `soil_temp` sensor. With this configuration, alerts are produced as follows:
-
-  * No alert is produced when the soil temperature is below 40.
-
-  * A warning alert is produced when the soil temperature is between 40 and 50.
-
-  * A critical alert is produced when the soil temperature is above 50.
-
-
-### Alert Events
-
-When the app detects an alert condition, it captures details of the alert and sends an event to `alert.qo`. The event includes the overall alert level (warning/critical) and details of the sensor readings, similar to this:
+When running from battery, a battery low alert is sent when the battery voltage falls below
+`BATTERY_LOW_VOLTAGE` volts. (Default setting is 3.2v.)
 
 ```json
-{
-    "alert": "warning",
-    "alert_seq": "first",
-    "app": "nf15",
-    "air_humidity": {
-        "status": "ok",
-        "value": 34.740234375
-    },
-    "air_pressure": {
-        "status": "ok",
-        "value": 1016.686328125
-    },
-    "air_temp": {
-        "status": "ok",
-        "value": 23.46999931335449
-    },
-    "light_level": {
-        "alert": "warning",
-        "status": "high",
-        "value": 279
-    },
-    "soil_moisture": {
-        "status": "ok",
-        "value": 342
-    },
-    "soil_temp": {
-        "status": "ok",
-        "value": 26.38705444335938
-    }
-}
+{ "active": true, "text": "Battery low" }
 ```
 
-The event has these properties:
+When power resumes, the battery low alert is cleared.
 
-* `alert`: Describes the overall alert level. This is the combined alert level of all of the sensors. Values are `warning`, `critical` or not present, meaning no alert, which happens when sensor readings return to normal.
+```json
+{ "active": true, "text": "Battery charging" }
+```
 
-* `alert_seq`: Distinguishes between the start of an alert, an ongoing alert, and when an alert has been cleared. The property has these values:
+#### Sensor offline alerts for each column
 
-  * `first`: This is set when the first alert event is sent. The event is sent immediately.
+When the app is unable to read from the distance sensor for a particular column, it sends a Sensor Offline alert.
 
-  * `ongoing`: This is set when the alert condition is still present and the alert is ongoing. An event is sent every `report_mins` minutes for as long as the alert condition is still present.
+```json
+{ "active": true, "text": "Distance sensor offline", "col": 1 }
+```
 
-  * `cleared`: This is set when the alert condition is no longer present and the alert is cleared. The event is sent immediately at the end of the alert.
+When the app is able to read from the sensor again, it sends clears the alert.
 
- * `status`: Describes the status of a sensor value:
+```json
+{ "active": false, "text": "Distance sensor online", "col": 1 }
+```
 
-   * `ok`: The sensor value is in normal range, that is, above any configured low threshold and lower than any configured high threshold.
+#### Vending notifications
 
-   * `low`: The sensor value is too low.
+Vending notifications are sent to `vending.qo`. These notifications, one for each column, include details of the state of the dispensing column, the number if items in the column and information about what has changed since the previous notification.
 
-   * `high`: The sensor value is too high.
+A typical event sent after an item has been dispensed looks like this:
 
->**Note**: The `alert_seq` field makes it easy to detect when an alert starts and stops. You can use this to send external notifications immediately when an alert is detected and when it is cleared. Events with `alert_seq` set to `ongoing` provide periodic reminders that the alert is still ongoing.
+```json
+{ "col":1, "name":"cola", "state": "good", "dist_mm": 152, "items": 3, "changes": "items,state", "text": "Item dispensed." }
+```
 
-### Soil Moisture and Light Level
+* `col`: The column number.
+* `name`: The name of the column (from the `col_X_name` environment variable).
+* `state`: The state of the column. One of `full`, `good`, `low`, `empty` and `offline`.
+* `dist_mm`: The measured distance from the top of the column to the first item.
+* `items`: The number of items in the column, determined from the measured distance and the column and item sizes given by environment variables.
+* `changes`: Indicates which fields changed.
+* `text`: A short description of what happened. In this case an item was dispensed.
 
-The `soil_moisture` and `light_level` are scalar readings that correlate to the amount of moisture in the soil and the amount of light, with more moisture and more light resulting is higher values, and less moisture and less light resulting in lower values. We suggest you use the app in the greenhouse for a few days, and use the monitoring data send to `greenhouse.qo` to determine the normal ranges for these values. You can then set the environment variables `soil_moisture_normal_low` etc.. to reflect the expected normal range of values.
+When the last item in a column is dispensed, the column becomes empty, as shown by the `state` and `items` values in the event:
+
+```json
+{ "col":1, "name": "cola", "state": "empty", "dist_mm": 811, "items": 0, "changes": "items,state", "text": "Item dispensed." }
+```
+
+When the vending machine is restocked, the column state returns to `full`:
+
+```json
+{ "col":1, "name":"cola", "state":"full", "dist_mm": 43, "items": 5, "changes": "items,state", "text": "Column restocked." }
+```
+
+When routine reporting is enabled by setting the `report_mins` environment variable, the state of each column is reported at that interval. A routine report doesn't have the `changes` property, and so can be easily distinguished from vending notifications.
+
+
+## Mock-up Vending Machine
+
+We didn't have a soda vending machine to hand, so we created a simple mockup that we used to test the app.
+
+<div class="text-align:center">
+  <img src="./assets/mock-up-front.jpg" width="25%"/>
+  <img src="./assets/mock-up-back.jpg" width="25%"/>
+</div>
+
+For the mock-up, we used:
+
+* 3.0” diameter acrylic tubing - [FengWu 2PCS Acrylic Tube 3'' (75mm) OD x 2mm Wall Thickness Clear Plastic Pipe Tube 15.5'' Length Clear PVC Pipe Round Polycarbonate Tubing Chemical Resistant](https://www.amazon.com/gp/product/B0B8SDTMTK/ref=ppx_yo_dt_b_asin_title_o01_s00?ie=UTF8&psc=1)
+
+* [3.0" Tube covers](https://www.amazon.com/gp/product/B08H78RW89/ref=ppx_yo_dt_b_asin_title_o00_s00?ie=UTF8&psc=1)
+
+* Soda cans, regular size, 2.6”/66mm in diameter, 4.8"/12.2mm high
+
+### Assembly
+
+1. Insert one tube cover in one end of the acrylic tubing. If it is a tight fit (as ours was), heat the tube cover in hot water to soften it so it can be inserted into the tube more easily.
+
+2. Make a hole in the center of the tube cover. You can use a sharp knife or a drill for this. We used a sharp knife to cut 8 "pizza slices" across the center and inserted a metal ring to hold them back.
+
+<div style="text-align:center">
+<img src="./assets/tube_end.jpg" width="25%">
+</div>
+
+3. Affix the sensor to the top of the tube, ensuring it is level and the IR emitter can be seen through the hole. We used superglue, but you can also use appropriately sized screws to hold the sensor in place.
+
+4. Affix the Notecarrier/Notecard/Swan combo to the tube. We used a rubber band for this.
+
+5. Set up the wiring as described in [Hardware Setup](#hardware-setup) above.
+
+You dispense sodas from the mock-up manually by sliding it to the edge of a surface and letting a can fall gently into your hand, and then sliding it back onto the surface. It's a low-tech approach, but it works!
 
 ## Blues Community
 
