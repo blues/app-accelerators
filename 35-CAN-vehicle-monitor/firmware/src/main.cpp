@@ -139,8 +139,8 @@ void setup() {
     JAddStringToObject(req, "mode", "continuous");
     JAddBoolToObject(req, "sync", true);
     // The hub.set request may fail if it's sent shortly after power up. We use
-    // NoteRequestWithRetry to give it a chance to succeed.
-    if (!NoteRequestWithRetry(req, HUB_SET_TIMEOUT)) {
+    // sendRequestWithRetry to give it a chance to succeed.
+    if (!notecard.sendRequestWithRetry(req, HUB_SET_TIMEOUT)) {
         notecard.logDebug("hub.set failed");
     }
 
@@ -207,4 +207,8 @@ void loop() {
             }
         }
     }
+}
+
+void NoteUserAgentUpdate(J *ua) {
+    JAddStringToObject(ua, "app", "nf35");
 }

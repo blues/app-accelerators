@@ -144,3 +144,7 @@ void main(void)
         k_sleep(K_SECONDS(10));
     }
 }
+
+void NoteUserAgentUpdate(J *ua) {
+    JAddStringToObject(ua, "app", "nf37");
+}
