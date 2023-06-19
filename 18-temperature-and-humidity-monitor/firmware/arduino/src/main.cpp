@@ -10,7 +10,7 @@
 
 // Uncomment this line and replace com.your-company:your-product-name with your
 // ProductUID.
-// #define PRODUCT_UID "com.my-company.my-name:my-project"
+#define PRODUCT_UID "com.zakoverflow.test"
 
 #ifndef PRODUCT_UID
 #define PRODUCT_UID "" // "com.my-company.my-name:my-project"
@@ -216,14 +216,14 @@ void setup()
 #ifndef RELEASE
 #warning "Debug mode is enabled. Define NDEBUG to disable debug."
     // Initialize Debug Output
-    usbSerial.begin(115200);
+    stlinkSerial.begin(115200);
     static const size_t MAX_SERIAL_WAIT_MS = 2500;
     size_t begin_serial_wait_ms = ::millis();
-    while (!usbSerial && (MAX_SERIAL_WAIT_MS > (::millis() - begin_serial_wait_ms)))
+    while (!stlinkSerial && (MAX_SERIAL_WAIT_MS > (::millis() - begin_serial_wait_ms)))
     {
         ; // wait for debug serial port to connect. Needed for native USB
     }
-    notecard.setDebugOutputStream(usbSerial);
+    notecard.setDebugOutputStream(stlinkSerial);
 #endif
 
     // Initialize the physical I/O channel to the Notecard.

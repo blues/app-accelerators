@@ -9,15 +9,17 @@
 
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/sys/printk.h>
+#include <zephyr/device.h>
 
 #include <note.h>
 #include <NotecardEnvVarManager.h>
 
+#include "actuator.h"
 #include "note_c_hooks.h"
 
 // Uncomment this line and replace com.your-company:your-product-name with your
 // ProductUID.
-// #define PRODUCT_UID "com.your-company:your-product-name"
+#define PRODUCT_UID "com.blues.eoss"
 
 #ifndef PRODUCT_UID
 #define PRODUCT_UID "" // "com.my-company.my-name:my-project"
@@ -56,6 +58,7 @@ typedef struct AppState {
     float humidity;
 } AppState;
 
+volatile static bool notecard_lock = false;
 static const char *envVarNames[] = {
     "report_interval",
     "temperature_threshold_min",
@@ -113,6 +116,22 @@ void envVarManagerCb(const char *var, const char *val, void *ctx) {
         printk("Unknown environment variable %s.\n", var);
     }
 }
+
+// Simple mutex for the I2C bus. This will spin forever until the lock is released.
+void lockNotecard(void)
+{
+    while (notecard_lock) {
+        NoteDelayMs(1);
+    }
+
+    notecard_lock = true;
+}
+
+void unlockNotecard(void)
+{
+    notecard_lock = false;
+}
+
 
 // Check for environment variable changes. Returns true if there are changes and
 // false otherwise.
@@ -215,12 +234,14 @@ void updateEnvVars()
 void setup()
 {
     // Set up debug output via serial connection.
+#define RELEASE
 #ifndef RELEASE
-#warning "Debug mode is enabled. Define NDEBUG to disable debug."
+#warning "Debug mode is enabled. Define RELEASE to disable debug."
     NoteSetFnDebugOutput(noteLogPrint);
 #endif
 
     // Initialize the physical I/O channel to the Notecard.
+    NoteSetFnMutex(NULL, NULL, lockNotecard, unlockNotecard);
     NoteSetFnDefault(malloc, free, platform_delay, platform_millis);
     NoteSetFnI2C(NOTE_I2C_ADDR_DEFAULT, NOTE_I2C_MAX_DEFAULT, noteI2cReset,
                  noteI2cTransmit, noteI2cReceive);
@@ -232,16 +253,6 @@ void setup()
     }
     else {
         NotecardEnvVarManager_setEnvVarCb(envVarManager, envVarManagerCb, &state);
-    }
-
-    // Initialize the BME280 sensor
-    if (!device_is_ready(bme280)) {
-        printk("getDevice: error: Device \"%s\" is not ready; "
-               "check the driver initialization logs for errors.\n",
-               bme280->name);
-    }
-    else {
-        printk("Connected to BME280.\n");
     }
 
     // Set defaults.
@@ -257,7 +268,8 @@ void setup()
     if (PRODUCT_UID[0]) {
        JAddStringToObject(req, "product", PRODUCT_UID);
     }
-    JAddStringToObject(req, "mode", "periodic");
+    JAddStringToObject(req, "mode", "continuous");
+    JAddBoolToObject(req, "sync", true);
     JAddNumberToObject(req, "outbound", OUTBOUND_SYNC_MINS);
     NoteRequest(req);
 
@@ -268,7 +280,18 @@ void setup()
     JAddBoolToObject(req, "sync", true);
     NoteRequest(req);
 
-    NotecardEnvVarManager_fetch(envVarManager, envVarNames, (sizeof(envVarNames) / sizeof(envVarNames[0])));
+    updateEnvVars();
+    initActuator();
+
+    // Initialize the BME280 sensor
+    if (!device_is_ready(bme280)) {
+        printk("getDevice: error: Device \"%s\" is not ready; "
+               "check the driver initialization logs for errors.\n",
+               bme280->name);
+    }
+    else {
+        printk("Connected to BME280.\n");
+    }
 }
 
 void readSensor()

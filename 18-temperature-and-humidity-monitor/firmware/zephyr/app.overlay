@@ -6,3 +6,19 @@
     };
 };
 
+&{/gpio_keys} {
+    actuator_pin: actuator_pin {
+        label = "Actuator";
+        gpios = <&gpioa 4 GPIO_ACTIVE_HIGH>;
+    };
+
+    attn_pin: attn_pin {
+        label = "ATTN";
+        gpios = <&gpioa 5 GPIO_ACTIVE_HIGH>;
+    };
+};
+
+&{/aliases} {
+    actuator = &actuator_pin;
+    attn = &attn_pin;
+};

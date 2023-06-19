@@ -8,10 +8,21 @@ set(SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src)
 set(NOTE_C_SRC_DIR ${SRC_DIR}/note-c)
 set(NEVM_SRC_DIR ${SRC_DIR}/notecard_env_var_manager/src)
 
+zephyr_compile_options(
+    # -ggdb
+    # -Og
+    -O2
+    -Wall
+    # -Wextra
+    -Wno-unused-parameter
+    # -Wpedantic
+)
+
 target_sources(
     app
     PRIVATE
         # Application sources.
+        ${SRC_DIR}/actuator.c
         ${SRC_DIR}/main.c
         ${SRC_DIR}/note_c_hooks.c
         # note-c sources.
