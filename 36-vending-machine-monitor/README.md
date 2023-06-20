@@ -1,8 +1,34 @@
-# Overview
+# Soda Vending Machine Monitor
 
 Soda vending machines, especially older models, are typically not internet connected. This project shows how to retrofit a regular soda vending machine to make it internet connected using a Notecard.
 
 By using a distance sensor placed at the top of each column of soda cans, the Soda Vending Machine Monitor App provides notification when items are vended, when a particular item is running low or empty and when the column has been restocked.
+
+- [Soda Vending Machine Monitor](#soda-vending-machine-monitor)
+  - [App features](#app-features)
+  - [You will Need](#you-will-need)
+    - [Hardware](#hardware)
+    - [Software](#software)
+  - [Hardware Setup](#hardware-setup)
+  - [Time-of-Flight Sensor](#time-of-flight-sensor)
+    - [The `XSHUT` Pin](#the-xshut-pin)
+  - [Firmware](#firmware)
+    - [Notecard APIs Used](#notecard-apis-used)
+    - [Building and Uploading Swan Firmware](#building-and-uploading-swan-firmware)
+  - [Environment Variables](#environment-variables)
+    - [App Control Variables](#app-control-variables)
+    - [Dispensing Column Variables](#dispensing-column-variables)
+  - [Events](#events)
+    - [Alerts](#alerts)
+      - [Tilt Alerts](#tilt-alerts)
+      - [Power Failure Alerts](#power-failure-alerts)
+      - [Battery Low Alerts](#battery-low-alerts)
+      - [Sensor offline alerts for each column](#sensor-offline-alerts-for-each-column)
+      - [Vending notifications](#vending-notifications)
+  - [Mock-up Vending Machine](#mock-up-vending-machine)
+    - [Assembly](#assembly)
+  - [Blues Community](#blues-community)
+
 
 ## App features
 
@@ -22,12 +48,12 @@ By using a distance sensor placed at the top of each column of soda cans, the So
 - USB-A to Micro-USB cable
 
 For each dispensing column:
-  * [Adafruit VL53LCD sensor breakout](https://www.adafruit.com/product/5396)
-  * [Quiic connect cable](https://www.adafruit.com/product/4401)
+  * Time-of-flight (ToF) sensor [Adafruit VL53LCD sensor breakout](https://www.adafruit.com/product/5396)
+  * [Qwiic connect cable](https://www.adafruit.com/product/4401)
   * Male-to-female jumper cable (optional when using just one sensor)
 
 For Assembly:
-* Soldering iron and solder to solder the 5-pin header to each ToF sensor
+* Soldering iron and solder to solder the 5-pin header to each Time of Flight (ToF) sensor
 * Zip ties, or a metal bracket, or some other means of fastening the Notecarrier to your vending machine.
 
 ### Software
@@ -47,7 +73,7 @@ For Assembly:
 <img src="./assets/VL53L4CD_sensor_soldered.jpg" width="14.9%" />
 </div>
 
-5. Using male-to-feamle jumper cables, connect the `XSHUT` pin of each VL53L4CD sensor to a pin on the Notecarrier corresponding to the column number shown in the table below. For ease of recognition, we suggest numbering columns from left to right. The app supports up to 7 columns.
+5. Using male-to-female jumper cables, connect the `XSHUT` pin of each VL53L4CD sensor to a pin on the Notecarrier corresponding to the column number shown in the table below. For ease of recognition, we suggest numbering columns from left to right. The app supports up to 7 columns.
 
     | Column # | Notecarrier Pin |
     |:--------:|:---------------:|
@@ -63,9 +89,9 @@ The app can support more than 7 columns. To add additional columns, increase the
 
 6. Connect the Swan to your development PC with the micro USB cable.
 
-## Time of Flight Sensor
+## Time-of-Flight Sensor
 
-This app uses the `VL53L4CD` sensor, which senses objects up to about 1200mm (47") away. The distance sensor uses the Time of Flight (ToF) of a reflected IR beam to determine the distance to the nearest object in the line of sight of the sensor.
+This app uses the `VL53L4CD` sensor, which senses objects up to about 1200mm (47") away. The distance sensor uses the Time-of-Flight (ToF) of a reflected IR beam to determine the distance to the nearest object in the line of sight of the sensor.
 
 The sensors have a 5-pin male header, and Qwiic connectors for I2C. This app requires just the `XSHUT` pin from the header to be connected, as described above.
 
@@ -123,7 +149,7 @@ With the firmware is running, the next step is to configure the app using enviro
 
 ## Environment Variables
 
-There are a number of [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) that configures the app behavior and provides the name and distance configuration for each dispensing column.
+There are a number of [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) that configure the app behavior and provide the name and distance configuration for each dispensing column.
 
 ### App Control Variables
 
@@ -167,7 +193,7 @@ The app publishes several types of events:
 
 * Tilt alerts
 * Power failure alerts
-* Low Battery alerts
+* Low battery alerts
 * Sensor offline alerts for each column
 * Vending notifications for each column
 * Environment variable change notifications
@@ -203,7 +229,7 @@ When the app is first powered on, the normal orientation of the Notecard is dete
 
 Once the downward vector has been determined, the app continues to receive accelerometer readings, and uses these to compute the current downward vector. The angle between the current downward vector and the original downward vector is computed to determine the current tilt of the vending machine, which is used to fire or clear the excessive tilt alert.
 
-#### Power failure alerts
+#### Power Failure Alerts
 
 A power failure alert is sent when USB power fails and the app is running from the LiPo battery.
 
@@ -253,7 +279,15 @@ Vending notifications are sent to `vending.qo`. These notifications, one for eac
 A typical event sent after an item has been dispensed looks like this:
 
 ```json
-{ "col":1, "name":"cola", "state": "good", "dist_mm": 152, "items": 3, "changes": "items,state", "text": "Item dispensed." }
+{
+  "col":1,
+  "name":"cola",
+  "state": "good",
+  "dist_mm": 152,
+  "items": 3,
+  "changes": "items,state",
+  "text": "Item dispensed."
+}
 ```
 
 * `col`: The column number.
@@ -267,13 +301,29 @@ A typical event sent after an item has been dispensed looks like this:
 When the last item in a column is dispensed, the column becomes empty, as shown by the `state` and `items` values in the event:
 
 ```json
-{ "col":1, "name": "cola", "state": "empty", "dist_mm": 811, "items": 0, "changes": "items,state", "text": "Item dispensed." }
+{
+  "col":1,
+  "name": "cola",
+  "state": "empty",
+  "dist_mm": 811,
+  "items": 0,
+  "changes": "items,state",
+  "text": "Item dispensed."
+}
 ```
 
 When the vending machine is restocked, the column state returns to `full`:
 
 ```json
-{ "col":1, "name":"cola", "state":"full", "dist_mm": 43, "items": 5, "changes": "items,state", "text": "Column restocked." }
+{
+  "col":1,
+  "name":"cola",
+  "state":"full",
+  "dist_mm": 43,
+  "items": 5,
+  "changes": "items,state",
+  "text": "Column restocked."
+}
 ```
 
 When routine reporting is enabled by setting the `report_mins` environment variable, the state of each column is reported at that interval. A routine report doesn't have the `changes` property, and so can be easily distinguished from vending notifications.
@@ -281,7 +331,7 @@ When routine reporting is enabled by setting the `report_mins` environment varia
 
 ## Mock-up Vending Machine
 
-We didn't have a soda vending machine to hand, so we created a simple mockup that we used to test the app.
+If you’re looking to prototype this project and don’t have a real vending machine handy, here’s a simple mockup you can use to test the app.
 
 <div class="text-align:center">
   <img src="./assets/mock-up-front.jpg" width="25%"/>
@@ -294,7 +344,7 @@ For the mock-up, we used:
 
 * [3.0" Tube covers](https://www.amazon.com/gp/product/B08H78RW89/ref=ppx_yo_dt_b_asin_title_o00_s00?ie=UTF8&psc=1)
 
-* Soda cans, regular size, 2.6”/66mm in diameter, 4.8"/12.2mm high
+* Soda cans, 12 fl. oz./355ml (regular size), 2.6”/66mm in diameter, 4.8"/12.2mm high
 
 ### Assembly
 
@@ -308,7 +358,7 @@ For the mock-up, we used:
 
 3. Affix the sensor to the top of the tube, ensuring it is level and the IR emitter can be seen through the hole. We used superglue, but you can also use appropriately sized screws to hold the sensor in place.
 
-4. Affix the Notecarrier/Notecard/Swan combo to the tube. We used a rubber band for this.
+4. Affix the Notecarrier/Notecard/Swan combo to the tube. We used an elastic band for this.
 
 5. Set up the wiring as described in [Hardware Setup](#hardware-setup) above.
 
