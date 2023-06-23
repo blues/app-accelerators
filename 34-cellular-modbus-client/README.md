@@ -41,8 +41,9 @@ Send requests and receive responses from Modbus servers via cellular.
 * [STLINK-V3MINI](https://shop.blues.io/collections/accessories/products/stlink-v3mini)
 * 2 micro USB cables
 * [1 USB mini-B cable](https://www.sparkfun.com/products/13243)
-* Male to male jumper wires
-* Female to male jumper wires
+* Male-to-male jumper wires
+* Female-to-male jumper wires
+* Soldering iron and solder flux
 
 ## Hardware Setup
 
@@ -54,7 +55,7 @@ To use the RS-485 transceiver breakout board, solder on a row of 5 male headers 
 
 ![RS-485 transceiver breakout soldered](images/rs485_transceiver_breakout_soldered.jpg)
 
-Using a small flat head screwdriver, loosen the screws on the screw terminal and insert a male to male jumper wire into each port, tightening the screws after. Then, attach the female end of 5 female to male jumper wires to the male headers you just soldered on:
+Using a small flat head screwdriver, loosen the screws on the screw terminal and insert a male-to-male jumper wire into each port, tightening the screws after. Then, attach the female end of 5 female-to-male jumper wires to the male headers you just soldered on:
 
 ![RS-485 transceiver breakout wires](images/rs485_transceiver_breakout_wires.jpg)
 
@@ -64,7 +65,7 @@ To use the USB to RS-485 converter, solder on the remaining 3-pin screw terminal
 
 ![USB to RS-485 converter soldered](images/usb_to_rs485_converter_soldered.jpg)
 
-Loosen the screws on the screw terminal and connect the loose ends of the male to male jumper wires from the RS-485 transceiver breakout to the corresponding ports of the converter's screw terminal, tightening the screws after. The pins are labeled on the backsides of both boards: B, A, and G.
+Loosen the screws on the screw terminal and connect the loose ends of the male-to-male jumper wires from the RS-485 transceiver breakout to the corresponding ports of the converter's screw terminal, tightening the screws after. The pins are labeled on the backsides of both boards: B, A, and G.
 
 ![Screw terminals connected](images/screw_terminals_connected.jpg)
 
@@ -75,7 +76,7 @@ Connect the converter to your development PC with the USB mini-B cable.
 1. Assemble Notecard and Notecarrier as described in the [Notecard Quickstart](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/).
 1. Plug the Swan into the Notecarrier, aligning the Swan's male headers with the Notecarrier's female headers.
 1. Flip the DIP switch labeled DFU away from ON so it's off. This is required to communicate with the RS-485 transceiver breakout.
-1. Make the following connections between the RS-485 transceiver breakout and the Notecarrier using the loose ends of the male to male headers (the breakout pins are labeled on the backside of the board):
+1. Make the following connections between the RS-485 transceiver breakout and the Notecarrier using the loose ends of the male-to-male headers (the breakout pins are labeled on the backside of the board):
     | Breakout | Notecarrier |
     | ---------| ------------|
     | 3-5V     | F_3V3       |
@@ -83,7 +84,7 @@ Connect the converter to your development PC with the USB mini-B cable.
     | TX-O     | F_RX        |
     | RTS      | F_D5        |
     | GND      | GND         |
-1. Use a male to male jumper wire to connect the ATTN and F_D13 pins of the Notecarrier.
+1. Use a male-to-male jumper wire to connect the ATTN and F_D13 pins of the Notecarrier.
 1. Connect one end of the JTAG ribbon cable that came with the STLINK to the STLINK and the other end to the Swan.
 1. Connect the STLINK to your development PC with a micro USB cable.
 1. Connect the Swan to your development PC with the remaining micro USB cable.
@@ -231,7 +232,7 @@ This is identical to the request for read holding registers, except the function
 }
 ```
 
-`addr` is the start address of the coils to write. `num_bits` is the number of coils to write. `coil_bytes` is an array of bytes containing the values to write. The LSB of the first byte corresponds to the value to write at `addr`, the next most significant bit corresponds to `addr + 1`, and so on. The next byte's LSB corresponds to `addr + 8`, the next most significant bit of that byte to `addr + 9`, and so on. This table shows what values would be written to which addresses using the above example (in binary, 99 is 01100011 and 171 is 10101011):
+`addr` is the start address of the coils to write. `num_bits` is the number of coils to write. `coil_bytes` is an array of bytes containing the values to write. The least significant bit (LSB) of the first byte corresponds to the value to write at `addr`, the next most significant bit corresponds to `addr + 1`, and so on. The next byte's LSB corresponds to `addr + 8`, the next most significant bit of that byte to `addr + 9`, and so on. This table shows what values would be written to which addresses using the above example (in binary, 99 is 01100011 and 171 is 10101011):
 
 | Address   | Value |
 | ----------|-------|
@@ -336,13 +337,13 @@ From here, you can view logs from the firmware over serial with a terminal emula
 
 ## Testing
 
-The tests described in this section rely on the server.py script. This script uses [pymodbus](https://github.com/pymodbus-dev/pymodbus) to run a Modbus server on your development PC. It's based on pymodbus's [datastore_simulator.py example](https://github.com/pymodbus-dev/pymodbus/blob/dev/examples/datastore_simulator.py). You can check out server.py's `config` dictionary to see how the coils and registers are addressed. Refer to [pymodbus's documentation](https://github.com/pymodbus-dev/pymodbus/blob/dev/doc/source/library/simulator/config.rst) for details on how the memory layout of the server is configured.
+The tests described in this section rely on the [`server.py`](./server.py) script. This script uses [`pymodbus`](https://github.com/pymodbus-dev/pymodbus) to run a Modbus server on your development PC. It's based on pymodbus's [datastore_simulator.py example](https://github.com/pymodbus-dev/pymodbus/blob/dev/examples/datastore_simulator.py). You can check out `server.py`'s `config` dictionary to see how the coils and registers are addressed. Refer to [pymodbus's documentation](https://github.com/pymodbus-dev/pymodbus/blob/dev/doc/source/library/simulator/config.rst) for details on how the memory layout of the server is configured.
 
-Before proceeding with the sections below, install pymodbus with `pip install pymodbus`.
+Before proceeding with the sections below, install the Python dependencies with `pip install -r requirements.txt`. You may want to do this inside a [virtualenv](https://virtualenv.pypa.io/en/latest/) to avoid polluting the system-level Python packages with these dependencies.
 
 ### Simple Test
 
-You'll use server.py as the Modbus server and the Swan as the Modbus client.
+You'll use `server.py` as the Modbus server and the Swan as the Modbus client.
 
 1. Run the server: `python server.py --log debug --port /dev/ttyUSB0`. The `--port` parameter specifies the serial port of the USB to RS-485 converter. On Linux, this is typically `/dev/ttyUSB0`, but you may need to alter this path depending on your machine. You should see output like this after starting the server:
     ```none
@@ -384,7 +385,7 @@ You'll use server.py as the Modbus server and the Swan as the Modbus client.
         "func": 1,
         "data": {
             "addr": 0,
-            "num_bits": 16,
+            "num_bits": 16
         }
     }
     ```
@@ -398,12 +399,12 @@ You'll use server.py as the Modbus server and the Swan as the Modbus client.
 
 ### Test Script
 
-To quickly exercise all the supported Modbus functions, you can run the test.py Python script.
+To quickly exercise all the supported Modbus functions, you can run the [`test.py`](./test.py) Python script.
 
 1. Set up Programmatic API Access on your Notehub project by following [this documentation](https://dev.blues.io/api-reference/notehub-api/api-introduction/#authentication-with-oauth-bearer-tokens). You now have a client ID and secret.
 1. Go to your Notehub project's Devices tab, double-click your device in the list, and copy down the Device UID.
 1. Go to your Notehub project's Settings tab and copy down the Project UID.
-1. You now have all the information you need to run test.py:
+1. You now have all the information you need to run `test.py`:
     ```bash
     python test.py \
         --serial-port <USB to RS-485 converter serial port> \

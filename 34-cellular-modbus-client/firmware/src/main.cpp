@@ -560,7 +560,9 @@ void attnArm()
 void setup()
 {
     Serial.begin(115200);
+#ifndef NF34_NO_WAIT_FOR_SERIAL
     while (!Serial);
+#endif
 
     notecard.begin();
     notecard.setDebugOutputStream(Serial);
