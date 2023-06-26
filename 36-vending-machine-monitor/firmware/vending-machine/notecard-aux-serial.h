@@ -13,6 +13,10 @@ struct AuxSerial {
     virtual void add(AuxSerialHandler& t)=0;
 };
 
+/**
+ * @brief A base class for handling a certain type of notification from the Notecard via the AUX serial
+ * port.
+ */
 class AuxSerialHandler {
 
 public:
@@ -43,11 +47,6 @@ public:
 };
 
 
-/**
- * @brief Use a template because there is no abstract base class for all types of Serial.
- * Stream doesn't have begin/end.
- *
- */
 class NotecardAuxSerial : public AuxSerial {
 
     /**
@@ -74,8 +73,9 @@ class NotecardAuxSerial : public AuxSerial {
      */
     AuxSerialHandler* handlerFor(const char* mode) {
         for (AuxSerialHandler* handler = this->handler; handler; handler = handler->next) {
-            if (!strcmp(mode, handler->mode))
+            if (!strcmp(mode, handler->mode)) {
                 return handler;
+            }
         }
         return nullptr;
     }
@@ -325,4 +325,3 @@ public:
     float angleFromNormal() { return angle; }
 
 };
-

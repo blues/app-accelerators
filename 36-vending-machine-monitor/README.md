@@ -5,8 +5,8 @@ Soda vending machines, especially older models, are typically not internet conne
 By using a distance sensor placed at the top of each column of soda cans, the Soda Vending Machine Monitor App provides notification when items are vended, when a particular item is running low or empty and when the column has been restocked.
 
 - [Soda Vending Machine Monitor](#soda-vending-machine-monitor)
-  - [App features](#app-features)
-  - [You will Need](#you-will-need)
+  - [App Features](#app-features)
+  - [You Will Need](#you-will-need)
     - [Hardware](#hardware)
     - [Software](#software)
   - [Hardware Setup](#hardware-setup)
@@ -23,14 +23,14 @@ By using a distance sensor placed at the top of each column of soda cans, the So
       - [Tilt Alerts](#tilt-alerts)
       - [Power Failure Alerts](#power-failure-alerts)
       - [Battery Low Alerts](#battery-low-alerts)
-      - [Sensor offline alerts for each column](#sensor-offline-alerts-for-each-column)
-      - [Vending notifications](#vending-notifications)
+      - [Sensor Offline Alerts for Each Column](#sensor-offline-alerts-for-each-column)
+      - [Vending Notifications](#vending-notifications)
   - [Mock-up Vending Machine](#mock-up-vending-machine)
     - [Assembly](#assembly)
   - [Blues Community](#blues-community)
 
 
-## App features
+## App Features
 
 * The app monitors the items in one or more dispensing columns using a distance sensor placed above the column. The app detects when an item is vended, when the column is running low or empty and when it has been restocked.
 
@@ -40,8 +40,10 @@ By using a distance sensor placed at the top of each column of soda cans, the So
 
 * The app is configurable via environment variables, with notifications about variable changes and errors sent to Notehub.
 
-## You will Need
+## You Will Need
+
 ### Hardware
+
 - [Notecard](https://shop.blues.io/collections/notecard/products/note-wbna-500)
 - [Notecarrier F](https://blues.io/products/notecarrier/notecarrier-f/)
 - [Swan](https://shop.blues.io/collections/swan/products/swan)
@@ -53,8 +55,8 @@ For each dispensing column:
   * Male-to-female jumper cable (optional when using just one sensor)
 
 For Assembly:
-* Soldering iron and solder to solder the 5-pin header to each Time of Flight (ToF) sensor
-* Zip ties, or a metal bracket, or some other means of fastening the Notecarrier to your vending machine.
+  * Soldering iron and solder to solder the 5-pin header to each Time of Flight (ToF) sensor
+  * Zip ties, or a metal bracket, or some other means of fastening the Notecarrier to your vending machine.
 
 ### Software
 
@@ -66,7 +68,7 @@ For Assembly:
 1. Assemble Notecard and Notecarrier as described [here](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/).
 2. Plug the Swan into the Notecarrier, aligning the Swan's male headers with the Notecarrier's female headers.
 3. Ensure the Notecarrier-F DIP-switch `Feather PWR` is set to the `SWITCHED` setting. This is so the Notecard can shut down the host when battery power is low. Also ensure that the `DFU` switch is in the `ON` position. This connects `AUXTX`/`AUXRX` on the Notecard to `RX/TX` on the Swan.
-4. Solder the 5-pin male header that comes with each VL53L4CD sensor breakout. The header can be soldered to either side of the board, choose the side that will be compatible with how you mount the sensors in the vending machine.
+4. Solder the 5-pin male header that comes with each VL53L4CD sensor breakout. The header can be soldered to either side of the board — choose the side that will be compatible with how you mount the sensors in the vending machine.
 
 <div style="text-align:center">
 <img src="./assets/VL53L4CD_sensor_and_header.jpg" width="30%"/>
@@ -75,15 +77,15 @@ For Assembly:
 
 5. Using male-to-female jumper cables, connect the `XSHUT` pin of each VL53L4CD sensor to a pin on the Notecarrier corresponding to the column number shown in the table below. For ease of recognition, we suggest numbering columns from left to right. The app supports up to 7 columns.
 
-    | Column # | Notecarrier Pin |
-    |:--------:|:---------------:|
-    | 1        | D5              |
-    | 2        | D6              |
-    | 3        | D9              |
-    | 4        | D10             |
-    | 5        | D11             |
-    | 6        | D12             |
-    | 7        | D13             |
+    | Column # | Notecarrier Pin   |
+    |:--------:|:-----------------:|
+    | 1        | F_D5              |
+    | 2        | F_D6              |
+    | 3        | F_D9              |
+    | 4        | F_D10             |
+    | 5        | F_D11             |
+    | 6        | F_D12             |
+    | 7        | F_D13             |
 
 The app can support more than 7 columns. To add additional columns, increase the value of `COLUMN_COUNT_MAX` in the source, and add the additional pins to the `COLUMN_PINS` array.
 
@@ -101,9 +103,9 @@ The `XSHUT` pin controls whether the sensor is active, or on standby, allowing t
 
 1. The host can power-down the ToF sensors to conserve power. The app does this when mains power is out.
 
-2. Each sensor can be specifically addressed even though they all initially have the same I2C address (`0x52`) when first powered on. You do not need to manually set the I2C address of each sensor, this is done automatically by the app when setting up the dispensing columns.
+2. Each sensor can be specifically addressed even though they all initially have the same I2C address (`0x52`) when first powered on. You do not need to manually set the I2C address of each sensor as this is done automatically by the app when setting up the dispensing columns.
 
-> **Note**: If you are using only one sensor to monitor a single column, you don't need to connect the `XSHUT` pin.
+> **Note**: If you are using only one sensor to monitor a single column, you don't need to connect the `XSHUT` pin. But doing so will reduce power consumption should mains power fail.
 
 
 ## Firmware
@@ -114,13 +116,13 @@ The firmware, found in the `firmware` folder, implements the Host functionality 
 
 The host app makes use of these Notecard APIs:
 
-* `card.voltage` is used to check the power supply voltage and detect when mains power has failed.
+* [`card.voltage`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-voltage) is used to check the power supply voltage and detect when mains power has failed.
 
-* `card.aux.serial` is used with `notify,accel` to receive accelerometer readings once per second. These accelerometer readings are used to detect the initial orientation and any subsequent tilt of the vending machine.
+* [`card.aux.serial`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-aux-serial) is used with `notify,accel` to receive accelerometer readings once per second. These accelerometer readings are used to detect the initial orientation and any subsequent tilt of the vending machine.
 
-* `note.add` is used to send monitoring events and alerts to Notehub.
+* [`note.add`](https://dev.blues.io/api-reference/notecard-api/note-requests/#note-add) is used to send monitoring events and alerts to Notehub.
 
-* `card.attn` is used with `mode` set to `sleep,usb` to put the notecard and host to sleep when mains power fails, and wake up when mains power resumes. Also, watchdog mode is used to reset the host when requests are not received within a timeout.
+* [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) is used with `mode` set to `sleep,usb` to put the notecard and host to sleep when mains power fails, and wake up when mains power resumes. Also, watchdog mode is used to reset the host when requests are not received within a timeout.
 
 ### Building and Uploading Swan Firmware
 
@@ -225,7 +227,7 @@ When the vending machine tilt returns to normal, the alert is cleared with:
 
 Tilt is detected using accelerometer readings from the Notecard, via the `card.aux.serial` API with the `mode` set to `notify,accel`, and `duration` set to 1000. This configures the Notecard to send accelerometer readings over the `TX/RX` serial connection once per second.
 
-When the app is first powered on, the normal orientation of the Notecard is determined from 10 seconds of accelerometer readings. While the Notecard (and Vending Machine) is stationary, the `x`, `y`, `z` readings from the accelerometer constitute a 3d vector that is the acceleration due to gravity, i.e. straight downwards. Depending upon the orientation of the Notecard inside the Vending Machine, the vector could be straight down, straight up, to the left, or any other direction that corresponds to the force of gravity relative to the Notecard.
+When the app is first powered on, the normal orientation of the Notecard is determined from 10 seconds of accelerometer readings. While the Notecard (and vending machine) is stationary, the `x`, `y`, `z` readings from the accelerometer constitute a 3d vector that is the acceleration due to gravity, i.e. straight downwards. Depending upon the orientation of the Notecard inside the Vending Machine, the vector could be straight down, straight up, to the left, or any other direction that corresponds to the force of gravity relative to the Notecard.
 
 Once the downward vector has been determined, the app continues to receive accelerometer readings, and uses these to compute the current downward vector. The angle between the current downward vector and the original downward vector is computed to determine the current tilt of the vending machine, which is used to fire or clear the excessive tilt alert.
 
@@ -237,7 +239,7 @@ A power failure alert is sent when USB power fails and the app is running from t
 { "active": true, "text": "Power failure" }
 ```
 
-On power failure, the app waits `DEFAULT_WAIT_BEFORE_SLEEP_MS` in case it's just a brief power glitch. Should power resume during that time, the alert is cleared and the app continues operating normally. Otherwise, the Notecard and Host sleep for 5 minute intervals (`DEFAULT_SLEEP_PERIOD_MS`), or until power is restored and the alert is cleared.
+On power failure, the app waits `DEFAULT_WAIT_BEFORE_SLEEP_MS` in case it's just a brief power glitch. Should power resume during that time, the alert is cleared and the app continues operating normally. Otherwise, the Notecard and host sleep for 5 minute intervals (`DEFAULT_SLEEP_PERIOD_MS`), or until power is restored and the alert is cleared.
 
 ```json
 { "active": false, "text": "Power restored" }
@@ -245,8 +247,7 @@ On power failure, the app waits `DEFAULT_WAIT_BEFORE_SLEEP_MS` in case it's just
 
 #### Battery Low Alerts
 
-When running from battery, a battery low alert is sent when the battery voltage falls below
-`BATTERY_LOW_VOLTAGE` volts. (Default setting is 3.2v.)
+When running from battery, a battery low alert is sent when the battery voltage falls below `BATTERY_LOW_VOLTAGE` volts. (The default setting is 3.2v.)
 
 ```json
 { "active": true, "text": "Battery low" }
@@ -258,7 +259,7 @@ When power resumes, the battery low alert is cleared.
 { "active": true, "text": "Battery charging" }
 ```
 
-#### Sensor offline alerts for each column
+#### Sensor Offline Alerts for Each Column
 
 When the app is unable to read from the distance sensor for a particular column, it sends a Sensor Offline alert.
 
@@ -272,7 +273,7 @@ When the app is able to read from the sensor again, it sends clears the alert.
 { "active": false, "text": "Distance sensor online", "col": 1 }
 ```
 
-#### Vending notifications
+#### Vending Notifications
 
 Vending notifications are sent to `vending.qo`. These notifications, one for each column, include details of the state of the dispensing column, the number if items in the column and information about what has changed since the previous notification.
 

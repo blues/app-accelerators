@@ -179,7 +179,7 @@ public:
     : Alert(active, inactive), col(col) {}
 };
 
-bool isTOfSensorReady(VL53L4CD& sensor) {
+bool isToFSensorReady(VL53L4CD& sensor) {
     uint8_t ready = 0;
     uint8_t error = sensor.VL53L4CD_CheckForDataReady(&ready);
     return !error && ready;
@@ -457,11 +457,13 @@ class DispensingColumn {
         char changed[128];
         *changed = 0;
         J* body = buildColumnEvent(current);
+        uint16_t maxChars = sizeof(changed)-1;
         if (current.isOnline() && prev.itemCount != current.itemCount) {
-            strncat(changed, ",items", sizeof(changed)-1);
+            strncat(changed, ",items", maxChars);
+            maxChars -= 6;
         }
         if (prev.fillState != current.fillState) {
-            strncat(changed, ",state", sizeof(changed)-1);
+            strncat(changed, ",state", maxChars);
         }
         if (*changed) {
             JAddStringToObject(body, DATA_FIELD_CHANGES, changed+1);    // skip the initial comma
@@ -494,14 +496,14 @@ public:
      * 
      * @param i2c           The i2c instance to use for communicating with the ToF sensor.
      * @param i2cAddress    The i2c address of the ToF sensor.
-     * @param xshut_pin     The `XSHUT` pin for the sensor, which is used to switch the sensor
+     * @param xshutPin      The `XSHUT` pin for the sensor, which is used to switch the sensor
      *  on and off.
      * @param column        The 1-based column ID for this column.
      */
-    DispensingColumn(TwoWire& i2c, uint8_t i2cAddress, uint8_t xshut_pin, uint8_t column) :
+    DispensingColumn(TwoWire& i2c, uint8_t i2cAddress, uint8_t xshutPin, uint8_t column) :
         enabled(false),
         sensorAddress(i2cAddress),
-        distanceSensor(&i2c, xshut_pin),
+        distanceSensor(&i2c, xshutPin),
         next(nullptr),
         column(column),
         sensorOfflineAlert(*this, TEXT_SENSOR_OFFLINE, TEXT_SENSOR_ONLINE),
@@ -558,7 +560,7 @@ public:
 
         int error = 1;
         if (sensorOnline) {
-            if (isTOfSensorReady(distanceSensor)) {
+            if (isToFSensorReady(distanceSensor)) {
                 error = readToFSensor(distanceSensor, distance);
             }
         }
@@ -738,7 +740,7 @@ bool readNotecardVoltage() {
         usbPower = JGetBool(rsp, "usb");
         notecard.deleteResponse(rsp);
     }
-    return rsp;
+    return rsp != nullptr;
 }
 
 /**
@@ -872,14 +874,14 @@ void setIntValueFromEnvironment(J* env, J* changed, J* error, uint32_t* result, 
  * @brief The default column sizes defined by the environment.
  */
 SodaStack defaultColumnSize;
-const SodaStack INITIAL_STACK_SIZE; // zero as the default
+const SodaStack EMPTY_SODA_STACK; //
 
 /**
  * @brief Updates a single size value.
  * 
  * @param changed   Receives details about environment variable changes.
  * @param errors    Receives details about environment variable errors.
- * @param env       THe environment variables.
+ * @param env       The environment variables.
  * @param fmt       The format of the environment variable, using %d as a placeholder for the column ID.
  * @param colId     The value of the placeholder as a string.
  * @param newValue  The result of the update.
@@ -974,7 +976,7 @@ void environmentUpdated(J* env) {
     setIntValueFromEnvironment(env, changed, errors, &tiltAlertDegrees, ENV_TILT_ALERT_DEG, 1, DEFAULT_TILT_ALERT_DEGREES);
 
     // update the default column size
-    environmentUpdateColumnSize(changed, errors, env, "_", defaultColumnSize, INITIAL_STACK_SIZE);
+    environmentUpdateColumnSize(changed, errors, env, "_", defaultColumnSize, EMPTY_SODA_STACK);
 
     for (DispensingColumn* column = columns; column; column = column->next) {
         environmentUpdateDispensingColumn(changed, errors, env, column);
@@ -1002,7 +1004,7 @@ void environmentUpdated(J* env) {
 }
 
 /**
- * @brief Fetch the environment from Notecard and configures this app.
+ * @brief Fetches the environment from Notecard and configures this app.
  * 
  * @return true     The environment was successfully read and applied.
  * @return false    The environment couldn't be read.
