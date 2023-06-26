@@ -18,6 +18,7 @@ pio_app_dirs=(
     "$root_dir/13-tool-usage-cycle-tracking/firmware"
     "$root_dir/18-temperature-and-humidity-monitor/firmware/arduino"
     "$root_dir/35-CAN-vehicle-monitor/firmware"
+    "$root_dir/34-cellular-modbus-client/firmware"
 )
 
 for app_dir in ${pio_app_dirs[@]}; do
