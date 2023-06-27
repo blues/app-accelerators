@@ -557,6 +557,11 @@ void attnArm()
     }
 }
 
+void NoteUserAgentUpdate(J *ua)
+{
+    JAddStringToObject(ua, "app", "nf34");
+}
+
 void setup()
 {
     Serial.begin(115200);
