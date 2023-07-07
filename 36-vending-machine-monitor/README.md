@@ -2,7 +2,7 @@
 
 Soda vending machines, especially older models, are typically not internet connected. This project shows how to retrofit a regular soda vending machine to make it internet connected using a Notecard.
 
-By using a distance sensor placed at the top of each column of soda cans, the Soda Vending Machine Monitor App provides notification when items are vended, when a particular item is running low or empty and when the column has been restocked.
+By using a distance sensor placed at the top of each column of soda cans, the Soda Vending Machine Monitor App provides notifications when items are vended, when a particular item is running low or empty and when the column has been restocked.
 
 - [Soda Vending Machine Monitor](#soda-vending-machine-monitor)
   - [App Features](#app-features)
@@ -65,10 +65,10 @@ For Assembly:
 
 ## Hardware Setup
 
-1. Assemble Notecard and Notecarrier as described [here](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/).
+1. Assemble your Notecard and Notecarrier as described [here](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/).
 2. Plug the Swan into the Notecarrier, aligning the Swan's male headers with the Notecarrier's female headers.
 3. Ensure the Notecarrier-F DIP-switch `Feather PWR` is set to the `SWITCHED` setting. This is so the Notecard can shut down the host when battery power is low. Also ensure that the `DFU` switch is in the `ON` position. This connects `AUXTX`/`AUXRX` on the Notecard to `RX/TX` on the Swan.
-4. Solder the 5-pin male header that comes with each VL53L4CD sensor breakout. The header can be soldered to either side of the board — choose the side that will be compatible with how you mount the sensors in the vending machine.
+4. Solder the 5-pin male header that comes with each VL53L4CD sensor breakout. The header can be soldered to either side of the board — choose the side that will be compatible with how you will mount the sensors in the vending machine.
 
 <div style="text-align:center">
 <img src="./assets/VL53L4CD_sensor_and_header.jpg" width="30%"/>
@@ -87,7 +87,7 @@ For Assembly:
     | 6        | F_D12             |
     | 7        | F_D13             |
 
-The app can support more than 7 columns. To add additional columns, increase the value of `COLUMN_COUNT_MAX` in the source, and add the additional pins to the `COLUMN_PINS` array.
+You can edit the code so the app supports more than 7 columns. To add additional columns, increase the value of `COLUMN_COUNT_MAX` in the source, and add the additional pins to the `COLUMN_PINS` array.
 
 6. Connect the Swan to your development PC with the micro USB cable.
 
@@ -146,7 +146,7 @@ notification: {"type":"accel","x":-1016,"y":-104,"z":41}
 col 1: Status =   0, Distance =   275 mm, Signal =    287 kcps/
 ```
 
-With the firmware is running, the next step is to configure the app using environment variables.
+With the firmware running, the next step is to configure the app using environment variables.
 
 
 ## Environment Variables
@@ -168,7 +168,7 @@ There are a number of [environment variables](https://dev.blues.io/guides-and-tu
 
 * `col_count`: the number of dispensing columns that have been fitted with distance sensors. The default value is 1.
 
-Dispensing column configuration specifies various lengths, which allows the app determine the number of items in a column, and when it is full/low/empty.
+Dispensing column configuration specifies various distances, which allows the app determine the number of items in a column, and when it is full/low/empty.
 
 These values provide defaults for all columns, which is useful when all or the majority of columns are dispensing similarly sized soda cans:
 
@@ -227,7 +227,7 @@ When the vending machine tilt returns to normal, the alert is cleared with:
 
 Tilt is detected using accelerometer readings from the Notecard, via the `card.aux.serial` API with the `mode` set to `notify,accel`, and `duration` set to 1000. This configures the Notecard to send accelerometer readings over the `TX/RX` serial connection once per second.
 
-When the app is first powered on, the normal orientation of the Notecard is determined from 10 seconds of accelerometer readings. While the Notecard (and vending machine) is stationary, the `x`, `y`, `z` readings from the accelerometer constitute a 3d vector that is the acceleration due to gravity, i.e. straight downwards. Depending upon the orientation of the Notecard inside the vending machine, the vector could be straight down, straight up, to the left, or any other direction that corresponds to the force of gravity relative to the Notecard.
+When the app is first powered on, the normal orientation of the Notecard is determined from 10 seconds of accelerometer readings. While the Notecard (and vending machine) are stationary, the `x`, `y`, `z` readings from the accelerometer constitute a 3d vector that is the acceleration due to gravity, i.e. straight downwards. Depending upon the orientation of the Notecard inside the vending machine, the vector could be straight down, straight up, to the left, or any other direction that corresponds to the force of gravity relative to the Notecard.
 
 Once the downward vector has been determined, the app continues to receive accelerometer readings, and uses these to compute the current downward vector. The angle between the current downward vector and the original downward vector is computed to determine the current tilt of the vending machine, which is used to fire or clear the excessive tilt alert.
 
