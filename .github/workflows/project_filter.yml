@@ -77,7 +77,6 @@ jobs:
             app:
               - ${{ matrix.apppath }}/**
       - name: "Build Platform IO project"
-        run-name: "Build Platform IO project ${{ matrix.appid }}"
         if: steps.filter.outputs.app == 'true' && matrix.pio_project != ''
         uses: "./.github/actions/platformio"
         with:
