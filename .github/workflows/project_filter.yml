@@ -72,7 +72,8 @@ jobs:
       - uses: dorny/paths-filter@v2
         id: filter
         with:
-          base: HEAD
+          # uncomment for local testing
+          #          base: HEAD
           filters: |
             app:
               - ${{ matrix.apppath }}/**
