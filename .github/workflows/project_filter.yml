@@ -7,10 +7,62 @@ jobs:
     strategy:
       matrix:
         include:
-          #  - appid: nf15
-          #    apppath: 15-greenhouse-monitor
-        - appid: nf34
-          apppath: 34-cellular-modbus-client
+          - appid: nf01
+            apppath: 01-indoor-floor-level-tracker
+            pio_project: firmware
+          - appid: nf04
+            apppath: 04-low-power-digital-signage
+            pio_project: firmware
+          - appid: nf08
+            apppath: 08-power-quality-monitor
+            pio_project: firmware
+          - appid: nf09
+            apppath: 09-valve-monitor
+            pio_project: firmware/arduino
+          - appid: nf10
+            apppath: 10-flow-rate-monitor
+            pio_project: firmware
+          - appid: nf11
+            apppath: 11-generator-activity-monitor
+            pio_project: firmware
+          - appid: nf12
+            apppath: 12-remote-power-control
+            pio_project: firmware
+          - appid: nf13
+            apppath: 13-tool-usage-cycle-tracking
+            pio_project: firmware
+          - appid: nf15
+            apppath: 15-greenhouse-monitor
+            pio_project: firmware
+          - appid: nf18
+            apppath: 18-temperature-and-humidity-monitor
+            pio_project: firmware/arduino
+          - appid: nf30
+            apppath: 38-audio-classifier
+            pio_project: classifier
+          - appid: nf30
+            apppath: 38-audio-classifier
+            pio_project: data_acquisition
+          - appid: nf34
+            apppath: 34-cellular-modbus-client
+            pio_project: firmware
+          - appid: nf35
+            apppath: 35-CAN-vehicle-monitor
+            pio_project: firmware
+          - appid: nf36
+            apppath: 36-vending-machine-monitor
+            pio_project: firmware
+          - appid: nf38
+            apppath: 38-audio-classifier
+          - appid: nf41
+            apppath: 41-cold-chain-monitor
+            pio_project: firmware/arduino
+          - appid: nf43
+            apppath: 43-propane-tank-fuel-gauge
+            pio_project: firmware
+          - appid: sense-hat-reference
+            apppath: sense-hat-reference
+            pio_project: .
 
     run-name: "Run CI for ${{ matrix.appid }}"
     runs-on: ubuntu-latest
@@ -26,20 +78,16 @@ jobs:
           filters: |
             app:
               - ${{ matrix.apppath }}/**
-      # - name: "Run App CI"
-      #   if: steps.filter.outputs.app == 'true'
-      #   # uses must be a literal. can't do dynamic lookup of the action. So we use shell scripts instead.
-      #   run: "./.ci.sh ${{ matrix.apppath }}"
-      #   shell: bash
-      #   working-directory: "${{ matrix.apppath }}"
-      - name: "Run NF15 App CI"
-        if: steps.filter.outputs.app == 'true' && matrix.appid == 'nf15'
+      - name: "Build Platform IO project"
+        run-name: "Build Platform IO project ${{ matrix.appid }}"
+        if: steps.filter.outputs.app == 'true' && matrix.pio_project != ''
         uses: "./.github/actions/platformio"
         with:
-            project_dir: "${{ matrix.apppath }}/firmware"
-      - name: "Run NF34 App CI"
-        if: steps.filter.outputs.app == 'true' && matrix.appid == 'nf34'
-        uses: "./.github/actions/platformio"
-        with:
-            project_dir: "${{ matrix.apppath }}/firmware"
+            project_dir: "${{ matrix.apppath }}/${{ matrix.pio_project }}"
 
+      - name: "Run App CI shell script"
+        if: steps.filter.outputs.app == 'true' && matrix.shell_script != ''
+        # uses must be a literal. can't do dynamic lookup of the action. So we use shell scripts instead.
+        run: "./.ci.sh ${{ matrix.apppath }}"
+        shell: bash
+        working-directory: "${{ matrix.apppath }}"
