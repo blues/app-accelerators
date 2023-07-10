@@ -6,12 +6,11 @@ jobs:
   run_ci:
     strategy:
       matrix:
-        shell_script: [.ci.sh]
-        pio_project: [firmware]
         include:
           - appid: nf01
             apppath: 01-indoor-floor-level-tracker
             pio_project: firmware
+            shell_script: ''
           - appid: nf04
             apppath: 04-low-power-digital-signage
             pio_project: firmware
@@ -80,13 +79,13 @@ jobs:
             app:
               - ${{ matrix.apppath }}/**
       - name: "Build Platform IO project"
-        if: steps.filter.outputs.app == 'true' && hashFiles(format('{0}/{1}/platformio.ini', matrix.apppath, matrix.pio_project))!=''
+        if: steps.filter.outputs.app == 'true' && matrix.pio_project != ''
         uses: "./.github/actions/platformio"
         with:
             project_dir: "${{ matrix.apppath }}/${{ matrix.pio_project }}"
 
       - name: "Run App CI shell script"
-        if: steps.filter.outputs.app == 'true' && hashFiles(format('{0}/{1}', matrix.apppath, matrix.shell_script))!=''
+        if: steps.filter.outputs.app == 'true' && matrix.shell_script != ''
         # uses must be a literal. can't do dynamic lookup of the action. So we use shell scripts instead.
         run: "${{ matrix.shell_script }} ${{ matrix.apppath }}"
         shell: bash
