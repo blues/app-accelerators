@@ -6,6 +6,8 @@ jobs:
   run_ci:
     strategy:
       matrix:
+        shell: []
+        pio_project: []
         include:
           - appid: nf01
             apppath: 01-indoor-floor-level-tracker
