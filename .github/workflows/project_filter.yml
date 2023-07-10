@@ -1,6 +1,6 @@
 name: CI/CD per project
 on:
-  [ pull_request, push ]
+  [ pull_request ]
 
 jobs:
   run_ci:
@@ -63,8 +63,6 @@ jobs:
           - appid: sense-hat-reference
             apppath: sense-hat-reference
             pio_project: .
-
-    run-name: "Run CI for ${{ matrix.appid }}"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
