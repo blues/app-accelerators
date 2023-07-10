@@ -1,0 +1,45 @@
+name: CI/CD per project
+on:
+  [ pull_request, push ]
+
+jobs:
+  run_ci:
+    strategy:
+      matrix:
+        include:
+          #  - appid: nf15
+          #    apppath: 15-greenhouse-monitor
+        - appid: nf34
+          apppath: 34-cellular-modbus-client
+
+    run-name: "Run CI for ${{ matrix.appid }}"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: false
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          base: HEAD
+          filters: |
+            app:
+              - ${{ matrix.apppath }}/**
+      # - name: "Run App CI"
+      #   if: steps.filter.outputs.app == 'true'
+      #   # uses must be a literal. can't do dynamic lookup of the action. So we use shell scripts instead.
+      #   run: "./.ci.sh ${{ matrix.apppath }}"
+      #   shell: bash
+      #   working-directory: "${{ matrix.apppath }}"
+      - name: "Run NF15 App CI"
+        if: steps.filter.outputs.app == 'true' && matrix.appid == 'nf15'
+        uses: "./.github/actions/platformio"
+        with:
+            project_dir: "${{ matrix.apppath }}/firmware"
+      - name: "Run NF34 App CI"
+        if: steps.filter.outputs.app == 'true' && matrix.appid == 'nf34'
+        uses: "./.github/actions/platformio"
+        with:
+            project_dir: "${{ matrix.apppath }}/firmware"
+
