@@ -35,6 +35,7 @@ Send requests and receive responses from Modbus servers via cellular.
 * [Visual Studio Code (VS Code)](https://code.visualstudio.com/) with the [PlatformIO extension](https://platformio.org/)
 * [Notecarrier F](https://blues.io/products/notecarrier/notecarrier-f/)
 * [Notecard](https://blues.io/products/notecard/)
+* [Swan](https://blues.io/products/swan/)
 * [SparkFun Transceiver Breakout - RS-485](https://www.sparkfun.com/products/10124)
 * [SparkFun USB to RS-485 Converter](https://www.sparkfun.com/products/9822)
 * [2 Screw Terminals 3.5mm Pitch (3-Pin)](https://www.sparkfun.com/products/8235)
