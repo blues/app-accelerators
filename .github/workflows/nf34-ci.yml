@@ -11,6 +11,10 @@ jobs:
     runs-on: NF34
     steps:
       - uses: actions/checkout@v3
+        with:
+          sparse-checkout: |
+            .github
+            ${{ env.apppath }}
       - name: Build PlatformIO Project
         # force remote so that pio compiles on the agent
         run: echo pio remote run -a "$PLATFORMIO_AGENT" -d "$project_dir" --force-remote -p "$NF34_PORT_STLINK" -t upload
