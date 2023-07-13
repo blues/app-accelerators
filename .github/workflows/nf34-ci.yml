@@ -1,7 +1,9 @@
 name: nf34-ci
 on:
-    push:
-    workflow_dispatch:
+  pull_request:
+    paths:
+      - "34-cellular-modbus-client/**"
+  workflow_dispatch: # allow the job to be run manually
 
 jobs:
   nf34-test:
@@ -41,12 +43,13 @@ jobs:
             echo $PLATFORMIO_BUILD_FLAGS
 
             # cannot use --force-remote to build on the agent because environment variables are not propagated
+            # used to have -t clean -t upload which worked with --force-remote, but not with a local build
             pio remote -a "$PLATFORMIO_AGENT" run -d "$PROJECT_DIR" --upload-port "$NF34_PORT_STLINK" -t upload
-  
+
       - name: Install Test script dependencies
         run: pip install -r ${{ env.APP_DIR }}/requirements.txt
       - name: Run NF34 test script
         working-directory: ${{ env.APP_DIR }}
-      # configuration provided by the environment variables on the runner
+        # configuration provided by the environment variables on the runner
         run: |
             python test.py --serial-port $NF34_PORT_MODBUS
