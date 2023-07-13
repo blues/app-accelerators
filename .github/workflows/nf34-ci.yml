@@ -41,7 +41,7 @@ jobs:
             echo $PLATFORMIO_BUILD_FLAGS
 
             # cannot use --force-remote to build on the agent because environment variables are not propagated
-            pio remote -a "$PLATFORMIO_AGENT" run -d "$PROJECT_DIR"--upload-port "$NF34_PORT_STLINK" -t clean -t upload
+            pio remote -a "$PLATFORMIO_AGENT" run -d "$PROJECT_DIR" --upload-port "$NF34_PORT_STLINK" -t clean -t upload
   
       - name: Install Test script dependencies
         run: pip install -r ${{ env.APP_DIR }}/requirements.txt
