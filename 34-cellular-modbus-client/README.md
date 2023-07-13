@@ -24,6 +24,7 @@ Send requests and receive responses from Modbus servers via cellular.
             - [Reads](#reads)
             - [Writes](#writes)
             - [Errors](#errors)
+    - [Building and Flashing](#building-and-flashing)
   - [Testing](#testing)
     - [Simple Test](#simple-test)
     - [Test Script](#test-script)
