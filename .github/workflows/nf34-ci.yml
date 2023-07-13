@@ -16,7 +16,9 @@ jobs:
             ${{ env.apppath }}
       - name: Build PlatformIO Project
         # NF34_PORT_xxx are defined in the `.env` file in the actions runner service on the self hosted runner
-        run: pio remote --agent "$PLATFORMIO_AGENT" run -d "$project_dir" --force-remote -p "$NF34_PORT_STLINK" -t upload
+        run: |
+            echo --agent "$PLATFORMIO_AGENT" 
+            pio remote run --agent "$PLATFORMIO_AGENT" -d "$project_dir" --force-remote -p "$NF34_PORT_STLINK" -t upload
       - name: Setup Python version
         uses: actions/setup-python@v2
         with:
