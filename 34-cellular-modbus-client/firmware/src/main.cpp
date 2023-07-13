@@ -566,6 +566,7 @@ void setup()
 {
     Serial.begin(115200);
 #ifndef NF34_NO_WAIT_FOR_SERIAL
+    #pragma message "App will wait for serial connection before starting."
     while (!Serial);
 #endif
 
