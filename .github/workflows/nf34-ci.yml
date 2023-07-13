@@ -7,7 +7,6 @@ jobs:
         apppath: ./34-cellular-modbus-client
         project_dir:  ./34-cellular-modbus-client/firmware
         PLATFORMIO_BUILD_FLAGS: "-DNF34_NO_WAIT_FOR_SERIAL"
-        PLATFORMIO_AGENT: "orangepi5b"
     runs-on: NF34
     steps:
       - uses: actions/checkout@v3
@@ -15,10 +14,21 @@ jobs:
           sparse-checkout: |
             .github
             ${{ env.apppath }}
-      - name: Build PlatformIO Project
-        # force remote so that pio compiles on the agent
-        run: echo pio remote run --agent "$PLATFORMIO_AGENT" -d "$project_dir" --force-remote -p "$NF34_PORT_STLINK" -t upload
+      - name: Configure Agent
+        run: pio remote --agent "$PLATFORMIO_AGENT"
       - name: Build PlatformIO Project
         # NF34_PORT_xxx are defined in the `.env` file in the actions runner service on the self hosted runner
         run: pio remote run --agent "$PLATFORMIO_AGENT" -d "$project_dir" --force-remote -p "$NF34_PORT_STLINK" -t upload
-        shell: bash
+      - name: Setup Python version
+        uses: actions/setup-python@v2
+        with:
+            python-version: 3.11
+      - name: Create and start virtual environment
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run NF34 test script
+        # configuration provided by the environment variables on the runner
+        run: python test.py
