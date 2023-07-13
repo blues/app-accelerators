@@ -1,0 +1,18 @@
+name: nf34-ci
+on: [push]
+
+jobs:
+  nf34-test:
+    env:
+        apppath: ./34-cellular-modbus-client
+        project_dir: ${{ env.apppath }}/firmware
+    runs-on: NF34
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build PlatformIO Project
+        env:
+            PLATFORMIO_BUILD_FLAGS: "-DNF34_NO_WAIT_FOR_SERIAL"
+        # force remote so that pio compiles on the agent
+        run: echo pio remote run -d "$project_dir" --force-remote -p "$NF34_PORT_STLINK" -t upload
+        run: pio remote run -d "$project_dir" --force-remote -p "$NF34_PORT_STLINK" -t upload
+        shell: bash
