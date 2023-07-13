@@ -4,8 +4,8 @@ on: [push]
 jobs:
   nf34-test:
     env:
-        apppath: ./34-cellular-modbus-client
-        project_dir:  ./34-cellular-modbus-client/firmware
+        apppath: 34-cellular-modbus-client
+        project_dir: 34-cellular-modbus-client/firmware
         PLATFORMIO_BUILD_FLAGS: "-DNF34_NO_WAIT_FOR_SERIAL"
     runs-on: NF34
     steps:
@@ -14,6 +14,7 @@ jobs:
           sparse-checkout: |
             .github
             ${{ env.apppath }}
+            34-cellular-modbus-client
       - name: Build PlatformIO Project
         # NF34_PORT_xxx are defined in the `.env` file in the actions runner service on the self hosted runner
         run: |
