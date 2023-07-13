@@ -41,7 +41,7 @@ jobs:
         run: |
             pip install platformio
             echo $PLATFORMIO_BUILD_FLAGS
-            pio remote -a "$PLATFORMIO_AGENT" run -d "$PROJECT_DIR" --upload-port "$NF34_PORT_STLINK" -t clean
+            pio remote -a "$PLATFORMIO_AGENT" run -d "$PROJECT_DIR" -t clean
 
             # cannot use --force-remote to build on the agent because environment variables are not propagated
             # used to have -t clean -t upload which worked with --force-remote, but not with a local build
