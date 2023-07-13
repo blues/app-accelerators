@@ -44,7 +44,7 @@ jobs:
 
             # cannot use --force-remote to build on the agent because environment variables are not propagated
             # used to have -t clean -t upload which worked with --force-remote, but not with a local build
-            pio remote -a "$PLATFORMIO_AGENT" run -d "$PROJECT_DIR" --upload-port "$NF34_PORT_STLINK" -t upload
+            pio remote -a "$PLATFORMIO_AGENT" run -d "$PROJECT_DIR" --upload-port "$NF34_PORT_STLINK" -t clean -t upload
 
       - name: Install Test script dependencies
         run: pip install -r ${{ env.APP_DIR }}/requirements.txt
