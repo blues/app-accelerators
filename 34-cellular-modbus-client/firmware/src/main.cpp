@@ -28,7 +28,7 @@ volatile bool attnTriggered;
 // ties TX/RX to the Notecard's AUXRX/AUXTX
 static HardwareSerial modbusSerial(A5, A4); // RX/TX
 static RS485Class rs485(modbusSerial, RS485_DEFAULT_TX_PIN, RS485_DEFAULT_DE_PIN, RS485_DEFAULT_RE_PIN);
-static ModbusRTUClientClass& modbusClient(rs485);
+static ModbusRTUClientClass modbusClient(rs485);
 
 // These are Modbus function codes. This code supports the most common ones. For
 // a full listing, check the Modbus spec:
