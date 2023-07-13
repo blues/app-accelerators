@@ -16,13 +16,6 @@ jobs:
             .github
             34-cellular-modbus-client
             "${{ env.APP_DIR }}" # does not work
-      - name: Build PlatformIO Project
-        # NF34_PORT_xxx are defined in the `.env` file in the actions runner service on the self hosted runner
-        env:
-          PLATFORMIO_BUILD_FLAGS: -DNF34_NO_WAIT_FOR_SERIAL
-        run: |
-            echo $PLATFORMIO_BUILD_FLAGS
-            pio remote -a "$PLATFORMIO_AGENT" run -d "$PROJECT_DIR" --force-remote --upload-port "$NF34_PORT_STLINK" -t clean -t upload
 
         #   - name: Setup Python version
         #     uses: actions/setup-python@v4
@@ -38,7 +31,19 @@ jobs:
         run: |
           python3 -m venv venv
           source venv/bin/activate
-      - name: Install dependencies
+
+      - name: Build PlatformIO Project
+        # NF34_PORT_xxx are defined in the `.env` file in the actions runner service on the self hosted runner
+        env:
+          PLATFORMIO_BUILD_FLAGS: -DNF34_NO_WAIT_FOR_SERIAL
+        run: |
+            pip install platformio
+            echo $PLATFORMIO_BUILD_FLAGS
+
+            # cannot use --force-remote to build on the agent because environment variables are not propagated
+            pio remote -a "$PLATFORMIO_AGENT" run -d "$PROJECT_DIR"--upload-port "$NF34_PORT_STLINK" -t clean -t upload
+  
+      - name: Install Test script dependencies
         run: pip install -r ${{ env.APP_DIR }}/requirements.txt
       - name: Run NF34 test script
         working-directory: ${{ env.APP_DIR }}
