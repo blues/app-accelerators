@@ -21,7 +21,7 @@ jobs:
         run: |
             pwd
             ls
-            pio remote -a "$PLATFORMIO_AGENT" run -d "$project_dir" --force-remote --upload-port "$NF34_PORT_STLINK" -t upload
+            pio remote -a "$PLATFORMIO_AGENT" run -d "$PROJECT_DIR" --force-remote --upload-port "$NF34_PORT_STLINK" -t upload
       - name: Setup Python version
         uses: actions/setup-python@v4
         with:
