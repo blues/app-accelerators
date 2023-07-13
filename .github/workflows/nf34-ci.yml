@@ -43,4 +43,7 @@ jobs:
       - name: Run NF34 test script
         working-directory: ${{ env.APP_DIR }}
       # configuration provided by the environment variables on the runner
-        run: python test.py
+        run: |
+            echo $NF34_SERIAL_PORT
+            echo $NF34_DEVICE_UID
+            python test.py --serial-port $NF34_PORT_MODBUS
