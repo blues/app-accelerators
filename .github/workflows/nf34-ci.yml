@@ -15,8 +15,7 @@ jobs:
         with:
           sparse-checkout: |
             .github
-            34-cellular-modbus-client
-            ${{ env.APP_DIR }}  # this doesn't work
+            "${{ env.APP_DIR }}"
       - name: Build PlatformIO Project
         # NF34_PORT_xxx are defined in the `.env` file in the actions runner service on the self hosted runner
         run: |
