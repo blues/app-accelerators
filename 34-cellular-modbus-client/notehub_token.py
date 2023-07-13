@@ -16,7 +16,7 @@ def get_new_token(client_id, client_secret):
 #        print(f"New token: {new_token}")
         return new_token
     else:
-        raise Exception(f"Failed to get new token. {response} {data}")
+        raise Exception(f"Failed to get new token. {response}")
 
 
 def overwrite_token(token_file, new_token):

@@ -44,8 +44,8 @@ jobs:
         working-directory: ${{ env.APP_DIR }}
       # configuration provided by the environment variables on the runner
         run: |
-            echo $NF34_SERIAL_PORT
-            echo $NF34_DEVICE_UID
-            echo $NF34_CLIENT_ID
-            echo $NF34_CLIENT_SECRET
+            # echo $NF34_SERIAL_PORT
+            # echo $NF34_DEVICE_UID
+            # echo $NF34_CLIENT_ID
+            # echo $NF34_CLIENT_SECRET
             python test.py --serial-port $NF34_PORT_MODBUS
