@@ -39,7 +39,9 @@ jobs:
           python3 -m venv venv
           source venv/bin/activate
       - name: Install dependencies
+        working-directory: $APP_DIR
         run: pip install -r requirements.txt
       - name: Run NF34 test script
-        # configuration provided by the environment variables on the runner
+        working-directory: $APP_DIR
+      # configuration provided by the environment variables on the runner
         run: python test.py
