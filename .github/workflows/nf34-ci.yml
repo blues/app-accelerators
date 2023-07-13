@@ -21,7 +21,7 @@ jobs:
         # NF34_PORT_xxx are defined in the `.env` file in the actions runner service on the self hosted runner
         run: |
             echo $PLATFORMIO_BUILD_FLAGS
-            pio remote -a "$PLATFORMIO_AGENT" run -d "$PROJECT_DIR" --force-remote --upload-port "$NF34_PORT_STLINK" -t upload
+            pio remote -a "$PLATFORMIO_AGENT" run -d "$PROJECT_DIR" --force-remote --upload-port "$NF34_PORT_STLINK" -t clean -t upload
 
         #   - name: Setup Python version
         #     uses: actions/setup-python@v4
