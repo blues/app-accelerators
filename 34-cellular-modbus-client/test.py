@@ -7,6 +7,7 @@ import shlex
 import subprocess
 import sys
 import time
+import os
 
 test_cases = [
     {
@@ -375,28 +376,40 @@ def main(args):
 
 
 if __name__ == '__main__':
+    serial_port = os.environ.get("NF34_SERIAL_PORT")
+    client_id = os.environ.get("NF34_CLIENT_ID")
+    client_secret = os.environ.get("NF34_CLIENT_SECRET")
+    device_uid = os.environ.get("NF34_DEVICE_UID")
+    project_uid = os.environ.get("NF34_PROJECT_UID")
+
     parser = argparse.ArgumentParser(
         description='Run the Notecard-based Modbus client tests.')
     parser.add_argument(
         '--serial-port',
-        required=True,
+        required=not serial_port,
         help='The serial port '
         'corresponding to the USB to RS-485 converter (e.g. /dev/ttyUSB0. The '
         'Modbus server will communicate with the client over this port.')
     parser.add_argument('--project-uid',
-                        required=True,
+                        required=not project_uid,
                         help='The ProjectUID of the Notehub project.')
     parser.add_argument('--device-uid',
-                        required=True,
+                        required=not device_uid,
                         help='The DeviceUID of the Notecard.')
     parser.add_argument(
         '--client-id',
-        required=True,
+        required=not client_id,
         help='The client ID associated with the Notehub project.')
     parser.add_argument(
         '--client-secret',
-        required=True,
+        required=not client_secret,
         help='The client secret associated with the Notehub project.')
     args = parser.parse_args()
+
+    args.serial_port = args.serial_port or serial_port
+    args.client_id = args.client_id or client_id
+    args.client_secret = args.client_secret or client_secret
+    args.device_uid = args.device_uid or device_uid
+    args.project_uid = args.project_uid or project_uid
 
     main(args)
