@@ -16,7 +16,7 @@ def get_new_token(client_id, client_secret):
 #        print(f"New token: {new_token}")
         return new_token
     else:
-        raise Exception("Failed to get new token.")
+        raise Exception(f"Failed to get new token. {response} {data}")
 
 
 def overwrite_token(token_file, new_token):
@@ -34,11 +34,15 @@ def overwrite_token(token_file, new_token):
 
 def read_token(token_file):
     path = Path(token_file)
+    if not path.exists():
+        return None;
     with path.open(mode='r') as f:
         return f.read()
 
 
 def need_new_token(token, project_uid):
+    if not token:
+        return True
     headers = {
         'Authorization': f'Bearer {token}',
     }
@@ -52,7 +56,6 @@ def need_new_token(token, project_uid):
 def refresh_token(client_id, client_secret, token_file):
     token = get_new_token(client_id, client_secret)
     overwrite_token(token_file, token)
-
     return token
 
 
