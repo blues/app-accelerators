@@ -17,7 +17,8 @@ jobs:
             ${{ env.apppath }}
       - name: Build PlatformIO Project
         # force remote so that pio compiles on the agent
-        run: echo pio remote run -a "$PLATFORMIO_AGENT" -d "$project_dir" --force-remote -p "$NF34_PORT_STLINK" -t upload
+        run: echo pio remote run --agent "$PLATFORMIO_AGENT" -d "$project_dir" --force-remote -p "$NF34_PORT_STLINK" -t upload
       - name: Build PlatformIO Project
-        run: pio remote run -a "$PLATFORMIO_AGENT" -d "$project_dir" --force-remote -p "$NF34_PORT_STLINK" -t upload
+        # NF34_PORT_xxx are defined in the `.env` file in the actions runner service on the self hosted runner
+        run: pio remote run --agent "$PLATFORMIO_AGENT" -d "$project_dir" --force-remote -p "$NF34_PORT_STLINK" -t upload
         shell: bash
