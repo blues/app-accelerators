@@ -23,10 +23,17 @@ jobs:
             pwd
             ls
             pio remote -a "$PLATFORMIO_AGENT" run -d "$PROJECT_DIR" --force-remote --upload-port "$NF34_PORT_STLINK" -t upload
-      - name: Setup Python version
-        uses: actions/setup-python@v4
-        with:
-            python-version: '3.11'
+
+        #   - name: Setup Python version
+        #     uses: actions/setup-python@v4
+        #     with:
+        #         python-version: '3.11'
+        # fails with
+        # Version 3.11 was not found in the local cache
+        # Error: The version '3.11' with architecture 'arm64' was not found for Ubuntu 22.04.
+        # The list of all available versions can be found here: https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json    
+        #
+        # see: https://github.com/actions/setup-python/blob/main/docs/advanced-usage.md#using-setup-python-with-a-self-hosted-runner 
       - name: Create and start virtual environment
         run: |
           python3 -m venv venv
