@@ -335,7 +335,7 @@ To build and upload the firmware onto the MCU, you'll need VS Code with the Plat
 1. Click the PlatformIO icon again, and under the Project Tasks menu, click Build to build the firmware image.
 1. Under the Project Tasks menu, click Upload to upload the firmware image to the MCU.
 
-From here, you can view logs from the firmware over serial with a terminal emulator (e.g. minicom). On Linux, the serial device will be something like `/dev/ttyACM0`. Use a baud rate of 115200 and [8-N-1](https://en.wikipedia.org/wiki/8-N-1) for the serial parameters.
+From here, you can view logs from the firmware over serial with a terminal emulator (e.g. minicom, or `pio device monitor`). You can determine the correct serial port by running `pio device list` in a terminal window of VSCode. The command output lists all the serial devices and their logical names - look for the port corresponding to `SWAN_R5 CDC in FS Mode`.
 
 ## Testing
 
