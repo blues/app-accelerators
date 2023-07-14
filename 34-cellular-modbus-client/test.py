@@ -345,6 +345,14 @@ def run_tests(project_uid, device_uid, client_id, client_secret):
         else:
             print("Response matches expected.")
 
+def server_running(process, server_log_file):
+    # poll() returns None if the process is still running.
+    if process.poll() is None:
+        # Double check that it's running normally by making sure that the log
+        # indicates that the server is listening on the serial connection.
+        with open(server_log_file, 'r') as f:
+            return "Server(Serial) listening." in f.read()
+
 
 def start_server(serial_port):
     script_directory = Path(__file__).resolve().parent
@@ -356,14 +364,19 @@ def start_server(serial_port):
             stdout=log_file,
             stderr=log_file)
 
+    # Give the server a couple seconds to spin up.
+    time.sleep(3)
+
+    # Now make sure it's running.
+    if not server_running(process, server_log_file):
+        raise RuntimeError(f"Server failed to start. Check {server_log_file}.")
+
     return process
 
 
 def main(args):
     print("Starting Modbus server simulator...")
     server_process = start_server(args.serial_port)
-    # Give the server a couple seconds to spin up.
-    time.sleep(3)
 
     try:
         run_tests(args.project_uid, args.device_uid, args.client_id,
