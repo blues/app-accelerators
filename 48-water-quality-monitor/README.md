@@ -64,7 +64,7 @@ With the analog sensors calibrated, you're ready to assembly the circuitry.
 
 ### Power
 
-Since we'll be powering several sensors and boards, it's a good idea to use an external power supply. All the parts accept 5V power. We recommend using either a DC regulated bench power supply or a 5V DC wall wart and a [power jack adapter](https://www.amazon.com/gp/product/B01J1WZENK) to allow for breadboarding. We used a bench power supply, connecting the GND and minus ports and then wiring the minus and plus ports to the corresponding rails on a breadboard:
+Since we'll be powering several sensors and boards, you must use an external power supply. All the parts accept 5V power. We recommend using either a DC regulated bench power supply or a 5V DC wall wart and a [power jack adapter](https://www.amazon.com/gp/product/B01J1WZENK) to allow for breadboarding. If you go with a wall wart, be warned that the power supplied needs to be stable, as the analog sensors have tight tolerances around their power requirements (+/- 0.1 V). We used a bench power supply, connecting the minus and plus ports to the corresponding rails on a breadboard:
 
 <p align="center">
 <img src="images/power_supply_and_breadboard.jpg"/>
@@ -117,9 +117,10 @@ As with the analog sensors, connect the red wire to the + rail of the breadboard
     | ORP         | F_A0        |
     | pH          | F_A1        |
     | TDS         | F_A2        |
-    | Temperature | F_D6        |
-4. Connect a micro USB cable between a free USB port on your development PC and the micro USB port of the Swan.
-5. Place the probes of all 4 sensors into a container of water.
+    | Temperature | F_D5        |
+4. Connect the GND pin of the Notecarrier to the minus rail of the breadboard. **Do not forget this step!** It's critical that everything shares this GND connection.
+5. Connect a micro USB cable between a free USB port on your development PC and the micro USB port of the Swan.
+6. Place the probes of all 4 sensors into a container of water.
 
 <p align="center">
 <img src="images/full_setup.jpg"/>
@@ -134,6 +135,8 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 ### Operation
 
 The firmware periodically reads the sensors, computes the measurements, and uploads the measurements to Notehub via the [Notefile](https://dev.blues.io/api-reference/glossary/#notefile) `sensor.qo`. The time between between sensor readings defaults to 10 minutes, but this can be changed using the [environment variable](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) `sample_period`. For example, if you set `sample_period` to 5, the sensors will be read every 5 minutes.
+
+Data from Notehub to the Notecard is synced every 5 minutes, and data from the Notecard to Notehub is synced every 10 minutes. You can change these values at compile-time with the macros `INBOUND_MINS` and `OUTBOUND_MINS`, respectively. These values are passed directly to the [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) command that gets issued when the Swan starts up.
 
 ### Building and Flashing
 
@@ -158,6 +161,66 @@ With the firmware running, you should begin to see notes come into Notehub on yo
 </p>
 
 \* The analog sensor values shown in this image are not realistic, as the sensors generating the measurements in this case weren't calibrated, yet.
+
+## Datacake Dashboard
+
+If you want to visualize the data coming in from the Notecard, you can set up a [Notehub route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) that transforms the contents of the `sensor.qo` notes and pushes the resulting data to [Datacake](https://datacake.co/). [This guide on our developer site](https://dev.blues.io/guides-and-tutorials/routing-data-to-cloud/datacake/) will walk you through the whole process. When you get to the section "Use JSONata to Transfrom JSON", use this code to populate the JSONata expression box when creating the route:
+
+```
+(
+    {
+        "device": device,
+        "orp": body.orp,
+        "ph": body.ph,
+        "tds": body.tds,
+        "temp": body.temp
+    }
+)
+```
+
+This transform script pares down the data in the notes to output:
+
+- `device`: The [DeviceUID](https://dev.blues.io/api-reference/glossary/#deviceuid) of the Notecard.
+- `orp`: The ORP value in mV.
+- `ph`: The pH value.
+- `tds`: The TDS value in ppm.
+- `temp`: The water temperature in Celsius.
+
+When you get to the point in our guide where you're setting up the HTTP Payload Decoder in Datacake, use this code:
+
+```js
+function Decoder(request) {
+    var data = JSON.parse(request.body);
+    console.log(JSON.stringify(data))
+    var device = data.device;
+
+    var decoded = {};
+    decoded.orp = data.orp;
+    decoded.ph = data.ph;
+    decoded.tds = data.tds;
+    decoded.temp = data.temp;
+
+    // Array where we store the fields that are being sent to Datacake
+    var datacakeFields = []
+
+    // take each field from decoded and convert them to Datacake format
+    for (var key in decoded) {
+        if (decoded.hasOwnProperty(key)) {
+            datacakeFields.push({field: key.toUpperCase(), value: decoded[key], device: device})
+        }
+    }
+
+    // forward data to Datacake
+    return datacakeFields;
+
+}
+````
+
+Once you've completed the routing guide, you'll have a dashboard to monitor the various water quality metrics. Here's an example dashboard that we created:
+
+<p align="center">
+<img src="images/datacake_dashboard.png"/>
+</p>
 
 ## Blues Community
 

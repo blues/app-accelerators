@@ -6,7 +6,7 @@
 #include "GravityTDS.h"
 #include <OneWire.h>
 
-// Uncomment this line and replace com.your-company:your-product-name with your
+// Uncomment this line and replace com.my-company.my-name:my-project with your
 // ProductUID.
 // #define PRODUCT_UID "com.my-company.my-name:my-project"
 
@@ -28,28 +28,59 @@
 #endif
 
 #ifndef TEMP_PIN
-#define TEMP_PIN 6
+#define TEMP_PIN D5
 #endif
 
 #ifndef ENV_FETCH_INTERVAL_MS
 #define ENV_FETCH_INTERVAL_MS (5 * 60 * 1000) // 5 minutes
 #endif
 
-#ifndef ORP_OFFSET
-#define ORP_OFFSET 0
+#ifndef DEFAULT_SAMPLE_PERIOD_MS
+#define DEFAULT_SAMPLE_PERIOD_MS (10 * 60 * 1000); // 10 minutes
 #endif
 
-#define ORP_SAMPLE_COUNT 25
-#define ORP_SAMPLE_DELAY_MS (1000 / ORP_SAMPLE_COUNT)
+#ifndef DEFAULT_ORP_OFFSET_MV
+#define DEFAULT_ORP_OFFSET_MV 0
+#endif
 
-#define PH_SAMPLE_COUNT 25
-#define PH_SAMPLE_DELAY_MS (1000 / PH_SAMPLE_COUNT)
+// ADC range is 1024 (10 bits).
+#ifndef ADC_RANGE
+#define ADC_RANGE 1024.0
+#endif
 
+// Reference voltage for computing voltages from ADC output.
+#ifndef REFERENCE_V
+#define REFERENCE_V 3.3
+#endif
+// Reference voltage in millivolts.
+#define REFERENCE_MV (REFERENCE_V * 1000)
+
+#ifndef TEMP_SAMPLING_DELAY_MS
+#define TEMP_SAMPLING_DELAY_MS 200
+#endif
+
+#ifndef ANALOG_SAMPLE_COUNT
+#define ANALOG_SAMPLE_COUNT 25
+#endif
+#define ANALOG_SAMPLE_DELAY_MS (1000 / ANALOG_SAMPLE_COUNT)
+
+#ifndef MAX_TEMP_SAMPLE_ATTEMPTS
 #define MAX_TEMP_SAMPLE_ATTEMPTS 3
-#define TEMP_SAMPLING_DELAY_MS 702
-#define DS18B20_SCRATCHPAD_SIZE 9
+#endif
 
+#ifndef MAX_SERIAL_WAIT_MS
 #define MAX_SERIAL_WAIT_MS 5000
+#endif
+
+#ifndef OUTBOUND_MINS
+#define OUTBOUND_MINS 10
+#endif
+
+#ifndef INBOUND_MINS
+#define INBOUND_MINS 5
+#endif
+
+#define DS18B20_SCRATCHPAD_SIZE 9
 
 Notecard notecard;
 NotecardEnvVarManager *envVarManager = NULL;
@@ -61,29 +92,30 @@ OneWire ds18b20(TEMP_PIN);
 // Application state.
 static unsigned long lastSampleMs = 0;
 static unsigned long lastEnvFetchMs = 0;
-static unsigned long samplePeriodMs = 10 * 60 * 1000; // 10 minutes
+static unsigned long samplePeriodMs = DEFAULT_SAMPLE_PERIOD_MS;
+static int orpOffsetMv = DEFAULT_ORP_OFFSET_MV;
 
 // These are the environment variables we'll be fetching from the Notecard.
 const char *envVars[] = {
-    "sample_period"
+    "sample_period_mins",
+    "orp_offset_mv"
 };
 static const size_t numEnvVars = sizeof(envVars) / sizeof(envVars[0]);
 
 // Based on sampleAverageAnalogSignal from here:
 // https://github.com/zfields/StreamResearch/blob/main/StreamResearch.ino
-float getPhVoltage()
+int sampleAverageAnalogSignal(int pin)
 {
-    int samples[PH_SAMPLE_COUNT];
+    int samples[ANALOG_SAMPLE_COUNT];
     int maxSample = INT_MIN;
     int minSample = INT_MAX;
     int maxSampleIndex = 0;
     int minSampleIndex = 0;
     int sampleAggregate = 0;
 
-    // Sample the sensor multiple times over one second.
-    for (int i = 0 ; i < PH_SAMPLE_COUNT ; ++i) {
-        samples[i] = analogRead(PH_PIN);
-        delay(PH_SAMPLE_DELAY_MS);
+    for (int i = 0 ; i < ANALOG_SAMPLE_COUNT ; ++i) {
+        samples[i] = analogRead(pin);
+        delay(ANALOG_SAMPLE_DELAY_MS);
 
         if (samples[i] > maxSample) {
             maxSample = samples[i];
@@ -97,7 +129,7 @@ float getPhVoltage()
 
     // Average the remaining readings.
     int numSamples = 0;
-    for (int i = 0 ; i < PH_SAMPLE_COUNT ; ++i) {
+    for (int i = 0 ; i < ANALOG_SAMPLE_COUNT ; ++i) {
         // Remove the highest and lowest samples.
         if (i == maxSampleIndex || i == minSampleIndex) {
             continue;
@@ -107,13 +139,15 @@ float getPhVoltage()
         sampleAggregate += samples[i];
     }
 
-    return ((sampleAggregate / numSamples) / 1024.0) * 5000;
+    return sampleAggregate / numSamples;
 }
 
 // Based on sampleDs18b20 from the StreamResearch.ino code linked above.
-float sampleDs18b20(int pin)
+float sampleDs18b20()
 {
+    float temp = NAN;
     int encodedTemp = 0;
+    bool success = false;
 
     // Sample the sensor (with retries).
     for (int i = 0 ; i < MAX_TEMP_SAMPLE_ATTEMPTS ; ++i) {
@@ -130,7 +164,7 @@ float sampleDs18b20(int pin)
         ds18b20.skip();
         ds18b20.write(0xBE); // Read scratchpad.
         for (int i = 0; i < DS18B20_SCRATCHPAD_SIZE; ++i) {
-          scratchpad[i] = ds18b20.read();
+            scratchpad[i] = ds18b20.read();
         }
 
         // Validate CRC.
@@ -141,100 +175,44 @@ float sampleDs18b20(int pin)
 
         // Reassemble temperature value.
         encodedTemp = ((int)scratchpad[1] << 8) | scratchpad[0];
+        success = true;
         break;
     }
 
-    // The encoded temperature carries fractional information and is shifted 4
-    // bits to the left. Divide by 16 into float value to preserve fractional
-    // information.
-    return (float)(encodedTemp)/16.0;
-}
-
-// Adapted from the sample code provided by DFRobot here:
-// https://wiki.dfrobot.com/Analog_ORP_Meter_SKU_SEN0165_
-float averageArray(int* arr, int len){
-    int i;
-    int min;
-    int max;
-    float avg;
-    long amount = 0;
-
-    if (len <= 0) {
-        return 0;
+    if (success) {
+        // The encoded temperature carries fractional information and is shifted 4
+        // bits to the left. Divide by 16 into float value to preserve fractional
+        // information.
+        temp = (float)(encodedTemp)/16.0;
     }
 
-    // Calculate average directly.
-    if (len < 5) {
-        for (i = 0; i < len; ++i) {
-            amount += arr[i];
-        }
-
-        avg = amount/len;
-        return avg;
-    }
-
-    if (arr[0]<arr[1]) {
-        min = arr[0];
-        max = arr[1];
-    }
-    else {
-        min = arr[1];
-        max = arr[0];
-    }
-    for (i = 2; i < len; ++i) {
-        if (arr[i] < min) {
-            amount += min;
-            min = arr[i];
-        }
-        else {
-            if(arr[i] > max) {
-                amount += max;
-                max = arr[i];
-            }
-            else {
-                amount += arr[i];
-            }
-        }
-    }
-
-    avg = (float)amount / (len - 2);
-
-    return avg;
-}
-
-float getOrp()
-{
-    int samples[ORP_SAMPLE_COUNT];
-
-    // Sample the sensor multiple times over one second.
-    for (int i = 0 ; i < ORP_SAMPLE_COUNT ; ++i) {
-        samples[i] = analogRead(ORP_PIN);
-        delay(ORP_SAMPLE_DELAY_MS);
-    }
-
-    // Taken from ORP sample code here:
-    // https://wiki.dfrobot.com/Analog_ORP_Meter_SKU_SEN0165_
-    return ((30 * 5.0 * 1000) - (75 * averageArray(samples, ORP_SAMPLE_COUNT) *
-            5.0 * 1000 / 1024)) / 75 - ORP_OFFSET;
+    return temp;
 }
 
 // This callback is called whenever environment variables are fetched. It's
 // called once per var:val pair.
 static void envVarManagerCb(const char *var, const char *val, void *userCtx)
 {
-    if (strcmp(var, "sample_period") == 0) {
+    if (strcmp(var, "sample_period_mins") == 0) {
         int period = atoi(val);
 
         if (period <= 0) {
-            Serial.println("sample_period must be a positive integer.");
+            Serial.println("sample_period_mins must be a positive integer.");
         }
         else {
-            samplePeriodMs = period * 60 * 1000;
+            samplePeriodMs = period * 60 * 1000; // Convert mins to ms.
             Serial.print("Sample period set to ");
             Serial.print(period);
             Serial.println(" minutes.");
         }
     }
+    else if (strcmp(var, "orp_offset_mv") == 0) {
+        orpOffsetMv = atoi(val);
+
+        Serial.print("ORP offset set to ");
+        Serial.print(orpOffsetMv);
+        Serial.println(" mV.");
+}
 }
 
 void setup()
@@ -254,8 +232,8 @@ void setup()
     // See sample code here:
     // https://wiki.dfrobot.com/Gravity__Analog_TDS_Sensor___Meter_For_Arduino_SKU__SEN0244
     tds.setPin(TDS_PIN);
-    tds.setAref(5.0); // Reference voltage.
-    tds.setAdcRange(1024);  // 1024 for 10-bit ADC.
+    tds.setAref(REFERENCE_V); // Reference voltage.
+    tds.setAdcRange(ADC_RANGE);
     tds.begin();
 
     // See sample code here:
@@ -265,6 +243,8 @@ void setup()
     J *req = notecard.newRequest("hub.set");
     JAddStringToObject(req, "product", PRODUCT_UID);
     JAddStringToObject(req, "mode", "periodic");
+    JAddIntToObject(req, "outbound", OUTBOUND_MINS);
+    JAddIntToObject(req, "inbound", INBOUND_MINS);
     notecard.sendRequest(req);
 
     // Establish a template to optimize queue size and data usage.
@@ -319,30 +299,45 @@ void loop()
         JAddStringToObject(req, "file", "sensor.qo");
 
         J *body = JAddObjectToObject(req, "body");
-        float orpValue = getOrp();
+
+        // Taken from ORP sample code here:
+        // https://wiki.dfrobot.com/Analog_ORP_Meter_SKU_SEN0165_
+        float orpValue = ((30 * REFERENCE_MV) - (75 *
+                          sampleAverageAnalogSignal(ORP_PIN) * REFERENCE_MV /
+                          ADC_RANGE)) / 75 - orpOffsetMv;
         JAddNumberToObject(body, "orp", orpValue);
-
-        float temp = sampleDs18b20(TEMP_PIN);
-        JAddNumberToObject(body, "temp", temp);
-
-        float phValue = ph.readPH(getPhVoltage(), temp);
-        JAddNumberToObject(body, "ph", phValue);
-
-        // Set the temperature and perform temperature compensation.
-        tds.setTemperature(temp);
-        // Sample the sensor and calculate the TDS.
-        tds.update();
-        float tdsValue = tds.getTdsValue();
-        JAddNumberToObject(body, "tds", tdsValue);
-
-        Serial.print("Temperature: ");
-        Serial.println(temp);
         Serial.print("ORP: ");
         Serial.println(orpValue);
-        Serial.print("pH: ");
-        Serial.println(phValue);
-        Serial.print("TDS: ");
-        Serial.println(tdsValue);
+
+        float temp = sampleDs18b20();
+
+        // If we didn't get a valid temperature reading (indicated by
+        // sampleDs18b20 returning NAN), then we don't add the temp, ph, and
+        // tds fields, which all depend on this value.
+        if (!isnan(temp)) {
+            JAddNumberToObject(body, "temp", temp);
+            Serial.print("Temperature: ");
+            Serial.println(temp);
+
+            float phVoltage = sampleAverageAnalogSignal(PH_PIN) / ADC_RANGE *
+                              REFERENCE_MV;
+            float phValue = ph.readPH(phVoltage, temp);
+            JAddNumberToObject(body, "ph", phValue);
+            Serial.print("pH: ");
+            Serial.println(phValue);
+
+            // Set the temperature and perform temperature compensation.
+            tds.setTemperature(temp);
+            // Sample the sensor and calculate the TDS.
+            tds.update();
+            float tdsValue = tds.getTdsValue();
+            JAddNumberToObject(body, "tds", tdsValue);
+            Serial.print("TDS: ");
+            Serial.println(tdsValue);
+        }
+        else {
+            Serial.println("Failed to get temperature reading.");
+        }
 
         Serial.println("Sending measurements to Notehub.");
         notecard.sendRequest(req);
