@@ -13,10 +13,10 @@ def get_new_token(client_id, client_secret):
     response = requests.post('https://notehub.io/oauth2/token', data=data)
     if response.ok:
         new_token = json.loads(response.text)['access_token']
-        print(f"New token: {new_token}")
+#        print(f"New token: {new_token}")
         return new_token
     else:
-        raise Exception("Failed to get new token.")
+        raise Exception(f"Failed to get new token. {response}")
 
 
 def overwrite_token(token_file, new_token):
@@ -29,16 +29,20 @@ def overwrite_token(token_file, new_token):
     with path.open(mode='w') as f:
         f.write(new_token)
 
-    print(f"Wrote token {new_token} into {path}.")
+ #   print(f"Wrote token {new_token} into {path}.")
 
 
 def read_token(token_file):
     path = Path(token_file)
+    if not path.exists():
+        return None;
     with path.open(mode='r') as f:
         return f.read()
 
 
 def need_new_token(token, project_uid):
+    if not token:
+        return True
     headers = {
         'Authorization': f'Bearer {token}',
     }
@@ -52,13 +56,12 @@ def need_new_token(token, project_uid):
 def refresh_token(client_id, client_secret, token_file):
     token = get_new_token(client_id, client_secret)
     overwrite_token(token_file, token)
-
     return token
 
 
 def get_token(project_uid, client_id, client_secret, token_file):
     try:
-        print(f"Reading token from {token_file}...")
+        # print(f"Reading token from {token_file}...")
         token = read_token(token_file)
         if need_new_token(token, project_uid):
             print("Need new token. Fetching new token...")

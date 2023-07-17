@@ -24,6 +24,12 @@
 Notecard notecard;
 volatile bool attnTriggered;
 
+// We use an alternative serial port so that the Notecarrier can use DFU mode, which
+// ties TX/RX to the Notecard's AUXRX/AUXTX
+static HardwareSerial modbusSerial(A5, A4); // RX/TX
+static RS485Class rs485(modbusSerial, RS485_DEFAULT_TX_PIN, RS485_DEFAULT_DE_PIN, RS485_DEFAULT_RE_PIN);
+static ModbusRTUClientClass modbusClient(rs485);
+
 // These are Modbus function codes. This code supports the most common ones. For
 // a full listing, check the Modbus spec:
 // https://www.modbus.org/docs/Modbus_Application_Protocol_V1_1b3.pdf
@@ -125,12 +131,12 @@ int readBits(long int serverAddr, long int funcCode, long int seqNum, J *data)
         long int numBits = JGetInt(data, "num_bits");
 
         int type = (funcCode == READ_COILS) ? COILS : DISCRETE_INPUTS;
-        if (!ModbusRTUClient.requestFrom(serverAddr, type, addr, numBits)) {
-            sendError(seqNum, ModbusRTUClient.lastError());
+        if (!modbusClient.requestFrom(serverAddr, type, addr, numBits)) {
+            sendError(seqNum, modbusClient.lastError());
             ret = -1;
         }
         else {
-            int avail = ModbusRTUClient.available();
+            int avail = modbusClient.available();
             if (avail > 0) {
                 int numBytes = (numBits + 7) / 8;
                 long int *bits = (long int *)malloc(numBytes * sizeof(long int));
@@ -142,7 +148,7 @@ int readBits(long int serverAddr, long int funcCode, long int seqNum, J *data)
                     memset(bits, 0, numBytes * sizeof(long int));
                     for (int i = 0; i < avail; ++i) {
                         int byteIdx = i / 8;
-                        int bit = ModbusRTUClient.read();
+                        int bit = modbusClient.read();
                         bits[byteIdx] |= (bit << (i % 8));
                     }
 
@@ -213,12 +219,12 @@ int readRegisters(long int serverAddr, long int funcCode, long int seqNum,
 
         int type = (funcCode == READ_MULTIPLE_HOLDING_REGS) ?
                    HOLDING_REGISTERS : INPUT_REGISTERS;
-        if (!ModbusRTUClient.requestFrom(serverAddr, type, addr, numRegs)) {
-            sendError(seqNum, ModbusRTUClient.lastError());
+        if (!modbusClient.requestFrom(serverAddr, type, addr, numRegs)) {
+            sendError(seqNum, modbusClient.lastError());
             ret = -1;
         }
         else {
-            int avail = ModbusRTUClient.available();
+            int avail = modbusClient.available();
             if (avail > 0) {
                 long int *regs = (long int *)malloc(avail * sizeof(long int));
                 if (regs == NULL) {
@@ -228,7 +234,7 @@ int readRegisters(long int serverAddr, long int funcCode, long int seqNum,
                 else {
                     memset(regs, 0, avail * sizeof(long int));
                     for (int i = 0; i < avail; ++i) {
-                        regs[i] = ModbusRTUClient.read();
+                        regs[i] = modbusClient.read();
                     }
 
                     J *note = notecard.newRequest("note.add");
@@ -299,8 +305,8 @@ int writeSingleCoil(long int serverAddr, long int seqNum, J *data)
         long int addr = JGetInt(data, "addr");
         long int val = JGetInt(data, "val");
 
-        if (!ModbusRTUClient.coilWrite(serverAddr, addr, val)) {
-            sendError(seqNum, ModbusRTUClient.lastError());
+        if (!modbusClient.coilWrite(serverAddr, addr, val)) {
+            sendError(seqNum, modbusClient.lastError());
             ret = -1;
         }
         else if (acknowledgeWrite(seqNum) != 0) {
@@ -340,11 +346,11 @@ int writeMultipleCoils(long int serverAddr, long int seqNum, J *data)
         int numCoilBytes = JGetArraySize(coilBytes);
         int validBitsInLastByte = (numBits % 8) == 0 ? 8 : (numBits % 8);
 
-        if (!ModbusRTUClient.beginTransmission(serverAddr, COILS, addr,
+        if (!modbusClient.beginTransmission(serverAddr, COILS, addr,
                 numBits)) {
             Serial.println("writeMultipleCoils error: "
-                "ModbusRTUClient.beginTransmission failed.");
-            sendError(seqNum, ModbusRTUClient.lastError());
+                "modbusClient.beginTransmission failed.");
+            sendError(seqNum, modbusClient.lastError());
             ret = -1;
         }
         else {
@@ -355,12 +361,12 @@ int writeMultipleCoils(long int serverAddr, long int seqNum, J *data)
                                   validBitsInLastByte : 8;
                 for (int j = 0; j < bitsToWrite; ++j) {
                     unsigned int coilBit = (coilByte & (1 << j)) >> j;
-                    ModbusRTUClient.write(coilBit);
+                    modbusClient.write(coilBit);
                 }
             }
 
-            if (!ModbusRTUClient.endTransmission()) {
-                sendError(seqNum, ModbusRTUClient.lastError());
+            if (!modbusClient.endTransmission()) {
+                sendError(seqNum, modbusClient.lastError());
                 ret = -1;
             }
             else if (acknowledgeWrite(seqNum) != 0) {
@@ -392,8 +398,8 @@ int writeSingleRegister(long int serverAddr, long int seqNum, J *data)
         long int addr = JGetInt(data, "addr");
         long int val = JGetInt(data, "val");
 
-        if (!ModbusRTUClient.holdingRegisterWrite(serverAddr, addr, val)) {
-            sendError(seqNum, ModbusRTUClient.lastError());
+        if (!modbusClient.holdingRegisterWrite(serverAddr, addr, val)) {
+            sendError(seqNum, modbusClient.lastError());
             ret = -1;
         }
         else if (acknowledgeWrite(seqNum) != 0) {
@@ -425,21 +431,21 @@ int writeMultipleRegisters(long int serverAddr, long int seqNum, J *data)
         J *vals = JGetObjectItem(data, "vals");
         int numVals = JGetArraySize(vals);
 
-        if (!ModbusRTUClient.beginTransmission(serverAddr, HOLDING_REGISTERS,
+        if (!modbusClient.beginTransmission(serverAddr, HOLDING_REGISTERS,
                 addr, numVals)) {
             Serial.println("writeMultipleRegisters error: "
-                "ModbusRTUClient.beginTransmission failed.");
-            sendError(seqNum, ModbusRTUClient.lastError());
+                "modbusClient.beginTransmission failed.");
+            sendError(seqNum, modbusClient.lastError());
             ret = -1;
         }
         else {
             for (int i = 0; i < numVals; i++) {
                 long int val = JIntValue(JGetArrayItem(vals, i));
-                ModbusRTUClient.write(val);
+                modbusClient.write(val);
             }
 
-            if (!ModbusRTUClient.endTransmission()) {
-                sendError(seqNum, ModbusRTUClient.lastError());
+            if (!modbusClient.endTransmission()) {
+                sendError(seqNum, modbusClient.lastError());
                 ret = -1;
             }
             else if (acknowledgeWrite(seqNum) != 0) {
@@ -566,13 +572,14 @@ void setup()
 {
     Serial.begin(115200);
 #ifndef NF34_NO_WAIT_FOR_SERIAL
+    #pragma message "App will wait for serial connection before starting."
     while (!Serial);
 #endif
 
     notecard.begin();
     notecard.setDebugOutputStream(Serial);
 
-    if (!ModbusRTUClient.begin(115200)) {
+    if (!modbusClient.begin(115200)) {
         Serial.println("Failed to start Modbus RTU Client!");
         while (1) {}
     }

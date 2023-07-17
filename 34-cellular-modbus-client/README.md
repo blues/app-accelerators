@@ -11,23 +11,24 @@ Send requests and receive responses from Modbus servers via cellular.
   - [Notehub Setup](#notehub-setup)
   - [Firmware](#firmware)
     - [Operation](#operation)
-        - [Request Types](#request-types)
-            - [Read Coils](#read-coils)
-            - [Read Discrete Inputs](#read-discrete-inputs)
-            - [Read Holding Registers](#read-holding-registers)
-            - [Read Input Registers](#read-input-registers)
-            - [Write Single Coil](#write-single-coil)
-            - [Write Single Register](#write-single-register)
-            - [Write Multiple Coils](#write-multiple-coils)
-            - [Write Multiple Registers](#write-multiple-registers)
-        - [Response Types](#response-types)
-            - [Reads](#reads)
-            - [Writes](#writes)
-            - [Errors](#errors)
+      - [Request Types](#request-types)
+        - [Read Coils](#read-coils)
+        - [Read Discrete Inputs](#read-discrete-inputs)
+        - [Read Holding Registers](#read-holding-registers)
+        - [Read Input Registers](#read-input-registers)
+        - [Write Single Coil](#write-single-coil)
+        - [Write Single Register](#write-single-register)
+        - [Write Multiple Coils](#write-multiple-coils)
+        - [Write Multiple Registers](#write-multiple-registers)
+      - [Response Types](#response-types)
+        - [Reads](#reads)
+        - [Writes](#writes)
+        - [Errors](#errors)
     - [Building and Flashing](#building-and-flashing)
   - [Testing](#testing)
     - [Simple Test](#simple-test)
     - [Test Script](#test-script)
+  - [Troubleshooting](#troubleshooting)
   - [Blues Community](#blues-community)
   - [Additional Resources](#additional-resources)
 
@@ -77,19 +78,18 @@ Connect the converter to your development PC with the USB mini-B cable.
 
 1. Assemble Notecard and Notecarrier as described in the [Notecard Quickstart](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/).
 1. Plug the Swan into the Notecarrier, aligning the Swan's male headers with the Notecarrier's female headers.
-1. Flip the DIP switch labeled DFU away from ON so it's off. This is required to communicate with the RS-485 transceiver breakout.
-1. Make the following connections between the RS-485 transceiver breakout and the Notecarrier using the loose ends of the male-to-male headers (the breakout pins are labeled on the backside of the board):
+2. Make the following connections between the RS-485 transceiver breakout and the Notecarrier using the loose ends of the male-to-male headers (the breakout pins are labeled on the backside of the board):
     | Breakout | Notecarrier |
     | ---------| ------------|
     | 3-5V     | F_3V3       |
-    | RX-I     | F_TX        |
-    | TX-O     | F_RX        |
+    | RX-I     | F_A4        |
+    | TX-O     | F_A5        |
     | RTS      | F_D5        |
     | GND      | GND         |
-1. Use a male-to-male jumper wire to connect the ATTN and F_D13 pins of the Notecarrier.
-1. Connect one end of the JTAG ribbon cable that came with the STLINK to the STLINK and the other end to the Swan.
-1. Connect the STLINK to your development PC with a micro USB cable.
-1. Connect the Swan to your development PC with the remaining micro USB cable.
+3. Use a male-to-male jumper wire to connect the ATTN and F_D13 pins of the Notecarrier.
+4. Connect one end of the JTAG ribbon cable that came with the STLINK to the STLINK and the other end to the Swan.
+5. Connect the STLINK to your development PC with a micro USB cable.
+6. Connect the Swan to your development PC with the remaining micro USB cable.
 
 ![Everything wired](images/everything_wired.jpg)
 
@@ -335,7 +335,7 @@ To build and upload the firmware onto the MCU, you'll need VS Code with the Plat
 1. Click the PlatformIO icon again, and under the Project Tasks menu, click Build to build the firmware image.
 1. Under the Project Tasks menu, click Upload to upload the firmware image to the MCU.
 
-From here, you can view logs from the firmware over serial with a terminal emulator (e.g. minicom). On Linux, the serial device will be something like `/dev/ttyACM0`. Use a baud rate of 115200 and [8-N-1](https://en.wikipedia.org/wiki/8-N-1) for the serial parameters.
+From here, you can view logs from the firmware over serial with a terminal emulator (e.g. minicom, or `pio device monitor`). You can determine the correct serial port by running `pio device list` in a terminal window of VSCode. The command output lists all the serial devices and their logical names - look for the port corresponding to `SWAN_R5 CDC in FS Mode`.
 
 ## Testing
 
@@ -417,6 +417,16 @@ To quickly exercise all the supported Modbus functions, you can run the [`test.p
     ```
 
 The tests should take less than a minute to complete. They should all pass, and you should be able to see the requests and responses in your Notehub project's Events tab.
+
+## Troubleshooting
+
+Should you encounter any errors, these are typically caused by missing wiring.
+
+* `Connection timed out`/`Invalid CRC` responses in `responses.qo`. This typically occurs when the `D5` pin is not connected to the `DE` and `RE` pins on the RS485 breakout. The purpose of this pin is to control the direction of serial data to the RS485 breakout. Without it, data cannot be transmitted reliably. Double-check your wiring to ensure the jumper cable is in place between `F_D5` and `ATTN` pins on the Notecarrier.
+
+* Notes sent to `requests.qi` don't appear immediately, but do after a sync. The connection between `F_D13` and the  `ATTN` pin is used to notify the host (Swan) that a new note is available. If this connection is broken, the host isn't notified in a timely manner. Double-check your wiring to ensure the jumper cable is in place between `F_D13` and `ATTN` pins on the Notecarrier.
+
+* Notes sent to `request.qi` don't appear at all. This happens when the Notecard is not configured to the Notehub project. Ensure that `PRODUCT_UID` is set in the source code, or that you have issued a `hub.set` request with the `product` property set to your Notehub Project's `ProductUID`.
 
 ## Blues Community
 
