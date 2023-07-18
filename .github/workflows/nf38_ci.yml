@@ -6,13 +6,14 @@ on:
             - "38-audio-classifier/**"
 
 jobs:
-    nf38-ci:
-        uses: ./.github/workflows/platformio_ci.yml
-        with:
-            appid: nf38
-            apppath: 38-audio-classifier
-            pio_project: classifier
-            submodules: true
+    # Doesn't build without a trained classifier model
+    # nf38-ci:
+    #     uses: ./.github/workflows/platformio_ci.yml
+    #     with:
+    #         appid: nf38
+    #         apppath: 38-audio-classifier
+    #         pio_project: classifier
+    #         submodules: true
 
     nf38-data_acquisition-ci:
         uses: ./.github/workflows/platformio_ci.yml
