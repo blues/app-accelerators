@@ -1,4 +1,4 @@
-name: nf09-ci
+name: nf08-ci
 on:
     workflow_dispatch:
     pull_request:
@@ -9,7 +9,7 @@ jobs:
     nf08-ci:
         uses: ./.github/workflows/platformio_ci.yml
         with:
-            appid: nf09
+            appid: nf08
             apppath: 08-power-quality-monitor
             pio_project: firmware
 

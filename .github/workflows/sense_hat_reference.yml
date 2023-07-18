@@ -4,7 +4,6 @@ on:
     pull_request:
         paths:
             - "sense-hat-reference/**"
-    
 
 jobs:
     sense_hat_reference-ci:
