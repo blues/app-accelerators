@@ -332,10 +332,38 @@ def run_tests(project_uid, device_uid, client_id, client_secret):
         test_case_name = case['name']
         print(f'\nRunning test case "{test_case_name}".')
         start_time = int(time.time())
-        send_request(token, project_uid, device_uid, case['request'])
-        response = get_response(token, project_uid, device_uid, start_time)
-        expected_response = case['response']
 
+        # If the Modbus server doesn't respond or the response is corrupted
+        # (indicated by a CRC error), we'll try again, up to 3 times.
+        retries = 3
+        retries_left = retries
+        while retries_left >= 0:
+            send_request(token, project_uid, device_uid, case['request'])
+            response = get_response(token, project_uid, device_uid, start_time)
+
+            if 'error' in response:
+                if response['error'] == 'Connection timed out':
+                    print(
+                        'Timed out waiting to connect to Modbus server. Trying again...'
+                    )
+                elif response['error'] == 'Invalid CRC':
+                    print(
+                        'CRC error in Modbus server response. Trying again...')
+                else:
+                    # There was an error, but we're not going to retry.
+                    break
+            else:
+                # No error, so no need to retry.
+                break
+
+            retries_left -= 1
+
+        if retries_left < 0:
+            raise RuntimeError(
+                f"Couldn't communicate with the Modbus server. Tried {retries+1} times."
+            )
+
+        expected_response = case['response']
         if response != expected_response:
             print("Received response differs from expected.")
             print(f"Received: {response}")
@@ -344,6 +372,7 @@ def run_tests(project_uid, device_uid, client_id, client_secret):
             raise RuntimeError("Received response differs from expected.")
         else:
             print("Response matches expected.")
+
 
 def server_running(process, server_log_file):
     # poll() returns None if the process is still running.
