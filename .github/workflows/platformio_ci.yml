@@ -15,7 +15,10 @@ on:
         required: false
         type: boolean
         default: false
-
+      extrapath:
+        required: false
+        type: string
+        default: ""
 jobs:
   platformio_ci:
     runs-on: ubuntu-latest
@@ -27,6 +30,7 @@ jobs:
           sparse-checkout: |
             .github
             ${{ inputs.apppath }}
+            ${{ inputs.extrapath }}
 
       - name: "Build Platform IO project"
         uses: "./.github/actions/platformio"

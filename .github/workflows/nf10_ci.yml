@@ -4,11 +4,13 @@ on:
     pull_request:
         paths:
             - "10-flow-rate-monitor/**"
-
+            - "09-valve-monitor/**"
+            # NF10 uses a symlinked main source file from NF09
 jobs:
     nf10-ci:
         uses: ./.github/workflows/platformio_ci.yml
         with:
             appid: nf10
             apppath: 10-flow-rate-monitor
+            extrapath: 09-valve-monitor     # also checkout this directory
             pio_project: firmware
