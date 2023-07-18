@@ -12,4 +12,3 @@ jobs:
             appid: nf41
             apppath: 41-cold-chain-monitor
             pio_project: firmware/arduino
-

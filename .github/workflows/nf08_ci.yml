@@ -12,5 +12,3 @@ jobs:
             appid: nf08
             apppath: 08-power-quality-monitor
             pio_project: firmware
-
-            

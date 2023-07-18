@@ -12,4 +12,3 @@ jobs:
             appid: nf36
             apppath: 36-vending-machine-monitor
             pio_project: firmware
-
