@@ -12,6 +12,7 @@ jobs:
             appid: nf38
             apppath: 38-audio-classifier
             pio_project: classifier
+            submodules: true
 
     nf38-data_acquisition-ci:
         uses: ./.github/workflows/platformio_ci.yml
