@@ -1,0 +1,14 @@
+name: nf12-ci
+on:
+    workflow_dispatch:
+    pull_request:
+        paths:
+            - "12-remote-power-control/**"
+
+jobs:
+    nf12-ci:
+        uses: ./.github/workflows/platformio_ci.yml
+        with:
+            appid: nf12
+            apppath: 12-remote-power-control
+            pio_project: firmware

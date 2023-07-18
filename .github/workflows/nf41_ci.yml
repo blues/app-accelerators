@@ -1,0 +1,15 @@
+name: nf41-ci
+on:
+    workflow_dispatch:
+    pull_request:
+        paths:
+            - "41-cold-chain-monitor/**"
+
+jobs:
+    nf41-ci:
+        uses: ./.github/workflows/platformio_ci.yml
+        with:
+            appid: nf41
+            apppath: 41-cold-chain-monitor
+            pio_project: firmware/arduino
+

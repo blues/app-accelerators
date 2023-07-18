@@ -1,0 +1,14 @@
+name: nf10-ci
+on:
+    workflow_dispatch:
+    pull_request:
+        paths:
+            - "10-flow-rate-monitor/**"
+
+jobs:
+    nf10-ci:
+        uses: ./.github/workflows/platformio_ci.yml
+        with:
+            appid: nf10
+            apppath: 10-flow-rate-monitor
+            pio_project: firmware

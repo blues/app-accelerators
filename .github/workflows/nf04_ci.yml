@@ -1,0 +1,14 @@
+name: nf04-ci
+on:
+    workflow_dispatch:
+    pull_request:
+        paths:
+            - "04-low-power-digital-signage/**"
+
+jobs:
+    nf04-ci:
+        uses: ./.github/workflows/platformio_ci.yml
+        with:
+            appid: nf04
+            apppath: 04-low-power-digital-signage
+            pio_project: firmware

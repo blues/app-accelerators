@@ -1,0 +1,21 @@
+name: nf38-ci
+on:
+    workflow_dispatch:
+    pull_request:
+        paths:
+            - "38-audio-classifier/**"
+
+jobs:
+    nf38-ci:
+        uses: ./.github/workflows/platformio_ci.yml
+        with:
+            appid: nf38
+            apppath: 38-audio-classifier
+            pio_project: classifier
+
+    nf38-data_acquisition-ci:
+        uses: ./.github/workflows/platformio_ci.yml
+        with:
+            appid: nf38
+            apppath: 38-audio-classifier
+            pio_project: data_acquisition
