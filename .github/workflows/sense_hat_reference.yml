@@ -1,0 +1,14 @@
+name: sense_hat_reference-ci
+on:
+    workflow_dispatch:
+    pull_request:
+        paths:
+            - "sense-hat-reference/**"
+
+jobs:
+    sense_hat_reference-ci:
+        uses: ./.github/workflows/platformio_ci.yml
+        with:
+            appid: sense-hat-reference
+            apppath: sense-hat-reference
+            pio_project: .

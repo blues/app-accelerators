@@ -1,0 +1,14 @@
+name: nf11-ci
+on:
+    workflow_dispatch:
+    pull_request:
+        paths:
+            - "11-generator-activity-monitor/**"
+
+jobs:
+    nf11-ci:
+        uses: ./.github/workflows/platformio_ci.yml
+        with:
+            appid: nf11
+            apppath: 11-generator-activity-monitor
+            pio_project: firmware

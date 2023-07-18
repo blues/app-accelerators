@@ -1,6 +1,7 @@
 name: indoor-floor-level-tracker/web-app
 
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - "01-indoor-floor-level-tracker/web-app/**"

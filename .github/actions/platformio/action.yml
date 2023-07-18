@@ -1,0 +1,26 @@
+name: PlatformIO CI
+description: PlatformIO install and build
+inputs:
+  project_dir:
+    description: "The platformio project directory."
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/pip
+          ~/.platformio/.cache
+        key: ${{ runner.os }}-pio
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install PlatformIO Core
+      run: pip install --upgrade platformio
+      shell: bash
+
+    - name: Build PlatformIO Project
+      run: pio run -d "${{ inputs.project_dir }}"
+      shell: bash
