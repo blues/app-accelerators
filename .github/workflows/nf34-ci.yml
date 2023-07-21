@@ -30,6 +30,8 @@ jobs:
         # The list of all available versions can be found here: https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json    
         #
         # see: https://github.com/actions/setup-python/blob/main/docs/advanced-usage.md#using-setup-python-with-a-self-hosted-runner 
+        # Instead we use the system version of python which has been set to 3.11.4
+
       - name: Create and start virtual environment
         run: |
           python3 -m venv venv
@@ -40,9 +42,10 @@ jobs:
         run: |
             pip install cffi platformio
             echo $PLATFORMIO_BUILD_FLAGS
+            pio --version
             pio remote -a "$PLATFORMIO_AGENT" run -d "$PROJECT_DIR" -t clean
 
-            # cannot use --force-remote to build on the agent because environment variables are not propagated
+            # cannot use --force-remote to build on the agent's pio installation because environment variables are not propagated
             # used to have -t clean -t upload which worked with --force-remote, but not with a local build
             pio remote -a "$PLATFORMIO_AGENT" run -d "$PROJECT_DIR" --upload-port "$NF34_PORT_STLINK" -t upload
 
