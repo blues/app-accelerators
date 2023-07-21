@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - "34-cellular-modbus-client/**"
+      - ".github/workflows/nf34-ci.yml"
   workflow_dispatch: # allow the job to be run manually
 
 jobs:
