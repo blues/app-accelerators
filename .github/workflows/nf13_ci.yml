@@ -1,0 +1,14 @@
+name: nf13-ci
+on:
+    workflow_dispatch:
+    pull_request:
+        paths:
+            - "13-tool-usage-cycle-tracking/**"
+
+jobs:
+    nf13-ci:
+        uses: ./.github/workflows/platformio_ci.yml
+        with:
+            appid: nf13
+            apppath: 13-tool-usage-cycle-tracking
+            pio_project: firmware

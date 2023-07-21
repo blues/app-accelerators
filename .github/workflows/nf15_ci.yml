@@ -1,0 +1,14 @@
+name: nf15-ci
+on:
+    workflow_dispatch:
+    pull_request:
+        paths:
+            - "15-greenhouse-monitor/**"
+
+jobs:
+    nf15-ci:
+        uses: ./.github/workflows/platformio_ci.yml
+        with:
+            appid: nf15
+            apppath: 15-greenhouse-monitor
+            pio_project: firmware

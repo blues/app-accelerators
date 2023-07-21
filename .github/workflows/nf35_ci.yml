@@ -1,0 +1,14 @@
+name: nf35-ci
+on:
+    workflow_dispatch:
+    pull_request:
+        paths:
+            - "35-CAN-vehicle-monitor/**"
+
+jobs:
+    nf35-ci:
+        uses: ./.github/workflows/platformio_ci.yml
+        with:
+            appid: nf35
+            apppath: 35-CAN-vehicle-monitor
+            pio_project: firmware
