@@ -45,8 +45,8 @@
 #define DATA_FIELD_FUEL_PERCENT "fuel_pc"
 #define DATA_FIELD_FUEL_GALLONS "gal"
 #define DATA_FIELD_FUEL_REMAINING_MINS "mins"
-#define DATA_FIELD_BURN_RATE_MM_PER_MIN "mm/min"
-#define DATA_FIELD_BURN_RATE_GAL_PER_HR "gal/hr"
+#define DATA_FIELD_BURN_RATE_MM_PER_MIN "fuel_mm/min"
+#define DATA_FIELD_BURN_RATE_GAL_PER_HR "fuel_gal/hr"
 #define DATA_FIELD_TEXT "text"
 
 #define ENV_FULL_HEIGHT_MM "full_height_mm"
@@ -62,11 +62,12 @@
 #define CUBIC_MM_PER_CUBIC_CM (10*10*10)      // cm^3 -> mm^3 factor
 
 #define DEFAULT_FULL_HEIGHT_MM (305)
-// the sensor has a minimum sensing height of 50mm, but it's quite inaccurate around there.
+// the sensor has a minimum sensing height of 50mm, but it's quite inaccurate as the liquid level
+// approaches this value, so we set empty to be slightly above that.
 #define DEFAULT_EMPTY_HEIGHT_MM (60)
 #define DEFAULT_TANK_DIAMETER_MM (312) // 12.3in
 #define DEFAULT_ACOUSTIC_VELOCITY ACOUSTIC_VELOCITY_LIQUID_PROPANE
-#define DEFAULT_ALERT_BURN_TIME_MINS (30)
+#define DEFAULT_ALERT_BURN_TIME_MINS (60)
 #define DEFAULT_ALERT_FUEL_PERCENT (10)
 
 /**
@@ -78,7 +79,7 @@
 /**
  * @brief Burn rate is presently an experimental feature to be evaluated with additional testing.
  */
-#define NF43_BURNRATE (0)
+#define NF43_BURNRATE (1)
 
 // forward declarations needed by the Arduino .ino preprocessor
 struct FuelGaugeData;
@@ -428,6 +429,17 @@ void jsonToStream(J* json, Stream& stream, size_t bufSize) {
     debug.println(buf);
 }
 
+void ledSignal(unsigned count, unsigned on=200, unsigned off=200) {
+    for (unsigned i=0; i<count; i++) {
+        if (i) {
+            delay(off);
+        }
+        digitalWrite(LED_BUILTIN, HIGH);
+        delay(on);
+        digitalWrite(LED_BUILTIN, LOW);
+    }
+}
+
 uint8_t readSensor()
 {
     uint8_t status = sensor.readSensor();
@@ -441,11 +453,13 @@ uint8_t readSensor()
         debug.printf("{\"text\":\"Distance sensor not detected.\",\"err\":1,\"time\":%d}", millis());
         debug.println();
         fuelGauge.notifySensorOffline();
+        ledSignal(3);
         break;
 
     case DS1603L_READ_CHECKSUM_FAIL: // Checksum of the latest transmission failed.
         debug.printf("{\"text\":\"Data received; checksum failed.\",\"err\":2,\"value\":%d,\"time\":%d}", sensor.getDistance(), millis());
         debug.println();
+        ledSignal(2);
         // drop it on the floor - the sensor will eventually return DS1603L_SENSOR_NOT_DETECTED
         // or return a valid reading
         break;
@@ -454,17 +468,19 @@ uint8_t readSensor()
         uint16_t distance = sensor.getDistance();
         // Scale the measurement by the relative acoustic velocities of water and propane.
         // Fallback to the default should acousticVelocity be zero (it should never be zero, but defensive programming.)
-        double corrected = double(distance) * double(ACOUSTIC_VELOCITY_WATER) / double(acousticVelocity ? acousticVelocity : ACOUSTIC_VELOCITY_LIQUID_PROPANE);
+        double corrected = double(distance) * double(acousticVelocity ? acousticVelocity : ACOUSTIC_VELOCITY_LIQUID_PROPANE) / double(ACOUSTIC_VELOCITY_WATER);
         debug.printf("{\"text\":\"Reading success.\",\"value\":%d,\"corrected\":%d,\"time\":%d}", uint32_t(distance), uint32_t(corrected), millis());
         debug.println();
         if (distance <= max(fuelGauge.emptyHeightMm, uint32_t(DEFAULT_EMPTY_HEIGHT_MM))) {
             // indicate that the reading is not reliable.
             corrected = NAN;
+            ledSignal(2);
         }
         if (distance) {
             fuelGauge.setFuelLevel(distance, corrected);
             J* data = fuelGauge.addFuelGaugeProperties(JCreateObject());
             jsonToStream(data, debug, 256);
+            ledSignal(1);
         }
         break;
     }
@@ -704,6 +720,8 @@ void setup()
     debug.begin(115200);
     debug.printf("{\"text\":\"started\",\"build\":\"" __DATE__ " " __TIME__ "\",\"time\":%d}", millis());
     debug.println();
+
+    pinMode(LED_BUILTIN, OUTPUT);
 
     // distance sensor operates at 9600 baud
     sensorSerial.begin(9600);
