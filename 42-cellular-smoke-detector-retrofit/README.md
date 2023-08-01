@@ -107,7 +107,7 @@ Optocouplers are useful for passing signals between circuits operating at differ
 
 If you hook up the optocoupler to the interconnect wire with no series resistor, you risk frying the chip. You must limit the forward current, the current flowing through the optocoupler's LED, with a resistor in series with the optocoupler's LED. However, if your resistance is too high, the forward current will be insufficient to get the output transistor to saturate. Looking at [the PC817 datasheet](https://www.farnell.com/datasheets/73758.pdf), we can see that the maximum forward current under "Absolute Maximum Ratings" is 50mA. In the "Electro-optical Characteristics" table, we see a forward current of 20mA used as a condition for several of the values in the table. As such, designing the circuit for a 20mA forward current is a good place to start.
 
-To estimate the resistance needed to achieve a particular forward current, use Ohm's Law: V = IR. Rearrange it to get R = V/I. V is the voltage drop over your resistor. Looking at the datasheet, we see that the forward voltage, which is the voltage dropped over the LED, is typically 1.2V if the forward current is 20mA. With 6.7V coming from the source, 6.7V - 1.2V = 5.5V will be dropped over our resistor. Plugging this voltage and 20mA into R = V/I, we get R = 5.5V / 20e-3 = 275 Ω.
+To estimate the resistance needed to achieve a particular forward current, use Ohm's Law: V = IR. Rearrange it to get R = V/I. V is the voltage drop over your resistor. Looking at the datasheet, we see that the forward voltage, which is the voltage dropped over the LED, is typically 1.2V if the forward current is 20mA. With 6.7V coming from the source, 6.7V - 1.2V = 5.5V will be dropped over our resistor. Plugging this voltage and 20mA into R = V/I, we get R = 5.5V / 20e-3 = 275Ω.
 
 From our testing of this particular PC817 from Gikfun ([linked above](#you-will-need)), we were able to saturate the transistor with just 0.8mA of forward current. To achieve this with a source voltage of 6.7V, we used 2 resistors in series: 1kΩ and 4.7kΩ. If you plug 5.7kΩ into the calculations above, you won't get exactly 0.8mA of forward current. In practice, however, this is what we observed when using a digital multimeter to measure the current.
 
@@ -116,7 +116,7 @@ From our testing of this particular PC817 from Gikfun ([linked above](#you-will-
 Setting aside the Notecard and Notecarrier, which you'll assemble and configure shortly, build the circuit on the breadboard:
 
 <p align="center">
-  <img src="images/breadboard_no_notecarrier.jpg"/>
+<img src="images/breadboard_no_notecarrier.jpg"/>
 </p>
 
 You're now ready to configure your Notehub project and the Notecard so you can run an end-to-end test of the whole system.
@@ -129,25 +129,23 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 
 1. Assemble Notecard and Notecarrier as described [here](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-a/). Keep the Notecard connected to the your development PC with [the in-browser terminal](https://dev.blues.io/notecard-playground/) active.
 2. Set the ProductUID for the Notecard by pasting the command below into the in-browser terminal. Make sure to replace `com.your-company:your-product-name` with the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) from your Notehub project.
-
-        ```json
-        { "req": "hub.set", "product": "com.your-company:your-product-name", "body": { "app": "nf42" } }
-        ```
-
+    ```json
+    { "req": "hub.set", "product": "com.your-company:your-product-name", "body": { "app": "nf42" } }
+    ```
 3. Set the [AUX1 pin of the Notecard to GPIO mode](https://dev.blues.io/notecard/notecard-walkthrough/advanced-notecard-configuration/#using-aux-gpio-mode) and configure it as an `input-pullup`:
-
-        ```json
-        { "req": "card.aux", "mode": "gpio", "usage": ["input-pullup", "", "", ""], "sync": true, "file": "smoke.qo" }
-        ```
-
+    ```json
+    { "req": "card.aux", "mode": "gpio", "usage": ["input-pullup", "", "", ""], "sync": true, "file": "smoke.qo" }
+    ```
     The `"sync" true` parameter makes it so a Note gets synced to Notehub whenever the level of AUX1 changes. The note will go to the Notefile `smoke.qo` due to the `"file": "smoke.qo"` parameter.
-
 4. Plug the LiPo battery into the port labeled LIPO on the Notecarrier. While the Notecarrier is connected to USB power, the battery will charge.
 5. Once the battery is charged (or if it's already charged), disconnect the Notecarrier from USB and head back over to your optocoupler circuit.
 6. Use male-to-male jumper wires to connect pin 3 of the optocoupler to AUX1 and pin 4 to GND:
-  <p align="center">
-  <img src="images/breadboard_with_notecarrier.jpg"/>
-  </p>
+<p align="center">
+<img src="images/breadboard_with_notecarrier.jpg"/>
+</p>
+<p align="center">
+<img src="images/full_circuit.png"/>
+</p>
 
 ## Twilio Route
 
@@ -171,9 +169,9 @@ Head back over to the smoke detector you used to test the interconnect voltage e
 <img src="images/notehub_events.png"/>
 </p>
 
-## Blues Wireless Community
+## Blues Community
 
-We’d love to hear about you and your project on the [Blues Wireless Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
 
 ## Additional Resources
 
