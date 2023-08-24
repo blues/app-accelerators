@@ -212,7 +212,12 @@ static void envVarManagerCb(const char *var, const char *val, void *userCtx)
         Serial.print("ORP offset set to ");
         Serial.print(orpOffsetMv);
         Serial.println(" mV.");
+    }
 }
+
+void NoteUserAgentUpdate(J *ua)
+{
+    JAddStringToObject(ua, "app", "nf48");
 }
 
 void setup()
