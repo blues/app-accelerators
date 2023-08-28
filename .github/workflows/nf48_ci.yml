@@ -1,0 +1,14 @@
+name: nf48-ci
+on:
+    workflow_dispatch:
+    pull_request:
+        paths:
+            - "48-water-quality-monitor/**"
+
+jobs:
+    nf48-ci:
+        uses: ./.github/workflows/platformio_ci.yml
+        with:
+            appid: nf48
+            apppath: 48-water-quality-monitor
+            pio_project: firmware
