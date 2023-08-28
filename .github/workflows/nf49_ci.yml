@@ -1,0 +1,14 @@
+name: nf49-ci
+on:
+    workflow_dispatch:
+    pull_request:
+        paths:
+            - "49-hvac-current-monitor/**"
+
+jobs:
+    nf49-ci:
+        uses: ./.github/workflows/platformio_ci.yml
+        with:
+            appid: nf49
+            apppath: 49-hvac-current-monitor
+            pio_project: firmware
