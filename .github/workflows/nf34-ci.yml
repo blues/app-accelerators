@@ -6,6 +6,10 @@ on:
       - ".github/workflows/nf34-ci.yml"
   workflow_dispatch: # allow the job to be run manually
 
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    - cron:  '0 4 * * 1'  # 4am every Monday
+
 jobs:
   nf34-test:
     env:
@@ -56,7 +60,7 @@ jobs:
           pip3 install -r ${{ env.APP_DIR }}/requirements.txt
       - name: Run NF34 test script
         run: |
-            source venv/bin/
+            source venv/bin/activate
             cd ${{ env.APP_DIR }}
             # configuration of the test script provided by the environment variables on the runner
             python3 test.py --serial-port $NF34_PORT_MODBUS
