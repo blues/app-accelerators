@@ -6,6 +6,10 @@ on:
       - ".github/workflows/nf34-ci.yml"
   workflow_dispatch: # allow the job to be run manually
 
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    - cron:  '0 4 * * 1'  # 4am every Monday
+
 jobs:
   nf34-test:
     env:
@@ -40,7 +44,8 @@ jobs:
       - name: Build PlatformIO Project
         # NF34_PORT_xxx are defined in the `.env` file in the actions runner service on the self hosted runner
         run: |
-            pip install cffi platformio
+            source venv/bin/activate
+            pip3 install cffi platformio
             echo $PLATFORMIO_BUILD_FLAGS
             pio --version
             pio remote -a "$PLATFORMIO_AGENT" run -d "$PROJECT_DIR" -t clean
@@ -50,9 +55,12 @@ jobs:
             pio remote -a "$PLATFORMIO_AGENT" run -d "$PROJECT_DIR" --upload-port "$NF34_PORT_STLINK" -t upload
 
       - name: Install Test script dependencies
-        run: pip install -r ${{ env.APP_DIR }}/requirements.txt
-      - name: Run NF34 test script
-        working-directory: ${{ env.APP_DIR }}
-        # configuration provided by the environment variables on the runner
         run: |
-            python test.py --serial-port $NF34_PORT_MODBUS
+          source venv/bin/activate
+          pip3 install -r ${{ env.APP_DIR }}/requirements.txt
+      - name: Run NF34 test script
+        run: |
+            source venv/bin/activate
+            cd ${{ env.APP_DIR }}
+            # configuration of the test script provided by the environment variables on the runner
+            python3 test.py --serial-port $NF34_PORT_MODBUS
