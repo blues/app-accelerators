@@ -110,7 +110,7 @@ To build and upload the firmware to the Swan, you'll need VS Code with the Platf
 1. Download and install [Visual Studio Code](https://code.visualstudio.com/).
 2. Install the [PlatformIO IDE extension](https://marketplace.visualstudio.com/items?itemName=platformio.platformio-ide) via the Extensions menu of Visual Studio Code.
 3. Click the PlatformIO icon on the left side of VS Code, then click Pick a folder, and select the the firmware directory, `49-hvac-current-monitor/firmware`.
-4. In the file explorer, open `src/main.cpp` and uncomment this line: `// #define PRODUCT_UID "com.my-company.my-name:my-project"`. Replace `com.my-company.my-name:my-project` with the [ProductUID of the Notehub project](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) you created in [Notehub Setup](#notehub-setup).
+4. In the file explorer, open `hvac_current_monitor/hvac_current_monitor.ino` and uncomment this line: `// #define PRODUCT_UID "com.my-company.my-name:my-project"`. Replace `com.my-company.my-name:my-project` with the [ProductUID of the Notehub project](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) you created in [Notehub Setup](#notehub-setup).
 5. Click the PlatformIO icon again, and under the Project Tasks menu, click Build to build the firmware image.
 6. Prepare the Swan to receive the firmware image via DFU by following these instructions from the [Swan Quickstart](https://dev.blues.io/quickstart/swan-quickstart/#programming-swan-the-stlink-v3mini).
 7. Under the Project Tasks menu, click Upload to upload the firmware image to the MCU.

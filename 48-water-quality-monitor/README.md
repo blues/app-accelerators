@@ -56,7 +56,7 @@ Temperature is measured with a digital sensor, but the other three quantities ar
 | pH     | [Link](https://wiki.dfrobot.com/Gravity__Analog_pH_Sensor_Meter_Kit_V2_SKU_SEN0161-V2) | [4.00](https://atlas-scientific.com/calibration-solutions/ph-4-00-calibration-solution-chem-ph-4/) and [7.00](https://atlas-scientific.com/calibration-solutions/ph-7-00-calibration-solution/)
 | TDS    | [Link](https://wiki.dfrobot.com/Gravity__Analog_TDS_Sensor___Meter_For_Arduino_SKU__SEN0244) | [1000 ppm](https://www.amazon.com/HM-Digital-1000ppm-Calibration-Solution/dp/B001FD6WZ8)
 
-The ORP calibration procedure involves computing an offset value. Once you have that value, edit `firmware/src/main.cpp` and replace 0 in the line `#define ORP_OFFSET 0` with your value.
+The ORP calibration procedure involves computing an offset value. Once you have that value, edit `firmware/water_quality_monitor/water_quality_monitor.ino` and replace 0 in the line `#define ORP_OFFSET 0` with your value.
 
 ## Hardware Setup
 
@@ -145,7 +145,7 @@ To build and upload the firmware onto the Swan, you'll need VS Code with the Pla
 1. Download and install [Visual Studio Code](https://code.visualstudio.com/).
 2. Install the [PlatformIO IDE extension](https://marketplace.visualstudio.com/items?itemName=platformio.platformio-ide) via the Extensions menu of Visual Studio Code.
 3. Click the PlatformIO icon on the left side of VS Code, then click Pick a folder, and select the the firmware directory, `48-water-quality-monitor/firmware`.
-4. In the file explorer, open `src/main.cpp` and uncomment this line: `// #define PRODUCT_UID "com.my-company.my-name:my-project"`. Replace `com.my-company.my-name:my-project` with the [ProductUID of the Notehub project](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) you created in [Notehub Setup](#notehub-setup).
+4. In the file explorer, open `water_quality_monitor/water_quality_monitor.ino` and uncomment this line: `// #define PRODUCT_UID "com.my-company.my-name:my-project"`. Replace `com.my-company.my-name:my-project` with the [ProductUID of the Notehub project](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) you created in [Notehub Setup](#notehub-setup).
 5. Click the PlatformIO icon again, and under the Project Tasks menu, click Build to build the firmware image.
 6. Prepare the Swan to receive the firmware image via DFU by following these instructions from the [Swan Quickstart](https://dev.blues.io/quickstart/swan-quickstart/#programming-swan-the-stlink-v3mini).
 7. Under the Project Tasks menu, click Upload to upload the firmware image to the MCU.
