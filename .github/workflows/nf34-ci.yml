@@ -40,6 +40,7 @@ jobs:
       - name: Build PlatformIO Project
         # NF34_PORT_xxx are defined in the `.env` file in the actions runner service on the self hosted runner
         run: |
+            source venv/bin/activate
             pip3 install cffi platformio
             echo $PLATFORMIO_BUILD_FLAGS
             pio --version
@@ -50,9 +51,12 @@ jobs:
             pio remote -a "$PLATFORMIO_AGENT" run -d "$PROJECT_DIR" --upload-port "$NF34_PORT_STLINK" -t upload
 
       - name: Install Test script dependencies
-        run: pip3 install -r ${{ env.APP_DIR }}/requirements.txt
+        run: |
+          source venv/bin/activate
+          pip3 install -r ${{ env.APP_DIR }}/requirements.txt
       - name: Run NF34 test script
         working-directory: ${{ env.APP_DIR }}
         # configuration provided by the environment variables on the runner
         run: |
+            source venv/bin/activate
             python3 test.py --serial-port $NF34_PORT_MODBUS
