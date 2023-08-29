@@ -55,8 +55,8 @@ jobs:
           source venv/bin/activate
           pip3 install -r ${{ env.APP_DIR }}/requirements.txt
       - name: Run NF34 test script
-        working-directory: ${{ env.APP_DIR }}
-        # configuration provided by the environment variables on the runner
         run: |
-            source venv/bin/activate
+            source venv/bin/
+            cd ${{ env.APP_DIR }}
+            # configuration of the test script provided by the environment variables on the runner
             python3 test.py --serial-port $NF34_PORT_MODBUS
