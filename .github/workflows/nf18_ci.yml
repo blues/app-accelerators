@@ -1,0 +1,14 @@
+name: nf18-ci
+on:
+    workflow_dispatch:
+    pull_request:
+        paths:
+            - "18-temperature-and-humidity-monitor/**"
+
+jobs:
+    nf18-ci:
+        uses: ./.github/workflows/platformio_ci.yml
+        with:
+            appid: nf18
+            apppath: 18-temperature-and-humidity-monitor
+            pio_project: firmware/arduino

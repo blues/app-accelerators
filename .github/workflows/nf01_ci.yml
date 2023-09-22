@@ -1,0 +1,14 @@
+name: nf01-firmware-ci
+on:
+    workflow_dispatch:
+    pull_request:
+        paths:
+            - "01-indoor-floor-level-tracker/**"
+
+jobs:
+    nf01-ci:
+        uses: ./.github/workflows/platformio_ci.yml
+        with:
+            appid: nf01
+            apppath: 01-indoor-floor-level-tracker
+            pio_project: firmware

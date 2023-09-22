@@ -5,17 +5,20 @@
 //
 
 #include <Notecard.h>
-#include <Wire.h>
+#include <NotecardEnvVarManager.h>
 #include <SparkFunBME280.h>
 
 // Uncomment this line and replace com.your-company:your-product-name with your
 // ProductUID.
-// #define PRODUCT_UID "com.your-company:your-product-name"
+// #define PRODUCT_UID "com.my-company.my-name:my-project"
 
 #ifndef PRODUCT_UID
 #define PRODUCT_UID "" // "com.my-company.my-name:my-project"
 #pragma message "PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://bit.ly/product-uid"
 #endif
+#define usbSerial Serial
+#define txRxPinsSerial Serial1
+HardwareSerial stlinkSerial(PIN_VCP_RX, PIN_VCP_TX);
 
 // Sync outbound notes to Notehub a minimum of every 3 minutes.
 #define OUTBOUND_SYNC_MINS 3
@@ -26,7 +29,7 @@
 // Read the sensor every minute.
 #define SENSOR_READ_INTERVAL_MS (60 * 1000)
 // Publish temperature and humidity every 3 minutes.
-#define MONITOR_INTERVAL_DEFAULT_MS (180 * 1000)
+#define REPORT_INTERVAL_DEFAULT_MS (180 * 1000)
 // Temperature in C.
 #define TEMPERATURE_MIN_DEFAULT 5
 #define TEMPERATURE_MAX_DEFAULT 33
@@ -37,8 +40,8 @@
 struct AppState {
     uint32_t lastEnvVarPollMs;
     uint32_t envLastModTime;
-    uint32_t monitorIntervalMs;
-    uint32_t monitorLastUpdateMs;
+    uint32_t reportIntervalMs;
+    uint32_t reportLastUpdateMs;
     uint32_t sensorLastReadMs;
     uint32_t lastAlarmMs;
     float temperatureMin;
@@ -49,9 +52,65 @@ struct AppState {
     float humidity;
 };
 
+static const char *envVarNames[] = {
+    "report_interval",
+    "temperature_threshold_min",
+    "temperature_threshold_max",
+    "humidity_threshold_min",
+    "humidity_threshold_max"
+};
 AppState state = {0};
+
 Notecard notecard;
+NotecardEnvVarManager *envVarManager;
 BME280 bmeSensor;
+
+// The environment variable manager callback is called once for each variable
+// that has changed.
+void envVarManagerCb(const char *var, const char *val, void *ctx) {
+    AppState *state = static_cast<AppState *>(ctx);
+
+    // Convert value string to positive float values
+    char *endPtr;
+    float value = strtof(val, &endPtr);
+    if ((value == 0 && val == endPtr) || value < 0) {
+        notecard.logDebugf("ERROR: Failed to convert %s to positive "
+            "float for %s variable.\n", val, var);
+        return;
+    }
+
+    // Cache the values for each variable.
+    if (strcmp(var, "report_interval") == 0)
+    {
+        state->reportIntervalMs = (uint32_t)(value * 1000);
+        notecard.logDebugf("Monitor interval set to %u ms.\n",
+            state->reportIntervalMs);
+    }
+    else if (strcmp(var, "temperature_threshold_min") == 0)
+    {
+        state->temperatureMin = value;
+        notecard.logDebugf("Temperature min set to %sC.\n", val);
+    }
+    else if (strcmp(var, "temperature_threshold_max") == 0)
+    {
+        state->temperatureMax = value;
+        notecard.logDebugf("Temperature max set to %sC.\n", val);
+    }
+    else if (strcmp(var, "humidity_threshold_min") == 0)
+    {
+        state->humidityMin = value;
+        notecard.logDebugf("Humidity min set to %s%%.\n", val);
+    }
+    else if (strcmp(var, "humidity_threshold_max") == 0)
+    {
+        state->humidityMax = value;
+        notecard.logDebugf("Humidity max set to %s%%.\n", val);
+    }
+    else
+    {
+        notecard.logDebugf("Unknown environment variable %s.\n", var);
+    }
+}
 
 // Add a note with temperature and humidity data to data.qo. The note will be
 // synced to Notehub according to the interval set with hub.set's outbound
@@ -78,7 +137,7 @@ void publishSystemStatus()
     }
     else {
         notecard.logDebug("Failed to create note.add request for system status "
-            "update.\n");        
+            "update.\n");
     }
 }
 
@@ -116,147 +175,36 @@ bool pollEnvVars()
     return true;
 }
 
-// Returns true if any variables were updated and false otherwise.
-bool fetchEnvVars()
-{
-    bool updated = false;
-    J *req = notecard.newRequest("env.get");
-    J *names = JAddArrayToObject(req, "names");
-    JAddItemToArray(names, JCreateString("monitor_interval"));
-    JAddItemToArray(names, JCreateString("temperature_threshold_min"));
-    JAddItemToArray(names, JCreateString("temperature_threshold_max"));
-    JAddItemToArray(names, JCreateString("humidity_threshold_min"));
-    JAddItemToArray(names, JCreateString("humidity_threshold_max"));
-
-    J *rsp = notecard.requestAndResponse(req);
-    if (rsp != NULL) {
-        if (notecard.responseError(rsp)) {
-            notecard.logDebug("Error in env.get response.\n");
-        }
-        else {
-            J *body = JGetObject(rsp, "body");
-            if (body != NULL) {
-                char *valueStr = JGetString(body, "monitor_interval");
-                float value;
-                char *endPtr;
-
-                if (valueStr != NULL && strlen(valueStr) > 0) {
-                    value = strtof(valueStr, &endPtr);
-                    if ((value == 0 && valueStr == endPtr) || value < 0) {
-                        notecard.logDebugf("Failed to convert %s to positive "
-                            "float for monitor interval.\n", valueStr);
-                    }
-                    else {
-                        state.monitorIntervalMs = (uint32_t)(value * 1000);
-                        updated = true;
-                        notecard.logDebugf("Monitor interval set to %u ms.\n",
-                            state.monitorIntervalMs);
-                    }
-                }
-
-                valueStr = JGetString(body, "temperature_threshold_min");
-                if (valueStr != NULL && strlen(valueStr) > 0) {
-                    value = strtof(valueStr, &endPtr);
-                    if ((value == 0 && valueStr == endPtr) || value < 0) {
-                        notecard.logDebugf("Failed to convert %s to positive "
-                            "float for temperature min.\n", valueStr);
-                    }
-                    else {
-                        state.temperatureMin = value;
-                        updated = true;
-                        notecard.logDebugf("Temperature min set to %sC.\n",
-                            valueStr);
-                    }
-                }
-
-                valueStr = JGetString(body, "temperature_threshold_max");
-                if (valueStr != NULL && strlen(valueStr) > 0) {
-                    value = strtof(valueStr, &endPtr);
-                    if ((value == 0 && valueStr == endPtr) || value < 0) {
-                        notecard.logDebugf("Failed to convert %s to positive "
-                            "float for temperature max.\n", valueStr);
-                    }
-                    else {
-                        state.temperatureMax = value;
-                        updated = true;
-                        notecard.logDebugf("Temperature max set to %sC.\n",
-                            valueStr);
-                    }
-                }
-
-                valueStr = JGetString(body, "humidity_threshold_min");
-                if (valueStr != NULL && strlen(valueStr) > 0) {
-                    value = strtof(valueStr, &endPtr);
-                    if ((value == 0 && valueStr == endPtr) || value < 0) {
-                        notecard.logDebugf("Failed to convert %s to positive "
-                            "float for humidity min.\n", valueStr);
-                    }
-                    else {
-                        state.humidityMin = value;
-                        updated = true;
-                        notecard.logDebugf("Humidity min set to %s%%.\n",
-                            valueStr);
-                    }
-                }
-
-                valueStr = JGetString(body, "humidity_threshold_max");
-                if (valueStr != NULL && strlen(valueStr) > 0) {
-                    value = strtof(valueStr, &endPtr);
-                    if ((value == 0 && valueStr == endPtr) || value < 0) {
-                        notecard.logDebugf("Failed to convert %s to positive "
-                            "float for humidity max.\n", valueStr);
-                    }
-                    else {
-                        state.humidityMax = value;
-                        updated = true;
-                        notecard.logDebugf("Humidity max set to %s%%.\n",
-                            valueStr);
-                    }
-                }
-            }
-            else {
-                notecard.logDebug("NULL body in response to env.get request."
-                    "\n");
-            }
-        }
-
-        notecard.deleteResponse(rsp);
-    }
-    else {
-        notecard.logDebug("NULL response to env.get request.\n");
-    }
-
-    return updated;
-}
-
 // Used in the main loop to check for and accept environment variable updates.
 // If any variables are updated, this function sends a note to Notehub to
 // acknowledge the update.
 void updateEnvVars()
 {
     if (pollEnvVars()) {
-        if (fetchEnvVars()) {
-            J *req = notecard.newRequest("note.add");
-            if (req != NULL) {
-                JAddStringToObject(req, "file", "notify.qo");
-                JAddBoolToObject(req, "sync", true);
+        NotecardEnvVarManager_fetch(envVarManager, envVarNames, (sizeof(envVarNames) / sizeof(envVarNames[0])));
 
-                J *body = JCreateObject();
-                if (body != NULL) {
-                    JAddStringToObject(body, "message", "environment variable "
-                        "update received");
-                    JAddItemToObject(req, "body", body);
-                    notecard.sendRequest(req);
-                }
-                else {
-                    notecard.logDebug("Failed to create note body for env var "
-                        "update ack.\n");
-                }
+        // Generate a note to Notehub to acknowledge the update.
+        J *req = notecard.newRequest("note.add");
+        if (req != NULL) {
+            JAddStringToObject(req, "file", "notify.qo");
+            JAddBoolToObject(req, "sync", true);
+
+            J *body = JCreateObject();
+            if (body != NULL) {
+                JAddStringToObject(body, "message", "environment variable "
+                    "update received");
+                JAddItemToObject(req, "body", body);
+                notecard.sendRequest(req);
             }
             else {
-                notecard.logDebug("Failed to create note.add request for env "
-                    "var update ack.\n");
+                free(req);
+                notecard.logDebug("Failed to create note body for env var "
+                    "update ack.\n");
             }
+        }
+        else {
+            notecard.logDebug("Failed to create note.add request for env "
+                "var update ack.\n");
         }
     }
 }
@@ -265,23 +213,41 @@ void updateEnvVars()
 void setup()
 {
     // Set up debug output via serial connection.
-    delay(2500);
-    Serial.begin(115200);
-    notecard.setDebugOutputStream(Serial);
+#ifndef RELEASE
+#warning "Debug mode is enabled. Define NDEBUG to disable debug."
+    // Initialize Debug Output
+    usbSerial.begin(115200);
+    static const size_t MAX_SERIAL_WAIT_MS = 2500;
+    size_t begin_serial_wait_ms = ::millis();
+    while (!usbSerial && (MAX_SERIAL_WAIT_MS > (::millis() - begin_serial_wait_ms)))
+    {
+        ; // wait for debug serial port to connect. Needed for native USB
+    }
+    notecard.setDebugOutputStream(usbSerial);
+#endif
 
     // Initialize the physical I/O channel to the Notecard.
-    Wire.begin();
     notecard.begin();
 
+    // Initialize the Notecard Environment Variable Manager.
+    envVarManager = NotecardEnvVarManager_alloc();
+    if (envVarManager == NULL) {
+        notecard.logDebug("Failed to allocate NotecardEnvVarManager.\n");
+    }
+    else {
+        NotecardEnvVarManager_setEnvVarCb(envVarManager, envVarManagerCb, &state);
+    }
+
+    // Initialize the BME280 sensor
     if (!bmeSensor.beginI2C()) {
         notecard.logDebug("bmeSensor.beginI2C() failed.\n");
-    } 
+    }
     else {
         notecard.logDebug("Connected to BME280.\n");
     }
 
     // Set defaults.
-    state.monitorIntervalMs = MONITOR_INTERVAL_DEFAULT_MS;
+    state.reportIntervalMs = REPORT_INTERVAL_DEFAULT_MS;
     state.temperatureMin = TEMPERATURE_MIN_DEFAULT;
     state.temperatureMax = TEMPERATURE_MAX_DEFAULT;
     state.humidityMin = HUMIDITY_MIN_DEFAULT;
@@ -293,6 +259,7 @@ void setup()
     if (PRODUCT_UID[0]) {
        JAddStringToObject(req, "product", PRODUCT_UID);
     }
+    JAddStringToObject(req, "sn", "NF18");
     JAddStringToObject(req, "mode", "periodic");
     JAddNumberToObject(req, "outbound", OUTBOUND_SYNC_MINS);
     notecard.sendRequest(req);
@@ -304,7 +271,7 @@ void setup()
     JAddBoolToObject(req, "sync", true);
     notecard.sendRequest(req);
 
-    fetchEnvVars();
+    updateEnvVars();
 }
 
 void readSensor()
@@ -361,7 +328,7 @@ void publishAlarm(const char *temperatureStatus, const char *humidityStatus)
         }
     }
     else {
-        notecard.logDebug("Failed to create note.add request for alarm.\n");        
+        notecard.logDebug("Failed to create note.add request for alarm.\n");
     }
 }
 
@@ -419,8 +386,8 @@ void loop()
     checkAlarm();
 
     currentMs = millis();
-    if (currentMs - state.monitorLastUpdateMs >= state.monitorIntervalMs) {
-        state.monitorLastUpdateMs = currentMs;
+    if (currentMs - state.reportLastUpdateMs >= state.reportIntervalMs) {
+        state.reportLastUpdateMs = currentMs;
         publishSystemStatus();
     }
 }
@@ -428,4 +395,3 @@ void loop()
 void NoteUserAgentUpdate(J *ua) {
     JAddStringToObject(ua, "app", "nf18");
 }
-

@@ -1,0 +1,40 @@
+name: PlatformIO build
+on: 
+  workflow_call:
+    inputs:
+      appid:
+        required: true
+        type: string
+      apppath:
+        required: true
+        type: string
+      pio_project:
+        required: true
+        type: string
+      submodules:
+        required: false
+        type: boolean
+        default: false
+      extrapath:
+        required: false
+        type: string
+        default: ""
+jobs:
+  platformio_ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: ${{ inputs.submodules }}
+          sparse-checkout: |
+            .github
+            ${{ inputs.apppath }}
+            ${{ inputs.extrapath }}
+
+      - name: "Build Platform IO project"
+        uses: "./.github/actions/platformio"
+        with:
+            project_dir: "${{ inputs.apppath }}/${{ inputs.pio_project }}"
+
+

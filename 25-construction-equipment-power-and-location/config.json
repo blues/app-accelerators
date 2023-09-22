@@ -1,4 +1,0 @@
-{ "req": "hub.set", "product" : "com.your-company:your-product-name", "sn": "a-serial-number", "mode": "periodic", "outbound": 30, "body":{"app":"nf25"} }
-{ "req": "card.voltage", "usb": true, "alert": true, "sync": true }
-{ "req": "card.location.mode", "mode": "periodic", "seconds": 180, "lat": 34.0782, "lon": -118.2606, "max": 500 }
-{ "req": "card.location.track", "start": true, "file": "locations.qo" }

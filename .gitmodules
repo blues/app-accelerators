@@ -49,3 +49,6 @@
 [submodule "37-heat-index-monitor/firmware/zephyr/src/notecard_env_var_manager"]
 	path = 37-heat-index-monitor/firmware/zephyr/src/notecard_env_var_manager
 	url = https://github.com/blues/notecard-env-var-manager.git
+[submodule "38-audio-classifier/classifier/lib/notecard_env_var_manager"]
+	path = 38-audio-classifier/classifier/lib/notecard_env_var_manager
+	url = https://github.com/blues/notecard-env-var-manager.git
