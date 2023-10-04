@@ -11,30 +11,41 @@
 #pragma message "PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://bit.ly/product-uid"
 #endif
 
+// The number of minutes between syncs of outbound data from the Notecard to
+// Notehub (e.g. events.qo Notes).
 #ifndef OUTBOUND_MINS
 #define OUTBOUND_MINS 10
 #endif
 
+// The number of minutes between syncs of inbound data from Notehub to the
+// Notecard (e.g. environment variable changes).
 #ifndef INBOUND_MINS
 #define INBOUND_MINS 5
 #endif
 
+// The maximum number of milliseconds to wait for the serial logging port to
+// become available.
 #ifndef MAX_SERIAL_WAIT_MS
 #define MAX_SERIAL_WAIT_MS 5000
 #endif
 
+// The number of milliseconds to wait between fetches of the environment
+// variables from the Notecard.
 #ifndef ENV_FETCH_INTERVAL_MS
 #define ENV_FETCH_INTERVAL_MS (3 * 60 * 1000) // 3 minutes
 #endif
 
+// The Notefile where detection events will be reported.
 #ifndef EVENTS_FILE
 #define EVENTS_FILE "events.qo"
 #endif
 
+// The GPIO pin to connect to the detector's chip select pin.
 #ifndef SPI_CS_PIN
 #define SPI_CS_PIN D5
 #endif
 
+// The GPIO pin to connect to the detector's interrupt pin.
 #ifndef INTERRUPT_PIN
 #define INTERRUPT_PIN D6
 #endif
@@ -100,9 +111,9 @@ static AppState state = {
 };
 
 enum EventType {
-    NOISE_EVENT = 0,
-    DISTURBER_EVENT = 1,
-    LIGHTNING_EVENT = 2
+    NOISE_EVENT = 1,
+    DISTURBER_EVENT = 2,
+    LIGHTNING_EVENT = 3
 };
 
 // This callback is called whenever environment variables are fetched. It's

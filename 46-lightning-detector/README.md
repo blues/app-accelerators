@@ -18,9 +18,7 @@ Detect lightning strikes up to 40 km away and send the detections to the cloud v
 ## You Will Need
 
 * [Visual Studio Code (VS Code)](https://code.visualstudio.com/) with the [PlatformIO extension](https://platformio.org/)
-* [Notecarrier F](https://blues.io/products/notecarrier/notecarrier-f/)
-* [Notecard](https://blues.io/products/notecard/)
-* [Swan](https://blues.io/products/swan/)
+* [Blues Starter Kit for North America](https://shop.blues.io/products/blues-starter-kit-for-north-america)[^1]
 * [SparkFun Lightning Detector - AS3935](https://www.sparkfun.com/products/15441)
 * Row of 7 headers
 * Soldering iron
@@ -44,13 +42,13 @@ After detection, the Swan's firmware creates a [Note](https://dev.blues.io/api-r
 
 ```json
 {
-    "type": 2,
+    "type": 3,
     "distance_to_storm": 15,
     "energy": 999
 }
 ```
 
-- `type` is a code to indicate the event type. 0 is noise, 1 is disturber, and 2 is lightning.
+- `type` is a code to indicate the event type. 1 is noise, 2 is disturber, and 3 is lightning.
 - `distance_to_storm` is an additional value reported for lightning events. It's the distance to the head of the storm in kilometers.
 - `energy` is an additional value reported for lightning events. According to the datasheet:
 
@@ -99,27 +97,17 @@ There are several optional [environment variables](https://dev.blues.io/guides-a
 
 Here are the environment variables supported by the firmware:
 
-- `ignore_disturbers`: If this is 0, disturbers trigger the creation of an event Note. If this is 1, disturbers do NOT create an event Note.
+- `ignore_disturbers`: If this is 0, disturbers trigger the creation of an event Note. If this is 1, disturbers do NOT create an event Note. *Default: 0*
+- `indoor`: If this is 0, the detector will configure its settings for outdoor usage. If this is 1, it'll optimize for indoor usage. *Default: 1*
+- `noise_floor_threshold`: The noise floor of the signal is continuously measured by the detector. If it breaches the noise floor threshold, the detector triggers a noise interrupt, and a noise event Note will be created. This environment variable is a value between 1 and 7. These values correspond to different thresholds, which are listed in Figure 41 of the "Noise Floor Level Measurement and Evaluation" section of the [datasheet](https://cdn.sparkfun.com/assets/learn_tutorials/9/2/1/AS3935_Datasheet_EN_v2.pdf). *Default: 2*
+- `spike_rejection`: A value between 1 and 15. From the datasheet:
+  > the spike rejection settings ... can be used to increase the  robustness against false alarms from such disturbers
 
-  *Default: 0*
-- `indoor`: If this is 0, the detector will configure its settings for outdoor usage. If this is 1, it'll optimize for indoor usage.
-
-  *Default: 1*
-- `noise_floor_threshold`: The noise floor of the signal is continuously measured by the detector. If it breaches the noise floor threshold, the detector triggers a noise interrupt, and a noise event Note will be created. This environment variable is a value between 1 and 7. These values correspond to different thresholds, which are listed in Figure 41 of the "Noise Floor Level Measurement and Evaluation" section of the [datasheet](https://cdn.sparkfun.com/assets/learn_tutorials/9/2/1/AS3935_Datasheet_EN_v2.pdf).
-
-  *Default: 2*
--  `spike_rejection`: A value between 1 and 15. From the datasheet:
-   > the spike rejection settings ... can be used to increase the  robustness against false alarms from such disturbers
-
-    See the "Signal Validation" section of the datasheet for more.
-
-    *Default: 2*
+  See the "Signal Validation" section of the datasheet for more. *Default: 2*
 - `watchdog_threshold`: This is a threshold between 1 and 15. From the datasheet:
-    > By increasing the threshold the AS3935 can be made more robust against disturbers. However, this will also make the sensor less sensitive for weaker signals from far away lightning events
+  > By increasing the threshold the AS3935 can be made more robust against disturbers. However, this will also make the sensor less sensitive for weaker signals from far away lightning events
 
-    See the "Analog Front-End (AFE) and Watchdog" section of the datasheet for more.
-
-    *Default: 2*
+  See the "Analog Front-End (AFE) and Watchdog" section of the datasheet for more. *Default: 2*
 
 ## Firmware
 
@@ -147,7 +135,7 @@ With the serial log open, ignite the lighter near the detector. You should see m
 ```
 Interrupt received. Source: disturber.
 Sending event note...
-[INFO] {"req":"note.add","file":"events.qo","body":{"type":1,"distance_to_storm":0,"energy":0},"crc":"0004:6C5B2D87"}
+[INFO] {"req":"note.add","file":"events.qo","body":{"type":2,"distance_to_storm":0,"energy":0},"crc":"0004:6C5B2D87"}
 [INFO] {"template":true}
 ```
 
@@ -158,11 +146,11 @@ Interrupt received. Source: lightning.
 Distance from head of storm: 40 km.
 Energy value: 0.
 Sending event note...
-[INFO] {"req":"note.add","file":"events.qo","body":{"type":2,"distance_to_storm":40,"energy":0},"crc":"0003:9CBD5B78"}
+[INFO] {"req":"note.add","file":"events.qo","body":{"type":3,"distance_to_storm":40,"energy":0},"crc":"0003:9CBD5B78"}
 [INFO] {"template":true}
 ```
 
-On Notehub, in your project's Events tab, you should see the Note come through sometime later.[^1]
+On Notehub, in your project's Events tab, you should see the Note come through sometime later.[^2]
 
 <p align="center">
 <img src="images/events.png"/>
@@ -172,14 +160,16 @@ Double-click the Note and open the Body tab to view the JSON:
 
 ```json
 {
-    "type": 1
+    "type": 2
 }
 ```
 
-Because this was a disturber (type 1), no `distance_to_storm` or `energy` fields are present.
-
-[^1]: Notes are synced from the Notecard to Notehub every 10 minutes. See the `OUTBOUND_MINS` macro in lightning_detector.ino if you want to change the number of minutes.
+Because this was a disturber (type 2), no `distance_to_storm` or `energy` fields are present.
 
 ## Blues Community
 
 We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+
+
+[^1]: [Blues Starter Kits for EMEA](https://shop.blues.io/products/blues-starter-kit-for-emea) are also available.
+[^2]: Notes are synced from the Notecard to Notehub every 10 minutes. See the `OUTBOUND_MINS` macro in lightning_detector.ino if you want to change the number of minutes.
