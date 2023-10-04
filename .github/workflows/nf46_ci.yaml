@@ -1,0 +1,14 @@
+name: nf46-ci
+on:
+    workflow_dispatch:
+    pull_request:
+        paths:
+            - "46-lightning-detector/**"
+
+jobs:
+    nf49-ci:
+        uses: ./.github/workflows/platformio_ci.yml
+        with:
+            appid: nf46
+            apppath: 46-lightning-detector
+            pio_project: firmware
