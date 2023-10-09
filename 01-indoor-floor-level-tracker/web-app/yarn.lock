@@ -367,10 +367,10 @@
   resolved "https://registry.npmjs.org/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@blues-inc/notehub-js@^1.0.7":
-  version "1.0.7"
-  resolved "https://registry.yarnpkg.com/@blues-inc/notehub-js/-/notehub-js-1.0.7.tgz#e5a8f966ba42a0fc1cee4f66bb74fb1454321e2d"
-  integrity sha512-Pa55G78q6G/FXRUC5GFUvWZGQMMjuS8PBg9lWu7snALlBJ6Stp2e/opFyxYg+wLXlDy+tcz8D1tlAVinUZJvXQ==
+"@blues-inc/notehub-js@1.0.18":
+  version "1.0.18"
+  resolved "https://registry.yarnpkg.com/@blues-inc/notehub-js/-/notehub-js-1.0.18.tgz#1756769421998c8cd69df44c9227043e5f495e48"
+  integrity sha512-G8MnD+ekyok03X2GAZk7tvtnfJ8sRkdCVypB5DuwoMNpg1boWeOG8APiTorhY6qGEB3GvHCMYfJOKLVWoGm/BQ==
   dependencies:
     "@babel/cli" "^7.0.0"
     querystring "^0.2.1"

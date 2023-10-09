@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@ant-design/icons": "^4.7.0",
-    "@blues-inc/notehub-js": "^1.0.7",
+    "@blues-inc/notehub-js": "1.0.18",
     "@types/lodash": "^4.14.178",
     "antd": "^4.19.1",
     "axios": "^0.24.0",
