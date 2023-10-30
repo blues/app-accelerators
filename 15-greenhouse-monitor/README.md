@@ -76,10 +76,10 @@ This app provides a simple to construct greenhouse monitoring device that can be
 
 4. Connect the STEMMA connector to the soil sensor. Connect the colored male jumper wires at the other end of the cable as follows:
 
-   * <span style="color:black;background:white">BLACK</span> to the negative power rail on the breadboard.
-   * <span style="color:red">RED</span> to the positive power rail on the breadboard.
-   * <span style="color:white;background:grey">WHITE</span> to `SDA` on the Notecarrier.
-   * <span style="color:green">GREEN</span> to `SCL` on the Notecarrier.
+   * BLACK to the negative power rail on the breadboard.
+   * RED to the positive power rail on the breadboard.
+   * WHITE to `SDA` on the Notecarrier.
+   * GREEN to `SCL` on the Notecarrier.
 
   The assembled hardware should look similar to this:
   ![](assets/hardware.jpg)
