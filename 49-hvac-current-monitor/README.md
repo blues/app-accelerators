@@ -46,15 +46,11 @@ In this project, you'll clamp the current transformer (CT) around one of the hot
 
 Start by opening up a small section of the extension cord's outer insulation, taking care not to cut too deeply, as you don't want to cut into the interior wires:
 
-<p align="center">
-<img src="images/extension_cord_outer_insulation.jpg"/>
-</p>
+![](images/extension_cord_outer_insulation.jpg)
 
 Inside, there should be 3 wires: black, white, and green. Black is the "hot" wire and white is the "neutral" wire. Take your CT and clamp it around either the hot or neutral wire:
 
-<p align="center">
-<img src="images/ct_installed.jpg"/>
-</p>
+![](images/ct_installed.jpg)
 
 Clamping the CT around both will result in 0 current readings, as [the current in each wire cancels the other out](https://docs.openenergymonitor.org/electricity-monitoring/ct-sensors/installation.html).
 
@@ -62,9 +58,7 @@ Clamping the CT around both will result in 0 current readings, as [the current i
 
 The CT's output signal is delivered via a [TRRS connector](https://en.wikipedia.org/wiki/Phone_connector_(audio)#TRRS). You'll plug this connector into the TRRS breakout, but first, you must solder on the row of headers that come with the breakout. Once you're done soldering, plug the breakout into the breadboard and connect the CT:
 
-<p align="center">
-<img src="images/trrs_breakout_wiring.jpg"/>
-</p>
+![](images/trrs_breakout_wiring.jpg)
 
 ### Notecarrier
 
@@ -72,9 +66,7 @@ The CT's output signal is delivered via a [TRRS connector](https://en.wikipedia.
 2. Plug the Swan into the Notecarrier, aligning the Swan's male headers with the Notecarrier's female headers.
 3. Connect the F_3V3 pin of the Notecarrier to the positive (+) rail of the breadboard, and the GND pin to the negative (-) rail:
 4. Connect F_A0 to the same Breadboard row as the SLEEVE pin of the TRRS breakout.
-    <p align="center">
-    <img src="images/notecarrier_breadboard_wiring.jpg"/>
-    </p>
+    ![](images/notecarrier_breadboard_wiring.jpg)
 
 ### Bias Circuit
 
@@ -82,12 +74,8 @@ The output of the current transformer is an AC signal whose voltage swings betwe
 
 Using a jumper wire, the resistors, and the capacitor, build the circuit shown below:
 
-<p align="center">
-<img src="images/circuit_diagram.svg"/>
-</p>
-<p align="center">
-<img src="images/fully_breadboarded.jpg"/>
-</p>
+![](images/circuit_diagram.svg)
+![](images/fully_breadboarded.jpg)
 
 ## Notehub Setup
 
@@ -121,9 +109,7 @@ From here, you can view logs from the firmware over serial with a terminal emula
 
 With all the circuitry in place, plug your HVAC unit into the extension cord and connect the extension cord to an outlet. Turn on the HVAC unit. You should begin to see Notes come into Notehub on your project's Events tab.
 
-<p align="center">
-<img src="images/notehub_events.png"/>
-</p>
+![](images/notehub_events.png)
 
 If you double-click on one of these events and navigate to the Body tab, you can see the contents of the Note in detail. Take a look at this example:
 

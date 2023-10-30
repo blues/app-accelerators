@@ -53,29 +53,21 @@ Note that the instructions in this README require you to remove one of the smoke
 
 Before you start building anything, identify the particular smoke detector in your home where you'll attach the new hardware. Remove the smoke detector from the ceiling/wall. The wiring in your home may vary, but you're likely to see the 3 wires of the smoke detector connected to the rest of the circuit with wire connectors:
 
-<p align="center">
-<img src="images/smoke_detector_wires.jpg"/>
-</p>
+![](images/smoke_detector_wires.jpg)
 
 Activate your voltage tester and bring it close to the black (hot) wire. You should hear a beep, indicating that the wire is live. Before you start changing the wiring, shut off power to this circuit by flipping off the corresponding circuit breaker in your home's breaker box. Use the voltage tester again to ensure power was shut off. You can now safely handle the wiring.
 
 To sense the voltage on the interconnect wire, we will need to install two additional wires: one that connects to the interconnect wire and another that connects to neutral. Find an extension cord or other sacrificial cable and cut it open to extract 2 lengths of wire:
 
-<p align="center">
-<img src="images/extension_wires.jpg"/>
-</p>
+![](images/extension_wires.jpg)
 
 Attach each wire to the interconnect wire connector and neutral wire connector, respectively:
 
-<p align="center">
-<img src="images/extension_wires_connected.jpg"/>
-</p>
+![](images/extension_wires_connected.jpg)
 
 In order to hook these wires up to your breadboard, you'll also want to attach jumper wires to the ends of each of these wires.  Cut off the end of 2 male-to-male jumper wires and strip off a bit of the insulation to expose the wire strands. Use wire connectors to connect these jumpers to your interconnect and neutral wires:
 
-<p align="center">
-<img src="images/extension_wires_with_jumpers.jpg"/>
-</p>
+![](images/extension_wires_with_jumpers.jpg)
 
 At this point, you can restore power to the smoke detector circuit at your breaker box.
 
@@ -83,23 +75,17 @@ At this point, you can restore power to the smoke detector circuit at your break
 
 As mentioned earlier, the voltage on the interconnect wire during an alarm event is usually 9V. However, in our particular case, the voltage was only 6.7V. To check this value, use clip or hook probes on your multimeter to measure the voltage on the interconnect wire with respect to the neutral wire:
 
-<p align="center">
-<img src="images/multimeter_setup.jpg"/>
-</p>
+![](images/multimeter_setup.jpg)
 
 The other smoke detectors in your home should have a test button that triggers an alarm and raises the voltage on the interconnect wire. Find a nearby detector and depress the test button until the alarm goes off. While the alarm is sounding, note the voltage on your multimeter. This value will inform the resistor values needed for the circuit you'll build in the next steps.
 
-<p align="center">
-<img src="images/multimeter_interconnect_reading.jpg"/>
-</p>
+![](images/multimeter_interconnect_reading.jpg)
 
 ### Circuit Design
 
 You can model the optocoupler as having an LED with its anode connected to pin 1 and its cathode connected to pin 2. At the output, there's a phototransistor with its collector connected to pin 3 and its emitter connected to pin 4. When current flows through the LED, it emits light that goes into the base of the phototransistor. If the light is sufficiently bright, the transistor saturates/turns on.
 
-<p align="center">
-<img src="images/Optoisolator_Pinout.svg.jpg"/>
-</p>
+![](images/Optoisolator_Pinout.svg.jpg);
 
 Optocouplers are useful for passing signals between circuits operating at different voltages. In this case, we need pass the 9V signal from the smoke detector interconnect onto the Notecard without damaging the Notecard. To do so, we'll use the optocoupler as a kind of switch. When the interconnect wire goes high to 9V, the optocoupler will effectively close a switch that connects one of the Notecard's GPIO pins to ground. When the interconnect wire is low at 0V, the switch will be open, and an internal pull-up on the Notecard's GPIO will keep the logic level high.
 
@@ -115,9 +101,7 @@ From our testing of this particular PC817 from Gikfun ([linked above](#you-will-
 
 Setting aside the Notecard and Notecarrier, which you'll assemble and configure shortly, build the circuit on the breadboard:
 
-<p align="center">
-<img src="images/breadboard_no_notecarrier.jpg"/>
-</p>
+![](images/breadboard_no_notecarrier.jpg)
 
 You're now ready to configure your Notehub project and the Notecard so you can run an end-to-end test of the whole system.
 
@@ -140,12 +124,7 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 4. Plug the LiPo battery into the port labeled LIPO on the Notecarrier. While the Notecarrier is connected to USB power, the battery will charge.
 5. Once the battery is charged (or if it's already charged), disconnect the Notecarrier from USB and head back over to your optocoupler circuit.
 6. Use male-to-male jumper wires to connect pin 3 of the optocoupler to AUX1 and pin 4 to GND:
-<p align="center">
-<img src="images/breadboard_with_notecarrier.jpg"/>
-</p>
-<p align="center">
-<img src="images/full_circuit.png"/>
-</p>
+![](images/breadboard_with_notecarrier.jpg)
 
 ## Twilio Route
 
@@ -165,9 +144,7 @@ Now, whenever a `smoke.qo` [Note](https://dev.blues.io/api-reference/glossary/#n
 
 Head back over to the smoke detector you used to test the interconnect voltage earlier. Depress the test button and trigger a test alarm. Within the next minute, you should receive a "Smoke detector alarming!" text via Twilio, followed by a "Smoke detector stopped alarming." text when the alarm stops. On Notehub, you can view the Notes that triggered these texts by navigating to the "Events" tab of your project:
 
-<p align="center">
-<img src="images/notehub_events.png"/>
-</p>
+![](images/notehub_events.png)
 
 ## Blues Community
 

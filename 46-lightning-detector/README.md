@@ -77,9 +77,7 @@ Break off a row of 7 headers and [solder](https://learn.sparkfun.com/tutorials/h
     | 3V3      | F_3V3       |
     | GND      | GND         |
 4. Connect the Swan to your development PC with the micro USB cable. The LED on the detector board will turn on.
-  <p align="center">
-  <img src="images/assembled.jpg"/>
-  </p>
+  ![](images/assembled.jpg)
 
 ## Notehub Setup
 
@@ -152,9 +150,7 @@ Sending event note...
 
 On Notehub, in your project's Events tab, you should see the Note come through sometime later.[^2]
 
-<p align="center">
-<img src="images/events.png"/>
-</p>
+![](images/events.png)
 
 Double-click the Note and open the Body tab to view the JSON:
 
