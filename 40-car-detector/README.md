@@ -174,7 +174,7 @@ There are 2 [environment variables](https://dev.blues.io/guides-and-tutorials/no
 
 To change these values, go to your Notehub project and click Environment in the left-hand menu. Under Project environment variables, enter your desired values and click Save:
 
-![Setting environment variables](./assets/env_vars.png)
+![Setting environment variables](assets/env_vars.png)
 
 The next time data is synced to the Notecard, the environment variables will update on the MCU.
 

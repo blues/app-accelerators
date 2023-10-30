@@ -348,7 +348,7 @@ Before proceeding with the sections below, install the Python dependencies with 
 You'll use `server.py` as the Modbus server and the Swan as the Modbus client.
 
 1. Run the server: `python server.py --log debug --port /dev/ttyUSB0`. The `--port` parameter specifies the serial port of the USB to RS-485 converter. On Linux, this is typically `/dev/ttyUSB0`, but you may need to alter this path depending on your machine. You should see output like this after starting the server:
-    ```none
+    ```plaintext
     2023-06-06 12:31:05,050 INFO  logging:96 Server(Serial) listening.
     2023-06-06 12:31:05,050 INFO  logging:96 Server(Serial) listening.
     2023-06-06 12:31:05,050 DEBUG logging:102 Serial connection opened on port: /dev/ttyUSB0

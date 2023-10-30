@@ -72,7 +72,7 @@ This app provides a simple to construct greenhouse monitoring device that can be
 
     3. Insert the longer leg of the photo transistor into the positive power rail, and the shorter leg into the same row of points as the A1 wire.
 
-    ![](./assets/phototransistor.png)
+    ![](assets/phototransistor.png)
 
 4. Connect the STEMMA connector to the soil sensor. Connect the colored male jumper wires at the other end of the cable as follows:
 
@@ -83,7 +83,7 @@ This app provides a simple to construct greenhouse monitoring device that can be
 
   The assembled hardware should look similar to this:
   ![](assets/hardware.jpg)
-  ![](./assets/breadboard.jpg)
+  ![](assets/breadboard.jpg)
 
 5. Connect the Swan to your computer using a micro-USB cable. This is so that the firmware can be uploaded and allows the app to be monitored over USB serial.
 

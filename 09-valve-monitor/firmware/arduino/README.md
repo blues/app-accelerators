@@ -55,7 +55,7 @@ Once you have the firmware running, you’ll next want to open the firmware’s 
 file, uncomment the `#define PRODUCT_UID` line, and replace the hardcoded value with
 a ProductUID from the Notehub project you’d like to use.
 
-```C
+```c
 // Replace with your product UID.
 #define PRODUCT_UID "com.my-company.my-name:my-project"
 ```

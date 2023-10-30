@@ -15,7 +15,7 @@ it can be rescued before it is ruined.
 
 The starting point for all medicines is, "Controlled Room Temperature (CRT)"
 
-> U.S. Pharmacopeia (USP) USP <659> "Packaging and Storage Requirements"
+> U.S. Pharmacopeia (USP) USP &lt;659&gt; "Packaging and Storage Requirements"
 >
 > Controlled room temperature: The temperature maintained thermostatically
 > that encompasses at the usual and customary working environment of 20°-25°
@@ -152,7 +152,7 @@ is provided at the following links:
 
 1. Wire the ESP32, LM75A and Notecarrier-B in the following arrangement:
 
-   ```none
+   ```plaintext
                             |   LM75A   |
                             |           |
                             | V G S S   |
