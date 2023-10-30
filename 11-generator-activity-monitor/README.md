@@ -95,7 +95,7 @@ With the build complete, you will have two power monitors, each with an AC inlet
       ```
       BLACK  RED  NC  NC  NC  NC  BLUE  YELLOW
       ```
-    ![](../08-power-quality-monitor/images/drwattson-i2c.jpg)
+    ![](images/drwattson-i2c.jpg)
 
     * Insert the Qwiic JST connector into one of the `F_I2C` connectors on the edge of the Notecarrier-F next to the USB port. You may also connect it to the I2C connector on the Swan.
 

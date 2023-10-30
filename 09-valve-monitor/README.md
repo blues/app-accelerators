@@ -2,7 +2,7 @@
 
 Monitor and control the open/closed state of a valve, and measure liquid flow state.
 
-![The valve monitor project’s web application and hardware](../app-banners/09-banner.png)
+![The valve monitor project’s web application and hardware](images/banner.png)
 
 To run this project yourself you’ll need to:
 

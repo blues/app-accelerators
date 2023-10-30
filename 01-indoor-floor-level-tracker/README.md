@@ -2,7 +2,7 @@
 
 A highly accurate floor-level tracker for response teams at emergency events.
 
-![](../app-banners/01-banner.png)
+![](images/banner.png)
 
 To run this project yourself you’ll need to:
 
