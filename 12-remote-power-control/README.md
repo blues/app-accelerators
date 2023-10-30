@@ -213,7 +213,7 @@ With the Dr. Wattson boards looped into the flow of power via extension cables, 
 
 For ease of identification, use the board with the lower I2C address to monitor input power, and the higher I2C address to monitor output power. We recommend using addresses `0x74` and `0x75`.
 
-![](./images/electrical-schematic.png)
+![](images/electrical-schematic.png)
 
 During development and testing, you will typically power the Notecarrier and Swan via USB cables from your computer. When the application is deployed, you will use a USB power adapter plugged into the first monitor USB outlet.
 
