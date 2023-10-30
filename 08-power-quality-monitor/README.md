@@ -70,7 +70,7 @@ Please see [Dr. Wattson Energy Monitor build](drwattson-build.md) for build inst
 With the build complete, you will have a power monitor with an AC inlet and two AC outlets, like this
 
 
-<img alt="Dr. Wattson monitor complete" title="Dr. Wattson Monitor complete" src="./images/wiring-10-complete.jpg" width="30%" height="30%"/>
+<img alt="Dr. Wattson monitor complete" title="Dr. Wattson Monitor complete" src="images/wiring-10-complete.jpg" width="30%" height="30%"/>
 
 
 ## Hardware Setup
