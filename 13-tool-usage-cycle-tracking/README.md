@@ -209,7 +209,7 @@ pasting in the ProductUID from your notehub project between the first pair of qu
 
 The primary electrical connections are based around the Dr. Wattson monitoring board. The board's line input is plugged into your AC outlet and the tool is plugged into the board's AC load outlet. A USB power brick is also connected to the 18-guage USB power outlet that you added to the board.
 
-![](./images/electrical-schematic.png)
+![](images/electrical-schematic.png)
 
 During development and testing, you will typically power the Notecarrier and Swan via USB cables from your computer. When the application is deployed, you will use the USB power adapter plugged into monitor's USB power outlet.
 
