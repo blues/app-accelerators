@@ -84,7 +84,7 @@ This command enables automatic location tracking to Notefile `_track.qo`.
 
 You can optionally add the property `"sync":true` which configures the Notecard to perform an immediate sync with Notehub when location is reported. Without this, the Notecard will sync within the next hour.
 
-### `card.aux` [GPIO mode](https://dev.blues.io/notecard/notecard-walkthrough/advanced-notecard-configuration/#using-aux-gpio-mode)
+### [`card.aux` GPIO mode](https://dev.blues.io/notecard/notecard-walkthrough/advanced-notecard-configuration/#using-aux-gpio-mode)
 
 This command uses AUX GPIO mode to configure the notecard to count the number of times the door has been opened.
 
