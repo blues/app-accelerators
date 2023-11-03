@@ -4,25 +4,6 @@ Use Notecard with a mains-powered USB power brick and LiPo battery to build a gl
 
 ![](images/SMS_alert.png)
 
-- [Power Outage Detector](#power-outage-detector)
-  - [You will need](#you-will-need)
-  - [Hardware Setup](#hardware-setup)
-  - [Notecard Firmware](#notecard-firmware)
-  - [Cloud Setup](#cloud-setup)
-  - [Notecard Setup](#notecard-setup)
-    - [Configure Notehub Project and Connection Mode](#configure-notehub-project-and-connection-mode)
-    - [Configure Power Outage Alerts](#configure-power-outage-alerts)
-    - [Notecard CLI](#notecard-cli)
-  - [System Test](#system-test)
-    - [Setup](#setup)
-    - [Simulating a Power Outage](#simulating-a-power-outage)
-  - [Routing Data out of Notehub](#routing-data-out-of-notehub)
-    - [Testing the Route](#testing-the-route)
-      - [Testing Power Failure](#testing-power-failure)
-      - [Testing Power Restored](#testing-power-restored)
-      - [Testing Power Restored after the LiPo battery has discharged](#testing-power-restored-after-the-lipo-battery-has-discharged)
-    - [Blues Wireless Community](#blues-wireless-community)
-
 ## You will need
 
 * LiPo battery with JST cable

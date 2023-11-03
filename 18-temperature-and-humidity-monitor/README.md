@@ -2,20 +2,6 @@
 
 Monitor temperature and humidity and send alerts using a Notecard and a BME280 sensor.
 
-- [Temperature and Humidity Monitor](#temperature-and-humidity-monitor)
-  - [You Will Need](#you-will-need)
-    - [Hardware](#hardware)
-    - [Software](#software)
-  - [Notehub Setup](#notehub-setup)
-  - [Hardware Setup](#hardware-setup)
-  - [Notecard Firmware Setup](#notecard-firmware-setup)
-  - [Swan Firmware Setup](#swan-firmware-setup)
-  - [Operation](#operation)
-    - [data.qo](#dataqo)
-    - [alarm.qo](#alarmqo)
-    - [_health.qo](#_healthqo)
-    - [Simulating a Power Outage](#simulating-a-power-outage)
-
 ## You Will Need
 
 ### Hardware

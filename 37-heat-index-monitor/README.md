@@ -2,18 +2,6 @@
 
 Monitor temperature, humidity, and heat index and send alerts using a solar-powered Notecard and a BME280 sensor.
 
-- [Heat Index Monitor](#heat-index-monitor)
-  - [You Will Need](#you-will-need)
-    - [Hardware](#hardware)
-    - [Software](#software)
-  - [Notehub Setup](#notehub-setup)
-  - [Hardware Setup](#hardware-setup)
-  - [Firmware Setup](#firmware-setup)
-  - [Notefiles](#notefiles)
-    - [data.qo](#dataqo)
-    - [alarm.qo](#alarmqo)
-  - [Testing](#testing)
-
 ## You Will Need
 
 ### Hardware

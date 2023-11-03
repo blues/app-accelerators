@@ -2,38 +2,8 @@
 
 Monitor a generator’s input and output AC supply, alert on anomalies and power failures.
 
-- [Generator Activity Monitor](#generator-activity-monitor)
-  - [You Will Need](#you-will-need)
-  - [Solution Overview](#solution-overview)
-  - [Dr. Wattson Energy Monitor Build](#dr-wattson-energy-monitor-build)
-  - [Hardware Setup](#hardware-setup)
-  - [Notehub](#notehub)
-  - [Application Firmware](#application-firmware)
-    - [PlatformIO extension for VS Code](#platformio-extension-for-vs-code)
-    - [Arduino Extension for VS Code](#arduino-extension-for-vs-code)
-    - [Arduino IDE](#arduino-ide)
-      - [Increasing the Serial Receive Buffer Size](#increasing-the-serial-receive-buffer-size)
-      - [Libraries](#libraries)
-      - [Arduino IDE - Compiling/Uploading](#arduino-ide---compilinguploading)
-    - [Configuring the ProductUID](#configuring-the-productuid)
-      - [Using the In-browser terminal](#using-the-in-browser-terminal)
-      - [Editing the Source Code](#editing-the-source-code)
-  - [Electrical Connections](#electrical-connections)
-  - [Testing](#testing)
-  - [Configure Monitoring](#configure-monitoring)
-    - [Instance number](#instance-number)
-  - [Activity GPIOs](#activity-gpios)
-  - [Configuring Power Activity Alerts](#configuring-power-activity-alerts)
-  - [Example Configuration](#example-configuration)
-  - [Events](#events)
-    - [Alerts](#alerts)
-      - [Power Activity Alerts](#power-activity-alerts)
-  - [Routing Data out of Notehub](#routing-data-out-of-notehub)
-    - [Testing the Route](#testing-the-route)
-  - [Blues Community](#blues-community)
-
-
 ## You Will Need
+
   * [Blues Starter Kit](https://shop.blues.io/collections/blues-starter-kits), that contains amongst other items
     * [Notecarrier F](https://shop.blues.io/products/notecarrier-f)
     * [Swan](https://shop.blues.io/collections/swan)

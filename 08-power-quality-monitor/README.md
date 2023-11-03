@@ -4,33 +4,6 @@ Monitor machine AC power use and send alerts on monitored changes.
 
 ![](images/banner.png)
 
-- [Power Quality Monitor](#power-quality-monitor)
-  - [Problem Description](#problem-description)
-  - [Solution Summary](#solution-summary)
-  - [You Will Need](#you-will-need)
-  - [Dr. Wattson Energy Monitor Build](#dr-wattson-energy-monitor-build)
-  - [Hardware Setup](#hardware-setup)
-  - [Notehub](#notehub)
-  - [Application Firmware](#application-firmware)
-    - [PlatformIO extension for VS Code](#platformio-extension-for-vs-code)
-    - [Arduino Extension for VS Code](#arduino-extension-for-vs-code)
-    - [Arduino IDE](#arduino-ide)
-      - [Increasing the Serial Receive Buffer Size](#increasing-the-serial-receive-buffer-size)
-      - [Libraries](#libraries)
-      - [Arduino IDE - Compiling/Uploading](#arduino-ide---compilinguploading)
-    - [Configuring the ProductUID](#configuring-the-productuid)
-      - [Using the In-browser terminal](#using-the-in-browser-terminal)
-      - [Editing the Source Code](#editing-the-source-code)
-  - [Electrical Connections](#electrical-connections)
-  - [Testing](#testing)
-  - [Configure Monitoring](#configure-monitoring)
-  - [Events](#events)
-    - [Alerts](#alerts)
-  - [Routing Data out of Notehub](#routing-data-out-of-notehub)
-    - [Testing the Route](#testing-the-route)
-  - [Blues Community](#blues-community)
-
-
 ## Problem Description
 
 For organizations that rely on machinery for their day-to-day operations, an outage can be costly. Organizations with expensive machinery who run on thin margins will often optimize their costs by running at or close to capacity, or by minimizing redundancy between machines of a similar type. When a machine breaks, begins operating out-of-phase, or goes offline, the manufacturer loses money. Monitoring these machines for outages or out-of-phase behavior is preferred, but many of these machines do not come with built-in remote monitoring systems, nor do they contain logic-controllers that may enable a retrofit to add connectivity and remote monitoring and control.

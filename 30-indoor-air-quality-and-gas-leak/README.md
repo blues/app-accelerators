@@ -4,21 +4,6 @@ Monitor air quality, including Air Quality Index, CO2 and VOC concentration, and
 
 ![](images/sms.png)
 
-- [Indoor Air Quality and Gas Leak](#indoor-air-quality-and-gas-leak)
-  - [You Will Need](#you-will-need)
-  - [Notehub Setup](#notehub-setup)
-  - [Sparrow Setup](#sparrow-setup)
-    - [Quickstart](#quickstart)
-    - [Air Quality Sensor Connection](#air-quality-sensor-connection)
-  - [Firmware](#firmware)
-  - [Air Quality Monitoring and Alerting Behavior](#air-quality-monitoring-and-alerting-behavior)
-    - [Configuration](#configuration)
-  - [Routing Data out of Notehub](#routing-data-out-of-notehub)
-    - [Naming Air Quality Monitors](#naming-air-quality-monitors)
-    - [Testing the Route](#testing-the-route)
-  - [Blues Community](#blues-community)
-  - [Additional Resources](#additional-resources)
-
 ## You Will Need
 
 * [Sparrow Development Kit](https://shop.blues.io/products/sparrow-dev-kit)

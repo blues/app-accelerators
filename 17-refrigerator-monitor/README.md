@@ -2,22 +2,6 @@
 
 Monitor refrigerator temperature, humidity, and power using a Notecard and a BME280 sensor.
 
-- [Refrigerator Monitor](#refrigerator-monitor)
-  - [You Will Need](#you-will-need)
-  - [Hardware Setup](#hardware-setup)
-  - [Cloud Setup](#cloud-setup)
-  - [Notecard Setup](#notecard-setup)
-    - [Firmware](#firmware)
-    - [Configure Notehub Project and Connection Mode](#configure-notehub-project-and-connection-mode)
-    - [Configure Periodic Environmental Measurements](#configure-periodic-environmental-measurements)
-    - [Configure Power Outage Alerts](#configure-power-outage-alerts)
-    - [Notecard CLI](#notecard-cli)
-  - [System Test](#system-test)
-    - [Setup](#setup)
-    - [Viewing Environmental Data](#viewing-environmental-data)
-    - [Simulating a Power Outage](#simulating-a-power-outage)
-  - [Blues Wireless Community](#blues-wireless-community)
-
 ## You Will Need
 
 * AC to USB adapter (power brick)

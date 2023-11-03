@@ -3,34 +3,6 @@
 Monitor ambient light and temperature, soil moisture and soil temperature and send alerts
 when any of these fall outside specified ranges.
 
-- [Greenhouse Monitor](#greenhouse-monitor)
-  - [Solution Summary](#solution-summary)
-  - [You Will Need](#you-will-need)
-  - [Hardware Setup](#hardware-setup)
-  - [Notehub](#notehub)
-  - [Application Firmware](#application-firmware)
-    - [PlatformIO extension for VS Code](#platformio-extension-for-vs-code)
-    - [Arduino Extension for VS Code](#arduino-extension-for-vs-code)
-    - [Arduino IDE](#arduino-ide)
-      - [Libraries](#libraries)
-      - [Arduino IDE - Compiling/Uploading](#arduino-ide---compilinguploading)
-    - [Configuring the ProductUID](#configuring-the-productuid)
-      - [Using the In-browser terminal](#using-the-in-browser-terminal)
-      - [Editing the Source Code](#editing-the-source-code)
-  - [Testing](#testing)
-    - [App Configuration](#app-configuration)
-    - [Sensor Names](#sensor-names)
-    - [Monitoring Events](#monitoring-events)
-    - [Configuration Updates and Errors](#configuration-updates-and-errors)
-  - [Alerts](#alerts)
-    - [Alert Events](#alert-events)
-    - [Soil Moisture and Light Level](#soil-moisture-and-light-level)
-  - [Manual Testing](#manual-testing)
-  - [Deploying to a Greenhouse](#deploying-to-a-greenhouse)
-    - [Synchronization Mode](#synchronization-mode)
-  - [Blues Community](#blues-community)
-
-
 ## Solution Summary
 
 This app provides a simple to construct greenhouse monitoring device that can be deployed inside a greenhouse. The app monitors soil moisture and soil temperature as well as ambient light and ambient temperature. Using off-the-shelf hardware and modular components, you can use this solution to add monitoring to an existing greenhouse.

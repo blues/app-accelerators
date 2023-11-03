@@ -2,18 +2,6 @@
 
 Detect when a vehicle or other object collides with another object on a roadway.
 
-- [Roadway Impact Detection](#roadway-impact-detection)
-  - [You Will Need](#you-will-need)
-  - [Notehub Setup](#notehub-setup)
-  - [Hardware Setup](#hardware-setup)
-  - [Notecard Firmware](#notecard-firmware)
-  - [Testing](#testing)
-    - [`hub.set`](#hubset)
-    - [`card.voltage`](#cardvoltage)
-    - [`card.motion.mode`](#cardmotionmode)
-    - [`card.motion.sync`](#cardmotionsync)
-    - [Notecard CLI](#notecard-cli)
-
 ## You Will Need
 
 * USB A to micro USB cable

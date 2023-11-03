@@ -2,36 +2,6 @@
 
 Send requests and receive responses from Modbus servers via cellular.
 
-- [Cellular Modbus Client](#cellular-modbus-client)
-  - [You Will Need](#you-will-need)
-  - [Hardware Setup](#hardware-setup)
-    - [RS-485 Transceiver Breakout](#rs-485-transceiver-breakout)
-    - [USB to RS-485 Converter](#usb-to-rs-485-converter)
-    - [Notecarrier](#notecarrier)
-  - [Notehub Setup](#notehub-setup)
-  - [Firmware](#firmware)
-    - [Operation](#operation)
-      - [Request Types](#request-types)
-        - [Read Coils](#read-coils)
-        - [Read Discrete Inputs](#read-discrete-inputs)
-        - [Read Holding Registers](#read-holding-registers)
-        - [Read Input Registers](#read-input-registers)
-        - [Write Single Coil](#write-single-coil)
-        - [Write Single Register](#write-single-register)
-        - [Write Multiple Coils](#write-multiple-coils)
-        - [Write Multiple Registers](#write-multiple-registers)
-      - [Response Types](#response-types)
-        - [Reads](#reads)
-        - [Writes](#writes)
-        - [Errors](#errors)
-    - [Building and Flashing](#building-and-flashing)
-  - [Testing](#testing)
-    - [Simple Test](#simple-test)
-    - [Test Script](#test-script)
-  - [Troubleshooting](#troubleshooting)
-  - [Blues Community](#blues-community)
-  - [Additional Resources](#additional-resources)
-
 ## You Will Need
 
 * [Visual Studio Code (VS Code)](https://code.visualstudio.com/) with the [PlatformIO extension](https://platformio.org/)

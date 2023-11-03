@@ -2,17 +2,6 @@
 
 Receive notifications when a door is opened or closed.
 
-- [Door State Monitor](#door-state-monitor)
-  - [You Will Need](#you-will-need)
-  - [Notehub Setup](#notehub-setup)
-  - [Sparrow Setup](#sparrow-setup)
-    - [Quickstart](#quickstart)
-    - [Hardware](#hardware)
-    - [Firmware](#firmware)
-  - [Testing](#testing)
-  - [Blues Community](#blues-community)
-  - [Additional Resources](#additional-resources)
-
 ## You Will Need
 
 * [Sparrow Development Kit](https://shop.blues.io/products/sparrow-dev-kit)

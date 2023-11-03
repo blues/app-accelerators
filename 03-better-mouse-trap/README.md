@@ -11,19 +11,6 @@ it has caught a mouse.
 
 ![Finished trap on a concrete floor](images/pxl_20221018_203442381_2HE5Zxfkng.jpg)
 
-- [Better Mouse Trap](#better-mouse-trap)
-  - [You will need](#you-will-need)
-    - [Parts](#parts)
-    - [Tools](#tools)
-  - [Hardware Setup](#hardware-setup)
-    - [Modifying the Mousetrap](#modifying-the-mousetrap)
-    - [Sparrow Setup](#sparrow-setup)
-  - [Firmware](#firmware)
-  - [Cloud Setup](#cloud-setup)
-  - [SMS Alerts](#sms-alerts)
-  - [System Test](#system-test)
-    - [Blues Wireless Community](#blues-wireless-community)
-
 ## You will need
 
 ### Parts

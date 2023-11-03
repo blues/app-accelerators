@@ -2,21 +2,6 @@
 
 Collect water quality metrics from various sensors and upload them to the cloud via a cellular connection.
 
-- [Water Quality Monitor](#water-quality-monitor)
-  - [You Will Need](#you-will-need)
-  - [Sensor Calibration](#sensor-calibration)
-  - [Hardware Setup](#hardware-setup)
-    - [Power](#power)
-    - [Analog Sensors](#analog-sensors)
-    - [Temperature Sensor](#temperature-sensor)
-    - [Notecarrier](#notecarrier)
-  - [Notehub Setup](#notehub-setup)
-  - [Firmware](#firmware)
-    - [Operation](#operation)
-    - [Building and Flashing](#building-and-flashing)
-  - [Notehub Events](#notehub-events)
-  - [Blues Community](#blues-community)
-
 ## You Will Need
 
 * [Visual Studio Code (VS Code)](https://code.visualstudio.com/) with the [PlatformIO extension](https://platformio.org/)

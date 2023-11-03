@@ -2,17 +2,6 @@
 
 Receive a notification when a fall is detected and provide a panic button to alert a response team.
 
-- [Fall Detector and Panic Button](#fall-detector-and-panic-button)
-  - [You Will Need](#you-will-need)
-  - [Notehub Setup](#notehub-setup)
-  - [Sparrow Setup](#sparrow-setup)
-    - [Quickstart](#quickstart)
-    - [Hardware](#hardware)
-    - [Firmware](#firmware)
-  - [Testing](#testing)
-  - [Blues Community](#blues-community)
-  - [Additional Resources](#additional-resources)
-
 ## You Will Need
 
 * [Sparrow Development Kit](https://shop.blues.io/products/sparrow-dev-kit)

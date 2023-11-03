@@ -2,14 +2,6 @@
 
 Detect when a sign is knocked over or a door is opened/closed.
 
-- [Sign and Door Tilt Sensor](#sign-and-door-tilt-sensor)
-  - [You Will Need](#you-will-need)
-  - [Notehub Setup](#notehub-setup)
-  - [Hardware Setup](#hardware-setup)
-  - [Notecard Firmware](#notecard-firmware)
-  - [Testing](#testing)
-    - [Notecard CLI](#notecard-cli)
-
 ## You Will Need
 
 * USB A to micro USB cable

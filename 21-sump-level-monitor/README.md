@@ -2,18 +2,6 @@
 
 Monitor water level changes in a sump using a Notecard and a float switch.
 
-- [Sump Level Monitor](#sump-level-monitor)
-  - [You Will Need](#you-will-need)
-  - [Notehub Setup](#notehub-setup)
-  - [Hardware Setup](#hardware-setup)
-  - [Notecard Firmware Setup](#notecard-firmware-setup)
-  - [Notecard Configuration](#notecard-configuration)
-    - [`hub.set`](#hubset)
-    - [`card.aux`](#cardaux)
-    - [Notecard CLI](#notecard-cli)
-  - [Testing](#testing)
-  - [Going Further](#going-further)
-
 ## You Will Need
 
 * USB A to micro USB cable

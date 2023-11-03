@@ -2,22 +2,6 @@
 
 Track the location of a Freight Car and determine the number of times the door was opened and closed. Battery powered solution with an expected lifespan of 10 years.
 
-- [Freight Car Door Motion and Location](#freight-car-door-motion-and-location)
-  - [You will need](#you-will-need)
-  - [Notehub Setup](#notehub-setup)
-  - [Hardware Setup](#hardware-setup)
-  - [Notecard Firmware](#notecard-firmware)
-  - [Notecard Configuration](#notecard-configuration)
-    - [`card.voltage`](#cardvoltage)
-    - [`card.location.mode`](#cardlocationmode)
-    - [`card.location.track`](#cardlocationtrack)
-    - [`card.aux` GPIO mode](#cardaux-gpio-mode)
-  - [Detecting when the door is opened and closed](#detecting-when-the-door-is-opened-and-closed)
-    - [Hall Effect Sensor](#hall-effect-sensor)
-    - [Magnetic Door Switch](#magnetic-door-switch)
-  - [Notecard CLI](#notecard-cli)
-
-
 ## You will need
 
 * USB A to micro USB cable

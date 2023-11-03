@@ -2,17 +2,6 @@
 
 Receive updates on restroom cleanliness so that it can be serviced when needed.
 
-- [Restroom Servicing Monitor](#restroom-servicing-monitor)
-  - [You Will Need](#you-will-need)
-  - [Notehub Setup](#notehub-setup)
-  - [Sparrow Setup](#sparrow-setup)
-    - [Quickstart](#quickstart)
-    - [Hardware](#hardware)
-    - [Firmware](#firmware)
-  - [Testing](#testing)
-  - [Blues Community](#blues-community)
-  - [Additional Resources](#additional-resources)
-
 ## You Will Need
 
 * [Sparrow Development Kit](https://shop.blues.io/products/sparrow-dev-kit)

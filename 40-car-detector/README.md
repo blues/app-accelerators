@@ -2,23 +2,6 @@
 
 Detect passing cars with a camera and publish the timestamps for these events to the cloud via a cellular connection.
 
-- [Car Detector](#car-detector)
-  - [You Will Need](#you-will-need)
-  - [Overview](#overview)
-  - [Hardware Setup](#hardware-setup)
-  - [Collecting Data](#collecting-data)
-  - [Training the Model](#training-the-model)
-  - [Deploying the Model](#deploying-the-model)
-  - [Notehub Setup](#notehub-setup)
-  - [MicroPython Code](#micropython-code)
-    - [note-python](#note-python)
-    - [`main.py`](#mainpy)
-      - [Environment Variables](#environment-variables)
-      - [Running `main.py`](#running-mainpy)
-  - [Notehub Events](#notehub-events)
-  - [Model Limitations](#model-limitations)
-  - [Blues Community](#blues-community)
-
 ## Overview
 
 This application continuously grabs images from an [OpenMV](https://openmv.io/) camera board running [MicroPython](https://micropython.org/) and runs them through an object detection model built using [Edge Impulse](https://edgeimpulse.com/) to test for the presence of a car. The coming and going of a car counts as 1 "event". The start and end times for each event are captured and periodically synced to [Notehub](https://www.notehub.io/) via a [Notecard](https://blues.io/products/notecard/).

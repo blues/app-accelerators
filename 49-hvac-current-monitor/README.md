@@ -2,21 +2,6 @@
 
 Measure the current consumption of an HVAC unit and publish the measurements to the cloud.
 
-- [HVAC Current Monitor](#hvac-current-monitor)
-  - [You Will Need](#you-will-need)
-  - [Overview](#overview)
-  - [Hardware Setup](#hardware-setup)
-    - [Current Transformer](#current-transformer)
-    - [TRRS Breakout](#trrs-breakout)
-    - [Notecarrier](#notecarrier)
-    - [Bias Circuit](#bias-circuit)
-  - [Notehub Setup](#notehub-setup)
-  - [Firmware](#firmware)
-    - [Operation](#operation)
-    - [Building and Flashing](#building-and-flashing)
-  - [Testing](#testing)
-  - [Blues Community](#blues-community)
-
 ## You Will Need
 
 * [Visual Studio Code (VS Code)](https://code.visualstudio.com/) with the [PlatformIO extension](https://platformio.org/)

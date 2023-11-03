@@ -4,32 +4,6 @@ Soda vending machines, especially older models, are typically not internet conne
 
 By using a distance sensor placed at the top of each column of soda cans, the Soda Vending Machine Monitor App provides notifications when items are vended, when a particular item is running low or empty and when the column has been restocked.
 
-- [Soda Vending Machine Monitor](#soda-vending-machine-monitor)
-  - [App Features](#app-features)
-  - [You Will Need](#you-will-need)
-    - [Hardware](#hardware)
-    - [Software](#software)
-  - [Hardware Setup](#hardware-setup)
-  - [Time-of-Flight Sensor](#time-of-flight-sensor)
-    - [The `XSHUT` Pin](#the-xshut-pin)
-  - [Firmware](#firmware)
-    - [Notecard APIs Used](#notecard-apis-used)
-    - [Building and Uploading Swan Firmware](#building-and-uploading-swan-firmware)
-  - [Environment Variables](#environment-variables)
-    - [App Control Variables](#app-control-variables)
-    - [Dispensing Column Variables](#dispensing-column-variables)
-  - [Events](#events)
-    - [Alerts](#alerts)
-      - [Tilt Alerts](#tilt-alerts)
-      - [Power Failure Alerts](#power-failure-alerts)
-      - [Battery Low Alerts](#battery-low-alerts)
-      - [Sensor Offline Alerts for Each Column](#sensor-offline-alerts-for-each-column)
-      - [Vending Notifications](#vending-notifications)
-  - [Mock-up Vending Machine](#mock-up-vending-machine)
-    - [Assembly](#assembly)
-  - [Blues Community](#blues-community)
-
-
 ## App Features
 
 * The app monitors the items in one or more dispensing columns using a distance sensor placed above the column. The app detects when an item is vended, when the column is running low or empty and when it has been restocked.

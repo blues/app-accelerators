@@ -2,29 +2,6 @@
 
 Monitor a motor's activity and vibration level with a Notecard.
 
-- [Motor Monitor and Vibration](#motor-monitor-and-vibration)
-  - [Overview](#overview)
-  - [Hardware you will need](#hardware-you-will-need)
-  - [Motor Choice and Testing](#motor-choice-and-testing)
-  - [Setup overview](#setup-overview)
-  - [Hardware Initial Setup](#hardware-initial-setup)
-  - [Cloud Setup](#cloud-setup)
-  - [Notecard Setup](#notecard-setup)
-    - [Firmware](#firmware)
-    - [Configure Notehub Project and Connection Mode](#configure-notehub-project-and-connection-mode)
-    - [Configure Activity Sensing](#configure-activity-sensing)
-      - [`card.aux - gpio mode`](#cardaux---gpio-mode)
-    - [Configure Vibration Sensing](#configure-vibration-sensing)
-      - [`card.motion.mode`](#cardmotionmode)
-      - [`card.motion.track`](#cardmotiontrack)
-      - [`card.motion.sync`](#cardmotionsync)
-    - [Notecard CLI](#notecard-cli)
-    - [Notecard Configuration Complete](#notecard-configuration-complete)
-  - [Create a Route with JSONata](#create-a-route-with-jsonata)
-  - [Configure Vibration Alerts in Notehub](#configure-vibration-alerts-in-notehub)
-  - [Blues Wireless Community](#blues-wireless-community)
-
-
 ## Overview
 
 The Motor Monitor and Vibration app monitors a motor's activity (on or off) and vibration and optionally

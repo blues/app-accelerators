@@ -2,19 +2,6 @@
 
 Detect lightning strikes up to 40 km away and send the detections to the cloud via a cellular connection.
 
-- [Lightning Detector](#lightning-detector)
-  - [You Will Need](#you-will-need)
-  - [Overview](#overview)
-  - [Hardware Setup](#hardware-setup)
-    - [AS3935](#as3935)
-    - [Notecarrier](#notecarrier)
-  - [Notehub Setup](#notehub-setup)
-    - [Environment Variables](#environment-variables)
-  - [Firmware](#firmware)
-    - [Building and Flashing](#building-and-flashing)
-  - [Testing](#testing)
-  - [Blues Community](#blues-community)
-
 ## You Will Need
 
 * [Visual Studio Code (VS Code)](https://code.visualstudio.com/) with the [PlatformIO extension](https://platformio.org/)

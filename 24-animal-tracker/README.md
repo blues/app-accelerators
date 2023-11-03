@@ -2,17 +2,6 @@
 
 Monitor an animal's location via GPS and detect when it enters or leaves a geofenced region.
 
-- [Animal Tracker](#animal-tracker)
-  - [You Will Need](#you-will-need)
-  - [Notehub Setup](#notehub-setup)
-  - [Hardware Setup](#hardware-setup)
-  - [Testing](#testing)
-    - [`hub.set`](#hubset)
-    - [`card.voltage`](#cardvoltage)
-    - [`card.location.mode`](#cardlocationmode)
-    - [`card.location.track`](#cardlocationtrack)
-    - [Notecard CLI](#notecard-cli)
-
 ## You Will Need
 
 * USB A to micro USB cable

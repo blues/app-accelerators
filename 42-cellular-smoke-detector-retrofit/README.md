@@ -2,22 +2,6 @@
 
 Retrofit a network of smoke detectors so that alarms trigger SMS alerts.
 
-- [Cellular Smoke Detector Retrofit](#cellular-moke-detector-retrofit)
-  - [Overview](#overview)
-  - [You Will Need](#you-will-need)
-  - [Hardware Setup](#hardware-setup)
-    - [Smoke Detector Wiring](#smoke-detector-wiring)
-    - [Checking the Interconnect Voltage](#checking-the-interconnect-voltage)
-    - [Circuit Design](#circuit-design)
-      - [Choosing a Resistor Value](#choosing-a-resistor-value)
-    - [Breadboarding](#breadboarding)
-  - [Notehub Setup](#notehub-setup)
-  - [Notecard Setup](#notecard-setup)
-  - [Twilio Route](#twilio-route)
-  - [Testing](#testing)
-  - [Blues Wireless Community](#blues-wireless-community)
-  - [Additional Resources](#additional-resources)
-
 ## Overview
 
 The smoke detectors installed in a home often come with [3 wires](https://home.howstuffworks.com/home-improvement/household-safety/question576.htm):

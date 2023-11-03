@@ -4,19 +4,6 @@ Temperature monitoring and smoke detection across a number of rooms at a facilit
 
 ![](images/MQ2_sensor.jpg)
 
-- [Temperature and Smoke Detector](#temperature-and-smoke-detector)
-  - [You Will Need](#you-will-need)
-  - [Notehub Setup](#notehub-setup)
-  - [Sparrow Setup](#sparrow-setup)
-    - [Quickstart](#quickstart)
-    - [MQ2 Sensor Connection](#mq2-sensor-connection)
-  - [Firmware](#firmware)
-  - [Temperature Monitoring and Smoke Alerting Behavior](#temperature-monitoring-and-smoke-alerting-behavior)
-    - [Configuration](#configuration)
-    - [Calibrating the Gas Sensor](#calibrating-the-gas-sensor)
-  - [Blues Community](#blues-community)
-  - [Additional Resources](#additional-resources)
-
 ## You Will Need
 
 * [Sparrow Development Kit](https://shop.blues.io/products/sparrow-dev-kit)

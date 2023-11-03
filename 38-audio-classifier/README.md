@@ -2,25 +2,6 @@
 
 Monitor the environment for a particular sound and publish the detections to Notehub.
 
-- [Audio Classifier](#audio-classifier)
-  - [Overview](#overview)
-  - [You Will Need](#you-will-need)
-    - [Hardware](#hardware)
-    - [Software](#software)
-  - [Hardware Setup](#hardware-setup)
-  - [Building the Audio Classifier Model](#building-the-audio-classifier-model)
-    - [Collecting Data](#collecting-data)
-      - [Prebuilt Dataset](#prebuilt-dataset)
-      - [Custom Dataset](#custom-dataset)
-    - [Training the Model](#training-the-model)
-    - [Downloading the Model](#downloading-the-model)
-  - [Notehub Setup](#notehub-setup)
-    - [Environment Variables](#environment-variables)
-    - [`detections.qo`](#detections-qo)
-  - [Classifier Firmware](#firmware-setup)
-  - [Testing](#testing)
-  - [Blues Community](#blues-community)
-
 ## Overview
 
 In this application, you'll build a binary audio classifier. "Binary" here means there are two classes of audio the model will be able to classify: the sound you're interested in and everything else. In this README, we'll use the example of a "running faucet" detector. However, you can easily apply the principals described here to any other binary audio classification task (we even built a cat meow detector!).
