@@ -2,6 +2,8 @@
 
 Monitor a CAN bus for messages with particular IDs and upload those messages to the cloud.
 
+![](images/banner.png)
+
 ## You Will Need
 
 * [Visual Studio Code (VS Code)](https://code.visualstudio.com/) with the [PlatformIO extension](https://platformio.org/)
