@@ -54,7 +54,7 @@ With the build complete, you will have two power monitors, each with an AC inlet
 
 1. Assemble the Notecard, Notecarrier and antenna as described in our [quickstart tutorial](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/).
 
-2. On the Notecarrier, ensure the `DFU` DIP switch set to `ON`, which maps `AUX RX/TX` over to `F_TX/F_RX` so that notifications can be sent to the host via a serial connection. (see [`card.aux.serial`](https://dev.blues.io/reference/notecard-api/card-requests/#card-aux-serial))
+2. On the Notecarrier, ensure the `DFU` DIP switch set to `ON`, which maps `AUX RX/TX` over to `F_TX/F_RX` so that notifications can be sent to the host via a serial connection. (see [`card.aux.serial`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-aux-serial))
 
 3. Similarly, set the Notecarrier's `SWITCHED` DIP switch to the `ON` position.
 
@@ -118,8 +118,8 @@ The workaround, which is required by this sketch, is to add a compiler flag that
 
   1. Close the Arduino IDE if it is currently open.
   2. Find the location of the `platform.txt` file for the board that you are building for. When building for Swan, which is an STM32 board supported by STM32Duino, this is located at
-      Mac: `~/Library/Arduino15/packages/STMicroelectronics/hardware/stm32/2.3.0`
-      Windows: `%HOME$/AppData/Local/Arduino15/packages/STMicroelectronics/hardware/stm32/2.3.0`
+      Mac: `~/Library/Arduino15/packages/STMicroelectronics/datasheets/stm32/2.3.0`
+      Windows: `%HOME$/AppData/Local/Arduino15/packages/STMicroelectronics/datasheets/stm32/2.3.0`
 
   3. Create a file in that directory called `platform.local.txt` containing this line:
 
@@ -147,7 +147,7 @@ There are two ways to configure the ProductUID created in the Notehub setup abov
 #### Using the In-browser terminal
 
 1. Connect the Notecarrier to your computer using a micro USB cable.
-2. Launch the in-browser terminal at [blues.dev](https://dev.blues.io/notecard-playground/)
+2. Launch the in-browser terminal at [blues.dev](https://dev.blues.io/terminal/)
 3. Click the "USB Notecard" button under "Connect a Notecard".
 4. Select the Notecard to connect to and click "Connect".
 5. The terminal will display the firmware version of Notecard.

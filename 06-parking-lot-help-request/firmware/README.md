@@ -2,7 +2,7 @@
 
 This project is host-free because the Notecard itself can be configured to send notes to Notehub when the help button is pressed.
 
-Instead of a true firmware setup guide, the [first part](#configure-the-notecard) of this document will guide you through creating a reusable Notecard configuration script which can be executed through the [Notecard CLI](https://dev.blues.io/tools-and-sdks/notecard-cli/) or through the [online webREPL](https://dev.blues.io/notecard-playground/) available on the Blues Developer Experience site.
+Instead of a true firmware setup guide, the [first part](#configure-the-notecard) of this document will guide you through creating a reusable Notecard configuration script which can be executed through the [Notecard CLI](https://dev.blues.io/tools-and-sdks/notecard-cli/) or through the [online webREPL](https://dev.blues.io/terminal/) available on the Blues Developer Experience site.
 
 The [second section](#transform-notehub-data-with-jsonata-for-twilio), covers a data transformation you need to provide in your Notehub project to trigger SMS alerts.
 
@@ -10,7 +10,7 @@ The [second section](#transform-notehub-data-with-jsonata-for-twilio), covers a 
 
 There are two main ways to program a standalone Notecard that will not be interacting with a host microcontroller: 
 1. [The Notecard CLI](https://dev.blues.io/tools-and-sdks/notecard-cli/): a downloadable CLI designed for the Notecard.
-2. The [Notecard Playground](https://dev.blues.io/notecard-playground/): an in-browser terminal that emulates much of the functionality of the Notecard CLI. 
+2. The [Notecard Playground](https://dev.blues.io/terminal/): an in-browser terminal that emulates much of the functionality of the Notecard CLI. 
 
 Both of these tools are accessible through the Blues [Developer Experience site](https://www.dev.blues.io).
 
@@ -44,7 +44,7 @@ $ notecard -setup parking-lot-help-request-config-script.json
 ![Notecard registered to Notehub project with a custom ID displayed as best ID instead of device's serial number](readme-notehub-device.png)
 _Devices tab on Notehub project showing your Notecard is registered to this project._
 
-If you'd prefer to upload this script using the in-browser Notecard Playground instead of downloading the CLI, connect your Notecarrier to your computer via the USB-A to micro USB connector, pair it via serial port in your browser by clicking the **USB Notecard** button in the [Notecard Playground](https://dev.blues.io/notecard-playground/), and copy/paste the whole config file like in the screenshot below. (Don't forget to replace the placeholder `product` and `sn` variables in the script before copy/pasting.)
+If you'd prefer to upload this script using the in-browser Notecard Playground instead of downloading the CLI, connect your Notecarrier to your computer via the USB-A to micro USB connector, pair it via serial port in your browser by clicking the **USB Notecard** button in the [Notecard Playground](https://dev.blues.io/terminal/), and copy/paste the whole config file like in the screenshot below. (Don't forget to replace the placeholder `product` and `sn` variables in the script before copy/pasting.)
 
 ![Pasting in the Notecard config script in the in-browser Notecard playground](./readme-notecard-playground-script.png)
 

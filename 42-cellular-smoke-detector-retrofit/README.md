@@ -95,7 +95,7 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 
 ## Notecard Setup
 
-1. Assemble Notecard and Notecarrier as described [here](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-a/). Keep the Notecard connected to the your development PC with [the in-browser terminal](https://dev.blues.io/notecard-playground/) active.
+1. Assemble Notecard and Notecarrier as described [here](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-a/). Keep the Notecard connected to the your development PC with [the in-browser terminal](https://dev.blues.io/terminal) active.
 2. Set the ProductUID for the Notecard by pasting the command below into the in-browser terminal. Make sure to replace `com.your-company:your-product-name` with the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) from your Notehub project.
     ```json
     { "req": "hub.set", "product": "com.your-company:your-product-name", "body": { "app": "nf42" } }

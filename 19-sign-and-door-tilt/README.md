@@ -48,7 +48,7 @@ Finally, enter this command to have the Notecard send a note to Notehub every ti
 { "req": "card.motion.sync", "start": true, "threshold": 0 }
 ```
 
-The `"start": true` parameter tells the Notecard to begin motion tracking. The `"threshold": 0` parameter makes it so the Notecard will sync motion event notes to Notehub only when its orientation changes. So, for example, if we've mounted our device to a sign and that sign gets bumped but doesn't tilt/tip over, no motion event will be synced. If the sign falls over, an event will be synced. You can read more about these parameters in [our card.motion.sync documentation](https://dev.blues.io/reference/notecard-api/card-requests/#card-motion-sync).
+The `"start": true` parameter tells the Notecard to begin motion tracking. The `"threshold": 0` parameter makes it so the Notecard will sync motion event notes to Notehub only when its orientation changes. So, for example, if we've mounted our device to a sign and that sign gets bumped but doesn't tilt/tip over, no motion event will be synced. If the sign falls over, an event will be synced. You can read more about these parameters in [our card.motion.sync documentation](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-motion-sync).
 
 With those commands entered, unplug the Notecarrier's USB connection so that the Notecard's running on LiPo power. Flip the Notecarrier over on your work surface. Go to your project on Notehub, open the Events tab, and soon enough you should see an event like this in `_motion.qo` for the flip:
 

@@ -68,7 +68,7 @@ Paste this command into the in-browser terminal:
 { "req": "card.voltage", "mode": "lipo", "usb": true, "alert": true, "sync": true }
 ```
 
-This instructs the Notecard to assume LiPo battery characteristics, monitor USB power and send an alert immediately when a power outage occurs and when power is restored. For more details, see the [Notecard API reference](https://dev.blues.io/reference/notecard-api/card-requests/#card-voltage) and the `Enable USB Power Alerting` example.
+This instructs the Notecard to assume LiPo battery characteristics, monitor USB power and send an alert immediately when a power outage occurs and when power is restored. For more details, see the [Notecard API reference](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-voltage) and the `Enable USB Power Alerting` example.
 
 ### Notecard CLI
 

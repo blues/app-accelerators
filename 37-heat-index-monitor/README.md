@@ -68,7 +68,7 @@ Now, the code should be running on the Swan. If you want to look at the serial l
 
 At this point, the Swan firmware should be running and you should start to see events show up on Notehub under your project's "Events" view. There are 2 important Notefiles.
 
-### `data.qo`
+### data.qo
 
 By default, the Swan will publish temperature (Fahrenheit), humidity (relative humidity, a percentage), and heat index (Fahrenheit) data from the BME280 to this file every 2 minutes. For example:
 
@@ -82,7 +82,7 @@ By default, the Swan will publish temperature (Fahrenheit), humidity (relative h
 
 You can change this interval by setting the [environment variable](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) `monitor_interval`. The unit for `monitor_interval` is seconds. The firmware reads from the BME280 every 30 seconds, so it's not particularly useful to set `monitor_interval` lower than 30 seconds. Note: If you modify any environment variables, wait at least a minute for the changes to propagate to the Swan.
 
-### `alarm.qo`
+### alarm.qo
 
 By default, the firmware will send an `alarm.qo` Note in the following situations:
 

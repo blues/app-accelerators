@@ -90,7 +90,7 @@ For a more in-depth example of the required files, web app structure, and how to
 
 ### Set Environment Variables
 
-Additionally, there are 4 [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) used in this project to store settings that can be shared and synchronized across devices. You can set them at the [fleet](https://dev.blues.io/reference/glossary/#fleet) level by:
+Additionally, there are 4 [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) used in this project to store settings that can be shared and synchronized across devices. You can set them at the [fleet](https://dev.blues.io/api-reference/glossary/#fleet) level by:
 
 1. Navigating to your Notehub project page.
 2. Selecting your fleet name from under **Fleets**.

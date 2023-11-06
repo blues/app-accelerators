@@ -91,7 +91,7 @@ Before building the project, you will need to install the required [libraries](#
 
 ### Arduino IDE
 
-Before compiling and uploading the sketch, be sure to install the STM32Duino board support package. The tutorial [Using the Arduino IDE](https://dev.blues.io/quickstart/swan-quickstart/#using-the-arduino-ide) in the Swan Quickstart shows how to install support for Swan in Arduino IDE and how to compile and upload firmware.
+Before compiling and uploading the sketch, be sure to install the STM32Duino board support package. The tutorial [Using the Arduino IDE](https://dev.blues.io/swan/using-arduino-ide-with-swan/) in the Swan documentation shows how to install support for Swan in Arduino IDE and how to compile and upload firmware.
 
 You will also need to install the required libraries.
 
@@ -118,7 +118,7 @@ There are two ways to configure the `ProductUID`, either using the in-browser te
 #### Using the In-browser terminal
 
 1. Connect the Notecarrier to your computer using a micro-USB cable.
-2. Launch the in-browser terminal at [blues.dev](https://dev.blues.io/notecard-playground/)
+2. Launch the in-browser terminal at [blues.dev](https://dev.blues.io/terminal)
 3. Click the "USB Notecard" button under "Connect a Notecard".
 4. Select the Notecard to connect to and click "Connect".
 5. The terminal will display the firmware version of the Notecard.

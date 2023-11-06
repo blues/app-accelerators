@@ -358,7 +358,7 @@ The project’s `src/pages/api` directory are
 [APIs](https://nextjs.org/docs/api-routes/introduction) as opposed to
 React-powered HTML pages.
 The Flow Rate Monitor web app uses these routes in several places to access the
-[Notehub API](https://dev.blues.io/reference/notehub-api/api-introduction/)
+[Notehub API](https://dev.blues.io/api-reference/notehub-api/api-introduction/)
 server without triggering a full-page reload.
 
 > **NOTE**: If you’re new to Next.js, the [Next.js official interactive

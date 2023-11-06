@@ -113,7 +113,7 @@ We’d love to hear about you and your project on the [Blues Community Forum](ht
 
 ## Additional Resources
 
-* [Sparrow Datasheet](https://dev.blues.io/hardware/sparrow-datasheet/)
+* [Sparrow Datasheet](https://dev.blues.io/datasheets/sparrow-datasheet/)
 * [Sparrow Hardware Behavior](https://dev.blues.io/sparrow/sparrow-hardware-behavior/) (e.g. what do the various Sparrow LEDs indicate?)
 * [BMA 400 Datasheet](https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bma400-ds000.pdf)
 * [BMA 400 Library](https://github.com/BoschSensortec/BMA400-API)

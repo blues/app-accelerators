@@ -66,7 +66,7 @@ This app uses the `VL53L4CD` sensor, which senses objects up to about 1200mm (47
 
 The sensors have a 5-pin male header, and Qwiic connectors for I2C. This app requires just the `XSHUT` pin from the header to be connected, as described above.
 
-### The `XSHUT` Pin
+### The XSHUT Pin
 
 The `XSHUT` pin controls whether the sensor is active, or on standby, allowing the sensor to be switched on or off from the host.  This serves two purposes:
 

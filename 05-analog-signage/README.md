@@ -33,7 +33,7 @@ already.
 The Analog Signage project uses [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/)
 for sending text to a set of connected displays. Each variable is a valid JSON object with fields that the host MCU uses to configure text on a connected display.
 
-For this project all environment variables need to be set up at the [fleet](https://dev.blues.io/reference/glossary/#fleet)
+For this project all environment variables need to be set up at the [fleet](https://dev.blues.io/api-reference/glossary/#fleet)
 level, allowing you to configure different settings on different groups of
 devices, if necessary.
 

@@ -39,7 +39,7 @@ With the Notecarrier connected to your development PC, navigate to https://dev.b
 
 Make sure to replace "com.your-company:your-product-name" with your ProductUID from [Notehub Setup](#notehub-setup). Also, replace "a-serial-number" with the serial number of other relevant identifier for this particular tracker (e.g. "freight car 2").
 
-### [`card.voltage`](https://dev.blues.io/reference/notecard-api/card-requests/#card-voltage)
+### [card.voltage](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-voltage)
 
 Next, enter this command to optimize voltage ranges for the LiPo battery
 
@@ -59,7 +59,7 @@ This will have the notecard send any outbound messages once per hour. If there a
 You can read more about this command in the [Low Power Design documentation](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/#customizing-voltage-variable-behaviors)
 
 
-### [`card.location.mode`](https://dev.blues.io/reference/notecard-api/card-requests/#card-location-mode)
+### [card.location.mode](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-location-mode)
 
 This command tracks location daily, switching to once every 2 days when the battery is low. When powered via USB, location is reported every 30 minutes, since power use is not a concern.
 
@@ -71,7 +71,7 @@ This command tracks location daily, switching to once every 2 days when the batt
 }
 ```
 
-### [`card.location.track`](https://dev.blues.io/reference/notecard-api/card-requests/#card-location-track)
+### [card.location.track](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-location-track)
 
 This command enables automatic location tracking to Notefile `_track.qo`.
 
@@ -84,7 +84,7 @@ This command enables automatic location tracking to Notefile `_track.qo`.
 
 You can optionally add the property `"sync":true` which configures the Notecard to perform an immediate sync with Notehub when location is reported. Without this, the Notecard will sync within the next hour.
 
-### [`card.aux` GPIO mode](https://dev.blues.io/notecard/notecard-walkthrough/advanced-notecard-configuration/#using-aux-gpio-mode)
+### [card.aux GPIO mode](https://dev.blues.io/notecard/notecard-walkthrough/advanced-notecard-configuration/#using-aux-gpio-mode)
 
 This command uses AUX GPIO mode to configure the notecard to count the number of times the door has been opened.
 

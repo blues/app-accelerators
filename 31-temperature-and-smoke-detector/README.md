@@ -21,7 +21,7 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 
 ### Quickstart
 
-Follow the [Sparrow Quickstart](https://dev.blues.io/quickstart/sparrow-quickstart/) pair your Sparrow reference node with the gateway and associate it with the Notehub project you just created. Note also that you only need one reference node for this project (although multiple reference nodes can be used to monitor multiple rooms). Make sure that you use the ProductUID generated in [Notehub Setup](#notehub-setup) when it comes time to issue the [`hub.set`](https://dev.blues.io/reference/notecard-api/hub-requests/#hub-set) command in the quickstart.
+Follow the [Sparrow Quickstart](https://dev.blues.io/quickstart/sparrow-quickstart/) pair your Sparrow reference node with the gateway and associate it with the Notehub project you just created. Note also that you only need one reference node for this project (although multiple reference nodes can be used to monitor multiple rooms). Make sure that you use the ProductUID generated in [Notehub Setup](#notehub-setup) when it comes time to issue the [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) command in the quickstart.
 
 After you've completed the quickstart, leave the Notecarrier and Sparrow Essentials board powered and connected. These two devices will act as our gateway to Notehub, and you won't need to touch them again. The rest of this guide will focus on the Sparrow Reference Sensor node.
 
@@ -73,7 +73,7 @@ mq2: note sent. gas: 4226, temperature: 20.2C, humidity: 35.26%
 
 ## Temperature Monitoring and Smoke Alerting Behavior
 
-The firmware periodically monitors temperature and gas concentrations, and posts events with this information. Regular monitoring events are not synced immediately to Notehub, and will be delivered as often as the Notecard is configured to sync with Notehub via the [`hub.set`](https://dev.blues.io/reference/notecard-api/hub-requests/#hub-set) request.
+The firmware periodically monitors temperature and gas concentrations, and posts events with this information. Regular monitoring events are not synced immediately to Notehub, and will be delivered as often as the Notecard is configured to sync with Notehub via the [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) request.
 
 Temperature and Gas measurements are posted to the Notefile `*#mq2.qo`, where `*` is replaced with the unique ID of the Sparrow node. An event has these properties:
 
@@ -132,6 +132,6 @@ We’d love to hear about you and your project on the [Blues Community Forum](ht
 
 ## Additional Resources
 
-* [Sparrow Datasheet](https://dev.blues.io/hardware/sparrow-datasheet/)
+* [Sparrow Datasheet](https://dev.blues.io/datasheets/sparrow-datasheet/)
 * [Sparrow Hardware Behavior](https://dev.blues.io/sparrow/sparrow-hardware-behavior/) (e.g. what do the various Sparrow LEDs indicate?)
 * [MQ2 Datasheet](https://www.mouser.com/datasheet/2/321/605-00008-MQ-2-Datasheet-370464.pdf)

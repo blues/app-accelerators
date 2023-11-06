@@ -32,30 +32,6 @@ can be dynamically modified using cloud-based environment variables._
 | ESP32 | Arduino | Wi-Fi Triangulation | GPS (GNSS) | Tracking | Low-Power
 | Environment Variables | SMS Alerts |
 
-Table of Contents
------------------
-
-- [Cold Chain Monitor](#cold-chain-monitor)
-  - [Table of Contents](#table-of-contents)
-  - [Prerequisites](#prerequisites)
-    - [Hardware](#hardware)
-    - [Software](#software)
-  - [Notehub Setup](#notehub-setup)
-    - [Twilio Route](#twilio-route)
-  - [Hardware Setup](#hardware-setup)
-  - [Notecard Firmware Setup](#notecard-firmware-setup)
-  - [Host Firmware Setup](#host-firmware-setup)
-  - [Environment Variables](#environment-variables)
-  - [Operation](#operation)
-    - [Normal Operation](#normal-operation)
-      - [Temperature Sampling](#temperature-sampling)
-      - [Location Sampling](#location-sampling)
-    - [Alarm Conditions](#alarm-conditions)
-      - [Thermal Event](#thermal-event)
-        - [Thermal Event Operation](#thermal-event-operation)
-      - [Low Battery](#low-battery)
-  - [Related Topics](#related-topics)
-
 Prerequisites
 -------------
 

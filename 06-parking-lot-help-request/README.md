@@ -100,7 +100,7 @@ Once your project's created, copy the product UID down somewhere: you'll need it
 Notehub has the option to store groups of devices by fleets, which is useful 
 for organizing similar groups of devices and storing project settings that need to be shared and synchronized across devices.
 
-For this project, you can group devices by something like "Lot Location" or "Garage Level", simply by updating a project's [fleet](https://dev.blues.io/reference/glossary/#fleet)
+For this project, you can group devices by something like "Lot Location" or "Garage Level", simply by updating a project's [fleet](https://dev.blues.io/api-reference/glossary/#fleet)
 name, and assigning devices to that fleet.
 
 Notehub creates an initial default fleet for you when you start a new project, and you
