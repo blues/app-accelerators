@@ -126,13 +126,13 @@ With this, your Notehub backend is fully configured, and you’re ready to start
 
 This is a "host-free" project because the _Notecard itself_ can be configured to send notes to Notehub when the button is pressed. It may sound simple, but this is a pretty big deal. Typically, a host microcontroller is necessary to process logic like "when a button is tapped something else (sending a note to Notehub) needs to happen." The fact that Notecard can do this without a host means big savings in terms of necessary hardware and necessary power-usage the device needs (microcontrollers tend to be resource intensive).
 
-To set up the Notecard, refer to the [`README.md`](firmware/README.md) file in this project's `firmware` folder for full instructions under the [**Configure the Notecard**](firmware/README.md#configure-the-notecard) section.
+To set up the Notecard, refer to the [`README.md`](firmware/README.md) file in this project's `firmware` folder for full instructions under the [Configure the Notecard](firmware/README.md#configure-the-notecard) section.
 
 ## Twilio Firmware
 
 Once help requests (button press events) are being successfully sent to Notehub from the Notecard, the requests will need to be routed out of Notehub to Twilio for SMS alerting.
 
-See the `firmware` folder's [`README.md`](firmware/README.md) once more for complete instructions to format the button press events and send them to Twilio. The section [**Transform Notehub data with JSONata for Twilio**](firmware/README.md#transform-notehub-data-with-jsonata-for-twilio) has all the details you should need.
+See the `firmware` folder's [`README.md`](firmware/README.md) once more for complete instructions to format the button press events and send them to Twilio. The section [Transform Notehub data with JSONata for Twilio](firmware/README.md#transform-notehub-data-with-jsonata-for-twilio) has all the details you should need.
 
 ![Example SMS alert from Twilio requesting assistance for help request device located in parking lot G](images/readme-twilio-sms.PNG)
 

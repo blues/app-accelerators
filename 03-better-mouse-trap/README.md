@@ -2,7 +2,7 @@
 
 A smarter mouse trap with SMS alerting.
 
-Find the complete story in the detailed [Hackster.io writeup].
+Find the complete story in the detailed [Hackster.io writeup](https://www.hackster.io/hendersoncarlton/i-love-checking-on-mousetraps-said-no-one-ever-52c5e7).
 
 [![Mouse wearing a helmet grabbing cheese from a trap](images/banner.png)][hackster.io writeup]
 
@@ -40,7 +40,7 @@ nylon standoffs.
 
 ### Sparrow Setup
 
-Follow the [Sparrow quickstart]. Including:
+Follow the [Sparrow quickstart](https://dev.blues.io/quickstart/sparrow-quickstart/?&utm_source=github&utm_medium=web&utm_campaign=nf&utm_content=nf3#set-up-notecard). Including:
 
 - Plugging in some QWIIC connectors, setting a few dip switches
 - Pressing a few `pair` buttons
@@ -60,15 +60,15 @@ my home router.
 
 ## Cloud Setup
 
-- Sign up for a free account on [Notehub.io], and create a new project.
+- Sign up for a free account on [Notehub.io](https://notehub.io), and create a new project.
 - Configure the Notecard on the Sparrow Gateway with your Notehub ProductUID
   `{"req":"hub.set", "product":"com.your-company.your-name:your_product", "mode":"continuous"}`
 
 ## SMS Alerts
 
-Notehub doesn’t have native SMS alerts yet, but it does allow you to route messages [to any other cloud services or HTTPS API endpoint][route] that your heart desires. I used Twilio, an inexpensive SMS service, to send message to my phone when there is motion in the trap.
+Notehub doesn’t have native SMS alerts yet, but it does allow you to route messages [to any other cloud services or HTTPS API endpoint](https://dev.blues.io/guides-and-tutorials/routing-data-to-cloud/?&utm_source=github&utm_medium=web&utm_campaign=nf&utm_content=nf3) that your heart desires. I used Twilio, an inexpensive SMS service, to send message to my phone when there is motion in the trap.
 
-To correctly format the request for the Twilio HTTP API I followed the Blues Wireless [Twilio SMS Guide] and [modified the JSONata] expression to tell me which mousetrap (Garage, Basement, etc.) saw motion based on the unique ID of the Sparrow sensor node I affixed to each trap.
+To correctly format the request for the Twilio HTTP API I followed the Blues Wireless [Twilio SMS Guide](https://dev.blues.io/guides-and-tutorials/twilio-sms-guide/?&utm_source=github&utm_medium=web&utm_campaign=nf&utm_content=nf3) and [modified the JSONata](mousetrap.jsonata) expression to tell me which mousetrap (Garage, Basement, etc.) saw motion based on the unique ID of the Sparrow sensor node I affixed to each trap.
 
 ![Data path from Wi-Fi to Notehub.io and JSONata transformation into SMS format](images/nf3_mousetrap_(18)_sghXhszUbO.jpg)
 
@@ -84,13 +84,4 @@ To trigger the PIR sensor, flip the trap upside down and back upright. You shoul
 
 ### Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum].
-
-[Blues community forum]: https://discuss.blues.io/
-[Blues sparrow development kit]: https://shop.blues.io/products/sparrow-dev-kit?&utm_source=github&utm_medium=web&utm_campaign=nf&utm_content=nf3
-[hackster.io writeup]: https://www.hackster.io/hendersoncarlton/i-love-checking-on-mousetraps-said-no-one-ever-52c5e7
-[modified the jsonata]: ./mousetrap.jsonata
-[notehub.io]: https://notehub.io
-[route]: https://dev.blues.io/guides-and-tutorials/routing-data-to-cloud/?&utm_source=github&utm_medium=web&utm_campaign=nf&utm_content=nf3
-[sparrow quickstart]: https://dev.blues.io/quickstart/sparrow-quickstart/?&utm_source=github&utm_medium=web&utm_campaign=nf&utm_content=nf3#set-up-notecard
-[twilio sms guide]: https://dev.blues.io/guides-and-tutorials/twilio-sms-guide/?&utm_source=github&utm_medium=web&utm_campaign=nf&utm_content=nf3
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/).

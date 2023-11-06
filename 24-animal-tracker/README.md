@@ -23,7 +23,9 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 
 With the Notecarrier connected to your development PC, navigate to https://dev.blues.io open the in-browser terminal, and connect to the Notecard. Then enter the JSON commands below into the terminal.
 
-### [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set)
+### hub.set
+
+[API Reference](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set)
 
 ```json
 { "req": "hub.set", "product" : "com.your-company:your-product-name", "sn": "a-serial-number", "mode": "periodic", "outbound": 30, "body":{"app":"nf24"} }
@@ -31,7 +33,9 @@ With the Notecarrier connected to your development PC, navigate to https://dev.b
 
 This command sets the Notecard's ProductUID and serial number. Make sure to replace "com.your-company:your-product-name" with your ProductUID from [Notehub Setup](#notehub-setup). Also, replace "a-serial-number" with a relevant identifier for the object that the Notecard will be attached to (e.g. "cow 257", if this were a real world scenario). Setting the `mode` to `periodic` and `outbound` to 30 makes it so the Notecard will periodically sync notes to Notehub every 30 minutes.
 
-### [`card.voltage`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-voltage)
+### card.voltage
+
+[API Reference](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-voltage)
 
 ```json
 { "req": "card.voltage", "mode": "lipo" }
@@ -39,7 +43,9 @@ This command sets the Notecard's ProductUID and serial number. Make sure to repl
 
 This command instructs the Notecard to assume LiPo battery characteristics to better conserve power.
 
-### [`card.location.mode`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-location-mode)
+### card.location.mode
+
+[API Reference](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-location-mode)
 
 ```json
 { "req": "card.location.mode", "mode": "periodic", "seconds": 180, "lat": 34.0782, "lon": -118.2606, "max": 500 }
@@ -47,7 +53,9 @@ This command instructs the Notecard to assume LiPo battery characteristics to be
 
 This command tells the Notecard to sample its GPS location every 180 seconds, so long as motion has been detected (i.e. it won't be sampled if the Notecard hasn't moved). It also sets up a circular [geofence](https://en.wikipedia.org/wiki/Geo-fence) centered at latitude (`lat`) 34.0782 and longitude (`lon`) -118.2606 (Los Angeles, CA -- adjust this according to your location!). The `max` parameter controls the radius of the geofence. In this case, it's 500 meters. Whenever the Notecard's location transitions from inside this region to outside it, or vice-versa, the Notecard will immediately sync a note to Notehub. Note that this sync is _immediate_, meaning the outbound wait time set with `hub.set` is ignored.
 
-### [`card.location.track`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-location-track)
+### card.location.track
+
+[API Reference](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-location-track)
 
 ```json
 { "req": "card.location.track", "start": true, "file": "locations.qo" }

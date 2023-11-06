@@ -307,7 +307,7 @@ When the device detects an alert condition, such as over or under voltage, curre
 
 #### Power Control Alerts
 
-These alerts are produced for a given instance when the corresponding [`alert_power_activity_X`](#configuring-power-activity-alerts) variable is set.
+These alerts are produced for a given instance when the corresponding `alert_power_activity_X` variable is set.
 
 * `novoltage`,`nocurrent`: no voltage or current is detected when the control pin is high, indicating a supply or load should be present, but isn't.
 
