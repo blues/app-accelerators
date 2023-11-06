@@ -126,7 +126,7 @@ To get the note-python files onto the MCU, use the `setup_board.py` script. Firs
 3. Copies the `.py` files from `note-python/notecard` on your development machine to `/lib/notecard` on the MCU.
 4. Lists the contents of `/lib/notecard` so you can verify that everything was copied over.
 
-### `main.py`
+### main.py
 
 `main.py` loops infinitely, grabbing an image from the camera and running it through your model. The output of the model is a probability value in the range [0, 1], with 0 corresponding to a 0% probability of a car being in the image and 1 corresponding to a 100% probability. If this probability exceeds a configurable threshold (discussed further below), a car "event" begins. The event ends once the probability has dropped below the threshold for 12 consecutive images.*
 

@@ -114,7 +114,7 @@ There are a few [environment variables](https://dev.blues.io/guides-and-tutorial
 
 ![Environment variables](images/env_vars.png)
 
-### `detections.qo`
+### detections.qo
 
 Detection notes are published to the `detections.qo` Notefile:
 

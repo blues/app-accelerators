@@ -309,7 +309,7 @@ From here, you can view logs from the firmware over serial with a terminal emula
 
 ## Testing
 
-The tests described in this section rely on the [`server.py`](./server.py) script. This script uses [`pymodbus`](https://github.com/pymodbus-dev/pymodbus) to run a Modbus server on your development PC. It's based on pymodbus's [datastore_simulator.py example](https://github.com/pymodbus-dev/pymodbus/blob/dev/examples/datastore_simulator.py). You can check out `server.py`'s `config` dictionary to see how the coils and registers are addressed. Refer to [pymodbus's documentation](https://github.com/pymodbus-dev/pymodbus/blob/dev/doc/source/library/simulator/config.rst) for details on how the memory layout of the server is configured.
+The tests described in this section rely on the [`server.py`](https://github.com/blues/app-accelerators/blob/main/34-cellular-modbus-client/server.py) script. This script uses [`pymodbus`](https://github.com/pymodbus-dev/pymodbus) to run a Modbus server on your development PC. It's based on pymodbus's [datastore_simulator.py example](https://github.com/pymodbus-dev/pymodbus/blob/dev/examples/datastore_simulator.py). You can check out `server.py`'s `config` dictionary to see how the coils and registers are addressed. Refer to [pymodbus's documentation](https://github.com/pymodbus-dev/pymodbus/blob/dev/doc/source/library/simulator/config.rst) for details on how the memory layout of the server is configured.
 
 Before proceeding with the sections below, install the Python dependencies with `pip install -r requirements.txt`. You may want to do this inside a [virtualenv](https://virtualenv.pypa.io/en/latest/) to avoid polluting the system-level Python packages with these dependencies.
 
