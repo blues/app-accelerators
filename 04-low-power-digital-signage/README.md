@@ -95,7 +95,7 @@ to get your firmware up and running.
 
 Once the app is running, you can update the display using the environment variables above, either using the Notehub UI or one of the shell scripts in the [`scripts`](scripts/) folder.
 
-The scripts use the Notehub API, so you'll need follow the [instructions here](https://dev.blues.io/api-reference/notehub-api/api-introduction/#authentication) to get an authentication token.
+The scripts use the Notehub API, so you'll need follow the [instructions here](https://dev.blues.io/api-reference/notehub-api/api-introduction/) to get an authentication token.
 
 You'll also need your Notehub project's UID, which you can find in the `Settings` screen. For setting fleet variables, you'll need the Fleet UID, which you can find on the `Settings` tab for your fleet. For device variables, you need the Device UID, which you can find on the device screen.
 

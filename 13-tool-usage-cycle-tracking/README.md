@@ -1,6 +1,7 @@
 # Tool Cycle-Usage Tracking
 
 Monitor digital inputs, monitor power inputs, monitor vibration, optionally alert when vibration is out of range when the tool is active.
+
 ## Solution Overview
 
 This solution uses a [Dr. Wattson energy monitoring board] to monitor a tool's power supply and power usage. The tool, or a component connected to the tool, provides a 3.3-5v digital signal indicating when the tool is active. You can configure the solution with upper and lower thresholds for voltage, current and power, and receive alerts when the monitor detects values out of range. The solution also senses vibration using the Notecard's built-in accelerometer, and this too can be used to generate alerts for over vibration.
@@ -8,6 +9,7 @@ This solution uses a [Dr. Wattson energy monitoring board] to monitor a tool's p
 The solution comprises hardware, firmware, Notehub environment variables and jsonata scripts.
 
 ## You Will Need
+
   * [Blues Starter Kit](https://shop.blues.io/collections/blues-starter-kits), that contains amongst other items
     * [Notecarrier F](https://shop.blues.io/products/notecarrier-f)
     * [Swan](https://shop.blues.io/collections/swan)
@@ -100,7 +102,7 @@ Before building the project, you will need to install the required [libraries](#
 
 ### Arduino IDE
 
-Before compiling and uploading the sketch, be sure to install the STM32Duino board support package. The tutorial [Using the Arduino IDE](https://dev.blues.io/quickstart/swan-quickstart/#using-the-arduino-ide) in the Swan Quickstart shows how to install support for Swan in Arduino IDE and how to compile and upload firmware.
+Before compiling and uploading the sketch, be sure to install the STM32Duino board support package. The tutorial [Using the Arduino IDE](https://dev.blues.io/swan/using-arduino-ide-with-swan/) in the Swan documentation shows how to install support for Swan in Arduino IDE and how to compile and upload firmware.
 
 You will also need to install the required libraries, and increase the serial receive buffer size, detailed below.
 
@@ -380,7 +382,7 @@ When the device detects an alert condition, such as over or under voltage, curre
 
 #### Power Control Alerts
 
-These alerts are produced for a given instance when the corresponding [`alert_power_activity_X`](#configuring-power-activity-alerts) variable is set.
+These alerts are produced for a given instance when the corresponding `alert_power_activity_X` variable is set.
 
 * `novoltage`,`nocurrent`: no voltage or current is detected when the control pin is high, indicating a supply or load should be present, but isn't.
 

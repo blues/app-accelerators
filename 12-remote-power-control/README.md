@@ -9,6 +9,7 @@ This solution uses two Dr. Wattson monitoring boards to monitor AC line power an
 The solution comprises hardware, firmware, Notehub environment variables and jsonata scripts to provide power quality monitoring, power control and power quality alerts.
 
 ## You Will Need
+
   * [Blues Starter Kit](https://shop.blues.io/collections/blues-starter-kits), that contains amongst other items
     * [Notecarrier F](https://shop.blues.io/products/notecarrier-f)
     * [Swan](https://shop.blues.io/collections/swan)
@@ -106,7 +107,7 @@ Before building the project, you will need to install the required [libraries](#
 
 ### Arduino IDE
 
-Before compiling and uploading the sketch, be sure to install the STM32Duino board support package. The tutorial [Using the Arduino IDE](https://dev.blues.io/quickstart/swan-quickstart/#using-the-arduino-ide) in the Swan Quickstart shows how to install support for Swan in Arduino IDE and how to compile and upload firmware.
+Before compiling and uploading the sketch, be sure to install the STM32Duino board support package. The tutorial [Using the Arduino IDE](https://dev.blues.io/swan/using-arduino-ide-with-swan/) in the Swan documentation shows how to install support for Swan in Arduino IDE and how to compile and upload firmware.
 
 You will also need to install the required libraries, and increase the serial receive buffer size, detailed below.
 
