@@ -58,7 +58,7 @@ Now, everything is wired up. It should look something like this:
 
 Since this is a fall detector, we're going to need to drop this assembly from a decent height to simulate a person falling. To keep things secure, we can just tape everything to the breadboard.
 
-![breadboard taped](assets/breadboard_full_taped.jpg "Breadboard Taped")
+![breadboard taped](assets/breadboard_taped.jpg "Breadboard Taped")
 
 ### Firmware
 

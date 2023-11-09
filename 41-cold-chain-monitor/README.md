@@ -28,10 +28,6 @@ The starting point for all medicines is, "Controlled Room Temperature (CRT)"
 _**NOTE:** By default, our device will monitor for CRT, but those thresholds
 can be dynamically modified using cloud-based environment variables._
 
-**Feature Tags:**
-| ESP32 | Arduino | Wi-Fi Triangulation | GPS (GNSS) | Tracking | Low-Power
-| Environment Variables | SMS Alerts |
-
 Prerequisites
 -------------
 
