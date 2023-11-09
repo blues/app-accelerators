@@ -2,29 +2,6 @@
 
 Monitor a motor's activity and vibration level with a Notecard.
 
-- [Motor Monitor and Vibration](#motor-monitor-and-vibration)
-  - [Overview](#overview)
-  - [Hardware you will need](#hardware-you-will-need)
-  - [Motor Choice and Testing](#motor-choice-and-testing)
-  - [Setup overview](#setup-overview)
-  - [Hardware Initial Setup](#hardware-initial-setup)
-  - [Cloud Setup](#cloud-setup)
-  - [Notecard Setup](#notecard-setup)
-    - [Firmware](#firmware)
-    - [Configure Notehub Project and Connection Mode](#configure-notehub-project-and-connection-mode)
-    - [Configure Activity Sensing](#configure-activity-sensing)
-      - [`card.aux - gpio mode`](#cardaux---gpio-mode)
-    - [Configure Vibration Sensing](#configure-vibration-sensing)
-      - [`card.motion.mode`](#cardmotionmode)
-      - [`card.motion.track`](#cardmotiontrack)
-      - [`card.motion.sync`](#cardmotionsync)
-    - [Notecard CLI](#notecard-cli)
-    - [Notecard Configuration Complete](#notecard-configuration-complete)
-  - [Create a Route with JSONata](#create-a-route-with-jsonata)
-  - [Configure Vibration Alerts in Notehub](#configure-vibration-alerts-in-notehub)
-  - [Blues Wireless Community](#blues-wireless-community)
-
-
 ## Overview
 
 The Motor Monitor and Vibration app monitors a motor's activity (on or off) and vibration and optionally
@@ -115,9 +92,9 @@ Next we enable GPIO monitoring or control via environment variables, and sync ch
 
 Vibration sensing is configured using a number of distinct requests. Each request given below should be pasted into the in-browser terminal separately.
 
-#### `card.motion.mode`
+#### card.motion.mode
 
-The [`card.motion.mode`](https://dev.blues.io/reference/notecard-api/card-requests/#card-motion-mode) request enables motion sensing using the Notecard's built-in accelerometer. Motion is used to determine how much the motor is vibrating. The configuration below uses maximum sensitivity (`5`) and a 5 second period for each bucket of movement count.
+The [`card.motion.mode`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-motion-mode) request enables motion sensing using the Notecard's built-in accelerometer. Motion is used to determine how much the motor is vibrating. The configuration below uses maximum sensitivity (`5`) and a 5 second period for each bucket of movement count.
 
 ```json
 {
@@ -128,9 +105,9 @@ The [`card.motion.mode`](https://dev.blues.io/reference/notecard-api/card-reques
 }
 ```
 
-#### `card.motion.track`
+#### card.motion.track
 
-The [`card.motion.track`](https://dev.blues.io/reference/notecard-api/card-requests/#card-motion-track) request
+The [`card.motion.track`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-motion-track) request
 configures the Notecard to write motion notes to notefile `_motion.qo` every 5 minutes. Each motion bucket (configured in `card.motion.mode` above) is 5 seconds of motion, so we use 60 of them to fill the 5 minute interval.
 
 ```json
@@ -142,9 +119,9 @@ configures the Notecard to write motion notes to notefile `_motion.qo` every 5 m
 }
 ```
 
-#### `card.motion.sync`
+#### card.motion.sync
 
-The [`card.motion.sync`](https://dev.blues.io/reference/notecard-api/card-requests/#card-motion-sync
+The [`card.motion.sync`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-motion-sync
 ) request configures how often the Notecard syncs tracking data to notehub. Here we use 5 minutes. Adjust this
 according to how much data you wish to use and the responsiveness of alerts required.
 
@@ -158,7 +135,7 @@ according to how much data you wish to use and the responsiveness of alerts requ
 
 ### Notecard CLI
 
-If you want to issue all of the above requests in one shot, you can do so with the [Notecard CLI](https://dev.blues.io/tools-and-sdks/notecard-cli/) and the [`config.json`](./config.json) configuration script. You will need to change the `ProductUID` and `sn` property values in the `hub.set` command to match the ProductUID in your Notehub project. Once you've done that, you can configure the Notecard with:
+If you want to issue all of the above requests in one shot, you can do so with the [Notecard CLI](https://dev.blues.io/tools-and-sdks/notecard-cli/) and the [`config.json`](https://github.com/blues/app-accelerators/blob/main/20-motor-monitor-and-vibration/config.json) configuration script. You will need to change the `ProductUID` and `sn` property values in the `hub.set` command to match the ProductUID in your Notehub project. Once you've done that, you can configure the Notecard with:
 
 ```sh
 notecard -setup config.json
@@ -200,6 +177,6 @@ Environment variables are set using Notehub, either per device or per fleet, des
 Initially, start with these all configured to the value 1, which will generate alerts for any vibration. You then inspect the resulting events with the motor off and on to see typical ranges of vibration. With this information, you can then set the threshold variables accordingly.
 
 
-## Blues Wireless Community
+## Blues Community
 
-We’d love to hear about you and your project on the [Blues Wireless Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!

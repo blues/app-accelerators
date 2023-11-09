@@ -2,18 +2,6 @@
 
 Detect when a vehicle or other object collides with another object on a roadway.
 
-- [Roadway Impact Detection](#roadway-impact-detection)
-  - [You Will Need](#you-will-need)
-  - [Notehub Setup](#notehub-setup)
-  - [Hardware Setup](#hardware-setup)
-  - [Notecard Firmware](#notecard-firmware)
-  - [Testing](#testing)
-    - [`hub.set`](#hubset)
-    - [`card.voltage`](#cardvoltage)
-    - [`card.motion.mode`](#cardmotionmode)
-    - [`card.motion.sync`](#cardmotionsync)
-    - [Notecard CLI](#notecard-cli)
-
 ## You Will Need
 
 * USB A to micro USB cable
@@ -39,7 +27,9 @@ The Notecard should use [firmware version 3.5.2](https://dev.blues.io/notecard/n
 
 With the Notecarrier connected to your development PC, navigate to https://dev.blues.io open the in-browser terminal, and connect to the Notecard. Then enter the JSON commands below into the terminal.
 
-### [`hub.set`](https://dev.blues.io/reference/notecard-api/hub-requests/#hub-set)
+### hub.set
+
+[API reference](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set)
 
 ```json
 { "req": "hub.set", "product" : "com.your-company:your-product-name", "sn": "a-serial-number", "body":{"app":"nf22"} }
@@ -47,7 +37,9 @@ With the Notecarrier connected to your development PC, navigate to https://dev.b
 
 This command sets the Notecard's ProductUID and serial number. Make sure to replace "com.your-company:your-product-name" with your ProductUID from [Notehub Setup](#notehub-setup). Also, replace "a-serial-number" with a relevant identifier for the object that the Notecard will be attached to (e.g. "mile marker 100", if this were a real world scenario).
 
-### [`card.voltage`](https://dev.blues.io/reference/notecard-api/card-requests/#card-voltage)
+### card.voltage
+
+[API reference](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-voltage)
 
 ```json
 { "req": "card.voltage", "mode": "lipo" }
@@ -56,7 +48,9 @@ This command sets the Notecard's ProductUID and serial number. Make sure to repl
 This command optimizes battery usage, assuming the power source is a LiPo battery. You can learn more about this command in the [Low Power Design documentation](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/#customizing-voltage-variable-behaviors
 ).
 
-### [`card.motion.mode`](https://dev.blues.io/reference/notecard-api/card-requests/#card-motion-mode)
+### card.motion.mode
+
+[API reference](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-motion-mode)
 
 ```json
 { "req": "card.motion.mode", "sensitivity": 1 }
@@ -64,7 +58,9 @@ This command optimizes battery usage, assuming the power source is a LiPo batter
 
 This command configures the Notecard's accelerometer's sensitivity (an integer, ranging from -1 to 5). The lower the sensitivity value, the less sensitive the accelerometer will be. We only want to detect drastic movements due to a collision, so we are setting the value low. Setting sensitivity to -1 is probably a better choice for the real-world application, but a sensitivity of 1 is better for local testing.
 
-### [`card.motion.sync`](https://dev.blues.io/reference/notecard-api/card-requests/#card-motion-sync)
+### card.motion.sync
+
+[API reference](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-motion-sync)
 
 ```json
 { "req": "card.motion.sync", "start": true }

@@ -2,20 +2,6 @@
 
 Monitor temperature and humidity and send alerts using a Notecard and a BME280 sensor.
 
-- [Temperature and Humidity Monitor](#temperature-and-humidity-monitor)
-  - [You Will Need](#you-will-need)
-    - [Hardware](#hardware)
-    - [Software](#software)
-  - [Notehub Setup](#notehub-setup)
-  - [Hardware Setup](#hardware-setup)
-  - [Notecard Firmware Setup](#notecard-firmware-setup)
-  - [Swan Firmware Setup](#swan-firmware-setup)
-  - [Operation](#operation)
-    - [data.qo](#dataqo)
-    - [alarm.qo](#alarmqo)
-    - [_health.qo](#_healthqo)
-    - [Simulating a Power Outage](#simulating-a-power-outage)
-
 ## You Will Need
 
 ### Hardware
@@ -78,7 +64,7 @@ At this point, the Swan firmware should be running and you should start to see
 events show up on Notehub under your project's "Events" view. There are 3
 important Notefiles.
 
-### `data.qo`
+### data.qo
 
 By default, the Swan will publish temperature and humidity data from the BME280
 to this file every 3 minutes.
@@ -98,7 +84,7 @@ from the BME280 every minute, so it's not particularly useful to set
 `report_interval` lower than 60 seconds. Note: If you modify any environment
 variables, wait at least 30 seconds for the changes to propagate to the Swan.
 
-### `alarm.qo`
+### alarm.qo
 
 By default, the firmware will send an alarm if the temperature falls outside the
 range `[5, 33]`C or the humidity falls outside the range `[20, 70]`% (relative
@@ -134,7 +120,7 @@ You can use these environment variables to change the range:
 * `humidity_threshold_min`: Lower bound of humidity range.
 * `humidity_threshold_max`: Upper bound of humidity range.
 
-### `_health.qo`
+### _health.qo
 
 Notes in this file indicate when USB power is lost or restored. When USB power
 is lost, you should see a note like this:

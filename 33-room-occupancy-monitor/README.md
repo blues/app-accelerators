@@ -2,17 +2,6 @@
 
 Receive notifications when motion is detected in a room and when the room's door is opened or closed.
 
-- [Room Occupancy Monitor](#room-occupancy-monitor)
-  - [You Will Need](#you-will-need)
-  - [Notehub Setup](#notehub-setup)
-  - [Sparrow Setup](#sparrow-setup)
-    - [Quickstart](#quickstart)
-    - [Hardware](#hardware)
-    - [Firmware](#firmware)
-  - [Testing](#testing)
-  - [Blues Community](#blues-community)
-  - [Additional Resources](#additional-resources)
-
 ## You Will Need
 
 * [Sparrow Development Kit](https://shop.blues.io/products/sparrow-dev-kit)
@@ -70,7 +59,7 @@ pir: 1 motion events sensed
 
 At startup, the PIR sensor may detect motion even if there is none. This is a one-off false positive that can be ignored, and the sensor should work as intended thereafter. If you encounter additional false positives, you may want to try increasing the sensor's threshold value, which makes the sensor less sensitive. This can be done by defining the macro `PIR_THRESHOLD_DEFAULT` at build-time (e.g. via `-DCMAKE_C_FLAGS="-DPIR_THRESHOLD_DEFAULT=50"`). If this macro isn't defined by the user, it'll default to 100 in pir.c:
 
-```C
+```c
 #ifndef PIR_THRESHOLD_DEFAULT
 #define PIR_THRESHOLD_DEFAULT 100
 #endif
@@ -100,7 +89,7 @@ Now, to test the PIR motion sensor, simply wave your hand in front of the plasti
 
 In order to keep traffic to Notehub reasonable, a motion note will only be sent a maximum of once every 5 minutes. So, many motion events may be coalesced into a single note. In that case, you would see a `count` value greater than 1. If you want to lengthen or shorten this interval, you can modify the value of `PIR_SUPPRESSION_MINS` in pir.c:
 
-```C
+```c
 #define PIR_SUPPRESSION_MINS        5
 ```
 
@@ -110,6 +99,6 @@ We’d love to hear about you and your project on the [Blues Community Forum](ht
 
 ## Additional Resources
 
-* [Sparrow Datasheet](https://dev.blues.io/hardware/sparrow-datasheet/)
+* [Sparrow Datasheet](https://dev.blues.io/datasheets/sparrow-datasheet/)
 * [Sparrow Hardware Behavior](https://dev.blues.io/sparrow/sparrow-hardware-behavior/) (e.g. what do the various Sparrow LEDs indicate?)
 * [PIR motion sensor datasheet (PYQ 1548 / 7659)](https://media.digikey.com/pdf/Data%20Sheets/Excelitas%20PDFs/PYQ_1548_7659_07.11.2018_DS.pdf)

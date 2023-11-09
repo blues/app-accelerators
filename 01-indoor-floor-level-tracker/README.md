@@ -2,7 +2,7 @@
 
 A highly accurate floor-level tracker for response teams at emergency events.
 
-![](../app-banners/01-banner.png)
+![](images/banner.png)
 
 To run this project yourself you’ll need to:
 
@@ -32,7 +32,7 @@ The Indoor Floor-Level Tracker uses [environment variables](https://dev.blues.io
 for storing project settings that need to be shared and synchronized across
 devices.
 
-For this project all environment variables need to be set up at the [fleet](https://dev.blues.io/reference/glossary/#fleet)
+For this project all environment variables need to be set up at the [fleet](https://dev.blues.io/api-reference/glossary/#fleet)
 level, allowing you to configure different settings on different groups of
 devices, if necessary.
 

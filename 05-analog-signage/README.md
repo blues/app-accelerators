@@ -5,7 +5,7 @@ Use the Notecard and a Wi-Fi-capable MCU to update character values on an analog
 This project is built around a hypothetical entity, "Blues Railway," which manages a number of train stations throughout the United States. Each station contains a set of analog split-flap displays that provide visitors with real-time departure
 information like city, track, time, and whether there is a delay. Departure information is set across the station using Fleet-level Notehub environment variables. Variable changes are sent to the Notecard and delivered to a Host MCU. The host MCU then uses its on-board Wi-Fi connection to communicate with the signs in the facility and update the displayed information.
 
-![](../app-banners/05-banner.gif)
+![](images/banner.gif)
 
 To run this project yourself you'll need to:
 
@@ -33,7 +33,7 @@ already.
 The Analog Signage project uses [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/)
 for sending text to a set of connected displays. Each variable is a valid JSON object with fields that the host MCU uses to configure text on a connected display.
 
-For this project all environment variables need to be set up at the [fleet](https://dev.blues.io/reference/glossary/#fleet)
+For this project all environment variables need to be set up at the [fleet](https://dev.blues.io/api-reference/glossary/#fleet)
 level, allowing you to configure different settings on different groups of
 devices, if necessary.
 

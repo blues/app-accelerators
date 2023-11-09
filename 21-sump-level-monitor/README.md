@@ -2,18 +2,6 @@
 
 Monitor water level changes in a sump using a Notecard and a float switch.
 
-- [Sump Level Monitor](#sump-level-monitor)
-  - [You Will Need](#you-will-need)
-  - [Notehub Setup](#notehub-setup)
-  - [Hardware Setup](#hardware-setup)
-  - [Notecard Firmware Setup](#notecard-firmware-setup)
-  - [Notecard Configuration](#notecard-configuration)
-    - [`hub.set`](#hubset)
-    - [`card.aux`](#cardaux)
-    - [Notecard CLI](#notecard-cli)
-  - [Testing](#testing)
-  - [Going Further](#going-further)
-
 ## You Will Need
 
 * USB A to micro USB cable
@@ -43,7 +31,9 @@ The Notecard should use [firmware version 3.3.1](https://dev.blues.io/notecard/n
 
 With the hardware assembled and firmware updated, it's time to configure the Notecard. First, connect the Notecarrier to your development machine with the USB A to micro USB cable. Using the in-browser terminal on [dev.blues.io](https://dev.blues.io/), connect to the Notecard and enter this command:
 
-### [`hub.set`](https://dev.blues.io/reference/notecard-api/hub-requests/#hub-set)
+### hub.set
+
+[API Reference](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set)
 
 ```json
 { "req": "hub.set", "product": "com.your-company:your-product-name", "body":{"app":"nf21"} }
@@ -51,7 +41,9 @@ With the hardware assembled and firmware updated, it's time to configure the Not
 
 Make sure to replace `com.your-company:your-product-name` with your ProductUID from [Notehub Setup](#notehub-setup).
 
-### [`card.aux`](https://dev.blues.io/reference/notecard-api/card-requests/#card-aux)
+### card.aux
+
+[API Reference](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-aux)
 
 ```json
 { "req": "card.aux", "mode": "gpio", "usage": ["input-pullup", "", "", ""], "sync": true, "file": "switch.qo" }

@@ -2,23 +2,6 @@
 
 Detect passing cars with a camera and publish the timestamps for these events to the cloud via a cellular connection.
 
-- [Car Detector](#car-detector)
-  - [You Will Need](#you-will-need)
-  - [Overview](#overview)
-  - [Hardware Setup](#hardware-setup)
-  - [Collecting Data](#collecting-data)
-  - [Training the Model](#training-the-model)
-  - [Deploying the Model](#deploying-the-model)
-  - [Notehub Setup](#notehub-setup)
-  - [MicroPython Code](#micropython-code)
-    - [note-python](#note-python)
-    - [`main.py`](#mainpy)
-      - [Environment Variables](#environment-variables)
-      - [Running `main.py`](#running-mainpy)
-  - [Notehub Events](#notehub-events)
-  - [Model Limitations](#model-limitations)
-  - [Blues Community](#blues-community)
-
 ## Overview
 
 This application continuously grabs images from an [OpenMV](https://openmv.io/) camera board running [MicroPython](https://micropython.org/) and runs them through an object detection model built using [Edge Impulse](https://edgeimpulse.com/) to test for the presence of a car. The coming and going of a car counts as 1 "event". The start and end times for each event are captured and periodically synced to [Notehub](https://www.notehub.io/) via a [Notecard](https://blues.io/products/notecard/).
@@ -42,29 +25,21 @@ First, assemble the Notecard and Notecarrier as described in the [Notecard Quick
 
 Next, use your soldering iron and flux to solder the female headers that came with the camera onto the camera board. The headers should face the same way as the camera lens:
 
-<p align="center">
-<img src="assets/camera_headers.jpg"/>
-</p>
+![](assets/camera_headers.jpg)
 
 If you chose to use the super telephoto lens, unscrew the stock lens from the camera board and screw in the super telephoto lens.
 
 Next, you need to figure out how you're going to mount the camera. The best mounting strategy will vary from situation to situation. In our case, we had no indoor vantage point that would work, so we had to move outside. We mounted the camera to a thin wood shim using screws and the screw holes on the camera board:
 
-<p align="center">
-<img src="assets/camera_and_shim.jpg"/>
-</p>
+![](assets/camera_and_shim.jpg)
 
 Once outside, we used a [helping hand](https://en.wikipedia.org/wiki/Helping_hand_(tool)) to hold the shim:
 
-<p align="center">
-<img src="assets/camera_and_helping_hand.jpg"/>
-</p>
+![](assets/camera_and_helping_hand.jpg)
 
 With everything mounted, we then adjusted the helping hand so that the camera was pointed toward the intersection we planned to monitor:
 
-<p align="center">
-<img src="assets/camera_pointed.jpg"/>
-</p>
+![](assets/camera_pointed.jpg)
 
 After mounting, connect the camera board to the Notecarrier via I2C by making these 2 connections with male-to-male jumper wires:
 
@@ -75,9 +50,7 @@ After mounting, connect the camera board to the Notecarrier via I2C by making th
 
 Finally, use the 2 micro USB cables to connect both the camera and the Notecarrier to your development PC:
 
-<p align="center">
-<img src="assets/full_hardware_assembly.jpg"/>
-</p>
+![](assets/full_hardware_assembly.jpg)
 
 ## Collecting Data
 
@@ -105,17 +78,14 @@ You'll use the [OpenMV IDE](https://openmv.io/pages/download) to collect data to
     The resolution, 120x120, is deliberately low in order to keep the model small enough to run on the board's microcontroller (MCU), but feel free to tune it to your liking.
 4. Click the Start button in the bottom left corner, below the Connect button. At this point, you should see a live stream of images coming in the Frame Buffer window.
 5. Using the Frame Buffer, position your camera so that it's looking at the roadway where you want to detect cars:
-    <p align="center">
-    <img src="assets/frame_buffer.png"/>
-    </p>
+    ![](assets/frame_buffer.png)
     In this image, we've used the Zoom button above the Frame Buffer pane to blow up the image, and we've resized the various panes to maximize the Frame Buffer. This view is more pleasant to look at while collecting data than the actual 120x120 image.
 6. Click the New Class Folder button on the left-hand toolbar and enter "car" for the class name.
 7. In the Dataset Editor pane, click car.class. This will enable the Capture Data button in the left-hand toolbar.
 8. When a car enters the shot, click the Capture Data button or use the hotkey Ctrl+Shift+s. This will capture whatever's in the Frame Buffer and save it as a .jpg file in the car.class folder:
-    <p align="center">
-    <img src="assets/example_sample.jpg"/>
-    </p>
-    We recommend collecting data like this until you've got around 100 images. Using less data than that is likely to result in poor model performance.
+    ![](assets/example_sample.jpg)
+
+We recommend collecting data like this until you've got around 100 images. Using less data than that is likely to result in poor model performance.
 
 ## Training the Model
 
@@ -156,7 +126,7 @@ To get the note-python files onto the MCU, use the `setup_board.py` script. Firs
 3. Copies the `.py` files from `note-python/notecard` on your development machine to `/lib/notecard` on the MCU.
 4. Lists the contents of `/lib/notecard` so you can verify that everything was copied over.
 
-### `main.py`
+### main.py
 
 `main.py` loops infinitely, grabbing an image from the camera and running it through your model. The output of the model is a probability value in the range [0, 1], with 0 corresponding to a 0% probability of a car being in the image and 1 corresponding to a 100% probability. If this probability exceeds a configurable threshold (discussed further below), a car "event" begins. The event ends once the probability has dropped below the threshold for 12 consecutive images.*
 
@@ -187,7 +157,7 @@ There are 2 [environment variables](https://dev.blues.io/guides-and-tutorials/no
 
 To change these values, go to your Notehub project and click Environment in the left-hand menu. Under Project environment variables, enter your desired values and click Save:
 
-![Setting environment variables](./assets/env_vars.png)
+![Setting environment variables](assets/env_vars.png)
 
 The next time data is synced to the Notecard, the environment variables will update on the MCU.
 

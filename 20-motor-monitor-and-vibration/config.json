@@ -1,10 +1,10 @@
-# https://dev.blues.io/reference/notecard-api/card-requests/#card-motion-mode
+# https://dev.blues.io/api-reference/notecard-api/card-requests/#card-motion-mode
 { "req": "card.motion.mode", "start": true, "sensitivity": 5, "seconds": 5 }
 
-# https://dev.blues.io/reference/notecard-api/card-requests/#card-motion-track
+# https://dev.blues.io/api-reference/notecard-api/card-requests/#card-motion-track
 { "req": "card.motion.track", "minutes": 5, "count": 60, "start": true }
 
-# https://dev.blues.io/reference/notecard-api/card-requests/#card-motion-sync
+# https://dev.blues.io/api-reference/notecard-api/card-requests/#card-motion-sync
 { "req": "card.motion.sync", "start": true, "minutes": 5 }
 
 # https://dev.blues.io/notecard/notecard-walkthrough/advanced-notecard-configuration/#monitoring-aux-gpio-state-with-environment-variables

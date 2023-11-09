@@ -4,32 +4,6 @@ Soda vending machines, especially older models, are typically not internet conne
 
 By using a distance sensor placed at the top of each column of soda cans, the Soda Vending Machine Monitor App provides notifications when items are vended, when a particular item is running low or empty and when the column has been restocked.
 
-- [Soda Vending Machine Monitor](#soda-vending-machine-monitor)
-  - [App Features](#app-features)
-  - [You Will Need](#you-will-need)
-    - [Hardware](#hardware)
-    - [Software](#software)
-  - [Hardware Setup](#hardware-setup)
-  - [Time-of-Flight Sensor](#time-of-flight-sensor)
-    - [The `XSHUT` Pin](#the-xshut-pin)
-  - [Firmware](#firmware)
-    - [Notecard APIs Used](#notecard-apis-used)
-    - [Building and Uploading Swan Firmware](#building-and-uploading-swan-firmware)
-  - [Environment Variables](#environment-variables)
-    - [App Control Variables](#app-control-variables)
-    - [Dispensing Column Variables](#dispensing-column-variables)
-  - [Events](#events)
-    - [Alerts](#alerts)
-      - [Tilt Alerts](#tilt-alerts)
-      - [Power Failure Alerts](#power-failure-alerts)
-      - [Battery Low Alerts](#battery-low-alerts)
-      - [Sensor Offline Alerts for Each Column](#sensor-offline-alerts-for-each-column)
-      - [Vending Notifications](#vending-notifications)
-  - [Mock-up Vending Machine](#mock-up-vending-machine)
-    - [Assembly](#assembly)
-  - [Blues Community](#blues-community)
-
-
 ## App Features
 
 * The app monitors the items in one or more dispensing columns using a distance sensor placed above the column. The app detects when an item is vended, when the column is running low or empty and when it has been restocked.
@@ -69,12 +43,7 @@ For Assembly:
 2. Plug the Swan into the Notecarrier, aligning the Swan's male headers with the Notecarrier's female headers.
 3. Ensure the Notecarrier-F DIP-switch `Feather PWR` is set to the `SWITCHED` setting. This is so the Notecard can shut down the host when battery power is low. Also ensure that the `DFU` switch is in the `ON` position. This connects `AUXTX`/`AUXRX` on the Notecard to `RX/TX` on the Swan.
 4. Solder the 5-pin male header that comes with each VL53L4CD sensor breakout. The header can be soldered to either side of the board — choose the side that will be compatible with how you will mount the sensors in the vending machine.
-
-<div style="text-align:center">
-<img src="./assets/VL53L4CD_sensor_and_header.jpg" width="30%"/>
-<img src="./assets/VL53L4CD_sensor_soldered.jpg" width="14.9%" />
-</div>
-
+  ![](assets/VL53L4CD_sensor.jpg)
 5. Using male-to-female jumper cables, connect the `XSHUT` pin of each VL53L4CD sensor to a pin on the Notecarrier corresponding to the column number shown in the table below. For ease of recognition, we suggest numbering columns from left to right. The app supports up to 7 columns.
 
     | Column # | Notecarrier Pin   |
@@ -97,7 +66,7 @@ This app uses the `VL53L4CD` sensor, which senses objects up to about 1200mm (47
 
 The sensors have a 5-pin male header, and Qwiic connectors for I2C. This app requires just the `XSHUT` pin from the header to be connected, as described above.
 
-### The `XSHUT` Pin
+### The XSHUT Pin
 
 The `XSHUT` pin controls whether the sensor is active, or on standby, allowing the sensor to be switched on or off from the host.  This serves two purposes:
 
@@ -334,10 +303,7 @@ When routine reporting is enabled by setting the `report_mins` environment varia
 
 If you’re looking to prototype this project and don’t have a real vending machine handy, here’s a simple mockup you can use to test the app.
 
-<div class="text-align:center">
-  <img src="./assets/mock-up-front.jpg" width="25%"/>
-  <img src="./assets/mock-up-back.jpg" width="25%"/>
-</div>
+![](assets/mock-up.jpg)
 
 For the mock-up, we used:
 
@@ -352,10 +318,7 @@ For the mock-up, we used:
 1. Insert one tube cover in one end of the acrylic tubing. If it is a tight fit (as ours was), heat the tube cover in hot water to soften it so it can be inserted into the tube more easily.
 
 2. Make a hole in the center of the tube cover. You can use a sharp knife or a drill for this. We used a sharp knife to cut 8 "pizza slices" across the center and inserted a metal ring to hold them back.
-
-<div style="text-align:center">
-<img src="./assets/tube_end.jpg" width="25%">
-</div>
+  ![](assets/tube_end.jpg)
 
 3. Affix the sensor to the top of the tube, ensuring it is level and the IR emitter can be seen through the hole. We used superglue, but you can also use appropriately sized screws to hold the sensor in place.
 

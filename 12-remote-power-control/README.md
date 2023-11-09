@@ -8,39 +8,8 @@ This solution uses two Dr. Wattson monitoring boards to monitor AC line power an
 
 The solution comprises hardware, firmware, Notehub environment variables and jsonata scripts to provide power quality monitoring, power control and power quality alerts.
 
-
-- [Remote Power Control](#remote-power-control)
-  - [Solution Overview](#solution-overview)
-  - [You Will Need](#you-will-need)
-  - [Dr. Wattson Energy Monitor Build](#dr-wattson-energy-monitor-build)
-  - [Hardware Setup](#hardware-setup)
-  - [Notehub](#notehub)
-  - [Application Firmware](#application-firmware)
-    - [PlatformIO extension for VS Code](#platformio-extension-for-vs-code)
-    - [Arduino Extension for VS Code](#arduino-extension-for-vs-code)
-    - [Arduino IDE](#arduino-ide)
-      - [Increasing the Serial Receive Buffer Size](#increasing-the-serial-receive-buffer-size)
-      - [Libraries](#libraries)
-      - [Arduino IDE - Compiling/Uploading](#arduino-ide---compilinguploading)
-    - [Configuring the ProductUID](#configuring-the-productuid)
-      - [Using the In-browser terminal](#using-the-in-browser-terminal)
-      - [Editing the Source Code](#editing-the-source-code)
-  - [Electrical Connections](#electrical-connections)
-  - [Testing](#testing)
-  - [Configure Monitoring](#configure-monitoring)
-    - [Instance number](#instance-number)
-  - [Equipment Control Lines](#equipment-control-lines)
-  - [Configuring Power Control Alerts](#configuring-power-control-alerts)
-  - [Example Configuration](#example-configuration)
-  - [Events](#events)
-    - [Alerts](#alerts)
-      - [Power Control Alerts](#power-control-alerts)
-  - [Routing Data out of Notehub](#routing-data-out-of-notehub)
-    - [Testing the Route](#testing-the-route)
-  - [Blues Community](#blues-community)
-
-
 ## You Will Need
+
   * [Blues Starter Kit](https://shop.blues.io/collections/blues-starter-kits), that contains amongst other items
     * [Notecarrier F](https://shop.blues.io/products/notecarrier-f)
     * [Swan](https://shop.blues.io/collections/swan)
@@ -80,14 +49,14 @@ Please see [Dr. Wattson Energy Monitor build](../08-power-quality-monitor/drwatt
 
 With the build complete, you will have two power monitors, each with an AC inlet and two AC outlets, like this
 
-<img alt="Dr. Wattson monitor complete" title="Dr. Wattson Monitor complete" src="./images/wiring-10-complete.jpg" width="30%" height="30%"/>
+![Dr. Wattson monitor complete](images/wiring-10-complete.jpg)
 
 
 ## Hardware Setup
 
 1. Assemble the Notecard, Notecarrier and antenna as described in our [quickstart tutorial](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/).
 
-2. On the Notecarrier, ensure the `DFU` DIP switch set to `ON`, which maps `AUX RX/TX` over to `F_TX/F_RX` so that notifications can be sent to the host via a serial connection. (see [`card.aux.serial`](https://dev.blues.io/reference/notecard-api/card-requests/#card-aux-serial))
+2. On the Notecarrier, ensure the `DFU` DIP switch set to `ON`, which maps `AUX RX/TX` over to `F_TX/F_RX` so that notifications can be sent to the host via a serial connection. (see [`card.aux.serial`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-aux-serial))
 
 3. Similarly, set the Notecarrier's `SWITCHED` DIP switch to the `ON` position.
 
@@ -97,7 +66,7 @@ With the build complete, you will have two power monitors, each with an AC inlet
       ```
       BLACK  RED  NC  NC  NC  NC  BLUE  YELLOW
       ```
-    ![](../08-power-quality-monitor/images/drwattson-i2c.jpg)
+    ![](images/drwattson-i2c.jpg)
 
     * Insert the Qwiic JST connector into one of the `F_I2C` connectors on the edge of the Notecarrier-F next to the USB port. You may also connect it to the I2C connector on the Swan.
 
@@ -138,7 +107,7 @@ Before building the project, you will need to install the required [libraries](#
 
 ### Arduino IDE
 
-Before compiling and uploading the sketch, be sure to install the STM32Duino board support package. The tutorial [Using the Arduino IDE](https://dev.blues.io/quickstart/swan-quickstart/#using-the-arduino-ide) in the Swan Quickstart shows how to install support for Swan in Arduino IDE and how to compile and upload firmware.
+Before compiling and uploading the sketch, be sure to install the STM32Duino board support package. The tutorial [Using the Arduino IDE](https://dev.blues.io/swan/using-arduino-ide-with-swan/) in the Swan documentation shows how to install support for Swan in Arduino IDE and how to compile and upload firmware.
 
 You will also need to install the required libraries, and increase the serial receive buffer size, detailed below.
 
@@ -151,8 +120,8 @@ The workaround, which is required by this sketch, is to add a compiler flag that
   1. Close the Arduino IDE if it is currently open.
 
   2. Find the location of the `platform.txt` file for the board that you are building for. When building for Swan, which is an STM32 board supported by STM32Duino, this is located at
-      Mac: `~/Library/Arduino15/packages/STMicroelectronics/hardware/stm32/2.3.0`
-      Windows: `%HOME$/AppData/Local/Arduino15/packages/STMicroelectronics/hardware/stm32/2.3.0`
+      Mac: `~/Library/Arduino15/packages/STMicroelectronics/datasheets/stm32/2.3.0`
+      Windows: `%HOME$/AppData/Local/Arduino15/packages/STMicroelectronics/datasheets/stm32/2.3.0`
 
   3. Create a file in that directory called `platform.local.txt` containing this line:
 
@@ -180,7 +149,7 @@ There are two ways to configure the ProductUID created in the Notehub setup abov
 #### Using the In-browser terminal
 
 1. Connect the Notecarrier to your computer using a micro USB cable.
-2. Launch the in-browser terminal at [blues.dev](https://dev.blues.io/notecard-playground/)
+2. Launch the in-browser terminal at [blues.dev](https://dev.blues.io/terminal/)
 3. Click the "USB Notecard" button under "Connect a Notecard".
 4. Select the Notecard to connect to and click "Connect".
 5. The terminal will display the firmware version of Notecard.
@@ -213,7 +182,7 @@ With the Dr. Wattson boards looped into the flow of power via extension cables, 
 
 For ease of identification, use the board with the lower I2C address to monitor input power, and the higher I2C address to monitor output power. We recommend using addresses `0x74` and `0x75`.
 
-![](./images/electrical-schematic.png)
+![](images/electrical-schematic.png)
 
 During development and testing, you will typically power the Notecarrier and Swan via USB cables from your computer. When the application is deployed, you will use a USB power adapter plugged into the first monitor USB outlet.
 
@@ -338,7 +307,7 @@ When the device detects an alert condition, such as over or under voltage, curre
 
 #### Power Control Alerts
 
-These alerts are produced for a given instance when the corresponding [`alert_power_activity_X`](#configuring-power-activity-alerts) variable is set.
+These alerts are produced for a given instance when the corresponding `alert_power_activity_X` variable is set.
 
 * `novoltage`,`nocurrent`: no voltage or current is detected when the control pin is high, indicating a supply or load should be present, but isn't.
 

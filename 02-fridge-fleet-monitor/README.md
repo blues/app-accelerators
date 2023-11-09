@@ -2,7 +2,7 @@
 
 LoRa-based temperature, humidity and door open/close state for a fleet of refrigerators.
 
-![](../app-banners/02-banner.png)
+![](images/banner.png)
 
 To run this project yourself you'll need to:
 
@@ -69,7 +69,7 @@ Now that the harware is installed, the last task left is to set up the web app.
 
 The Fridge Fleet Monitor's web application is based on the [Sparrow Reference Web App](https://github.com/blues/sparrow-reference-web-app). 
 
-Refer to the [`README.md`](web-app/README.md) file in this project's [`web-app`](web-app/) folder for full setup instructions.
+Refer to the [`README.md`](https://github.com/blues/app-accelerators/tree/main/02-fridge-fleet-monitor/web-app/README.md) file in this project's [`web-app`](https://github.com/blues/app-accelerators/tree/main/02-fridge-fleet-monitor/web-app) folder for full setup instructions.
 
 If all goes well, you'll end up with a Fridge Fleet Monitor dashboard similar to these.
 

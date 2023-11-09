@@ -2,36 +2,6 @@
 
 Send requests and receive responses from Modbus servers via cellular.
 
-- [Cellular Modbus Client](#cellular-modbus-client)
-  - [You Will Need](#you-will-need)
-  - [Hardware Setup](#hardware-setup)
-    - [RS-485 Transceiver Breakout](#rs-485-transceiver-breakout)
-    - [USB to RS-485 Converter](#usb-to-rs-485-converter)
-    - [Notecarrier](#notecarrier)
-  - [Notehub Setup](#notehub-setup)
-  - [Firmware](#firmware)
-    - [Operation](#operation)
-      - [Request Types](#request-types)
-        - [Read Coils](#read-coils)
-        - [Read Discrete Inputs](#read-discrete-inputs)
-        - [Read Holding Registers](#read-holding-registers)
-        - [Read Input Registers](#read-input-registers)
-        - [Write Single Coil](#write-single-coil)
-        - [Write Single Register](#write-single-register)
-        - [Write Multiple Coils](#write-multiple-coils)
-        - [Write Multiple Registers](#write-multiple-registers)
-      - [Response Types](#response-types)
-        - [Reads](#reads)
-        - [Writes](#writes)
-        - [Errors](#errors)
-    - [Building and Flashing](#building-and-flashing)
-  - [Testing](#testing)
-    - [Simple Test](#simple-test)
-    - [Test Script](#test-script)
-  - [Troubleshooting](#troubleshooting)
-  - [Blues Community](#blues-community)
-  - [Additional Resources](#additional-resources)
-
 ## You Will Need
 
 * [Visual Studio Code (VS Code)](https://code.visualstudio.com/) with the [PlatformIO extension](https://platformio.org/)
@@ -339,7 +309,7 @@ From here, you can view logs from the firmware over serial with a terminal emula
 
 ## Testing
 
-The tests described in this section rely on the [`server.py`](./server.py) script. This script uses [`pymodbus`](https://github.com/pymodbus-dev/pymodbus) to run a Modbus server on your development PC. It's based on pymodbus's [datastore_simulator.py example](https://github.com/pymodbus-dev/pymodbus/blob/dev/examples/datastore_simulator.py). You can check out `server.py`'s `config` dictionary to see how the coils and registers are addressed. Refer to [pymodbus's documentation](https://github.com/pymodbus-dev/pymodbus/blob/dev/doc/source/library/simulator/config.rst) for details on how the memory layout of the server is configured.
+The tests described in this section rely on the [`server.py`](https://github.com/blues/app-accelerators/blob/main/34-cellular-modbus-client/server.py) script. This script uses [`pymodbus`](https://github.com/pymodbus-dev/pymodbus) to run a Modbus server on your development PC. It's based on pymodbus's [datastore_simulator.py example](https://github.com/pymodbus-dev/pymodbus/blob/dev/examples/datastore_simulator.py). You can check out `server.py`'s `config` dictionary to see how the coils and registers are addressed. Refer to [pymodbus's documentation](https://github.com/pymodbus-dev/pymodbus/blob/dev/doc/source/library/simulator/config.rst) for details on how the memory layout of the server is configured.
 
 Before proceeding with the sections below, install the Python dependencies with `pip install -r requirements.txt`. You may want to do this inside a [virtualenv](https://virtualenv.pypa.io/en/latest/) to avoid polluting the system-level Python packages with these dependencies.
 
@@ -348,7 +318,7 @@ Before proceeding with the sections below, install the Python dependencies with 
 You'll use `server.py` as the Modbus server and the Swan as the Modbus client.
 
 1. Run the server: `python server.py --log debug --port /dev/ttyUSB0`. The `--port` parameter specifies the serial port of the USB to RS-485 converter. On Linux, this is typically `/dev/ttyUSB0`, but you may need to alter this path depending on your machine. You should see output like this after starting the server:
-    ```none
+    ```plaintext
     2023-06-06 12:31:05,050 INFO  logging:96 Server(Serial) listening.
     2023-06-06 12:31:05,050 INFO  logging:96 Server(Serial) listening.
     2023-06-06 12:31:05,050 DEBUG logging:102 Serial connection opened on port: /dev/ttyUSB0

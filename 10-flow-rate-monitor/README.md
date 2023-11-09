@@ -30,7 +30,7 @@ The Flow Monitor project uses [environment variables](https://dev.blues.io/guide
 for storing project settings that need to be shared and synchronized across
 devices.
 
-You can set this project’s environment variables at the [fleet](https://dev.blues.io/reference/glossary/#fleet)
+You can set this project’s environment variables at the [fleet](https://dev.blues.io/api-reference/glossary/#fleet)
 level or device level, where fleet-level variables affect all devices in the
 fleet, and device-level variables are specific to an individual device.
 

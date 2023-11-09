@@ -15,7 +15,7 @@ it can be rescued before it is ruined.
 
 The starting point for all medicines is, "Controlled Room Temperature (CRT)"
 
-> U.S. Pharmacopeia (USP) USP <659> "Packaging and Storage Requirements"
+> U.S. Pharmacopeia (USP) USP &lt;659&gt; "Packaging and Storage Requirements"
 >
 > Controlled room temperature: The temperature maintained thermostatically
 > that encompasses at the usual and customary working environment of 20°-25°
@@ -27,34 +27,6 @@ The starting point for all medicines is, "Controlled Room Temperature (CRT)"
 
 _**NOTE:** By default, our device will monitor for CRT, but those thresholds
 can be dynamically modified using cloud-based environment variables._
-
-**Feature Tags:**
-| ESP32 | Arduino | Wi-Fi Triangulation | GPS (GNSS) | Tracking | Low-Power
-| Environment Variables | SMS Alerts |
-
-Table of Contents
------------------
-
-- [Cold Chain Monitor](#cold-chain-monitor)
-  - [Table of Contents](#table-of-contents)
-  - [Prerequisites](#prerequisites)
-    - [Hardware](#hardware)
-    - [Software](#software)
-  - [Notehub Setup](#notehub-setup)
-    - [Twilio Route](#twilio-route)
-  - [Hardware Setup](#hardware-setup)
-  - [Notecard Firmware Setup](#notecard-firmware-setup)
-  - [Host Firmware Setup](#host-firmware-setup)
-  - [Environment Variables](#environment-variables)
-  - [Operation](#operation)
-    - [Normal Operation](#normal-operation)
-      - [Temperature Sampling](#temperature-sampling)
-      - [Location Sampling](#location-sampling)
-    - [Alarm Conditions](#alarm-conditions)
-      - [Thermal Event](#thermal-event)
-        - [Thermal Event Operation](#thermal-event-operation)
-      - [Low Battery](#low-battery)
-  - [Related Topics](#related-topics)
 
 Prerequisites
 -------------
@@ -152,7 +124,7 @@ is provided at the following links:
 
 1. Wire the ESP32, LM75A and Notecarrier-B in the following arrangement:
 
-   ```none
+   ```plaintext
                             |   LM75A   |
                             |           |
                             | V G S S   |

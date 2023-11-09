@@ -2,21 +2,6 @@
 
 Collect water quality metrics from various sensors and upload them to the cloud via a cellular connection.
 
-- [Water Quality Monitor](#water-quality-monitor)
-  - [You Will Need](#you-will-need)
-  - [Sensor Calibration](#sensor-calibration)
-  - [Hardware Setup](#hardware-setup)
-    - [Power](#power)
-    - [Analog Sensors](#analog-sensors)
-    - [Temperature Sensor](#temperature-sensor)
-    - [Notecarrier](#notecarrier)
-  - [Notehub Setup](#notehub-setup)
-  - [Firmware](#firmware)
-    - [Operation](#operation)
-    - [Building and Flashing](#building-and-flashing)
-  - [Notehub Events](#notehub-events)
-  - [Blues Community](#blues-community)
-
 ## You Will Need
 
 * [Visual Studio Code (VS Code)](https://code.visualstudio.com/) with the [PlatformIO extension](https://platformio.org/)
@@ -66,9 +51,7 @@ With the analog sensors calibrated, you're ready to assembly the circuitry.
 
 Since we'll be powering several sensors and boards, you must use an external power supply. All the parts accept 5V power. We recommend using either a DC regulated bench power supply or a 5V DC wall wart and a [power jack adapter](https://www.amazon.com/gp/product/B01J1WZENK) to allow for breadboarding. If you go with a wall wart, be warned that the power supplied needs to be stable, as the analog sensors have tight tolerances around their power requirements (+/- 0.1 V). We used a bench power supply, connecting the minus and plus ports to the corresponding rails on a breadboard:
 
-<p align="center">
-<img src="images/power_supply_and_breadboard.jpg"/>
-</p>
+![](images/power_supply_and_breadboard.jpg)
 
 When it comes time to power the various sensors, you can easily wire them up to the breadboard.
 
@@ -81,13 +64,9 @@ Each analog sensor (ORP, pH, and TDS) needs to be connected to an analog signal 
 1. Connect the ORP probe's BNC connector to the ORP board, and use the 3-wire connector to connect the ORP board to the port labeled "SEN" on one of the isolator boards.
 2. Connect the pH probe's BNC connector to the ORP board, and use the 3-wire connector to connect the pH board to the port labeled "SEN" on one of the isolator boards.
 3. Connect the TDS probe's 2-wire connector to the TDS board, and use the 3-wire connector to connect the ORP board to the port labeled "SEN" on one of the isolator boards.
-<p align="center">
-<img src="images/analog_sensors_no_power.jpg"/>
-</p>
+  ![](images/analog_sensors_no_power.jpg)
 4. Using male-to-male jumper wires, connect all the red wires from the sensors to the + rail of the breadboard, and connect all the black wires to the - rail.
-<p align="center">
-<img src="images/analog_sensors_with_power.jpg"/>
-</p>
+  ![](images/analog_sensors_with_power.jpg)
 
 As shown in the photo above, the blue LEDs should turn on when you apply power. Leave the third, blue wire of each sensor disconnected, for now. These are the signal lines that will be wired up to the Notecarrier.
 
@@ -103,9 +82,7 @@ The DS18B20 temperature sensor kit linked above comes with a resistor module tha
 
 As with the analog sensors, connect the red wire to the + rail of the breadboard, and connect the black wire to the - rail. Leave the green wire disconnected. This is the signal line that will be wired up to the Notecarrier.
 
-<p align="center">
-<img src="images/resistor_module_wired.jpg"/>
-</p>
+![](images/resistor_module_wired.jpg)
 
 ### Notecarrier
 
@@ -122,9 +99,7 @@ As with the analog sensors, connect the red wire to the + rail of the breadboard
 5. Connect a micro USB cable between a free USB port on your development PC and the micro USB port of the Swan.
 6. Place the probes of all 4 sensors into a container of water.
 
-<p align="center">
-<img src="images/full_setup.jpg"/>
-</p>
+![](images/full_setup.jpg)
 
 ## Notehub Setup
 
@@ -156,9 +131,7 @@ From here, you can view logs from the firmware over serial with a terminal emula
 
 With the firmware running, you should begin to see notes come into Notehub on your project's Events tab.\*
 
-<p align="center">
-<img src="images/notehub_events.png"/>
-</p>
+![](images/notehub_events.png)
 
 \* The analog sensor values shown in this image are not realistic, as the sensors generating the measurements in this case weren't calibrated, yet.
 
@@ -218,9 +191,7 @@ function Decoder(request) {
 
 Once you've completed the routing guide, you'll have a dashboard to monitor the various water quality metrics. Here's an example dashboard that we created:
 
-<p align="center">
-<img src="images/datacake_dashboard.png"/>
-</p>
+![](images/datacake_dashboard.png)
 
 ## Blues Community
 

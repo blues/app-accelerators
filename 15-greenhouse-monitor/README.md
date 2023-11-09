@@ -3,34 +3,6 @@
 Monitor ambient light and temperature, soil moisture and soil temperature and send alerts
 when any of these fall outside specified ranges.
 
-- [Greenhouse Monitor](#greenhouse-monitor)
-  - [Solution Summary](#solution-summary)
-  - [You Will Need](#you-will-need)
-  - [Hardware Setup](#hardware-setup)
-  - [Notehub](#notehub)
-  - [Application Firmware](#application-firmware)
-    - [PlatformIO extension for VS Code](#platformio-extension-for-vs-code)
-    - [Arduino Extension for VS Code](#arduino-extension-for-vs-code)
-    - [Arduino IDE](#arduino-ide)
-      - [Libraries](#libraries)
-      - [Arduino IDE - Compiling/Uploading](#arduino-ide---compilinguploading)
-    - [Configuring the ProductUID](#configuring-the-productuid)
-      - [Using the In-browser terminal](#using-the-in-browser-terminal)
-      - [Editing the Source Code](#editing-the-source-code)
-  - [Testing](#testing)
-    - [App Configuration](#app-configuration)
-    - [Sensor Names](#sensor-names)
-    - [Monitoring Events](#monitoring-events)
-    - [Configuration Updates and Errors](#configuration-updates-and-errors)
-  - [Alerts](#alerts)
-    - [Alert Events](#alert-events)
-    - [Soil Moisture and Light Level](#soil-moisture-and-light-level)
-  - [Manual Testing](#manual-testing)
-  - [Deploying to a Greenhouse](#deploying-to-a-greenhouse)
-    - [Synchronization Mode](#synchronization-mode)
-  - [Blues Community](#blues-community)
-
-
 ## Solution Summary
 
 This app provides a simple to construct greenhouse monitoring device that can be deployed inside a greenhouse. The app monitors soil moisture and soil temperature as well as ambient light and ambient temperature. Using off-the-shelf hardware and modular components, you can use this solution to add monitoring to an existing greenhouse.
@@ -72,18 +44,18 @@ This app provides a simple to construct greenhouse monitoring device that can be
 
     3. Insert the longer leg of the photo transistor into the positive power rail, and the shorter leg into the same row of points as the A1 wire.
 
-    ![](./assets/phototransistor.png)
+    ![](assets/phototransistor.png)
 
 4. Connect the STEMMA connector to the soil sensor. Connect the colored male jumper wires at the other end of the cable as follows:
 
-   * <span style="color:black;background:white">BLACK</span> to the negative power rail on the breadboard.
-   * <span style="color:red">RED</span> to the positive power rail on the breadboard.
-   * <span style="color:white;background:grey">WHITE</span> to `SDA` on the Notecarrier.
-   * <span style="color:green">GREEN</span> to `SCL` on the Notecarrier.
+   * BLACK to the negative power rail on the breadboard.
+   * RED to the positive power rail on the breadboard.
+   * WHITE to `SDA` on the Notecarrier.
+   * GREEN to `SCL` on the Notecarrier.
 
   The assembled hardware should look similar to this:
   ![](assets/hardware.jpg)
-  ![](./assets/breadboard.jpg)
+  ![](assets/breadboard.jpg)
 
 5. Connect the Swan to your computer using a micro-USB cable. This is so that the firmware can be uploaded and allows the app to be monitored over USB serial.
 
@@ -119,7 +91,7 @@ Before building the project, you will need to install the required [libraries](#
 
 ### Arduino IDE
 
-Before compiling and uploading the sketch, be sure to install the STM32Duino board support package. The tutorial [Using the Arduino IDE](https://dev.blues.io/quickstart/swan-quickstart/#using-the-arduino-ide) in the Swan Quickstart shows how to install support for Swan in Arduino IDE and how to compile and upload firmware.
+Before compiling and uploading the sketch, be sure to install the STM32Duino board support package. The tutorial [Using the Arduino IDE](https://dev.blues.io/swan/using-arduino-ide-with-swan/) in the Swan documentation shows how to install support for Swan in Arduino IDE and how to compile and upload firmware.
 
 You will also need to install the required libraries.
 
@@ -146,7 +118,7 @@ There are two ways to configure the `ProductUID`, either using the in-browser te
 #### Using the In-browser terminal
 
 1. Connect the Notecarrier to your computer using a micro-USB cable.
-2. Launch the in-browser terminal at [blues.dev](https://dev.blues.io/notecard-playground/)
+2. Launch the in-browser terminal at [blues.dev](https://dev.blues.io/terminal)
 3. Click the "USB Notecard" button under "Connect a Notecard".
 4. Select the Notecard to connect to and click "Connect".
 5. The terminal will display the firmware version of the Notecard.

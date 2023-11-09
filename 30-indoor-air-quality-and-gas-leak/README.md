@@ -4,21 +4,6 @@ Monitor air quality, including Air Quality Index, CO2 and VOC concentration, and
 
 ![](images/sms.png)
 
-- [Indoor Air Quality and Gas Leak](#indoor-air-quality-and-gas-leak)
-  - [You Will Need](#you-will-need)
-  - [Notehub Setup](#notehub-setup)
-  - [Sparrow Setup](#sparrow-setup)
-    - [Quickstart](#quickstart)
-    - [Air Quality Sensor Connection](#air-quality-sensor-connection)
-  - [Firmware](#firmware)
-  - [Air Quality Monitoring and Alerting Behavior](#air-quality-monitoring-and-alerting-behavior)
-    - [Configuration](#configuration)
-  - [Routing Data out of Notehub](#routing-data-out-of-notehub)
-    - [Naming Air Quality Monitors](#naming-air-quality-monitors)
-    - [Testing the Route](#testing-the-route)
-  - [Blues Community](#blues-community)
-  - [Additional Resources](#additional-resources)
-
 ## You Will Need
 
 * [Sparrow Development Kit](https://shop.blues.io/products/sparrow-dev-kit)
@@ -34,7 +19,7 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 
 ### Quickstart
 
-Follow the [Sparrow Quickstart](https://dev.blues.io/quickstart/sparrow-quickstart/) pair your Sparrow reference node with the gateway and associate it with the Notehub project you just created. Note also that you only need one reference node for this project, so you don't need to pair both nodes that came with the dev kit. Make sure that you use the ProductUID generated in [Notehub Setup](#notehub-setup) when it comes time to issue the [`hub.set`](https://dev.blues.io/reference/notecard-api/hub-requests/#hub-set) command in the quickstart.
+Follow the [Sparrow Quickstart](https://dev.blues.io/quickstart/sparrow-quickstart/) pair your Sparrow reference node with the gateway and associate it with the Notehub project you just created. Note also that you only need one reference node for this project, so you don't need to pair both nodes that came with the dev kit. Make sure that you use the ProductUID generated in [Notehub Setup](#notehub-setup) when it comes time to issue the [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) command in the quickstart.
 
 After you've completed the quickstart, leave the Notecarrier and Sparrow Essentials board powered and connected. These two devices will act as our gateway to Notehub, and you won't need to touch them again. The rest of this guide will focus on the Sparrow Reference Sensor node.
 
@@ -208,6 +193,6 @@ We’d love to hear about you and your project on the [Blues Community Forum](ht
 
 ## Additional Resources
 
-* [Sparrow Datasheet](https://dev.blues.io/hardware/sparrow-datasheet/)
+* [Sparrow Datasheet](https://dev.blues.io/datasheets/sparrow-datasheet/)
 * [Sparrow Hardware Behavior](https://dev.blues.io/sparrow/sparrow-hardware-behavior/) (e.g. what do the various Sparrow LEDs indicate?)
 * [ENS160 Datasheet](https://www.sciosense.com/wp-content/uploads/documents/SC-001224-DS-7-ENS160-Datasheet.pdf)

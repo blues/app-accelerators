@@ -4,25 +4,6 @@ Use Notecard with a mains-powered USB power brick and LiPo battery to build a gl
 
 ![](images/SMS_alert.png)
 
-- [Power Outage Detector](#power-outage-detector)
-  - [You will need](#you-will-need)
-  - [Hardware Setup](#hardware-setup)
-  - [Notecard Firmware](#notecard-firmware)
-  - [Cloud Setup](#cloud-setup)
-  - [Notecard Setup](#notecard-setup)
-    - [Configure Notehub Project and Connection Mode](#configure-notehub-project-and-connection-mode)
-    - [Configure Power Outage Alerts](#configure-power-outage-alerts)
-    - [Notecard CLI](#notecard-cli)
-  - [System Test](#system-test)
-    - [Setup](#setup)
-    - [Simulating a Power Outage](#simulating-a-power-outage)
-  - [Routing Data out of Notehub](#routing-data-out-of-notehub)
-    - [Testing the Route](#testing-the-route)
-      - [Testing Power Failure](#testing-power-failure)
-      - [Testing Power Restored](#testing-power-restored)
-      - [Testing Power Restored after the LiPo battery has discharged](#testing-power-restored-after-the-lipo-battery-has-discharged)
-    - [Blues Wireless Community](#blues-wireless-community)
-
 ## You will need
 
 * LiPo battery with JST cable
@@ -76,7 +57,7 @@ Paste this command into the in-browser terminal
 { "req": "card.voltage", "mode": "lipo", "usb": true, "alert": true, "sync": true }
 ```
 
-> This instructs the Notecard to assume LiPo battery characteristics, monitor USB power and send an alert immediately when a power outage occurs and when power is restored. For more details, see the [Notecard API reference](https://dev.blues.io/reference/notecard-api/card-requests/#card-voltage) and the `Enable USB Power Alerting` example.
+> This instructs the Notecard to assume LiPo battery characteristics, monitor USB power and send an alert immediately when a power outage occurs and when power is restored. For more details, see the [Notecard API reference](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-voltage) and the `Enable USB Power Alerting` example.
 
 ### Notecard CLI
 
@@ -177,8 +158,8 @@ You will see a message that looks like this:
 Power restored (LiPo battery discharged) to device Refrigerator.
 ```
 
-### Blues Wireless Community
+## Blues Community
 
-We’d love to hear about you and your project on the [Blues Wireless Community Forum].
+We’d love to hear about you and your project on the [Blues Community Forum].
 
-[blues wireless community forum]: https://discuss.blues.io/
+[blues community forum]: https://discuss.blues.io/

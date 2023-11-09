@@ -2,17 +2,6 @@
 
 Receive a notification when a fall is detected and provide a panic button to alert a response team.
 
-- [Fall Detector and Panic Button](#fall-detector-and-panic-button)
-  - [You Will Need](#you-will-need)
-  - [Notehub Setup](#notehub-setup)
-  - [Sparrow Setup](#sparrow-setup)
-    - [Quickstart](#quickstart)
-    - [Hardware](#hardware)
-    - [Firmware](#firmware)
-  - [Testing](#testing)
-  - [Blues Community](#blues-community)
-  - [Additional Resources](#additional-resources)
-
 ## You Will Need
 
 * [Sparrow Development Kit](https://shop.blues.io/products/sparrow-dev-kit)
@@ -69,7 +58,7 @@ Now, everything is wired up. It should look something like this:
 
 Since this is a fall detector, we're going to need to drop this assembly from a decent height to simulate a person falling. To keep things secure, we can just tape everything to the breadboard.
 
-![breadboard taped](assets/breadboard_full_taped.jpg "Breadboard Taped")
+![breadboard taped](assets/breadboard_taped.jpg "Breadboard Taped")
 
 ### Firmware
 
@@ -124,7 +113,7 @@ We’d love to hear about you and your project on the [Blues Community Forum](ht
 
 ## Additional Resources
 
-* [Sparrow Datasheet](https://dev.blues.io/hardware/sparrow-datasheet/)
+* [Sparrow Datasheet](https://dev.blues.io/datasheets/sparrow-datasheet/)
 * [Sparrow Hardware Behavior](https://dev.blues.io/sparrow/sparrow-hardware-behavior/) (e.g. what do the various Sparrow LEDs indicate?)
 * [BMA 400 Datasheet](https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bma400-ds000.pdf)
 * [BMA 400 Library](https://github.com/BoschSensortec/BMA400-API)

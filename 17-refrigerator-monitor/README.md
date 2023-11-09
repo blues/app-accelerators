@@ -2,22 +2,6 @@
 
 Monitor refrigerator temperature, humidity, and power using a Notecard and a BME280 sensor.
 
-- [Refrigerator Monitor](#refrigerator-monitor)
-  - [You Will Need](#you-will-need)
-  - [Hardware Setup](#hardware-setup)
-  - [Cloud Setup](#cloud-setup)
-  - [Notecard Setup](#notecard-setup)
-    - [Firmware](#firmware)
-    - [Configure Notehub Project and Connection Mode](#configure-notehub-project-and-connection-mode)
-    - [Configure Periodic Environmental Measurements](#configure-periodic-environmental-measurements)
-    - [Configure Power Outage Alerts](#configure-power-outage-alerts)
-    - [Notecard CLI](#notecard-cli)
-  - [System Test](#system-test)
-    - [Setup](#setup)
-    - [Viewing Environmental Data](#viewing-environmental-data)
-    - [Simulating a Power Outage](#simulating-a-power-outage)
-  - [Blues Wireless Community](#blues-wireless-community)
-
 ## You Will Need
 
 * AC to USB adapter (power brick)
@@ -84,7 +68,7 @@ Paste this command into the in-browser terminal:
 { "req": "card.voltage", "mode": "lipo", "usb": true, "alert": true, "sync": true }
 ```
 
-This instructs the Notecard to assume LiPo battery characteristics, monitor USB power and send an alert immediately when a power outage occurs and when power is restored. For more details, see the [Notecard API reference](https://dev.blues.io/reference/notecard-api/card-requests/#card-voltage) and the `Enable USB Power Alerting` example.
+This instructs the Notecard to assume LiPo battery characteristics, monitor USB power and send an alert immediately when a power outage occurs and when power is restored. For more details, see the [Notecard API reference](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-voltage) and the `Enable USB Power Alerting` example.
 
 ### Notecard CLI
 
@@ -133,6 +117,6 @@ This event indicates that the Notecard is no longer powered from the power brick
 
 This event indicates that the Notecard is again powered by the power brick.
 
-## Blues Wireless Community
+## Blues Community
 
-We’d love to hear about you and your project on the [Blues Wireless Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!

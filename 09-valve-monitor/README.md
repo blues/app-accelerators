@@ -2,7 +2,7 @@
 
 Monitor and control the open/closed state of a valve, and measure liquid flow state.
 
-![The valve monitor project’s web application and hardware](../app-banners/09-banner.png)
+![The valve monitor project’s web application and hardware](images/banner.png)
 
 To run this project yourself you’ll need to:
 
@@ -32,7 +32,7 @@ The Valve Monitor project uses [environment variables](https://dev.blues.io/guid
 for storing project settings that need to be shared and synchronized across
 devices.
 
-You can set this project’s environment variables at the [fleet](https://dev.blues.io/reference/glossary/#fleet)
+You can set this project’s environment variables at the [fleet](https://dev.blues.io/api-reference/glossary/#fleet)
 level or device level, where fleet-level variables affect all devices in the
 fleet, and device-level variables are specific to an individual device.
 

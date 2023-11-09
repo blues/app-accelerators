@@ -2,16 +2,7 @@
 
 Monitor a CAN bus for messages with particular IDs and upload those messages to the cloud.
 
-- [CAN Vehicle Monitor](#can-vehicle-monitor)
-  - [You Will Need](#you-will-need)
-  - [Hardware Setup](#hardware-setup)
-    - [MCU](#mcu)
-    - [USB to CAN Converter](#usb-to-can-converter)
-  - [Notehub Setup](#notehub-setup)
-  - [Firmware Setup](#firmware-setup)
-  - [Testing](#testing)
-  - [Blues Community](#blues-community)
-  - [Additional Resources](#additional-resources)
+![](images/banner.png)
 
 ## You Will Need
 
