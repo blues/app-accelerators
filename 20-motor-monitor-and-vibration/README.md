@@ -177,6 +177,6 @@ Environment variables are set using Notehub, either per device or per fleet, des
 Initially, start with these all configured to the value 1, which will generate alerts for any vibration. You then inspect the resulting events with the motor off and on to see typical ranges of vibration. With this information, you can then set the threshold variables accordingly.
 
 
-## Blues Wireless Community
+## Blues Community
 
-We’d love to hear about you and your project on the [Blues Wireless Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!

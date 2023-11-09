@@ -117,6 +117,6 @@ This event indicates that the Notecard is no longer powered from the power brick
 
 This event indicates that the Notecard is again powered by the power brick.
 
-## Blues Wireless Community
+## Blues Community
 
-We’d love to hear about you and your project on the [Blues Wireless Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!

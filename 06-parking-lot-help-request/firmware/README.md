@@ -63,7 +63,7 @@ After button press events are successfully being sent to your Notehub project, t
 
 > **NOTE:** Although this project is using Twilio for SMS alerts, you can route your button presses to any service you'd like, and set up whatever sort of notification system you have in mind.
 
-Follow the [Twilio starter guide](https://dev.blues.io/guides-and-tutorials/twilio-sms-guide/#configuring-the-route) on the Blues Wireless developer experience site to go through the basics of setting up Twilio account, and a route from Notehub to Twilio, until you reach step 8.
+Follow the [Twilio starter guide](https://dev.blues.io/guides-and-tutorials/twilio-sms-guide/#configuring-the-route) on the Blues  developer experience site to go through the basics of setting up Twilio account, and a route from Notehub to Twilio, until you reach step 8.
 
 Instead of selecting `twilio.qo` files, you're going to want to route out `_button.qo` events in the **Filters** section.
 

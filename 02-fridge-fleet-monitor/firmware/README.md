@@ -1,6 +1,6 @@
 # Fridge Fleet Monitor Firmware
 
-This project's firmware is a variant of the [Blues Wireless Sparrow Reference Firmware](https://github.com/blues/sparrow-reference-firmware).
+This project's firmware is a variant of the [Blues Sparrow Reference Firmware](https://github.com/blues/sparrow-reference-firmware).
 
 To run the firmware, start by ensuring you have the prerequisites below installed.
 

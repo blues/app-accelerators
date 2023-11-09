@@ -1,8 +1,8 @@
 # Fridge Fleet Monitor Web App
 
-An example web application to configure and view sensor data from a Blues Wireless Sparrow devices.
+An example web application to configure and view sensor data from a Blues Sparrow devices.
 
-This application is based off of the [Blues Wireless Sparrow Reference Web App](https://github.com/blues/sparrow-reference-web-app).
+This application is based off of the [Blues Sparrow Reference Web App](https://github.com/blues/sparrow-reference-web-app).
 
 - [Fridge Fleet Monitor Web App](#fridge-fleet-monitor-web-app)
   - [Development Overview](#development-overview)

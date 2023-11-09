@@ -16,7 +16,7 @@ it has caught a mouse.
 ### Parts
 
 - [Victor M333 Humane Mouse Trap](https://www.amazon.com/gp/product/B004CMNWES)
-- [Blues Wireless WiFi + LoRa Dev Kit (Sparrow)](https://shop.blues.io/products/sparrow-dev-kit)
+- [Blues WiFi + LoRa Dev Kit (Sparrow)](https://shop.blues.io/products/sparrow-dev-kit)
 - [Clear Polycarbonate Sheet 1/16-in](https://www.amazon.com/gp/product/B07MQTDF4R)
 - [M3-threaded Nylon Standoff Kit](https://www.amazon.com/gp/product/B07KP2ZFNJ)
 
@@ -30,7 +30,7 @@ it has caught a mouse.
 
 ### Modifying the Mousetrap
 
-I used a LoRa-based [Blues Wireless Sparrow Development Kit] which has a passive
+I used a LoRa-based [Blues Sparrow Development Kit] which has a passive
 infrared (PIR) motion sensor on each sensor node. To allow the PIR sensor to see
 into the trap, I cut a 1/2” hole in the lid of the Victor M333 Mousetrap. To
 locate the circuit board securely, I cut four 1/8” holes to receive M3-threaded
@@ -68,7 +68,7 @@ my home router.
 
 Notehub doesn’t have native SMS alerts yet, but it does allow you to route messages [to any other cloud services or HTTPS API endpoint](https://dev.blues.io/guides-and-tutorials/routing-data-to-cloud/?&utm_source=github&utm_medium=web&utm_campaign=nf&utm_content=nf3) that your heart desires. I used Twilio, an inexpensive SMS service, to send message to my phone when there is motion in the trap.
 
-To correctly format the request for the Twilio HTTP API I followed the Blues Wireless [Twilio SMS Guide](https://dev.blues.io/guides-and-tutorials/twilio-sms-guide/?&utm_source=github&utm_medium=web&utm_campaign=nf&utm_content=nf3) and [modified the JSONata](mousetrap.jsonata) expression to tell me which mousetrap (Garage, Basement, etc.) saw motion based on the unique ID of the Sparrow sensor node I affixed to each trap.
+To correctly format the request for the Twilio HTTP API I followed the Blues [Twilio SMS Guide](https://dev.blues.io/guides-and-tutorials/twilio-sms-guide/?&utm_source=github&utm_medium=web&utm_campaign=nf&utm_content=nf3) and [modified the JSONata](mousetrap.jsonata) expression to tell me which mousetrap (Garage, Basement, etc.) saw motion based on the unique ID of the Sparrow sensor node I affixed to each trap.
 
 ![Data path from Wi-Fi to Notehub.io and JSONata transformation into SMS format](images/nf3_mousetrap_(18)_sghXhszUbO.jpg)
 
