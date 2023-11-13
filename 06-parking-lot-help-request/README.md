@@ -4,7 +4,7 @@ Host-free low latency notification system to alert attendants in a parking lot o
 
 ![](images/banner.png)
 
-[Watch a video of this project in action.](https://user-images.githubusercontent.com/20400845/207144197-c4e99d29-cd9c-4e8f-9dfc-2e0ae0103c1c.mp4)
+[Watch a video of this project in action.](images/parking-lot-help-request.mp4)
 
 To run this project yourself you'll need to:
 

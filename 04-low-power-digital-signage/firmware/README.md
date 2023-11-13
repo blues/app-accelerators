@@ -9,7 +9,7 @@ the prerequisites below installed.
 1. Download and install [Visual Studio Code](https://code.visualstudio.com/).
 1. Install the [PlatformIO IDE extension](https://marketplace.visualstudio.com/items?itemName=platformio.platformio-ide)
 via the Extensions menu of Visual Studio Code.
-![Visual Studio Code extensions menu with a search of "platformio"](../assets/images/platformio-extension.png)
+![Visual Studio Code extensions menu with a search of "platformio"](../images/platformio-extension.png)
 
 ## Opening
 
@@ -20,10 +20,10 @@ to open the firmware within PlatformIO.
 code locally.
 1. Open the PlatformIO extension by clicking on the PlatformIO logo in the menu bar. Next,
 click the “Open” option under the “PIO Home” menu  and finally “Open Project”.
-![Instructions on how to open a project in PlatformIO](../assets/images/platformio-open-project.png)
+![Instructions on how to open a project in PlatformIO](../images/platformio-open-project.png)
 1. Select the `firmware` folder from within your local copy of this repository,
 and click the **Open "firmware"** button.
-![How to open the firmware folder in PlatformIO](../assets/images/platformio-open-firmware.png)
+![How to open the firmware folder in PlatformIO](../images/platformio-open-firmware.png)
 
 ## Flashing
 
@@ -41,13 +41,13 @@ to `dfu`.
 
 2. Once you have everything connected, click the arrow button that appears at the
 bottom of your Visual Studio Code window.
-![Uploading firmware in PlatformIO](../assets/images/platformio-upload.png)
+![Uploading firmware in PlatformIO](../images/platformio-upload.png)
 
 Once the firmware is running on your device, you might additionally want to open a serial
 monitor to view the firmware’s logs. You can do so by clicking the plug button that appears
 at the bottom of your Visual Studio Code window.
 
-![Opening a serial monitor in PlatformIO](../assets/images/platformio-serial-monitor.png)
+![Opening a serial monitor in PlatformIO](../images/platformio-serial-monitor.png)
 
 ## Testing
 
@@ -63,7 +63,7 @@ Additionally, the firmware sends outbound Notes to the Notecard and Notehub in s
 - If the host is unable to load an image from the SD card because the file is not found, a notification is sent.
 - If the loaded image is not in the correct dimensions (255x122), the image will not be loaded and a notification is sent.
 
-![Example of Events sent by a display](../assets/images/notehub-events.png)
+![Example of Events sent by a display](../images/notehub-events.png)
 
 Once you have the firmware running, you'll want to set the environment variables above to test the application. If you want to deploy this app to multiple devices for fleet testing, make sure you attach a LiPo battery to both the Swan and Notecarrier B.
 
