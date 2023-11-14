@@ -2,8 +2,6 @@
 
 A cellular-based solution for downloading resources for an electronic kiosk display without an Internet connection, using a simple Python script.
 
-[Watch a video of this project in action.](https://github.com/blues/app-accelerators/assets/20400845/24a49c10-d8e7-40bc-b4ba-4abf9a4fe727)
-
 In an effort to keep the required download size for the Raspberry Pi small, the hardware and Notehub cloud setup is covered in this repo, and the code required to run the app on the Pi and a sample web app to demonstrate how to zip up a project are located in a [separate repository](https://github.com/blues/accelerators-cellular-connected-electronic-kiosk).
 
 To run this project you'll need to:

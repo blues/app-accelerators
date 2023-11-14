@@ -23,7 +23,7 @@ already.
 1. Click the blue **Create Project** button in the top-right corner of the screen.
 1. Give the project a name, such as "Break Room Signs", and then click the next
 **Create Project** button.
-![Creating a project in Notehub with a name](assets/images/notehub-create-project.png)
+![Creating a project in Notehub with a name](images/notehub-create-project.png)
 
 ### Configuring Environment Variables
 
@@ -40,7 +40,7 @@ can use that for setting your initial variables.
 
 1. Navigate to your fleet in the navigation menu, and then click the **Settings**
 link.
-![Location of Notehub fleet settings](assets/images/notehub-fleet-settings.png)
+![Location of Notehub fleet settings](images/notehub-fleet-settings.png)
 1. Click the **Environment** tab.
 1. Scroll down to the **Fleet environment variables** heading, and define the
 two variables below.
@@ -48,7 +48,7 @@ two variables below.
     1. `display_interval_sec` is the number of seconds to display text or an image on the screen before rotating to the next item in the list.
 
 1. With both defined, click the blue **Save** button.
-![Notehub fleet environment variables fully defined](assets/images/notehub-env-vars-defined.png)
+![Notehub fleet environment variables fully defined](images/notehub-env-vars-defined.png)
 
 With this your Notehub backend is fully configured, and you’re ready to start
 setting up your hardware.
@@ -69,7 +69,7 @@ Additionally, if you want to place the project on a stand, [this 3D printed stan
 
 The Swan microcontroller plugs into the Feather slot on the back of the display and is connected to the Notecard and Notecarrier B via the Qwiic cable, as shown in the image below.
 
-![The final assembled hardware](assets/images/hardware-build.png)
+![The final assembled hardware](images/hardware-build.png)
 
 > **NOTE**: For a detailed look at how to connect the hardware, refer to the
 [Notecard and Notecarrier B quickstart guide](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-b/).
@@ -81,7 +81,7 @@ running on your device.
 
 The [assets/bitmap/](/assets/bitmaps/) folder contains a number of bitmaps formatted for the 2.13" display. Simply copy these onto the root of a FAT formatted MicroSD card, and the firmware for this project will detect them.
 
-![Animated GIF of copying bitmaps onto the SD Card](assets/images/sdcard.gif)
+![Animated GIF of copying bitmaps onto the SD Card](images/sdcard.gif)
 
 If you want to show your own images on the display, see [this guide](https://learn.adafruit.com/preparing-graphics-for-e-ink-displays?view=all) for detailed instructions on formatting and saving images for e-ink displays. Make sure to crop your images to 250x122 for display on the 2.13" screen.
 
