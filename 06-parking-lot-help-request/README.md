@@ -4,6 +4,8 @@ Host-free low latency notification system to alert attendants in a parking lot o
 
 ![](images/banner.png)
 
+> [Watch a video of this project in action.](https://www.youtube.com/watch?v=uhwdbYxxles)
+
 To run this project yourself you'll need to:
 
 * [Purchase the necessary hardware and configure it](#hardware).
