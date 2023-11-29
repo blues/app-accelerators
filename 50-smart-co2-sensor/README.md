@@ -5,7 +5,7 @@ dynamic alarm thresholds for activities via a cellular connection.
 
 ## Overview
 
-This application continuously reads atmospheric CO2 levels in ppm and check to
+This application continuously reads atmospheric CO2 levels in ppm and checks to
 see whether the current CO2 levels are cause for concern. When an alarm event is
 triggered, then an alarm is sounded and a Twilio message is generated to warn
 employees and/or patrons of dangerous CO2 levels. Periodic samples of
@@ -26,6 +26,7 @@ via a [Notecard](https://blues.io/products/notecard/).
 * Micro USB cable
 * Male-to-male jumper wires
 * Soldering iron and solder flux
+* 47pF capacitor (optional)
 * 3D printed enclosure (optional)
 
 ## Hardware Setup
@@ -57,7 +58,8 @@ _For more information, please review [the product page](https://www.adafruit.com
 ### Speaker
 
 The speaker has a three pin connector (GND,Vcc,Signal). The signal is generated
-using any pin compatible with the Arduino `tone()` API.
+using any pin compatible with the [Arduino `tone()`
+API](https://www.arduino.cc/reference/en/language/functions/advanced-io/tone/).
 
 ![CO2 breakout board](assets/FIT0449.png)
 
@@ -93,7 +95,7 @@ project. Feed the power into the `V+` and `GND` pins of the Notecarrier-F.
 | -      | GND         |
 | -      | D13         |
 
-> _**TIP:** To debounce the button connect a 47pF capacitor between the legs._
+> _**TIP:** To debounce the button, connect a 47pF capacitor between the legs._
 
 | Barrel Jack | Notecarrier |
 |-------------|-------------|
