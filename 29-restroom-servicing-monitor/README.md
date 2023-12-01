@@ -4,7 +4,7 @@ Receive updates on restroom cleanliness so that it can be serviced when needed.
 
 ## You Will Need
 
-* [Sparrow Development Kit](https://shop.blues.io/products/sparrow-dev-kit)
+* [Sparrow Development Kit](https://shop.blues.com/products/sparrow-dev-kit)
 * 2 USB A to micro USB cables
 * Breadboard
 * [3 push buttons](https://www.sparkfun.com/products/14460)
@@ -74,7 +74,7 @@ To test things out, we'll press each button, observe the serial log, and then ob
 
 ## Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!
 
 ## Additional Resources
 

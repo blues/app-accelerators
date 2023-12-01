@@ -9,11 +9,11 @@ Monitor temperature, humidity, and heat index and send alerts using a solar-powe
 - [Adafruit BME280 board with Qwiic cable](https://www.adafruit.com/product/2652)
 - [Lithium Ion Battery - 3.7V 2000mAh](https://www.adafruit.com/product/2011)
 - [Seeed Studio 3W Solar Panel with JST Connector](https://www.seeedstudio.com/3W-Solar-Panel-138X160.html)
-- [Notecarrier F](https://shop.blues.io/products/notecarrier-f)
-- [Notecard](https://shop.blues.io/products/note-wbna-500)
-- [Swan](https://shop.blues.io/collections/swan)
+- [Notecarrier F](https://shop.blues.com/products/notecarrier-f)
+- [Notecard](https://shop.blues.com/products/note-wbna-500)
+- [Swan](https://shop.blues.com/collections/swan)
 - 2 micro USB cables
-- [STLINK-V3MINI](https://shop.blues.io/collections/accessories/products/stlink-v3mini)
+- [STLINK-V3MINI](https://shop.blues.com/collections/accessories/products/stlink-v3mini)
 - [Housing to shield BME280](https://www.amazon.com/Crosse-Technology-925-1418-Sensor-Protection/dp/B00VSXENM4)*
 
 \* This housing isn't strictly required, but [the BME280 will give erroneous measurements if it isn't shielded from UV](https://community.bosch-sensortec.com/t5/MEMS-sensors-forum/BME280-sensibility-to-UV-light/td-p/17079). You'll also want something to shield the hardware from the elements if you plan to have this project deployed indefinitely. (see [Stevenson screen](https://en.wikipedia.org/wiki/Stevenson_screen))

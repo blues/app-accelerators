@@ -15,7 +15,7 @@ To run this project yourself you'll need to:
 
 The following hardware is required to run the Fridge Fleet Monitor.
 
-* [Sparrow Development Kit](https://shop.blues.io/products/sparrow-dev-kit)
+* [Sparrow Development Kit](https://shop.blues.com/products/sparrow-dev-kit)
 * [Adafruit magnetic contact switch (door sensor) x 2](https://www.adafruit.com/product/375)
 
 After purchasing your Sparrow development kit, head to [Sparrow Quickstart documentation](https://dev.blues.io/quickstart/sparrow-quickstart/) to get started setting up your Sparrow gateway and nodes, including how to set up Notehub and the Notecard. 

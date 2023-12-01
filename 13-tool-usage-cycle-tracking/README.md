@@ -10,11 +10,11 @@ The solution comprises hardware, firmware, Notehub environment variables and jso
 
 ## You Will Need
 
-  * [Blues Starter Kit](https://shop.blues.io/collections/blues-starter-kits), that contains amongst other items
-    * [Notecarrier F](https://shop.blues.io/products/notecarrier-f)
-    * [Swan](https://shop.blues.io/collections/swan)
-    * [Notecard](https://shop.blues.io/collections/notecard)
-    * [Molex Cellular Antenna](https://shop.blues.io/collections/accessories/products/flexible-cellular-or-wi-fi-antenna)
+  * [Blues Starter Kit](https://shop.blues.com/collections/blues-starter-kits), that contains amongst other items
+    * [Notecarrier F](https://shop.blues.com/products/notecarrier-f)
+    * [Swan](https://shop.blues.com/collections/swan)
+    * [Notecard](https://shop.blues.com/collections/notecard)
+    * [Molex Cellular Antenna](https://shop.blues.com/collections/accessories/products/flexible-cellular-or-wi-fi-antenna)
   * [Dr. Wattson Energy Monitoring Board](https://www.upbeatlabs.com/wattson/)
   * [ProtoStax Enclosure for Dr. Wattson](https://www.protostax.com/products/) or similar enclosure
   * [female-to-JST qwiic cable assembly](https://www.adafruit.com/product/4397)
@@ -446,7 +446,7 @@ These are the parts of the message:
 
 ## Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!
 
 
 [Dr. Wattson Energy Monitoring Board]: https://www.upbeatlabs.com/wattson/

@@ -40,7 +40,7 @@ With the firmware opened, modified, and built locally, it's time to flash the ne
 
 Complete the following steps to flash the Sparrow reference firmware to each Sparrow node.
 
-1. Connect the Sparrow node to your computer using an [STLINK-V3MINI programmer and debugger](https://shop.blues.io/products/stlink-v3mini) and microUSB to USB-A cable.
+1. Connect the Sparrow node to your computer using an [STLINK-V3MINI programmer and debugger](https://shop.blues.com/products/stlink-v3mini) and microUSB to USB-A cable.
 2. Reopen the VSCode task runner using `Terminal > Run Task` in the menu bar, and select `Sparrow Flash Firmware using STM32_Programmer_CLI`
 
 ![VS Code flash firmware command toolbar](readme-flash-firmware.png)

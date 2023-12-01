@@ -17,10 +17,10 @@ describe("Fridge Fleet Monitor Application", () => {
     // Check footer links are correct
     cy.get('[data-testid="notecard-link"]')
       .should("have.attr", "href")
-      .and("include", "https://blues.io/products");
+      .and("include", "https://blues.com/products");
     cy.get('[data-testid="blues-link"]')
       .should("have.attr", "href")
-      .and("include", "https://blues.io");
+      .and("include", "https://blues.com");
   });
 
   it("should be able to click on a gateway UID and see the details of that gateway and its related nodes", function () {

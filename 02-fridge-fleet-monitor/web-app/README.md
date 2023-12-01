@@ -512,4 +512,4 @@ yarn cypress:open
 
 If you run into any issues using this repo, feel free to create an
 [issue](issues/new) on this repository, or to reach out on our developer
-[forum](https://discuss.blues.io/).
+[forum](https://discuss.blues.com/).

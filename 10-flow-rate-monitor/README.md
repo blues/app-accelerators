@@ -61,7 +61,7 @@ setting up your hardware.
 
 The following hardware is required to run the Flow Rate Monitor project.
 
-* A [Blues Starter Kit](https://shop.blues.io/collections/blues-starter-kits).
+* A [Blues Starter Kit](https://shop.blues.com/collections/blues-starter-kits).
 * A flow meter, such as this [GREDIA Quick Connect Water Flow Sensor](https://www.amazon.com/dp/B07RD4JXLY/ref=cm_sw_r_api_i_652XGBZAS7RN06BSSHRT_0).
 * Tubing for moving liquid throughout your hardware, such as this
 [1/4 OD silicone tubing](https://www.amazon.com/dp/B09H4RNGGG/ref=cm_sw_r_api_i_H171CC4D2EDPPM23X8A4_0?th=1).

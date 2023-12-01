@@ -5,13 +5,13 @@ Send requests and receive responses from Modbus servers via cellular.
 ## You Will Need
 
 * [Visual Studio Code (VS Code)](https://code.visualstudio.com/) with the [PlatformIO extension](https://platformio.org/)
-* [Notecarrier F](https://blues.io/products/notecarrier/notecarrier-f/)
-* [Notecard](https://blues.io/products/notecard/)
-* [Swan](https://blues.io/products/swan/)
+* [Notecarrier F](https://blues.com/products/notecarrier/notecarrier-f/)
+* [Notecard](https://blues.com/products/notecard/)
+* [Swan](https://blues.com/products/swan/)
 * [SparkFun Transceiver Breakout - RS-485](https://www.sparkfun.com/products/10124)
 * [SparkFun USB to RS-485 Converter](https://www.sparkfun.com/products/9822)
 * [2 Screw Terminals 3.5mm Pitch (3-Pin)](https://www.sparkfun.com/products/8235)
-* [STLINK-V3MINI](https://shop.blues.io/collections/accessories/products/stlink-v3mini)
+* [STLINK-V3MINI](https://shop.blues.com/collections/accessories/products/stlink-v3mini)
 * 2 micro USB cables
 * [1 USB mini-B cable](https://www.sparkfun.com/products/13243)
 * Male-to-male jumper wires
@@ -400,7 +400,7 @@ Should you encounter any errors, these are typically caused by missing wiring.
 
 ## Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!
 
 ## Additional Resources
 

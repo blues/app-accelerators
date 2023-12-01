@@ -10,7 +10,7 @@ Follow the sections [Creating a New Project](../../#creating-a-new-project) and 
 
 ### Hardware
 
-Follow the [hardware setup guide](../../#hardware). You will also need an [STLINK-V3MINI](https://shop.blues.io/products/stlink-v3mini) to flash the firmware onto the Swan. The STLINK will also allow you to debug the firmware. Connect the STLINK's ribbon connector to the Swan and to your development PC with a micro USB cable.
+Follow the [hardware setup guide](../../#hardware). You will also need an [STLINK-V3MINI](https://shop.blues.com/products/stlink-v3mini) to flash the firmware onto the Swan. The STLINK will also allow you to debug the firmware. Connect the STLINK's ribbon connector to the Swan and to your development PC with a micro USB cable.
 
 ### Firmware
 

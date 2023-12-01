@@ -18,9 +18,9 @@ By using a distance sensor placed at the top of each column of soda cans, the So
 
 ### Hardware
 
-- [Notecard](https://shop.blues.io/collections/notecard/products/note-wbna-500)
-- [Notecarrier F](https://blues.io/products/notecarrier/notecarrier-f/)
-- [Swan](https://shop.blues.io/collections/swan/products/swan)
+- [Notecard](https://shop.blues.com/collections/notecard/products/note-wbna-500)
+- [Notecarrier F](https://blues.com/products/notecarrier/notecarrier-f/)
+- [Swan](https://shop.blues.com/collections/swan/products/swan)
 - USB-A to Micro-USB cable
 
 For each dispensing column:
@@ -330,4 +330,4 @@ You dispense sodas from the mock-up manually by sliding it to the edge of a surf
 
 ## Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!

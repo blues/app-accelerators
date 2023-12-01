@@ -57,13 +57,13 @@ setting up your hardware.
 
 The following hardware is required to run the Low Power Digital Signage project.
 
-* [Blues Notecard](https://shop.blues.io/collections/notecard)
-* [Blues Notecarrier B](https://shop.blues.io/products/carr-b)
-* [Blues Swan](https://shop.blues.io/collections/swan/products/swan)
+* [Blues Notecard](https://shop.blues.com/collections/notecard)
+* [Blues Notecarrier B](https://shop.blues.com/products/carr-b)
+* [Blues Swan](https://shop.blues.com/collections/swan/products/swan)
 * [2.13" Tri-Color e-Ink Display FeatherWing](https://www.adafruit.com/product/4814)
 * [Qwiic Cable](https://www.sparkfun.com/products/14427)
 * A MicroSD card if you plan to display bitmap images on the screen.
-* 2x LiPo Batteries of any size, like [these](https://www.adafruit.com/product/328) from Adafruit or [from Blues](https://shop.blues.io/collections/accessories).
+* 2x LiPo Batteries of any size, like [these](https://www.adafruit.com/product/328) from Adafruit or [from Blues](https://shop.blues.com/collections/accessories).
 
 Additionally, if you want to place the project on a stand, [this 3D printed stand](https://learn.adafruit.com/eink-featherwing-display-stand) is perfect for the 2.13" display. You'll also need some [M2.5 thread machine screws and nuts to connect the display to the stand](https://www.adafruit.com/product/3299).
 

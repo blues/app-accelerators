@@ -5,9 +5,9 @@ Collect water quality metrics from various sensors and upload them to the cloud 
 ## You Will Need
 
 * [Visual Studio Code (VS Code)](https://code.visualstudio.com/) with the [PlatformIO extension](https://platformio.org/)
-* [Notecarrier F](https://blues.io/products/notecarrier/notecarrier-f/)
-* [Notecard](https://blues.io/products/notecard/)
-* [Swan](https://blues.io/products/swan/)
+* [Notecarrier F](https://blues.com/products/notecarrier/notecarrier-f/)
+* [Notecard](https://blues.com/products/notecard/)
+* [Swan](https://blues.com/products/swan/)
 * [Gravity: Analog ORP Sensor Meter for Arduino](https://www.dfrobot.com/product-1071.html)
 * [Gravity: Analog Industrial pH Sensor / Meter Pro Kit V2](https://www.dfrobot.com/product-2069.html)
 * [Gravity: Analog TDS Sensor/ Meter for Arduino](https://www.dfrobot.com/product-1662.html)
@@ -195,4 +195,4 @@ Once you've completed the routing guide, you'll have a dashboard to monitor the 
 
 ## Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!

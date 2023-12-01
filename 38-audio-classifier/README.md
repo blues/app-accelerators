@@ -12,9 +12,9 @@ You'll use [Edge Impulse](https://www.edgeimpulse.com/), a free edge AI platform
 
 ### Hardware
 
-- [Notecard](https://shop.blues.io/collections/notecard/products/note-wbna-500)
-- [Notecarrier F](https://blues.io/products/notecarrier/notecarrier-f/)
-- [Swan](https://shop.blues.io/collections/swan/products/swan)
+- [Notecard](https://shop.blues.com/collections/notecard/products/note-wbna-500)
+- [Notecarrier F](https://blues.com/products/notecarrier/notecarrier-f/)
+- [Swan](https://shop.blues.com/collections/swan/products/swan)
 - [Adafruit PDM MEMS Microphone Breakout](https://www.adafruit.com/product/3492)
 - Soldering iron and flux
 - Male-to-female jumper wires
@@ -203,4 +203,4 @@ On your Notehub project page, navigate to the Events tab, and you should see a n
 
 ## Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!

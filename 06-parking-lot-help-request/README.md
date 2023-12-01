@@ -18,8 +18,8 @@ To run this project yourself you'll need to:
 
 The following hardware is required to run the Parking Lot Help Request application.
 
-* [Notecarrier A with pre-soldered headers](https://shop.blues.io/products/carr-al)
-* [Cellular Notecard](https://shop.blues.io/collections/notecard) (LTE Cat-1 versions are highly recommended)
+* [Notecarrier A with pre-soldered headers](https://shop.blues.com/products/carr-al)
+* [Cellular Notecard](https://shop.blues.com/collections/notecard) (LTE Cat-1 versions are highly recommended)
 * [Sparkfun RGB LED breakout - WS2812B](https://www.sparkfun.com/products/13282)
 * [Twidec 12mm momentary push button with pre-soldered wires](https://www.amazon.com/gp/product/B08JHW8BPV/ref=ppx_yo_dt_b_asin_title_o00_s00?ie=UTF8&th=1)
 * [LiPo battery](https://www.adafruit.com/product/2011)

@@ -5,9 +5,9 @@ Measure the current consumption of an HVAC unit and publish the measurements to 
 ## You Will Need
 
 * [Visual Studio Code (VS Code)](https://code.visualstudio.com/) with the [PlatformIO extension](https://platformio.org/)
-* [Notecarrier F](https://blues.io/products/notecarrier/notecarrier-f/)
-* [Notecard](https://blues.io/products/notecard/)
-* [Swan](https://blues.io/products/swan/)
+* [Notecarrier F](https://blues.com/products/notecarrier/notecarrier-f/)
+* [Notecard](https://blues.com/products/notecard/)
+* [Swan](https://blues.com/products/swan/)
 * Window HVAC unit
 * [SCT013-030 30A 1V Non-invasive Split Core Current Transformer Sensor](https://www.amazon.com/gp/product/B07WT7KGTT)
 * [TRRS 3.5mm Audio Jack Breakout](https://www.amazon.com/gp/product/B07L3P93ZD)
@@ -121,4 +121,4 @@ The `length` parameter indicates how many valid measurements are in the `measure
 
 ## Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!
