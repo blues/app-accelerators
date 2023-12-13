@@ -55,7 +55,7 @@ Turning on track mode will augment the environmental data with pressure and humi
 Next, paste this command into the in-browser terminal:
 
 ```json
-{ "req": "card.temp", "seconds": 180 }
+{ "req": "card.temp", "minutes": 3 }
 ```
 
 This will cause the Notecard to push a note to the `_temp.qo` Notefile with environmental data every 3 minutes. You can modify this interval to suit your application's needs. Note that this matches the 3 minute settings we specified for `outbound` in the `hub.set` request above.

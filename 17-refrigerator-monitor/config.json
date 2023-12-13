@@ -1,4 +1,4 @@
 { "req": "hub.set", "mode": "periodic", "outbound": 3, "product": "com.your-company:your-product-name", "sn": "fridge-location", "body":{"app":"nf17"} }
 { "req": "card.aux", "mode":"track" }
-{ "req": "card.temp", "seconds": 180 }
+{ "req": "card.temp", "minutes": 3 }
 { "req": "card.voltage", "mode": "lipo", "usb": true, "alert": true, "sync": true }
