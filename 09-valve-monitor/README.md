@@ -63,7 +63,7 @@ setting up your hardware.
 
 The following hardware is required to run the Valve Monitor project.
 
-* A [Blues Starter Kit](https://shop.blues.io/collections/blues-starter-kits).
+* A [Blues Starter Kit](https://shop.blues.com/collections/blues-starter-kits).
 * A flow meter, such as this [GREDIA Quick Connect Water Flow Sensor](https://www.amazon.com/dp/B07RD4JXLY/ref=cm_sw_r_api_i_652XGBZAS7RN06BSSHRT_0).
 * A solenoid valve, such as this [DIGITEN Inlet Feed Water Solenoid Valve](https://www.amazon.com/dp/B016MP1HX0/ref=cm_sw_r_api_i_6PW0RXB6569QB10RY51V_0).
   * If you do get the DIGITEN valve, make sure you also have [spade cables](https://www.amazon.com/dp/B08F784R9W/ref=cm_sw_r_api_i_3GMNPATKY77AAC247J9S_0)

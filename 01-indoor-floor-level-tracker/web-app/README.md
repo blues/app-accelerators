@@ -12,7 +12,7 @@ IDE, and then complete the following steps.
 - [Development](#development)
 
 > **NOTE**: The Indoor Floor-Level Tracker’s web app uses the [Notehub API](https://dev.blues.io/guides-and-tutorials/using-the-notehub-api/)
-to retrieve event data, which consumes [Notehub consumption credits](https://blues.io/pricing/).
+to retrieve event data, which consumes [Notehub consumption credits](https://blues.com/pricing/).
 You can change how frequently the app refreshes data from Notehub by altering
 the `MS_REFETCH_INTERVAL` constant in the [`src/pages/index.tsx`](src/pages/index.tsx)
 file.

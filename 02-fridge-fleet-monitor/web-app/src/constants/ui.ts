@@ -40,7 +40,7 @@ const ERROR_MESSAGE = {
   GATEWAY_NOT_FOUND:
     "We were unable to locate any gateways. Ensure your environment variables are configured correctly.",
   INTERNAL_ERROR:
-    "An internal error occurred. If this problem persists, contact <a href='https://discuss.blues.io' target='_blank' rel='noreferrer'>Blues Support</a>.",
+    "An internal error occurred. If this problem persists, contact <a href='https://discuss.blues.com' target='_blank' rel='noreferrer'>Blues Support</a>.",
   UNAUTHORIZED:
     "Authentication failed. Please ensure you have a valid HUB_AUTH_TOKEN environment variable.",
   NODES_NOT_FOUND:

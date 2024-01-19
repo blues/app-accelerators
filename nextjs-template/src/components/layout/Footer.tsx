@@ -13,7 +13,7 @@ const FooterComponent = () => {
           <span>
             <a
               target="_blank"
-              href="https://blues.io/products"
+              href="https://blues.com/products"
               rel="noreferrer"
               data-testid="notecard-link"
             >
@@ -34,7 +34,7 @@ const FooterComponent = () => {
           <span>
             <a
               target="_blank"
-              href="https://blues.io"
+              href="https://blues.com"
               rel="noreferrer"
               data-testid="blues-link"
             >

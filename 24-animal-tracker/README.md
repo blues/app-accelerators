@@ -5,9 +5,9 @@ Monitor an animal's location via GPS and detect when it enters or leaves a geofe
 ## You Will Need
 
 * USB A to micro USB cable
-* [LiPo battery with JST cable](https://shop.blues.io/products/5-000-mah-lipo-battery)
-* [Notecarrier-A](https://shop.blues.io/products/carr-al)
-* [Notecard](https://blues.io/products/notecard/)
+* [LiPo battery with JST cable](https://shop.blues.com/products/5-000-mah-lipo-battery)
+* [Notecarrier-A](https://shop.blues.com/products/carr-al)
+* [Notecard](https://blues.com/products/notecard/)
 
 ## Notehub Setup
 

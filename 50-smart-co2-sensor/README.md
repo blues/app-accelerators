@@ -10,14 +10,14 @@ see whether the current CO2 levels are cause for concern. When an alarm event is
 triggered, then an alarm is sounded and a Twilio message is generated to warn
 employees and/or patrons of dangerous CO2 levels. Periodic samples of
 atmospheric CO2 are recorded and synced to [Notehub](https://www.notehub.io/)
-via a [Notecard](https://blues.io/products/notecard/).
+via a [Notecard](https://blues.com/products/notecard/).
 
 ## You Will Need
 
-* [Notecard](https://blues.io/products/notecard/)
-* [Notecarrier F](https://blues.io/products/notecarrier/notecarrier-f/)
+* [Notecard](https://blues.com/products/notecard/)
+* [Notecarrier F](https://blues.com/products/notecarrier/notecarrier-f/)
 * [Adafruit FeatherWing OLED - 128x32](https://www.adafruit.com/product/3045)
-* [Blues Swan](https://blues.io/products/swan)
+* [Blues Swan](https://blues.com/products/swan)
 * [DFRobot Gravity: Digital Speaker Module](https://wiki.dfrobot.com/DFRobot_Speaker_v1.0_SKU__FIT0449)
 * [DFRobot Gravity: UART Infrared Carbon Dioxide Sensor (0-50000 ppm)](https://wiki.dfrobot.com/Infrared_CO2_Sensor_0-50000ppm_SKU__SEN0220)
 * Momentary push button
@@ -190,4 +190,4 @@ their speeds and timestamps in the Body column.
 ## Blues Community
 
 We’d love to hear about you and your project on the [Blues Community
-Forum](https://discuss.blues.io/)!
+Forum](https://discuss.blues.com/)!

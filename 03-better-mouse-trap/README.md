@@ -16,7 +16,7 @@ it has caught a mouse.
 ### Parts
 
 - [Victor M333 Humane Mouse Trap](https://www.amazon.com/gp/product/B004CMNWES)
-- [Blues WiFi + LoRa Dev Kit (Sparrow)](https://shop.blues.io/products/sparrow-dev-kit)
+- [Blues WiFi + LoRa Dev Kit (Sparrow)](https://shop.blues.com/products/sparrow-dev-kit)
 - [Clear Polycarbonate Sheet 1/16-in](https://www.amazon.com/gp/product/B07MQTDF4R)
 - [M3-threaded Nylon Standoff Kit](https://www.amazon.com/gp/product/B07KP2ZFNJ)
 
@@ -84,4 +84,4 @@ To trigger the PIR sensor, flip the trap upside down and back upright. You shoul
 
 ### Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/).
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/).

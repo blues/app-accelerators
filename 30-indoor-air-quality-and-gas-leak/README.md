@@ -6,7 +6,7 @@ Monitor air quality, including Air Quality Index, CO2 and VOC concentration, and
 
 ## You Will Need
 
-* [Sparrow Development Kit](https://shop.blues.io/products/sparrow-dev-kit)
+* [Sparrow Development Kit](https://shop.blues.com/products/sparrow-dev-kit)
 * 2 USB A to micro USB cables
 * [Sparkfun Indoor Air Quality Sensor - ENS160](https://www.sparkfun.com/products/20844)
 * [Qwiic cable](https://www.sparkfun.com/products/14427)
@@ -189,7 +189,7 @@ Sending this event results in the message
 
 ## Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!
 
 ## Additional Resources
 

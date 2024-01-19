@@ -4,7 +4,7 @@ Receive notifications when motion is detected in a room and when the room's door
 
 ## You Will Need
 
-* [Sparrow Development Kit](https://shop.blues.io/products/sparrow-dev-kit)
+* [Sparrow Development Kit](https://shop.blues.com/products/sparrow-dev-kit)
 * 2 USB A to micro USB cables
 * [Magnetic Door Switch Set](https://www.sparkfun.com/products/13247)
 
@@ -95,7 +95,7 @@ In order to keep traffic to Notehub reasonable, a motion note will only be sent 
 
 ## Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!
 
 ## Additional Resources
 

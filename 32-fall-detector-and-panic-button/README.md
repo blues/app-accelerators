@@ -4,7 +4,7 @@ Receive a notification when a fall is detected and provide a panic button to ale
 
 ## You Will Need
 
-* [Sparrow Development Kit](https://shop.blues.io/products/sparrow-dev-kit)
+* [Sparrow Development Kit](https://shop.blues.com/products/sparrow-dev-kit)
 * [1 push button](https://www.sparkfun.com/products/14460)
 * [SparkFun Micro Triple Axis Accelerometer Breakout - BMA400 (Qwiic)](https://www.sparkfun.com/products/21207)
 * [Qwiic Cable - Breadboard Jumper (4-pin)](https://www.sparkfun.com/products/14425)
@@ -109,7 +109,7 @@ By default, the accelerometer needs to be in free fall for 300ms to produce a fa
 
 ## Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!
 
 ## Additional Resources
 

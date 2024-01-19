@@ -8,10 +8,10 @@ Monitor temperature and humidity and send alerts using a Notecard and a BME280 s
 
 * AC to USB adapter (power brick)
 * USB A to micro USB cable
-* [LiPo battery with JST cable](https://shop.blues.io/products/5-000-mah-lipo-battery)
-* [Notecarrier-F](https://shop.blues.io/collections/notecarrier/products/notecarrier-f)
-* [Notecard](https://blues.io/products/notecard/)
-* [Swan MCU](https://blues.io/products/swan/)
+* [LiPo battery with JST cable](https://shop.blues.com/products/5-000-mah-lipo-battery)
+* [Notecarrier-F](https://shop.blues.com/collections/notecarrier/products/notecarrier-f)
+* [Notecard](https://blues.com/products/notecard/)
+* [Swan MCU](https://blues.com/products/swan/)
 * [SparkFun Atmospheric Sensor Breakout - BME280 (Qwiic)](https://www.sparkfun.com/products/15440)
 * [Qwiic Cable](https://www.sparkfun.com/products/14426)
 

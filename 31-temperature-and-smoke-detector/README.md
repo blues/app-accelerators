@@ -6,7 +6,7 @@ Temperature monitoring and smoke detection across a number of rooms at a facilit
 
 ## You Will Need
 
-* [Sparrow Development Kit](https://shop.blues.io/products/sparrow-dev-kit)
+* [Sparrow Development Kit](https://shop.blues.com/products/sparrow-dev-kit)
 * [MQ2 Gas and Smoke Sensor](https://www.amazon.com/Reland-Sun-MQ-2-Sensor-Module/dp/B09NN39G8X)
 * [3.3-to-5v voltage converter](https://www.amazon.com/Comidox-Module-Voltage-Converter-0-9-5V/dp/B07L76KLRY)
 * Soldering Iron
@@ -128,7 +128,7 @@ In order to determine the range of values you should test the solution in clean 
 
 ## Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!
 
 ## Additional Resources
 

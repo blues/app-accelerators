@@ -4,12 +4,12 @@ Detect speeding cars with a speed radar module and camera. Publish the speeds an
 
 ## Overview
 
-This application continuously grabs images from an [OpenMV](https://openmv.io/) camera board running [MicroPython](https://micropython.org/) and runs them through an object detection model built using [Edge Impulse](https://edgeimpulse.com/) to test for the presence of a moving car. If a moving car is detected, the speed of that car is measured using an [OmniPreSense](https://omnipresense.com) Doppler radar sensor. If that speed exceeds a configurable speed limit, the speed and current time are recorded and synced to [Notehub](https://www.notehub.io/) via a [Notecard](https://blues.io/products/notecard/).
+This application continuously grabs images from an [OpenMV](https://openmv.io/) camera board running [MicroPython](https://micropython.org/) and runs them through an object detection model built using [Edge Impulse](https://edgeimpulse.com/) to test for the presence of a moving car. If a moving car is detected, the speed of that car is measured using an [OmniPreSense](https://omnipresense.com) Doppler radar sensor. If that speed exceeds a configurable speed limit, the speed and current time are recorded and synced to [Notehub](https://www.notehub.io/) via a [Notecard](https://blues.com/products/notecard/).
 
 ## You Will Need
 
-* [Notecard](https://blues.io/products/notecard/)
-* [Notecarrier A](https://blues.io/products/notecarrier/notecarrier-a/)
+* [Notecard](https://blues.com/products/notecard/)
+* [Notecarrier A](https://blues.com/products/notecarrier/notecarrier-a/)
 * [OpenMV Cam H7](https://openmv.io/products/openmv-cam-h7)
 * [OmniPreSense OPS243-A Doppler Radar Sensor](https://omnipresense.com/product/ops243-doppler-radar-sensor/)
 * 5V, 1A DC power supply
@@ -229,4 +229,4 @@ To see the `speeders.qo` Notes on Notehub, navigate to your project page and cli
 
 ## Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!

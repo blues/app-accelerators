@@ -10,12 +10,12 @@ The solution comprises hardware, firmware, Notehub environment variables and jso
 
 ## You Will Need
 
-  * [Blues Starter Kit](https://shop.blues.io/collections/blues-starter-kits), that contains amongst other items
-    * [Notecarrier F](https://shop.blues.io/products/notecarrier-f)
-    * [Swan](https://shop.blues.io/collections/swan)
-    * [Notecard](https://shop.blues.io/collections/notecard)
-    * [Molex Cellular Antenna](https://shop.blues.io/collections/accessories/products/flexible-cellular-or-wi-fi-antenna)
-  * [LiPo battery](https://shop.blues.io/collections/accessories/products/5-000-mah-lipo-battery)
+  * [Blues Starter Kit](https://shop.blues.com/collections/blues-starter-kits), that contains amongst other items
+    * [Notecarrier F](https://shop.blues.com/products/notecarrier-f)
+    * [Swan](https://shop.blues.com/collections/swan)
+    * [Notecard](https://shop.blues.com/collections/notecard)
+    * [Molex Cellular Antenna](https://shop.blues.com/collections/accessories/products/flexible-cellular-or-wi-fi-antenna)
+  * [LiPo battery](https://shop.blues.com/collections/accessories/products/5-000-mah-lipo-battery)
   * [Digital Loggers IoT Relay](https://www.digital-loggers.com/iot2.html) or similar.
   * 2 x [Dr. Wattson Energy Monitoring Board](https://www.upbeatlabs.com/wattson/)
   * 2 x [ProtoStax Enclosure for Dr. Wattson](https://www.protostax.com/products/) or similar enclosure
@@ -370,4 +370,4 @@ When utility power fails, you will receive an `undervoltage` alert from instance
 
 ## Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!

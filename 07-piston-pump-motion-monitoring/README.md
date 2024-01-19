@@ -23,9 +23,9 @@ The Piston Pump Motion Monitor runs on top of Notehub. As such, to run this samp
 
 The following hardware is required to run the Piston Pump Motion Monitor.
 
-* [Blues Notecard](https://shop.blues.io/collections/notecard)
-* [Blues Notecarrier B](https://shop.blues.io/products/carr-b)
-* A LiPo Battery of any size, like [this one](https://www.adafruit.com/product/328) from Adafruit or [from Blues](https://shop.blues.io/collections/accessories).
+* [Blues Notecard](https://shop.blues.com/collections/notecard)
+* [Blues Notecarrier B](https://shop.blues.com/products/carr-b)
+* A LiPo Battery of any size, like [this one](https://www.adafruit.com/product/328) from Adafruit or [from Blues](https://shop.blues.com/collections/accessories).
 
 > **NOTE**: For a detailed look at how to connect the hardware, refer to the
 [Notecard and Notecarrier B quickstart guide](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-b/).

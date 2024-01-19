@@ -35,12 +35,12 @@ Prerequisites
 
 - USB type A-to-micro USB cable
 - [2000 mAh Li-Ion battery with JST cable](https://www.adafruit.com/product/2011)
-- [Notecarrier-B](https://shop.blues.io/collections/notecarrier/products/notecarrier-b)
+- [Notecarrier-B](https://shop.blues.com/collections/notecarrier/products/notecarrier-b)
 - Molex Antenna 213353 (included with Notecarrier-B purchase)
-- [LTE Cat-1 Notecard (North America, EMEA)](https://shop.blues.io/collections/notecard)
+- [LTE Cat-1 Notecard (North America, EMEA)](https://shop.blues.com/collections/notecard)
 - [Adafruit Huzzah32 - ESP32 Feather Board (loose headers)](https://www.adafruit.com/product/3405)
 - [HiLetgo 2pcs LM75 LM75A Temperature Sensor Module](https://www.amazon.com/gp/product/B082KLD7XT/)
-- [Molex Antenna 209142](https://shop.blues.io/collections/accessories/products/flexible-cellular-or-wi-fi-antenna)
+- [Molex Antenna 209142](https://shop.blues.com/collections/accessories/products/flexible-cellular-or-wi-fi-antenna)
 - [Qwiic Cable Breakout](https://www.sparkfun.com/products/14425)
 - [[OPTIONAL] Cirocomm 5cm Ceramic Active GPS Antenna 32db (High Gain)](https://www.amazon.com/gp/product/B078Y2WNY6/)
 - [[OPTIONAL] ESP-Prog](https://www.digikey.com/en/products/detail/espressif-systems/ESP-PROG/10259352)
