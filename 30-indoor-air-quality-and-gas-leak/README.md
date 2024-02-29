@@ -1,12 +1,14 @@
 # Indoor Air Quality and Gas Leak
 
+**Warning: This project uses Sparrow, a Blues product that is no longer under active development. We are working on updating this project to the successors of Sparrow: [Notecard LoRa](https://blues.com/notecard-lora/) and the [LoRaWAN Starter Kit](https://shop.blues.com/products/blues-starter-kit-lorawan). In the meantime, if you would like assistance building an Indoor Air Quality and Gas Leak Detector feel free to reach out on [our community forum](https://discuss.blues.com/).**
+
 Monitor air quality, including Air Quality Index, CO2 and VOC concentration, and send alerts when a potential gas leak is detected.
 
 ![](images/sms.png)
 
 ## You Will Need
 
-* [Sparrow Development Kit](https://shop.blues.io/products/sparrow-dev-kit)
+* Sparrow Development Kit
 * 2 USB A to micro USB cables
 * [Sparkfun Indoor Air Quality Sensor - ENS160](https://www.sparkfun.com/products/20844)
 * [Qwiic cable](https://www.sparkfun.com/products/14427)
