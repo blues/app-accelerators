@@ -1,10 +1,12 @@
 # Room Occupancy Monitor
 
+**Warning: This project uses Sparrow, a Blues product that is no longer under active development. We are working on updating this project to the successors of Sparrow: [Notecard LoRa](https://blues.com/notecard-lora/) and the [LoRaWAN Starter Kit](https://shop.blues.com/products/blues-starter-kit-lorawan). In the meantime, if you would like assistance building a Room Occupancy Monitor feel free to reach out on [our community forum](https://discuss.blues.com/).**
+
 Receive notifications when motion is detected in a room and when the room's door is opened or closed.
 
 ## You Will Need
 
-* [Sparrow Development Kit](https://shop.blues.io/products/sparrow-dev-kit)
+* Sparrow Development Kit
 * 2 USB A to micro USB cables
 * [Magnetic Door Switch Set](https://www.sparkfun.com/products/13247)
 

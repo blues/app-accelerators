@@ -1,5 +1,7 @@
 # Fridge Fleet Monitor
 
+**Warning: This project uses Sparrow, a Blues product that is no longer under active development. We are working on updating this project to the successors of Sparrow: [Notecard LoRa](https://blues.com/notecard-lora/) and the [LoRaWAN Starter Kit](https://shop.blues.com/products/blues-starter-kit-lorawan). In the meantime, if you would like assistance building a Fridge Fleet Monitor feel free to reach out on [our community forum](https://discuss.blues.com/).**
+
 LoRa-based temperature, humidity and door open/close state for a fleet of refrigerators.
 
 ![](images/banner.png)
@@ -15,7 +17,7 @@ To run this project yourself you'll need to:
 
 The following hardware is required to run the Fridge Fleet Monitor.
 
-* [Sparrow Development Kit](https://shop.blues.io/products/sparrow-dev-kit)
+* Sparrow Development Kit
 * [Adafruit magnetic contact switch (door sensor) x 2](https://www.adafruit.com/product/375)
 
 After purchasing your Sparrow development kit, head to [Sparrow Quickstart documentation](https://dev.blues.io/quickstart/sparrow-quickstart/) to get started setting up your Sparrow gateway and nodes, including how to set up Notehub and the Notecard. 

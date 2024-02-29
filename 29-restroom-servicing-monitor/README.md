@@ -1,10 +1,12 @@
 # Restroom Servicing Monitor
 
+**Warning: This project uses Sparrow, a Blues product that is no longer under active development. We are working on updating this project to the successors of Sparrow: [Notecard LoRa](https://blues.com/notecard-lora/) and the [LoRaWAN Starter Kit](https://shop.blues.com/products/blues-starter-kit-lorawan). In the meantime, if you would like assistance building a Restroom Servicing Monitor feel free to reach out on [our community forum](https://discuss.blues.com/).**
+
 Receive updates on restroom cleanliness so that it can be serviced when needed.
 
 ## You Will Need
 
-* [Sparrow Development Kit](https://shop.blues.io/products/sparrow-dev-kit)
+* Sparrow Development Kit
 * 2 USB A to micro USB cables
 * Breadboard
 * [3 push buttons](https://www.sparkfun.com/products/14460)

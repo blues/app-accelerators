@@ -1,5 +1,7 @@
 # Better Mouse Trap
 
+**Warning: This project uses Sparrow, a Blues product that is no longer under active development. We are working on updating this project to the successors of Sparrow: [Notecard LoRa](https://blues.com/notecard-lora/) and the [LoRaWAN Starter Kit](https://shop.blues.com/products/blues-starter-kit-lorawan). In the meantime, if you would like assistance building a Better Mouse Trap feel free to reach out on [our community forum](https://discuss.blues.com/).**
+
 A smarter mouse trap with SMS alerting.
 
 Find the complete story in the detailed [Hackster.io writeup](https://www.hackster.io/hendersoncarlton/i-love-checking-on-mousetraps-said-no-one-ever-52c5e7).
@@ -30,7 +32,7 @@ it has caught a mouse.
 
 ### Modifying the Mousetrap
 
-I used a LoRa-based [Blues Sparrow Development Kit] which has a passive
+I used a LoRa-based Blues Sparrow Development Kit which has a passive
 infrared (PIR) motion sensor on each sensor node. To allow the PIR sensor to see
 into the trap, I cut a 1/2” hole in the lid of the Victor M333 Mousetrap. To
 locate the circuit board securely, I cut four 1/8” holes to receive M3-threaded

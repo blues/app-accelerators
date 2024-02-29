@@ -1,10 +1,12 @@
 # Fall Detector and Panic Button
 
+**Warning: This project uses Sparrow, a Blues product that is no longer under active development. We are working on updating this project to the successors of Sparrow: [Notecard LoRa](https://blues.com/notecard-lora/) and the [LoRaWAN Starter Kit](https://shop.blues.com/products/blues-starter-kit-lorawan). In the meantime, if you would like assistance building a Fall Detector and Panic Button feel free to reach out on [our community forum](https://discuss.blues.com/).**
+
 Receive a notification when a fall is detected and provide a panic button to alert a response team.
 
 ## You Will Need
 
-* [Sparrow Development Kit](https://shop.blues.io/products/sparrow-dev-kit)
+* Sparrow Development Kit
 * [1 push button](https://www.sparkfun.com/products/14460)
 * [SparkFun Micro Triple Axis Accelerometer Breakout - BMA400 (Qwiic)](https://www.sparkfun.com/products/21207)
 * [Qwiic Cable - Breadboard Jumper (4-pin)](https://www.sparkfun.com/products/14425)
