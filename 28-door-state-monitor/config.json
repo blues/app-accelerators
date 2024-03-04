@@ -1,0 +1,3 @@
+{ "req": "hub.set", "product" : "com.your-company:your-product-name", "sn": "a-serial-number", "body":{"app":"nf28"} }
+{ "req": "card.aux", "mode":"gpio", "usage": ["input-pulldown", "off", "off", "off"], "sync":true, "file":"gpio.qo" }
+    
