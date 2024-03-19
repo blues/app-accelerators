@@ -7,9 +7,9 @@
 # https://dev.blues.io/api-reference/notecard-api/card-requests/#card-motion-sync
 { "req": "card.motion.sync", "start": true, "minutes": 5 }
 
-# https://dev.blues.io/notecard/notecard-walkthrough/advanced-notecard-configuration/#monitoring-aux-gpio-state-with-environment-variables
+# https://dev.blues.io/notecard/notecard-walkthrough/working-with-the-notecard-aux-pins/#monitoring-aux-gpio-state-with-environment-variables
 { "req": "card.aux", "mode": "gpio", "usage": [ "input-pulldown" ]}
 
 # enable GPIO monitoring via environment variables and sync to Notehub
-# https://dev.blues.io/notecard/notecard-walkthrough/advanced-notecard-configuration/#monitoring-aux-gpio-state-with-environment-variables
+# https://dev.blues.io/notecard/notecard-walkthrough/working-with-the-notecard-aux-pins/#monitoring-aux-gpio-state-with-environment-variables
 { "req": "env.set", "name": "_aux_gpio_report_enable", "text": "sync" }

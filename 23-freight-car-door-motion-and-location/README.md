@@ -92,7 +92,7 @@ You can optionally add the property `"sync":true` which configures the Notecard 
 
 ### card.aux GPIO mode
 
-[API Reference](https://dev.blues.io/notecard/notecard-walkthrough/advanced-notecard-configuration/#using-aux-gpio-mode)
+[API Reference](https://dev.blues.io/notecard/notecard-walkthrough/working-with-the-notecard-aux-pins/#using-aux-gpio-mode)
 
 This command uses AUX GPIO mode to configure the notecard to count the number of times the door has been opened.
 
