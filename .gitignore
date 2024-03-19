@@ -10,3 +10,6 @@ build/
 # STM32CubeIDE files
 *.launch
 .settings
+
+# VSCode files
+**/.vscode/*

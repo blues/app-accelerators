@@ -12,7 +12,6 @@
         $msg := $msg & "AQI: " & $e.body.aqi & ", CO2: " & $e.body.eco2 &  "ppm, TVOC: " & $e.body.tvoc & "ppb.";
         $result := { "customMessage": $msg };
     )};
-    $fileParts := $split($.file, "#");
-    $additional := $count($fileParts)=2 and $fileParts[1]="aqi.qo" and $exists($.body.alert) and ($.body.alert % 2)=1 ? $alertMessage($, $fileParts[0]) : $doNotRoute($);
+    $additional := $.file="aqi.qo" and $exists($.body.alert) and ($.body.alert % 2)=1 ? $alertMessage($, $.best_id) : $doNotRoute($);
     $merge([$, {"body": $merge([body, $additional])}]);
 )
