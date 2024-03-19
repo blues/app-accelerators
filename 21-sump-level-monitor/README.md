@@ -49,7 +49,7 @@ Make sure to replace `com.your-company:your-product-name` with your ProductUID f
 { "req": "card.aux", "mode": "gpio", "usage": ["input-pullup", "", "", ""], "sync": true, "file": "switch.qo" }
 ```
 
-This command configures the Notecard's AUX pins, which you can read more about in our documentation [here](https://dev.blues.io/notecard/notecard-walkthrough/advanced-notecard-configuration/#using-aux-gpio-mode). The `usage` parameter accepts an array of 4 values, one for each AUX pin. The first element corresponds to AUX1, the next to AUX2, and so on. Here, we are configuring AUX1 to act as an input with a pull-up. Thus, when the switch is open, AUX1 will be driven high. When the switch is closed, it'll be driven low. The `sync` parameter will cause the Notecard to sync a note to Notehub whenever the input on AUX1 changes (either low to high or high to low). The `file` parameter instructs the Notecard to sync these updates to a Notefile called switch.qo.
+This command configures the Notecard's AUX pins, which you can read more about in our documentation [here](https://dev.blues.io/notecard/notecard-walkthrough/working-with-the-notecard-aux-pins#using-aux-gpio-mode). The `usage` parameter accepts an array of 4 values, one for each AUX pin. The first element corresponds to AUX1, the next to AUX2, and so on. Here, we are configuring AUX1 to act as an input with a pull-up. Thus, when the switch is open, AUX1 will be driven high. When the switch is closed, it'll be driven low. The `sync` parameter will cause the Notecard to sync a note to Notehub whenever the input on AUX1 changes (either low to high or high to low). The `file` parameter instructs the Notecard to sync these updates to a Notefile called switch.qo.
 
 ### Notecard CLI
 

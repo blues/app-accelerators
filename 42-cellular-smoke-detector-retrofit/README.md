@@ -100,7 +100,7 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
     ```json
     { "req": "hub.set", "product": "com.your-company:your-product-name", "body": { "app": "nf42" } }
     ```
-3. Set the [AUX1 pin of the Notecard to GPIO mode](https://dev.blues.io/notecard/notecard-walkthrough/advanced-notecard-configuration/#using-aux-gpio-mode) and configure it as an `input-pullup`:
+3. Set the [AUX1 pin of the Notecard to GPIO mode](https://dev.blues.io/notecard/notecard-walkthrough/working-with-the-notecard-aux-pins/#using-aux-gpio-mode) and configure it as an `input-pullup`:
     ```json
     { "req": "card.aux", "mode": "gpio", "usage": ["input-pullup", "", "", ""], "sync": true, "file": "smoke.qo" }
     ```
