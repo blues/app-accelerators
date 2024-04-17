@@ -1,11 +1,20 @@
 #include <Arduino.h>
+#include <Notecard.h>
 #include <Wire.h>
 #include "SparkFun_BMA400_Arduino_Library.h"
+
+static bool registerNotefileTemplate();
+static void addNote(bool panic, bool fall);
+
+Notecard notecard;
+//#define productUID "com.your-company.your-name:your_product"
+#define productUID "net.bowerham.kimball:medicalalert" // TODO: Remove this line
+
 
 // Create a new sensor object
 BMA400 accelerometer;
 // I2C address selection
-uint8_t i2cAddress = BMA400_I2C_ADDRESS_DEFAULT; // 0x14
+uint8_t BMAi2cAddress = BMA400_I2C_ADDRESS_DEFAULT; // 0x14
 bool bmaInterruptOccurred = false;
 int bmaInterruptPin = 13;
 bool buttonInterruptOccurred = false;
@@ -34,12 +43,11 @@ void buttonInterruptHandler()
     }
 }
  
-
 void initAccel(void)
 {
     // Check if sensor is connected and initialize
     // Address is optional (defaults to 0x14)
-    while(accelerometer.beginI2C(i2cAddress) != BMA400_OK)
+    while(accelerometer.beginI2C(BMAi2cAddress) != BMA400_OK)
     {
         // Not connected, inform user
         Serial.println("Error: BMA400 not connected, check wiring and I2C address!");
@@ -120,9 +128,138 @@ void setInterruptParams(void)
 
 }
 
+// Register the notefile template for our data
+static bool registerNotefileTemplate()
+{
+    // Fall Template
+
+    // Create the request
+    J *req = NoteNewRequest("note.template");
+    if (req == NULL) {
+        Serial.println("Could not create fall template request");
+        return false;
+    }
+
+    // Create the body
+    J *body = JCreateObject();
+    if (body == NULL) {
+        Serial.println("Could not create fall template body");
+
+        JDelete(req);
+        return false;
+    }
+
+    // Setup name and parameters for template
+    JAddStringToObject(req, "file", "fall.qo");
+    JAddStringToObject(req, "format", "compact");
+    JAddNumberToObject(req, "port", 10);
+
+    // Attach the body to the request, and send it to the gateway
+    JAddItemToObject(req, "body", body);
+    J *rsp = NoteRequestResponse(req);
+    if (rsp == NULL || NoteResponseError(rsp)) {
+        Serial.println("Could not send fall template request");
+        if (rsp != NULL) {
+            Serial.printf("Error: %s\r\n", JGetString(rsp,"err"));
+            NoteDeleteResponse(rsp);
+        }
+        return false;
+    }
+    // Clear response object
+    NoteDeleteResponse(rsp);
+
+
+    // Panic Template
+    // Create the request
+    req = NoteNewRequest("note.template");
+    if (req == NULL) {
+        Serial.println("Could not create panic template request");
+        return false;
+    }
+
+    // Create the body
+    body = JCreateObject();
+    if (body == NULL) {
+        Serial.println("Could not create panic template body");
+        JDelete(req);
+        return false;
+    }
+
+    // Setup name and parameters for template
+    JAddStringToObject(req, "file", "panic.qo");
+    JAddStringToObject(req, "format", "compact");
+    JAddNumberToObject(req, "port", 11);
+
+    // Fill-in the body template
+    JAddBoolToObject(body, "panic", TBOOL);
+
+    // Attach the body to the request, and send it to the gateway
+    JAddItemToObject(req, "body", body);
+    rsp = NoteRequestResponse(req);
+    if (rsp == NULL || NoteResponseError(rsp)) {
+        Serial.println("Could not send panic template request");
+        if (rsp != NULL) {
+            Serial.printf("Error: %s\r\n", JGetString(rsp,"err"));
+            NoteDeleteResponse(rsp);
+        }
+        return false;
+    }
+
+    // Clear response object
+    NoteDeleteResponse(rsp);
+
+    return true;
+}
+
+// Send the sensor data
+static void addNote(bool fall, bool panic)
+{
+    // Create the request
+    J *req = NoteNewRequest("note.add");
+    if (req == NULL) {
+        Serial.print("mpb: out of memory creating note\r\n");
+        return;
+    }
+
+    // Create the body
+    J *body = JCreateObject();
+    if (body == NULL) {
+        JDelete(req);
+        Serial.print("mpb: out of memory creating note\r\n");
+        return;
+    }
+
+    // Set the target notefile
+    JAddStringToObject(req, "file", fall?"fall.qo":"panic.qo");
+    // Always sync immediately
+    JAddBoolToObject(req, "sync", true);
+    
+    // Fill-in the body
+    if (fall) {
+        JAddBoolToObject(body, "fall", true);
+    } else {
+        JAddBoolToObject(body, "panic", true);
+    }
+
+    // Attach the body to the request, and send it to the gateway
+    JAddItemToObject(req, "body", body);
+    JAddNumberToObject(req, "port", fall?10:11);
+    NoteRequest(req);
+    Serial.printf("mpb: note sent. fall %s, panic %s\r\n", fall?"true":"false", panic?"true":"false");
+
+}
+
+
 void setup() {
+  delay(2500);
+
   Serial.begin(115200);
   Serial.println("Setup Start");
+  notecard.begin();
+  if (!registerNotefileTemplate()) {
+    Serial.println("Notefile Template setup failed");
+    while(1){};
+  }
   Wire.begin();
   initAccel();
   setAccelParams();
@@ -155,12 +292,14 @@ void loop() {
         if(interruptStatus & BMA400_ASSERTED_GEN1_INT)
         {
             Serial.println("Fall detected!");
+            addNote(true, false);
         }
     }
     if(buttonInterruptOccurred){
         // Reset flag for next interrupt
         buttonInterruptOccurred = false;
         Serial.println("Panic detected!");
+        addNote(false, true);
     }
-    delay(50);
+    delay(50);  
 }
