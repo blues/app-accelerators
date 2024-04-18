@@ -88,9 +88,7 @@ To test the fall detector, position some form of cushion on the floor to catch t
 
 Similar to the panic button notes, the "File" for these notes is `fall.qo`.
 
-TODO: Check This
-
-By default, the accelerometer needs to be in free fall for 300ms to produce a fall event. If you don't see the fall event on Notehub, try dropping the breadboard from a greater height. If you want to detect shorter or longer falls, you can change the value of the macro `BMA400_INTERRUPT_DURATION_DEFAULT`, which is in units of 10ms (so the default is 30: 30 * 10ms = 300ms). You can do this when invoking CMake via `-DCMAKE_C_FLAGS="-DBMA400_INTERRUPT_DURATION_DEFAULT=<some value>"`, replacing `<some value>` with your custom value.
+By default, the accelerometer needs to be in free fall for 300ms to produce a fall event. If you don't see the fall event on Notehub, try dropping the breadboard from a greater height. If you want to detect shorter or longer falls, you can change the value of the macro `BMA400_INTERRUPT_DURATION_DEFAULT`, which is in units of 10ms (so the default is 30: 30 * 10ms = 300ms). You can do this by adding  `-D BMA400_INTERRUPT_DURATION_DEFAULT=<some value>"` to the build_flags in platformio.ini, replacing `<some value>` with your custom value.
 
 ## Blues Community
 
