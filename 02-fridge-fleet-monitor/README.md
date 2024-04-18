@@ -1,10 +1,8 @@
 # Fridge Fleet Monitor
 
-**Warning: This project uses Sparrow, a Blues product that is no longer under active development. We are working on updating this project to the successors of Sparrow: [Notecard LoRa](https://blues.com/notecard-lora/) and the [LoRaWAN Starter Kit](https://shop.blues.com/products/blues-starter-kit-lorawan). In the meantime, if you would like assistance building a Fridge Fleet Monitor feel free to reach out on [our community forum](https://discuss.blues.com/).**
 
 LoRa-based temperature, humidity and door open/close state for a fleet of refrigerators.
 
-![](images/banner.png)
 
 To run this project yourself you'll need to:
 
@@ -17,26 +15,22 @@ To run this project yourself you'll need to:
 
 The following hardware is required to run the Fridge Fleet Monitor.
 
-* Sparrow Development Kit
+* [Blues Starter Kit for LoRaWAN](https://shop.blues.com/products/blues-starter-kit-lorawan)
+* [Raspberry Pi Pico](https://www.adafruit.com/product/4864)
 * [Adafruit magnetic contact switch (door sensor) x 2](https://www.adafruit.com/product/375)
+* [DHT-11 Temperature and Humidity Sensor](https://www.amazon.com/SHILLEHTEK-Temperature-Humidity-Sensor-Module/dp/B0CN5RP8SL)
 
-After purchasing your Sparrow development kit, head to [Sparrow Quickstart documentation](https://dev.blues.io/quickstart/sparrow-quickstart/) to get started setting up your Sparrow gateway and nodes, including how to set up Notehub and the Notecard. 
-
-In the end, you'll have a gateway and two nodes that look similar to the image below (be sure to leave the backs off the node enclosures, you'll need access to the Sparrow board's pins to attach the contact switch sensor).
-
-![A constructed Sparrow gateway and Sparrow node](images/readme-sparrow-gateway-node-hardware.jpg)
-
-In addition to the Sparrow quickstart docs, connect the Adafruit magnetic contact switch to each Sparrow node by plugging one connector cable into the `A1` pin slot and the other into the `GND` pin slot. See images below.
-
-![The Sparrow node with magnetic door sensor attached](images/readme-sparrow-with-sensor.jpg)
-
-![The Sparrow node with magnetic door sensor attached close up](images/readme-sparrow-sensor-closeup.jpg)
-
-With that done, the hardware is assembled, and flashing firmware is up next.
 
 ## Firmware
 
-To get the proper firmware for the Fridge Fleet Monitor project set up, refer to the [`README.md`](firmware/README.md) file in this project's `firmware` folder for full instructions.
+This project runs on CircuitPython so you need to install it onto your Raspberry Pi Pico.  Follow the instructions from Adafruit: [Installing CircuitPython](https://learn.adafruit.com/getting-started-with-raspberry-pi-pico-circuitpython/circuitpython)
+
+Once this is installed, the pico will present as a mass storage device that you can install libraries and firmware onto.  First install the [note-python](https://dev.blues.io/tools-and-sdks/firmware-libraries/python-library/#circuitpython-and-micropython) library, and then the [Adafruit CircuitPython DHT Library](https://github.com/adafruit/Adafruit_CircuitPython_DHT).
+
+Finally copy code.py from the code repository onto the Pico.
+
+TODO: We should replace this sensor
+
 
 ## Hardware Installation
 
