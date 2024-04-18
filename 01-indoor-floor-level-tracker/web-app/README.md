@@ -95,7 +95,7 @@ it in your new `.env` file.
 Blues reference web apps need access to your Notehub project in order to
 access the Notehub API. An access token is used to authenticate the app.
 
-To find retrieve an authentication token, execute the following command in your
+To retrieve an authentication token, execute the following command in your
 terminal, replacing `YOUR_NOTEHUB_EMAIL` & `NOTEHUB_PASSWORD` with your own values.
 
 ```
