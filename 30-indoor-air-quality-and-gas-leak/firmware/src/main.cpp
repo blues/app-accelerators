@@ -32,7 +32,15 @@ static void addNote(const AQISensorReading& reading, bool immediate, uint8_t ale
 
 
 Notecard notecard;
-#define productUID "com.your-company.your-name:your_product"
+
+// Uncomment this line and replace com.your-company:your-product-name with your
+// ProductUID.
+// #define PRODUCT_UID "com.your-company:your-product-name"
+
+#ifndef PRODUCT_UID
+#define PRODUCT_UID "" // "com.my-company.my-name:my-project"
+#pragma message "PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://bit.ly/product-uid"
+#endif
 
 #define usbSerial Serial
 
@@ -110,7 +118,7 @@ void setup() {
     notecard.begin();
 
     J *req = notecard.newRequest("hub.set");
-    JAddStringToObject(req, "product", productUID);
+    JAddStringToObject(req, "product", PRODUCT_UID);
     notecard.sendRequest(req);
     if (!registerNotefileTemplate()) {
         usbSerial.println("Error Creating Notefile Template");
@@ -128,10 +136,10 @@ void setup() {
     }
     delay(200);
     if( !myENS.setOperatingMode(SFE_ENS160_STANDARD) ){
-        usbSerial.println("Error putting ENS160 into stanndard mode");
+        usbSerial.println("Error putting ENS160 into standard mode");
 		while(1);        
     } else {
-        usbSerial.println("ENS160 in stanndard mode, waiting for data");
+        usbSerial.println("ENS160 in standard mode, waiting for data");
     }
 }
 

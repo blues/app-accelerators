@@ -18,7 +18,21 @@ Monitor air quality, including Air Quality Index, CO2 and VOC concentration, and
 
 Sign up for a free account on [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-a/#set-up-notehub).
 
+## LoRa Gateway Setup
+
+Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to the Things Network.  To make this easy you can setup the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan).  To get this setup follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
+
 ## Swan Setup
+
+First connect your Blues Swan and Notecard to your Notecarrier-F. 
+
+1. Follow the steps in the [Notecard Quickstart](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/#connect-your-notecard-and-notecarrier) to connect your Notecard LoRa to your Notecarrier-F.  Your antenna will only have one cable, and the Notecard LoRa only one connection.
+
+2. Plug your Swan into the Feather headers on the Notecarrier F.
+
+3. Attach the Swan to your computer with a Micro USB to USB-A cable, using the **Micro USB port on the Swan**.
+
+![Notecard LoRa in Notecarrier F with antenna](images/notecarrier-notecard.jpg)
 
 ### Air Quality Sensor Connection
 
@@ -27,11 +41,13 @@ This solution makes use of the ENS160 sensor board, which measures indoor air qu
 1. Insert one end of the Qwiic cable into the port labelled Qwiic on the Swan board
 2. Insert the other end of the Qwiic cable into either of the Qwiic sockets on the ENS160 sensor board.
 
+![Notecarrier connected to ENS160 breakout board with Qwiic cable](images/notecarrier-ens160.jpg)
+
 With the Swan board powered on, you will see a red LED light up on the ENS160 board, indicating that it is receiving power. To improve battery life, you may wish to cut the LED jumper to disable the LED. For more details, see the "LED Jumper" section in the [Sparkfun ENS160 Qwiic Hookup Guide](https://learn.sparkfun.com/tutorials/sparkfun-indoor-air-quality-sensor---ens160-qwiic-hookup-guide).
 
 ## Firmware
 
-The firmware provided uses the Arduino Framework, follow the [instuctions in the git repo](firmware/) to flash your Swan.
+The firmware provided uses the Arduino Framework, follow the [instructions in the git repo](firmware/) to flash your Swan.
 
 ## Air Quality Monitoring and Alerting Behavior
 
