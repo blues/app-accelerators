@@ -26,7 +26,7 @@ Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is 
 
 First connect your Blues Swan and Notecard to your Notecarrier-F. 
 
-1. Follow the steps in the [Notecard Quickstart](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/#connect-your-notecard-and-notecarrier) to connect your Notecard LoRa to your Notecarrier-F.  Your antenna will only have one cable, and the Notecard LoRa only one connection.
+1. Follow the steps in the [Notecard Quickstart](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/#connect-your-notecard-and-notecarrier) to connect your Notecard LoRa to your Notecarrier-F.  Your antenna will only have one cable, and the Notecard LoRa only has one connection.
 
 2. Plug your Swan into the Feather headers on the Notecarrier F.
 
