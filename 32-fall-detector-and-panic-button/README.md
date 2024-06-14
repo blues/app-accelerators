@@ -16,9 +16,25 @@ Receive a notification when a fall is detected and provide a panic button to ale
 * Jumper wires
 * Solder flux
 * Soldering iron
-* Tape
+* Tape or Rubber Bands
 
 ## Overview
+
+## LoRa Gateway Setup
+
+Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to the Things Network.  To make this easy you can setup the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
+
+## Swan Setup
+
+First connect your Blues Swan and Notecard to your Notecarrier-F.
+
+1. Follow the steps in the [Notecard Quickstart](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/#connect-your-notecard-and-notecarrier) to connect your Notecard LoRa to your Notecarrier-F.  Your antenna will only have one cable, and the Notecard LoRa only has one connection.
+
+2. Plug your Swan into the Feather headers on the Notecarrier F.
+
+3. Attach the Swan to your computer with a Micro USB to USB-A cable, using the **Micro USB port on the Swan**.
+
+![Notecard LoRa in Notecarrier F with antenna](images/notecarrier-notecard.jpg)
 
 ## Hardware Setup
 
@@ -26,7 +42,7 @@ There are two primary pieces of hardware: the button and the accelerometer.
 
 The button will be wired to a GPIO pin on the Swan. This pin uses an internal pull-up so that the it reads a digital 1 when the button isn't pushed. When the button is pushed, it connects the corresponding GPIO pin to GND so that it reads a digital 0. Using the breadboard, button, and jumper wires, wire up the hardware as shown in the diagram below, connecting one side of the button to F_D12 and the other to the minus (-) rail of the breadboard. Make sure to then connect the minus rail to one of the GND pins on the Notecarrier-F.
 
-![breadboard button wiring](assets/breadboard_button.jpg "Breadboard Button Wiring")
+![breadboard button wiring](images/breadboard_button.jpg "Breadboard Button Wiring")
 
 Now, when the button is pressed, it will connect F_D12 to GND.
 
@@ -40,13 +56,13 @@ The accelerometer board has a hole on it labeled INT1. This is the interrupt lin
 
 The accelerometer also has a Qwiic port that needs to be wired up to the Swan Plug the Qwiic jumper cable into this port, and then on the other end to the Qwiic port on the Swan.
 
-Now, everything is wired up. It should look something like this:
+Now, everything is wired up. It should look something like this, although I soldered a header onto my BMA400 board, rather than soldering the wire directly:
 
-![breadboard full wiring](assets/breadboard_full.jpg "Breadboard Full Wiring")
+![breadboard full wiring](images/breadboard_full.jpg "Breadboard Full Wiring")
 
-Since this is a fall detector, we're going to need to drop this assembly from a decent height to simulate a person falling. To keep things secure, we can just tape everything to the breadboard.
+Since this is a fall detector, we're going to need to drop this assembly from a decent height to simulate a person falling. To keep things secure, we secure everything to the breadboard with rubber bands or tape.
 
-![breadboard taped](assets/breadboard_taped.jpg "Breadboard Taped")
+![breadboard taped](images/breadboard_banded.jpg "Breadboard Secured with Rubber Bands")
 
 ## Notehub Setup
 

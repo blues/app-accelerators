@@ -152,7 +152,6 @@ static bool registerNotefileTemplate()
     J *body = JCreateObject();
     if (body == NULL) {
         Serial.println("Could not create fall template body");
-
         JDelete(req);
         return false;
     }
@@ -162,19 +161,16 @@ static bool registerNotefileTemplate()
     JAddStringToObject(req, "format", "compact");
     JAddNumberToObject(req, "port", 10);
 
+    // Fill-in the body template
+    JAddBoolToObject(body, "fall", TBOOL);
+
     // Attach the body to the request, and send it to the gateway
     JAddItemToObject(req, "body", body);
-    J *rsp = NoteRequestResponse(req);
-    if (rsp == NULL || NoteResponseError(rsp)) {
+    if (!NoteRequest(req)) {
         Serial.println("Could not send fall template request");
-        if (rsp != NULL) {
-            Serial.printf("Error: %s\r\n", JGetString(rsp,"err"));
-            NoteDeleteResponse(rsp);
-        }
         return false;
     }
-    // Clear response object
-    NoteDeleteResponse(rsp);
+
 
 
     // Panic Template
@@ -203,18 +199,11 @@ static bool registerNotefileTemplate()
 
     // Attach the body to the request, and send it to the gateway
     JAddItemToObject(req, "body", body);
-    rsp = NoteRequestResponse(req);
-    if (rsp == NULL || NoteResponseError(rsp)) {
+
+    if (!NoteRequest(req)) {
         Serial.println("Could not send panic template request");
-        if (rsp != NULL) {
-            Serial.printf("Error: %s\r\n", JGetString(rsp,"err"));
-            NoteDeleteResponse(rsp);
-        }
         return false;
     }
-
-    // Clear response object
-    NoteDeleteResponse(rsp);
 
     return true;
 }
@@ -257,14 +246,17 @@ static void addNote(bool fall, bool panic)
 
 }
 
-
 void setup() {
   delay(2500);
 
   Serial.begin(115200);
   Serial.println("Setup Start");
   notecard.begin();
-  // TODO: Add Notecard Notehub Setup
+
+  J *req = notecard.newRequest("hub.set");
+  JAddStringToObject(req, "product", PRODUCT_UID);
+  notecard.sendRequest(req);
+
   if (!registerNotefileTemplate()) {
     Serial.println("Notefile Template setup failed");
     while(1){};
