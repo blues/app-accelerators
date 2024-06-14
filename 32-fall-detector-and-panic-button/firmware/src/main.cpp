@@ -12,7 +12,6 @@ Notecard notecard;
 // ProductUID.
 // #define PRODUCT_UID "com.your-company:your-product-name"
 
-#define PRODUCT_UID "net.bowerham.kimball:medicalalert" // TODO: Remove this line
 #ifndef PRODUCT_UID
 #define PRODUCT_UID "" // "com.my-company.my-name:my-project"
 #pragma message "PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://bit.ly/product-uid"
