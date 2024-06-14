@@ -7,8 +7,16 @@ static bool registerNotefileTemplate();
 static void addNote(bool panic, bool fall);
 
 Notecard notecard;
-//#define productUID "com.your-company.your-name:your_product"
-#define productUID "net.bowerham.kimball:medicalalert" // TODO: Remove this line
+
+// Uncomment this line and replace com.your-company:your-product-name with your
+// ProductUID.
+// #define PRODUCT_UID "com.your-company:your-product-name"
+
+#define PRODUCT_UID "net.bowerham.kimball:medicalalert" // TODO: Remove this line
+#ifndef PRODUCT_UID
+#define PRODUCT_UID "" // "com.my-company.my-name:my-project"
+#pragma message "PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://bit.ly/product-uid"
+#endif
 
 
 // Create a new sensor object
@@ -256,6 +264,7 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Setup Start");
   notecard.begin();
+  // TODO: Add Notecard Notehub Setup
   if (!registerNotefileTemplate()) {
     Serial.println("Notefile Template setup failed");
     while(1){};
