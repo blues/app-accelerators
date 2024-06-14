@@ -111,6 +111,6 @@ By default, the accelerometer needs to be in free fall for 300ms to produce a fa
 We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
 
 ## Additional Resources
-s
+
 * [BMA 400 Datasheet](https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bma400-ds000.pdf)
 * [BMA 400 Library](https://github.com/BoschSensortec/BMA400-API)
