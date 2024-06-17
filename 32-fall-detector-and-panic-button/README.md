@@ -22,13 +22,13 @@ Receive a notification when a fall is detected and provide a panic button to ale
 
 ## LoRa Gateway Setup
 
-Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to the Things Network.  To make this easy you can setup the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
+Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to The Things Network.  To make this easy you can setup the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
 
 ## Swan Setup
 
-First connect your Blues Swan and Notecard to your Notecarrier-F.
+First connect your Blues Swan and Notecard to your Notecarrier F.
 
-1. Follow the steps in the [Notecard Quickstart](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/#connect-your-notecard-and-notecarrier) to connect your Notecard LoRa to your Notecarrier-F.  Your antenna will only have one cable, and the Notecard LoRa only has one connection.
+1. Follow the steps in the [Notecard Quickstart](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/#connect-your-notecard-and-notecarrier) to connect your Notecard LoRa to your Notecarrier F.  Your antenna will only have one cable, and the Notecard LoRa only has one connection.
 
 2. Plug your Swan into the Feather headers on the Notecarrier F.
 
@@ -60,7 +60,7 @@ Now, everything is wired up. It should look something like this, although I sold
 
 ![breadboard full wiring](images/breadboard_full.jpg "Breadboard Full Wiring")
 
-Since this is a fall detector, we're going to need to drop this assembly from a decent height to simulate a person falling. To keep things secure, we secure everything to the breadboard with rubber bands or tape.
+Since this is a fall detector, we're going to need to drop this assembly from a decent height to simulate a person falling. To keep things from bouncing around, you can secure everything to the breadboard with rubber bands or tape.
 
 ![breadboard taped](images/breadboard_banded.jpg "Breadboard Secured with Rubber Bands")
 
@@ -74,7 +74,7 @@ To build and upload the firmware to the Swan, you'll need VS Code with the Platf
 
 1. Download and install [Visual Studio Code](https://code.visualstudio.com/).
 2. Install the [PlatformIO IDE extension](https://marketplace.visualstudio.com/items?itemName=platformio.platformio-ide) via the Extensions menu of Visual Studio Code.
-3. Click the PlatformIO icon on the left side of VS Code, then click Pick a folder, and select the the firmware directory `32-fall-detector-and-panic-button`.
+3. Click the PlatformIO icon on the left side of VS Code, then click Pick a folder, and select the `firmware` directory within `32-fall-detector-and-panic-button`.
 4. In the file explorer, open `src\main.cpp` and uncomment this line: `// #define PRODUCT_UID "com.my-company.my-name:my-project"`. Replace `com.my-company.my-name:my-project` with the [ProductUID of the Notehub project](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) you created in [Notehub Setup](#notehub-setup).
 5. Click the PlatformIO icon again, and under the Project Tasks menu, click Build to build the firmware image.
 6. Prepare the Swan to receive the firmware image via DFU by following these instructions from the [Swan Quickstart](https://dev.blues.io/quickstart/swan-quickstart/#programming-swan-the-stlink-v3mini).
@@ -104,7 +104,7 @@ To test the fall detector, position some form of cushion on the floor to catch t
 
 Similar to the panic button notes, the "File" for these notes is `fall.qo`.
 
-By default, the accelerometer needs to be in free fall for 300ms to produce a fall event. If you don't see the fall event on Notehub, try dropping the breadboard from a greater height. If you want to detect shorter or longer falls, you can change the value of the macro `BMA400_INTERRUPT_DURATION_DEFAULT`, which is in units of 10ms (so the default is 30: 30 * 10ms = 300ms). You can do this by adding  `-D BMA400_INTERRUPT_DURATION_DEFAULT=<some value>"` to the build_flags in platformio.ini, replacing `<some value>` with your custom value.
+By default, the accelerometer needs to be in free fall for 300ms to produce a fall event. If you don't see the fall event on Notehub, try dropping the breadboard from a greater height. If you want to detect shorter or longer falls, you can change the value of the macro `BMA400_INTERRUPT_DURATION_DEFAULT`, which is in units of 10ms (so the default is 30: 30 * 10ms = 300ms). You can do this by adding  `-D BMA400_INTERRUPT_DURATION_DEFAULT=<some value>"` to the build_flags in `platformio.ini`, replacing `<some value>` with your custom value.
 
 ## Blues Community
 
