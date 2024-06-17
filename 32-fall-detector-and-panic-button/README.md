@@ -42,7 +42,7 @@ There are two primary pieces of hardware: the button and the accelerometer.
 
 The button will be wired to a GPIO pin on the Swan. This pin uses an internal pull-up so that the it reads a digital 1 when the button isn't pushed. When the button is pushed, it connects the corresponding GPIO pin to GND so that it reads a digital 0. Using the breadboard, button, and jumper wires, wire up the hardware as shown in the diagram below, connecting one side of the button to F_D12 and the other to the minus (-) rail of the breadboard. Make sure to then connect the minus rail to one of the GND pins on the Notecarrier-F.
 
-![breadboard button wiring](images/breadboard_button.jpg "Breadboard Button Wiring")
+![breadboard button wiring](images/breadboard_button.png "Breadboard Button Wiring")
 
 Now, when the button is pressed, it will connect F_D12 to GND.
 
