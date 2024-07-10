@@ -3,6 +3,10 @@ import notecard
 from notecard import card, hub, note
 import time
 
+# Config
+PIRSupressionMins = 1
+productUID = "net.bowerham.kimball:roomoccupancy" 
+
 debounce_time=0
 pir_debounce_time=0
 
@@ -16,7 +20,6 @@ def sendPIRCount():
     global pirTotal
     global pirCount
     
-    
     pirTotal += pirCount
     rsp = note.add(nCard,file = "motion.qo", body = {"count": pirCount, "total": pirTotal}, port = 10, sync = True)
     print(rsp)
@@ -24,7 +27,8 @@ def sendPIRCount():
     
     
 def doorChange():
-    rsp = note.add(nCard,file = "door.qo", body = {"open": not door}, port = 11, sync = True)  # Door is high when closed (pull down input)
+    print("Door", ("open","closed")[door.value()])
+    rsp = note.add(nCard,file = "door.qo", body = {"open": not door.value(), "closed": door.value()}, port = 11, sync = True)  # Door is high when closed (pull down input)
     print(rsp)
     
 def doorCallback(pin):
@@ -49,26 +53,27 @@ i2c=I2C(0, freq=400000)
 nCard = notecard.OpenI2C(i2c, 0, 0) 
 
 # Set ProductUID 
-productUID = "net.bowerham.kimball:roomoccupancy" 
+
 hub.set(nCard, product=productUID, mode="minimum") # We use minimum so we can sync and reset PIR count together
 
 # Setup templates
 rsp = note.template(nCard, file="motion.qo", body={"count": 21, "total": 21}, port = 10, compact = True)
 print(rsp)
-rsp = note.template(nCard, file="door.qo", body={"open": True}, port = 11, compact = True)
+rsp = note.template(nCard, file="door.qo", body={"open": True, "closed": True}, port = 11, compact = True)
 print(rsp)
 
-pir = Pin(22, Pin.IN, Pin.PULL_UP)
+pir = Pin(22, Pin.IN, Pin.PULL_DOWN)
 door = Pin(21, Pin.IN, Pin.PULL_UP)
 
-timer = Timer(mode=Timer.PERIODIC, period=30000, callback=pirTimer)
+timer = Timer(mode=Timer.PERIODIC, period=(PIRSupressionMins * 60 * 1000), callback=pirTimer)
 door.irq(trigger=Pin.IRQ_FALLING|Pin.IRQ_RISING, handler=doorCallback)
 pir.irq(trigger=Pin.IRQ_RISING, handler=pirCallback)
 
 while True:
+    #print("Loop")
     machine.disable_irq
     if sendPIR:
-        print("PIR")
+        print("PIR Count: ", pirCount, " PIR Total: ", pirTotal)
         sendPIR = False
         sendPIRCount()
     if sendDoorChange:
@@ -76,6 +81,6 @@ while True:
         sendDoorChange = False
         doorChange()
     machine.enable_irq
-    time.sleep(1)
-    machine.lightsleep(60000)
+    #time.sleep(30)
+    #machine.lightsleep(60000)
     
