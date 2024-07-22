@@ -4,8 +4,8 @@ from notecard import card, hub, note
 import time
 
 # Config
-PIRSupressionMins = 1
-productUID = "net.bowerham.kimball:roomoccupancy" 
+PIRSupressionMins = 5
+# productUID = "com.my-company.my-name:my-project"
 
 debounce_time=0
 pir_debounce_time=0
@@ -21,14 +21,14 @@ def sendPIRCount():
     global pirCount
     
     pirTotal += pirCount
-    rsp = note.add(nCard,file = "motion.qo", body = {"count": pirCount, "total": pirTotal}, port = 10, sync = True)
+    rsp = note.add(nCard,file = "motion.qo", body = {"count": pirCount, "total": pirTotal}, port = 12, sync = True)
     print(rsp)
     pirCount = 0
     
     
 def doorChange():
-    print("Door", ("open","closed")[door.value()])
-    rsp = note.add(nCard,file = "door.qo", body = {"open": not door.value(), "closed": door.value()}, port = 11, sync = True)  # Door is high when closed (pull down input)
+    print("Door", ("closed","open")[door.value()])
+    rsp = note.add(nCard,file = "door.qo", body = {"open": door.value(), "closed": not door.value()}, port = 11, sync = True)  # Door is low when closed (pull up input)
     print(rsp)
     
 def doorCallback(pin):
@@ -57,7 +57,7 @@ nCard = notecard.OpenI2C(i2c, 0, 0)
 hub.set(nCard, product=productUID, mode="minimum") # We use minimum so we can sync and reset PIR count together
 
 # Setup templates
-rsp = note.template(nCard, file="motion.qo", body={"count": 21, "total": 21}, port = 10, compact = True)
+rsp = note.template(nCard, file="motion.qo", body={"count": 21, "total": 21}, port = 12, compact = True)
 print(rsp)
 rsp = note.template(nCard, file="door.qo", body={"open": True, "closed": True}, port = 11, compact = True)
 print(rsp)
@@ -70,17 +70,15 @@ door.irq(trigger=Pin.IRQ_FALLING|Pin.IRQ_RISING, handler=doorCallback)
 pir.irq(trigger=Pin.IRQ_RISING, handler=pirCallback)
 
 while True:
-    #print("Loop")
     machine.disable_irq
     if sendPIR:
         print("PIR Count: ", pirCount, " PIR Total: ", pirTotal)
         sendPIR = False
         sendPIRCount()
     if sendDoorChange:
-        print("Door")
         sendDoorChange = False
         doorChange()
     machine.enable_irq
-    #time.sleep(30)
-    #machine.lightsleep(60000)
+#    machine.lightsleep(60000)  # This should be uncommented, but with the current (1.23) version of micropython, it crashes USB Serial
+                                # Uncomment when running without usb in use.
     

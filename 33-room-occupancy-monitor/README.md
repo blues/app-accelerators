@@ -9,6 +9,7 @@ Receive notifications when motion is detected in a room and when the room's door
 * USB A to micro USB cable
 * [Magnetic Door Switch Set](https://www.sparkfun.com/products/13247)
 * [PIR Sensor](https://www.adafruit.com/product/4871)
+* [0.1" Jumper Cables](https://www.adafruit.com/product/5018)
 
 ## Notehub Setup
 
@@ -54,12 +55,17 @@ python pyboard.py -d <serial port> --no-soft-reset -f cp main.py :/
 
 There are two primary pieces of hardware: the magnetic door switch and a PIR motion sensor.
 
-The magnetic door switch consists of two plastic terminals, one of which has a pair of wires coming out of it. When the terminals are brought into contact (or close proximity), an internal [reed switch](https://en.wikipedia.org/wiki/Reed_switch) is closed and the two wires are electrically connected. As shown in the SparkFun product link above, the terminal with the wires is typically mounted to a door frame and the other terminal is mounted to the door such that when the door is closed, the two terminals are adjacent, closing the switch. Since we're just testing things out, don't mount the terminals yet. Instead, keep them on your work surface and plug the wires into the GP22 and GND ports of the Pico (it doesn't matter which wire goes into which port). When the switch is closed, GP22 will connect to GND. Otherwise, GP22 will be driven high by an internal pull-up.
+The magnetic door switch consists of two plastic terminals, one of which has a pair of wires coming out of it. When the terminals are brought into contact (or close proximity), an internal [reed switch](https://en.wikipedia.org/wiki/Reed_switch) is closed and the two wires are electrically connected. As shown in the SparkFun product link above, the terminal with the wires is typically mounted to a door frame and the other terminal is mounted to the door such that when the door is closed, the two terminals are adjacent, closing the switch. Since we're just testing things out, don't mount the terminals yet. Instead, keep them on your work surface and plug the wires into the GP21 and GND ports of the Pico (it doesn't matter which wire goes into which port). When the switch is closed, GP21 will connect to GND. Otherwise, GP21 will be driven high by an internal pull-up.
 
-The PIR motion sensor 
+The PIR motion sensor contains circuitry to convert the readings from the sensor into a simple high value on the data line for 2 seconds when motion is detected. Using the jumper cables, connect Pin 1 of the sensor to GND on the Pico, Pin 2 of the sensor to GP22 on the Pico, and Pin 2 of the sensor to 3V3(OUT) on the Pico.  GP22 will be driven low by an internal pull-down, to be brought high when movemnent is detected.
 
-### Firmware
+The Notecarrier can be connected with a Qwiic cable with the following connctions:.
 
+  Qwiic Black (GND) to Pico GND
+  Qwiic Blue (SDA) to  Pico GP4 (Pin 6)
+  Qwiic Yellow (SCL) to Pico GP5 (Pin 7)
+
+Do not connect the Red cable of the Qwiic connector.  If you wish to power the Pico from the Notecarrier (which makes sense after testing) connect VMAIN on the Notecarrier to VSYS (Pin 39) on the Pico.
 
 ## Testing
 
@@ -70,7 +76,7 @@ To test the magnetic door switch, do the following:
 
 The "File" field for each note on the events page will be `door.qo`.
 
-Now, to test the PIR motion sensor, simply wave your hand in front of the plastic dome or walk by it. You should see a note on the events page for your project like this:
+Now, to test the PIR motion sensor, simply wave your hand in front of the plastic dome or walk by it. After some time you should see a note on the events page for your project like this:
 
 ```json
 {
@@ -90,7 +96,3 @@ PIRSupressionMins = 5
 ## Blues Community
 
 We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
-
-## Additional Resources
-
-* [PIR motion sensor datasheet (PYQ 1548 / 7659)](https://media.digikey.com/pdf/Data%20Sheets/Excelitas%20PDFs/PYQ_1548_7659_07.11.2018_DS.pdf)
