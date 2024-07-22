@@ -42,9 +42,9 @@ Pico Power:
 
 Door Sensor:
 
-    GP28 on Pico (Pin 43) to 10K Resistor
+    GP28 on Pico (Pin 34) to 10K Resistor
     10K resistor to Breadboard +VE Rail
-    GP28 on Pico (Pin 43) to Magnetic Door Sensor
+    GP28 on Pico (Pin 34) to Magnetic Door Sensor
     GND Rail on Breadboard to Magnetic Door Sensor
 
 DHT11 Sensor:
@@ -59,7 +59,7 @@ Notecarrier:
     Notecarrier can be connected with a Qwiic cable.
     Qwiic Black (GND) to Breadboard GND Rail
     Qwiic Blue (SDA) to  Pico GP4 (Pin 6)
-    Qwiic Red (SCL) to Pico GP5 (Pin 7)
+    Qwiic Yellow (SCL) to Pico GP5 (Pin 7)
 
 Do not connect the Red cable of the Qwiic connector.  If you wish to power the Pico from the Notecarrier (which makes sense after testing) connect VMAIN on the Notecarrier to VSYS (Pin 39) on the Pico.
 
@@ -75,20 +75,14 @@ With the hardware assembled and the proper code on the Pico, attach the temperat
 
 To attach the sensor inside the fridge, use Command Strips or some other adhesive strip attached to the back of the sensor, and wipe down the area to place with node with rubbing alcohol prior to attaching for best adhesion.
 
-![DHT11 Sensor on side wall](images/readme-dht11-mounted-fridge.jpg)
+![DHT11 Sensor on side wall](images/dht11-mounted-fridge.jpg)
 
 _DHT11 Sensor installed in a refrigeration unit._
 
 
-Likewise, to install the door sensors, attach each piece of the sensor on one side of the door via Command Strips and ensure they line up as closely as possible (notice in the example photos below several Command Strips were stacked together to make sure the switch pieces were as level with each other as possible). See images below.
+Likewise, to install the door sensors, attach each piece of the sensor on one side of the door via Command Strips and ensure they line up as closely as possible. See the image below.
 
-![door switches aligned together when door is closed](images/readme-door-switches-closed.jpg)
-
-Notice multiple Command Strips raise the connected contact switch sensor on the fridge so they're close to level with the switch on the door's edge.
-
-![door switches separated when door is opened](images/readme-door-switches-open.jpg)
-
-Here's how it looks opened. Note the cable from the DHT11 Sensor is routed next to the Magnetic switch sensor so that is does not impede with the sensor or the door closing.
+![door switches aligned together when door is closed](images/door-switches-closed.jpg)
 
 
 ## Testing
@@ -100,7 +94,7 @@ Connect the Raspberry Pi Pico to your computer with a USB Cable, ensuring you ha
 Open a Serial Terminal Emulator to view the log output from the Pico Code
 You should see output similar to below:
 
-![example output from serial console of Pico](images/pico-serial-output.jpg)
+![example output from serial console of Pico](images/pico-serial-output.png)
 
 Open the fridge door.  In the console you should see the message 'Door Wakeup. Door Value: True' and 'Door Open'.  In addition, you should see an event in the Blues Notehub with a filename of `door.qo` with the body of `{'open':true}`
 
@@ -124,3 +118,4 @@ We’d love to hear about you and your project on the [Blues Community Forum](ht
 
 * [DHT11 Datasheet](https://www.mouser.com/datasheet/2/758/DHT11-Technical-Data-Sheet-Translated-Version-1143054.pdf)
 * [DHT11 Library](https://github.com/BoschSensortec/BMA400-API)
+* [Using Raspberry Pi Pico with Blues Notecard](https://dev.blues.io/blog/getting-started-with-raspberry-pi-pico-and-blues-notecard/)
