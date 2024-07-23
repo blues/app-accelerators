@@ -4,7 +4,7 @@ Receive notifications when motion is detected in a room and when the room's door
 
 ## You Will Need
 
-* Lora Development Kit
+* [Blues Starter Kit for LoRaWAN](https://shop.blues.com/products/blues-starter-kit-lorawan)
 * Raspberry Pi Pico
 * USB A to micro USB cable
 * [Magnetic Door Switch Set](https://www.sparkfun.com/products/13247)
@@ -17,16 +17,16 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 
 ## LoRa Gateway Setup
 
-Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to The Things Network.  To make this easy you can setup the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
+Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to The Things Network.  To make this easy you can use the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
 
 
 ## Pico Setup
 
-Your Raspbery Pi Pico will need to have Micropython installed.  If it is not yet installed, follow the [instalation instructions](https://micropython.org/download/RPI_PICO/) provided by MicroPython.
+Your Raspbery Pi Pico will need to have Micropython installed.  If it is not yet installed, follow the [installation instructions](https://micropython.org/download/RPI_PICO/) provided by MicroPython.
 
 ### MicroPython Code
 
-The script that will run on the MCU is `main.py`. It depends on [note-python](https://github.com/blues/note-python), a Python library for communicating with a Notecard.
+The script that will run on the MCU is [main.py](main.py). It depends on [note-python](https://github.com/blues/note-python), a Python library for communicating with a Notecard.
 
 #### note-python
 
@@ -55,7 +55,7 @@ python pyboard.py -d <serial port> --no-soft-reset -f cp main.py :/
 
 There are two primary pieces of hardware: the magnetic door switch and a PIR motion sensor.
 
-The magnetic door switch consists of two plastic terminals, one of which has a pair of wires coming out of it. When the terminals are brought into contact (or close proximity), an internal [reed switch](https://en.wikipedia.org/wiki/Reed_switch) is closed and the two wires are electrically connected. As shown in the SparkFun product link above, the terminal with the wires is typically mounted to a door frame and the other terminal is mounted to the door such that when the door is closed, the two terminals are adjacent, closing the switch. Since we're just testing things out, don't mount the terminals yet. Instead, keep them on your work surface and plug the wires into the GP21 and GND ports of the Pico (it doesn't matter which wire goes into which port). When the switch is closed, GP21 will connect to GND. Otherwise, GP21 will be driven high by an internal pull-up.
+The magnetic door switch consists of two plastic terminals, one of which has a pair of wires coming out of it. When the terminals are brought into contact (or close proximity), an internal [reed switch](https://en.wikipedia.org/wiki/Reed_switch) is closed and the two wires are electrically connected. As shown on the [SparkFun product site](https://www.sparkfun.com/products/13247), the terminal with the wires is typically mounted to a door frame and the other terminal is mounted to the door such that when the door is closed, the two terminals are adjacent, closing the switch. Since we're just testing things out, don't mount the terminals yet. Instead, keep them on your work surface and plug the wires into the GP21 and GND ports of the Pico (it doesn't matter which wire goes into which port). When the switch is closed, GP21 will connect to GND. Otherwise, GP21 will be driven high by an internal pull-up.
 
 The PIR motion sensor contains circuitry to convert the readings from the sensor into a simple high value on the data line for 2 seconds when motion is detected. Using the jumper cables, connect Pin 1 of the sensor to GND on the Pico, Pin 2 of the sensor to GP22 on the Pico, and Pin 2 of the sensor to 3V3(OUT) on the Pico.  GP22 will be driven low by an internal pull-down, to be brought high when movemnent is detected.
 
@@ -71,12 +71,12 @@ Do not connect the Red cable of the Qwiic connector.  If you wish to power the P
 
 To test the magnetic door switch, do the following:
 
-1. Bring the terminals together. You should see the message `Door closed.` in the serial log. Then, on the events page of your Notehub project, you should see a note that reads `{"open":false}`, indicating the door is closed.
-1. Separate the terminals. You should see the message `Door open.` in the serial log. Then, on the events page of your Notehub project, you should see a note that reads `{"open":true}`, indicating the door is open.
+1. Bring the terminals together. You should see the message `Door closed.` in the serial log. Then, on the events page of your Notehub project, you should see a Note that reads `{"open":false}`, indicating the door is closed.
+1. Separate the terminals. You should see the message `Door open.` in the serial log. Then, on the events page of your Notehub project, you should see a Note that reads `{"open":true}`, indicating the door is open.
 
-The "File" field for each note on the events page will be `door.qo`.
+The "File" field for each Note on the events page will be `door.qo`.
 
-Now, to test the PIR motion sensor, simply wave your hand in front of the plastic dome or walk by it. After some time you should see a note on the events page for your project like this:
+Now, to test the PIR motion sensor, wave your hand in front of the plastic dome or walk by it. After some time you should see a Note on the events page for your project like this:
 
 ```json
 {
@@ -85,9 +85,9 @@ Now, to test the PIR motion sensor, simply wave your hand in front of the plasti
 }
 ```
 
-`count` indicates the number of motion events since the last note, while `total` is the total number of events since the device first started running. Similar to the door state notes, the "File" for these notes is `motion.qo`, where ID is that same alphanumeric string that uniquely identifies the reference node.
+`count` indicates the number of motion events since the last Note, while `total` is the total number of events since the device first started running. Similar to the door state Notes, the "File" for these Notes is `motion.qo`, where ID is that same alphanumeric string that uniquely identifies the reference node.
 
-In order to keep traffic to Notehub reasonable, a motion note will only be sent a maximum of once every 5 minutes. So, many motion events may be coalesced into a single note. In that case, you would see a `count` value greater than 1. If you want to lengthen or shorten this interval, you can modify the value of `PIRSupressionMins` in main.py:
+In order to keep traffic to Notehub reasonable, a motion Note will only be sent a maximum of once every 5 minutes. So, many motion events may be coalesced into a single Note. In that case, you would see a `count` value greater than 1. If you want to lengthen or shorten this interval, you can modify the value of `PIRSupressionMins` in `main.py`:
 
 ```python
 PIRSupressionMins = 5

@@ -81,4 +81,4 @@ while True:
     machine.enable_irq
 #    machine.lightsleep(60000)  # This should be uncommented, but with the current (1.23) version of micropython, it crashes USB Serial
                                 # Uncomment when running without usb in use.
-    
+                                # https://github.com/orgs/micropython/discussions/14401
