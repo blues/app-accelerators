@@ -85,7 +85,7 @@ Now, to test the PIR motion sensor, wave your hand in front of the plastic dome 
 }
 ```
 
-`count` indicates the number of motion events since the last Note, while `total` is the total number of events since the device first started running. Similar to the door state Notes, the "File" for these Notes is `motion.qo`, where ID is that same alphanumeric string that uniquely identifies the reference node.
+`count` indicates the number of motion events since the last Note, while `total` is the total number of events since the device first started running. Similar to the door state Notes, the "File" for these Notes is `motion.qo`.
 
 In order to keep traffic to Notehub reasonable, a motion Note will only be sent a maximum of once every 5 minutes. So, many motion events may be coalesced into a single Note. In that case, you would see a `count` value greater than 1. If you want to lengthen or shorten this interval, you can modify the value of `PIRSupressionMins` in `main.py`:
 
