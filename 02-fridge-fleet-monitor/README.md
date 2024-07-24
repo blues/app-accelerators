@@ -20,7 +20,7 @@ The following hardware is required to run the Fridge Fleet Monitor.
 
 ## LoRa Gateway Setup
 
-Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to The Things Network.  To make this easy you can setup the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
+Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to The Things Network.  To make this easy you can use the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
 
 ## Firmware
 
@@ -28,7 +28,7 @@ This project runs on CircuitPython so you need to install it onto your Raspberry
 
 Once this is installed, the Pico will present as a mass storage device that you can install libraries and firmware onto.  First install the [note-python](https://dev.blues.io/tools-and-sdks/firmware-libraries/python-library/#circuitpython-and-micropython) library, and then the [Adafruit CircuitPython DHT Library](https://github.com/adafruit/Adafruit_CircuitPython_DHT).
 
-Finally update the ProductUID value in code.py from the code repository and copy it onto the Pico.
+Finally, update the ProductUID value in this repository’s `code.py` file, and copy that file onto the Pico.
 
 
 ## Hardware Setup
@@ -91,24 +91,24 @@ Ensure your Notecarrier is powered with a battery or via a USB power supply.
 
 Connect the Raspberry Pi Pico to your computer with a USB Cable, ensuring you have no power cable between the Notecarrier and the Pico to prevent damage.
 
-Open a Serial Terminal Emulator to view the log output from the Pico Code
+Open a Serial Terminal Emulator to view the log output from the Pico code.
 You should see output similar to below:
 
 ![example output from serial console of Pico](images/pico-serial-output.png)
 
-Open the fridge door.  In the console you should see the message 'Door Wakeup. Door Value: True' and 'Door Open'.  In addition, you should see an event in the Blues Notehub with a filename of `door.qo` with the body of `{'open':true}`
+Open the fridge door.  In the console you should see the message 'Door Wakeup. Door Value: True' and 'Door Open'.  In addition, you should see an event in the Blues Notehub with a filename of `door.qo` with the body of `{"open":true}`
 
-Close the fridge door. In the console you should see the message 'Door Closed'.  In addition, you should see an event in the Blues Notehub with a filename of `door.qo` with the body of `{'closed':true}`
+Close the fridge door. In the console you should see the message 'Door Closed'.  In addition, you should see an event in the Blues Notehub with a filename of `door.qo` with the body of `{"closed":true}`
 
-Aditionally you should also see an event in Notehub with the filename of `readings.qo` and the body similar to `{"humidity":48,"temperature":22}`. This is the relative humidity percentage and the temperature in celcius.  This event should be sent by default every 60 minutes.
+Additionally you should see an event in Notehub with the filename of `readings.qo` and a body similar to `{"humidity":48,"temperature":22}`. This is the relative humidity percentage and the temperature in Celsius.  This event should be sent by default every 60 minutes.
 
 ## Further Development
 
 If you wish to develop this project further, here are some suggestions.
 
-Firstly, the DHT11 sensor is cheap and accessable, but not nescarcellary the most accurate.  Consider replacing it with another, for example the BME280 which connects via I2C, so will share the same connections as the Notecarrier, and there is a [CircutPython Library available as well](https://docs.circuitpython.org/projects/bme280/en/latest/)
+Firstly, the DHT11 sensor is cheap and accessible, but not necessarily the most accurate.  Consider replacing it the BME280, which also connects via I2C, so it will share the same connections as the Notecarrier. There is a [CircutPython Library available for the BME280 as well](https://docs.circuitpython.org/projects/bme280/en/latest/)
 
-Secondly, a great addition to the functionality would be to add an note to be sent if the fridge door is left open for a configurable time.  I will leave this as an exercise to the user on how to add this feature, but it should be quite simple with the existing code.
+Secondly, a great addition to the functionality would be to add and send Note if the fridge door is left open for a configurable time.  I will leave this as an exercise to the user on how to add this feature, but it should be quite simple with the existing code.
 
 ## Blues Community
 
