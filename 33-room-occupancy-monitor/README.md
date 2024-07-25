@@ -30,7 +30,7 @@ The script that will run on the MCU is [main.py](main.py). It depends on [note-p
 
 #### note-python
 
-To get the note-python files onto the MCU, use the `setup_board.py` script. This uses the `pyboard.py` script to communicate with the Raspberry Pi Pico. First, you must identify the MCU's serial port. On Linux, it'll typically be something like `/dev/ttyACM0`. You can run `ls /dev/ttyACM*` before and after plugging the board in to figure out the serial port's associated file. Once you have that, run `python setup_board.py <serial port>`, replacing `<serial port>` with your serial port. This script does a few things:
+To get the note-python files onto the MCU, use the [`setup_board.py`](setup_board.py) script. This uses the [`pyboard.py`](pyboard.py) script to communicate with the Raspberry Pi Pico. First, you must identify the MCU's serial port. On Linux, it'll typically be something like `/dev/ttyACM0`. You can run `ls /dev/ttyACM*` before and after plugging the board in to figure out the serial port's associated file. Once you have that, run `python setup_board.py <serial port>`, replacing `<serial port>` with your serial port. This script does a few things:
 
 1. Clones note-python from GitHub.
 2. Creates the `/lib` and `/lib/notecard` directories on the MCU.
