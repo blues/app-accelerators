@@ -89,6 +89,10 @@ See the image below for a diagram of the connections required.
 
 ![Diagram of Breadboard Circuit](images/room-occupancy-monitor-breadboard.png)
 
+Once complete the build should look a little like this:
+
+![Complete Breadboard Build](images/complete-build.jpg)
+
 ## Testing
 
 To test the magnetic door switch, do the following:
