@@ -1,84 +1,108 @@
 # Room Occupancy Monitor
 
-**Warning: This project uses Sparrow, a Blues product that is no longer under active development. We are working on updating this project to the successors of Sparrow: [Notecard LoRa](https://blues.com/notecard-lora/) and the [LoRaWAN Starter Kit](https://shop.blues.com/products/blues-starter-kit-lorawan). In the meantime, if you would like assistance building a Room Occupancy Monitor feel free to reach out on [our community forum](https://discuss.blues.com/).**
-
 Receive notifications when motion is detected in a room and when the room's door is opened or closed.
 
 ## You Will Need
 
-* Sparrow Development Kit
-* 2 USB A to micro USB cables
+* [Blues Starter Kit for LoRaWAN](https://shop.blues.com/products/blues-starter-kit-lorawan)
+* Raspberry Pi Pico
+* USB A to micro USB cable
 * [Magnetic Door Switch Set](https://www.sparkfun.com/products/13247)
+* [PIR Sensor](https://www.adafruit.com/product/4871)
+* [0.1" Jumper Cables](https://www.adafruit.com/product/5018)
 
 ## Notehub Setup
 
 Sign up for a free account on [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-a/#set-up-notehub).
 
-## Sparrow Setup
+## LoRa Gateway Setup
 
-### Quickstart
+Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to The Things Network.  To make this easy you can use the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
 
-Follow the [Sparrow Quickstart](https://dev.blues.io/quickstart/sparrow-quickstart/) to get your Sparrow reference node paired with the gateway and associated with the Notehub project you just created. Note also that we'll only need one reference node for this project, so you don't need to pair both nodes that came with the dev kit. Make sure that you use the ProductUID generated in [Notehub Setup](#notehub-setup) when it comes time to issue the `hub.set` command in the quickstart.
 
-After you've completed the quickstart, leave the Notecarrier and essentials board powered and connected. These two devices will act as our gateway to Notehub, and we won't need to touch them again. The rest of this guide will focus on the reference node.
+## Pico Setup
+
+Your Raspbery Pi Pico will need to have Micropython installed.  If it is not yet installed, follow the [installation instructions](https://micropython.org/download/RPI_PICO/) provided by MicroPython.
+
+### MicroPython Code
+
+The script that will run on the MCU is [main.py](main.py). It depends on [note-python](https://github.com/blues/note-python), a Python library for communicating with a Notecard.
+
+#### note-python
+
+To get the note-python files onto the MCU, use the `setup_board.py` script. This uses the `pyboard.py` script to communicate with the Raspberry Pi Pico. First, you must identify the MCU's serial port. On Linux, it'll typically be something like `/dev/ttyACM0`. You can run `ls /dev/ttyACM*` before and after plugging the board in to figure out the serial port's associated file. Once you have that, run `python setup_board.py <serial port>`, replacing `<serial port>` with your serial port. This script does a few things:
+
+1. Clones note-python from GitHub.
+2. Creates the `/lib` and `/lib/notecard` directories on the MCU.
+3. Copies the `.py` files from `note-python/notecard` on your development machine to `/lib/notecard` on the MCU.
+4. Lists the contents of `/lib/notecard` so you can verify that everything was copied over.
+
+Note that for `pyboard.py` to work, you'll need to install [pyserial](https://pypi.org/project/pyserial/) with `pip install pyserial`, if you don't have it installed already.
+
+#### Running `main.py`
+
+Before running `main.py`, uncomment this line: `# product_uid = 'com.your-company:your-product-name'`. Replace `com.my-company.my-name:my-project` with the [ProductUID of the Notehub project](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) you created in [Notehub Setup](#notehub-setup).
+
+Copy `main.py` over to the board with this command:
+
+```
+python pyboard.py -d <serial port> --no-soft-reset -f cp main.py :/
+```
+
+ Make sure to replace `<serial port>` with your serial port. `main.py` will start running after boot up.
 
 ### Hardware
 
-There are two primary pieces of hardware: the magnetic door switch and the PIR motion sensor attached to the Sparrow reference node's circuit board.
+There are two primary pieces of hardware: the magnetic door switch and a PIR motion sensor.
 
-The magnetic door switch consists of two plastic terminals, one of which has a pair of wires coming out of it. When the terminals are brought into contact (or close proximity), an internal [reed switch](https://en.wikipedia.org/wiki/Reed_switch) is closed and the two wires are electrically connected. As shown in the SparkFun product link above, the terminal with the wires is typically mounted to a door frame and the other terminal is mounted to the door such that when the door is closed, the two terminals are adjacent, closing the switch. Since we're just testing things out, don't mount the terminals yet. Instead, keep them on your work surface and plug the wires into the A1 and GND ports of the Sparrow reference node (it doesn't matter which wire goes into which port). When the switch is closed, A1 will connect to GND. Otherwise, A1 will be driven high by an internal pull-up.
+The magnetic door switch consists of two plastic terminals, one of which has a pair of wires coming out of it. When the terminals are brought into contact (or close proximity), an internal [reed switch](https://en.wikipedia.org/wiki/Reed_switch) is closed and the two wires are electrically connected. As shown on the [SparkFun product site](https://www.sparkfun.com/products/13247), the terminal with the wires is typically mounted to a door frame and the other terminal is mounted to the door such that when the door is closed, the two terminals are adjacent, closing the switch. Since we're just testing things out, don't mount the terminals yet.
 
-The PIR motion sensor has a small plastic dome sticking out of the front of the reference node's housing. Since this sensor is integrated into the reference node already, there's no additional wiring required. When something moves in front of the sensor, it'll detect that motion and kick off logic in the firmware to send a "motion detected" note to Notehub.
+The PIR motion sensor contains circuitry to convert the readings from the sensor into a simple high value on the data line for 2 seconds when motion is detected. Attach the jumper cables to the sensor so that it can be mounted away from the board.
 
-### Firmware
+Place the Pico into a Breadboard with the USB connection on the outer edge.Make the following connections:
 
-Next, we need to flash the reference node with the room occupancy monitor firmware.
+Pico Power:
 
-1. Before we do anything, we need to pull in some dependencies for the firmware to work. After cloning this repository, run these commands: `git submodule update --init 33-room-occupancy-monitor/firmware/note-c` and `git submodule update --init 33-room-occupancy-monitor/firmware/sparrow-lora`. This will pull in the note-c and sparrow-lora submodules that this project depends on.
-1. There are a few ways to build and flash the firmware onto the reference node. These are covered in the [Sparrow Builder's Guide](https://dev.blues.io/sparrow/sparrow-builders-guide/). Follow the steps in that guide and then return to these instructions.
-1. Connect the STLINK-V3MINI to your development PC with a USB A to micro USB cable.
-1. Connect the STLINK to your reference node with the 2x7 JTAG ribbon cable.
-1. Build and flash the code using whichever method you selected when following the Sparrow Builder's Guide.
-1. Open a terminal emulator and connect to the STLINK's serial connection to view logs. See the documentation [here](https://dev.blues.io/sparrow/sparrow-builders-guide/#collecting-firmware-logs). 
-1. Start the program in debug mode (again, how you do this depends on the IDE: VS Code or STM32CubeIDE). In your terminal emulator's output, you should see something like this:
+    GND on Pico (Pin 38) to Breadboard Ground Rail
+    3V3 OUT on Pico (Pin 36) to Breadboad +VE Rail
 
-```
-===================
-===================
-===== SPARROW =====
-===================
-Feb 16 2023 22:42:58
-2037335832365003001d001f
-APPLICATION HOST MODE
-CONSOLE TRACE ENABLED
-```
+Door Sensor:
 
-You may also see a message like this:
+    GP21 on Pico (Pin 27) to Magnetic Door Sensor
+    GND Rail on Breadboard to Magnetic Door Sensor
 
-```
-pir: 1 motion events sensed
-```
+PIR Sensor:
 
-At startup, the PIR sensor may detect motion even if there is none. This is a one-off false positive that can be ignored, and the sensor should work as intended thereafter. If you encounter additional false positives, you may want to try increasing the sensor's threshold value, which makes the sensor less sensitive. This can be done by defining the macro `PIR_THRESHOLD_DEFAULT` at build-time (e.g. via `-DCMAKE_C_FLAGS="-DPIR_THRESHOLD_DEFAULT=50"`). If this macro isn't defined by the user, it'll default to 100 in pir.c:
+    Pin 1 of the sensor to Breadboard Ground Rail
+    Pin 2 of the sensor to GP22 on Pico (Pin 29)
+    Pin 3 of the sensor to Breadboad +VE Rail
 
-```c
-#ifndef PIR_THRESHOLD_DEFAULT
-#define PIR_THRESHOLD_DEFAULT 100
-#endif
-```
+The Notecarrier can be connected with a Qwiic cable with the following connctions:.
 
-The value must be between 0 and 255. If you find that the sensor is not sensitive enough, you can try decreasing the threshold value.
+    Qwiic Black (GND) to Pico GND
+    Qwiic Blue (SDA) to  Pico GP4 (Pin 6)
+    Qwiic Yellow (SCL) to Pico GP5 (Pin 7)
+
+Do not connect the Red cable of the Qwiic connector.  If you wish to power the Pico from the Notecarrier (which makes sense after testing) connect VMAIN on the Notecarrier to VSYS (Pin 39) on the Pico.
+
+See the image below for a diagram of the connections required.
+
+![Diagram of Breadboard Circuit](images/room-occupancy-monitor-breadboard.png)
+
+Once complete the build should look a little like this:
+
+![Complete Breadboard Build](images/complete-build.jpg)
 
 ## Testing
 
 To test the magnetic door switch, do the following:
 
-1. Bring the terminals together. You should see the message `dsm: Door closed.` in the serial log. Then, on the events page of your Notehub project, you should see a note that reads `{"open":false}`, indicating the door is closed.
-1. Separate the terminals. You should see the message `dsm: Door open.` in the serial log. Then, on the events page of your Notehub project, you should see a note that reads `{"open":true}`, indicating the door is open.
+1. Bring the terminals together. You should see the message `Door closed.` in the serial log. Then, on the events page of your Notehub project, you should see a Note that reads `{"open":false}`, indicating the door is closed.
+1. Separate the terminals. You should see the message `Door open.` in the serial log. Then, on the events page of your Notehub project, you should see a Note that reads `{"open":true}`, indicating the door is open.
 
-The "File" field for each note on the events page will look something like `ID#state.qo`, where ID is a long alphanumeric string. This ID uniquely identifies the Sparrow reference node. This way, if you have multiple reference nodes, you can distinguish which monitor is which.
+The "File" field for each Note on the events page will be `door.qo`.
 
-Now, to test the PIR motion sensor, simply wave your hand in front of the plastic dome or walk by it. You should see a note on the events page for your project like this:
+Now, to test the PIR motion sensor, wave your hand in front of the plastic dome or walk by it. After some time you should see a Note on the events page for your project like this:
 
 ```json
 {
@@ -87,20 +111,14 @@ Now, to test the PIR motion sensor, simply wave your hand in front of the plasti
 }
 ```
 
-`count` indicates the number of motion events since the last note, while `total` is the total number of events since the device first started running. Similar to the door state notes, the "File" for these notes is `ID#motion.qo`, where ID is that same alphanumeric string that uniquely identifies the reference node.
+`count` indicates the number of motion events since the last Note, while `total` is the total number of events since the device first started running. Similar to the door state Notes, the "File" for these Notes is `motion.qo`.
 
-In order to keep traffic to Notehub reasonable, a motion note will only be sent a maximum of once every 5 minutes. So, many motion events may be coalesced into a single note. In that case, you would see a `count` value greater than 1. If you want to lengthen or shorten this interval, you can modify the value of `PIR_SUPPRESSION_MINS` in pir.c:
+In order to keep traffic to Notehub reasonable, a motion Note will only be sent a maximum of once every 5 minutes. So, many motion events may be coalesced into a single Note. In that case, you would see a `count` value greater than 1. If you want to lengthen or shorten this interval, you can modify the value of `PIRSupressionMins` in `main.py`:
 
-```c
-#define PIR_SUPPRESSION_MINS        5
+```python
+PIRSupressionMins = 5
 ```
 
 ## Blues Community
 
 We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
-
-## Additional Resources
-
-* [Sparrow Datasheet](https://dev.blues.io/datasheets/sparrow-datasheet/)
-* [Sparrow Hardware Behavior](https://dev.blues.io/sparrow/sparrow-hardware-behavior/) (e.g. what do the various Sparrow LEDs indicate?)
-* [PIR motion sensor datasheet (PYQ 1548 / 7659)](https://media.digikey.com/pdf/Data%20Sheets/Excelitas%20PDFs/PYQ_1548_7659_07.11.2018_DS.pdf)
