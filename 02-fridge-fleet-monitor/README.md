@@ -1,14 +1,17 @@
 # Fridge Fleet Monitor
+
 LoRa-based temperature, humidity and door open/close state for a fleet of refrigerators.
 
 To run this project yourself you'll need to:
 
-* [Purchase the necessary hardware and configure it](#hardware).
+* [Acquire the necessary hardware](#hardware).
+* [Set Up a LoRaWAN Gateway](#lorawan-gateway-setup).
 * [Flash the project's firmware](#firmware).
+* [Connect all hardware](#hardware-setup).
 * [Install the hardware](#hardware-installation).
-* [Run the project's web application](#web-application).
+* [Test everything out](#testing).
 
-## Hardware 
+## Hardware
 
 The following hardware is required to run the Fridge Fleet Monitor.
 
@@ -18,7 +21,7 @@ The following hardware is required to run the Fridge Fleet Monitor.
 * [DHT-11 Temperature and Humidity Sensor](https://www.amazon.com/SHILLEHTEK-Temperature-Humidity-Sensor-Module/dp/B0CN5RP8SL)
 * 10k Resistor
 
-## LoRa Gateway Setup
+## LoRaWAN Gateway Setup
 
 Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to The Things Network.  To make this easy you can use the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
 
@@ -28,8 +31,7 @@ This project runs on CircuitPython so you need to install it onto your Raspberry
 
 Once this is installed, the Pico will present as a mass storage device that you can install libraries and firmware onto.  First install the [note-python](https://dev.blues.io/tools-and-sdks/firmware-libraries/python-library/#circuitpython-and-micropython) library, and then the [Adafruit CircuitPython DHT Library](https://github.com/adafruit/Adafruit_CircuitPython_DHT).
 
-Finally, update the ProductUID value in this repository’s `code.py` file, and copy that file onto the Pico.
-
+Finally, update the ProductUID value in this repository’s [`code.py` file](code.py), and copy that file onto the Pico.
 
 ## Hardware Setup
 
@@ -37,29 +39,29 @@ Place your Raspberry Pi on a breadboard, with the USB socket sticking out to the
 
 Pico Power:
 
-    GND on Pico (Pin 38) to Breadboard Ground Rail
-    3V3 OUT on Pico (Pin 36) to Breadboad +VE Rail
+* GND on Pico (Pin 38) to Breadboard Ground Rail
+* 3V3 OUT on Pico (Pin 36) to Breadboad +VE Rail
 
 Door Sensor:
 
-    GP28 on Pico (Pin 34) to 10K Resistor
-    10K resistor to Breadboard +VE Rail
-    GP28 on Pico (Pin 34) to Magnetic Door Sensor
-    GND Rail on Breadboard to Magnetic Door Sensor
+* GP28 on Pico (Pin 34) to 10K Resistor
+* 10K resistor to Breadboard +VE Rail
+* GP28 on Pico (Pin 34) to Magnetic Door Sensor
+* GND Rail on Breadboard to Magnetic Door Sensor
 
 DHT11 Sensor:
 
-    DHT11 may have 3 or 4 pins.  If there is 4, one is left disconncted.
-    DHT11 Data Pin to Pico GP22 (Pin 29)
-    DHT11 GND Pin to Breadboad GND Rail
-    DHT11 VDD Pin to Breadboard +VE Rail
+* DHT11 may have 3 or 4 pins.  If there is 4, one is left disconncted.
+* DHT11 Data Pin to Pico GP22 (Pin 29)
+* DHT11 GND Pin to Breadboad GND Rail
+* DHT11 VDD Pin to Breadboard +VE Rail
 
 Notecarrier:
 
-    Notecarrier can be connected with a Qwiic cable.
-    Qwiic Black (GND) to Breadboard GND Rail
-    Qwiic Blue (SDA) to  Pico GP4 (Pin 6)
-    Qwiic Yellow (SCL) to Pico GP5 (Pin 7)
+* Notecarrier can be connected with a Qwiic cable.
+* Qwiic Black (GND) to Breadboard GND Rail
+* Qwiic Blue (SDA) to  Pico GP4 (Pin 6)
+* Qwiic Yellow (SCL) to Pico GP5 (Pin 7)
 
 Do not connect the Red cable of the Qwiic connector.  If you wish to power the Pico from the Notecarrier (which makes sense after testing) connect VMAIN on the Notecarrier to VSYS (Pin 39) on the Pico.
 
@@ -69,7 +71,7 @@ See the image below for a diagram of the connections required.
 
 _Breadboard Connections_
 
-## Hardware Instalation
+## Hardware Installation
 
 With the hardware assembled and the proper code on the Pico, attach the temperature sensor inside the fridge you wish to monitor.  Be careful to route the wires so they do not affect the seal of the door.
 
@@ -79,11 +81,9 @@ To attach the sensor inside the fridge, use Command Strips or some other adhesiv
 
 _DHT11 Sensor installed in a refrigeration unit._
 
-
 Likewise, to install the door sensors, attach each piece of the sensor on one side of the door via Command Strips and ensure they line up as closely as possible. See the image below.
 
 ![door switches aligned together when door is closed](images/door-switches-closed.jpg)
-
 
 ## Testing
 
@@ -106,7 +106,7 @@ Additionally you should see an event in Notehub with the filename of `readings.q
 
 If you wish to develop this project further, here are some suggestions.
 
-Firstly, the DHT11 sensor is cheap and accessible, but not necessarily the most accurate.  Consider replacing it the BME280, which also connects via I2C, so it will share the same connections as the Notecarrier. There is a [CircutPython Library available for the BME280 as well](https://docs.circuitpython.org/projects/bme280/en/latest/)
+Firstly, the DHT11 sensor is cheap and accessible, but not necessarily the most accurate.  Consider replacing it the BME280, which also connects via I2C, so it will share the same connections as the Notecarrier. There is a [CircutPython Library available for the BME280 as well](https://docs.circuitpython.org/projects/bme280/en/latest/).
 
 Secondly, a great addition to the functionality would be to add and send Note if the fridge door is left open for a configurable time.  I will leave this as an exercise to the user on how to add this feature, but it should be quite simple with the existing code.
 
