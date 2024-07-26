@@ -97,7 +97,7 @@ Once complete the build should look a little like this:
 
 To test the magnetic door switch, do the following:
 
-1. Bring the terminals together. You should see the message `Door closed.` in the serial log. Then, on the events page of your Notehub project, you should see a Note that reads `{"open":false}`, indicating the door is closed.
+1. Bring the terminals together. You should see the message `Door closed.` in the serial log. Then, on the events page of your Notehub project, you should see a Note that reads `{"closed":true}`, indicating the door is closed.
 1. Separate the terminals. You should see the message `Door open.` in the serial log. Then, on the events page of your Notehub project, you should see a Note that reads `{"open":true}`, indicating the door is open.
 
 The "File" field for each Note on the events page will be `door.qo`.
