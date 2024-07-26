@@ -6,6 +6,8 @@ import time
 # Config
 # productUID = "com.my-company.my-name:my-project"
 
+# Global Variables for Interupt
+debounce_time=0
 sendDoorChange = False
 
 def doorChange():
@@ -34,7 +36,7 @@ hub.set(nCard, product=productUID, mode="minimum") # We use minimum so we can sy
 rsp = note.template(nCard, file="door.qo", body={"open": True, "closed": True}, port = 11, compact = True)
 print(rsp)
 
-door = Pin(21, Pin.IN, Pin.PULL_UP)
+door = Pin(26, Pin.IN, Pin.PULL_UP)
 
 door.irq(trigger=Pin.IRQ_FALLING|Pin.IRQ_RISING, handler=doorCallback)
 

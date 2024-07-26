@@ -62,7 +62,7 @@ Pico Power:
 
 Door Sensor:
 
-* GP21 on Pico (Pin 27) to Magnetic Door Sensor
+* GP26 on Pico (Pin 31) to Magnetic Door Sensor
 * GND Rail on Breadboard to Magnetic Door Sensor
 
 The Notecarrier can be connected with a Qwiic cable with the following connections:.
