@@ -28,7 +28,7 @@ def sendPIRCount():
     
 def doorChange():
     print("Door", ("closed","open")[door.value()])
-    rsp = note.add(nCard,file = "door.qo", body = {"open": door.value(), "closed": not door.value()}, port = 11, sync = True)  # Door is low when closed (pull up input)
+    rsp = note.add(nCard,file = "door.qo", body = {"open": bool(door.value()), "closed": not door.value()}, port = 11, sync = True)  # Door is low when closed (pull up input)
     print(rsp)
     
 def doorCallback(pin):
@@ -63,7 +63,7 @@ rsp = note.template(nCard, file="door.qo", body={"open": True, "closed": True}, 
 print(rsp)
 
 pir = Pin(22, Pin.IN, Pin.PULL_DOWN)
-door = Pin(21, Pin.IN, Pin.PULL_UP)
+door = Pin(26, Pin.IN, Pin.PULL_UP)
 
 timer = Timer(mode=Timer.PERIODIC, period=(PIRSupressionMins * 60 * 1000), callback=pirTimer)
 door.irq(trigger=Pin.IRQ_FALLING|Pin.IRQ_RISING, handler=doorCallback)
