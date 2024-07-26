@@ -12,7 +12,7 @@ sendDoorChange = False
 
 def doorChange():
     print("Door", ("closed","open")[door.value()])
-    rsp = note.add(nCard,file = "door.qo", body = {"open": door.value(), "closed": not door.value()}, port = 11, sync = True)  # Door is low when closed (pull up input)
+    rsp = note.add(nCard,file = "door.qo", body = {"open": bool(door.value()), "closed": not door.value()}, port = 11, sync = True)  # Door is low when closed (pull up input)
     print(rsp)
     
 def doorCallback(pin):
