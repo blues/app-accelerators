@@ -18,8 +18,6 @@ Receive a notification when a fall is detected and provide a panic button to ale
 * Soldering iron
 * Tape or Rubber Bands
 
-## Overview
-
 ## LoRa Gateway Setup
 
 Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to The Things Network.  To make this easy you can use the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
