@@ -20,11 +20,11 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 
 ## LoRa Gateway Setup
 
-Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to the Things Network.  To make this easy you can setup the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
+Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to The Things Network.  To make this easy you can use the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
 
 ## Swan Setup
 
-First connect your Blues Swan and Notecard to your Notecarrier-F. 
+First connect your Blues Swan and Notecard to your Notecarrier-F.
 
 1. Follow the steps in the [Notecard Quickstart](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/#connect-your-notecard-and-notecarrier) to connect your Notecard LoRa to your Notecarrier-F.  Your antenna will only have one cable, and the Notecard LoRa only has one connection.
 

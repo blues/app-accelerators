@@ -30,7 +30,7 @@ The script that will run on the MCU is [main.py](main.py). It depends on [note-p
 
 #### note-python
 
-To get the note-python files onto the MCU, use the `setup_board.py` script. This uses the `pyboard.py` script to communicate with the Raspberry Pi Pico. First, you must identify the MCU's serial port. On Linux, it'll typically be something like `/dev/ttyACM0`. You can run `ls /dev/ttyACM*` before and after plugging the board in to figure out the serial port's associated file. Once you have that, run `python setup_board.py <serial port>`, replacing `<serial port>` with your serial port. This script does a few things:
+To get the note-python files onto the MCU, use the [`setup_board.py`](setup_board.py) script. This uses the [`pyboard.py`](pyboard.py) script to communicate with the Raspberry Pi Pico. First, you must identify the MCU's serial port. On Linux, it'll typically be something like `/dev/ttyACM0`. You can run `ls /dev/ttyACM*` before and after plugging the board in to figure out the serial port's associated file. Once you have that, run `python setup_board.py <serial port>`, replacing `<serial port>` with your serial port. This script does a few things:
 
 1. Clones note-python from GitHub.
 2. Creates the `/lib` and `/lib/notecard` directories on the MCU.
@@ -49,7 +49,7 @@ Copy `main.py` over to the board with this command:
 python pyboard.py -d <serial port> --no-soft-reset -f cp main.py :/
 ```
 
- Make sure to replace `<serial port>` with your serial port. `main.py` will start running after boot up.
+Make sure to replace `<serial port>` with your serial port. `main.py` will start running after boot up.
 
 ### Hardware
 
@@ -63,25 +63,25 @@ Place the Pico into a Breadboard with the USB connection on the outer edge.Make 
 
 Pico Power:
 
-    GND on Pico (Pin 38) to Breadboard Ground Rail
-    3V3 OUT on Pico (Pin 36) to Breadboad +VE Rail
+* GND on Pico (Pin 38) to Breadboard Ground Rail
+* 3V3 OUT on Pico (Pin 36) to Breadboad +VE Rail
 
 Door Sensor:
 
-    GP21 on Pico (Pin 27) to Magnetic Door Sensor
-    GND Rail on Breadboard to Magnetic Door Sensor
+* GP21 on Pico (Pin 27) to Magnetic Door Sensor
+* GND Rail on Breadboard to Magnetic Door Sensor
 
 PIR Sensor:
 
-    Pin 1 of the sensor to Breadboard Ground Rail
-    Pin 2 of the sensor to GP22 on Pico (Pin 29)
-    Pin 3 of the sensor to Breadboad +VE Rail
+* Pin 1 of the sensor to Breadboard Ground Rail
+* Pin 2 of the sensor to GP22 on Pico (Pin 29)
+* Pin 3 of the sensor to Breadboad +VE Rail
 
-The Notecarrier can be connected with a Qwiic cable with the following connctions:.
+The Notecarrier can be connected with a Qwiic cable with the following connections:.
 
-    Qwiic Black (GND) to Pico GND
-    Qwiic Blue (SDA) to  Pico GP4 (Pin 6)
-    Qwiic Yellow (SCL) to Pico GP5 (Pin 7)
+* Qwiic Black (GND) to Pico GND
+* Qwiic Blue (SDA) to  Pico GP4 (Pin 6)
+* Qwiic Yellow (SCL) to Pico GP5 (Pin 7)
 
 Do not connect the Red cable of the Qwiic connector.  If you wish to power the Pico from the Notecarrier (which makes sense after testing) connect VMAIN on the Notecarrier to VSYS (Pin 39) on the Pico.
 
