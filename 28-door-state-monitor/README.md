@@ -67,7 +67,7 @@ Door Sensor:
 
 The Notecarrier can be connected with a Qwiic cable with the following connections:.
 
-* Qwiic Black (GND) to Pico GND
+* Qwiic Black (GND) to Pico GND (Pin 3)
 * Qwiic Blue (SDA) to  Pico GP4 (Pin 6)
 * Qwiic Yellow (SCL) to Pico GP5 (Pin 7)
 
