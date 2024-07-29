@@ -1,6 +1,6 @@
-from machine import I2C, Pin, Timer
+from machine import I2C, Pin
 import notecard 
-from notecard import card, hub, note
+from notecard import hub, note
 import time
 
 # Config
@@ -9,20 +9,32 @@ PIRSupressionMins = 5
 
 debounce_time=0
 sendButtonPress = False
+rating = 0
 
-
-    
-    
 def sendRating():
-    rating = "ok"
-
-    print("Sent", rating, " rating.")
-    rsp = note.add(nCard,file = "rating.qo", body = {"rating": rating} , port = 13, sync = True)  # Door is low when closed (pull up input)
-    print(rsp)
+    if rating == 1:
+        ratingString = "poor"
+    elif rating == 2:
+        ratingString = "ok"
+    elif rating == 3:
+        ratingString = "good"
+    else:
+        ratingString = "Error"
+        print("Invalid Rating")
     
+    print("Sent", ratingString, " rating.")
+    rsp = note.add(nCard,file = "rating.qo", body = {"rating": ratingString} , port = 13, sync = True)  # Door is low when closed (pull up input)
+    print(rsp)
+
 def buttonCallback(pin):
-    global sendButtonPress, debounce_time
+    global sendButtonPress, debounce_time, rating
     if (time.ticks_ms()-debounce_time) > 500:
+        if pin is poor:
+            rating = 1
+        elif pin is ok:
+            rating = 2
+        elif pin is good:
+            rating = 3
         sendButtonPress=True
         debounce_time=time.ticks_ms()
 
@@ -38,7 +50,7 @@ nCard = notecard.OpenI2C(i2c, 0, 0)
 hub.set(nCard, product=productUID, mode="minimum") # We use minimum so we can sync and reset PIR count together
 
 # Setup templates
-rsp = note.template(nCard, file="rating.qo", body={"rating": 21}, port = 13, compact = True)
+rsp = note.template(nCard, file="rating.qo", body={"rating": "5"}, port = 13, compact = True)
 print(rsp)
 
 poor = Pin(26, Pin.IN, Pin.PULL_DOWN)

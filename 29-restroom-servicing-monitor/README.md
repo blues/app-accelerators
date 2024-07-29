@@ -22,11 +22,29 @@ Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is 
 
 ## Hardware
 
-Before we set up the Pico for the restroom servicing monitor, let's wire up the hardware. The hardware interface is 3 push buttons: 1 for a bad rating (restroom needs service), 1 for an ok rating (restroom cleanliness deteriorating), and 1 for a good rating (no service needed). These buttons are wired to GPIO pins on the Pico. Those pins will be configured with internal pull-downs so that the pin reads a digital 0 when the button isn't pushed. When the button is pushed, it connects the corresponding AUX pin to VIO so that it reads a digital 1. Using the breadboard, buttons, and jumper wires, wire up the hardware as shown in the diagram below.
+Before we set up the Pico for the restroom servicing monitor, let's wire up the hardware. The hardware interface is 3 push buttons: 1 for a bad rating (restroom needs service), 1 for an ok rating (restroom cleanliness deteriorating), and 1 for a good rating (no service needed).
+
+These buttons are wired to GPIO pins on the Pico. Those pins will be configured with internal pull-downs so that the pin reads a digital 0 when the button isn't pushed. When the button is pushed, it connects the corresponding GPIO pin to 3V3 so that it reads a digital 1.
+
+Using the breadboard, buttons, and jumper wires, wire up the hardware as shown in the diagram below.
 
 ![breadboard wiring](images/restroom-monitor-breadboard.png "Breadboard Wiring")
 
-The labels off the breadboard correspond to the Qwiic connector from the Notecarrier. Connect these to the breadboard as shown.
+The three buttons are connected as follows:
+
+    Poor (Left)   -> GP26 (Pin 31)
+    Ok   (Middle) -> GP8  (Pin 11)
+    Good (Right)  -> GP7  (Pin 10)
+
+The labels off the breadboard correspond to the Qwiic connector from the Notecarrier. Connect these to the breadboard as follows:
+
+    Blue   (SDA)  -> Pin 6
+    Yellow (SCL)  -> Pin 7
+    Black  (GND)  -> Pin 8
+
+Do not connect the red connector of the Qwiic cable.
+
+The Power rail of the Breadboard is connected to Pin 36 on the Pico (3V3 Out)
 
 ## Pico Setup
 
