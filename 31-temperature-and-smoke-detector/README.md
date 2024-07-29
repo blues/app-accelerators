@@ -1,16 +1,19 @@
 # Temperature and Smoke Detector
 
-**Warning: This project uses Sparrow, a Blues product that is no longer under active development. We are working on updating this project to the successors of Sparrow: [Notecard LoRa](https://blues.com/notecard-lora/) and the [LoRaWAN Starter Kit](https://shop.blues.com/products/blues-starter-kit-lorawan). In the meantime, if you would like assistance building a Temperature and Smoke Detector feel free to reach out on [our community forum](https://discuss.blues.com/).**
-
 Temperature monitoring and smoke detection across a number of rooms at a facility.
 
 ![](images/MQ2_sensor.jpg)
 
 ## You Will Need
 
-* Sparrow Development Kit
+* [Notecard Lora](https://shop.blues.com/collections/notecard/products/notecard-lora)
+* [LoRaWAN Gateway](https://shop.blues.com/collections/accessories/products/lorawan-gateway)
+* [Notecarrier F](https://shop.blues.com/collections/notecarrier/products/notecarrier-f)
+* [Swan](https://shop.blues.com/collections/swan/products/swan)
+* 2 USB A to micro USB cables
 * [MQ2 Gas and Smoke Sensor](https://www.amazon.com/Reland-Sun-MQ-2-Sensor-Module/dp/B09NN39G8X)
 * [3.3-to-5v voltage converter](https://www.amazon.com/Comidox-Module-Voltage-Converter-0-9-5V/dp/B07L76KLRY)
+* [SparkFun Atmospheric Sensor Breakout - BME280](https://www.sparkfun.com/products/15440)
 * Soldering Iron
 * 2 USB A to micro USB cables
 * 3 male-to-female jumper wires
@@ -19,59 +22,47 @@ Temperature monitoring and smoke detection across a number of rooms at a facilit
 
 Sign up for a free account on [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-a/#set-up-notehub).
 
-## Sparrow Setup
+## LoRa Gateway Setup
 
-### Quickstart
+Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to The Things Network.  To make this easy you can use the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
 
-Follow the [Sparrow Quickstart](https://dev.blues.io/quickstart/sparrow-quickstart/) pair your Sparrow reference node with the gateway and associate it with the Notehub project you just created. Note also that you only need one reference node for this project (although multiple reference nodes can be used to monitor multiple rooms). Make sure that you use the ProductUID generated in [Notehub Setup](#notehub-setup) when it comes time to issue the [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) command in the quickstart.
+## Swan Setup
 
-After you've completed the quickstart, leave the Notecarrier and Sparrow Essentials board powered and connected. These two devices will act as our gateway to Notehub, and you won't need to touch them again. The rest of this guide will focus on the Sparrow Reference Sensor node.
+First connect your Blues Swan and Notecard to your Notecarrier-F.
+
+1. Follow the steps in the [Notecard Quickstart](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/#connect-your-notecard-and-notecarrier) to connect your Notecard LoRa to your Notecarrier-F.  Your antenna will only have one cable, and the Notecard LoRa only has one connection.
+
+2. Plug your Swan into the Feather headers on the Notecarrier F.
+
+3. Attach the Swan to your computer with a Micro USB to USB-A cable, using the **Micro USB port on the Swan**.
+
+![Notecard LoRa in Notecarrier F with antenna](images/notecarrier-notecard.jpg)
 
 ### MQ2 Sensor Connection
 
 This solution makes use of the an MQ2 sensor module, which detects smoke, as well as various gasses. Using the 3 male-to-female jumper wires, connect the MQ2 sensor to the Sparrow Reference Sensor board and the v5 converter as follows:
 
-1. Splice a male to female jumper in half and solder the exposed wires to the `GND` pad on the 5v converter. Connect the female end to `GND` on the sensor and the male end to the `GND` pin on Sparrow.
-2. Splice another jumper, and solder the exposed wire on male half to `Vi` on the converter. Connect the male connector to `VBAT` on Sparrow. Solder the exposed wire on the female half to `Vo` and connect the female end to the `A0` pin on the MQ2 sensor.
-3. Using an intact male-to-female jumper, connect `A0` on the sensor to the `A1` pin on Sparrow.
+TODO: Rewrite this with soldering headers onto the Boost Converter
+1. Splice a male to female jumper in half and solder the exposed wires to the `GND` pad on the 5v converter. Connect the female end to `GND` on the sensor and the male end to a `GND` pin on the Notecarrier-F.
+2. Splice another jumper, and solder the exposed wire on male half to `Vi` on the converter. Connect the male connector to `F_3V3` on the Notecarrier-F. Solder the exposed wire on the female half to `Vo` and connect the female end to the `A0` pin on the MQ2 sensor.
+3. Using an intact male-to-female jumper, connect `A0` on the sensor to the `F_A0` pin on the Notecarrier-F.
 4. The 4th pin on the sensor is left unconnected.
+
+### Temperature Sensor Connection
+
+This solution makes use of the BME280 sensor board, which measures temperature and humidity. Connect the BME280 sensor to the Swan board using the Qwiic cable:
+
+1. Insert one end of the Qwiic cable into the port labelled Qwiic on the Swan board
+2. Insert the other end of the Qwiic cable into either of the Qwiic sockets on the BME280 sensor board.
+
+![Notecarrier connected to BME280 breakout board with Qwiic cable](images/notecarrier-bme280.jpg)
+*Note I have the Adafruit version of the sensor rather then the Sparkfun one.  They are the same except the LED cannot be disabled on the Adafruit version*
+
+With the Swan board powered on, you will see a red LED light up on the BME280 board, indicating that it is receiving power. To improve battery life, you may wish to cut the LED jumper to disable the LED. For more details, see the "LED Jumper" section in the [Sparkfun Qwiic Atmospheric Sensor (BME280) Hookup Guide](https://learn.sparkfun.com/tutorials/qwiic-atmospheric-sensor-bme280-hookup-guide/hardware-overview).
 
 ## Firmware
 
-This section shows how you build the Temperature and Smoke Detector firmware and flash it to the reference node.
-
-1. You will need to fetch the dependencies required by the firmware. After cloning this repository, run these commands: `git submodule update --init 31-temperature-and-smoke-detector/firmware/note-c` and `git submodule update --init 31-temperature-and-smoke-detector/firmware/sparrow-lora`. This will fetch the `note-c` and `sparrow-lora` submodules that this project depends on.
-
-2. Connect the STLINK-V3MINI to your development PC with a USB A to micro USB cable.
-
-3. Connect the STLINK to your reference node with the 2x7 JTAG ribbon cable.
-
-4. There are a few ways to build and flash the firmware onto the reference node. These are covered in the [Sparrow Builder's Guide](https://dev.blues.io/sparrow/sparrow-builders-guide/). Follow the steps in that guide and then return to these instructions.
-
-> **Note**: When building the firmware with VSCode, be sure the `firmware` folder is added at the root of the workspace. This ensures the project's tasks to compile the firmware are recognized by VSCode.
-
-5. Build and flash the firmware using whichever method you chose when following the Sparrow Builder's Guide.
-
-6. Open a terminal emulator and connect to the STLINK's serial connection to view the logs from the device. See the documentation [here](https://dev.blues.io/sparrow/sparrow-builders-guide/#collecting-firmware-logs).
-
-7. Start the program in debug mode (again, how you do this depends on the IDE: VS Code or STM32CubeIDE). In your terminal emulator, you should see something like this:
-
-```
-===================
-===================
-===== SPARROW =====
-===================
-Feb 16 2023 22:42:58
-2037335832365003001d001f
-APPLICATION HOST MODE
-CONSOLE TRACE ENABLED
-```
-
-You will see a message like this after a few minutes:
-
-```
-mq2: note sent. gas: 4226, temperature: 20.2C, humidity: 35.26%
-```
+The firmware provided uses the Arduino Framework, follow the [instructions in the git repo](firmware/) to flash your Swan.
 
 ## Temperature Monitoring and Smoke Alerting Behavior
 
