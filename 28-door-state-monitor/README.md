@@ -53,7 +53,7 @@ Make sure to replace `<serial port>` with your serial port. `main.py` will start
 
 The magnetic door switch consists of two plastic terminals, one of which has a pair of wires coming out of it. When the terminals are brought into contact (or close proximity), an internal [reed switch](https://en.wikipedia.org/wiki/Reed_switch) is closed and the two wires are electrically connected. As shown on the [SparkFun product site](https://www.sparkfun.com/products/13247), the terminal with the wires is typically mounted to a door frame and the other terminal is mounted to the door such that when the door is closed, the two terminals are adjacent, closing the switch. Since we're just testing things out, don't mount the terminals yet.
 
-Place the Pico into a Breadboard with the USB connection on the outer edge.Make the following connections:
+Place the Pico into a Breadboard with the USB connection on the outer edge. Make the following connections:
 
 Pico Power:
 

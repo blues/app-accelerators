@@ -1,6 +1,6 @@
-from machine import I2C, Pin, Timer
+from machine import I2C, Pin
 import notecard 
-from notecard import card, hub, note
+from notecard import hub, note
 import time
 
 # Config
