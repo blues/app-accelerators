@@ -44,7 +44,7 @@ The labels off the breadboard correspond to the Qwiic connector from the Notecar
 
 Do not connect the red connector of the Qwiic cable.
 
-The Power rail of the Breadboard is connected to Pin 36 on the Pico (3V3 Out)
+The power rail of the Breadboard is connected to Pin 36 on the Pico (3V3 Out).
 
 ## Pico Setup
 
@@ -81,9 +81,9 @@ Make sure to replace `<serial port>` with your serial port. `main.py` will start
 
 ## Testing
 
-To test things out, we'll press each button, observe the serial log, and then observe the note that was sent to Notehub.
+To test things out, we'll press each button, observe the serial log, and then observe the Note that was sent to Notehub.
 
-1. Press the left most button connected to GP26 (bad rating). You should see `Sent bad rating.` in the serial log. On your Notehub project's Events page, you should see a note come into ratings.qo that looks like this:
+1. Press the leftmost button connected to GP26 (bad rating). You should see `Sent bad rating.` in the serial log. On your Notehub project's Events page, you should see a `ratings.qo` Note that looks like this:
 
 ```json
 {
@@ -92,7 +92,7 @@ To test things out, we'll press each button, observe the serial log, and then ob
 ```
 
 1. Press the middle button connected to GP8 (ok rating). You'll see `Sent ok rating.` in the serial log and the Notehub event should have a `rating` field with the string "ok".
-1. Press the right most button connected to GP7 (good rating). You'll see `Sent good rating.` in the serial log and the Notehub event should have a `rating` field with the string "good".
+1. Press the rightmost button connected to GP7 (good rating). You'll see `Sent good rating.` in the serial log and the Notehub event should have a `rating` field with the string "good".
 
 ## Blues Community
 
