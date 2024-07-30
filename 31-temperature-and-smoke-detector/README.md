@@ -42,10 +42,12 @@ First connect your Blues Swan and Notecard to your Notecarrier-F.
 
 This solution makes use of the an MQ2 sensor module, which detects smoke, as well as various gasses. Using the 3 male-to-female jumper wires, connect the MQ2 sensor to the Sparrow Reference Sensor board and the v5 converter as follows:
 
-TODO: Rewrite this with soldering headers onto the Boost Converter
-1. Splice a male to female jumper in half and solder the exposed wires to the `GND` pad on the 5v converter. Connect the female end to `GND` on the sensor and the male end to a `GND` pin on the Notecarrier-F.
-2. Splice another jumper, and solder the exposed wire on male half to `Vi` on the converter. Connect the male connector to `F_3V3` on the Notecarrier-F. Solder the exposed wire on the female half to `Vo` and connect the female end to the `A0` pin on the MQ2 sensor.
-3. Using an intact male-to-female jumper, connect `A0` on the sensor to the `F_A0` pin on the Notecarrier-F.
+1. Solder a set of headers onto the 5v converter.
+1. Connetor a jumper to `GND` pad on the 5v converter and the other end  to a `GND` pin on the Notecarrier-F.
+1. Connect a jumper to `GND` on the sensor and the other end  to a `GND` pin on the Notecarrier-F.
+2. Connect a jumper to `Vi` on the converter and the other end to  `F_3V3` on the Notecarrier-F. 
+2. Connect a jumper to `Vo` on the converter and the other end to the  `VCC` pin on the MQ2 sensor.
+3. Connect a jumper to `A0` on the sensor and the other end to the `F_A0` pin on the Notecarrier-F.
 4. The 4th pin on the sensor is left unconnected.
 
 ### Temperature Sensor Connection
@@ -66,16 +68,17 @@ The firmware provided uses the Arduino Framework, follow the [instructions in th
 
 ## Temperature Monitoring and Smoke Alerting Behavior
 
-The firmware periodically monitors temperature and gas concentrations, and posts events with this information. Regular monitoring events are not synced immediately to Notehub, and will be delivered as often as the Notecard is configured to sync with Notehub via the [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) request.
+The firmware periodically monitors temperature and gas concentrations, and posts events with this information. Regular monitoring events are not synced immediately to Notehub, and will be delivered as often as the Notecard is configured to sync with Notehub via the [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) request.  This value is configure with the `MQ2_SYNC_PERIOD` define in the file [`./firmware/main.cpp`](./firmware/main.cpp) 
 
-Temperature and Gas measurements are posted to the Notefile `*#mq2.qo`, where `*` is replaced with the unique ID of the Sparrow node. An event has these properties:
+Temperature and Gas measurements are posted to the Notefile `mq2.qo`. An event has these properties:
 
 ```cpp
 {
   "app" : "nf31",       // the application name
-  "temperature" : 20.6, // ambient temperature (in &deg;C)
-  "humidity" : 41.2,    // ambient humidity (in percent)
-  "voltage" : 4.7       // battery voltage (in V)
+  "gas": 6319,            // Gas/Smoke level (analog input value out of 65535)
+  "humidity" : 60.21875,    // ambient humidity (in percent)
+  "pressure" : 97019.08,  // ambient pressure (in pascals)
+  "temperature" : 24.859375 // ambient temperature (in &deg;C)
 }
 ```
 
@@ -85,9 +88,10 @@ Each reading taken is checked against the [configured thresholds](#configuration
 {
   "alert" : 1,          // Signifies an alert
   "app" : "nf31",       // the application name
-  "temperature" : 40.3, // ambient temperature (in &deg;C)
-  "humidity" : 25.2,    // ambient humidity (in percent)
-  "voltage" : 4.7       // battery voltage (in V)
+  "gas": 43277,            // Gas/Smoke level (analog input value out of 65535)
+  "humidity" : 60.21875,    // ambient humidity (in percent)
+  "pressure" : 97019.08,  // ambient pressure (in pascals)
+  "temperature" : 24.859375 // ambient temperature (in &deg;C)
 }
 ```
 
@@ -104,12 +108,14 @@ When temperature and gas levels return to normal, `alert:3` is the last event se
 
 ### Configuration
 
-The file [`./firmware/sparrow-application/mq2/mq2.c`](./firmware/sparrow-application/mq2/mq2.c) contains a number of `#define`s that are used to configure how often temperature and gas levels are measured and the thresholds that trigger an alert:
+The file [`./firmware/main.cpp`](./firmware/main.cpp) contains a number of `#define`s that are used to configure how often temperature and gas levels are measured and the thresholds that trigger an alert:
 
 | Name     | Default  | Unit    | Description |
 |----------|----------|---------|-------------|
+| `MQ2_SYNC_PERIOD` | 60 | minutes | The period in minutes for the notecard to sync regular events.
 | `MQ2_MONITOR_PERIOD` | 60 | seconds | The period in seconds between each sensor reading.
 | `ALERTS_ONLY` | false | boolean | When true, disables reporting of regular monitoring events and only alerts are sent. |
+| `SYNC_ALL_NOTES` | false | boolean | When true, forces immediate  reporting of regular monitoring events. Useful for debugging.|
 | `ALERT_TEMPERATURE` | 50.0 | C | Trigger an alert when the temperature is at least this high. Set to 0 to disable temperature alerts. |
 | `ALERT_GAS_LEVEL` | 40000 | 1-65535 | Trigger an alert when the measured gas level is at least this high. Set to 0 to disable gas level alerts. |
 

@@ -4,7 +4,9 @@
 
 #include "STM32LowPower.h"
 
+#define APPLICATION_NAME        "nf31"
 #define DATA_FIELD_ALERT        "alert"
+#define DATA_FIELD_APP          "app"
 #define DATA_FIELD_TEMPERATURE  "temperature"
 #define DATA_FIELD_HUMIDITY     "humidity"
 #define DATA_FIELD_PRESSURE     "pressure"
@@ -43,6 +45,10 @@ BME280 bmeSensor;
 
 bool activeAlert;
 
+/**
+ * @brief Configures how often the note card periodicly syncs when there are no alerts.
+ */
+#define MQ2_SYNC_PERIOD       60     // minutes
 
 /**
  * @brief Configures how often an air quality reading is taken and reported.
@@ -102,6 +108,13 @@ void setup() {
     J *req = notecard.newRequest("hub.set");
     JAddStringToObject(req, "product", PRODUCT_UID);
     notecard.sendRequest(req);
+
+    req = notecard.newRequest("hub.set");
+    JAddStringToObject(req, "mode", "periodic");
+    JAddNumberToObject(req, "outbound", MQ2_SYNC_PERIOD);
+    JAddNumberToObject(req, "inbound", 240);
+    notecard.sendRequest(req);
+    
     if (!registerNotefileTemplate()) {
         usbSerial.println("Error Creating Notefile Template");
         while(1);
@@ -156,9 +169,11 @@ void loop() {
             alertState = ALERT_NONE;
         }                
     }
+
     addNote(reading, false, alertState);
     delay(200);
     usbSerial.end();
+    delay(10);
     LowPower.sleep(MQ2_MONITOR_PERIOD * 1000);
     usbSerial.begin(115200);
     while (!usbSerial);
@@ -194,6 +209,8 @@ static bool registerNotefileTemplate()
     JAddStringToObject(req, "file", APPLICATION_NOTEFILE);
 
     // Fill-in the body template
+    JAddStringToObject(body, DATA_FIELD_APP, TSTRINGV);
+    JAddNumberToObject(body, DATA_FIELD_ALERT, TUINT8);
     JAddNumberToObject(body, DATA_FIELD_TEMPERATURE, TFLOAT16);
     JAddNumberToObject(body, DATA_FIELD_HUMIDITY, TFLOAT16);
     JAddNumberToObject(body, DATA_FIELD_PRESSURE, TFLOAT32);
@@ -238,6 +255,7 @@ static void addNote(const MQ2SensorReading& reading, bool immediate, uint8_t ale
     }
 
     // Fill-in the body
+    JAddStringToObject(body, DATA_FIELD_APP, APPLICATION_NAME);
     JAddNumberToObject(body, DATA_FIELD_ALERT, alert);
     JAddNumberToObject(body, DATA_FIELD_TEMPERATURE, reading.bme.temperature);
     JAddNumberToObject(body, DATA_FIELD_HUMIDITY, reading.bme.humidity);
@@ -249,7 +267,13 @@ static void addNote(const MQ2SensorReading& reading, bool immediate, uint8_t ale
     JAddItemToObject(req, "body", body);
     JAddNumberToObject(req, "port", 14);
     NoteRequest(req);
-    usbSerial.printf("mq2: note sent. temp %f, humidity %f, pressure: %f, gas: %d\r\n", 
-        reading.bme.temperature, reading.bme.humidity, reading.bme.pressure, reading.gas);
 
+    usbSerial.print("mq2: note sent. temp: ");
+    usbSerial.print(reading.bme.temperature);
+    usbSerial.print(" celcuis, humidity: ");
+    usbSerial.print(reading.bme.humidity);
+    usbSerial.print(" %RH, pressure: ");
+    usbSerial.print(reading.bme.pressure);
+    usbSerial.print(" Pa, gas: ");
+    usbSerial.println(reading.gas);
 }
