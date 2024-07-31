@@ -34,7 +34,7 @@ Notecard notecard;
 BME280 bmeSensor;
 // Uncomment this line and replace com.your-company:your-product-name with your
 // ProductUID.
-#define PRODUCT_UID "net.bowerham.kimball:temperaturesmokedetector"
+// #define PRODUCT_UID "com.your-company:your-product-name"
 
 #ifndef PRODUCT_UID
 #define PRODUCT_UID "" // "com.my-company.my-name:my-project"

@@ -16,7 +16,9 @@ Temperature monitoring and smoke detection across a number of rooms at a facilit
 * [SparkFun Atmospheric Sensor Breakout - BME280](https://www.sparkfun.com/products/15440)
 * Soldering Iron
 * 2 USB A to micro USB cables
-* 3 male-to-female jumper wires
+* male-to-female jumper wires
+* female-to-female jumper wires
+* 0.1" Header Pins
 
 ## Notehub Setup
 
@@ -28,9 +30,9 @@ Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is 
 
 ## Swan Setup
 
-First connect your Blues Swan and Notecard to your Notecarrier-F.
+First connect your Blues Swan and Notecard to your Notecarrier F.
 
-1. Follow the steps in the [Notecard Quickstart](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/#connect-your-notecard-and-notecarrier) to connect your Notecard LoRa to your Notecarrier-F.  Your antenna will only have one cable, and the Notecard LoRa only has one connection.
+1. Follow the steps in the [Notecard Quickstart](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/#connect-your-notecard-and-notecarrier) to connect your Notecard LoRa to your Notecarrier F.  Your antenna will only have one cable, and the Notecard LoRa only has one connection.
 
 2. Plug your Swan into the Feather headers on the Notecarrier F.
 
@@ -40,15 +42,15 @@ First connect your Blues Swan and Notecard to your Notecarrier-F.
 
 ### MQ2 Sensor Connection
 
-This solution makes use of the an MQ2 sensor module, which detects smoke, as well as various gasses. Using the 3 male-to-female jumper wires, connect the MQ2 sensor to the Sparrow Reference Sensor board and the v5 converter as follows:
+This solution makes use of the an MQ2 sensor module, which detects smoke, as well as various gasses. Using the jumper wires, connect the MQ2 sensor to the Notecarrier F board and the v5 converter as follows:
 
-1. Solder a set of headers onto the 5v converter.
-1. Connetor a jumper to `GND` pad on the 5v converter and the other end  to a `GND` pin on the Notecarrier-F.
-1. Connect a jumper to `GND` on the sensor and the other end  to a `GND` pin on the Notecarrier-F.
-2. Connect a jumper to `Vi` on the converter and the other end to  `F_3V3` on the Notecarrier-F. 
-2. Connect a jumper to `Vo` on the converter and the other end to the  `VCC` pin on the MQ2 sensor.
-3. Connect a jumper to `A0` on the sensor and the other end to the `F_A0` pin on the Notecarrier-F.
-4. The 4th pin on the sensor is left unconnected.
+1. Solder a set of header pins onto the 5v converter.
+1. Connetor a jumper to `GND` pad on the 5v converter and the other end  to a `GND` pin on the Notecarrier F.
+1. Connect a jumper to `GND` on the sensor and the other end  to a `GND` pin on the Notecarrier F.
+1. Connect a jumper to `Vi` on the converter and the other end to  `F_3V3` on the Notecarrier F.
+1. Connect a jumper to `Vo` on the converter and the other end to the  `VCC` pin on the MQ2 sensor.
+1. Connect a jumper to `A0` on the sensor and the other end to the `F_A0` pin on the Notecarrier F.
+1. The 4th pin on the sensor is left unconnected.
 
 ### Temperature Sensor Connection
 
@@ -68,7 +70,7 @@ The firmware provided uses the Arduino Framework, follow the [instructions in th
 
 ## Temperature Monitoring and Smoke Alerting Behavior
 
-The firmware periodically monitors temperature and gas concentrations, and posts events with this information. Regular monitoring events are not synced immediately to Notehub, and will be delivered as often as the Notecard is configured to sync with Notehub via the [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) request.  This value is configure with the `MQ2_SYNC_PERIOD` define in the file [`./firmware/main.cpp`](./firmware/main.cpp) 
+The firmware periodically monitors temperature and gas concentrations, and posts events with this information. Regular monitoring events are not synced immediately to Notehub, and will be delivered as often as the Notecard is configured to sync with Notehub via the [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) request. You can configure this value with the `MQ2_SYNC_PERIOD` defined in the file [`./firmware/main.cpp`](./firmware/main.cpp)
 
 Temperature and Gas measurements are posted to the Notefile `mq2.qo`. An event has these properties:
 
