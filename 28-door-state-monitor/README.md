@@ -1,12 +1,11 @@
 # Door State Monitor
 
-**Warning: This project uses Sparrow, a Blues product that is no longer under active development. We are working on updating this project to the successors of Sparrow: [Notecard LoRa](https://blues.com/notecard-lora/) and the [LoRaWAN Starter Kit](https://shop.blues.com/products/blues-starter-kit-lorawan). In the meantime, if you would like assistance building a Door State Monitor feel free to reach out on [our community forum](https://discuss.blues.com/).**
-
 Receive notifications when a door is opened or closed.
 
 ## You Will Need
 
-* Sparrow Development Kit
+* [Blues Starter Kit for LoRaWAN](https://shop.blues.com/products/blues-starter-kit-lorawan)
+* Raspberry Pi Pico
 * 2 USB A to micro USB cables
 * [Magnetic Door Switch Set](https://www.sparkfun.com/products/13247)
 
@@ -14,57 +13,79 @@ Receive notifications when a door is opened or closed.
 
 Sign up for a free account on [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-a/#set-up-notehub).
 
-## Sparrow Setup
+## LoRa Gateway Setup
 
-### Quickstart
+Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to The Things Network.  To make this easy you can use the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
 
-Follow the [Sparrow Quickstart](https://dev.blues.io/quickstart/sparrow-quickstart/) to get your Sparrow devices paired with each other and associated with the Notehub project you just created. Make sure that you use the ProductUID generated in [Notehub Setup](#notehub-setup) when it comes time to issue the `hub.set` command in the quickstart. Note also that we'll only need one reference node for this project, so you don't need to pair both nodes that came with the dev kit.
 
-After you've completed the quickstart, leave the Notecarrier and essentials board powered and connected. These two devices will act as our gateway to Notehub, and we won't need to touch them again. The rest of this guide will focus on the reference node.
+## Pico Setup
 
-### Hardware
+Your Raspbery Pi Pico will need to have Micropython installed.  If it is not yet installed, follow the [installation instructions](https://micropython.org/download/RPI_PICO/) provided by MicroPython.
 
-Before we set up the custom firmware needed for the door state monitor, let's wire up the hardware. The magnetic door switch consists of two plastic terminals, one of which has a pair of wires coming out of it. When the terminals are brought into contact (or close proximity), an internal [reed switch](https://en.wikipedia.org/wiki/Reed_switch) is closed and the two wires are electrically connected. As shown in the SparkFun product link above, the terminal with the wires is typically mounted to a door frame and the other terminal is mounted to the door such that when the door is closed, the two terminals are adjacent, closing the switch. Since we're just testing things out, don't mount the terminals yet. Instead, keep them on your work surface and plug the wires into the A1 and GND ports of the Sparrow reference node (it doesn't matter which wire goes into which port). When the switch is closed, A1 will connect to GND. Otherwise, A1 will be driven high by an internal pull-up.
+### MicroPython Code
 
-### Firmware
+The script that will run on the MCU is [main.py](main.py). It depends on [note-python](https://github.com/blues/note-python), a Python library for communicating with a Notecard.
 
-Next, we need to flash the reference node with the door state monitor firmware.
+#### note-python
 
-1. Before we do anything, we need to pull in some dependencies for the firmware to work. After cloning this repository, run these commands: `git submodule update --init 28-door-state-monitor/firmware/note-c` and `git submodule update --init 28-door-state-monitor/firmware/sparrow-lora`. This will pull in the note-c and sparrow-lora submodules that this project depends on.
-1. There are a few ways to build and flash the firmware onto the reference node. These are covered in the [Sparrow Builder's Guide](https://dev.blues.io/sparrow/sparrow-builders-guide/). Follow the steps in that guide and then return to these instructions.
-1. Connect the STLINK-V3MINI to your development PC with a USB A to micro USB cable.
-1. Connect the STLINK to your reference node with the 2x7 JTAG ribbon cable.
-1. Build and flash the code using whichever method you selected when following the Sparrow Builder's Guide.
-1. Open a terminal emulator and connect to the STLINK's serial connection to view logs. See the documentation [here](https://dev.blues.io/sparrow/sparrow-builders-guide/#collecting-firmware-logs).
-1. Start the program in debug mode (again, how you do this depends on the IDE: VS Code or STM32CubeIDE). In your terminal emulator's output, you should see something like this:
+To get the note-python files onto the MCU, use the [`setup_board.py`](setup_board.py) script. This uses the [`pyboard.py`](pyboard.py) script to communicate with the Raspberry Pi Pico. First, you must identify the MCU's serial port. On Linux, it'll typically be something like `/dev/ttyACM0`. You can run `ls /dev/ttyACM*` before and after plugging the board in to figure out the serial port's associated file. Once you have that, run `python setup_board.py <serial port>`, replacing `<serial port>` with your serial port. This script does a few things:
 
-```
-===================
-===== SPARROW =====
-===================
-Feb 15 2023 19:29:29
-2037335832365003001d001f
-APPLICATION HOST MODE
-CONSOLE TRACE ENABLED
-dsm: Door initially open.
-dsm activated with 1440s activation period and 1s poll interval
-dsm now DEACTIVATED (Nothing to do.)
-```
+1. Clones note-python from GitHub.
+2. Creates the `/lib` and `/lib/notecard` directories on the MCU.
+3. Copies the `.py` files from `note-python/notecard` on your development machine to `/lib/notecard` on the MCU.
+4. Lists the contents of `/lib/notecard` so you can verify that everything was copied over.
 
-"dsm" stands for door state monitor. You'll also see a message like this at startup:
+Note that for `pyboard.py` to work, you'll need to install [pyserial](https://pypi.org/project/pyserial/) with `pip install pyserial`, if you don't have it installed already.
+
+#### Running `main.py`
+
+Before running `main.py`, uncomment this line: `# product_uid = 'com.your-company:your-product-name'`. Replace `com.my-company.my-name:my-project` with the [ProductUID of the Notehub project](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) you created in [Notehub Setup](#notehub-setup).
+
+Copy `main.py` over to the board with this command:
 
 ```
-dsm: Sending door state heartbeat.
+python pyboard.py -d <serial port> --no-soft-reset -f cp main.py :/
 ```
 
-Every 30 minutes, the app sends the state of the door to Notehub, which acts as a heartbeat so that we know everything's still working.
+Make sure to replace `<serial port>` with your serial port. `main.py` will start running after boot up.
+
+## Hardware
+
+The magnetic door switch consists of two plastic terminals, one of which has a pair of wires coming out of it. When the terminals are brought into contact (or close proximity), an internal [reed switch](https://en.wikipedia.org/wiki/Reed_switch) is closed and the two wires are electrically connected. As shown on the [SparkFun product site](https://www.sparkfun.com/products/13247), the terminal with the wires is typically mounted to a door frame and the other terminal is mounted to the door such that when the door is closed, the two terminals are adjacent, closing the switch. Since we're just testing things out, don't mount the terminals yet.
+
+Place the Pico into a Breadboard with the USB connection on the outer edge. Make the following connections:
+
+Pico Power:
+
+* GND on Pico (Pin 38) to Breadboard Ground Rail
+* 3V3 OUT on Pico (Pin 36) to Breadboad +VE Rail
+
+Door Sensor:
+
+* GP26 on Pico (Pin 31) to Magnetic Door Sensor
+* GND Rail on Breadboard to Magnetic Door Sensor
+
+The Notecarrier can be connected with a Qwiic cable with the following connections:.
+
+* Qwiic Black (GND) to Pico GND (Pin 3)
+* Qwiic Blue (SDA) to  Pico GP4 (Pin 6)
+* Qwiic Yellow (SCL) to Pico GP5 (Pin 7)
+
+Do not connect the Red cable of the Qwiic connector.  If you wish to power the Pico from the Notecarrier (which makes sense after testing) connect VMAIN on the Notecarrier to VSYS (Pin 39) on the Pico.
+
+See the image below for a diagram of the connections required.
+
+![Diagram of Breadboard Circuit](images/door-state-monitor-breadboard.png)
+
+Once complete the build should look a little like this:
+
+![Complete Breadboard Build](images/complete-build.jpg)
 
 ## Testing
 
-1. Bring the terminals together. You should see the message `dsm: Door closed.` in the serial log. Then, on the events page of your Notehub project, you should see a note that reads `{"open":false}`, indicating the door is closed.
-1. Separate the terminals. You should see the message `dsm: Door open.` in the serial log. Then, on the events page of your Notehub project, you should see a note that reads `{"open":true}`, indicating the door is open.
+1. Bring the terminals together. You should see the message `Door closed.` in the serial log. Then, on the events page of your Notehub project, you should see a Note that reads `{"closed":true}`, indicating the door is closed.
+1. Separate the terminals. You should see the message `Door open.` in the serial log. Then, on the events page of your Notehub project, you should see a Note that reads `{"open":true}`, indicating the door is open.
 
-The "File" field for each note on the events page will look something like `ID#state.qo`, where ID is a long alphanumeric string. This ID uniquely identifies the Sparrow reference node. This way, if you have multiple door state monitors, you can distinguish which monitor is which.
 
 ## Blues Community
 
@@ -72,5 +93,4 @@ We’d love to hear about you and your project on the [Blues Community Forum](ht
 
 ## Additional Resources
 
-* [Sparrow Datasheet](https://dev.blues.io/datasheets/sparrow-datasheet/)
-* [Sparrow Hardware Behavior](https://dev.blues.io/sparrow/sparrow-hardware-behavior/) (e.g. what do the various Sparrow LEDs indicate?)
+* [Notecard Lora Datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-lora/)
