@@ -97,8 +97,3 @@ To test things out, we'll press each button, observe the serial log, and then ob
 ## Blues Community
 
 We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
-
-## Additional Resources
-
-* [Sparrow Datasheet](https://dev.blues.io/datasheets/sparrow-datasheet/)
-* [Sparrow Hardware Behavior](https://dev.blues.io/sparrow/sparrow-hardware-behavior/) (e.g. what do the various Sparrow LEDs indicate?)
