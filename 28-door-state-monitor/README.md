@@ -93,4 +93,4 @@ We’d love to hear about you and your project on the [Blues Community Forum](ht
 
 ## Additional Resources
 
-* [Notecard Lora Datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-lora/)
+* [Notecard Lora Datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-lora-v2-1/)
