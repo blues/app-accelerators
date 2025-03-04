@@ -162,4 +162,4 @@ Power restored (LiPo battery discharged) to device Refrigerator.
 
 We’d love to hear about you and your project on the [Blues Community Forum].
 
-[blues community forum]: https://discuss.blues.io/
+[blues community forum]: https://discuss.blues.com/

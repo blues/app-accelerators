@@ -330,4 +330,4 @@ You dispense sodas from the mock-up manually by sliding it to the edge of a surf
 
 ## Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!

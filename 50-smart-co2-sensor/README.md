@@ -190,4 +190,4 @@ their speeds and timestamps in the Body column.
 ## Blues Community
 
 We’d love to hear about you and your project on the [Blues Community
-Forum](https://discuss.blues.io/)!
+Forum](https://discuss.blues.com/)!
