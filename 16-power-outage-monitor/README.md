@@ -21,7 +21,7 @@ Use Notecard with a mains-powered USB power brick and LiPo battery to build a gl
 
 ## Notecard Firmware
 
-Your notecard should be running [firmware version 4.2.1](https://dev.blues.io/notecard/notecard-firmware-updates/#lts-v4-2-1-march-3-2023) or higher. The simplest way to update firmware is to do an [over-the-air update](https://dev.blues.io/notecard/notecard-firmware-updates/#ota-dfu-with-notehub)
+Your notecard should be running [firmware version 4.2.1](https://dev.blues.io/notecard/notecard-firmware-releases/#lts-v4-2-1-march-3-2023) or higher. The simplest way to update firmware is to do an [over-the-air update](https://dev.blues.io/notecard/notecard-walkthrough/updating-notecard-firmware#ota-dfu-with-notehub)
 
 ## Cloud Setup
 
@@ -162,4 +162,4 @@ Power restored (LiPo battery discharged) to device Refrigerator.
 
 We’d love to hear about you and your project on the [Blues Community Forum].
 
-[blues community forum]: https://discuss.blues.io/
+[blues community forum]: https://discuss.blues.com/

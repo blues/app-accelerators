@@ -203,4 +203,4 @@ On your Notehub project page, navigate to the Events tab, and you should see a n
 
 ## Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!

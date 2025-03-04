@@ -44,7 +44,7 @@ In these steps, you will use the in-browser terminal to configure your Notecard 
 
 ### Firmware
 
-The Notecard should use [firmware version 3.5.1](https://dev.blues.io/notecard/notecard-firmware-updates/#v3-5-1-october-7-2022) or higher. The simplest way to update firmware is to do an [over-the-air update](https://dev.blues.io/notecard/notecard-firmware-updates/#ota-dfu-with-notehub).
+The Notecard should use [firmware version 3.5.1](https://dev.blues.io/notecard/notecard-firmware-releases/#v3-5-1-october-7-2022) or higher. The simplest way to update firmware is to do an [over-the-air update](https://dev.blues.io/notecard/notecard-walkthrough/updating-notecard-firmware#ota-dfu-with-notehub).
 
 ### Configure Notehub Project and Connection Mode
 
@@ -179,4 +179,4 @@ Initially, start with these all configured to the value 1, which will generate a
 
 ## Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!

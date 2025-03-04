@@ -370,4 +370,4 @@ When utility power fails, you will receive an `undervoltage` alert from instance
 
 ## Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!
