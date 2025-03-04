@@ -21,7 +21,7 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 
 ## Notecard Firmware
 
-The Notecard should use [firmware version 3.5.2](https://dev.blues.io/notecard/notecard-firmware-updates/#v3-5-2-november-2-2022) or higher. The simplest way to update firmware is to do an [over-the-air update](https://dev.blues.io/notecard/notecard-firmware-updates/#ota-dfu-with-notehub).
+The Notecard should use [firmware version 3.5.2](https://dev.blues.io/notecard/notecard-firmware-releases/#v3-5-2-november-2-2022) or higher. The simplest way to update firmware is to do an [over-the-air update](https://dev.blues.io/notecard/notecard-walkthrough/updating-notecard-firmware#ota-dfu-with-notehub).
 
 ## Testing
 
