@@ -15,7 +15,7 @@ Use Notecard with a mains-powered USB power brick and LiPo battery to build a gl
 
 ## Hardware Setup
 
-1. Assemble Notecard, Notecarrier and LiPo battery as described in our [tutorial](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-b/).
+1. Assemble Notecard, Notecarrier and LiPo battery as described in our [tutorial](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-x/).
 
 2. Keep the Notecard connected to the computer with the in-browser terminal active until you have completed [Notecard Setup](#notecard-setup).
 
