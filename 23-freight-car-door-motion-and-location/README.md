@@ -20,7 +20,7 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 
 ## Hardware Setup
 
-1. Assemble Notecard and Notecarrier as described [here](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-b).
+1. Assemble Notecard and Notecarrier as described [here](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-x).
 2. Plug the LiPo battery's JST cable into the Notecarrier port labeled "LIPO".
 3. Connect the micro USB cable from your development PC to the port on the Notecarrier. This is to both charge the LiPo battery and configure the Notecard.
 
