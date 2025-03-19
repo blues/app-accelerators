@@ -31,7 +31,7 @@ With the motor and activity line already set up and ready, you will first connec
 
 This initial setup configures the Notecard to provide activity and vibration monitoring.
 
-1. Assemble the Notecard and Notecarrier as described [here](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-b/).
+1. Assemble the Notecard and Notecarrier as described [here](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-x/).
 2. Connect the Notecarrier to your PC with the micro USB cable. Keep the Notecard connected to the computer with the in-browser terminal active until you have completed [Notecard Setup](#notecard-setup).
 
 ## Cloud Setup
