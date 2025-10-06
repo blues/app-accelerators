@@ -84,7 +84,7 @@ We recommend using one of the VS Code extensions, since they are easier to set u
 ### PlatformIO extension for VS Code
 
 There is no special setup required for the project beyond what is normally required to configure a PlatformIO project in VSCode.
-[This tutorial](https://dev.blues.io//feather-mcus/swan/using-platformio-with-swan) explains how to install and use PlatformIO.
+[This tutorial](https://dev.blues.io/feather-mcus/swan/using-platformio-with-swan) explains how to install and use PlatformIO.
 
 The PlatformIO project is located in the `firmware` folder, where you'll find `platformio.ini` that configures the project, including libraries required, location of the sources and compile-time definitions required.
 
