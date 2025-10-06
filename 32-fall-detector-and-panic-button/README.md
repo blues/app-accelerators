@@ -75,7 +75,7 @@ To build and upload the firmware to the Swan, you'll need VS Code with the Platf
 3. Click the PlatformIO icon on the left side of VS Code, then click Pick a folder, and select the `firmware` directory within `32-fall-detector-and-panic-button`.
 4. In the file explorer, open `src\main.cpp` and uncomment this line: `// #define PRODUCT_UID "com.my-company.my-name:my-project"`. Replace `com.my-company.my-name:my-project` with the [ProductUID of the Notehub project](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) you created in [Notehub Setup](#notehub-setup).
 5. Click the PlatformIO icon again, and under the Project Tasks menu, click Build to build the firmware image.
-6. Prepare the Swan to receive the firmware image via DFU by following these instructions from the [Swan Quickstart](https://dev.blues.io/quickstart/swan-quickstart/#programming-swan-the-stlink-v3mini).
+6. Prepare the Swan to receive the firmware image via DFU by following these instructions from the [Swan Quickstart](https://dev.blues.io/feather-mcus/swan/using-platformio-with-swan).
 7. Under the Project Tasks menu, click Upload to upload the firmware image to the MCU.
 
 From here, you can view logs from the firmware over serial with a terminal emulator (e.g. minicom). On Linux, the serial device will be something like `/dev/ttyACM0`. Use a baud rate of 115200 and [8-N-1](https://en.wikipedia.org/wiki/8-N-1) for the serial parameters.

@@ -34,7 +34,7 @@ source code, and then flash the firmware to your device.
 
 Complete the following steps to upload firmware in PlatformIO.
 
-1. Connect your Swan to your computer using [these steps](https://dev.blues.io/quickstart/swan-quickstart/#programming-swan-platformio).
+1. Connect your Swan to your computer using [these steps](https://dev.blues.io/feather-mcus/swan/using-platformio-with-swan).
 
 > **NOTE**: The project’s default configuration assumes you’re using an
 [STLINK-V3MINI programmer and debugger](https://shop.blues.io/products/stlink-v3mini).
