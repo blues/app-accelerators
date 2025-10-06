@@ -101,7 +101,7 @@ The host app makes use of these Notecard APIs:
 
 3. Click the PlatformIO icon again, and under the Project Tasks menu, click "Build" to build the firmware image.
 
-4. Prepare the Swan to receive the firmware image via DFU by following these instructions from the [Swan Quickstart](https://dev.blues.io/quickstart/swan-quickstart/#programming-swan-the-stlink-v3mini).
+4. Prepare the Swan to receive the firmware image via DFU by following these instructions from the [Swan Quickstart](https://dev.blues.io/feather-mcus/swan/using-platformio-with-swan).
 
 5. Under the Project Tasks menu, click "Upload" to upload the firmware image to the Swan. Note that this step can fail if 1) you already have a serial connection open to the Swan or 2) the micro USB cable is for charging only.
 

@@ -94,7 +94,7 @@ We recommend using one of the VS Code extensions, since they are easier to set u
 ### PlatformIO extension for VS Code
 
 There is no special setup required for the project beyond what is normally required to configure a PlatformIO project in VSCode.
-[This tutorial](https://dev.blues.io/quickstart/swan-quickstart/#using-the-vs-code-platformio-extension) explains how to install and use the PlatformIO.
+[This tutorial](https://dev.blues.io/feather-mcus/swan/using-platformio-with-swan) explains how to install and use the PlatformIO.
 
 The PlatformIO project is located in the `firmware` folder, where you'll find `platformio.ini` that configures the project, including libraries required, location of the sources and compile-time definitions required.
 
@@ -106,7 +106,7 @@ Before building the project, you will need to install the required [libraries](#
 
 ### Arduino IDE
 
-Before compiling and uploading the sketch, be sure to install the STM32Duino board support package. The tutorial [Using the Arduino IDE](https://dev.blues.io/feather-mcus/swan/using-arduino-ide-with-swan/) in the Swan documentation shows how to install support for Swan in Arduino IDE and how to compile and upload firmware.
+Before compiling and uploading the sketch, be sure to install the STM32Duino board support package. The tutorial [Using the Arduino IDE](https://dev.blues.io/quickstart/swan-quickstart/) in the Swan documentation shows how to install support for Swan in Arduino IDE and how to compile and upload firmware.
 
 You will also need to install the required libraries, and increase the serial receive buffer size, detailed below.
 

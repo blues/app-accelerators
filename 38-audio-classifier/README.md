@@ -71,7 +71,7 @@ First, you need to flash the data acquisition firmware onto the Swan.
 1. Make sure you've installed [Visual Studio Code (VS Code)](https://code.visualstudio.com/) and the [PlatformIO extension](https://platformio.org/install/ide?install=vscode).
 1. Open VS Code, click the PlatformIO icon on the left side of VS Code, click "Pick a folder", and select the directory `38-audio-classifier/data_acquisition`.
 1. Click the PlatformIO icon again, and under the Project Tasks menu, click "Build" to build the firmware image.
-1. Prepare the Swan to receive the firmware image via DFU by following these instructions from the [Swan Quickstart](https://dev.blues.io/quickstart/swan-quickstart/#programming-swan-the-stlink-v3mini).
+1. Prepare the Swan to receive the firmware image via DFU by following these instructions from the [Swan Quickstart](https://dev.blues.io/feather-mcus/swan/using-platformio-with-swan).
 1. Under the Project Tasks menu, click "Upload" to upload the firmware image to the Swan. Note that this step can fail if 1) you already have a serial connection open to the Swan or 2) the micro USB cable is for charging only.
 1. Under the Project Tasks menu, click "Monitor" to view the audio data streaming over serial. You should see a rapid stream of integers pouring down the console.
 1. Close the Monitor task in the pane to the right of the serial console.
@@ -147,7 +147,7 @@ With the model trained and Notehub configured, it's time to build and flash the 
     ```
     Uncomment the `#include` and change `running_faucet_detector_inferencing.h` to the name of your specific header file. This header file is located in the `src` subdirectory of the directory you unzipped in [Downloading the Model](#downloading-the-model).
 1. Click the PlatformIO icon, and under the Project Tasks menu, click "Build" to build the firmware image.
-1. Prepare the Swan to receive the firmware image by doing the [BOOT + RST button press combo](https://dev.blues.io/quickstart/swan-quickstart/#programming-swan-the-stlink-v3mini).
+1. Prepare the Swan to receive the firmware image by doing the [BOOT + RST button press combo](https://dev.blues.io/quickstart/swan-quickstart#programming-swan-the-stlink-v3mini).
 1. Under the Project Tasks menu, click "Upload" to upload the firmware image to the Swan.
 1. Under the Project Tasks menu, click "Monitor" to view the serial log. You should see output like this:
 
