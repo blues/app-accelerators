@@ -170,9 +170,9 @@ Notecard Firmware Setup
 -----------------------
 
 The Notecard should use
-[firmware version 4.4.1](https://dev.blues.io/notecard/notecard-firmware-updates/#v3-5-1-october-7-2022)
+[firmware version 4.4.1](https://dev.blues.io/notecard/notecard-firmware-releases/#v3-5-1-october-7-2022)
 or higher. The simplest way to update firmware is to do an
-[over-the-air (OTA) update](https://dev.blues.io/notecard/notecard-firmware-updates/#ota-dfu-with-notehub).
+[over-the-air (OTA) update](https://dev.blues.io/notecard/notecard-walkthrough/updating-notecard-firmware#ota-dfu-with-notehub).
 
 Host Firmware Setup
 -------------------

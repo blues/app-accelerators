@@ -72,7 +72,7 @@ The Swan microcontroller plugs into the Feather slot on the back of the display 
 ![The final assembled hardware](images/hardware-build.png)
 
 > **NOTE**: For a detailed look at how to connect the hardware, refer to the
-[Notecard and Notecarrier B quickstart guide](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-b/).
+[Notecard and Notecarrier B quickstart guide](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-x/).
 
 With the hardware assembled you next need to get the project’s firmware
 running on your device.

@@ -31,7 +31,7 @@ With the motor and activity line already set up and ready, you will first connec
 
 This initial setup configures the Notecard to provide activity and vibration monitoring.
 
-1. Assemble the Notecard and Notecarrier as described [here](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-b/).
+1. Assemble the Notecard and Notecarrier as described [here](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-x/).
 2. Connect the Notecarrier to your PC with the micro USB cable. Keep the Notecard connected to the computer with the in-browser terminal active until you have completed [Notecard Setup](#notecard-setup).
 
 ## Cloud Setup
@@ -44,7 +44,7 @@ In these steps, you will use the in-browser terminal to configure your Notecard 
 
 ### Firmware
 
-The Notecard should use [firmware version 3.5.1](https://dev.blues.io/notecard/notecard-firmware-updates/#v3-5-1-october-7-2022) or higher. The simplest way to update firmware is to do an [over-the-air update](https://dev.blues.io/notecard/notecard-firmware-updates/#ota-dfu-with-notehub).
+The Notecard should use [firmware version 3.5.1](https://dev.blues.io/notecard/notecard-firmware-releases/#v3-5-1-october-7-2022) or higher. The simplest way to update firmware is to do an [over-the-air update](https://dev.blues.io/notecard/notecard-walkthrough/updating-notecard-firmware#ota-dfu-with-notehub).
 
 ### Configure Notehub Project and Connection Mode
 
@@ -179,4 +179,4 @@ Initially, start with these all configured to the value 1, which will generate a
 
 ## Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!

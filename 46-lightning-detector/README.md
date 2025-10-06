@@ -151,7 +151,7 @@ Because this was a disturber (type 2), no `distance_to_storm` or `energy` fields
 
 ## Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!
 
 
 [^1]: [Blues Starter Kits for EMEA](https://shop.blues.io/products/blues-starter-kit-for-emea) are also available.

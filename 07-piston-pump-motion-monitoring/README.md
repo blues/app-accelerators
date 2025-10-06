@@ -28,7 +28,7 @@ The following hardware is required to run the Piston Pump Motion Monitor.
 * A LiPo Battery of any size, like [this one](https://www.adafruit.com/product/328) from Adafruit or [from Blues](https://shop.blues.io/collections/accessories).
 
 > **NOTE**: For a detailed look at how to connect the hardware, refer to the
-[Notecard and Notecarrier B quickstart guide](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-b/).
+[Notecard and Notecarrier B quickstart guide](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-x/).
 
 With the hardware assembled you next need to get the Notecard configured for motion tracking.
 

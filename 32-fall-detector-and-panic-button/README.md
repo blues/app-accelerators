@@ -106,7 +106,7 @@ By default, the accelerometer needs to be in free fall for 300ms to produce a fa
 
 ## Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!
 
 ## Additional Resources
 

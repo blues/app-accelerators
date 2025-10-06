@@ -55,14 +55,14 @@ To build, flash, and debug the firmware, you will need
 * [Visual Studio Code (VS Code)](https://code.visualstudio.com/).
 * [Docker and the VS Code Dev Containers extension](https://code.visualstudio.com/docs/devcontainers/containers). The Dev Containers documentation will take you through the process of installing both Docker and the extension for VS Code.
 
-These instructions will defer parts of the build process to the [Blues Zephyr SDK documentation](https://dev.blues.io/tools-and-sdks/firmware-libraries/zephyr-sdk) (the "Zephyr SDK docs"). Though these instructions are for the [note-zephyr repo](https://github.com/blues/note-zephyr), the same patterns for building the code are used here.
+These instructions will defer parts of the build process to the [Blues Zephyr library documentation](https://dev.blues.io/tools-and-sdks/firmware-libraries/zephyr-library) (the "Zephyr library docs"). Though these instructions are for the [note-zephyr repo](https://github.com/blues/note-zephyr), the same patterns for building the code are used here.
 
 1. Start VS Code and select File > Open Folder and pick `37-heat-index-monitor/firmware/zephyr`.
-1. Follow the instructions for your OS in the [Zephyr SDK docs' "Building the Dev Container" section](https://dev.blues.io/tools-and-sdks/firmware-libraries/zephyr-sdk/#building-the-dev-container).
+1. Follow the instructions for your OS in the [Zephyr library docs' "Building the Dev Container" section](https://dev.blues.io/tools-and-sdks/firmware-libraries/zephyr-library/#building-the-dev-container).
 1. Edit `src/main.c` to associate the firmware with your Notehub project. Uncomment `// #define PRODUCT_UID "com.your-company:your-product-name"` and replace `com.your-company:your-product-name` with [your project's ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid).
-1. Follow the [Zephyr SDK docs' "Building and Running" section](https://dev.blues.io/tools-and-sdks/firmware-libraries/zephyr-sdk/#building-and-running).
+1. Follow the [Zephyr library docs' "Building and Running" section](https://dev.blues.io/tools-and-sdks/firmware-libraries/zephyr-library/#building-and-running).
 
-Now, the code should be running on the Swan. If you want to look at the serial logs or debug the code, check out the [Zephyr SDK docs' "Debugging" section](https://dev.blues.io/tools-and-sdks/firmware-libraries/zephyr-sdk/#debugging).
+Now, the code should be running on the Swan. If you want to look at the serial logs or debug the code, check out the [Zephyr library docs' "Debugging" section](https://dev.blues.io/tools-and-sdks/firmware-libraries/zephyr-library/#debugging).
 
 ## Notefiles
 

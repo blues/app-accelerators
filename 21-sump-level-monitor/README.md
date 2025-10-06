@@ -17,7 +17,7 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 
 ## Hardware Setup
 
-1. Assemble Notecard and Notecarrier as described [here for the Notecarrier A](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-a/) or [here for the Notecarrier B](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-b/).
+1. Assemble Notecard and Notecarrier as described [here for the Notecarrier A](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-a/) or [here for the Notecarrier B](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-x/).
 2. Strip ~1/2" of the insulation off the float switch's brown and black wires. Twist the strands of each wire tightly and then use a soldering iron to [tin each wire](https://www.youtube.com/watch?v=pRPF4wpXX9Q). We will not be using the remaining blue wire.
 3. With the float switch wires tinned, break off two male header pins and solder a header onto each switch wire so that you can easily connect the switch to the Notecarrier's headers.
 4. Plug the header from one of the float switch's wires (it doesn't matter which one) into the GND header on the Notecarrier.
@@ -25,7 +25,7 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 
 ## Notecard Firmware Setup
 
-The Notecard should use [firmware version 3.3.1](https://dev.blues.io/notecard/notecard-firmware-updates/#v3-3-1-may-23-2022) or higher. The simplest way to update firmware is to do an [over-the-air update](https://dev.blues.io/notecard/notecard-firmware-updates/#ota-dfu-with-notehub).
+The Notecard should use [firmware version 3.3.1](https://dev.blues.io/notecard/notecard-firmware-releases/#v3-3-1-may-23-2022) or higher. The simplest way to update firmware is to do an [over-the-air update](https://dev.blues.io/notecard/notecard-walkthrough/updating-notecard-firmware#ota-dfu-with-notehub).
 
 ## Notecard Configuration
 

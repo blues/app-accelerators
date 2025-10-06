@@ -129,7 +129,7 @@ In order to determine the range of values you should test the solution in clean 
 
 ## Blues Community
 
-We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.io/)!
+We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!
 
 ## Additional Resources
 
