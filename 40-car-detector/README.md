@@ -4,12 +4,12 @@ Detect passing cars with a camera and publish the timestamps for these events to
 
 ## Overview
 
-This application continuously grabs images from an [OpenMV](https://openmv.io/) camera board running [MicroPython](https://micropython.org/) and runs them through an object detection model built using [Edge Impulse](https://edgeimpulse.com/) to test for the presence of a car. The coming and going of a car counts as 1 "event". The start and end times for each event are captured and periodically synced to [Notehub](https://www.notehub.io/) via a [Notecard](https://blues.io/products/notecard/).
+This application continuously grabs images from an [OpenMV](https://openmv.io/) camera board running [MicroPython](https://micropython.org/) and runs them through an object detection model built using [Edge Impulse](https://edgeimpulse.com/) to test for the presence of a car. The coming and going of a car counts as 1 "event". The start and end times for each event are captured and periodically synced to [Notehub](https://www.notehub.io/) via a [Notecard](https://blues.com/products/notecard/).
 
 ## You Will Need
 
-* [Notecard](https://blues.io/products/notecard/)
-* [Notecarrier A](https://blues.io/products/notecarrier/notecarrier-a/)
+* [Notecard](https://blues.com/products/notecard/)
+* [Notecarrier A](https://blues.com/products/notecarrier/notecarrier-a/)
 * [OpenMV Cam H7](https://openmv.io/products/openmv-cam-h7)
 * [Super Telephoto Lens](https://openmv.io/collections/lenses/products/super-telephoto-lens)*
 * 2 micro USB cables

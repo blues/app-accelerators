@@ -12,9 +12,9 @@ You'll use [Edge Impulse](https://www.edgeimpulse.com/), a free edge AI platform
 
 ### Hardware
 
-- [Notecard](https://shop.blues.io/collections/notecard/products/note-wbna-500)
-- [Notecarrier F](https://blues.io/products/notecarrier/notecarrier-f/)
-- [Swan](https://shop.blues.io/collections/swan/products/swan)
+- [Notecard](https://shop.blues.com/collections/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+- [Notecarrier F](https://blues.com/products/notecarrier/notecarrier-f/)
+- [Swan](https://shop.blues.com/collections/swan/products/swan?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
 - [Adafruit PDM MEMS Microphone Breakout](https://www.adafruit.com/product/3492)
 - Soldering iron and flux
 - Male-to-female jumper wires

@@ -5,8 +5,8 @@ Monitor water level changes in a sump using a Notecard and a float switch.
 ## You Will Need
 
 * USB A to micro USB cable
-* [Notecarrier-A](https://shop.blues.io/products/carr-al) or [Notecarrier-B](https://shop.blues.io/products/carr-b) (for the Notecarrier-B you'll need a separate antenna, which comes with the Notecarrier-B in our shop)
-* [Notecard](https://blues.io/products/notecard/)
+* [Notecarrier A](https://shop.blues.com/products/carr-al?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) or [Notecarrier B](https://shop.blues.com/products/carr-b?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) (for the Notecarrier-B you'll need a separate antenna, which comes with the Notecarrier-B in our shop)
+* [Notecard](https://blues.com/products/notecard/)
 * [Sump Alarm Three Wire Float Switch](https://www.sumpalarm.com/products/float-switch-for-use-septic-system-sump-pump-water-tank-see-all-five-cable-length-options)
 * Soldering iron and solder flux
 * Strip of male header pins
@@ -96,5 +96,5 @@ The switch was opened, and AUX1 is now reading high from its pull-up.
 ## Going Further
 
 - In a real sump, the float switch will change orientation and close/open with rising and falling water level. When the water rises to a certain level (the exact level is dependent on how much slack you've given the float), you'll get the first kind of note, indicating low voltage on AUX1. When the water falls back to a certain level, you'll get the second kind of note, indicating high voltage on AUX1. You can then act on this signal as appropriate for your use case.
-- In the real world, you'd want your alert system to be resilient to power outages, so you'll want to hook up a [LiPo battery with a JST cable](https://shop.blues.io/products/5-000-mah-lipo-battery) to the JST port labeled LIPO on the Notecarrier. 
+- In the real world, you'd want your alert system to be resilient to power outages, so you'll want to hook up a [LiPo battery with a JST cable](https://shop.blues.com/products/5-000-mah-lipo-battery?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) to the JST port labeled LIPO on the Notecarrier. 
 - If you want to wire up more float switches to the same Notecard, you can easily do so by using the additional AUX pins. This could be useful in a particularly deep sump/vessel and/or when you want more granularity in terms of knowing the current fluid level.

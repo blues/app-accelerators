@@ -18,9 +18,9 @@ By using a distance sensor placed at the top of each column of soda cans, the So
 
 ### Hardware
 
-- [Notecard](https://shop.blues.io/collections/notecard/products/note-wbna-500)
-- [Notecarrier F](https://blues.io/products/notecarrier/notecarrier-f/)
-- [Swan](https://shop.blues.io/collections/swan/products/swan)
+- [Notecard](https://shop.blues.com/collections/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+- [Notecarrier F](https://blues.com/products/notecarrier/notecarrier-f/)
+- [Swan](https://shop.blues.com/collections/swan/products/swan?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
 - USB-A to Micro-USB cable
 
 For each dispensing column:

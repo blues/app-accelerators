@@ -5,7 +5,7 @@ Detect lightning strikes up to 40 km away and send the detections to the cloud v
 ## You Will Need
 
 * [Visual Studio Code (VS Code)](https://code.visualstudio.com/) with the [PlatformIO extension](https://platformio.org/)
-* [Blues Starter Kit for North America](https://shop.blues.io/products/blues-starter-kit-for-north-america)[^1]
+* [Blues Starter Kit](https://shop.blues.com/collections/blues-starter-kits/products/blues-global-starter-kit?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
 * [SparkFun Lightning Detector - AS3935](https://www.sparkfun.com/products/15441)
 * Row of 7 headers
 * Soldering iron
@@ -135,7 +135,7 @@ Sending event note...
 [INFO] {"template":true}
 ```
 
-On Notehub, in your project's Events tab, you should see the Note come through sometime later.[^2]
+On Notehub, in your project's Events tab, you should see the Note come through sometime later.[^1]
 
 ![](images/events.png)
 
@@ -154,5 +154,4 @@ Because this was a disturber (type 2), no `distance_to_storm` or `energy` fields
 We’d love to hear about you and your project on the [Blues Community Forum](https://discuss.blues.com/)!
 
 
-[^1]: [Blues Starter Kits for EMEA](https://shop.blues.io/products/blues-starter-kit-for-emea) are also available.
-[^2]: Notes are synced from the Notecard to Notehub every 10 minutes. See the `OUTBOUND_MINS` macro in lightning_detector.ino if you want to change the number of minutes.
+[^1]: Notes are synced from the Notecard to Notehub every 10 minutes. See the `OUTBOUND_MINS` macro in lightning_detector.ino if you want to change the number of minutes.

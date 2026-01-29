@@ -1,4 +1,4 @@
-// Wi-Fi, Cellular, or LoRa
+// WiFi, Cellular, or LoRa
 export type SignalStrengths = "N/A" | "0" | "1" | "2" | "3" | "4";
 
 export function barsToSignalStrengths(bars: number): SignalStrengths {

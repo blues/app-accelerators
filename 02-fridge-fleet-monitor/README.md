@@ -15,7 +15,7 @@ To run this project yourself you'll need to:
 
 The following hardware is required to run the Fridge Fleet Monitor.
 
-* [Blues Starter Kit for LoRaWAN](https://shop.blues.com/products/blues-starter-kit-lorawan)
+* [Blues Starter Kit for LoRaWAN](https://shop.blues.com/products/blues-starter-kit-lorawan?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
 * [Raspberry Pi Pico](https://www.adafruit.com/product/4864)
 * [Adafruit magnetic contact switch (door sensor) x 2](https://www.adafruit.com/product/375)
 * [DHT-11 Temperature and Humidity Sensor](https://www.amazon.com/SHILLEHTEK-Temperature-Humidity-Sensor-Module/dp/B0CN5RP8SL)
@@ -23,7 +23,7 @@ The following hardware is required to run the Fridge Fleet Monitor.
 
 ## LoRaWAN Gateway Setup
 
-Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to The Things Network.  To make this easy you can use the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
+Before you can use the Notecard for LoRa you need to have a LoRaWAN gateway that is provisioned to The Things Network.  To make this easy you can use the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
 
 ## Firmware
 

@@ -5,9 +5,9 @@ Detect when a sign is knocked over or a door is opened/closed.
 ## You Will Need
 
 * USB A to micro USB cable
-* [LiPo battery with JST cable](https://shop.blues.io/products/5-000-mah-lipo-battery)
-* [Notecarrier-A](https://shop.blues.io/products/carr-al)
-* [Notecard](https://blues.io/products/notecard/)
+* [LiPo battery with JST cable](https://shop.blues.com/products/5-000-mah-lipo-battery?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+* [Notecarrier A](https://shop.blues.com/products/carr-al?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+* [Notecard](https://blues.com/products/notecard/)
 
 ## Notehub Setup
 

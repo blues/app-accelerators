@@ -21,13 +21,13 @@ The Analog Signage Demo's firmware is built using [CircuitPython](https://circui
 
 The `.py` files in this directory contain the complete working source for this demo.
 
-- `secrets.py` contains Wi-Fi SSID and Password information, as well as the IP address and [API key for your Vestaboard](https://docs.vestaboard.com/local). You will need to update the placeholder values in this file before you run the app.
+- `secrets.py` contains WiFi SSID and Password information, as well as the IP address and [API key for your Vestaboard](https://docs.vestaboard.com/local). You will need to update the placeholder values in this file before you run the app.
 - `code.py` is the main application and should either be incorporated into the `code.py` file of your MCU or dragged onto the `CIRCUITPY` drive to overwrite the default file. This file contains application logic for:
   - Connecting to the Notecard and configuring its connection (don't forget to set your [Notehub ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) in this app or using the REPL at [dev.blues.io](https://dev.blues.io)).
-  - Connecting to a local Wi-Fi network.
-  - Communicating with the Vestaboard over the local Wi-Fi Network.
+  - Connecting to a local WiFi network.
+  - Communicating with the Vestaboard over the local WiFi Network.
   - Polling for environment variable changes and updating local application state when new variables are detected.
   - Mapping environment variable values to the [array](https://docs.vestaboard.com/local) and [character code format](https://docs.vestaboard.com/characters) expected by the Vestaboard API.
   - Sending updated information to the Vestaboard.
 - `vestaboard.py` contains helper objects for board setup as well as a character codes dictionary that maps letters, digits, characters and colors to the Vestaboard character code format.
-- `feathers2.py` contains helper functions for working with devices on the FeatherS2. This file and references to it can be deleted if using another Wi-Fi host.
+- `feathers2.py` contains helper functions for working with devices on the FeatherS2. This file and references to it can be deleted if using another WiFi host.
