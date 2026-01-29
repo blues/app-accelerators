@@ -40,6 +40,7 @@ enum {
   EPD_GRAY,  ///< gray color ('red' on grayscale)
   EPD_DARK,  ///< darker color
   EPD_LIGHT, ///< lighter color
+  EPD_YELLOW, ///< yellow color (for quad-color displays)
   EPD_NUM_COLORS
 };
 
@@ -48,6 +49,7 @@ typedef enum {
   THINKINK_TRICOLOR,
   THINKINK_GRAYSCALE4,
   THINKINK_MONO_PARTIAL,
+  THINKINK_QUADCOLOR,
 } thinkinkmode_t;
 
 #define EPD_swap(a, b)                                                         \
