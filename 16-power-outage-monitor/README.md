@@ -9,8 +9,8 @@ Use Notecard with a mains-powered USB power brick and LiPo battery to build a gl
 * LiPo battery with JST cable
 * AC to USB Adapter (power brick)
 * USB A to Micro USB cable
-* [Notecarrier-A](https://shop.blues.io/collections/notecarrier/products/carr-al) or [Notecarrier-B](https://shop.blues.io/collections/notecarrier/products/carr-b)
-* Cellular [Notecard](https://blues.io/products/notecard/)
+* [Notecarrier A](https://shop.blues.com/collections/notecarrier/products/carr-al?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) or [Notecarrier B](https://shop.blues.com/collections/notecarrier/products/carr-b?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+* Cellular [Notecard](https://blues.com/products/notecard/)
 
 
 ## Hardware Setup

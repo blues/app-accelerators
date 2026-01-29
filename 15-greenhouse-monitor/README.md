@@ -8,11 +8,11 @@ when any of these fall outside specified ranges.
 This app provides a simple to construct greenhouse monitoring device that can be deployed inside a greenhouse. The app monitors soil moisture and soil temperature as well as ambient light and ambient temperature. Using off-the-shelf hardware and modular components, you can use this solution to add monitoring to an existing greenhouse.
 
 ## You Will Need
-  * A [Blues Starter Kit](https://shop.blues.io/collections/blues-starter-kits), that contains amongst other things
-    * [Notecarrier F](https://shop.blues.io/products/notecarrier-f)
-    * [Swan](https://shop.blues.io/collections/swan)
-    * [Notecard](https://shop.blues.io/collections/notecard)
-    * [Molex Cellular Antenna](https://shop.blues.io/collections/accessories/products/flexible-cellular-or-wi-fi-antenna)
+  * A [Blues Starter Kit](https://shop.blues.com/collections/blues-starter-kits?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), that contains amongst other things
+    * [Notecarrier F](https://shop.blues.com/products/notecarrier-f?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+    * [Swan](https://shop.blues.com/collections/swan?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+    * [Notecard](https://shop.blues.com/collections/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+    * [Molex Cellular Antenna](https://shop.blues.com/collections/accessories/products/flexible-cellular-or-wi-fi-antenna?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
   * [Adafruit BME280](https://www.adafruit.com/product/2652)
   * [Photo transistor](https://www.adafruit.com/product/2831)
   * [Adafruit STEMMA Soil Sensor](https://www.adafruit.com/product/4026)

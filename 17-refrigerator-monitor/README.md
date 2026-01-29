@@ -6,9 +6,9 @@ Monitor refrigerator temperature, humidity, and power using a Notecard and a BME
 
 * AC to USB adapter (power brick)
 * USB A to micro USB cable
-* [LiPo battery with JST cable](https://shop.blues.io/products/5-000-mah-lipo-battery)
-* [Notecarrier-A](https://shop.blues.io/collections/notecarrier/products/carr-al)
-* [Notecard](https://blues.io/products/notecard/)
+* [LiPo battery with JST cable](https://shop.blues.com/products/5-000-mah-lipo-battery?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+* [Notecarrier A](https://shop.blues.com/collections/notecarrier/products/carr-al?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+* [Notecard](https://blues.com/products/notecard/)
 * [SparkFun Atmospheric Sensor Breakout - BME280 (Qwiic)](https://www.sparkfun.com/products/15440)
 * [Qwiic Cable](https://www.sparkfun.com/products/14426)
 

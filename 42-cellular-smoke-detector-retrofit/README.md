@@ -10,16 +10,16 @@ The smoke detectors installed in a home often come with [3 wires](https://home.h
 - White is neutral.
 - Red is an interconnect wire that essentially acts as a bus shared by all the smoke detectors in the home.
 
-For this project, we're primarily interested in that interconnect wire. Typically, when one detector senses smoke and starts alarming, it will raise the voltage on this line to 9V DC. The other smoke detectors sense this voltage and begin sounding their alarms in response. This application adds an additional node on the interconnect bus that senses the change in voltage and uses a [Blues Notecard](https://blues.io/products/notecard/) to push a notification to [Notehub](https://notehub.io). That notification causes an SMS message to be sent to a phone number of your choosing. When the alarm stops and the voltage drops back to 0, another SMS is sent to indicate the alarm has stopped.
+For this project, we're primarily interested in that interconnect wire. Typically, when one detector senses smoke and starts alarming, it will raise the voltage on this line to 9V DC. The other smoke detectors sense this voltage and begin sounding their alarms in response. This application adds an additional node on the interconnect bus that senses the change in voltage and uses a [Blues Notecard](https://blues.com/products/notecard/) to push a notification to [Notehub](https://notehub.io). That notification causes an SMS message to be sent to a phone number of your choosing. When the alarm stops and the voltage drops back to 0, another SMS is sent to indicate the alarm has stopped.
 
 Note that the instructions in this README require you to remove one of the smoke detectors in your home and install the hardware described here in its place. It's certainly possible to keep the smoke detector installed alongside the cellular monitoring system, but this is not covered in this document.
 
 ## You Will Need
 
-* [Notecard](https://blues.io/products/notecard/)
-* [Notecarrier-A](https://shop.blues.io/collections/notecarrier/products/carr-al)
+* [Notecard](https://blues.com/products/notecard/)
+* [Notecarrier A](https://shop.blues.com/collections/notecarrier/products/carr-al?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
 * USB A to micro USB cable
-* [LiPo battery with JST cable](https://shop.blues.io/products/5-000-mah-lipo-battery)
+* [LiPo battery with JST cable](https://shop.blues.com/products/5-000-mah-lipo-battery?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
 * [PC817 optocoupler](https://www.amazon.com/dp/B01JG8EJVW?psc=1&ref=ppx_yo2ov_dt_b_product_details)
 * Non-contact voltage tester
 * Digital multimeter with hook or clip probes

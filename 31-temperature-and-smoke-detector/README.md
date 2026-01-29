@@ -6,10 +6,10 @@ Temperature monitoring and smoke detection across a number of rooms at a facilit
 
 ## You Will Need
 
-* [Notecard Lora](https://shop.blues.com/collections/notecard/products/notecard-lora)
-* [LoRaWAN Gateway](https://shop.blues.com/collections/accessories/products/lorawan-gateway)
-* [Notecarrier F](https://shop.blues.com/collections/notecarrier/products/notecarrier-f)
-* [Swan](https://shop.blues.com/collections/swan/products/swan)
+* [Notecard Lora](https://shop.blues.com/collections/notecard/products/notecard-lora?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+* [LoRaWAN Gateway](https://shop.blues.com/collections/accessories/products/lorawan-gateway?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+* [Notecarrier F](https://shop.blues.com/collections/notecarrier/products/notecarrier-f?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+* [Swan](https://shop.blues.com/collections/swan/products/swan?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
 * 2 USB A to micro USB cables
 * [MQ2 Gas and Smoke Sensor](https://www.amazon.com/Reland-Sun-MQ-2-Sensor-Module/dp/B09NN39G8X)
 * [3.3-to-5v voltage converter](https://www.amazon.com/Comidox-Module-Voltage-Converter-0-9-5V/dp/B07L76KLRY)
@@ -26,7 +26,7 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 
 ## LoRa Gateway Setup
 
-Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to The Things Network.  To make this easy you can use the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
+Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to The Things Network.  To make this easy you can use the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
 
 ## Swan Setup
 

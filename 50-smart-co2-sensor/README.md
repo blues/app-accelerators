@@ -10,14 +10,14 @@ see whether the current CO2 levels are cause for concern. When an alarm event is
 triggered, then an alarm is sounded and a Twilio message is generated to warn
 employees and/or patrons of dangerous CO2 levels. Periodic samples of
 atmospheric CO2 are recorded and synced to [Notehub](https://www.notehub.io/)
-via a [Notecard](https://blues.io/products/notecard/).
+via a [Notecard](https://blues.com/products/notecard/).
 
 ## You Will Need
 
-* [Notecard](https://blues.io/products/notecard/)
-* [Notecarrier F](https://blues.io/products/notecarrier/notecarrier-f/)
+* [Notecard](https://blues.com/products/notecard/)
+* [Notecarrier F](https://blues.com/products/notecarrier/notecarrier-f/)
 * [Adafruit FeatherWing OLED - 128x32](https://www.adafruit.com/product/3045)
-* [Blues Swan](https://blues.io/products/swan)
+* [Blues Swan](https://blues.com/products/swan)
 * [DFRobot Gravity: Digital Speaker Module](https://wiki.dfrobot.com/DFRobot_Speaker_v1.0_SKU__FIT0449)
 * [DFRobot Gravity: UART Infrared Carbon Dioxide Sensor (0-50000 ppm)](https://wiki.dfrobot.com/Infrared_CO2_Sensor_0-50000ppm_SKU__SEN0220)
 * Momentary push button
@@ -154,11 +154,11 @@ variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understandi
 you may wish to configure:
 
 - `alarm_threshold`: This is the ppm value where the alarm should trigger.
-- `wifi_ssid`: The Notecard WBNAW has a built-in Wi-Fi antenna. It will connect
-via cellular out of the box, but if Wi-Fi ssid and password are provided, then
-it will prefer to connect over Wi-Fi. You are able to test and deploy this
+- `wifi_ssid`: The Notecard WBNAW has a built-in WiFi antenna. It will connect
+via cellular out of the box, but if WiFi ssid and password are provided, then
+it will prefer to connect over WiFi. You are able to test and deploy this
 device in separate locations without having to recompile the firmware.
-- `wifi_password`: The Wi-Fi password used to update the current configuration.
+- `wifi_password`: The WiFi password used to update the current configuration.
 
 To change these values, go to your Notehub project, find the device you wish to
 update. Click into the device detail page, then click the Environment tab. Now,

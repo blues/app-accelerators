@@ -16,17 +16,14 @@ ENV_POLL_SECS = 1
 next_poll_sec = 0
 last_modified_time = 0
 
-application_state = {
-    "lines": {},
-    "variables_updated": False
-}
+application_state = {"lines": {}, "variables_updated": False}
 
 # Make sure the 2nd LDO is turned on
 feathers2.enable_LDO2(True)
 
 i2c = board.I2C()
 card = notecard.OpenI2C(i2c, 0, 0, debug=False)
-card.SetAppUserAgent({"app":"nf5"})
+card.SetAppUserAgent({"app": "nf5"})
 req = {"req": "hub.set", "mode": "continuous", "sync": True}
 card.Transaction(req)
 
@@ -75,22 +72,22 @@ def map_env_vars():
         row_state = []
         key_index = int(key[-1]) + 1
 
-        if value['delay'] is 'true':
-            row_state.extend([vestaboard.character_codes['red'], 0])
+        if value["delay"] is "true":
+            row_state.extend([vestaboard.character_codes["red"], 0])
         else:
-            row_state.extend([vestaboard.character_codes['green'], 0])
+            row_state.extend([vestaboard.character_codes["green"], 0])
 
-        for _, char in enumerate(value['city']):
+        for _, char in enumerate(value["city"]):
             row_state.append(vestaboard.character_codes[char])
         row_state.extend([0, 0, 0])
 
-        for _, char in enumerate(value['track']):
+        for _, char in enumerate(value["track"]):
             row_state.append(vestaboard.character_codes[char])
         row_state.extend([0, 0, 0, 0, 0])
 
-        for _, char in enumerate(value['time']):
+        for _, char in enumerate(value["time"]):
             row_state.append(vestaboard.character_codes[char])
-        row_state.extend([0,0,0,0,0])
+        row_state.extend([0, 0, 0, 0, 0])
 
         updated_board[key_index] = row_state
 
@@ -101,19 +98,23 @@ def setup_board(req):
     print("Setting up Vestaboard")
 
     board_state = str(vestaboard.base_board)
-    board_headers = {"X-Vestaboard-Local-Api-Key": secrets['vestaboard_key']}
-    response = req.post(secrets['vestaboard_url'], headers=board_headers, data=board_state)
+    board_headers = {"X-Vestaboard-Local-Api-Key": secrets["vestaboard_key"]}
+    response = req.post(
+        secrets["vestaboard_url"], headers=board_headers, data=board_state
+    )
 
-    print(response.status_code, ' - ' if response.text else '', response.text)
+    print(response.status_code, " - " if response.text else "", response.text)
 
 
 def update_board(req, board_data):
     print("Updating Vestaboard")
 
-    board_headers = {"X-Vestaboard-Local-Api-Key": secrets['vestaboard_key']}
-    response = req.post(secrets['vestaboard_url'], headers=board_headers, data=str(board_data))
+    board_headers = {"X-Vestaboard-Local-Api-Key": secrets["vestaboard_key"]}
+    response = req.post(
+        secrets["vestaboard_url"], headers=board_headers, data=str(board_data)
+    )
 
-    print(response.status_code, ' - ' if response.text else '', response.text)
+    print(response.status_code, " - " if response.text else "", response.text)
 
 
 fetch_environment_variables()
@@ -121,8 +122,8 @@ fetch_environment_variables()
 print("\nAnalog Display Demo")
 print("-------------------\n")
 
-print("joining Wi-Fi network...")
-wifi.radio.connect(ssid=secrets['ssid'], password=secrets['passwd'])
+print("joining WiFi network...")
+wifi.radio.connect(ssid=secrets["ssid"], password=secrets["passwd"])
 
 print("IP addr:", wifi.radio.ipv4_address)
 
@@ -133,7 +134,9 @@ request = adafruit_requests.Session(pool)
 setup_board(request)
 
 while True:
-    update_env_vars, next_poll_sec, last_modified_time = poll_environment_variables(next_poll_sec, last_modified_time)
+    update_env_vars, next_poll_sec, last_modified_time = poll_environment_variables(
+        next_poll_sec, last_modified_time
+    )
 
     if update_env_vars:
         fetch_environment_variables()

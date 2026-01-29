@@ -5,9 +5,9 @@ Track the location of a Freight Car and determine the number of times the door w
 ## You will need
 
 * USB A to micro USB cable
-* [LiPo battery with JST cable](https://shop.blues.io/products/5-000-mah-lipo-battery)
-* [Notecarrier-A](https://shop.blues.io/products/carr-al) or [Notecarrier-B](https://shop.blues.io/products/carr-b)
-* [Notecard WBNA](https://shop.blues.io/collections/notecard/products/note-wbna-500)
+* [LiPo battery with JST cable](https://shop.blues.com/products/5-000-mah-lipo-battery?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+* [Notecarrier A](https://shop.blues.com/products/carr-al?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) or [Notecarrier B](https://shop.blues.com/products/carr-b?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+* [Notecard WBNA](https://shop.blues.com/collections/notecard/products/note-wbna-500?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
 * To sense the door opening, either
   * [Hall Effect Sensor](https://www.amazon.com/HiLetgo-NJK-5002C-Proximity-3-Wires-Normally/dp/B01MZYYCLH/)
 * or

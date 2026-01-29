@@ -11,9 +11,9 @@ send alerts when the vibration is not within the expected range for the motor's 
 ## Hardware you will need
 
 * AC to USB adapter (power brick) with a compatible micro USB cable
-* (optional - for power outage events) [LiPo battery with JST cable](https://shop.blues.io/products/5-000-mah-lipo-battery)
-* [Notecarrier-B](https://shop.blues.io/products/carr-b)
-* [Notecard](https://blues.io/products/notecard/)
+* (optional - for power outage events) [LiPo battery with JST cable](https://shop.blues.com/products/5-000-mah-lipo-battery?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+* [Notecarrier B](https://shop.blues.com/products/carr-b?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+* [Notecard](https://blues.com/products/notecard/)
 * A switched motor that has a 3v3 input or output that controls or indicates activity. (See the next section for details.)
 * A pair of jumper cables
 

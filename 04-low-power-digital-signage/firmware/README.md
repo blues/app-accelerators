@@ -35,7 +35,7 @@ Complete the following steps to upload firmware in in PlatformIO.
 1. Connect your Swan to your computer using [these steps](https://dev.blues.io/quickstart/swan-quickstart/#programming-swan-platformio).
 
 > **NOTE**: The project’s default configuration assumes you’re using an
-[STLINK-V3MINI programmer and debugger](https://shop.blues.io/products/stlink-v3mini).
+[STLINK-V3MINI programmer and debugger](https://shop.blues.com/products/stlink-v3mini?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link).
 If you’re not, make sure to open your `platformio.ini` file and change the `upload_protocol`
 to `dfu`.
 

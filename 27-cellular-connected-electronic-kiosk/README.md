@@ -20,8 +20,8 @@ The following hardware is required to run the Cellular-Connected Electronic Kios
 - [Raspberry Pi 4B](https://www.raspberrypi.com/products/raspberry-pi-4-model-b/)
 - [CanaKit 3.5A Raspberry Pi 4 Power Supply (USB-C)](https://www.amazon.com/CanaKit-Raspberry-Power-Supply-USB-C/dp/B07TYQRXTK/)
 - microSD Card (8GB minimum) and a MicroSD to SD Memory Card Adapter (your development PC must have an SD card reader slot)
-- [Notecard](https://shop.blues.io/collections/notecard/products/note-wbna-500)
-- [Notecarrier Pi Hat](https://shop.blues.io/products/carr-pi)
+- [Notecard](https://shop.blues.com/collections/notecard/products/note-wbna-500?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+- [Notecarrier Pi Hat](https://shop.blues.com/products/carr-pi?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
 - Micro USB cable
 - [7" Touchscreen Display for Raspberry Pi](https://www.adafruit.com/product/2718)
 - [Wireless Keyboard and Mouse Combo](https://www.adafruit.com/product/1738)

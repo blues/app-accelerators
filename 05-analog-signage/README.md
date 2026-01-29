@@ -1,9 +1,9 @@
 # Connected Analog Signage
 
-Use the Notecard and a Wi-Fi-capable MCU to update character values on an analog split-flap display.
+Use the Notecard and a WiFi-capable MCU to update character values on an analog split-flap display.
 
 This project is built around a hypothetical entity, "Blues Railway," which manages a number of train stations throughout the United States. Each station contains a set of analog split-flap displays that provide visitors with real-time departure
-information like city, track, time, and whether there is a delay. Departure information is set across the station using Fleet-level Notehub environment variables. Variable changes are sent to the Notecard and delivered to a Host MCU. The host MCU then uses its on-board Wi-Fi connection to communicate with the signs in the facility and update the displayed information.
+information like city, track, time, and whether there is a delay. Departure information is set across the station using Fleet-level Notehub environment variables. Variable changes are sent to the Notecard and delivered to a Host MCU. The host MCU then uses its on-board WiFi connection to communicate with the signs in the facility and update the displayed information.
 
 ![](images/banner.gif)
 
@@ -57,9 +57,9 @@ setting up your hardware.
 
 The following hardware is required to run the Analog Signage demo.
 
-* [Notecarrier F](https://shop.blues.io/products/notecarrier-f)
-* [Notecard](https://shop.blues.io/collections/notecard)
-* [FeatherS2 ESP32-S2 From Unexpected Maker](https://feathers2.io) or equivalent ESP32/Wi-Fi capable MCU.
+* [Notecarrier F](https://shop.blues.com/products/notecarrier-f?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+* [Notecard](https://shop.blues.com/collections/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+* [FeatherS2 ESP32-S2 From Unexpected Maker](https://feathers2.io) or equivalent ESP32/WiFi capable MCU.
 * [Vestaboard](https://www.vestaboard.com/) or equivalent split-flap display.
 
 Please note that the included firmware is optimized for the FeatherS2 MCU and Vestaboard, and will need to be customized if you select different hardware.

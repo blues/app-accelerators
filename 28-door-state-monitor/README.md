@@ -4,7 +4,7 @@ Receive notifications when a door is opened or closed.
 
 ## You Will Need
 
-* [Blues Starter Kit for LoRaWAN](https://shop.blues.com/products/blues-starter-kit-lorawan)
+* [Blues Starter Kit for LoRaWAN](https://shop.blues.com/products/blues-starter-kit-lorawan?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
 * Raspberry Pi Pico
 * 2 USB A to micro USB cables
 * [Magnetic Door Switch Set](https://www.sparkfun.com/products/13247)
@@ -15,7 +15,7 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 
 ## LoRa Gateway Setup
 
-Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to The Things Network.  To make this easy you can use the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
+Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to The Things Network.  To make this easy you can use the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
 
 
 ## Pico Setup

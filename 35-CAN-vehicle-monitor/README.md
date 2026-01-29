@@ -10,8 +10,8 @@ Monitor a CAN bus for messages with particular IDs and upload those messages to 
 * USB C cable
 * [USB to CAN Converter Cable](https://www.amazon.com/gp/product/B09K3LL93Q)
 * [Adafruit Feather M4 CAN Express with ATSAME51](https://www.adafruit.com/product/4759)
-* [Notecarrier-F](https://shop.blues.io/products/notecarrier-f)
-* [Notecard](https://blues.io/products/notecard/)
+* [Notecarrier F](https://shop.blues.com/products/notecarrier-f?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+* [Notecard](https://blues.com/products/notecard/)
 * Antenna (comes with the Notecard)
 * 2 male-to-male jumper wires
 * Soldering iron

@@ -4,13 +4,13 @@ Receive a notification when a fall is detected and provide a panic button to ale
 
 ## You Will Need
 
-* [Notecarrier-F](https://shop.blues.com/collections/notecarrier/products/notecarrier-f)
-* [Notecard for LoRa](https://shop.blues.com/products/notecard-lora)
+* [Notecarrier F](https://shop.blues.com/collections/notecarrier/products/notecarrier-f?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+* [Notecard for LoRa](https://shop.blues.com/products/notecard-lora?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
 * [1 push button](https://www.sparkfun.com/products/14460)
 * [SparkFun Micro Triple Axis Accelerometer Breakout - BMA400 (Qwiic)](https://www.sparkfun.com/products/21207)
 * *or* [SparkFun Triple Axis Accelerometer Breakout - BMA400 (Qwiic)](https://www.sparkfun.com/products/21208)
 * [Flexible Qwiic Cable - 50mm](https://www.sparkfun.com/products/17260)
-* [LiPo Battery](https://shop.blues.com/collections/accessories/products/5-000-mah-lipo-battery)
+* [LiPo Battery](https://shop.blues.com/collections/accessories/products/5-000-mah-lipo-battery?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
 * 2 USB A to micro USB cables
 * Breadboard
 * Jumper wires
@@ -20,7 +20,7 @@ Receive a notification when a fall is detected and provide a panic button to ale
 
 ## LoRa Gateway Setup
 
-Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to The Things Network.  To make this easy you can use the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
+Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to The Things Network.  To make this easy you can use the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
 
 ## Swan Setup
 

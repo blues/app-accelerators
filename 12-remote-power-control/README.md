@@ -10,12 +10,12 @@ The solution comprises hardware, firmware, Notehub environment variables and jso
 
 ## You Will Need
 
-  * [Blues Starter Kit](https://shop.blues.io/collections/blues-starter-kits), that contains amongst other items
-    * [Notecarrier F](https://shop.blues.io/products/notecarrier-f)
-    * [Swan](https://shop.blues.io/collections/swan)
-    * [Notecard](https://shop.blues.io/collections/notecard)
-    * [Molex Cellular Antenna](https://shop.blues.io/collections/accessories/products/flexible-cellular-or-wi-fi-antenna)
-  * [LiPo battery](https://shop.blues.io/collections/accessories/products/5-000-mah-lipo-battery)
+  * [Blues Starter Kit](https://shop.blues.com/collections/blues-starter-kits?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), that contains amongst other items
+    * [Notecarrier F](https://shop.blues.com/products/notecarrier-f?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+    * [Swan](https://shop.blues.com/collections/swan?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+    * [Notecard](https://shop.blues.com/collections/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+    * [Molex Cellular Antenna](https://shop.blues.com/collections/accessories/products/flexible-cellular-or-wi-fi-antenna?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+  * [LiPo battery](https://shop.blues.com/collections/accessories/products/5-000-mah-lipo-battery?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
   * [Digital Loggers IoT Relay](https://www.digital-loggers.com/iot2.html) or similar.
   * 2 x [Dr. Wattson Energy Monitoring Board](https://www.upbeatlabs.com/wattson/)
   * 2 x [ProtoStax Enclosure for Dr. Wattson](https://www.protostax.com/products/) or similar enclosure

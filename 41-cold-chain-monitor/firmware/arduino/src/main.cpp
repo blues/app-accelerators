@@ -411,9 +411,9 @@ void NoteUserAgentUpdate(J *ua)
     JAddStringToObject(ua, "app", "nf41");
 }
 
-  /************************
+/************************
  * Application Execution *
-************************/
+ ************************/
 
 void setup()
 {
@@ -440,7 +440,7 @@ void setup()
     // Initialize Notecard
     notecard.begin();
 #ifdef ARDUINO_ARCH_ESP32
-    // Initialize Auxiliary Wi-Fi
+    // Initialize Auxiliary WiFi
     aux_wifi.begin();
 #endif
 
@@ -478,7 +478,7 @@ void setup()
                                  // when storage threshold has been exceeded
     }
 
-    // Select location service (Wi-Fi or GPS) based upon alarm state
+    // Select location service (WiFi or GPS) based upon alarm state
     if (ACTIVE_ALARM)
     {
         // Halt periodic tracking when alarm is active
@@ -492,7 +492,7 @@ void setup()
         if (int gps_error = acquireGPSLocation())
         {
             logNoteF("ERROR: Failed to acquire GPS signal! <%d>", gps_error);
-            // Failed to acquire GPS try Wi-Fi instead
+            // Failed to acquire GPS try WiFi instead
 #ifdef ARDUINO_ARCH_ESP32
             aux_wifi.updateTriangulationData(true, false);
             aux_wifi.logCachedSsids(); // Log SSIDs used in calculation
@@ -502,10 +502,10 @@ void setup()
     else
     {
 #ifdef ARDUINO_ARCH_ESP32
-        // Check if actively moving before updating Wi-Fi location
+        // Check if actively moving before updating WiFi location
         if (!inMotion())
         {
-            aux_wifi.updateTriangulationData(true); // Update Current Location (via Wi-Fi)
+            aux_wifi.updateTriangulationData(true); // Update Current Location (via WiFi)
             aux_wifi.logCachedSsids();              // Log SSIDs used in calculation
         }
 #endif
