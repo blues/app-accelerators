@@ -1,6 +1,6 @@
 # Better Mouse Trap
 
-**Warning: This project uses Sparrow, a Blues product that is no longer under active development. We are working on updating this project to the successors of Sparrow: [Notecard LoRa](https://blues.com/notecard-lora/) and the [LoRaWAN Starter Kit](https://shop.blues.com/products/blues-starter-kit-lorawan?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link). In the meantime, if you would like assistance building a Better Mouse Trap feel free to reach out on [our community forum](https://discuss.blues.com/).**
+**Warning: This project uses Sparrow, a Blues product that is no longer under active development. We are working on updating this project to the successors of Sparrow: [Notecard for LoRa](https://blues.com/notecard-lora/) and the [LoRaWAN Starter Kit](https://shop.blues.com/products/blues-starter-kit-lorawan?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link). In the meantime, if you would like assistance building a Better Mouse Trap feel free to reach out on [our community forum](https://discuss.blues.com/).**
 
 A smarter mouse trap with SMS alerting.
 

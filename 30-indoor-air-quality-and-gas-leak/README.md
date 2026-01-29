@@ -6,7 +6,7 @@ Monitor air quality, including Air Quality Index, CO2 and VOC concentration, and
 
 ## You Will Need
 
-* [Notecard Lora](https://shop.blues.com/collections/notecard/products/notecard-lora?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
+* [Notecard for Lora](https://shop.blues.com/collections/notecard/products/notecard-lora?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
 * [LoRaWAN Gateway](https://shop.blues.com/collections/accessories/products/lorawan-gateway?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
 * [Notecarrier F](https://shop.blues.com/collections/notecarrier/products/notecarrier-f?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
 * [Swan](https://shop.blues.com/collections/swan/products/swan?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)
@@ -20,19 +20,19 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 
 ## LoRa Gateway Setup
 
-Before you can use the Notecard LoRa you need to have a LoRaWAN gateway that is provisioned to The Things Network.  To make this easy you can use the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
+Before you can use the Notecard for LoRa you need to have a LoRaWAN gateway that is provisioned to The Things Network.  To make this easy you can use the [Blues Indoor LoRaWAN Gateway](https://shop.blues.com/products/blues-starter-kit-lorawan?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link).  To get this set up follow the [setup instructions](https://dev.blues.io/lora/connecting-to-a-lorawan-gateway/)
 
 ## Swan Setup
 
 First connect your Blues Swan and Notecard to your Notecarrier-F.
 
-1. Follow the steps in the [Notecard Quickstart](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/#connect-your-notecard-and-notecarrier) to connect your Notecard LoRa to your Notecarrier-F.  Your antenna will only have one cable, and the Notecard LoRa only has one connection.
+1. Follow the steps in the [Notecard Quickstart](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-f/#connect-your-notecard-and-notecarrier) to connect your Notecard for LoRa to your Notecarrier-F.  Your antenna will only have one cable, and the Notecard for LoRa only has one connection.
 
 2. Plug your Swan into the Feather headers on the Notecarrier F.
 
 3. Attach the Swan to your computer with a Micro USB to USB-A cable, using the **Micro USB port on the Swan**.
 
-![Notecard LoRa in Notecarrier F with antenna](images/notecarrier-notecard.jpg)
+![Notecard for LoRa in Notecarrier F with antenna](images/notecarrier-notecard.jpg)
 
 ### Air Quality Sensor Connection
 
