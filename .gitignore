@@ -13,3 +13,4 @@ build/
 
 # VSCode files
 **/.vscode/*
+/.claude/skills
