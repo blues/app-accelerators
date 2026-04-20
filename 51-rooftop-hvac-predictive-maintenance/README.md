@@ -37,7 +37,7 @@ This project is that watcher. It's a retrofit predictive-maintenance sidecar tha
 | [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Coulomb-counter on the power rail for ground-truth energy validation. |
 | 10 kΩ NTC thermistor, β=3950, waterproof duct probe | 2 | Duct-mount supply and return air temperature for cooling delta-T. |
 | 10 kΩ 1% resistor (divider series leg) | 2 | Pull-up for each thermistor divider. |
-| [SCT-013-030 split-core CT, 30A / 1V AC](https://www.digikey.com/en/products/detail/yhdc/SCT-013-030) | 1 | Non-invasive compressor current sensing; 30A matches single-phase light-commercial RTU compressors. |
+| [SCT-013-030 split-core CT, 30A / 1V AC](https://www.mouser.com/ProductDetail/YHDC/SCT-013-030) | 1 | Non-invasive compressor current sensing; 30A matches single-phase light-commercial RTU compressors. |
 | TRRS 3.5 mm breakout (e.g. [SparkFun BOB-11570](https://www.sparkfun.com/products/11570)) | 1 | The SCT-013's output lead terminates in a TRRS plug. |
 | 10 kΩ 1% resistor (bias pair) | 2 | CT bias circuit — centers the AC signal at Vref/2 so the ADC sees only positive voltages. |
 | 10 µF electrolytic capacitor | 1 | Bias-circuit decoupling. |
