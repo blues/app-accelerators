@@ -1,18 +1,20 @@
 # Rooftop HVAC Unit Predictive Maintenance Pack
 
-A retrofit [downtime prevention](https://blues.com/downtime-prevention/) pack for commercial rooftop HVAC units (RTUs). Three inexpensive sensors and a Blues Notecard Cell+WiFi turn an ordinary RTU into a remotely-monitored, predictively-maintained asset — catching refrigerant loss, short-cycling, and clogged filters *before* the unit fails and a tenant loses cooling.
+A retrofit [downtime prevention](https://blues.com/downtime-prevention/) pack for commercial rooftop HVAC units. Three inexpensive sensors and a Blues Notecard Cell+WiFi turn an ordinary rooftop unit into a remotely-monitored, predictively-maintained asset — catching refrigerant loss, short-cycling, and clogged filters *before* the unit fails and a tenant loses cooling.
 
 ![System architecture](diagrams/system_architecture.png)
 
 ## 1. Project Overview
 
-**The problem.** A commercial RTU sits on a roof, cannot see building Wi-Fi, and when it fails a grocery store or restaurant loses cooling and goes dark. The HVAC failures that cause most unplanned downtime aren't dramatic — they're gradual. A refrigerant leak slowly narrows the cooling delta-T over weeks. A tired contactor starts chattering, and the compressor short-cycles several times an hour instead of running in long, steady pulls. A neglected filter chokes airflow across the coil. None of these are invisible, but they're all easy to miss from inside the building — especially when nobody's looking. Each one is an impending failure detectable hours to days before the actual outage, *if* someone (or something) happens to be watching.
+**The problem.** In HVAC, an **RTU** (rooftop unit) is a self-contained packaged HVAC system — compressor, condenser, evaporator, blower, and controls all in one box — mounted on the roof of a commercial building. It's the workhorse of light commercial cooling: the vast majority of grocery stores, restaurants, strip-mall tenants, and small warehouses are conditioned by one or more RTUs sitting above the suspended ceiling.
+
+A commercial RTU sits on a roof, cannot see building Wi-Fi, and when it fails a grocery store or restaurant loses cooling and goes dark. The HVAC failures that cause most unplanned downtime aren't dramatic — they're gradual. A refrigerant leak slowly narrows the cooling delta-T over weeks. A tired contactor starts chattering, and the compressor short-cycles several times an hour instead of running in long, steady pulls. A neglected filter chokes airflow across the coil. None of these are invisible, but they're all easy to miss from inside the building — especially when nobody's looking. Each one is an impending failure detectable hours to days before the actual outage, *if* someone (or something) happens to be watching.
 
 This project is that watcher. It's a retrofit predictive-maintenance sidecar that gets strapped to the RTU chassis on the roof, samples four sensors a minute, and pages the service technician *before* the walk-in cooler hits 50°F on a Saturday night. In Blues terms, it's a complete downtime-prevention device-to-cloud system: continuous remote monitoring on the edge, data-driven failure detection in firmware, and proactive-service alerts routed through Notehub to whatever on-call system the fleet owner already uses.
 
 **Why Notecard.** RTUs have no line-of-sight to indoor Wi-Fi access points, and HVAC OEMs and service companies need a single SKU that works identically in a strip mall and in a warehouse. Cellular removes the per-site IT involvement entirely — there's no network form to fill out, no AP to pair to, and no IT ticket to chase. The Notecard Cell+WiFi variant keeps Wi-Fi as an optional fallback for the occasional site that happens to have a rooftop-accessible AP, without compromising the cellular-first deployment model.
 
-**Deployment scenario.** A weatherproof enclosure strapped to the RTU frame, powered from the 24VAC control transformer, with four pigtails running into the unit: two thermistors (supply and return ducts), one clamp-on current transformer on the compressor hot leg, and one differential-pressure sensor with silicone tubes tapped across the filter. No RTU modification, no OEM cooperation, and no site IT coordination required.
+**Deployment scenario.** A weatherproof enclosure strapped to the RTU frame, powered from 120VAC line at the RTU service disconnect (or from the 24VAC control transformer with an alternate supply — see [Limitations](#9-limitations-and-next-steps)), with four pigtails running into the unit: two thermistors (supply and return ducts), one clamp-on current transformer on the compressor hot leg, and one differential-pressure sensor with silicone tubes tapped across the filter. No RTU modification, no OEM cooperation, and no site IT coordination required.
 
 ## 2. System Architecture
 
@@ -39,7 +41,7 @@ This project is that watcher. It's a retrofit predictive-maintenance sidecar tha
 | 10 µF electrolytic capacitor | 1 | Bias-circuit decoupling. |
 | [Sensirion SDP810-125Pa](https://sensirion.com/products/catalog/SDP810-125Pa) differential-pressure sensor | 1 | I²C DP sensor across the filter; a continuous reading trends *toward* clogging, unlike a binary DP switch that only tells you once you're already there. |
 | ¼″ silicone tubing, ~2 ft | 1 | Taps the SDP810 across the filter frame. |
-| AC/DC supply, 24VAC-capable 5V/2A output (e.g. [MeanWell IRM-03-5](https://www.meanwell.com/productPdf.aspx?i=430)) | 1 | Derives 5V DC from the RTU control-board 24VAC for permanent grid-tied power. |
+| AC/DC supply, 5V/2A output (e.g. [MeanWell IRM-03-5](https://www.meanwell.com/Upload/PDF/IRM-03/IRM-03-SPEC.PDF)) | 1 | Derives 5V DC from 120VAC line power at the RTU service disconnect for permanent grid-tied power. See [Limitations](#9-limitations-and-next-steps) for the 24VAC-input alternative. |
 | NEMA 4X enclosure, ~6×4×2″ | 1 | Rooftop-rated housing. |
 
 All Blues parts ship with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
@@ -58,7 +60,7 @@ Pin-by-pin:
 - **A1** → wiper of the return-air thermistor divider.
 - **A2** → output of the CT bias circuit (CT TRRS sleeve/tip → 10 kΩ → bias node → 10 µF to GND → A2).
 - **SDA / SCL** → SDP810 `SDA` / `SCL` (the Notecarrier has pull-ups on-board).
-- **+VBAT / +5V** pad → Mojo `LOAD` output; `BAT` input of Mojo ← 5V DC from the 24VAC-to-5V supply.
+- **+VBAT / +5V** pad → Mojo `LOAD` output; `BAT` input of Mojo ← 5V DC from the AC/DC supply.
 
 Mount probes inside the unit: supply thermistor ~12″ past the evaporator coil in the supply duct, return thermistor in the return plenum upstream of the filter, CT clamped on either of the hot legs feeding the compressor contactor (clamping only **one** leg is required — both will cancel), SDP810 tubes tapped across the filter frame with silicone tubing.
 
@@ -66,7 +68,7 @@ Mount probes inside the unit: supply thermistor ~12″ past the evaporator coil 
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid).
 2. **Claim the Notecard.** Power the unit; on first connect the Notecard associates with your project. Paste the ProductUID into `firmware/rtu_predictive_maintenance/rtu_predictive_maintenance.ino` via `PRODUCT_UID`.
-3. **Create a Fleet.** [Fleets (and Smart Fleets)](https://dev.blues.io/notehub/fleets/) are how Notehub groups devices for config and routing. One fleet per service territory is a reasonable starting point — it lets you set [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) (thresholds) at the fleet level and override per-device if a given unit turns out to be unusual.
+3. **Create a Fleet.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) (and [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules)) are how Notehub groups devices for config and routing. One fleet per service territory is a reasonable starting point — it lets you set [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) (thresholds) at the fleet level and override per-device if a given unit turns out to be unusual.
 4. **Set environment variables.** All variables below are optional; firmware defaults are shown. Any variable set in Notehub overrides the compile-time default on the device's next wake — operators can re-tune thresholds in the field without touching the firmware.
 
    | Variable | Default | Purpose |
@@ -179,6 +181,10 @@ NotePayloadSaveAndSleep(&payload, SAMPLE_INTERVAL_SEC, NULL);
 
 ## 7. Data Flow
 
+![Failure-mode detection flow](diagrams/failure_modes.png)
+
+Every 60 s the firmware runs one sample cycle, evaluates three independent threshold checks in parallel, and emits an alert for each one that trips. All three alerts converge onto the same `rtu_alert.qo` Notefile with `sync:true`, so any one failure mode paging out doesn't depend on the state of the other two.
+
 - **Collected.** Supply-air °F, return-air °F, compressor RMS amps, filter DP in Pa, compressor starts this hour, cumulative compressor runtime, plus a Mojo-reported mAh figure for diagnostic power.
 - **Transmitted.**
   - `rtu_summary.qo` — one record every `summary_interval_min` (default 60 min), template-encoded.
@@ -197,7 +203,7 @@ NotePayloadSaveAndSleep(&payload, SAMPLE_INTERVAL_SEC, NULL);
 
 The [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) reports cumulative mAh to the Notecard at 1% accuracy over its Qwiic link. A useful bench-up exercise: leave a unit running for 24 h powered from a known battery and confirm the Mojo tally lines up with the expected pattern — "host awake for a few seconds every minute, radio on for tens of seconds once an hour." That pattern is what you should see on a Mojo trace. If instead you see continuous ≥100 mA draw, the host is never actually sleeping (usually a `card.attn` wiring or firmware issue); if you see a big spike every 60 minutes *and* nothing in between, the sleep path is working correctly.
 
-Because the deployed RTU is grid-tied through the 24VAC transformer, the absolute mAh number matters less in production than the *shape* of the trace. The bench measurement is still worth doing, because it's the cheapest way to catch a firmware regression that silently keeps the host awake.
+Because the deployed RTU is grid-tied through the 120VAC service-disconnect supply, the absolute mAh number matters less in production than the *shape* of the trace. The bench measurement is still worth doing, because it's the cheapest way to catch a firmware regression that silently keeps the host awake.
 
 ## 9. Limitations and Next Steps
 
@@ -206,13 +212,13 @@ Because the deployed RTU is grid-tied through the 24VAC transformer, the absolut
 - The SDP810 CRC byte is read and discarded rather than verified.
 - No local storage of historical samples — the Notecard does its own multi-day note queue, but the sketch itself keeps only the current summary window in RAM.
 - Thresholds are simple scalar comparisons; there is no outlier rejection or smoothing beyond per-sample averaging.
-- The 24VAC-to-5V power path assumes the installer can tap the RTU control transformer. A Scoop / solar variant is a reasonable addition for units where that is not practical.
+- The 120VAC power path assumes the installer can tap the RTU service disconnect. Installations that can only offer the 24VAC control-transformer rail need a 24VAC-input supply instead (e.g. a Functional Devices PSH40A or a Mornsun LH05-23B05R3); the downstream 5V wiring is unchanged. A Scoop / solar variant is a reasonable addition for units where neither rail is practical.
 
 **Production next steps:**
 - Three-phase CT support (or 208/240V split-phase) for larger units — a second and third CT on A3/A4 plus an RMS sum in firmware.
 - Add a duct-static-pressure sensor on the supply side to distinguish "clogged filter" from "blocked coil." The two look similar from the return side alone, but a clogged coil shows rising static on *both* sides while a clogged filter only rises on the return.
 - CRC check on all SDP810 I²C reads — the bytes are already there in the frame, the firmware just ignores them today.
-- Field-upgradeable firmware via [Notecard Outboard DFU](https://dev.blues.io/notecard/notecard-walkthrough/notecard-outboard-firmware-update/) so a service company can push a threshold recipe or a new failure-mode detector to the entire fleet without a truck roll.
+- Field-upgradeable firmware via [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) so a service company can push a threshold recipe or a new failure-mode detector to the entire fleet without a truck roll.
 - Per-unit commissioning: probe-offset correction via an environment variable. Thermistors drift a few degrees with duct placement, and calibrating once at install time is strictly better than living with the noise.
 - Weather-input overlay: correlate delta-T against outside-air temperature (via a Notehub environment variable sourced from a weather API route, or a dedicated outdoor-air probe) so refrigerant-loss detection isn't falsely triggered during mild-weather startup cycles, when delta-T naturally runs low before the coil saturates.
 
