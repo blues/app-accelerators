@@ -6,16 +6,16 @@
 //             1x SCT-013-030 CT on the compressor hot leg (0-30A / 0-1V AC)
 //             1x Sensirion SDP810-125Pa I2C differential pressure sensor
 //
-// Detects the three canonical RTU failure modes:
+// Detects the three canonical RTU failure modes via rule-based thresholds:
 //   1. Refrigerant loss    -> narrowing cooling delta-T
-//   2. Short-cycling       -> many compressor starts without sustained draw
+//   2. Short-cycling       -> many compressor starts per rolling hour
 //   3. Clogged filter      -> rising filter differential pressure
 //
 // Runtime cadence:
 //   - Host wakes every SAMPLE_INTERVAL_SEC via card.attn.
 //   - Each wake: sample sensors, evaluate thresholds, queue any alert note.
 //   - When SUMMARY_INTERVAL_MIN has elapsed, queue one rtu_summary.qo note.
-//   - The Notecard transmits queued notes to cellular per hub.set outbound.
+//   - The Notecard transmits queued notes per the hub.set outbound cadence.
 
 #include <Notecard.h>
 #include <Wire.h>
@@ -40,12 +40,26 @@ static const float    NTC_T0_K         = 298.15f;
 static const float    NTC_R0_OHM       = 10000.0f;
 static const float    NTC_SERIES_OHM   = 10000.0f;
 
-static const float    CT_AMPS_PER_VOLT = 30.0f;    // SCT-013-030: 1V = 30A
+static const float    CT_AMPS_PER_VOLT = 30.0f;    // SCT-013-030: 1V RMS = 30A RMS
 static const uint16_t CT_SAMPLES       = 1480;     // ~20 cycles @ 60Hz
 
 static const uint8_t  SDP810_ADDR          = 0x25;
 static const uint8_t  SDP810_CMD_START[2]  = { 0x36, 0x1E };
-static const float    SDP810_SCALE_FACTOR  = 60.0f; // 125Pa variant: Pa = raw/60
+// Sensirion SDP810-125Pa: scale = 240 counts/Pa (per datasheet §3).
+// (Note: the 500Pa variant uses 60 counts/Pa — don't mix them up.)
+static const float    SDP810_SCALE_FACTOR  = 240.0f;
+
+// Sentinel value emitted in the summary template when no valid samples
+// were collected for a metric in the summary window. Chosen well outside
+// any plausible physical range so downstream analytics can distinguish
+// "sensor failed" from a true near-zero reading.
+static const float    SUMMARY_INVALID_SENTINEL = -9999.0f;
+
+// -------- Short-cycle sliding window --------
+// Store the epoch of each compressor rising edge; count how many fall
+// within the last 3600s on each evaluation. 16 slots covers >16 starts/hr
+// comfortably — well above any plausible short-cycling threshold.
+static const uint8_t  START_RING_SIZE = 16;
 
 // -------- Default thresholds / intervals (overridable via env) --------
 static float    DELTA_T_MIN_F         = 12.0f;
@@ -59,18 +73,33 @@ static uint32_t ALERT_COOLDOWN_SEC    = 1800;
 // -------- State preserved across sleeps --------
 struct PersistState {
   uint32_t  cycles;
-  uint32_t  compressor_starts_this_hour;
-  uint32_t  start_window_epoch;
+
+  // Per-metric running sums and *valid* sample counts for the current
+  // summary window. Tracking counts per metric means a single bad read
+  // on one sensor doesn't bias the averages of the others downward.
+  float     sum_supply;   uint32_t n_supply;
+  float     sum_return;   uint32_t n_return;
+  float     sum_delta;    uint32_t n_delta;
+  float     sum_amps;     uint32_t n_amps;
+  float     sum_dp;       uint32_t n_dp;
+  uint32_t  summary_window_start_epoch;
+  uint32_t  summary_runtime_sec;
+
+  // Short-cycle sliding window: ring buffer of recent start epochs.
+  uint32_t  start_times[START_RING_SIZE];
+  uint8_t   start_head; // index of next slot to write
+  uint8_t   start_count; // capped at START_RING_SIZE
+
   uint32_t  last_alert_delta_t_epoch;
   uint32_t  last_alert_short_cycle_epoch;
   uint32_t  last_alert_filter_epoch;
-  uint32_t  summary_window_start_epoch;
-  float     summary_amps_sum;
-  float     summary_delta_sum;
-  float     summary_dp_sum;
-  uint32_t  summary_samples;
-  uint32_t  summary_runtime_sec;
+
   bool      compressor_was_on;
+
+  // Value of SUMMARY_INTERVAL_MIN last sent to the Notecard via hub.set.
+  // When env vars change the in-memory value, we re-apply hub.set so the
+  // Notecard's outbound cadence tracks the local summary cadence.
+  uint32_t  last_applied_outbound_min;
 };
 static const char STATE_SEG_ID[] = "RTUS";
 static PersistState state;
@@ -86,6 +115,7 @@ static void hubConfigure() {
   JAddNumberToObject(req, "outbound", SUMMARY_INTERVAL_MIN);
   JAddNumberToObject(req, "inbound", 360);
   notecard.sendRequestWithRetry(req, 10);
+  state.last_applied_outbound_min = SUMMARY_INTERVAL_MIN;
 }
 
 static void defineTemplates() {
@@ -143,6 +173,13 @@ static void fetchEnvOverrides() {
     if (v[0]) SUMMARY_INTERVAL_MIN = (uint32_t)atol(v);
   }
   notecard.deleteResponse(rsp);
+
+  // Re-apply hub.set if the outbound cadence changed. Without this, env-var
+  // changes to summary_interval_min update local summary timing but leave the
+  // Notecard transmitting on its old schedule.
+  if (SUMMARY_INTERVAL_MIN != state.last_applied_outbound_min) {
+    hubConfigure();
+  }
 }
 
 // ---------- Sensor reading ----------
@@ -190,8 +227,25 @@ static float readFilterDpPa() {
   Wire.requestFrom((int)SDP810_ADDR, 3);
   if (Wire.available() < 3) return NAN;
   int16_t raw = (int16_t)((Wire.read() << 8) | Wire.read());
-  Wire.read(); // CRC byte, unchecked here
+  Wire.read(); // CRC byte, unchecked here (see README limitations)
   return (float)raw / SDP810_SCALE_FACTOR;
+}
+
+// ---------- Short-cycle sliding window ----------
+
+static void recordCompressorStart(uint32_t now_epoch) {
+  state.start_times[state.start_head] = now_epoch;
+  state.start_head = (state.start_head + 1) % START_RING_SIZE;
+  if (state.start_count < START_RING_SIZE) state.start_count++;
+}
+
+static uint8_t startsInLastHour(uint32_t now_epoch) {
+  uint8_t count = 0;
+  for (uint8_t i = 0; i < state.start_count; i++) {
+    uint32_t t = state.start_times[i];
+    if (t != 0 && (now_epoch - t) <= 3600) count++;
+  }
+  return count;
 }
 
 // ---------- Alerts & summaries ----------
@@ -211,33 +265,38 @@ static void sendAlert(const char *kind,
   notecard.sendRequest(req);
 }
 
-static void sendSummary(uint32_t now_epoch, float supply, float ret) {
-  if (state.summary_samples == 0) return;
-  float avg_amps  = state.summary_amps_sum  / state.summary_samples;
-  float avg_delta = state.summary_delta_sum / state.summary_samples;
-  float avg_dp    = state.summary_dp_sum    / state.summary_samples;
+static float safeAvg(float sum, uint32_t n) {
+  return n > 0 ? (sum / (float)n) : SUMMARY_INVALID_SENTINEL;
+}
+
+static void sendSummary(uint32_t now_epoch) {
+  // Emit a summary only if *some* data was collected this window.
+  bool any_valid = state.n_supply || state.n_return || state.n_delta
+                || state.n_amps   || state.n_dp;
+  if (!any_valid) return;
+
   float runtime_min = state.summary_runtime_sec / 60.0f;
 
   J *req = notecard.newRequest("note.add");
   JAddStringToObject(req, "file", "rtu_summary.qo");
   J *body = JAddObjectToObject(req, "body");
-  JAddNumberToObject(body, "supply_f",        isnan(supply) ? 0.0 : supply);
-  JAddNumberToObject(body, "return_f",        isnan(ret)    ? 0.0 : ret);
-  JAddNumberToObject(body, "delta_t_f",       avg_delta);
-  JAddNumberToObject(body, "compressor_amps", avg_amps);
-  JAddNumberToObject(body, "filter_dp_pa",    avg_dp);
-  JAddNumberToObject(body, "starts",          (int)state.compressor_starts_this_hour);
+  JAddNumberToObject(body, "supply_f",        safeAvg(state.sum_supply, state.n_supply));
+  JAddNumberToObject(body, "return_f",        safeAvg(state.sum_return, state.n_return));
+  JAddNumberToObject(body, "delta_t_f",       safeAvg(state.sum_delta,  state.n_delta));
+  JAddNumberToObject(body, "compressor_amps", safeAvg(state.sum_amps,   state.n_amps));
+  JAddNumberToObject(body, "filter_dp_pa",    safeAvg(state.sum_dp,     state.n_dp));
+  JAddNumberToObject(body, "starts",          (int)startsInLastHour(now_epoch));
   JAddNumberToObject(body, "runtime_min",     runtime_min);
   notecard.sendRequest(req);
 
-  state.summary_window_start_epoch = now_epoch;
-  state.summary_amps_sum    = 0;
-  state.summary_delta_sum   = 0;
-  state.summary_dp_sum      = 0;
-  state.summary_samples     = 0;
+  // Reset running sums/counters for the next summary window. The short-cycle
+  // ring buffer is *not* reset — it is a rolling hour regardless of cadence.
+  state.sum_supply = state.sum_return = state.sum_delta = 0;
+  state.sum_amps   = state.sum_dp     = 0;
+  state.n_supply = state.n_return = state.n_delta = 0;
+  state.n_amps   = state.n_dp     = 0;
   state.summary_runtime_sec = 0;
-  state.compressor_starts_this_hour = 0;
-  state.start_window_epoch  = now_epoch;
+  state.summary_window_start_epoch = now_epoch;
 }
 
 // ---------- One sample cycle ----------
@@ -262,24 +321,28 @@ static void runSampleCycle() {
   usbSerial.print(" on=");                usbSerial.println(compressor_on);
 #endif
 
-  if (!isnan(delta_t)) state.summary_delta_sum += delta_t;
-  state.summary_amps_sum += amps;
-  if (!isnan(dp_pa))  state.summary_dp_sum    += dp_pa;
-  state.summary_samples++;
+  // Per-metric accumulation. Each count increments only when the read is valid.
+  if (!isnan(supply))  { state.sum_supply += supply;  state.n_supply++; }
+  if (!isnan(ret))     { state.sum_return += ret;     state.n_return++; }
+  if (!isnan(delta_t)) { state.sum_delta  += delta_t; state.n_delta++;  }
+  if (!isnan(amps))    { state.sum_amps   += amps;    state.n_amps++;   }
+  if (!isnan(dp_pa))   { state.sum_dp     += dp_pa;   state.n_dp++;     }
+
   if (compressor_on) state.summary_runtime_sec += SAMPLE_INTERVAL_SEC;
 
+  // Rising-edge detection: timestamp this start into the sliding window.
+  // Note: transitions occurring entirely between SAMPLE_INTERVAL_SEC sample
+  // points won't be detected — this is a sampled approximation, not a true
+  // event-driven counter. See README §9 for the implications.
   if (compressor_on && !state.compressor_was_on) {
-    state.compressor_starts_this_hour++;
+    recordCompressorStart(now_epoch);
   }
   state.compressor_was_on = compressor_on;
 
-  // Roll the rolling-hour window if it has aged past an hour.
-  if (now_epoch - state.start_window_epoch >= 3600) {
-    state.start_window_epoch = now_epoch;
-    state.compressor_starts_this_hour = 0;
-  }
+  uint8_t starts_last_hour = startsInLastHour(now_epoch);
 
-  // Delta-T is only diagnostic while the compressor is running.
+  // ---- Threshold evaluations ----
+
   if (compressor_on && !isnan(delta_t) && delta_t < DELTA_T_MIN_F &&
       (now_epoch - state.last_alert_delta_t_epoch) > ALERT_COOLDOWN_SEC) {
     sendAlert("delta_t_low",
@@ -289,10 +352,10 @@ static void runSampleCycle() {
     state.last_alert_delta_t_epoch = now_epoch;
   }
 
-  if (state.compressor_starts_this_hour > SHORT_CYCLE_STARTS_HR &&
+  if (starts_last_hour > SHORT_CYCLE_STARTS_HR &&
       (now_epoch - state.last_alert_short_cycle_epoch) > ALERT_COOLDOWN_SEC) {
     sendAlert("short_cycling",
-              "starts_per_hour", (float)state.compressor_starts_this_hour,
+              "starts_per_hour", (float)starts_last_hour,
               "compressor_amps", amps,
               NULL, 0);
     state.last_alert_short_cycle_epoch = now_epoch;
@@ -307,7 +370,7 @@ static void runSampleCycle() {
   }
 
   if (now_epoch - state.summary_window_start_epoch >= SUMMARY_INTERVAL_MIN * 60) {
-    sendSummary(now_epoch, supply, ret);
+    sendSummary(now_epoch);
   }
 }
 
@@ -341,7 +404,8 @@ void setup() {
     memset(&state, 0, sizeof(state));
     hubConfigure();
     defineTemplates();
-    // Quiet the accelerometer so Mojo traces aren't polluted by ISR wakes.
+    // Quiet the accelerometer so Mojo traces aren't polluted by ISR wakes
+    // during bench power-consumption validation (see README §8).
     J *req = notecard.newRequest("card.motion.mode");
     JAddBoolToObject(req, "stop", true);
     notecard.sendRequest(req);
@@ -349,12 +413,13 @@ void setup() {
 
   startSdp810Continuous();
 
-  // Re-read env on every wake so operators can retune thresholds without reflash.
+  // Re-read env on every wake; may re-apply hub.set if summary_interval_min
+  // changed, keeping the Notecard's outbound cadence in sync with local summary
+  // cadence.
   fetchEnvOverrides();
 
   uint32_t now = notecardEpoch();
   if (state.summary_window_start_epoch == 0) state.summary_window_start_epoch = now;
-  if (state.start_window_epoch == 0)         state.start_window_epoch = now;
 
   runSampleCycle();
   state.cycles++;

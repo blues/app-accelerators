@@ -12,7 +12,7 @@ A retrofit [downtime prevention](https://blues.com/downtime-prevention/) pack fo
 
 A commercial RTU sits on a roof, cannot see building Wi-Fi, and when it fails a grocery store or restaurant loses cooling and goes dark. The HVAC failures that cause most unplanned downtime aren't dramatic — they're gradual. A refrigerant leak slowly narrows the cooling delta-T over weeks. A tired contactor starts chattering, and the compressor short-cycles several times an hour instead of running in long, steady pulls. A neglected filter chokes airflow across the coil. None of these are invisible, but they're all easy to miss from inside the building — especially when nobody's looking. Each one is an impending failure detectable hours to days before the actual outage, *if* someone (or something) happens to be watching.
 
-This project is that watcher. It's a retrofit predictive-maintenance sidecar that gets strapped to the RTU chassis on the roof, samples four sensors a minute, and pages the service technician *before* the walk-in cooler hits 50°F on a Saturday night. In Blues terms, it's a complete downtime-prevention device-to-cloud system: continuous remote monitoring on the edge, data-driven failure detection in firmware, and proactive-service alerts routed through Notehub to whatever on-call system the fleet owner already uses.
+This project is that watcher. It's a retrofit sidecar that gets strapped to the RTU chassis on the roof, samples four sensors a minute, and pages the service technician *before* the walk-in cooler hits 50°F on a Saturday night. In Blues terms, it's a downtime-prevention device-to-cloud system: continuous remote monitoring on the edge, rule-based failure detection in firmware, and proactive-service alerts routed through Notehub to whatever on-call system the fleet owner already uses. The detection is heuristic — three scalar threshold checks, not a trained model — but it catches the impending-failure patterns HVAC technicians already look for on a service call.
 
 **Why Notecard.** RTUs have no line-of-sight to indoor Wi-Fi access points, and HVAC OEMs and service companies need a single SKU that works identically in a strip mall and in a warehouse. Cellular removes the per-site IT involvement entirely — there's no network form to fill out, no AP to pair to, and no IT ticket to chase. The Notecard Cell+WiFi variant keeps Wi-Fi as an optional fallback for the occasional site that happens to have a rooftop-accessible AP, without compromising the cellular-first deployment model.
 
@@ -107,7 +107,7 @@ Dependencies:
 
 - **Thermistors.** 16-sample average of 12-bit ADC counts, convert to resistance via the divider ratio, convert to temperature via the β equation, convert to Fahrenheit.
 - **CT.** The SCT-013-030 emits an AC signal. A 2-resistor divider with a 10 µF capacitor biases the signal to Vref/2 so the ADC sees only positive voltages. The firmware derives the DC offset from a 256-sample mean, then computes RMS over ~20 mains cycles (1480 samples) and scales at 30 A per volt RMS.
-- **SDP810.** I²C continuous measurement mode started once at boot; each read pulls three bytes (MSB, LSB, CRC) and divides by the 125 Pa variant's 60 count/Pa scale factor.
+- **SDP810.** I²C continuous measurement mode started once at boot; each read pulls three bytes (MSB, LSB, CRC) and divides by the 125 Pa variant's **240 count/Pa** scale factor. The 500 Pa variant uses 60 count/Pa — don't mix the two up, the two variants share the same part family name.
 
 ### Event payload design
 
@@ -133,7 +133,9 @@ Even with grid-tied 24VAC power available, we still keep the host asleep most of
 ### Retry and error handling
 
 - The first Notecard transaction uses [`sendRequestWithRetry(req, 10)`](https://dev.blues.io/tools-and-sdks/arduino-library/) to paper over the cold-boot I²C race that the `note-arduino` library docs warn about.
-- Sensor reads returning `NaN` (unplugged probe, ADC rail pegged) are excluded from summary averages; the compressor-on branch also guards against evaluating delta-T when the unit is not actually cooling, so a perfectly-fine RTU idling overnight doesn't page anyone.
+- Sensor reads returning `NaN` (unplugged probe, ADC rail pegged) are excluded from summary averages on a per-metric basis — each metric carries its own valid-sample counter so a single bad SDP810 read doesn't bias the thermistor averages. If a metric has zero valid samples in the window, the summary emits `-9999` as a sentinel rather than a misleading zero.
+- The compressor-on branch also guards against evaluating delta-T when the unit is not actually cooling, so a perfectly-fine RTU idling overnight doesn't page anyone.
+- Env var changes to `summary_interval_min` re-apply `hub.set` on the next wake, so the Notecard's outbound cellular cadence stays in sync with local summary cadence rather than drifting apart.
 - Alert de-duplication via `ALERT_COOLDOWN_SEC` (30 min) prevents a slow-drifting sensor from paging the on-call every single sample — one alert per 30 minutes per failure mode is plenty.
 
 ### Key code snippet 1: template definition
@@ -187,14 +189,14 @@ NotePayloadSaveAndSleep(&payload, SAMPLE_INTERVAL_SEC, NULL);
 
 Every 60 s the firmware runs one sample cycle, evaluates three independent threshold checks in parallel, and emits an alert for each one that trips. All three alerts converge onto the same `rtu_alert.qo` Notefile with `sync:true`, so any one failure mode paging out doesn't depend on the state of the other two.
 
-- **Collected.** Supply-air °F, return-air °F, compressor RMS amps, filter DP in Pa, compressor starts this hour, cumulative compressor runtime, plus a Mojo-reported mAh figure for diagnostic power.
+- **Collected.** Supply-air °F, return-air °F, compressor RMS amps, filter DP in Pa, compressor starts in the last rolling hour, cumulative compressor runtime.
 - **Transmitted.**
-  - `rtu_summary.qo` — one record every `summary_interval_min` (default 60 min), template-encoded.
+  - `rtu_summary.qo` — one record every `summary_interval_min` (default 60 min), template-encoded. Each numeric field is the average of its valid samples over the window; if a sensor produced zero valid reads that field carries the sentinel `-9999` so downstream analytics can tell "sensor failed" apart from a real near-zero reading.
   - `rtu_alert.qo` — emitted only on a threshold trip, immediate sync, with a 30-minute dedup window per alert kind.
 - **Routed.** Both Notefiles go to Notehub and from there to whatever downstream the project's routes specify. The two filenames are deliberately separate so you can fan them out differently.
 - **Alerts trigger on.**
   - `delta_t_low` — cooling delta-T below `delta_t_min_f` while the compressor is drawing current (refrigerant loss indicator).
-  - `short_cycling` — more than `short_cycle_starts_per_hour` compressor starts in the last rolling hour.
+  - `short_cycling` — more than `short_cycle_starts_per_hour` compressor starts inside a true rolling 60-minute window (ring buffer of recent start timestamps).
   - `filter_dp_high` — filter DP above `filter_dp_alert_pa`.
 
 ## 8. Validation and Testing
@@ -210,11 +212,13 @@ Because the deployed RTU is grid-tied through the 120VAC service-disconnect supp
 ## 9. Limitations and Next Steps
 
 **Simplified for the POC:**
+- Detection is rule-based — three scalar threshold checks, not a trained model. That catches the impending-failure patterns HVAC technicians already recognize on a service call, but it isn't the anomaly-detection or drift-analysis that a more sophisticated predictive-maintenance platform would layer on top.
 - CT readings are single-phase only. Three-phase commercial RTUs need three CTs and a firmware change to sum them.
-- The SDP810 CRC byte is read and discarded rather than verified.
-- No local storage of historical samples — the Notecard does its own multi-day note queue, but the sketch itself keeps only the current summary window in RAM.
-- Thresholds are simple scalar comparisons; there is no outlier rejection or smoothing beyond per-sample averaging.
+- The SDP810 CRC byte is read and discarded rather than verified — a communication-layer fault on the I²C bus won't be caught.
+- Compressor-start detection is sampled, not interrupt-driven: transitions that occur and finish entirely inside one `sample_interval_sec` window won't be counted. The 60-second default is well below normal RTU cycle times, but a badly-misbehaving contactor could in principle cycle faster than the sampler sees.
+- No local storage of historical samples — the Notecard does its own multi-day note queue, but the sketch itself keeps only the current summary window in RAM plus a 16-slot ring buffer of recent compressor starts.
 - The 120VAC power path assumes the installer can tap the RTU service disconnect. Installations that can only offer the 24VAC control-transformer rail need a 24VAC-input supply instead (e.g. a Functional Devices PSH40A or a Mornsun LH05-23B05R3); the downstream 5V wiring is unchanged. A Scoop / solar variant is a reasonable addition for units where neither rail is practical.
+- Mojo is bench-validation equipment in this POC — the firmware does not read its LTC2959 coulomb counter over the Qwiic bus. Adding a runtime mAh field to the summary is a straightforward extension if fleet-level power telemetry is valuable.
 
 **Production next steps:**
 - Three-phase CT support (or 208/240V split-phase) for larger units — a second and third CT on A3/A4 plus an RMS sum in firmware.
