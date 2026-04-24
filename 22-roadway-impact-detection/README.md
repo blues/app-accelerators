@@ -45,7 +45,7 @@ This command sets the Notecard's ProductUID and serial number. Make sure to repl
 { "req": "card.voltage", "mode": "lipo" }
 ```
 
-This command optimizes battery usage, assuming the power source is a LiPo battery. You can learn more about this command in the [Low Power Design documentation](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/#customizing-voltage-variable-behaviors
+This command optimizes battery usage, assuming the power source is a LiPo battery. You can learn more about this command in the [Low Power Design documentation](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/#customizing-voltage-variable-behaviors
 ).
 
 ### card.motion.mode
