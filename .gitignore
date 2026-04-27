@@ -14,3 +14,5 @@ build/
 # VSCode files
 **/.vscode/*
 /.claude/skills
+/.playwright-mcp/
+.mcp.json
