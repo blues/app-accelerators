@@ -58,7 +58,7 @@ And then this command
 
 This will have the notecard send any outbound messages once per hour. If there are no messages to send, the Notecard does not power on the modem, preserving battery life. It also checks for incoming messages once per day.
 
-You can read more about this command in the [Low Power Design documentation](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/#customizing-voltage-variable-behaviors)
+You can read more about this command in the [Low Power Design documentation](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/#customizing-voltage-variable-behaviors)
 
 
 ### card.location.mode

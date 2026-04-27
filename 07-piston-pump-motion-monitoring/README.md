@@ -76,7 +76,7 @@ Let's take a look at each request in the configuration script for this app. Firs
 {"req":"env.default","name":"pump_jack_notecard_configuration_version","text":"1.0.0"}
 ```
 
-Next is `hub.set`, and you'll want to edit this request to include your Product UID in a `product` key-value pair, and optionally set a serial number with the `sn` key and value. `voutbound` and `vinbound` are [voltage-variable values](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/#modem-power-management) that you can use to configure the sync behavior of the Notecard based on the state of its battery. `voutbound` corresponds to periodic syncs from the Notecard to Notehub, while `vinbound` corresponds to syncs from Notehub to Notecard.
+Next is `hub.set`, and you'll want to edit this request to include your Product UID in a `product` key-value pair, and optionally set a serial number with the `sn` key and value. `voutbound` and `vinbound` are [voltage-variable values](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/#modem-power-management) that you can use to configure the sync behavior of the Notecard based on the state of its battery. `voutbound` corresponds to periodic syncs from the Notecard to Notehub, while `vinbound` corresponds to syncs from Notehub to Notecard.
 
 ```json
 {"req":"hub.set","mode":"periodic","align":true,"voutbound":"usb:10;high:180;normal:180; low:360; dead:0","vinbound":"usb:10;high:360;normal:720;low:1440;dead:0"}

@@ -39,7 +39,7 @@ Next, enter this command to optimize battery, assuming our power source is the L
 { "req": "card.voltage", "mode": "lipo" }
 ```
 
-You can read more about this command in the [Low Power Design documentation](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/#customizing-voltage-variable-behaviors
+You can read more about this command in the [Low Power Design documentation](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/#customizing-voltage-variable-behaviors
 ).
 
 Finally, enter this command to have the Notecard send a note to Notehub every time it detects motion:
