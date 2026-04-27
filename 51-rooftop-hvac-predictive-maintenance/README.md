@@ -128,11 +128,7 @@ One [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-ban
 
 ### Low-power strategy
 
-<<<<<<< Updated upstream
-Even with grid-tied 24VAC power available, we still keep the host asleep most of the time — less heat in the enclosure, less wear on the MOSFETs, and a firmware pattern that ports directly to battery- or solar-powered variants without a rewrite. After each sample cycle the host issues `NotePayloadSaveAndSleep`, which serializes the runtime state into Notecard flash and then uses [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) to cut host power entirely for `sample_interval_sec` seconds. The Notecard itself sits in its own [low-power idle](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/) (~8 µA @ 5V) between cellular wakes. Sample rate and transmit rate are deliberately decoupled: we sample every 60 s but only transmit once an hour — alerts are the only thing that bypass the transmit timer.
-=======
 Even with grid-tied 24VAC power available, we still keep the host asleep most of the time — less heat in the enclosure, less wear on the MOSFETs, and a firmware pattern that ports directly to battery- or solar-powered variants without a rewrite. After each sample cycle the host issues `NotePayloadSaveAndSleep`, which serializes the runtime state into Notecard flash and then uses [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) to cut host power entirely for `sample_interval_sec` seconds. The Notecard itself sits in its own [low-power idle](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) (~8 µA @ 5V) between cellular wakes. Sample rate and transmit rate are deliberately decoupled: we sample every 60 s but only transmit once an hour — alerts are the only thing that bypass the transmit timer.
->>>>>>> Stashed changes
 
 ### Retry and error handling
 
@@ -207,11 +203,7 @@ Every 60 s the firmware runs one sample cycle, evaluates three independent thres
 
 **Expected cadence after deployment.** In steady state, a correctly-behaving RTU generates one `rtu_summary.qo` event per hour and zero `rtu_alert.qo` events. Expect occasional alerts during the first week while you dial in thresholds for the specific unit — thermistor placement, duct geometry, and compressor model all nudge the baseline around.
 
-<<<<<<< Updated upstream
-**Using Mojo to validate power behavior.** The Notecard's published idle figure is roughly 8 µA @ 5V — see the [low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/) for the authoritative measured numbers across Notecard SKUs and modes. Transmit bursts for a single small queued note are on the order of tens of seconds at hundreds of mA peak on LTE-M, dominated by the radio warm-up and network registration. The host MCU, when cut by `card.attn`, draws essentially zero from the +VBAT rail.
-=======
 **Using Mojo to validate power behavior.** The Notecard's published idle figure is roughly 8 µA @ 5V — see the [low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) for the authoritative measured numbers across Notecard SKUs and modes. Transmit bursts for a single small queued note are on the order of tens of seconds at hundreds of mA peak on LTE-M, dominated by the radio warm-up and network registration. The host MCU, when cut by `card.attn`, draws essentially zero from the +VBAT rail.
->>>>>>> Stashed changes
 
 The [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) reports cumulative mAh to the Notecard at 1% accuracy over its Qwiic link. A useful bench-up exercise: leave a unit running for 24 h powered from a known battery and confirm the Mojo tally lines up with the expected pattern — "host awake for a few seconds every minute, radio on for tens of seconds once an hour." That pattern is what you should see on a Mojo trace. If instead you see continuous ≥100 mA draw, the host is never actually sleeping (usually a `card.attn` wiring or firmware issue); if you see a big spike every 60 minutes *and* nothing in between, the sleep path is working correctly.
 
