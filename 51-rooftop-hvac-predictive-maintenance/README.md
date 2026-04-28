@@ -4,8 +4,6 @@
 
 A retrofit [downtime prevention](https://blues.com/downtime-prevention/) pack for commercial rooftop HVAC units. Three inexpensive sensors and a Blues Notecard Cell+WiFi turn an ordinary rooftop unit into a remotely-monitored, predictively-maintained asset — catching refrigerant loss, short-cycling, and clogged filters *before* the unit fails and a tenant loses cooling.
 
-![System architecture](diagrams/system_architecture.png)
-
 ## 1. Project Overview
 
 **The problem.** In HVAC, an **RTU** (rooftop unit) is a self-contained packaged HVAC system — compressor, condenser, evaporator, blower, and controls all in one box — mounted on the roof of a commercial building. It's the workhorse of light commercial cooling: the vast majority of grocery stores, restaurants, strip-mall tenants, and small warehouses are conditioned by one or more RTUs sitting above the suspended ceiling.
@@ -19,6 +17,8 @@ This project is that watcher. It's a retrofit sidecar that gets strapped to the 
 **Deployment scenario.** A weatherproof enclosure strapped to the RTU frame, powered from 120VAC line at the RTU service disconnect (or from the 24VAC control transformer with an alternate supply — see [Limitations](#9-limitations-and-next-steps)), with four pigtails running into the unit: two thermistors (supply and return ducts), one clamp-on current transformer on the compressor hot leg, and one differential-pressure sensor with silicone tubes tapped across the filter. No RTU modification, no OEM cooperation, and no site IT coordination required.
 
 ## 2. System Architecture
+
+![System architecture: rooftop sensors → Notecarrier CX with Cygnet host → Notecard MBGLW → cellular/WiFi → Notehub → routes](diagrams/01-system-architecture.svg)
 
 **Device-side responsibilities.** The onboard Cygnet STM32 host on the Notecarrier CX samples all four sensors every 60 s, evaluates three threshold rules locally, and manages its own sleep between samples using [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn). Queued notes travel from the host to the Notecard over I²C — no JSON marshaling, no AT commands, no serial buffers to babysit.
 
@@ -50,7 +50,7 @@ All Blues parts ship with an active SIM including 500 MB of data and 10 years of
 
 ## 4. Wiring and Assembly
 
-![Wiring diagram](diagrams/wiring.png)
+![Wiring diagram: thermistor dividers on A0/A1, CT bias circuit on A2, SDP810 on I²C, power chain from 120 VAC → 5 V supply → Mojo → +VBAT](diagrams/02-wiring-assembly.svg)
 
 All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard Cell+WiFi (MBGLW) seats into the carrier's M.2 slot; cellular, GNSS, and WiFi antennas are u.FL leads to roof-mounted externals. The Mojo sits inline between the 5V supply and the Notecarrier's +VBAT pad, and reports cumulative mAh to the Notecard over its [Qwiic](https://www.sparkfun.com/qwiic) connector.
 
@@ -185,7 +185,7 @@ NotePayloadSaveAndSleep(&payload, SAMPLE_INTERVAL_SEC, NULL);
 
 ## 7. Data Flow
 
-![Failure-mode detection flow](diagrams/failure_modes.png)
+![Data flow: sensors sampled every 60s → three threshold rules → alert (sync:true) and summary (hourly templated) → Notehub → routes](diagrams/03-data-flow.svg)
 
 Every 60 s the firmware runs one sample cycle, evaluates three independent threshold checks in parallel, and emits an alert for each one that trips. All three alerts converge onto the same `rtu_alert.qo` Notefile with `sync:true`, so any one failure mode paging out doesn't depend on the state of the other two.
 
