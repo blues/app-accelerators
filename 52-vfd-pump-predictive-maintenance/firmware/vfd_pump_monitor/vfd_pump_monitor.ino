@@ -123,6 +123,13 @@ static bool     g_runtime_baseline_initialized = false;
 static bool g_active_load_anomaly    = false;
 static bool g_active_transient_flt   = false;
 static bool g_active_drive_overtemp  = false;
+static bool g_active_runtime_drift   = false;
+
+// Most recent successful Modbus sample. Used by sendEvent() to populate the
+// trigger fields on modbus_unreachable so an alert lands with the last-known
+// frequency/current/fault rather than zeros — useful for diagnosing whether
+// the drive lost comms while idle vs. while loaded.
+static VfdSample g_last_known_sample = {};
 
 // Track the last serial config we passed to ModbusRTUClient.begin() so we can
 // detect env-var changes and re-initialize the bus.
@@ -215,6 +222,7 @@ void loop() {
             }
 
             accumulate(s);
+            g_last_known_sample = s;
 
             // Count fault EVENTS (transitions), not samples. Persistent state
             // lives in g_current_fault_code (NOT cleared at hour boundary), so
@@ -235,7 +243,9 @@ void loop() {
             // service doesn't generate dozens of identical alerts.
             if (!g_modbus_alert_sent ||
                 now - last_modbus_alert_ms >= 60UL * 60UL * 1000UL) {
-                sendEvent("modbus_unreachable", nullptr);
+                const VfdSample *trig = g_last_known_sample.valid ? &g_last_known_sample
+                                                                  : nullptr;
+                sendEvent("modbus_unreachable", trig);
                 last_modbus_alert_ms = now;
                 g_modbus_alert_sent = true;
             }
@@ -281,7 +291,7 @@ static void defineTemplates() {
             JAddNumberToObject(body, "run_min",    12);
             JAddNumberToObject(body, "stop_min",   12);
             JAddNumberToObject(body, "hrs_total",  24);
-            JAddNumberToObject(body, "fault_count_hour", 11);
+            JAddNumberToObject(body, "fault_count_hour", 21);
             JAddStringToObject(body, "last_fault", "8");
             notecard.sendRequest(req);
         }
@@ -630,15 +640,24 @@ static void evaluateRules() {
 
     // ---- Runtime drift -------------------------------------------------------
     // Every 24 hours, compare actual vs expected runtime hours. Skip until the
-    // baseline has been initialized from a real sample (see loop()).
+    // baseline has been initialized from a real sample (see loop()). Edge-
+    // triggered: fires once on the rising edge, rearms once a 24h window comes
+    // back within the expected envelope, so a sustained drift doesn't alert
+    // every day.
     const uint32_t now = millis();
     if (g_runtime_baseline_initialized &&
         now - day_start_ms >= 24UL * 60UL * 60UL * 1000UL) {
         uint32_t observed = stats.hrs_total_last - day_start_runtime_hours;
-        if (g_expected_run_hours_per_day > 0.0f &&
-            (float)observed > g_expected_run_hours_per_day * 1.25f) {
-            sendEvent("runtime_drift", nullptr,
-                      (float)observed, g_expected_run_hours_per_day);
+        bool drifted = (g_expected_run_hours_per_day > 0.0f &&
+                        (float)observed > g_expected_run_hours_per_day * 1.25f);
+        if (drifted) {
+            if (!g_active_runtime_drift) {
+                sendEvent("runtime_drift", nullptr,
+                          (float)observed, g_expected_run_hours_per_day);
+                g_active_runtime_drift = true;
+            }
+        } else {
+            g_active_runtime_drift = false;
         }
         day_start_runtime_hours = stats.hrs_total_last;
         day_start_ms = now;
@@ -675,7 +694,7 @@ static void sendSummary() {
 
     // last_fault_seen_this_hour is a per-hour summary field (not the persistent
     // fault state — that's g_current_fault_code). Reports the last non-zero
-    // fault code observed in the just-completed hour, "" if no faults.
+    // fault code observed in the just-completed hour, or "0" if no faults.
     char fault_str[12];
     snprintf(fault_str, sizeof(fault_str), "%u", stats.last_fault_seen_this_hour);
     JAddStringToObject(body, "last_fault", fault_str);

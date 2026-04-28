@@ -4,8 +4,6 @@
 
 A [downtime prevention](https://blues.com/downtime-prevention/) reference design that turns an industrial centrifugal pump into a predictively-maintained, remotely-monitored asset by reading what the pump's existing **VFD** (variable frequency drive) already knows about itself — over **Modbus RTU**, on a real industrial **PLC** (programmable logic controller), with a cellular Notecard for the uplink.
 
-![System architecture](diagrams/system_architecture.png)
-
 ## 1. Project Overview
 
 **The problem.** Industrial centrifugal pumps almost universally run behind a VFD. Modern drives from ABB, Yaskawa, Danfoss, and Schneider all expose the pump's operating telemetry through Modbus holding registers — motor current, output frequency, output torque, drive temperature, runtime hours, active fault code — and almost nobody reads them. The VFD is sitting in the cabinet doing the work; the data is right there. What's missing is the network path off the plant floor.
@@ -19,6 +17,8 @@ A failing pump rarely just stops. It signals first: motor current can shift at c
 **Deployment scenario.** A single OPTA + Wireless for OPTA mounted on the DIN rail next to the VFD inside the pump's electrical panel, RS-485 daisied to the drive's communication port, antenna routed out through a cable gland to a magnetic-mount whip on the cabinet roof. Line power from a 24 VDC panel supply that's already there. No PC, no gateway, no plant LAN involvement.
 
 ## 2. System Architecture
+
+![System architecture: VFD ↔ Modbus RTU over RS-485 ↔ OPTA + Wireless for OPTA ↔ cellular ↔ Notehub ↔ customer cloud](diagrams/01-system-architecture.svg)
 
 **Device-side responsibilities.** The OPTA's Cortex-M7 host acts as a Modbus RTU **client** (master), polling six holding registers from the VFD (the **server** / slave) once per minute over the onboard RS-485 transceiver. The host computes rolling hourly statistics (mean, peak, count) in RAM, evaluates four anomaly-detection rules locally, and decides whether to emit an event. Queued Notes travel from the host to the Notecard over I²C through Blues Wireless for OPTA's AUX connector — no modem AT commands, no session state machine, no raw socket management. The Notecard API is JSON over I²C and the `note-arduino` library's `JAdd*` helpers construct the requests; the win is that the host never touches the modem or the cellular session itself.
 
@@ -47,7 +47,7 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ## 4. Wiring and Assembly
 
-![Wiring diagram](diagrams/wiring.png)
+![Wiring: OPTA + Wireless for OPTA on DIN rail; RS-485 A/B/COM daisy to VFD with 120 Ω terminators at each end; antennas through cable glands; 24 VDC supply](diagrams/02-wiring-assembly.svg)
 
 > **Safety.** VFD cabinets contain hazardous voltages even when control wiring is low-voltage. Installation must be performed by qualified personnel following site lockout/tagout procedures, the VFD manufacturer's instructions, and applicable electrical codes. This reference design is **read-only** over Modbus — it does not command pump start/stop or speed.
 
@@ -225,6 +225,8 @@ if (g_baseline_seeded[bin] &&
 ```
 
 ## 7. Data Flow
+
+![Data flow: poll 6 holding registers → rolling hourly stats with 5 Hz frequency bins and EWMA baselines → four anomaly rules → vfd_event.qo (sync) and vfd_summary.qo (hourly) → Notehub](diagrams/03-data-flow.svg)
 
 **Collected.** Every `sample_minutes`: output frequency, motor current, output torque, drive heatsink temperature, cumulative runtime hours, **active** fault code (not the fault history log — the live fault register only).
 
