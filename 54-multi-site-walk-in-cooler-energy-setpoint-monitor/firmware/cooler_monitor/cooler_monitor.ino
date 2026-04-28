@@ -163,11 +163,32 @@ void loop() {
     NotePayloadAddSegment(&outPayload, SEG_STATE, &state, sizeof(state));
     NotePayloadSaveAndSleep(&outPayload, cfgSampleSec, NULL);
 
-    // Reached only if ATTN-based host power cut is unavailable (not expected
-    // on a Notecarrier CX).  Delay one sample interval, run a fresh cycle so
-    // measurements do not go stale, then let the next loop() iteration retry
-    // the sleep request.
+    // Reached only if ATTN-based host power cut is unavailable (bench / bring-
+    // up mode, not expected on a Notecarrier CX in deployment).  Delay one
+    // sample interval, then mirror the wake-time housekeeping setup() does:
+    // retry template registration, retry hub.set if not yet confirmed, refresh
+    // env-var overrides, and re-apply hub.set when the cadence has changed.
+    // Without this path, env-var edits made during a bench run (e.g. lowering
+    // temp_alert_f to fire a temp_high alert) would not take effect until the
+    // host was power-cycled, breaking the threshold tests documented in
+    // Section 8 of the README.
     delay(cfgSampleSec * 1000UL);
+
+    if (!state.templatesRegistered) {
+        if (defineTemplates()) {
+            state.templatesRegistered = 1u;
+        }
+    }
+    if (!state.hubSetConfirmed) {
+        if (hubConfigure()) {
+            state.hubSetConfirmed = 1u;
+        }
+    }
+    if (fetchEnvOverrides(state)) {
+        if (state.hubSetConfirmed) {
+            applyHubSetIfChanged(state);
+        }
+    }
     runSampleCycle(state);
 }
 

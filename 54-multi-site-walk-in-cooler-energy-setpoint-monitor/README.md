@@ -18,6 +18,8 @@ This project is the device that gets past that barrier. One SKU, cellular-connec
 
 ## 2. System Architecture
 
+![System architecture: walk-in cooler sensors (box temp, compressor CT, door reed) → Notecarrier CX with Cygnet host and Notecard MBGLW → cellular/WiFi → Notehub → energy ops / BI / alerts](diagrams/01-system-architecture.svg)
+
 **Device-side responsibilities.** The onboard Cygnet STM32 host on the Notecarrier CX wakes every `sample_interval_sec` seconds (default 60 s), reads all three sensors, updates per-window accumulators (kWh, compressor runtime, door open time and event count), evaluates two alert rules, and either queues a summary [Note](https://dev.blues.io/api-reference/glossary/#note) or goes back to sleep. Between wakes, the host is fully powered down via [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) — the Notecard holds the sleep state and restores it on wake.
 
 **Notecard responsibilities.** The Notecard stores Notes locally in its on-device queue, establishes a cellular (or WiFi) session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 min), and flushes queued summary notes in that session. Alert notes set `sync:true` and jump the queue — the radio wakes within a session-establishment window regardless of the outbound cadence. The Notecard also distributes [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) from Notehub to the host, so operators can retune setpoint thresholds, door-alert timers, and cadences without reflashing firmware.
@@ -42,13 +44,15 @@ This project is the device that gets past that barrier. One SKU, cellular-connec
 | [Adafruit Magnetic Contact Switch / Door Sensor (product 375)](https://www.adafruit.com/product/375) | 1 | Normally-open reed switch in a pre-wired ABS enclosure; screws to the door frame while the included magnet mounts on the door itself. Closes below 13 mm separation, opens above — reliable over millions of cycles with no moving parts that wear. |
 | 10 kΩ resistor, ¼W | 1 | External pull-up for the reed switch GPIO (supplements or replaces the internal STM32 pull-up for noise immunity). |
 | AC/DC supply, 5V/2A (e.g., [MeanWell IRM-10-5](https://www.meanwell.com/Upload/PDF/IRM-10/IRM-10-SPEC.PDF)) | 1 | Derives 5V/2A (10 W) DC from the cooler's dedicated circuit. The IRM-10-5 accepts 85–264VAC wide-range input, covering both 120VAC and 208/240VAC single-phase supplies. During a cellular session the MBGLW's Quectel EG916Q-GL modem draws ~250 mA average (LTE Cat-1 bis); in areas where the modem falls back to GSM coverage it can spike to ~2 A for a few milliseconds — a burst the supply's output bulk capacitance absorbs within its 2 A continuous rating. Confirm the available supply voltage at the installation site before ordering — see Limitations for 24VAC/24VDC control-transformer installs. |
-| External LTE antenna, external SMA (e.g., [SparkFun WRL-14987](https://www.sparkfun.com/products/14987)) | 1 | **Mandatory for any metal-enclosure or metal mechanical-room installation.** A Notecard antenna inside a steel NEMA 4X box cannot radiate reliably. Route the u.FL-to-SMA pigtail (next row) through a cable gland in the enclosure wall; attach this external SMA antenna on the exterior side of the gland. |
+| External multiband LTE antenna, SMA male (e.g., [SparkFun CEL-29622](https://www.sparkfun.com/lte-hinged-external-antenna-600mhz-2700mhz-sma-male.html), 600 MHz–2.7 GHz hinged whip) | 1 | **Mandatory for any metal-enclosure or metal mechanical-room installation.** A Notecard antenna inside a steel NEMA 4X box cannot radiate reliably. The 600 MHz–2.7 GHz pass-band covers every band the MBGLW's Quectel EG916Q-GL operates on (LTE Cat-1 bis B1/B2/B3/B4/B5/B7/B8/B12/B13/B18–B20/B25–B28/B66 plus the 2G/3G fallback bands). Do **not** substitute a GPS/GNSS-only antenna (1.55–1.62 GHz) — it will not radiate on the cellular bands. Route the u.FL-to-SMA pigtail (next row) through a cable gland in the enclosure wall; attach this external SMA antenna on the exterior side of the gland. |
 | u.FL-to-SMA bulkhead pigtail cable, ~150 mm (e.g., [Adafruit product 851](https://www.adafruit.com/product/851)) | 1 | Connects the Notecard's onboard u.FL antenna port to the external SMA panel-mount antenna. Required whenever an external SMA antenna is used — without this cable the antenna has no electrical path to the Notecard radio. A 150–200 mm length routes cleanly inside a ~6×4×2″ NEMA box without excess coiling. |
 | NEMA 4X enclosure, ~6×4×2″ | 1 | Moisture- and hose-down-rated housing suitable for the cold, wet environment of a walk-in mechanical room. |
 
 All Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees and no monthly commitment.
 
 ## 4. Wiring and Assembly
+
+![Wiring: DS18B20 1-Wire to D5; SCT-013 CT with V/2 bias to A0; door reed switch to D6 (PULLUP); external SMA antenna via u.FL pigtail; 120/240 VAC → IRM-10-5 → Mojo → +VBAT](diagrams/02-wiring-assembly.svg)
 
 > **Safety — qualified personnel only.** This assembly connects to mains-voltage AC power. The AC/DC supply installation (wiring to the cooler's dedicated circuit) must be performed by a licensed electrician in compliance with applicable electrical codes (NEC Articles 100 and 110 and local amendments). Apply **lockout/tagout** procedures to the circuit breaker before opening any conduit or junction box. Once installed, all three sensors (temperature probe, CT clamp, reed switch) are electrically non-invasive — the CT clamps over the wire without breaking the circuit and is isolated from the mains conductor — but the supply wiring itself is not. Do not energize the enclosure until all wiring is complete and the enclosure lid is secured.
 
@@ -219,6 +223,8 @@ NotePayloadSaveAndSleep(&outPayload, cfgSampleSec, NULL);
 ```
 
 ## 7. Data Flow
+
+![Data flow: 60s sample of box temp/compressor amps/door state → two rules (door_open_long, temp_high) with 30-min cooldowns → cooler_alert.qo (sync:true) and cooler_summary.qo (hourly templated) → Notehub routes](diagrams/03-data-flow.svg)
 
 **Collected** every `sample_interval_sec` (default 60 s): box air temperature (°F), compressor RMS amps, door open/closed state.
 

@@ -7,6 +7,7 @@
 
 #include "cooler_monitor_helpers.h"
 #include <errno.h>
+#include <math.h>
 
 // ── Notecard configuration ─────────────────────────────────────────────────
 
@@ -22,7 +23,12 @@
 bool hubConfigure() {
     J *req = notecard.newRequest("hub.set");
     if (!req) { DBG_PRINTLN("[hub] newRequest failed"); return false; }
-    JAddStringToObject(req, "product", PRODUCT_UID);
+    // Only send "product" when PRODUCT_UID is actually set.  Sending an empty
+    // string can dissociate the Notecard from any project, leaving the device
+    // silently queueing Notes that never reach Notehub.  The #pragma message
+    // in cooler_monitor_helpers.h warns at compile time if PRODUCT_UID was not
+    // set; this guards against the runtime consequence either way.
+    if (PRODUCT_UID[0]) JAddStringToObject(req, "product", PRODUCT_UID);
     JAddStringToObject(req, "mode",    "periodic");
     JAddNumberToObject(req, "outbound", (int)DEFAULT_SUMMARY_INTERVAL_MIN);
     JAddNumberToObject(req, "inbound",  (int)(DEFAULT_SUMMARY_INTERVAL_MIN * 2));
@@ -55,7 +61,9 @@ void applyHubSetIfChanged(AppState &s) {
 
     J *req = notecard.newRequest("hub.set");
     if (!req) { DBG_PRINTLN("[hub] newRequest failed (cadence update)"); return; }
-    JAddStringToObject(req, "product",  PRODUCT_UID);
+    // Same empty-PRODUCT_UID guard as hubConfigure(): never send "product":""
+    // which would dissociate the Notecard from its project on a cadence update.
+    if (PRODUCT_UID[0]) JAddStringToObject(req, "product",  PRODUCT_UID);
     JAddStringToObject(req, "mode",     "periodic");
     JAddNumberToObject(req, "outbound", (int)cfgSummaryMin);
     JAddNumberToObject(req, "inbound",  (int)(cfgSummaryMin * 2));
@@ -162,7 +170,15 @@ static bool parseDoubleStr(const char *s, double &out) {
     if (!s || !*s) return false;
     char *end;
     out = strtod(s, &end);
-    return (end != s && *end == '\0');
+    if (end == s || *end != '\0') return false;
+    // Reject "nan", "inf", "-inf", and overflowed values.  strtod() accepts
+    // these strings as syntactically valid, but a NaN poisons every downstream
+    // comparison silently (NaN comparisons all evaluate false, so a NaN value
+    // falls through clampF's range check and ends up persisted into cfg).  An
+    // infinity would similarly survive nothing useful.  Treat any non-finite
+    // result as a malformed env var and let the caller retain the prior value.
+    if (!isfinite(out)) return false;
+    return true;
 }
 
 // Clamp helpers: return the clamped value, or fallback when out of range.
@@ -174,7 +190,11 @@ static uint32_t clampU32(long v, uint32_t minv, uint32_t maxv, uint32_t fallback
 }
 
 static float clampF(double v, float minv, float maxv, float fallback) {
-    if (v < (double)minv || v > (double)maxv) return fallback;
+    // Belt-and-suspenders against callers that bypass parseDoubleStr() — NaN
+    // silently passes any < / > comparison, so without an isfinite() guard a
+    // NaN would be cast to float and returned, poisoning every threshold that
+    // consumes it.  Reject non-finite first, then range-check.
+    if (!isfinite(v) || v < (double)minv || v > (double)maxv) return fallback;
     return (float)v;
 }
 
