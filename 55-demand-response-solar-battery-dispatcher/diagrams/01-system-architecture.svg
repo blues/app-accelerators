@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 460" width="800" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <marker id="ar-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="ar-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/>
+    </marker>
+    <marker id="ar-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16a34a"/>
+    </marker>
+  </defs>
+  <rect width="800" height="460" fill="#ffffff"/>
+
+  <text x="400" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">System Architecture</text>
+  <text x="400" y="58" text-anchor="middle" font-size="12" fill="#64748b">Demand-Response Solar + Battery Dispatcher — cellular control, no building LAN</text>
+
+  <!-- Inverter + BMS -->
+  <rect x="20" y="90" width="155" height="230" rx="8" fill="#e0e7ff" stroke="#4f46e5" stroke-width="1.5"/>
+  <g transform="translate(88,105) scale(0.75)" fill="#312e81"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></g>
+  <text x="97" y="138" text-anchor="middle" font-size="13" font-weight="700" fill="#312e81">Field Devices</text>
+  <text x="97" y="156" text-anchor="middle" font-size="11" fill="#3730a3">2 Modbus servers</text>
+  <line x1="35" y1="168" x2="160" y2="168" stroke="#c7d2fe"/>
+  <g font-size="11" fill="#3730a3">
+    <text x="97" y="192" text-anchor="middle" font-weight="600">Inverter (ID 1)</text>
+    <text x="97" y="212" text-anchor="middle">PV W · AC W · grid W</text>
+  </g>
+  <line x1="35" y1="226" x2="160" y2="226" stroke="#c7d2fe" stroke-dasharray="4,3"/>
+  <g font-size="11" fill="#3730a3">
+    <text x="97" y="250" text-anchor="middle" font-weight="600">BMS (ID 2)</text>
+    <text x="97" y="270" text-anchor="middle">SOC · V · A</text>
+    <text x="97" y="290" text-anchor="middle">charge / discharge</text>
+  </g>
+
+  <!-- Arduino OPTA -->
+  <rect x="245" y="90" width="155" height="230" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+  <g transform="translate(313,105) scale(0.75)" fill="#713f12"><path d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z"/></g>
+  <text x="323" y="138" text-anchor="middle" font-size="13" font-weight="700" fill="#713f12">Arduino OPTA</text>
+  <text x="323" y="156" text-anchor="middle" font-size="11" fill="#854d0e">Modbus client · control logic</text>
+  <line x1="260" y1="168" x2="385" y2="168" stroke="#fde68a"/>
+  <g font-size="11" fill="#854d0e">
+    <text x="323" y="192" text-anchor="middle">resolveMode()</text>
+    <text x="323" y="214" text-anchor="middle">applyRelays()</text>
+    <text x="323" y="236" text-anchor="middle">checkDispatch()</text>
+    <text x="323" y="258" text-anchor="middle">sendTelemetry()</text>
+    <text x="323" y="280" text-anchor="middle">sendModeEvent()</text>
+  </g>
+
+  <!-- 4 Relay outputs sub-box -->
+  <rect x="245" y="342" width="155" height="88" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="323" y="362" text-anchor="middle" font-size="11" font-weight="700" fill="#14532d">4 Relay Outputs</text>
+  <g font-size="10" fill="#166534">
+    <text x="323" y="380" text-anchor="middle">R1: Grid Export Enable</text>
+    <text x="323" y="396" text-anchor="middle">R2: Battery Discharge</text>
+    <text x="323" y="412" text-anchor="middle">R3: Battery Charge</text>
+    <text x="323" y="428" text-anchor="middle">R4: DR Indicator</text>
+  </g>
+
+  <!-- Wireless for OPTA -->
+  <rect x="468" y="90" width="155" height="230" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <g transform="translate(536,105) scale(0.75)" fill="#1e3a8a"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></g>
+  <text x="546" y="138" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">Wireless for OPTA</text>
+  <text x="546" y="156" text-anchor="middle" font-size="11" fill="#1e40af">Notecard Cell+WiFi</text>
+  <line x1="483" y1="168" x2="608" y2="168" stroke="#bfdbfe"/>
+  <g font-size="11" fill="#1e40af">
+    <text x="546" y="192" text-anchor="middle">Note queue</text>
+    <text x="546" y="214" text-anchor="middle">hub.set periodic</text>
+    <text x="546" y="236" text-anchor="middle">Env vars delivery</text>
+    <text x="546" y="258" text-anchor="middle">dispatch.qi inbound</text>
+    <text x="546" y="280" text-anchor="middle">5 min inbound cadence</text>
+  </g>
+
+  <!-- Notehub + DR API -->
+  <rect x="683" y="90" width="102" height="100" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+  <g transform="translate(725,100) scale(0.75)" fill="#581c87"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></g>
+  <text x="734" y="140" text-anchor="middle" font-size="12" font-weight="700" fill="#581c87">Notehub</text>
+  <text x="734" y="158" text-anchor="middle" font-size="10" fill="#6b21a8">routes · env vars</text>
+  <text x="734" y="178" text-anchor="middle" font-size="10" fill="#6b21a8">fleet config</text>
+
+  <rect x="683" y="210" width="102" height="80" rx="8" fill="#f8fafc" stroke="#475569" stroke-width="1.5"/>
+  <text x="734" y="232" text-anchor="middle" font-size="11" font-weight="700" fill="#0f172a">DR Cloud</text>
+  <text x="734" y="250" text-anchor="middle" font-size="10" fill="#334155">API / EMS /</text>
+  <text x="734" y="268" text-anchor="middle" font-size="10" fill="#334155">rate scheduler</text>
+  <text x="734" y="282" text-anchor="middle" font-size="9" fill="#64748b" font-style="italic">HTTP POST →</text>
+
+  <!-- Connection labels -->
+  <text x="208" y="105" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">RS-485</text>
+  <text x="208" y="119" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">Modbus RTU</text>
+  <text x="430" y="112" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">I²C · via AUX</text>
+  <text x="655" y="180" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">LTE</text>
+
+  <!-- Arrows: field devices → OPTA -->
+  <line x1="175" y1="205" x2="243" y2="205" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <!-- OPTA → Wireless -->
+  <line x1="400" y1="205" x2="466" y2="205" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <!-- Wireless → Notehub -->
+  <line x1="623" y1="205" x2="681" y2="175" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <!-- DR API → Notehub -->
+  <line x1="734" y1="208" x2="734" y2="192" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <!-- OPTA → Relays (down) -->
+  <line x1="323" y1="320" x2="323" y2="340" stroke="#16a34a" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-green)"/>
+
+  <text x="400" y="446" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">Independent cellular channel — no building LAN, no IT coordination required.</text>
+</svg>
