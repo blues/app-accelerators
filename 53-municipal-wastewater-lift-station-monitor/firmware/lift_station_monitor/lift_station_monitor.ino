@@ -134,9 +134,13 @@ void setup() {
 //
 // The code below is only reached when ATTN is not wired to the host power
 // rail (bench / bring-up mode). In that case we delay to mimic the sleep
-// interval and then run a full sample cycle before looping back to save
-// state again. This keeps alerts and summary accumulation behaviorally
-// correct without ATTN-based host power gating.
+// interval and then re-run the same wake-time housekeeping setup() does —
+// retry template registration, pull env-var changes from Notehub, re-apply
+// hub.set if cadences changed, and run a full sample cycle — before looping
+// back to save state again. Without this, env-var edits made during a bench
+// run (e.g. setting high_level_pct = 1.0 to trigger pump_fail_to_start)
+// would not take effect until the host was power-cycled, breaking the
+// bench-test procedures documented in Section 8 of the README.
 // ---------------------------------------------------------------------------
 void loop() {
     NotePayloadDesc save_payload = {0, 0, 0};
@@ -144,10 +148,19 @@ void loop() {
     NotePayloadSaveAndSleep(&save_payload, SAMPLE_INTERVAL_SEC, NULL);
 
     // Reached only if ATTN is not cutting host power (bench / bring-up mode).
-    // Delay to simulate the sleep window, then sample so that the next
-    // NotePayloadSaveAndSleep call persists fresh readings and accumulated state.
+    // Delay to simulate the sleep window, then mirror the wake-time housekeeping
+    // sequence from setup() so env-var, template, and hub.set state all refresh
+    // on the bench without requiring a manual power-cycle.
     Serial.println("[SLEEP] NotePayloadSaveAndSleep returned — ATTN may not be wired; bench mode active.");
     delay(SAMPLE_INTERVAL_SEC * 1000UL);
+
+    if (!g_state.templates_registered) {
+        if (defineTemplates()) {
+            g_state.templates_registered = true;
+        }
+    }
+    fetchEnvOverrides();
+    applyHubSetIfChanged();
     runSampleCycle();
 }
 

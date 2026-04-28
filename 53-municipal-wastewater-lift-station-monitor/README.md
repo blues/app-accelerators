@@ -6,8 +6,6 @@ A [downtime prevention](https://blues.com/downtime-prevention/) retrofit for mun
 
 Two connectivity SKUs cover the full deployment spectrum. Stations within LTE coverage use a **Notecard Cell+WiFi (MBGLW)**. Truly rural stations beyond reliable cellular reach use a **[Starnote](https://dev.blues.io/datasheets/starnote/starnote-for-skylo/)**, which routes telemetry over the Skylo satellite network. The firmware is identical for both variants; Notehub configuration is shared, though satellite deployments benefit from wider inbound sync intervals to conserve bundled satellite data — see [Satellite-specific considerations](#satellite-specific-considerations-option-b--starnote) in Section 2.
 
-![System architecture](diagrams/system_architecture.png)
-
 ## 1. Project Overview
 
 **The problem.** A **lift station** (also called a pump station) is a below-grade concrete vault or roadside cabinet that collects raw sewage from the surrounding gravity sewer system and pumps it uphill toward the treatment plant. Every municipality has dozens of them, often scattered across low-lying neighborhoods, industrial zones, and rural road shoulders — most with no onsite staff and no way to know what's happening inside until a citizen calls to report a smell or, worse, a spill.
@@ -21,6 +19,8 @@ This project is that watcher. It straps to the inside of the station, samples th
 **Deployment scenario.** A sealed NEMA 4X enclosure mounted **inside the lift station's above-grade control cabinet**, powered from the 120 VAC control circuit that already powers the pump starters. The specified Blues hardware and NEMA 4X ABS enclosure are **not** rated for hazardous (classified) locations. Wet wells and sealed vaults can accumulate methane and hydrogen sulfide — both potentially classified atmospheres under NFPA 820 / NEC Article 820. Do not install this hardware inside the wet well or any classified-atmosphere zone. If your jurisdiction classifies the vault interior as a hazardous location, any hardware in that zone must be rated for the classification; consult a licensed electrical engineer before proceeding. Sensor cables enter through conduit fittings: one multiconductor cable to the submersible level transducer in the wet well, two split-core CT jaws clamped around the pump motor supply conductors inside the control panel, and one float switch cable to a new dedicated high-water alarm float switch hung in the wet well alongside the station's existing level floats. No station modification is required beyond adding three sensor connections to the existing control wiring. Cellular antenna cable exits through a conduit fitting to a magnetic-mount or direct-mount antenna on the cabinet exterior or above-grade access point.
 
 ## 2. System Architecture
+
+![System architecture: wet well sensors (level transducer, two CTs, float) → above-grade enclosure with Notecarrier CX → cellular MBGLW or Starnote satellite → Notehub → on-call/analytics](diagrams/01-system-architecture.svg)
 
 **Device-side responsibilities.** The onboard Cygnet STM32L433 host on the Notecarrier CX wakes every 60 seconds via [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn), reads three sensor types across four inputs (level, CT1, CT2, and float switch), evaluates the three fault-detection rules locally, and queues or immediately syncs the result. The Cygnet communicates with the Notecard over I²C — no AT commands, no modem state machine, no serial buffers. Application state (the previous sample's level reading, alert cooldowns, summary accumulators) is persisted into the Notecard's flash across sleep cycles using `NotePayloadSaveAndSleep` / `NotePayloadRetrieveAfterSleep`, so a 60-second host MCU restart doesn't lose any accumulated data.
 
@@ -54,7 +54,7 @@ The Starnote uses the same Notecard API as the MBGLW, but the satellite link has
 | **Option A — cellular sites:** [Notecard Cell+WiFi (MBGLW)](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) | 1 | LTE Cat-1 bis cellular (Quectel EG916Q-GL modem) removes per-site network provisioning; prepaid SIM covers all stations from one SKU. Onboard PCB antenna handles WiFi; cellular requires the external LTE antenna below. Use this SKU for stations within LTE coverage — the majority of municipal infrastructure. |
 | **Option B — satellite/rural sites:** [Starnote](https://dev.blues.io/datasheets/starnote/) | 1 | Same M.2 form factor and Notecard API as Option A; routes telemetry over the Skylo satellite network instead of a terrestrial cell tower. Use this SKU for stations beyond reliable LTE coverage. Requires the satellite patch antenna below (replace the LTE antenna and pigtail with the satellite items). Satellite link is lower-bandwidth and higher-latency than LTE; alert and summary notes queue in the Notecard's local store and sync on the Starnote's satellite session cadence. |
 | [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Coulomb-counter on the power rail for bench-validation of the sleep/wake/transmit energy profile. Not deployed to the field. |
-| [WIKA S-10](https://www.wika.us/s_10_en_us.WIKA), 0–15 PSI gauge, 4–20 mA 2-wire, 316L SS, IP68, with 5 m vented cable | 1 | Submersible hydrostatic level transmitter designed for wet-well immersion. The vented polyurethane cable (an internal vent tube equalizes the sensor's reference side to atmosphere, making the measurement gauge pressure = water head) doubles as the support tether — secured with a stainless cable grip at the cover plate. 316L SS wetted parts tolerate raw sewage. 15 PSI range covers ≈ 10 m of wet-well head. 4–20 mA 2-wire loop-powered output; wiring is identical to any other loop-powered transmitter. Specify "vented cable" and M20×1.5 or ½ NPT conduit seal fitting when ordering. Available from WIKA.us, instrumart.com, and major industrial distributors. |
+| [WIKA LH-10](https://www.wika.com/en-us/lh_10.WIKA), 0–15 PSI gauge, 4–20 mA 2-wire, 316L SS, IP68, with vented cable | 1 | Submersible hydrostatic level transmitter purpose-built for water/wastewater wet-well immersion (the WIKA S-10 is a general-purpose / sanitary transmitter; the LH-10 is the family member rated for permanent submersion in raw sewage). The vented polyurethane cable (an internal vent tube equalizes the sensor's reference side to atmosphere, making the measurement gauge pressure = water head) doubles as the support tether — secured with a stainless cable grip at the cover plate. 316L SS wetted parts tolerate raw sewage. 15 PSI range covers ≈ 10 m of wet-well head. 4–20 mA 2-wire loop-powered output; wiring is identical to any other loop-powered transmitter. Specify "vented cable" and M20×1.5 or ½ NPT conduit seal fitting when ordering. Available from WIKA, instrumart.com, and major industrial distributors. |
 | 150 Ω, 1% resistor (level sensor shunt) | 1 | Converts 4–20 mA loop current to 0.6–3.0 V for the 3.3 V STM32 ADC (full-scale within VREF). |
 | [SCT-013-030 split-core CT, 30 A / 1 V RMS](https://www.sparkfun.com/products/11005) (SparkFun SEN-11005) | 2 | Non-invasive current sensing on each pump motor supply lead; no break in the power circuit required. 30 A range is appropriate for single-phase motors up to approximately 5 HP at 230 V (FLA ≈ 28 A). Larger or three-phase motors require a higher-ratio CT — see Limitations. |
 | [TRRS 3.5 mm audio jack breakout](https://www.sparkfun.com/products/11570) (SparkFun BOB-11570) | 2 | The SCT-013's pigtail terminates in a TRRS plug; this breakout exposes Tip and Sleeve for the AC signal and shield/return. |
@@ -74,7 +74,7 @@ The Starnote uses the same Notecard API as the MBGLW, but the satellite link has
 
 ## 4. Wiring and Assembly
 
-![Wiring diagram](diagrams/wiring.png)
+![Wiring: 4–20 mA loop with 150 Ω shunt → A0; dual SCT-013 CTs with 10 kΩ/10 kΩ bias and 10 µF cap → A1/A2; dedicated Gems float → D2 PULLUP; HDR-15-24 and HDR-15-5 from 120 VAC](diagrams/02-wiring-assembly.svg)
 
 > **Safety.** Lift-station control panels contain 120 VAC mains wiring operating in wet, corrosive, and potentially hazardous-atmosphere environments. Installation must be performed by a **licensed electrician** or qualified instrumentation technician following your jurisdiction's electrical code and your utility's **lockout/tagout (LOTO)** procedures before opening any panel. Wet wells are classified confined spaces — follow applicable confined-space entry (CSE) regulations (OSHA 29 CFR 1910.146 in the US) before entering the vault: test for H₂S and oxygen deficiency, establish an attendant and rescue plan, and use supplied-air or appropriate respiratory protection as required. Raw sewage contains pathogens; wear appropriate PPE and observe hygiene protocols for all work inside the vault. This reference design is **sensor and monitoring only** — it does not command pump start/stop and makes no safety-critical outputs.
 
@@ -213,12 +213,15 @@ Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-ban
     "pump1_run_min": 18.0,
     "pump2_run_min": 0.0,
     "float_sw": false,
-    "alert_count": 0
+    "alert_count": 0,
+    "level_faults": 0,
+    "ct1_faults": 0,
+    "ct2_faults": 0
   }
 }
 ```
 
-The `level_pct` field in the summary is the instantaneous reading at summary time; `level_avg_pct` is the mean of all samples collected in the window (60 at the default 60-minute cadence, fewer if `summary_interval_min` was changed mid-window). `pump1_run_min` and `pump2_run_min` reflect how many minutes each pump was detected running during the window — a useful proxy for station loading and lead/lag duty balance. The `alert_count` field makes it easy to spot summary windows that were eventful without loading the full alert Notefile.
+The `level_pct` field in the summary is the instantaneous reading at summary time; `level_avg_pct` is the mean of all samples collected in the window (60 at the default 60-minute cadence, fewer if `summary_interval_min` was changed mid-window). `pump1_run_min` and `pump2_run_min` reflect how many minutes each pump was detected running during the window — a useful proxy for station loading and lead/lag duty balance. The `alert_count` field makes it easy to spot summary windows that were eventful without loading the full alert Notefile. The three `*_faults` counters record how many samples in the window returned a sensor-fault sentinel (ADC out of range for the level loop; bias-network failure or rail saturation on a CT) so an operator can immediately tell when an average-or-instantaneous field is degraded by hardware faults rather than reflecting actual station state.
 
 ### Low-power strategy
 
@@ -301,6 +304,8 @@ bool ok = notecard.sendRequestWithRetry(req, 5);
 
 ## 7. Data Flow
 
+![Data flow: 60s sample of level/CT1/CT2/float → three rules (high_water_alarm, pump_fail_to_start, pump_clog) with 30-min cooldowns → lift_alert.qo (sync:true) and lift_summary.qo (hourly) → Notehub routes](diagrams/03-data-flow.svg)
+
 **Collected (every 60 s):** wet-well fill level (%), pump 1 RMS current (A), pump 2 RMS current (A), float switch state.
 
 **Summarized (every 60 min):** instantaneous and average level, average current per pump, per-pump runtime minutes in the window, float switch state, alert count in the window.
@@ -356,7 +361,7 @@ Leave the system running for 24 hours and confirm the Mojo trace shows the expec
 - 2–4 second active spikes every 60 seconds when the host wakes, reads sensors, and issues I²C transactions.
 - A longer, higher-amplitude session every ~60 minutes when the Notecard transmits the queued summary (~250 mA avg for MBGLW; up to ~350 mA for Starnote, with variable session length).
 
-If you see a continuous mid-level draw rather than this spike pattern, the ATTN pin is likely not cutting host power — check that the DIP switch on the Notecarrier CX is in the `HST` position. Mojo is the fastest way to confirm that the sleep architecture is actually working before the unit goes underground.
+If you see a continuous mid-level draw rather than this spike pattern, the ATTN pin is likely not cutting host power — typically a `card.attn` wiring or firmware issue. The Notecarrier CX exposes the Notecard's `ATTN` interrupt and an `EN` input that gates the on-board host's 3.3 V rail; ATTN-driven host power gating requires that those two pins be tied together so the Notecard's wake/sleep signal actually de-energizes the Cygnet. Verify that connection (per your carrier wiring) before assuming a firmware bug — the HST/NC DIP switch on the Notecarrier CX selects only which device is connected to the USB serial interface and has no effect on host power. Mojo is the fastest way to confirm that the sleep architecture is actually working before the unit goes underground.
 
 ## 9. Limitations and Next Steps
 
