@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 460" width="800" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <marker id="ar-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="ar-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/>
+    </marker>
+    <marker id="ar-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16a34a"/>
+    </marker>
+    <marker id="ar-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d97706"/>
+    </marker>
+  </defs>
+  <rect width="800" height="460" fill="#ffffff"/>
+
+  <text x="400" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">Data Flow</text>
+  <text x="400" y="58" text-anchor="middle" font-size="12" fill="#64748b">Sense · evaluate · emit · command</text>
+
+  <!-- Sense -->
+  <rect x="20" y="110" width="165" height="200" rx="10" fill="#e0f2fe" stroke="#0284c7" stroke-width="1.5"/>
+  <g transform="translate(94,126) scale(0.75)" fill="#0c4a6e">
+    <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/>
+  </g>
+  <text x="102" y="166" text-anchor="middle" font-size="13" font-weight="700" fill="#0c4a6e">Sense</text>
+  <text x="102" y="184" text-anchor="middle" font-size="11" fill="#075985">each wake cycle</text>
+  <line x1="40" y1="198" x2="165" y2="198" stroke="#7dd3fc"/>
+  <g font-size="11" fill="#0c4a6e">
+    <text x="102" y="222" text-anchor="middle">Ignition (12 V divider)</text>
+    <text x="102" y="244" text-anchor="middle">Motion (accelerometer)</text>
+    <text x="102" y="266" text-anchor="middle">GPS fix + fix age</text>
+    <text x="102" y="288" text-anchor="middle">Battery voltage</text>
+  </g>
+
+  <!-- Edge rules -->
+  <rect x="230" y="110" width="165" height="200" rx="10" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+  <g transform="translate(304,126) scale(0.75)" fill="#7c2d12">
+    <path d="M20 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9.6 13.6L7 13.2l1.4-1.4 2 2 4.6-4.6 1.4 1.4-6 6z"/>
+  </g>
+  <text x="312" y="166" text-anchor="middle" font-size="13" font-weight="700" fill="#7c2d12">Edge rules</text>
+  <text x="312" y="184" text-anchor="middle" font-size="11" fill="#9a3412">Cygnet evaluation</text>
+  <line x1="250" y1="198" x2="375" y2="198" stroke="#fed7aa"/>
+  <g font-size="11" fill="#7c2d12">
+    <text x="312" y="222" text-anchor="middle">Geofence (Haversine)</text>
+    <text x="312" y="244" text-anchor="middle">After-hrs motion</text>
+    <text x="312" y="266" text-anchor="middle">Immobilizer stage</text>
+    <text x="312" y="288" text-anchor="middle">Cmd queue drain</text>
+  </g>
+
+  <!-- alert.qo (top right output) -->
+  <rect x="440" y="110" width="170" height="80" rx="10" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+  <g transform="translate(516,122) scale(0.65)" fill="#7f1d1d">
+    <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+  </g>
+  <text x="525" y="158" text-anchor="middle" font-size="12" font-weight="700" fill="#7f1d1d">alert.qo</text>
+  <text x="525" y="178" text-anchor="middle" font-size="10" fill="#991b1b">sync:true · immediate uplink</text>
+
+  <!-- tracker.qo (bottom right output) -->
+  <rect x="440" y="230" width="170" height="80" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+  <g transform="translate(516,242) scale(0.65)" fill="#14532d">
+    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7 17v-3h2v3H7zm4 0V7h2v10h-2zm4 0v-5h2v5h-2z"/>
+  </g>
+  <text x="525" y="278" text-anchor="middle" font-size="12" font-weight="700" fill="#14532d">tracker.qo</text>
+  <text x="525" y="298" text-anchor="middle" font-size="10" fill="#166534">queued · batch outbound</text>
+
+  <!-- immobilize.qi inbound (bottom) -->
+  <rect x="440" y="360" width="170" height="70" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <g transform="translate(516,370) scale(0.65)" fill="#78350f">
+    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+  </g>
+  <text x="525" y="402" text-anchor="middle" font-size="12" font-weight="700" fill="#78350f">immobilize.qi</text>
+  <text x="525" y="420" text-anchor="middle" font-size="10" fill="#92400e">inbound from Notehub</text>
+
+  <!-- Notehub -->
+  <rect x="650" y="110" width="130" height="200" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <g transform="translate(706,170) scale(0.75)" fill="#1e3a8a">
+    <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/>
+  </g>
+  <text x="715" y="210" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">Notehub</text>
+  <text x="715" y="230" text-anchor="middle" font-size="11" fill="#1e40af">+ routes</text>
+  <g font-size="10" fill="#1e40af">
+    <text x="715" y="258" text-anchor="middle">Security / PSIM</text>
+    <text x="715" y="274" text-anchor="middle">Fleet mgmt</text>
+    <text x="715" y="290" text-anchor="middle">Analytics</text>
+  </g>
+
+  <!-- Outbound arrows -->
+  <line x1="185" y1="210" x2="228" y2="210" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <line x1="395" y1="170" x2="438" y2="150" stroke="#dc2626" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-red)"/>
+  <line x1="395" y1="250" x2="438" y2="268" stroke="#16a34a" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-green)"/>
+  <line x1="610" y1="150" x2="648" y2="170" stroke="#dc2626" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-red)"/>
+  <line x1="610" y1="268" x2="648" y2="248" stroke="#16a34a" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-green)"/>
+
+  <!-- Inbound command path -->
+  <line x1="648" y1="310" x2="615" y2="395" stroke="#d97706" stroke-opacity="0.5" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ar-amber)"/>
+  <line x1="438" y1="395" x2="240" y2="290" stroke="#d97706" stroke-opacity="0.5" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ar-amber)"/>
+
+  <text x="400" y="420" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">Two Notefiles, two routes — alerts to security, heartbeats to fleet management. Commands flow inbound.</text>
+</svg>
