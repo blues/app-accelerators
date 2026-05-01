@@ -26,6 +26,8 @@ WiFi fallback on the MBGLW is available as a secondary path, but only for sites 
 
 ## 2. System Architecture
 
+![System architecture: PT1000 RTD + VEML7700 + door reed → Notecarrier CX with Cygnet host and Notecard MBGLW → cellular/WiFi → Notehub → compliance archive / LIMS / paging](diagrams/01-system-architecture.svg)
+
 **Device-side responsibilities.** The Cygnet STM32 host on the Notecarrier CX wakes every `sample_interval_sec` seconds (default 5 minutes), reads all three sensors (MAX31865 via SPI, VEML7700 via I²C, reed switch via GPIO), and evaluates four alert conditions. Between samples, the host is powered down by the Notecard via [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) sleep mode — the Notecard's ATTN pin drives the Notecarrier CX enable gate, cutting power to the Cygnet entirely. State that must survive the sleep (door-open timestamps, alert cooldown timers) is serialized into the Notecard's flash before sleep and rehydrated at the next wake using the `NotePayloadSaveAndSleep` / `NotePayloadRetrieveAfterSleep` helper pair from the `note-arduino` library.
 
 **Notecard responsibilities.** The Notecard stores [Notes](https://dev.blues.io/api-reference/glossary/#note) in its on-device queue, establishes the cellular (or WiFi) session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 minutes), and flushes any `sync:true` alert Notes immediately when the rule fires. The Notecard also maintains a real-time clock synchronized to UTC via Notehub — the `card.time` response provides the epoch timestamps that the firmware uses for door-duration tracking and alert cooldowns. Every Note automatically carries a `when` field with the UTC epoch, giving Notehub an immutable record of when each event was enqueued — provided the Notecard's clock has been synchronized with Notehub at enqueue time. Notes enqueued before the first successful Notehub session (during the initial cellular-registration window) carry an unverified Notecard RTC timestamp and are not audit-grade records; see [Limitations](#9-limitations-and-next-steps). The Notecard handles [environment variable](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) distribution from Notehub, letting operators change temperature thresholds, door-alert timing, and sample cadence without re-flashing firmware.
@@ -58,6 +60,8 @@ WiFi fallback on the MBGLW is available as a secondary path, but only for sites 
 All Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
 ## 4. Wiring and Assembly
+
+![Wiring: PT1000 + MAX31865 on SPI with CS=D10; VEML7700 on Qwiic I²C; door reed to D5 INPUT_PULLUP; external SMA antenna via u.FL; USB-C 5.1 V → Mojo → +VBAT](diagrams/02-wiring-assembly.svg)
 
 **Notecard installation:**
 
@@ -322,6 +326,8 @@ if (light_on && !door_open && cooldown_ok) {
 ```
 
 ## 7. Data Flow
+
+![Data flow: 5-min sample of RTD °C, lux, and door state → four rules (temp_excursion_high/low, door_open_timeout, sensor_disagreement) → storage_alert.qo (sync:true) and storage_reading.qo (per-sample audit grade) → Notehub routes](diagrams/03-data-flow.svg)
 
 Every `sample_interval_sec` (default 5 minutes) the Cygnet reads temperature, lux, and door state. Four independent alert rules run against every sample:
 
