@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="370" viewBox="0 0 820 370"
+     font-family="system-ui, -apple-system, 'Segoe UI', Arial, sans-serif">
+
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#64748B"/>
+    </marker>
+    <marker id="arrp" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#7C3AED"/>
+    </marker>
+    <marker id="arrg" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#059669"/>
+    </marker>
+  </defs>
+
+  <rect width="820" height="370" fill="#F8FAFC"/>
+
+  <!-- Title -->
+  <text x="410" y="24" text-anchor="middle" font-size="13" font-weight="700" fill="#1E293B">Creek / Culvert Flood-Warning Stream Gauge — System Architecture</text>
+
+  <!-- ═══════════════ IP67 ENCLOSURE ═══════════════ -->
+  <rect x="10" y="36" width="450" height="312" rx="8" fill="none"
+        stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="8,4"/>
+  <text x="20" y="50" font-size="9" fill="#94A3B8" font-style="italic">IP67 field enclosure</text>
+
+  <!-- ── SENSORS (left column) ── -->
+  <rect x="20" y="56" width="138" height="140" rx="6" fill="#EFF6FF" stroke="#3B82F6" stroke-width="1.5"/>
+  <text x="89" y="74" text-anchor="middle" font-size="10" font-weight="700" fill="#1D4ED8">Sensors</text>
+
+  <rect x="28" y="80" width="122" height="48" rx="4" fill="white" stroke="#93C5FD" stroke-width="1"/>
+  <text x="89" y="96" text-anchor="middle" font-size="9" font-weight="600" fill="#1E293B">MB7389 Ultrasonic</text>
+  <text x="89" y="109" text-anchor="middle" font-size="8" fill="#475569">HRXL-MaxSonar · UART 9600</text>
+  <text x="89" y="121" text-anchor="middle" font-size="8" fill="#475569">300–5000 mm · 1 mm res.</text>
+
+  <rect x="28" y="134" width="122" height="48" rx="4" fill="white" stroke="#93C5FD" stroke-width="1"/>
+  <text x="89" y="150" text-anchor="middle" font-size="9" font-weight="600" fill="#1E293B">Rain Gauge SEN-28867</text>
+  <text x="89" y="163" text-anchor="middle" font-size="8" fill="#475569">Tipping bucket · reed switch</text>
+  <text x="89" y="175" text-anchor="middle" font-size="8" fill="#475569">0.28 mm/tip · GPIO D5</text>
+
+  <!-- ── POWER (left column, below sensors) ── -->
+  <rect x="20" y="210" width="138" height="124" rx="6" fill="#F0FDF4" stroke="#16A34A" stroke-width="1.5"/>
+  <text x="89" y="228" text-anchor="middle" font-size="10" font-weight="700" fill="#166534">Power Supply</text>
+  <text x="89" y="244" text-anchor="middle" font-size="8.5" fill="#374151">6V 6W Solar Panel</text>
+  <text x="89" y="256" text-anchor="middle" font-size="11" fill="#16A34A">↓</text>
+  <text x="89" y="270" text-anchor="middle" font-size="8.5" fill="#374151">Adafruit 4755 MPPT</text>
+  <text x="89" y="282" text-anchor="middle" font-size="11" fill="#16A34A">↓</text>
+  <text x="89" y="296" text-anchor="middle" font-size="8.5" fill="#374151">6600 mAh LiPo</text>
+  <text x="89" y="308" text-anchor="middle" font-size="8" fill="#64748B">→ Notecarrier CX +VBAT</text>
+  <text x="89" y="328" font-size="1" fill="none"/>
+
+  <!-- Arrows: sensors → Notecarrier CX -->
+  <line x1="158" y1="107" x2="178" y2="107" stroke="#64748B" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="168" y="101" text-anchor="middle" font-size="7.5" fill="#64748B">UART</text>
+  <line x1="158" y1="158" x2="178" y2="158" stroke="#64748B" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="168" y="152" text-anchor="middle" font-size="7.5" fill="#64748B">GPIO</text>
+  <!-- Power arrow -->
+  <line x1="158" y1="270" x2="178" y2="270" stroke="#16A34A" stroke-width="1.5" marker-end="url(#arrg)"/>
+
+  <!-- ── NOTECARRIER CX + NOTECARD FOR SKYLO (right of sensors, inside enclosure) ── -->
+  <rect x="180" y="56" width="268" height="278" rx="6" fill="#DBEAFE" stroke="#1D4ED8" stroke-width="1.5"/>
+  <text x="314" y="76" text-anchor="middle" font-size="11" font-weight="700" fill="#1D4ED8">Notecarrier CX</text>
+  <text x="314" y="91" text-anchor="middle" font-size="9" fill="#374151">Cygnet STM32 host</text>
+  <line x1="188" y1="98" x2="440" y2="98" stroke="#93C5FD" stroke-width="0.8"/>
+  <text x="314" y="113" text-anchor="middle" font-size="8" fill="#475569">Wakes every 5 min via card.attn</text>
+  <text x="314" y="126" text-anchor="middle" font-size="8" fill="#475569">Reads sensors · 8-sample rolling history</text>
+  <text x="314" y="139" text-anchor="middle" font-size="8" fill="#475569">Evaluates 4 threshold conditions in priority order</text>
+  <text x="314" y="152" text-anchor="middle" font-size="8" fill="#475569">Emits Notes to Notecard over I²C</text>
+  <text x="314" y="165" text-anchor="middle" font-size="8" fill="#475569">AppState persisted in Notecard flash between sleeps</text>
+
+  <!-- Notecard for Skylo sub-box -->
+  <rect x="190" y="176" width="248" height="144" rx="5" fill="#EDE9FE" stroke="#6D28D9" stroke-width="1.5"/>
+  <text x="314" y="195" text-anchor="middle" font-size="10" font-weight="700" fill="#5B21B6">Notecard for Skylo</text>
+  <text x="314" y="209" text-anchor="middle" font-size="8.5" fill="#6D28D9">NOTE-NBGLWX (M.2 slot)</text>
+  <line x1="197" y1="216" x2="431" y2="216" stroke="#C4B5FD" stroke-width="0.8"/>
+  <text x="314" y="231" text-anchor="middle" font-size="8" fill="#475569">LTE-M / NB-IoT primary · WiFi opportunistic</text>
+  <text x="314" y="244" text-anchor="middle" font-size="8" fill="#6D28D9">Skylo NTN satellite auto-fallback</text>
+  <line x1="197" y1="252" x2="431" y2="252" stroke="#C4B5FD" stroke-width="0.8"/>
+  <text x="314" y="267" text-anchor="middle" font-size="8" fill="#475569">Note flash queue · hourly outbound sync</text>
+  <text x="314" y="280" text-anchor="middle" font-size="8" fill="#475569">sync:true alerts bypass outbound timer</text>
+  <text x="314" y="293" text-anchor="middle" font-size="8" fill="#475569">24 h inbound (conserves 10 KB NTN budget)</text>
+  <text x="314" y="306" text-anchor="middle" font-size="8" fill="#475569">GNSS fix required for NTN sessions</text>
+
+  <!-- Arrow: Notecard → connectivity (exits enclosure) -->
+  <line x1="448" y1="248" x2="468" y2="248" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#arrp)"/>
+
+  <!-- ═══════════════ OUTSIDE ENCLOSURE ═══════════════ -->
+
+  <!-- ── CONNECTIVITY ── -->
+  <rect x="470" y="110" width="112" height="180" rx="6" fill="#F5F3FF" stroke="#7C3AED" stroke-width="1.5"/>
+  <text x="526" y="130" text-anchor="middle" font-size="10" font-weight="700" fill="#5B21B6">Cellular</text>
+  <text x="526" y="143" text-anchor="middle" font-size="8.5" fill="#6D28D9">LTE-M / NB-IoT</text>
+  <text x="526" y="155" text-anchor="middle" font-size="8" fill="#475569">primary transport</text>
+  <line x1="477" y1="163" x2="575" y2="163" stroke="#C4B5FD" stroke-width="0.8" stroke-dasharray="5,3"/>
+  <text x="526" y="178" text-anchor="middle" font-size="10" font-weight="700" fill="#7C3AED">Skylo NTN</text>
+  <text x="526" y="191" text-anchor="middle" font-size="8.5" fill="#7C3AED">Satellite</text>
+  <text x="526" y="203" text-anchor="middle" font-size="8" fill="#475569">auto-fallback when</text>
+  <text x="526" y="215" text-anchor="middle" font-size="8" fill="#475569">cellular unavailable</text>
+  <line x1="477" y1="223" x2="575" y2="223" stroke="#C4B5FD" stroke-width="0.8" stroke-dasharray="5,3"/>
+  <text x="526" y="239" text-anchor="middle" font-size="7.5" fill="#6B7280" font-style="italic">alert gets through</text>
+  <text x="526" y="251" text-anchor="middle" font-size="7.5" fill="#6B7280" font-style="italic">even if cell tower</text>
+  <text x="526" y="263" text-anchor="middle" font-size="7.5" fill="#6B7280" font-style="italic">is storm-disabled</text>
+  <text x="526" y="285" font-size="1" fill="none"/>
+
+  <!-- Arrow: connectivity → notehub -->
+  <line x1="582" y1="200" x2="602" y2="200" stroke="#64748B" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ── NOTEHUB ── -->
+  <rect x="604" y="128" width="96" height="144" rx="6" fill="#ECFDF5" stroke="#059669" stroke-width="1.5"/>
+  <text x="652" y="148" text-anchor="middle" font-size="10" font-weight="700" fill="#065F46">Notehub</text>
+  <line x1="611" y1="154" x2="693" y2="154" stroke="#6EE7B7" stroke-width="0.8"/>
+  <text x="652" y="169" text-anchor="middle" font-size="8" fill="#374151">Session termination</text>
+  <text x="652" y="182" text-anchor="middle" font-size="8" fill="#374151">Event storage</text>
+  <text x="652" y="195" text-anchor="middle" font-size="8" fill="#374151">Fleet env variables</text>
+  <text x="652" y="208" text-anchor="middle" font-size="8" fill="#374151">Smart Fleets</text>
+  <line x1="611" y1="215" x2="693" y2="215" stroke="#6EE7B7" stroke-width="0.8"/>
+  <text x="652" y="230" text-anchor="middle" font-size="8" fill="#374151">Routes →</text>
+  <text x="652" y="243" text-anchor="middle" font-size="8" fill="#374151">HTTP · MQTT</text>
+  <text x="652" y="256" text-anchor="middle" font-size="8" fill="#374151">AWS · Azure · GCP</text>
+  <text x="652" y="268" font-size="1" fill="none"/>
+
+  <!-- Arrows: notehub → routes -->
+  <line x1="700" y1="172" x2="718" y2="172" stroke="#64748B" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="700" y1="246" x2="718" y2="246" stroke="#64748B" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ── ROUTES ── -->
+  <rect x="719" y="140" width="94" height="66" rx="5" fill="#FFF7ED" stroke="#EA580C" stroke-width="1.5"/>
+  <text x="766" y="157" text-anchor="middle" font-size="8.5" font-weight="700" fill="#C2410C">gauge_alert.qo</text>
+  <text x="766" y="169" text-anchor="middle" font-size="7.5" fill="#374151">sync:true · immediate</text>
+  <line x1="725" y1="175" x2="807" y2="175" stroke="#FED7AA" stroke-width="0.8"/>
+  <text x="766" y="188" text-anchor="middle" font-size="7.5" fill="#374151">Emergency dispatch</text>
+  <text x="766" y="199" text-anchor="middle" font-size="7.5" fill="#374151">/ on-call system</text>
+
+  <rect x="719" y="218" width="94" height="66" rx="5" fill="#EFF6FF" stroke="#0284C7" stroke-width="1.5"/>
+  <text x="766" y="235" text-anchor="middle" font-size="8.5" font-weight="700" fill="#0369A1">gauge_reading.qo</text>
+  <text x="766" y="247" text-anchor="middle" font-size="7.5" fill="#374151">periodic · hourly</text>
+  <line x1="725" y1="253" x2="807" y2="253" stroke="#BAE6FD" stroke-width="0.8"/>
+  <text x="766" y="266" text-anchor="middle" font-size="7.5" fill="#374151">Hydrology data store</text>
+  <text x="766" y="277" text-anchor="middle" font-size="7.5" fill="#374151">/ dashboard</text>
+
+  <!-- Footer note -->
+  <text x="12" y="356" font-size="8" fill="#94A3B8">Alert notes with sync:true bypass the hourly outbound timer for immediate delivery via whichever transport (cellular or NTN satellite) is available.</text>
+</svg>

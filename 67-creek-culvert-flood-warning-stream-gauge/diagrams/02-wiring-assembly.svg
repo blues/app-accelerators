@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="430" viewBox="0 0 820 430"
+     font-family="system-ui, -apple-system, 'Segoe UI', Arial, sans-serif">
+
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#64748B"/>
+    </marker>
+    <marker id="arrg" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#16A34A"/>
+    </marker>
+    <marker id="arrb" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#0284C7"/>
+    </marker>
+    <marker id="arro" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#EA580C"/>
+    </marker>
+    <marker id="arrv" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#7C3AED"/>
+    </marker>
+  </defs>
+
+  <rect width="820" height="430" fill="#F8FAFC"/>
+
+  <!-- Title -->
+  <text x="410" y="24" text-anchor="middle" font-size="13" font-weight="700" fill="#1E293B">Creek / Culvert Flood-Warning Stream Gauge — Wiring and Assembly</text>
+
+  <!-- ═══════════ SECTION LABELS ═══════════ -->
+  <text x="12" y="48" font-size="9" font-weight="700" fill="#64748B" letter-spacing="1">POWER CHAIN</text>
+  <line x1="12" y1="51" x2="808" y2="51" stroke="#E2E8F0" stroke-width="1"/>
+
+  <!-- ═══════════ POWER CHAIN (top) ═══════════ -->
+
+  <!-- Solar panel -->
+  <rect x="12" y="58" width="120" height="64" rx="6" fill="#F0FDF4" stroke="#16A34A" stroke-width="1.5"/>
+  <text x="72" y="77" text-anchor="middle" font-size="9" font-weight="700" fill="#166534">Solar Panel</text>
+  <text x="72" y="91" text-anchor="middle" font-size="8" fill="#374151">Adafruit 1525</text>
+  <text x="72" y="103" text-anchor="middle" font-size="8" fill="#374151">6 V · 6 W · 930 mA pk</text>
+  <text x="72" y="115" text-anchor="middle" font-size="8" fill="#374151">DC jack 3.5×1.1 mm</text>
+
+  <!-- Arrow: solar → MPPT -->
+  <line x1="132" y1="90" x2="162" y2="90" stroke="#16A34A" stroke-width="1.5" marker-end="url(#arrg)"/>
+  <text x="147" y="84" text-anchor="middle" font-size="7.5" fill="#16A34A">DC IN</text>
+
+  <!-- MPPT Charger -->
+  <rect x="164" y="58" width="148" height="64" rx="6" fill="#F0FDF4" stroke="#16A34A" stroke-width="1.5"/>
+  <text x="238" y="77" text-anchor="middle" font-size="9" font-weight="700" fill="#166534">Adafruit 4755 MPPT</text>
+  <text x="238" y="91" text-anchor="middle" font-size="8" fill="#374151">BQ24074 · 5–10 V in · 1 A max</text>
+  <text x="238" y="103" text-anchor="middle" font-size="8" fill="#374151">BATT port ↔ LiPo (JST-PH)</text>
+  <text x="238" y="115" text-anchor="middle" font-size="8" fill="#374151">LOAD output → +VBAT</text>
+
+  <!-- Arrow: MPPT BATT ↔ LiPo -->
+  <line x1="238" y1="122" x2="238" y2="148" stroke="#16A34A" stroke-width="1.5"/>
+  <line x1="224" y1="148" x2="252" y2="148" stroke="#16A34A" stroke-width="1"/>
+  <line x1="224" y1="148" x2="224" y2="168" stroke="#16A34A" stroke-width="1"/>
+  <line x1="252" y1="148" x2="252" y2="168" stroke="#16A34A" stroke-width="1"/>
+  <!-- LiPo battery -->
+  <rect x="164" y="168" width="148" height="48" rx="6" fill="#F0FDF4" stroke="#16A34A" stroke-width="1.5"/>
+  <text x="238" y="186" text-anchor="middle" font-size="9" font-weight="700" fill="#166534">LiPo 6600 mAh</text>
+  <text x="238" y="199" text-anchor="middle" font-size="8" fill="#374151">Adafruit 353 · 3.7 V · JST-PH</text>
+  <text x="238" y="211" text-anchor="middle" font-size="8" fill="#374151">built-in protection circuit</text>
+
+  <!-- Arrow: MPPT LOAD → Notecarrier +VBAT -->
+  <line x1="312" y1="90" x2="422" y2="90" stroke="#16A34A" stroke-width="1.5" marker-end="url(#arrg)"/>
+  <text x="367" y="83" text-anchor="middle" font-size="7.5" fill="#16A34A">LOAD +</text>
+  <!-- GND line -->
+  <line x1="312" y1="105" x2="422" y2="105" stroke="#374151" stroke-width="1" stroke-dasharray="4,2"/>
+  <text x="367" y="118" text-anchor="middle" font-size="7.5" fill="#374151">LOAD GND</text>
+
+  <!-- (Mojo bench callout) -->
+  <rect x="330" y="58" width="88" height="38" rx="5" fill="#FFFBEB" stroke="#D97706" stroke-width="1" stroke-dasharray="4,2"/>
+  <text x="374" y="72" text-anchor="middle" font-size="8" font-weight="700" fill="#92400E">Mojo (bench only)</text>
+  <text x="374" y="85" text-anchor="middle" font-size="7.5" fill="#92400E">inline on LOAD path</text>
+  <text x="374" y="98" font-size="1" fill="none"/>
+
+  <!-- ═══════════ NOTECARRIER CX (central hub) ═══════════ -->
+  <rect x="424" y="54" width="198" height="186" rx="6" fill="#DBEAFE" stroke="#1D4ED8" stroke-width="2"/>
+  <text x="523" y="74" text-anchor="middle" font-size="11" font-weight="700" fill="#1D4ED8">Notecarrier CX</text>
+  <text x="523" y="89" text-anchor="middle" font-size="9" fill="#374151">Cygnet STM32 host</text>
+  <line x1="430" y1="96" x2="616" y2="96" stroke="#93C5FD" stroke-width="0.8"/>
+
+  <!-- Pin labels inside Notecarrier CX -->
+  <text x="440" y="113" font-size="8.5" fill="#1D4ED8" font-weight="600">+3V3_OUT</text>
+  <text x="440" y="128" font-size="8.5" fill="#1D4ED8" font-weight="600">GND</text>
+  <text x="440" y="143" font-size="8.5" fill="#1D4ED8" font-weight="600">RX (USART1)</text>
+  <text x="440" y="165" font-size="8.5" fill="#1D4ED8" font-weight="600">D5 (INPUT_PULLUP)</text>
+  <text x="440" y="180" font-size="8.5" fill="#1D4ED8" font-weight="600">GND</text>
+  <text x="440" y="202" font-size="8.5" fill="#1D4ED8" font-weight="600">+VBAT</text>
+  <text x="440" y="217" font-size="8.5" fill="#1D4ED8" font-weight="600">GND</text>
+  <text x="440" y="232" font-size="8.5" fill="#1D4ED8" font-weight="600">M.2 slot → Notecard</text>
+
+  <!-- Right-side pin labels (signals arriving from sensors) -->
+  <line x1="424" y1="109" x2="424" y2="246" stroke="#93C5FD" stroke-width="0.5" stroke-dasharray="2,2"/>
+
+  <!-- ═══════════ SECTION LABEL: SENSORS ═══════════ -->
+  <text x="12" y="268" font-size="9" font-weight="700" fill="#64748B" letter-spacing="1">SENSOR CONNECTIONS</text>
+  <line x1="12" y1="271" x2="808" y2="271" stroke="#E2E8F0" stroke-width="1"/>
+
+  <!-- ── MB7389 ── -->
+  <rect x="12" y="278" width="160" height="102" rx="6" fill="#EFF6FF" stroke="#3B82F6" stroke-width="1.5"/>
+  <text x="92" y="296" text-anchor="middle" font-size="9" font-weight="700" fill="#1D4ED8">MB7389 Ultrasonic</text>
+  <text x="92" y="310" text-anchor="middle" font-size="8" fill="#374151">pin 1 (+V, 3.3 V acceptable)</text>
+  <text x="92" y="323" text-anchor="middle" font-size="8" fill="#374151">pin 7 (GND)</text>
+  <text x="92" y="336" text-anchor="middle" font-size="8" fill="#374151">pin 5 (TX / serial out)</text>
+  <text x="92" y="349" text-anchor="middle" font-size="8" fill="#374151">pin 6 (RX) — leave open</text>
+  <text x="92" y="362" text-anchor="middle" font-size="8" fill="#64748B">9600 baud · 8N1 · TTL 3.3 V</text>
+  <text x="92" y="375" font-size="1" fill="none"/>
+
+  <!-- MB7389 wiring arrows to Notecarrier -->
+  <line x1="172" y1="304" x2="422" y2="113" stroke="#DC2626" stroke-width="1.5" marker-end="url(#arro)"/>
+  <text x="290" y="298" text-anchor="middle" font-size="7.5" fill="#DC2626">+3V3_OUT</text>
+  <line x1="172" y1="321" x2="422" y2="128" stroke="#374151" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="290" y="338" text-anchor="middle" font-size="7.5" fill="#374151">GND</text>
+  <line x1="172" y1="335" x2="422" y2="143" stroke="#0284C7" stroke-width="1.5" marker-end="url(#arrb)"/>
+  <text x="290" y="316" text-anchor="middle" font-size="7.5" fill="#0284C7">RX (USART1)</text>
+
+  <!-- ── Rain Gauge ── -->
+  <rect x="12" y="388" width="160" height="32" rx="6" fill="#EFF6FF" stroke="#3B82F6" stroke-width="1.5"/>
+  <text x="92" y="400" text-anchor="middle" font-size="9" font-weight="700" fill="#1D4ED8">Rain Gauge SEN-28867</text>
+  <text x="92" y="413" text-anchor="middle" font-size="8" fill="#374151">lead 1 → D5 · lead 2 → GND (center pair, RJ11 pins 3 &amp; 4)</text>
+
+  <!-- Rain gauge wiring arrows to Notecarrier -->
+  <line x1="172" y1="398" x2="422" y2="165" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#arrv)"/>
+  <text x="250" y="395" text-anchor="middle" font-size="7.5" fill="#7C3AED">D5 (INPUT_PULLUP)</text>
+  <line x1="172" y1="411" x2="422" y2="180" stroke="#374151" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ═══════════ ANTENNAS (right side) ═══════════ -->
+  <text x="630" y="268" font-size="9" font-weight="700" fill="#64748B" letter-spacing="1">ANTENNAS (EXTERIOR MOUNT)</text>
+
+  <rect x="628" y="278" width="180" height="64" rx="6" fill="#F5F3FF" stroke="#7C3AED" stroke-width="1.5"/>
+  <text x="718" y="296" text-anchor="middle" font-size="9" font-weight="700" fill="#5B21B6">Cellular / NTN Antenna</text>
+  <text x="718" y="309" text-anchor="middle" font-size="8" fill="#374151">Skylo-certified · included w/ NOTE-NBGLWX</text>
+  <text x="718" y="322" text-anchor="middle" font-size="8" fill="#374151">u.FL → Notecard MAIN port</text>
+  <text x="718" y="335" text-anchor="middle" font-size="8" fill="#6B7280">Do not substitute — uncertified antenna</text>
+  <text x="718" y="346" font-size="1" fill="none"/>
+
+  <rect x="628" y="354" width="180" height="62" rx="6" fill="#F5F3FF" stroke="#7C3AED" stroke-width="1.5"/>
+  <text x="718" y="372" text-anchor="middle" font-size="9" font-weight="700" fill="#5B21B6">GNSS Antenna</text>
+  <text x="718" y="385" text-anchor="middle" font-size="8" fill="#374151">Blues Dual Flexible YCA001BA</text>
+  <text x="718" y="398" text-anchor="middle" font-size="8" fill="#374151">u.FL → Notecard GPS port</text>
+  <text x="718" y="411" text-anchor="middle" font-size="8" fill="#6B7280">Required — fix needed for Skylo NTN</text>
+
+  <!-- Antenna arrows from Notecarrier to antenna boxes (representing cable glands) -->
+  <line x1="622" y1="232" x2="718" y2="310" stroke="#7C3AED" stroke-width="1" stroke-dasharray="5,3" marker-end="url(#arrv)"/>
+  <line x1="622" y1="232" x2="718" y2="385" stroke="#7C3AED" stroke-width="1" stroke-dasharray="5,3" marker-end="url(#arrv)"/>
+  <text x="680" y="252" text-anchor="middle" font-size="7.5" fill="#7C3AED">u.FL leads through</text>
+  <text x="680" y="263" text-anchor="middle" font-size="7.5" fill="#7C3AED">cable glands (×2)</text>
+</svg>

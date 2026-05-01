@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="410" viewBox="0 0 820 410"
+     font-family="system-ui, -apple-system, 'Segoe UI', Arial, sans-serif">
+
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#64748B"/>
+    </marker>
+    <marker id="arro" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#EA580C"/>
+    </marker>
+    <marker id="arrb" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#0284C7"/>
+    </marker>
+    <marker id="arrd" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#6D28D9"/>
+    </marker>
+  </defs>
+
+  <rect width="820" height="410" fill="#F8FAFC"/>
+
+  <!-- Title -->
+  <text x="410" y="24" text-anchor="middle" font-size="13" font-weight="700" fill="#1E293B">Creek / Culvert Flood-Warning Stream Gauge — Data Flow</text>
+
+  <!-- ═══════════════════════════════════════════════
+       TOP ROW: WAKE → DATA COLLECTION
+       ═══════════════════════════════════════════════ -->
+
+  <!-- card.attn wake -->
+  <rect x="10" y="38" width="102" height="52" rx="6" fill="#FFFBEB" stroke="#D97706" stroke-width="1.5"/>
+  <text x="61" y="57" text-anchor="middle" font-size="9" font-weight="700" fill="#92400E">card.attn</text>
+  <text x="61" y="70" text-anchor="middle" font-size="8.5" fill="#92400E">Wake</text>
+  <text x="61" y="83" text-anchor="middle" font-size="8" fill="#374151">every 5 min</text>
+
+  <!-- Arrow: wake → env.get -->
+  <line x1="112" y1="64" x2="130" y2="64" stroke="#64748B" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- env.get -->
+  <rect x="132" y="38" width="102" height="52" rx="6" fill="#FFFBEB" stroke="#D97706" stroke-width="1.5"/>
+  <text x="183" y="57" text-anchor="middle" font-size="9" font-weight="700" fill="#92400E">env.get</text>
+  <text x="183" y="70" text-anchor="middle" font-size="8" fill="#374151">Apply Notehub</text>
+  <text x="183" y="83" text-anchor="middle" font-size="8" fill="#374151">env overrides</text>
+
+  <!-- Arrow: env.get → MB7389 read -->
+  <line x1="234" y1="64" x2="252" y2="64" stroke="#64748B" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- MB7389 read -->
+  <rect x="254" y="38" width="126" height="52" rx="6" fill="#EFF6FF" stroke="#3B82F6" stroke-width="1.5"/>
+  <text x="317" y="55" text-anchor="middle" font-size="9" font-weight="700" fill="#1D4ED8">MB7389 Read ×3</text>
+  <text x="317" y="68" text-anchor="middle" font-size="8" fill="#374151">UART · average valid</text>
+  <text x="317" y="81" text-anchor="middle" font-size="8" fill="#374151">readings → level_mm</text>
+
+  <!-- Arrow: MB7389 → rain poll -->
+  <line x1="380" y1="64" x2="398" y2="64" stroke="#64748B" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Rain poll -->
+  <rect x="400" y="38" width="126" height="52" rx="6" fill="#EFF6FF" stroke="#3B82F6" stroke-width="1.5"/>
+  <text x="463" y="55" text-anchor="middle" font-size="9" font-weight="700" fill="#1D4ED8">Rain Gauge Poll</text>
+  <text x="463" y="68" text-anchor="middle" font-size="8" fill="#374151">3-second window</text>
+  <text x="463" y="81" text-anchor="middle" font-size="8" fill="#374151">count tips → tips_window</text>
+
+  <!-- Arrow: rain poll → history -->
+  <line x1="526" y1="64" x2="544" y2="64" stroke="#64748B" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Rolling history + rate -->
+  <rect x="546" y="38" width="128" height="52" rx="6" fill="#EFF6FF" stroke="#3B82F6" stroke-width="1.5"/>
+  <text x="610" y="53" text-anchor="middle" font-size="9" font-weight="700" fill="#1D4ED8">Rolling History</text>
+  <text x="610" y="66" text-anchor="middle" font-size="8" fill="#374151">8-sample circular buffer</text>
+  <text x="610" y="79" text-anchor="middle" font-size="8" fill="#374151">→ rate_mm_per_min</text>
+
+  <!-- Arrow: history → threshold eval -->
+  <line x1="674" y1="64" x2="692" y2="64" stroke="#64748B" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Threshold evaluation -->
+  <rect x="694" y="34" width="118" height="60" rx="6" fill="#FEF2F2" stroke="#DC2626" stroke-width="1.5"/>
+  <text x="753" y="52" text-anchor="middle" font-size="9" font-weight="700" fill="#991B1B">Threshold Eval</text>
+  <text x="753" y="65" text-anchor="middle" font-size="7.5" fill="#374151">level_critical (1st)</text>
+  <text x="753" y="77" text-anchor="middle" font-size="7.5" fill="#374151">level_warning (2nd)</text>
+  <text x="753" y="89" text-anchor="middle" font-size="7.5" fill="#374151">rate_rising · rain_intense</text>
+
+  <!-- ═══════════════════════════════════════════════
+       MIDDLE: COOLDOWN + SUMMARY TIMER
+       ═══════════════════════════════════════════════ -->
+
+  <!-- Cooldown gate (below threshold eval) -->
+  <line x1="753" y1="94" x2="753" y2="132" stroke="#64748B" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <rect x="686" y="134" width="134" height="48" rx="6" fill="#FFFBEB" stroke="#D97706" stroke-width="1.5"/>
+  <text x="753" y="153" text-anchor="middle" font-size="9" font-weight="700" fill="#92400E">Cooldown Gate</text>
+  <text x="753" y="166" text-anchor="middle" font-size="8" fill="#374151">alert_cooldown_sec (default 900 s)</text>
+  <text x="753" y="179" text-anchor="middle" font-size="8" fill="#374151">global · shared across all alert types</text>
+
+  <!-- Summary timer (below rolling history) -->
+  <line x1="610" y1="90" x2="610" y2="132" stroke="#64748B" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <rect x="546" y="134" width="128" height="48" rx="6" fill="#FFFBEB" stroke="#D97706" stroke-width="1.5"/>
+  <text x="610" y="153" text-anchor="middle" font-size="9" font-weight="700" fill="#92400E">Summary Timer</text>
+  <text x="610" y="166" text-anchor="middle" font-size="8" fill="#374151">summary_interval_min</text>
+  <text x="610" y="179" text-anchor="middle" font-size="8" fill="#374151">(default 60 min)</text>
+
+  <!-- ═══════════════════════════════════════════════
+       BOTTOM ROW: NOTE EMISSION
+       ═══════════════════════════════════════════════ -->
+
+  <!-- Alert path -->
+  <line x1="753" y1="182" x2="753" y2="214" stroke="#EA580C" stroke-width="1.5" marker-end="url(#arro)"/>
+  <text x="768" y="202" font-size="7.5" fill="#EA580C">threshold</text>
+  <text x="768" y="212" font-size="7.5" fill="#EA580C">tripped</text>
+
+  <rect x="686" y="216" width="134" height="72" rx="6" fill="#FFF7ED" stroke="#EA580C" stroke-width="2"/>
+  <text x="753" y="234" text-anchor="middle" font-size="9" font-weight="700" fill="#C2410C">sendAlert()</text>
+  <text x="753" y="247" text-anchor="middle" font-size="8" fill="#374151">gauge_alert.qo</text>
+  <text x="753" y="260" text-anchor="middle" font-size="8" fill="#374151">sync:true (bypass timer)</text>
+  <text x="753" y="273" text-anchor="middle" font-size="8" fill="#374151">retry up to 3×</text>
+  <text x="753" y="286" font-size="1" fill="none"/>
+
+  <!-- Summary path -->
+  <line x1="610" y1="182" x2="610" y2="214" stroke="#0284C7" stroke-width="1.5" marker-end="url(#arrb)"/>
+  <text x="625" y="202" font-size="7.5" fill="#0284C7">interval</text>
+  <text x="625" y="212" font-size="7.5" fill="#0284C7">elapsed</text>
+
+  <rect x="546" y="216" width="128" height="72" rx="6" fill="#EFF6FF" stroke="#0284C7" stroke-width="2"/>
+  <text x="610" y="234" text-anchor="middle" font-size="9" font-weight="700" fill="#0369A1">sendSummary()</text>
+  <text x="610" y="247" text-anchor="middle" font-size="8" fill="#374151">gauge_reading.qo</text>
+  <text x="610" y="260" text-anchor="middle" font-size="8" fill="#374151">no sync:true</text>
+  <text x="610" y="273" text-anchor="middle" font-size="8" fill="#374151">queued for next outbound</text>
+  <text x="610" y="286" font-size="1" fill="none"/>
+
+  <!-- State persistence + sleep (bottom left) -->
+  <line x1="61" y1="90" x2="61" y2="214" stroke="#64748B" stroke-width="1" stroke-dasharray="4,2"/>
+  <rect x="10" y="216" width="166" height="72" rx="6" fill="#F1F5F9" stroke="#94A3B8" stroke-width="1.5"/>
+  <text x="93" y="234" text-anchor="middle" font-size="9" font-weight="700" fill="#475569">sleepUntilNextSample()</text>
+  <text x="93" y="247" text-anchor="middle" font-size="8" fill="#374151">NotePayloadSaveAndSleep</text>
+  <text x="93" y="260" text-anchor="middle" font-size="8" fill="#374151">AppState → Notecard flash</text>
+  <text x="93" y="273" text-anchor="middle" font-size="8" fill="#374151">card.attn sleep → Cygnet off</text>
+  <text x="93" y="286" font-size="1" fill="none"/>
+
+  <!-- ═══════════════════════════════════════════════
+       BOTTOM: NOTEHUB + ROUTING
+       ═══════════════════════════════════════════════ -->
+
+  <!-- Notehub -->
+  <rect x="10" y="316" width="192" height="56" rx="6" fill="#ECFDF5" stroke="#059669" stroke-width="1.5"/>
+  <text x="106" y="334" text-anchor="middle" font-size="10" font-weight="700" fill="#065F46">Notehub</text>
+  <text x="106" y="348" text-anchor="middle" font-size="8" fill="#374151">Terminates session · stores all events</text>
+  <text x="106" y="361" text-anchor="middle" font-size="8" fill="#374151">Fleet env variables · routes traffic</text>
+
+  <!-- Notecard sync path (cellular/NTN) -->
+  <rect x="224" y="316" width="132" height="56" rx="6" fill="#EDE9FE" stroke="#6D28D9" stroke-width="1.5"/>
+  <text x="290" y="334" text-anchor="middle" font-size="9" font-weight="700" fill="#5B21B6">Notecard Sync</text>
+  <text x="290" y="348" text-anchor="middle" font-size="8" fill="#374151">Cellular LTE-M (primary)</text>
+  <text x="290" y="361" text-anchor="middle" font-size="8" fill="#7C3AED">Skylo NTN satellite fallback</text>
+
+  <!-- Arrows: Notecards notes → Notecard Sync → Notehub -->
+  <line x1="753" y1="288" x2="753" y2="344" stroke="#EA580C" stroke-width="1.5"/>
+  <line x1="610" y1="288" x2="610" y2="344" stroke="#0284C7" stroke-width="1.5"/>
+  <line x1="200" y1="344" x2="610" y2="344" stroke="#6D28D9" stroke-width="1.5"/>
+  <line x1="753" y1="344" x2="753" y2="344" stroke="#EA580C" stroke-width="1"/>
+  <!-- Connect all note paths to Notecard sync box -->
+  <line x1="356" y1="344" x2="356" y2="344" stroke="#6D28D9" stroke-width="1"/>
+  <line x1="356" y1="316" x2="356" y2="344" stroke="#6D28D9" stroke-width="1.5" marker-end="url(#arrd)"/>
+  <line x1="290" y1="316" x2="290" y2="344" stroke="#6D28D9" stroke-width="1"/>
+  <!-- Notecard sync → notehub -->
+  <line x1="224" y1="344" x2="204" y2="344" stroke="#6D28D9" stroke-width="1.5" marker-end="url(#arrd)"/>
+
+  <!-- Routes from Notehub -->
+  <line x1="10" y1="355" x2="10" y2="355" stroke="#059669" stroke-width="1"/>
+  <!-- Alert route -->
+  <rect x="416" y="316" width="180" height="56" rx="6" fill="#FFF7ED" stroke="#EA580C" stroke-width="1.5"/>
+  <text x="506" y="334" text-anchor="middle" font-size="9" font-weight="700" fill="#C2410C">gauge_alert.qo route</text>
+  <text x="506" y="348" text-anchor="middle" font-size="8" fill="#374151">Emergency dispatch / on-call</text>
+  <text x="506" y="361" text-anchor="middle" font-size="8" fill="#374151">HTTP · MQTT · webhook</text>
+
+  <!-- Summary route -->
+  <rect x="616" y="316" width="196" height="56" rx="6" fill="#EFF6FF" stroke="#0284C7" stroke-width="1.5"/>
+  <text x="714" y="334" text-anchor="middle" font-size="9" font-weight="700" fill="#0369A1">gauge_reading.qo route</text>
+  <text x="714" y="348" text-anchor="middle" font-size="8" fill="#374151">Hydrology data store / dashboard</text>
+  <text x="714" y="361" text-anchor="middle" font-size="8" fill="#374151">AWS · Azure · GCP · Snowflake</text>
+
+  <!-- Arrows from Notehub to routes -->
+  <line x1="202" y1="334" x2="414" y2="334" stroke="#EA580C" stroke-width="1" stroke-dasharray="5,3" marker-end="url(#arro)"/>
+  <line x1="202" y1="351" x2="614" y2="351" stroke="#0284C7" stroke-width="1" stroke-dasharray="5,3" marker-end="url(#arrb)"/>
+
+  <!-- Legend -->
+  <text x="10" y="382" font-size="8" fill="#94A3B8">gauge_alert.qo (main loop): at most one alert per wake · highest-priority tripped condition · single shared cooldown · four kinds: level_critical, level_warning, rate_rising, rain_intense.</text>
+  <text x="10" y="396" font-size="8" fill="#94A3B8">gauge_fault.qo (setup-time, not part of main loop): gnss_timeout kind emitted once if GNSS commissioning exceeds 30 min · not subject to alert cooldown · route separately in Notehub to installer endpoint.</text>
+</svg>
