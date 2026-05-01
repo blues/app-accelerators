@@ -760,10 +760,27 @@ void setup() {
     }
   }
 
+  // runSampleCycle() and state.cycles++ are called from loop() so the sample
+  // path runs on every iteration — both after a hardware power-cycle (deep-sleep
+  // mode) and after the bench delay() fallback (USB-powered mode).
+  //
+  // Per-wake configuration (template retry, env-var refresh, summary-window
+  // seed) is also in loop() rather than setup() so bench/USB mode (where
+  // setup() runs only once at boot) picks up Notehub env-var changes, retries
+  // failed template/hub.set calls, and seeds the summary-window anchor on
+  // every iteration — matching deep-sleep field behavior where setup() re-runs
+  // on every wake.
+}
+
+// Per-wake configuration: idempotent calls that must run on every wake in both
+// deep-sleep and bench modes. Lives in loop() rather than setup() so bench/USB
+// mode (which only enters setup() once at boot) does not get permanently stuck
+// on stale env vars, untemplatized notes, or an unseeded summary window.
+static void perWakeConfigure() {
   // Define note templates on every wake until both succeed. note.template is
   // idempotent on the Notecard, so repeating it is safe. Without this retry
-  // loop a one-time failure at cold-start would leave the device running
-  // untemplatized indefinitely across subsequent wakes.
+  // a one-time failure at cold-start would leave the device running
+  // untemplatized indefinitely.
   if (!state.templates_defined) {
     state.templates_defined = defineTemplates();
   }
@@ -789,9 +806,6 @@ void setup() {
     if (state.pre_time_low_fill_sent)     state.last_low_fill_epoch     = now;
     if (state.pre_time_sensor_fault_sent) state.last_sensor_fault_epoch = now;
   }
-  // runSampleCycle() and state.cycles++ are called from loop() so the sample
-  // path runs on every iteration — both after a hardware power-cycle (deep-sleep
-  // mode) and after the bench delay() fallback (USB-powered mode).
 }
 
 void loop() {
@@ -804,6 +818,7 @@ void loop() {
   // Bench/USB mode (no VBAT gating): NotePayloadSaveAndSleep returns without
   // cutting power; delay() waits out the interval; loop() runs again and
   // performs the next sample — identical cadence to deep-sleep mode.
+  perWakeConfigure();
   runSampleCycle();
   state.cycles++;
 

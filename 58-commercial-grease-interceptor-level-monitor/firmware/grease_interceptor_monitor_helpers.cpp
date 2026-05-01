@@ -150,22 +150,30 @@ bool notecardResponseOk(J *rsp) {
 // on the next scheduled outbound sync (typically every 24 hours).
 // Returns true if the Notecard accepted the note; false on I2C or API error.
 // The caller resets window accumulators only on a true return.
+//
+// "full":true is required for templated notes whose fields can legitimately
+// be zero. Notecard templates default to omitempty at Notehub serialization,
+// stripping any field whose value is 0/false/null/"". Without "full":true a
+// freshly pumped-out interceptor (0 % fill) would have fill_pct_avg,
+// fill_pct_peak, and fill_pct_now all silently dropped from the Notehub body
+// — only valid_samples would appear, leaving the consumer unable to
+// distinguish "0 % fill" from "field never sent".
 // ===========================================================================
 bool sendSummary(const State &state) {
     float avg = state.fill_pct_sum / (float)state.valid_samples;
 
     J *req = notecard.newRequest("note.add");
     JAddStringToObject(req, "file", "grease_summary.qo");
+    JAddBoolToObject(req,   "full", true);
     J *body = JAddObjectToObject(req, "body");
     JAddNumberToObject(body, "fill_pct_avg",  avg);
     JAddNumberToObject(body, "fill_pct_peak", state.fill_pct_peak);
     // fill_pct_now carries the most recent valid instantaneous reading
     // persisted in State across sleep cycles — not the window average. The
-    // field is omitted when no valid sample has been recorded yet (sentinel
-    // -1.0) so a spurious zero never appears in Notehub for the first summary.
-    if (state.fill_pct_last_valid >= 0.0f) {
-        JAddNumberToObject(body, "fill_pct_now", state.fill_pct_last_valid);
-    }
+    // caller gates sendSummary on valid_samples > 0, which guarantees
+    // fill_pct_last_valid has been updated to a real (>= 0) value before we
+    // reach this point, so we can include it unconditionally.
+    JAddNumberToObject(body, "fill_pct_now", state.fill_pct_last_valid);
     JAddNumberToObject(body, "valid_samples", state.valid_samples);
     J *rsp = notecard.requestAndResponse(req);
     bool ok = notecardResponseOk(rsp);

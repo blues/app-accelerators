@@ -20,6 +20,8 @@ This project solves all three. A weatherproof electronics enclosure mounted on a
 
 ## 2. System Architecture
 
+![System architecture: propane tank with 4–20 mA float transmitter and DS18B20 → edge enclosure outside hazardous area → cellular MBGLW or Starnote satellite → Notehub → dispatch / ERP / time-series DB](diagrams/01-system-architecture.svg)
+
 **Device-side responsibilities.** The onboard Cygnet STM32 host on the Notecarrier CX wakes every `sample_interval_min` (default 15 minutes), reads the 4-20 mA LP gauge-port float transmitter and the DS18B20 temperature sensor, converts the transmitter's linear current output directly to fill percentage and gallons remaining, updates a smoothed consumption-rate estimate, and queues a note if an alert condition is met. Once per `report_interval_hr` (default 24 hours) it sends a templated summary note carrying the current fill %, fill gallons, minimum fill seen in the window, window-averaged temperature, daily consumption rate, and projected days-until-empty. Between wakes the host is cut entirely via [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn), and the Notecard idles at ~18 µA (NOTE-MBGLW Notecard Cell+WiFi published idle figure). Queued [Notes](https://dev.blues.io/api-reference/glossary/#note) travel from the Cygnet to the Notecard over I²C — no JSON hand-rolling, no AT commands.
 
 **Notecard responsibilities.** The Notecard stores Notes in its on-device queue, establishes cellular (or optional WiFi when provisioned) sessions per the [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence, and flushes any `sync:true` alert notes immediately. At sites with no cellular coverage, a Starnote for Skylo attached via the Notecard's 6-pin JST port provides NTN satellite transport — the Notecard automatically routes queued notes over satellite when cellular is unavailable, with no firmware changes required. The Starnote must be mounted outside the enclosure with a clear sky view (see §3 and §4). [Environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) are distributed from Notehub to each device, letting the dealer's operations team retune transmitter calibration and alert thresholds for any tank in the fleet without touching firmware.
@@ -59,6 +61,8 @@ Blues hardware ships with an active SIM including 500 MB of data and 10 years of
 > **Classified-area / hazardous-location requirement.** Blues Notecard and Notecarrier CX electronics are **not** rated for hazardous locations (NEC Class I Division 1 or Division 2 / ATEX Zone equivalents) and must **not** be installed inside the classified area as defined by the installation's authority having jurisdiction (AHJ) and NFPA 58. The classified area boundary around a propane container typically extends several feet from fittings, relief valves, and regulators — confirm the boundary with the AHJ and the installing LP gas technician before positioning the enclosure. Mount the electronics enclosure outside that boundary. For 4–20 mA transmitter loop wiring that crosses the classified-area boundary, the AHJ may require a listed intrinsic-safety (IS) barrier or other approved interface device in the loop circuit, between the tank-side transmitter and the enclosure-side electronics. Confirm IS barrier requirements with the installing LP gas technician and the AHJ before wiring.
 
 ## 4. Wiring and Assembly
+
+![Wiring: 4–20 mA float transmitter with 120 Ω shunt → A0; DS18B20 with 4.7 kΩ pull-up → D2; 24 V boost converter for transmitter loop; solar + SLA dual-rail power chain (5 V → +VBAT, 24 V → loop)](diagrams/02-wiring-assembly.svg)
 
 All Notecarrier CX host I/O lands on its dual 16-pin header. The Notecard Cell+WiFi seats into the M.2 slot. The Mojo sits inline between the 5 V step-down and the Notecarrier +VBAT pad during bench validation only; it is not deployed in the field.
 
@@ -413,6 +417,8 @@ delay((uint32_t)SAMPLE_INTERVAL_MIN * 60UL * 1000UL);
 ```
 
 ## 7. Data Flow
+
+![Data flow: 15-min sample of 4–20 mA loop current → fill % and consumption EWMA → two rules (low_fill, sensor_fault) → tank_alert.qo (sync:true) and tank_status.qo (daily templated) → Notehub routes](diagrams/03-data-flow.svg)
 
 Every `sample_interval_min` (default 15 min) the Cygnet wakes, reads the LP gauge-port level transmitter and DS18B20 temperature probe, converts the transmitter current directly to fill %, updates the consumption EWMA, and evaluates three alert conditions.
 

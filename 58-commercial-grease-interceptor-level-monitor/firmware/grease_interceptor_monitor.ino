@@ -253,14 +253,28 @@ void setup() {
                       (now > 0 &&
                        (now - state.last_report_epoch) >= report_interval_sec);
 
-    if (report_due && state.valid_samples > 0) {
-        if (sendSummary(state)) {
-            // Reset window accumulators only after confirmed delivery so a
-            // failed send retries on the next wake with the full window intact.
-            state.fill_pct_sum      = 0.0f;
-            state.valid_samples     = 0;
-            state.fill_pct_peak     = 0.0f;
-            state.last_report_epoch = (now > 0) ? now : 1;  // 1 = fired; time not yet known
+    if (report_due) {
+        if (state.valid_samples > 0) {
+            if (sendSummary(state)) {
+                // Reset window accumulators only after confirmed delivery so a
+                // failed send retries on the next wake with the full window intact.
+                state.fill_pct_sum      = 0.0f;
+                state.valid_samples     = 0;
+                state.fill_pct_peak     = 0.0f;
+                state.last_report_epoch = (now > 0) ? now : 1;  // 1 = fired; time not yet known
+            }
+        } else if (state.last_report_epoch > 0 && now > 0) {
+            // The reporting window expired with no valid samples (sensor
+            // failed for the full period). Advance last_report_epoch so the
+            // schedule resumes from this point rather than firing a misleading
+            // single-sample summary at the moment the sensor recovers — that
+            // summary would carry valid_samples=1 covering only one reading
+            // instead of a representative window. Operators see the gap by
+            // the absence of a summary for that window. The
+            // state.last_report_epoch > 0 guard preserves the cold-boot
+            // behaviour of firing the very first summary as soon as a valid
+            // sample is available, even if that takes several wake cycles.
+            state.last_report_epoch = now;
         }
     }
 

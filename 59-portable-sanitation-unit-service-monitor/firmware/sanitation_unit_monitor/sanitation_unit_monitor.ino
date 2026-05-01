@@ -19,6 +19,15 @@
 //   - When fill exceeds FILL_ALERT_PCT, emit sanitation_alert.qo (sync:true).
 //   - Between wakes, both the host and the Notecard radio are in their
 //     lowest-power idle states.
+//
+// REQUIRED WIRING for the deep-sleep path:
+//   The Notecarrier CX exposes the Notecard's ATTN interrupt and an EN input
+//   that gates the on-board Cygnet host's 3.3 V rail (which also feeds
+//   +3V3_OUT — the MB7389 supply). They are NOT connected by default. Tie
+//   ATTN to EN with a short jumper on the dual 16-pin header, otherwise
+//   NotePayloadSaveAndSleep / card.attn toggles ATTN but the Cygnet stays
+//   powered, and the assembly drains a 2 Ah LiPo in days rather than weeks.
+//   See README §4 (Wiring and Assembly) and §8 (Validation and Testing).
 
 #include <Notecard.h>
 #include <Wire.h>
