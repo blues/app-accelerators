@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 490" width="860" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <marker id="ar-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="ar-violet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#7c3aed"/>
+    </marker>
+    <marker id="ar-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d97706"/>
+    </marker>
+    <marker id="ar-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16a34a"/>
+    </marker>
+  </defs>
+  <rect width="860" height="490" fill="#ffffff"/>
+
+  <text x="430" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">System Architecture</text>
+  <text x="430" y="58" text-anchor="middle" font-size="12" fill="#64748b">Remote Apiary Hive Health Monitor</text>
+
+  <!-- Sensors -->
+  <rect x="20" y="100" width="170" height="200" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+  <text x="105" y="130" text-anchor="middle" font-size="13" font-weight="700" fill="#7c2d12">Sensors</text>
+  <line x1="38" y1="142" x2="172" y2="142" stroke="#fed7aa"/>
+  <g font-size="11" fill="#9a3412">
+    <text x="105" y="165" text-anchor="middle">HX711 + Load Cell</text>
+    <text x="105" y="183" text-anchor="middle">(weight)</text>
+    <text x="105" y="207" text-anchor="middle">SHT31-D</text>
+    <text x="105" y="225" text-anchor="middle">(temp / RH)</text>
+    <text x="105" y="249" text-anchor="middle">MAX9814 Mic</text>
+    <text x="105" y="267" text-anchor="middle">(acoustic ZCR)</text>
+  </g>
+
+  <!-- Edge enclosure — Notecarrier + Notecard only; Starnote is external -->
+  <rect x="240" y="100" width="200" height="200" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+  <text x="340" y="130" text-anchor="middle" font-size="13" font-weight="700" fill="#713f12">Edge enclosure</text>
+  <line x1="258" y1="142" x2="422" y2="142" stroke="#fde68a"/>
+  <g font-size="11" fill="#854d0e">
+    <text x="340" y="168" text-anchor="middle">Notecarrier CX</text>
+    <text x="340" y="188" text-anchor="middle">Cygnet STM32L433</text>
+    <text x="340" y="214" text-anchor="middle">Notecard Cell+WiFi</text>
+    <text x="340" y="232" text-anchor="middle">(MBGLW)</text>
+  </g>
+  <text x="340" y="274" text-anchor="middle" font-size="10" fill="#a16207" font-style="italic">samples · rules · sleep</text>
+
+  <!-- Starnote — external mount, shown outside the Edge enclosure box -->
+  <!-- Connecting line: bottom of Edge enclosure to top of Starnote box -->
+  <line x1="340" y1="300" x2="340" y2="314" stroke="#16a34a" stroke-width="1.5" marker-end="url(#ar-green)"/>
+  <text x="356" y="309" font-size="9" fill="#15803d" font-style="italic">6-pin JST NTN cable</text>
+  <rect x="255" y="315" width="170" height="46" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5 3"/>
+  <text x="340" y="334" text-anchor="middle" font-size="12" font-weight="700" fill="#166534">Starnote for Skylo</text>
+  <text x="340" y="352" text-anchor="middle" font-size="10" fill="#15803d">(ext. mount · NTN satellite)</text>
+
+  <!-- Notehub -->
+  <rect x="490" y="100" width="170" height="200" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="575" y="130" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">Notehub</text>
+  <line x1="508" y1="142" x2="642" y2="142" stroke="#bfdbfe"/>
+  <g font-size="11" fill="#1e40af">
+    <text x="575" y="166" text-anchor="middle">Storage</text>
+    <text x="575" y="188" text-anchor="middle">Env vars</text>
+    <text x="575" y="210" text-anchor="middle">Routing</text>
+    <text x="575" y="238" text-anchor="middle">hive_summary.qo</text>
+    <text x="575" y="256" text-anchor="middle">hive_alert.qo</text>
+  </g>
+
+  <!-- Routes -->
+  <rect x="710" y="100" width="130" height="200" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+  <text x="775" y="130" text-anchor="middle" font-size="13" font-weight="700" fill="#581c87">Routes</text>
+  <line x1="728" y1="142" x2="832" y2="142" stroke="#e9d5ff"/>
+  <g font-size="11" fill="#6b21a8">
+    <text x="775" y="166" text-anchor="middle">SMS / pager</text>
+    <text x="775" y="188" text-anchor="middle">(alerts)</text>
+    <text x="775" y="212" text-anchor="middle">Analytics</text>
+    <text x="775" y="230" text-anchor="middle">store</text>
+    <text x="775" y="252" text-anchor="middle">(summaries)</text>
+  </g>
+
+  <!-- Arrows main path -->
+  <text x="215" y="88" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">local I/O</text>
+  <text x="465" y="88" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">cellular · NTN satellite</text>
+  <text x="680" y="88" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">routes</text>
+  <line x1="190" y1="200" x2="238" y2="200" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <line x1="440" y1="200" x2="488" y2="200" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <line x1="660" y1="200" x2="708" y2="200" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+
+  <!-- Power section — branched topology: BATT (LiPo buffer) and LOAD (device rail) are separate Sunny Buddy nodes -->
+  <rect x="20" y="380" width="820" height="88" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+  <text x="38" y="402" font-size="12" font-weight="700" fill="#713f12">Power path (bench includes Mojo inline on LOAD rail)</text>
+
+  <!-- Solar -->
+  <rect x="38"  y="412" width="118" height="44" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="97"  y="430" text-anchor="middle" font-size="11" fill="#713f12">5 W Solar</text>
+  <text x="97"  y="446" text-anchor="middle" font-size="10" fill="#92400e">→ IN+ barrel jack</text>
+
+  <!-- Sunny Buddy (centre) -->
+  <rect x="182" y="412" width="148" height="44" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="256" y="428" text-anchor="middle" font-size="11" fill="#713f12">Sunny Buddy (MPPT)</text>
+  <text x="256" y="442" text-anchor="middle" font-size="10" fill="#92400e">BATT ↔ LiPo  ·  LOAD →</text>
+
+  <!-- LiPo — branches down from BATT -->
+  <rect x="356" y="412" width="128" height="44" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="420" y="430" text-anchor="middle" font-size="11" fill="#713f12">LiPo 4 400 mAh</text>
+  <text x="420" y="446" text-anchor="middle" font-size="10" fill="#92400e">↔ BATT JST (buffer)</text>
+
+  <!-- Mojo bench -->
+  <rect x="512" y="412" width="110" height="44" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="567" y="430" text-anchor="middle" font-size="11" fill="#713f12">Mojo (bench)</text>
+  <text x="567" y="446" text-anchor="middle" font-size="10" fill="#92400e">inline on LOAD rail</text>
+
+  <!-- Notecarrier -->
+  <rect x="650" y="412" width="172" height="44" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="736" y="430" text-anchor="middle" font-size="11" fill="#713f12">Notecarrier +VBAT</text>
+  <text x="736" y="446" text-anchor="middle" font-size="10" fill="#92400e">from LOAD (or Mojo LOAD)</text>
+
+  <!-- Solar → Sunny Buddy -->
+  <line x1="156" y1="434" x2="180" y2="434" stroke="#a16207" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-amber)"/>
+  <!-- Sunny Buddy BATT ↔ LiPo (double-headed: bidirectional charge/discharge) -->
+  <line x1="330" y1="434" x2="354" y2="434" stroke="#a16207" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-amber)"/>
+  <!-- Sunny Buddy LOAD → Mojo BAT (load rail, separate from BATT) -->
+  <line x1="330" y1="450" x2="510" y2="450" stroke="#a16207" stroke-opacity="0.5" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ar-amber)"/>
+  <!-- Mojo → Notecarrier -->
+  <line x1="622" y1="434" x2="648" y2="434" stroke="#a16207" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-amber)"/>
+
+  <text x="430" y="482" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">Cellular-first + satellite NTN fallback — deployable in orchards and meadows with no grid power.</text>
+</svg>

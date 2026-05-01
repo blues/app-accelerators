@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 440" width="860" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <marker id="ar-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="ar-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/>
+    </marker>
+    <marker id="ar-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16a34a"/>
+    </marker>
+  </defs>
+  <rect width="860" height="440" fill="#ffffff"/>
+
+  <text x="430" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">Data Flow</text>
+  <text x="430" y="58" text-anchor="middle" font-size="12" fill="#64748b">Sample · accumulate · evaluate · emit</text>
+
+  <!-- Sensors: weight/temp every 15 min; audio once per summary window -->
+  <rect x="20" y="90" width="175" height="240" rx="10" fill="#e0f2fe" stroke="#0284c7" stroke-width="1.5"/>
+  <text x="107" y="118" text-anchor="middle" font-size="13" font-weight="700" fill="#0c4a6e">Sensors</text>
+  <line x1="40" y1="130" x2="175" y2="130" stroke="#7dd3fc"/>
+  <g font-size="11" fill="#0c4a6e">
+    <text x="107" y="149" text-anchor="middle" font-weight="600">Every 15 min:</text>
+    <text x="107" y="167" text-anchor="middle">Weight (kg)</text>
+    <text x="107" y="185" text-anchor="middle">Temp (°C) + RH (%)</text>
+    <line x1="40" y1="197" x2="175" y2="197" stroke="#7dd3fc"/>
+    <text x="107" y="214" text-anchor="middle" font-weight="600">Once per summary window</text>
+    <text x="107" y="231" text-anchor="middle">(rollover wake — first of new window):</text>
+    <text x="107" y="249" text-anchor="middle">ZCR · RMS · Peak</text>
+    <text x="107" y="267" text-anchor="middle">(~0.75 s audio snapshot)</text>
+    <line x1="40" y1="279" x2="175" y2="279" stroke="#7dd3fc"/>
+    <text x="107" y="296" text-anchor="middle">→ window accumulators</text>
+    <text x="107" y="313" text-anchor="middle">(NotePayloadSave)</text>
+  </g>
+
+  <!-- Edge rules -->
+  <rect x="240" y="90" width="175" height="240" rx="10" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+  <text x="327" y="118" text-anchor="middle" font-size="13" font-weight="700" fill="#7c2d12">Edge rules</text>
+  <text x="327" y="136" text-anchor="middle" font-size="11" fill="#9a3412">three thresholds</text>
+  <line x1="260" y1="150" x2="395" y2="150" stroke="#fed7aa"/>
+  <g font-size="11" fill="#7c2d12">
+    <text x="327" y="174" text-anchor="middle">weight_drop</text>
+    <text x="327" y="193" text-anchor="middle">(swarm / starvation)</text>
+    <text x="327" y="219" text-anchor="middle">temp_anomaly</text>
+    <text x="327" y="238" text-anchor="middle">(brood viability)</text>
+    <text x="327" y="264" text-anchor="middle">audio_anomaly</text>
+    <text x="327" y="283" text-anchor="middle">(behavioral alert —</text>
+    <text x="327" y="300" text-anchor="middle">evaluated once/window)</text>
+  </g>
+
+  <!-- Alert -->
+  <rect x="460" y="90" width="175" height="82" rx="10" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="547" y="128" text-anchor="middle" font-size="12" font-weight="700" fill="#7f1d1d">hive_alert.qo</text>
+  <text x="547" y="148" text-anchor="middle" font-size="10" fill="#991b1b">sync:true · immediate</text>
+  <text x="547" y="164" text-anchor="middle" font-size="10" fill="#991b1b">compact template · port 11</text>
+
+  <!-- Summary -->
+  <rect x="460" y="218" width="175" height="82" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="547" y="256" text-anchor="middle" font-size="12" font-weight="700" fill="#14532d">hive_summary.qo</text>
+  <text x="547" y="275" text-anchor="middle" font-size="10" fill="#166534">once per window · compact</text>
+  <text x="547" y="291" text-anchor="middle" font-size="10" fill="#166534">port 10 · NTN-safe payload</text>
+
+  <!-- Notehub -->
+  <rect x="685" y="90" width="155" height="240" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="762" y="124" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">Notehub</text>
+  <line x1="705" y1="140" x2="828" y2="140" stroke="#bfdbfe"/>
+  <g font-size="11" fill="#1e40af">
+    <text x="762" y="165" text-anchor="middle">Storage</text>
+    <text x="762" y="187" text-anchor="middle">Env vars</text>
+    <text x="762" y="215" text-anchor="middle">Alerts →</text>
+    <text x="762" y="233" text-anchor="middle">SMS / pager</text>
+    <text x="762" y="261" text-anchor="middle">Summaries →</text>
+    <text x="762" y="279" text-anchor="middle">analytics store</text>
+  </g>
+
+  <!-- Arrows -->
+  <line x1="195" y1="210" x2="238" y2="210" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <line x1="415" y1="155" x2="458" y2="135" stroke="#dc2626" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-red)"/>
+  <line x1="415" y1="245" x2="458" y2="258" stroke="#16a34a" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-green)"/>
+  <line x1="635" y1="135" x2="683" y2="155" stroke="#dc2626" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-red)"/>
+  <line x1="635" y1="258" x2="683" y2="238" stroke="#16a34a" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-green)"/>
+
+  <text x="430" y="405" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">Two Notefiles, two routes — alerts to real-time paging, summaries to long-term weight-trend analytics.</text>
+</svg>
