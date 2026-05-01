@@ -89,8 +89,10 @@ void setup() {
     pinMode(RELAY_BATT_CHARGE,    OUTPUT); digitalWrite(RELAY_BATT_CHARGE,    LOW);
     pinMode(RELAY_DR_INDICATOR,   OUTPUT); digitalWrite(RELAY_DR_INDICATOR,   LOW);
 
-    notecard.begin();
+    // Set the debug stream before begin() so any output during I²C initialization
+    // is captured — matches the Wireless for OPTA Quickstart pattern.
     notecard.setDebugOutputStream(usbSerial);
+    notecard.begin();
 
     // hub.set is the very first Notecard request; templates are defined before
     // any note.add; env vars are fetched and hub.set re-issued immediately if

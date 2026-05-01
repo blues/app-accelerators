@@ -96,5 +96,5 @@
   <line x1="648" y1="310" x2="615" y2="395" stroke="#d97706" stroke-opacity="0.5" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ar-amber)"/>
   <line x1="438" y1="395" x2="240" y2="290" stroke="#d97706" stroke-opacity="0.5" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ar-amber)"/>
 
-  <text x="400" y="420" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">Two Notefiles, two routes — alerts to security, heartbeats to fleet management. Commands flow inbound.</text>
+  <text x="400" y="450" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">Two outbound Notefiles + one inbound — alerts to security, heartbeats to fleet, commands flow back via immobilize.qi.</text>
 </svg>

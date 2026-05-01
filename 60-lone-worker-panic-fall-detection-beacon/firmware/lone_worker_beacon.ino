@@ -281,6 +281,14 @@ void loop()
     // g_lastAlertMs is updated before any new cooldown calculation.
     pollAlertRetry();
 
+    // Re-capture `now` AFTER pollAlertRetry. A successful retry sets
+    // g_lastAlertMs from its own millis() snapshot, which is later than the
+    // `now` captured at the top of loop(). Computing (loop_now - g_lastAlertMs)
+    // in uint32_t would underflow to a huge positive value, falsely signalling
+    // an expired cooldown — bypassing the alert-storm protection on the same
+    // loop pass as a successful retry.
+    now = millis();
+
     if (fell || panicked) {
         uint32_t sinceLastSec = (now - g_lastAlertMs) / 1000UL;
         bool cooldownExpired  = (g_lastAlertMs == 0 ||

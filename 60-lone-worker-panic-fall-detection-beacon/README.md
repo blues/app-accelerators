@@ -24,6 +24,8 @@ The WiFi path in the Notecard Cell+WiFi variant is an opportunistic bonus: a fie
 
 ## 2. System Architecture
 
+![System architecture: wearable I/O (LIS3DH accel, panic button, haptic motor) → Notecarrier CX with Cygnet host, Notecard MBGLW, and Starnote → cellular or Skylo satellite → Notehub → dispatch / paging / compliance](diagrams/01-system-architecture.svg)
+
 **Device-side responsibilities.** The Cygnet STM32L433 host on the Notecarrier CX runs a dual-cadence loop: the LIS3DH is sampled at ~100 Hz via a 10-sample inner loop (one read every 10 ms, matching the sensor's ODR), while Notecard I/O, GPS polling, and haptic state all advance at the outer ~10 Hz cadence. The host simultaneously monitors the panic button with software debounce and drives the DRV2605L haptic motor driver for per-event feedback. When an alert fires, the host immediately queues the alert note with the Notecard's cached location and triggers a sync, then starts a non-blocking GPS search that runs in the background without suspending fall detection or button monitoring. If a fresh GPS fix arrives within the timeout window, a follow-up `beacon_location.qo` note is queued with the event-time coordinates. All Notecard communication stays on I²C — no AT commands, no serial framing, no session management.
 
 **Notecard responsibilities.** The Notecard manages the cellular (or WiFi) session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (daily flush). Alert notes carry `sync:true`, which instructs the Notecard to bypass the outbound interval and attempt an immediate session. The Notecard also owns GPS/GNSS: after the host calls `card.location.mode`, the Notecard caches the resulting fix and automatically embeds it in every subsequent compact template note via the `_lat`/`_lon` template fields — no lat/lon passing required in the firmware's note body.
@@ -58,6 +60,8 @@ All Blues hardware ships with an active SIM including 500 MB of cellular data an
 > **Charging and power access.** No LiPo charging circuit, dock, or power-switch hardware is included in this BOM or wiring. The project runs on a bare LiPo cell until depleted. A production wearable needs a USB-C LiPo charging circuit integrated into the enclosure, plus overcharge and short-circuit protection if not already provided by the cell's built-in circuitry. See [Section 9](#9-limitations-and-next-steps) for details; adding a charging path is the expected next step for anyone moving from bench validation toward a field-deployed unit.
 
 ## 4. Wiring and Assembly
+
+![Wiring: LIS3DH + DRV2605L on shared I²C; panic button to D9 INPUT_PULLUP; dual flex antenna on Notecard CELL + GPS u.FL; Starnote satellite via JST; LiPo 3.7 V → Mojo → +VBAT](diagrams/02-wiring-assembly.svg)
 
 All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin headers. The Notecard Cell+WiFi seats in the M.2 slot; the Cygnet host communicates with it over the carrier's internal I²C bus. The Starnote connects via a 6-pin JST-SH cable plugged directly into the Notecard's onboard JST port (accessible on the Notecard edge, no Notecarrier CX modification required). The Mojo sits inline between the LiPo JST connector and the Notecarrier CX `+VBAT` pad.
 
@@ -341,6 +345,8 @@ void pollGpsSearch() {
 If GPS times out, only the initial `beacon_alert.qo` note is sent; the cached location (which may be GNSS-derived, cell-derived, stale, or empty) stands. The `loc_age_s` field in the initial alert records how old the cached fix was at alert time, letting dispatch judge location freshness independently.
 
 ## 7. Data Flow
+
+![Data flow: 100 Hz LIS3DH inner loop / 10 Hz outer → fall and panic detection → beacon_alert.qo (sync:true with cached location) and beacon_location.qo (GPS follow-up) → Notehub, paired by event_id](diagrams/03-data-flow.svg)
 
 **Collected.** On every outer loop pass (~10 Hz): ten LIS3DH accelerometer samples read at 10 ms intervals (100 Hz effective), with the two-stage fall-detection state machine evaluated on each. On each alert event: battery voltage (`card.voltage`), cached-fix age at alert time (`loc_age_s`), and a monotonic `event_id`. GPS search runs non-blocking in the background after an alert; a fresh fix, if acquired, produces a follow-up note carrying the same `event_id`.
 

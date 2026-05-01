@@ -1,7 +1,7 @@
 // plug_load_monitor_helpers.cpp
 //
 // Implementations of all helper functions for the plug_load_monitor sketch.
-// Globals (CFG_*, state, notecard, g_templates_applied) are defined in
+// Globals (CFG_*, state, notecard, g_*_template_applied) are defined in
 // plug_load_monitor.ino and accessed here via extern declarations in
 // plug_load_monitor_helpers.h.
 //
@@ -75,9 +75,13 @@ bool hubConfigure() {
     return ok;
 }
 
-// Returns true only when all note.template requests complete successfully.
+// Registers each Notefile template independently and updates the per-Notefile
+// confirmation flags from each send result.  Returns true only when every
+// template attempted in this build succeeded; the per-Notefile flags carry
+// the granular state used to gate emission of each Notefile.
+//
 // Called unconditionally at every boot — note.template is idempotent, so
-// re-issuing it on an intact Notecard is a no-op and re-issuing after a
+// re-issuing it on an intact Notecard is a no-op, and re-issuing after a
 // factory reset or card replacement restores the fixed-schema encoding before
 // any note.add calls reach the Notecard.
 bool defineTemplates() {
@@ -102,17 +106,18 @@ bool defineTemplates() {
     JAddNumberToObject(body, "ch4_peak",    14.1);
     JAddNumberToObject(body, "ch4_act_min", 14.1);
     JAddNumberToObject(body, "samples",     12);
-    if (!notecard.sendRequest(req)) {
+    g_summary_template_applied = notecard.sendRequest(req);
 #ifdef PLUG_LOAD_DEBUG
+    if (!g_summary_template_applied) {
         dbgSerial.println("[init] circuit_summary.qo template definition failed; will retry next boot");
-#endif
-        return false;
     }
+#endif
 
 #ifdef PLUG_LOAD_ALERTS
     // circuit_alert.qo – immediate sync on after-hours anomaly.
     // Registered only when PLUG_LOAD_ALERTS is defined in
-    // plug_load_monitor_helpers.h.
+    // plug_load_monitor_helpers.h.  Attempted independently of the summary
+    // template above so a failure here does not suppress the summary stream.
     //
     // The exemplar string for alert_type must be at least as long as the
     // longest value the firmware will ever send ("after_hours_load" = 16 chars).
@@ -124,15 +129,17 @@ bool defineTemplates() {
     JAddNumberToObject(body, "arms",       14.1);             // 4-byte float: RMS amps at trigger
     JAddStringToObject(body, "alert_type", "after_hours_load"); // exemplar sets max string length
     JAddNumberToObject(body, "hour_local", 11);               // 1-byte int: local hour 0–23
-    if (!notecard.sendRequest(req)) {
+    g_alert_template_applied = notecard.sendRequest(req);
 #ifdef PLUG_LOAD_DEBUG
+    if (!g_alert_template_applied) {
         dbgSerial.println("[init] circuit_alert.qo template definition failed; will retry next boot");
-#endif
-        return false;
     }
-#endif // PLUG_LOAD_ALERTS
+#endif
 
-    return true;
+    return g_summary_template_applied && g_alert_template_applied;
+#else
+    return g_summary_template_applied;
+#endif // PLUG_LOAD_ALERTS
 }
 
 // ── Env-var fetch ─────────────────────────────────────────────────────────────
@@ -342,10 +349,11 @@ static bool isAfterHours(uint32_t unix_epoch) {
 // suppress the retry on the next wake.
 static bool sendAlert(uint8_t circuit_1based, float arms,
                       const char *alert_type, int hour_local) {
-    // Do not emit notes until both note.template calls have been confirmed.
-    if (!g_templates_applied) {
+    // Gate only on the alert Notefile's own template flag — a failure on the
+    // summary template must not suppress alerts (and vice versa in sendSummary).
+    if (!g_alert_template_applied) {
 #ifdef PLUG_LOAD_DEBUG
-        dbgSerial.println("[alert] templates not yet confirmed; suppressing note");
+        dbgSerial.println("[alert] circuit_alert.qo template not yet confirmed; suppressing note");
 #endif
         return false;
     }
@@ -371,12 +379,14 @@ static float safeAvg(float sum, uint32_t n) {
 // to send). Accumulators are only reset on confirmed success so the window
 // data survives to the next wake if queueing fails.
 static bool sendSummary() {
-    // Do not emit notes until note.template has been confirmed.
+    // Gate only on the summary Notefile's own template flag.  A failure on
+    // circuit_alert.qo (PLUG_LOAD_ALERTS builds only) must not suppress
+    // circuit_summary.qo emission, since they are independent Notefiles.
     // Returning false here preserves the accumulated window data so it is not
     // silently discarded.
-    if (!g_templates_applied) {
+    if (!g_summary_template_applied) {
 #ifdef PLUG_LOAD_DEBUG
-        dbgSerial.println("[summary] templates not yet confirmed; suppressing note");
+        dbgSerial.println("[summary] circuit_summary.qo template not yet confirmed; suppressing note");
 #endif
         return false;
     }

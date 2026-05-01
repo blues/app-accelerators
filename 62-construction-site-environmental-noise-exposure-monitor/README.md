@@ -202,35 +202,37 @@ Sampling cadence and transmit cadence are deliberately decoupled: the firmware s
 
 ### Key code snippet 1 — template definition
 
-Templates must be defined once at first boot. `14.1` is the note-c `TFLOAT32` hint (4-byte IEEE 754 float); `22` is `TUINT16` (2-byte unsigned int).
+Templates must be defined once at first boot. `14.1` is the note-c `TFLOAT32` hint (4-byte IEEE 754 float); `22` is `TUINT16` (2-byte unsigned int). Boolean fields are declared by passing the literal `true` (there is no numeric type-hint for `TBOOL`) — see the [note-c template data-type table](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#understanding-template-data-types).
 
 ```cpp
 J *req  = notecard.newRequest("note.template");
 JAddStringToObject(req, "file", "env_summary.qo");
 JAddNumberToObject(req, "port", 50);
 J *body = JAddObjectToObject(req, "body");
-JAddNumberToObject(body, "pm25_avg",  14.1);
-JAddNumberToObject(body, "pm25_peak", 14.1);
-JAddNumberToObject(body, "pm10_avg",  14.1);
-JAddNumberToObject(body, "pm10_peak", 14.1);
-JAddNumberToObject(body, "db_a_avg",   14.1);
-JAddNumberToObject(body, "db_a_peak",  14.1);
-JAddNumberToObject(body, "samples",    22);
-JAddNumberToObject(body, "pm_samples", 22);   // 0 = all PM reads failed; pm25_avg/pm10_avg = -9999.0
-JAddNumberToObject(body, "voltage",    14.1);
-JAddNumberToObject(body, "lat",        14.1);
-JAddNumberToObject(body, "lon",        14.1);
+JAddNumberToObject(body, "pm25_avg",       14.1);
+JAddNumberToObject(body, "pm25_peak",      14.1);
+JAddNumberToObject(body, "pm10_avg",       14.1);
+JAddNumberToObject(body, "pm10_peak",      14.1);
+JAddNumberToObject(body, "db_a_avg",       14.1);
+JAddNumberToObject(body, "db_a_peak",      14.1);
+JAddNumberToObject(body, "samples",         22);
+JAddNumberToObject(body, "pm_samples",      22);   // 0 = all PM reads failed; pm25_avg/pm10_avg = -9999.0
+JAddNumberToObject(body, "voltage",        14.1);
+JAddNumberToObject(body, "lat",            14.1);
+JAddNumberToObject(body, "lon",            14.1);
+JAddBoolToObject(body,   "location_valid", true); // TBOOL — declared by passing literal 'true'
 notecard.sendRequest(req);
 ```
 
 ### Key code snippet 2 — immediate-sync alert
 
-`sync:true` tells the Notecard to bypass the outbound window and open a cellular session right now. This is the mechanism that gets a dust spike off the device within seconds of the threshold crossing.
+`sync:true` tells the Notecard to bypass the outbound window and open a cellular session right now. This is the mechanism that gets a dust spike off the device within seconds of the threshold crossing. `full:true` opts the note out of the [omitempty rule](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#use-of-in-templates) that templated Notefiles otherwise apply on Notehub serialisation — without it, `location_valid: false` (the explicit "GPS not yet confirmed at this site" signal) and any zero-valued `lat`/`lon` would be silently stripped from the body that downstream consumers receive. The same `full:true` flag is set on the `env_summary.qo` `note.add` so that `pm_samples: 0` (the companion sentinel to `pm25_avg/pm10_avg = -9999.0` when every PM read in the window failed) survives serialisation.
 
 ```cpp
 J *req  = notecard.newRequest("note.add");
 JAddStringToObject(req, "file", "env_alert.qo");
 JAddBoolToObject(req,   "sync", true);
+JAddBoolToObject(req,   "full", true);
 J *body = JAddObjectToObject(req, "body");
 JAddStringToObject(body, "alert",          "pm25_high");
 JAddNumberToObject(body, "value",          pm25);

@@ -24,6 +24,8 @@ The underlying challenge isn't mechanical; modern locks are strong. The challeng
 
 ## 2. System Architecture
 
+![System architecture: lock sensors (reed shackle, hall bolt, internal accelerometer) → Notecarrier CX with Cygnet host and NOTE-NBGLWX → cellular or Skylo satellite → Notehub → dispatch / TMS / audit log](diagrams/01-system-architecture.svg)
+
 **Device-side responsibilities.** The onboard Cygnet STM32 host on the Notecarrier CX wakes every `SAMPLE_INTERVAL_SEC` (default 60 s), reads the reed switch and hall-effect sensor, queries the Notecard's built-in accelerometer for motion activity, evaluates the lock state machine, and queues any resulting notes over I²C. Between wakes, the host is completely off — cut by the Notecard's `card.attn` sleep mechanism. State persists through sleep cycles via [`NotePayloadSaveAndSleep`](https://dev.blues.io/guides-and-tutorials/notecard-guides/feather-mcu-low-power-management/) and is restored via `NotePayloadRetrieveAfterSleep` on each wake.
 
 **Notecard responsibilities.** The Notecard stores [Notes](https://dev.blues.io/api-reference/glossary/#note) in its on-device queue, manages the cellular or satellite session on the [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 6 hours), and pushes any `sync:true` alert notes immediately when they arrive. [Environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) flow down from Notehub to the device on each inbound sync — operators retune thresholds and cadences without a firmware update.
@@ -53,6 +55,8 @@ The underlying challenge isn't mechanical; modern locks are strong. The challeng
 All Blues hardware ships with an active SIM, 500 MB of cellular data, and 10 years of service — no activation fees, no monthly commitment.
 
 ## 4. Wiring and Assembly
+
+![Wiring: reed switch to D5 and SS461A hall to D6 (both INPUT_PULLUP on host-gated +3V3); MAIN antenna to u.FL for cellular + satellite; Notecard accelerometer is internal; LiPo 5000 mAh → Mojo (bench) → +VBAT](diagrams/02-wiring-assembly.svg)
 
 All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard for Skylo (NOTE-NBGLWX) seats in the carrier's M.2 slot. The Mojo sits inline between the Li-Po positive terminal and the Notecarrier's `+VBAT` pad for bench power measurement.
 
@@ -88,7 +92,7 @@ The NOTE-NBGLWX also has a `GPS` u.FL port; GNSS location tracking is a recommen
 
 ## 5. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/cargo_lock.ino` as `PRODUCT_UID`.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/cargo_lock/cargo_lock.ino` as `PRODUCT_UID`.
 
 2. **Claim the device.** Power the unit; on first cellular (or satellite) session the Notecard associates with your project automatically.
 
@@ -107,7 +111,7 @@ The NOTE-NBGLWX also has a `GPS` u.FL port; GNSS location tracking is a recommen
 
 ## 6. Firmware Design
 
-Single sketch: [`firmware/cargo_lock.ino`](firmware/cargo_lock.ino).
+The sketch lives in [`firmware/cargo_lock/`](firmware/cargo_lock/), split across three files: [`cargo_lock.ino`](firmware/cargo_lock/cargo_lock.ino) (entry point — `setup()`, `loop()`, user-facing constants), [`cargo_lock_helpers.h`](firmware/cargo_lock/cargo_lock_helpers.h) (enums, `PersistState` struct, function prototypes), and [`cargo_lock_helpers.cpp`](firmware/cargo_lock/cargo_lock_helpers.cpp) (Notecard config, env-var handling, sensor reads, state machine). Open the `firmware/cargo_lock/` folder in the Arduino IDE or point `arduino-cli` at it.
 
 **Dependencies:**
 - Arduino core for STM32 ([`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32)) — install via the Arduino IDE Boards Manager.
@@ -252,6 +256,8 @@ NotePayloadSaveAndSleep(&payload, SAMPLE_INTERVAL_SEC, NULL);
 ```
 
 ## 7. Data Flow
+
+![Data flow: 60-s sample of reed/hall/motion → state machine evaluates two transitions plus tamper rule → lock_event.qo (sync:true) and lock_status.qo (every 6 h audit beat) → Notehub routes](diagrams/03-data-flow.svg)
 
 Every `SAMPLE_INTERVAL_SEC` (default 60 s), the firmware reads three sensors, evaluates the lock state machine, and decides whether anything noteworthy happened:
 

@@ -39,7 +39,10 @@ void applyModbusIfChanged() {
         g_modbus_parity    == s_last_modbus_parity  &&
         g_modbus_stop_bits == s_last_modbus_stop_bits) return;
     ModbusRTUClient.end();
-    RS485.setDelays(50, 50);
+    // ModbusRTUClient.begin() computes and applies the Modbus 3.5-char inter-frame
+    // pre/post delays from the baud rate internally — do not call RS485.setDelays()
+    // before begin(); the library overwrites it. Override only if a specific bus
+    // requires non-default timing, and do it after begin().
     if (!ModbusRTUClient.begin(g_modbus_baud, modbusSerialConfig())) {
         usbSerial.println("[modbus] begin failed; will retry on next sample cycle");
     } else {

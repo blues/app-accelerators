@@ -90,7 +90,12 @@ struct AlertQueueEntry {
     uint32_t event_id;       // monotonic event counter for note correlation
     float    locAgeS;        // age of cached fix at event-fire time (−1.0 = unknown)
     uint8_t  retryCount;     // attempts made so far
-    uint32_t retryNextMs;    // millis() deadline for next attempt
+    uint32_t lastAttemptMs;  // millis() at last attempt; pollAlertRetry() waits
+                             // until (now - lastAttemptMs) >= ALERT_RETRY_INTERVAL_MS.
+                             // Elapsed-time comparison is wraparound-safe across
+                             // the 49.7-day millis() rollover; an absolute
+                             // deadline would underflow at the rollover and
+                             // either fire too early or too late.
 };
 
 // ── Worker ID ─────────────────────────────────────────────────────────────

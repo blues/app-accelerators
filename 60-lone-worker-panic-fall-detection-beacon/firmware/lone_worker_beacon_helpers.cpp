@@ -637,11 +637,13 @@ void enqueueAlert(const char *alertType, uint32_t cacheEpoch, uint32_t eventId,
     strncpy(g_alertQueue[idx].type, alertType,
             sizeof(g_alertQueue[idx].type) - 1);
     g_alertQueue[idx].type[sizeof(g_alertQueue[idx].type) - 1] = '\0';
-    g_alertQueue[idx].cacheEpoch  = cacheEpoch;
-    g_alertQueue[idx].event_id    = eventId;
-    g_alertQueue[idx].locAgeS     = locAgeS;
-    g_alertQueue[idx].retryCount  = 0;
-    g_alertQueue[idx].retryNextMs = millis() + ALERT_RETRY_INTERVAL_MS;
+    g_alertQueue[idx].cacheEpoch    = cacheEpoch;
+    g_alertQueue[idx].event_id      = eventId;
+    g_alertQueue[idx].locAgeS       = locAgeS;
+    g_alertQueue[idx].retryCount    = 0;
+    // Treat enqueue time as the "0th attempt" timestamp; the first retry fires
+    // once (now - lastAttemptMs) >= ALERT_RETRY_INTERVAL_MS — wraparound-safe.
+    g_alertQueue[idx].lastAttemptMs = millis();
     g_alertQueueCount++;
     DEBUG_PRINT("[ALERT] Enqueued '"); DEBUG_PRINT(alertType);
     DEBUG_PRINT("' event_id="); DEBUG_PRINT(eventId);
@@ -651,8 +653,9 @@ void enqueueAlert(const char *alertType, uint32_t cacheEpoch, uint32_t eventId,
 
 // ─── Non-Blocking Alert Retry ─────────────────────────────────────────────
 // Called once per outer loop pass before processing new fall/panic events.
-// Services the head of the fixed-depth retry queue: waits until the entry's
-// retryNextMs deadline, then makes one sendAlert() attempt. On success the
+// Services the head of the fixed-depth retry queue: waits until
+// ALERT_RETRY_INTERVAL_MS has elapsed since the entry's last attempt
+// (wraparound-safe), then makes one sendAlert() attempt. On success the
 // entry is dequeued, g_lastAlertMs is updated, and a GPS follow-up search is
 // started. On failure the retry count is incremented; after ALERT_RETRY_MAX
 // attempts the entry is **discarded** — it was never successfully accepted by
@@ -670,7 +673,9 @@ void pollAlertRetry()
     uint32_t now = millis();
 
     AlertQueueEntry &entry = g_alertQueue[g_alertQueueHead % ALERT_QUEUE_DEPTH];
-    if (now < entry.retryNextMs) return;   // not yet time for this entry
+    // Elapsed-time comparison (wraparound-safe). An absolute deadline would
+    // misbehave around the 49.7-day millis() rollover.
+    if ((now - entry.lastAttemptMs) < ALERT_RETRY_INTERVAL_MS) return;
 
     // Pass the event-time locAgeS directly to sendAlert() — it was pre-computed
     // at alert-fire time and stored in the queue entry, so the retried note
@@ -700,7 +705,7 @@ void pollAlertRetry()
         g_alertQueueHead  = (g_alertQueueHead + 1) % ALERT_QUEUE_DEPTH;
         g_alertQueueCount--;
     } else {
-        entry.retryNextMs = now + ALERT_RETRY_INTERVAL_MS;
+        entry.lastAttemptMs = now;
         DEBUG_PRINT("[ALERT] Retry "); DEBUG_PRINT(entry.retryCount);
         DEBUG_PRINT(" for '"); DEBUG_PRINT(entry.type);
         DEBUG_PRINTLN("' failed — rescheduled.");

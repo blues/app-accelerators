@@ -167,8 +167,11 @@ void defineTemplates(void) {
         // confirmed a fresh fix at the current site (i.e. the fix timestamp
         // advanced since boot).  Downstream consumers should treat lat/lon as
         // potentially a cached position from a previous deployment site until
-        // this field is true.  TBOOL template type hint = 12.
-        JAddNumberToObject(body, "location_valid",  12);
+        // this field is true.  Per the note-c template spec, a TBOOL field is
+        // declared by passing the literal boolean value 'true' — there is no
+        // numeric type-hint for booleans.  See:
+        // https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#understanding-template-data-types
+        JAddBoolToObject(body,   "location_valid",  true);
         J *rsp = notecard.requestAndResponse(req);
         if (rsp == NULL || notecard.responseError(rsp)) {
 #ifdef DEBUG_SERIAL
@@ -200,7 +203,7 @@ void defineTemplates(void) {
         JAddNumberToObject(body, "threshold",      14.1);
         JAddNumberToObject(body, "lat",            14.1);
         JAddNumberToObject(body, "lon",            14.1);
-        JAddNumberToObject(body, "location_valid",  12);  // TBOOL; see env_summary.qo
+        JAddBoolToObject(body,   "location_valid", true);  // TBOOL; see env_summary.qo
         J *rsp = notecard.requestAndResponse(req);
         if (rsp == NULL || notecard.responseError(rsp)) {
 #ifdef DEBUG_SERIAL
@@ -428,6 +431,16 @@ bool sendSummary(void) {
         return false;
     }
     JAddStringToObject(req, "file", NOTEFILE_SUMMARY);
+    // full:true bypasses the omitempty rule that templated Notefiles enforce
+    // on Notehub-side JSON serialisation.  Without it, fields whose value is
+    // false / 0 / 0.0 / "" are stripped from the body — which would silently
+    // erase 'location_valid: false' (the explicit "GPS not yet confirmed at
+    // this site" signal), 'pm_samples: 0' (the "every PM read failed" sentinel
+    // companion to pm25_avg/pm10_avg = -9999.0), and 'lat: 0.0 / lon: 0.0'
+    // (no fix yet).  Setting full:true preserves all field values and keeps
+    // the documented sentinel semantics intact.  See:
+    // https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#use-of-in-templates
+    JAddBoolToObject(req,   "full", true);
     J *body = JAddObjectToObject(req, "body");
     JAddNumberToObject(body, "pm25_avg",  pm25Avg);
     JAddNumberToObject(body, "pm25_peak", state.pm25Peak);
@@ -488,6 +501,10 @@ bool sendAlert(const char *type, float value, float threshold) {
     }
     JAddStringToObject(req, "file", NOTEFILE_ALERT);
     JAddBoolToObject(req,   "sync", true);
+    // full:true bypasses templated-Notefile omitempty so 'location_valid:
+    // false' and any zero-valued lat/lon are preserved on Notehub.  See
+    // sendSummary() for the full rationale.
+    JAddBoolToObject(req,   "full", true);
     J *body = JAddObjectToObject(req, "body");
     JAddStringToObject(body, "alert",          type);
     JAddNumberToObject(body, "value",          value);

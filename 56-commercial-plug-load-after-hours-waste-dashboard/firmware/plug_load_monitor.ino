@@ -61,9 +61,13 @@ AppState   state;
 // Template-application confirmation for the current boot only.
 // note.template is re-issued unconditionally on every wake (idempotent on an
 // intact Notecard; auto-recovers after a factory reset or card replacement).
-// Not persisted — a host-side boolean cannot reliably reflect Notecard state
-// across a card reset or swap.
-bool g_templates_applied = false;
+// Tracked per Notefile so a transient failure registering one template does
+// not gate emission on the other.  Not persisted — a host-side boolean cannot
+// reliably reflect Notecard state across a card reset or swap.
+bool g_summary_template_applied = false;
+#ifdef PLUG_LOAD_ALERTS
+bool g_alert_template_applied   = false;
+#endif
 
 Notecard notecard;
 
@@ -166,9 +170,10 @@ void setup() {
     // note.template is idempotent: re-issuing it on an intact Notecard is a
     // no-op, and re-issuing after a Notecard factory reset or card replacement
     // restores the fixed-schema binary encoding before any note.add calls reach
-    // the Notecard.  sendAlert() and sendSummary() gate on g_templates_applied
-    // and will not emit notes until defineTemplates() has succeeded.
-    g_templates_applied = defineTemplates();
+    // the Notecard.  defineTemplates() updates the per-Notefile g_*_template_applied
+    // flags; sendSummary() and sendAlert() each gate on their own flag so a
+    // failure on one template does not suppress the other Notefile.
+    defineTemplates();
 
     if (!restored) {
         // First boot only: quiesce the onboard accelerometer so its interrupt
@@ -215,12 +220,17 @@ void loop() {
     }
 
     // On the bench path, note.template is only issued once during setup().
-    // If that attempt failed (defineTemplates() returned false), notes will
-    // be suppressed every iteration.  Retry here whenever the confirmation
-    // flag is still false so a transient I²C failure at boot does not
-    // suppress emission for the entire bench session.
-    if (!g_templates_applied) {
-        g_templates_applied = defineTemplates();
+    // If a previous attempt failed (a template flag is still false), retry
+    // here so a transient I²C failure at boot does not suppress emission for
+    // the entire bench session.  defineTemplates() rewrites both flags from
+    // the fresh send-request results, so calling it unconditionally when any
+    // Notefile is unconfirmed is safe — note.template is idempotent.
+    if (!g_summary_template_applied
+#ifdef PLUG_LOAD_ALERTS
+        || !g_alert_template_applied
+#endif
+       ) {
+        defineTemplates();
     }
 
     runSampleCycle();

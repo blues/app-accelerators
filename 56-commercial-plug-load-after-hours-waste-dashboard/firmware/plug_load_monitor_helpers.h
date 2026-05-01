@@ -128,7 +128,12 @@ extern float    CFG_CT_FULL_SCALE_AMPS;
 
 extern const char STATE_SEG_ID[];
 extern AppState   state;
-extern bool       g_templates_applied;
+// Per-Notefile template-application flags.  Tracked independently so a failure
+// to register one template does not gate emission on the other Notefile.
+extern bool       g_summary_template_applied;
+#ifdef PLUG_LOAD_ALERTS
+extern bool       g_alert_template_applied;
+#endif
 extern Notecard   notecard;
 
 // ── Public function prototypes ────────────────────────────────────────────────
