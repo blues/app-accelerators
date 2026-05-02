@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 410" width="800" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <marker id="ar-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+  </defs>
+  <rect width="800" height="410" fill="#ffffff"/>
+
+  <text x="400" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">System Architecture</text>
+  <text x="400" y="57" text-anchor="middle" font-size="12" fill="#64748b">Untethered Trailer &amp; Chassis Fleet Tracker</text>
+
+  <!-- Box 1: Power chain (x=20, w=165, center=102) -->
+  <rect x="20" y="88" width="165" height="225" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+  <g transform="translate(90,103) scale(0.75)" fill="#7c2d12">
+    <path d="M11 21h-1l1-7H7.5c-.88 0-.33-.75-.31-.78C8.48 10.94 10.42 7.54 13.01 3h1l-1 7h3.51c.4 0 .62.19.4.66C12.97 17.55 11 21 11 21z"/>
+  </g>
+  <text x="102" y="141" text-anchor="middle" font-size="13" font-weight="700" fill="#7c2d12">Power</text>
+  <line x1="40" y1="155" x2="165" y2="155" stroke="#fed7aa"/>
+  <g font-size="11" fill="#9a3412">
+    <text x="102" y="178" text-anchor="middle">Solar 0.6 W / 6 V</text>
+    <text x="102" y="200" text-anchor="middle">Sunny Buddy MPPT</text>
+    <text x="102" y="222" text-anchor="middle">LiPo 3.7 V / 2 Ah</text>
+  </g>
+  <text x="102" y="280" text-anchor="middle" font-size="10" fill="#a16207" font-style="italic">trickle-solar · multi-day</text>
+  <text x="102" y="295" text-anchor="middle" font-size="10" fill="#a16207" font-style="italic">battery reserve</text>
+
+  <!-- Box 2: Notecarrier XI edge (x=235, w=200, center=335) -->
+  <rect x="235" y="88" width="200" height="225" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+  <g transform="translate(322,103) scale(0.75)" fill="#713f12">
+    <path d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z"/>
+  </g>
+  <text x="335" y="141" text-anchor="middle" font-size="13" font-weight="700" fill="#713f12">Notecarrier XI</text>
+  <line x1="255" y1="155" x2="415" y2="155" stroke="#fde68a"/>
+  <g font-size="11" fill="#854d0e">
+    <text x="335" y="178" text-anchor="middle">Swan STM32U5</text>
+    <text x="335" y="200" text-anchor="middle">NOTE-WBEX (M.2)</text>
+    <text x="335" y="222" text-anchor="middle">Starnote for Iridium</text>
+  </g>
+  <text x="335" y="278" text-anchor="middle" font-size="10" fill="#a16207" font-style="italic">parked/moving state machine</text>
+  <text x="335" y="293" text-anchor="middle" font-size="10" fill="#a16207" font-style="italic">GPS · motion · voltage</text>
+
+  <!-- Box 3: Notehub (x=490, w=155, center=567) -->
+  <rect x="490" y="88" width="155" height="225" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <g transform="translate(554,103) scale(0.75)" fill="#1e3a8a">
+    <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/>
+  </g>
+  <text x="567" y="141" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">Notehub</text>
+  <line x1="510" y1="155" x2="625" y2="155" stroke="#bfdbfe"/>
+  <g font-size="11" fill="#1e40af">
+    <text x="567" y="178" text-anchor="middle">Storage</text>
+    <text x="567" y="200" text-anchor="middle">Routing</text>
+    <text x="567" y="222" text-anchor="middle">Env vars</text>
+    <text x="567" y="244" text-anchor="middle">Fleets</text>
+  </g>
+
+  <!-- Box 4: Routes (x=710, w=75, center=747) -->
+  <rect x="710" y="88" width="75" height="225" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+  <g transform="translate(733,103) scale(0.75)" fill="#581c87">
+    <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+  </g>
+  <text x="747" y="141" text-anchor="middle" font-size="13" font-weight="700" fill="#581c87">Routes</text>
+  <line x1="720" y1="155" x2="775" y2="155" stroke="#e9d5ff"/>
+  <g font-size="11" fill="#6b21a8">
+    <text x="747" y="178" text-anchor="middle">Fleet</text>
+    <text x="747" y="200" text-anchor="middle">TMS</text>
+    <text x="747" y="222" text-anchor="middle">Analytics</text>
+  </g>
+
+  <!-- Connection labels above arrows -->
+  <text x="214" y="72" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">+VBAT solar</text>
+  <text x="453" y="68" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">LTE-M (primary)</text>
+  <text x="453" y="82" text-anchor="middle" font-size="11" fill="#475569">Iridium LEO (fallback)</text>
+  <text x="676" y="72" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">routes</text>
+
+  <!-- Arrows -->
+  <line x1="185" y1="200" x2="233" y2="200" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <line x1="435" y1="200" x2="488" y2="200" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <line x1="645" y1="200" x2="708" y2="200" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+
+  <text x="400" y="378" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">Cellular-first with pole-to-pole Iridium LEO satellite fallback — no tractor hookup, no site IT.</text>
+</svg>
