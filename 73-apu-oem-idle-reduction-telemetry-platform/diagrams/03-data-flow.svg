@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 440" width="800" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <marker id="ar-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="ar-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/>
+    </marker>
+    <marker id="ar-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16a34a"/>
+    </marker>
+    <marker id="ar-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0d9488"/>
+    </marker>
+  </defs>
+  <rect width="800" height="440" fill="#ffffff"/>
+
+  <text x="400" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">Data Flow</text>
+  <text x="400" y="58" text-anchor="middle" font-size="12" fill="#64748b">Sample · evaluate · emit</text>
+
+  <!-- Sample (blue) -->
+  <rect x="20" y="120" width="170" height="200" rx="10" fill="#e0f2fe" stroke="#0284c7" stroke-width="1.5"/>
+  <g transform="translate(96,135) scale(0.75)" fill="#0c4a6e">
+    <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/>
+  </g>
+  <text x="105" y="172" text-anchor="middle" font-size="13" font-weight="700" fill="#0c4a6e">Sample</text>
+  <text x="105" y="190" text-anchor="middle" font-size="11" fill="#075985">every 60 s</text>
+  <line x1="40" y1="206" x2="170" y2="206" stroke="#7dd3fc"/>
+  <g font-size="11" fill="#0c4a6e">
+    <text x="105" y="232" text-anchor="middle">APU Modbus (5 reg)</text>
+    <text x="105" y="254" text-anchor="middle">DS18B20 × 2</text>
+    <text x="105" y="276" text-anchor="middle">Ignition state</text>
+  </g>
+
+  <!-- Event triggers (orange) -->
+  <rect x="230" y="120" width="170" height="200" rx="10" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+  <g transform="translate(306,135) scale(0.75)" fill="#7c2d12">
+    <path d="M20 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9.6 13.6L7 13.2l1.4-1.4 2 2 4.6-4.6 1.4 1.4-6 6z"/>
+  </g>
+  <text x="315" y="172" text-anchor="middle" font-size="13" font-weight="700" fill="#7c2d12">Event triggers</text>
+  <text x="315" y="190" text-anchor="middle" font-size="11" fill="#9a3412">five checks</text>
+  <line x1="250" y1="204" x2="380" y2="204" stroke="#fed7aa"/>
+  <g font-size="11" fill="#7c2d12">
+    <text x="315" y="222" text-anchor="middle">APU fault code</text>
+    <text x="315" y="241" text-anchor="middle">Cab temp excursion</text>
+    <text x="315" y="260" text-anchor="middle">State change</text>
+    <text x="315" y="279" text-anchor="middle">Sensor fail × 3</text>
+    <text x="315" y="298" text-anchor="middle">Day boundary</text>
+  </g>
+
+  <!-- apu_event.qo (red) -->
+  <rect x="440" y="120" width="170" height="60" rx="10" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+  <g transform="translate(516,128) scale(0.55)" fill="#7f1d1d">
+    <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+  </g>
+  <text x="525" y="153" text-anchor="middle" font-size="12" font-weight="700" fill="#7f1d1d">apu_event.qo</text>
+  <text x="525" y="169" text-anchor="middle" font-size="10" fill="#991b1b">sync:true · immediate</text>
+
+  <!-- apu_telemetry.qo (green) -->
+  <rect x="440" y="190" width="170" height="60" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+  <g transform="translate(516,198) scale(0.55)" fill="#14532d">
+    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7 17v-3h2v3H7zm4 0V7h2v10h-2zm4 0v-5h2v5h-2z"/>
+  </g>
+  <text x="525" y="223" text-anchor="middle" font-size="12" font-weight="700" fill="#14532d">apu_telemetry.qo</text>
+  <text x="525" y="238" text-anchor="middle" font-size="10" fill="#166534">hourly · templated</text>
+
+  <!-- apu_daily.qo (teal) -->
+  <rect x="440" y="260" width="170" height="60" rx="10" fill="#f0fdfa" stroke="#0d9488" stroke-width="1.5"/>
+  <g transform="translate(516,268) scale(0.55)" fill="#134e4a">
+    <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+  </g>
+  <text x="525" y="293" text-anchor="middle" font-size="12" font-weight="700" fill="#134e4a">apu_daily.qo</text>
+  <text x="525" y="308" text-anchor="middle" font-size="10" fill="#0f766e">once per day · templated</text>
+
+  <!-- Notehub (blue) -->
+  <rect x="650" y="120" width="130" height="200" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <g transform="translate(706,188) scale(0.75)" fill="#1e3a8a">
+    <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/>
+  </g>
+  <text x="715" y="228" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">Notehub</text>
+  <text x="715" y="248" text-anchor="middle" font-size="11" fill="#1e40af">+ routes</text>
+
+  <!-- Arrows -->
+  <!-- Sample → Event triggers -->
+  <line x1="190" y1="220" x2="228" y2="220" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <!-- Event triggers → apu_event.qo -->
+  <line x1="400" y1="162" x2="438" y2="152" stroke="#dc2626" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-red)"/>
+  <!-- Event triggers → apu_telemetry.qo -->
+  <line x1="400" y1="225" x2="438" y2="222" stroke="#16a34a" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-green)"/>
+  <!-- Event triggers → apu_daily.qo -->
+  <line x1="400" y1="288" x2="438" y2="292" stroke="#0d9488" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-teal)"/>
+  <!-- apu_event.qo → Notehub -->
+  <line x1="610" y1="152" x2="648" y2="183" stroke="#dc2626" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-red)"/>
+  <!-- apu_telemetry.qo → Notehub -->
+  <line x1="610" y1="222" x2="648" y2="213" stroke="#16a34a" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-green)"/>
+  <!-- apu_daily.qo → Notehub -->
+  <line x1="610" y1="292" x2="648" y2="257" stroke="#0d9488" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-teal)"/>
+
+  <text x="400" y="395" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">Three Notefiles, three routes — faults to warranty system, summaries to analytics, daily totals to dashboard.</text>
+</svg>
