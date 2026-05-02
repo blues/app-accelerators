@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 460" width="860" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <marker id="ar-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="ar-slate" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+    </marker>
+  </defs>
+  <rect width="860" height="460" fill="#ffffff"/>
+
+  <text x="430" y="34" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">System Architecture</text>
+  <text x="430" y="54" text-anchor="middle" font-size="12" fill="#64748b">Cross-Border Container Electronic Security Seal — Skylo NTN + Cellular</text>
+
+  <!-- ── Sensors column ──────────────────────────────────────────────── -->
+  <!-- Reed switch (A0) -->
+  <rect x="16" y="80" width="160" height="120" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+  <text x="96" y="108" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">Reed Switch</text>
+  <text x="96" y="124" text-anchor="middle" font-size="10" fill="#9a3412">NC magnetic, GPIO A0</text>
+  <line x1="30" y1="135" x2="162" y2="135" stroke="#fed7aa" stroke-width="1"/>
+  <text x="96" y="153" text-anchor="middle" font-size="10" fill="#9a3412">Sealed = LOW</text>
+  <text x="96" y="169" text-anchor="middle" font-size="10" fill="#9a3412">Breach = HIGH</text>
+  <text x="96" y="185" text-anchor="middle" font-size="10" fill="#9a3412">INPUT_PULLUP</text>
+
+  <!-- Break-wire seal loop (A1) -->
+  <rect x="16" y="218" width="160" height="120" rx="8" fill="#fdf4ff" stroke="#a21caf" stroke-width="1.5"/>
+  <text x="96" y="246" text-anchor="middle" font-size="12" font-weight="700" fill="#701a75">Break-Wire Seal</text>
+  <text x="96" y="262" text-anchor="middle" font-size="10" fill="#86198f">NC continuity loop, GPIO A1</text>
+  <line x1="30" y1="273" x2="162" y2="273" stroke="#e9d5ff" stroke-width="1"/>
+  <text x="96" y="291" text-anchor="middle" font-size="10" fill="#86198f">Intact = LOW</text>
+  <text x="96" y="307" text-anchor="middle" font-size="10" fill="#86198f">Cut/removed = HIGH</text>
+  <text x="96" y="323" text-anchor="middle" font-size="10" fill="#86198f">INPUT_PULLUP</text>
+
+  <!-- ── Edge enclosure ──────────────────────────────────────────────── -->
+  <rect x="226" y="68" width="238" height="320" rx="10" fill="#fefce8" stroke="#ca8a04" stroke-width="2"/>
+  <text x="345" y="94" text-anchor="middle" font-size="13" font-weight="700" fill="#713f12">Edge Enclosure</text>
+  <line x1="240" y1="102" x2="450" y2="102" stroke="#fde68a" stroke-width="1"/>
+
+  <!-- Cygnet / Notecarrier CX -->
+  <rect x="240" y="112" width="210" height="68" rx="6" fill="#fffbeb" stroke="#d97706" stroke-width="1"/>
+  <text x="345" y="133" text-anchor="middle" font-size="11" font-weight="700" fill="#92400e">Notecarrier CX</text>
+  <text x="345" y="150" text-anchor="middle" font-size="10" fill="#a16207">Cygnet STM32L4 host MCU</text>
+  <text x="345" y="166" text-anchor="middle" font-size="10" fill="#a16207">reads A0 · A1 · runs firmware</text>
+
+  <!-- Notecard for Skylo (M.2) -->
+  <rect x="240" y="194" width="210" height="68" rx="6" fill="#fefce8" stroke="#ca8a04" stroke-width="1"/>
+  <text x="345" y="215" text-anchor="middle" font-size="11" font-weight="700" fill="#713f12">Notecard for Skylo (M.2)</text>
+  <text x="345" y="232" text-anchor="middle" font-size="10" fill="#854d0e">LTE-M / NB-IoT / GPRS global</text>
+  <text x="345" y="248" text-anchor="middle" font-size="10" fill="#854d0e">Skylo NTN satellite · GPS/GNSS</text>
+
+  <!-- ATECC608A (I2C) -->
+  <rect x="240" y="276" width="210" height="68" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1"/>
+  <text x="345" y="297" text-anchor="middle" font-size="11" font-weight="700" fill="#14532d">ATECC608A (Qwiic I²C)</text>
+  <text x="345" y="314" text-anchor="middle" font-size="10" fill="#166534">ECC P-256 key — never leaves chip</text>
+  <text x="345" y="330" text-anchor="middle" font-size="10" fill="#166534">signs events · signs heartbeats</text>
+
+  <!-- Internal I2C label -->
+  <text x="345" y="363" text-anchor="middle" font-size="10" fill="#a16207" font-style="italic">Cygnet ↔ Notecard via M.2 · Cygnet ↔ ATECC via I²C</text>
+  <text x="345" y="378" text-anchor="middle" font-size="10" fill="#a16207" font-style="italic">state · compact notes · sleep/wake · queue</text>
+
+  <!-- ── Notehub ──────────────────────────────────────────────────────── -->
+  <rect x="518" y="80" width="160" height="220" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="598" y="108" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">Notehub</text>
+  <line x1="530" y1="116" x2="668" y2="116" stroke="#bfdbfe" stroke-width="1"/>
+  <g font-size="10" fill="#1e40af">
+    <text x="598" y="137" text-anchor="middle">Session termination</text>
+    <text x="598" y="155" text-anchor="middle">Event storage</text>
+    <text x="598" y="173" text-anchor="middle">Env var distribution</text>
+    <text x="598" y="191" text-anchor="middle">Time sync</text>
+    <text x="598" y="209" text-anchor="middle">Fleet management</text>
+    <text x="598" y="227" text-anchor="middle">Route dispatch</text>
+    <text x="598" y="247" text-anchor="middle" font-style="italic" fill="#3b82f6">seal_event.qo</text>
+    <text x="598" y="263" text-anchor="middle" font-style="italic" fill="#3b82f6">seal_heartbeat.qo</text>
+    <text x="598" y="279" text-anchor="middle" font-style="italic" fill="#3b82f6">seal_sig_full.qo</text>
+  </g>
+
+  <!-- ── Routes ──────────────────────────────────────────────────────── -->
+  <rect x="736" y="80" width="108" height="220" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+  <text x="790" y="108" text-anchor="middle" font-size="13" font-weight="700" fill="#581c87">Routes</text>
+  <line x1="748" y1="116" x2="832" y2="116" stroke="#e9d5ff" stroke-width="1"/>
+  <g font-size="10" fill="#6b21a8">
+    <text x="790" y="140" text-anchor="middle">Alerts</text>
+    <text x="790" y="160" text-anchor="middle">Audit DB</text>
+    <text x="790" y="180" text-anchor="middle">Analytics</text>
+    <text x="790" y="200" text-anchor="middle">Webhook</text>
+    <text x="790" y="220" text-anchor="middle">Compliance</text>
+    <text x="790" y="240" text-anchor="middle">SIEM</text>
+  </g>
+
+  <!-- ── Connection labels ────────────────────────────────────────────── -->
+  <text x="192" y="62" text-anchor="middle" font-size="10" font-weight="600" fill="#475569">GPIO</text>
+  <text x="490" y="62" text-anchor="middle" font-size="10" font-weight="600" fill="#475569">cellular / Skylo NTN satellite</text>
+  <text x="704" y="62" text-anchor="middle" font-size="10" font-weight="600" fill="#475569">routes</text>
+
+  <!-- ── Arrows ────────────────────────────────────────────────────────── -->
+  <!-- Reed switch → edge (door events) -->
+  <line x1="176" y1="140" x2="224" y2="175" stroke="#ea580c" stroke-opacity="0.55" stroke-width="1.8" marker-end="url(#ar-gray)"/>
+  <!-- Break-wire → edge (seal-break events) -->
+  <line x1="176" y1="278" x2="224" y2="250" stroke="#a21caf" stroke-opacity="0.55" stroke-width="1.8" marker-end="url(#ar-gray)"/>
+  <!-- Edge → Notehub -->
+  <line x1="464" y1="200" x2="516" y2="200" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <!-- Notehub → Routes -->
+  <line x1="678" y1="190" x2="734" y2="190" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+
+  <!-- ── Key ────────────────────────────────────────────────────────────── -->
+  <rect x="16" y="368" width="440" height="76" rx="6" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="28" y="388" font-size="10" font-weight="700" fill="#334155">Event flows</text>
+  <rect x="28" y="396" width="10" height="10" rx="2" fill="#fff7ed" stroke="#ea580c" stroke-width="1"/>
+  <text x="44" y="406" font-size="10" fill="#475569">Door breach / re-seal (seal_event.qo, sync:true)</text>
+  <rect x="28" y="413" width="10" height="10" rx="2" fill="#fdf4ff" stroke="#a21caf" stroke-width="1"/>
+  <text x="44" y="423" font-size="10" fill="#475569">Seal-wire break (seal_event.qo, sync:true — independent of door state)</text>
+  <rect x="28" y="430" width="10" height="10" rx="2" fill="#f0fdf4" stroke="#16a34a" stroke-width="1"/>
+  <text x="44" y="440" font-size="10" fill="#475569">Heartbeat + sig (seal_heartbeat.qo batched) · Full sig (seal_sig_full.qo cellular)</text>
+
+  <text x="430" y="438" text-anchor="end" font-size="10" fill="#64748b" font-style="italic">Skylo NTN covers major shipping lanes; Iridium/Starnote required for polar routes — see §9</text>
+</svg>

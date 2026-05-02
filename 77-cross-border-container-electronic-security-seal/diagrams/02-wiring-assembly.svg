@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 580" width="860" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <marker id="ar-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#f59e0b"/>
+    </marker>
+    <marker id="ar-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#a21caf"/>
+    </marker>
+    <marker id="ar-sky" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0ea5e9"/>
+    </marker>
+    <marker id="ar-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#10b981"/>
+    </marker>
+    <marker id="ar-emerald" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16a34a"/>
+    </marker>
+    <marker id="ar-brown" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#a16207"/>
+    </marker>
+  </defs>
+  <rect width="860" height="580" fill="#ffffff"/>
+
+  <text x="430" y="34" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">Wiring &amp; Assembly</text>
+  <text x="430" y="54" text-anchor="middle" font-size="12" fill="#64748b">Connections on the Notecarrier CX dual 16-pin header</text>
+
+  <!-- ── Notecarrier CX center ─────────────────────────────────────────── -->
+  <rect x="310" y="72" width="240" height="350" rx="10" fill="#f1f5f9" stroke="#0f172a" stroke-width="2"/>
+  <text x="430" y="98" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Notecarrier CX</text>
+  <text x="430" y="114" text-anchor="middle" font-size="10" fill="#475569">Cygnet STM32 · NOTE-NBGLWX M.2</text>
+  <line x1="320" y1="122" x2="540" y2="122" stroke="#cbd5e1" stroke-width="1"/>
+
+  <!-- Pin labels (left side) -->
+  <text x="326" y="185" font-size="11" fill="#0f172a" font-weight="600">A0</text>
+  <text x="326" y="247" font-size="11" fill="#0f172a" font-weight="600">A1</text>
+  <text x="326" y="305" font-size="11" fill="#0f172a">GND</text>
+
+  <!-- Pin labels (right side) -->
+  <text x="536" y="165" text-anchor="end" font-size="11" fill="#0f172a">u.FL MAIN</text>
+  <text x="536" y="255" text-anchor="end" font-size="11" fill="#0f172a">u.FL GPS</text>
+  <text x="536" y="338" text-anchor="end" font-size="11" fill="#0f172a">Qwiic (I²C)</text>
+
+  <!-- Pin dots -->
+  <circle cx="310" cy="181" r="5" fill="#f59e0b"/>
+  <circle cx="310" cy="243" r="5" fill="#a21caf"/>
+  <circle cx="310" cy="301" r="5" fill="#94a3b8"/>
+  <circle cx="550" cy="161" r="5" fill="#0ea5e9"/>
+  <circle cx="550" cy="251" r="5" fill="#10b981"/>
+  <circle cx="550" cy="334" r="5" fill="#16a34a"/>
+  <circle cx="430" cy="422" r="5" fill="#a16207"/>
+  <text x="430" y="436" text-anchor="middle" font-size="11" fill="#0f172a">+VBAT</text>
+
+  <!-- ── Left: Reed switch (A0) ─────────────────────────────────────────── -->
+  <rect x="30" y="148" width="220" height="84" rx="8" fill="#fff7ed" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="140" y="175" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">Reed Switch (NC) — A0</text>
+  <text x="140" y="192" text-anchor="middle" font-size="10" fill="#9a3412">Terminal A → A0 (INPUT_PULLUP)</text>
+  <text x="140" y="208" text-anchor="middle" font-size="10" fill="#9a3412">Terminal B → GND · sealed=LOW, breach=HIGH</text>
+  <text x="140" y="224" text-anchor="middle" font-size="10" fill="#9a3412" font-style="italic">fail-safe: disconnected wire = breach detected</text>
+
+  <!-- ── Left: Break-wire continuity loop (A1) ────────────────────────── -->
+  <rect x="30" y="210" width="220" height="84" rx="8" fill="#fdf4ff" stroke="#a21caf" stroke-width="1.5"/>
+  <text x="140" y="237" text-anchor="middle" font-size="12" font-weight="700" fill="#701a75">Break-Wire Loop — A1</text>
+  <text x="140" y="254" text-anchor="middle" font-size="10" fill="#86198f">Wire End 1 → A1 (INPUT_PULLUP)</text>
+  <text x="140" y="270" text-anchor="middle" font-size="10" fill="#86198f">Wire End 2 → GND · intact=LOW, cut=HIGH</text>
+  <text x="140" y="286" text-anchor="middle" font-size="10" fill="#86198f" font-style="italic">loop routes through physical seal body</text>
+
+  <!-- ── Right top: MAIN antenna ──────────────────────────────────────── -->
+  <rect x="610" y="128" width="230" height="78" rx="8" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="1.5"/>
+  <text x="725" y="156" text-anchor="middle" font-size="12" font-weight="700" fill="#075985">MAIN Antenna</text>
+  <text x="725" y="173" text-anchor="middle" font-size="10" fill="#0c4a6e">Skylo-certified (included with Notecard)</text>
+  <text x="725" y="189" text-anchor="middle" font-size="10" fill="#0c4a6e">LTE-M + Skylo NTN · u.FL direct → cable gland #1</text>
+
+  <!-- ── Right mid: GPS antenna path ──────────────────────────────────── -->
+  <rect x="610" y="222" width="230" height="92" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
+  <text x="725" y="248" text-anchor="middle" font-size="12" font-weight="700" fill="#065f46">GPS Antenna Path</text>
+  <text x="725" y="265" text-anchor="middle" font-size="10" fill="#064e3b">Adafruit 851 u.FL→SMA pigtail</text>
+  <text x="725" y="281" text-anchor="middle" font-size="10" fill="#064e3b">ANT-GPS-P20-SMA passive patch</text>
+  <text x="725" y="297" text-anchor="middle" font-size="10" fill="#064e3b">face-up outdoors · no active bias · cable gland #2</text>
+
+  <!-- ── Right bottom: ATECC608A ──────────────────────────────────────── -->
+  <rect x="610" y="306" width="230" height="92" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="725" y="332" text-anchor="middle" font-size="12" font-weight="700" fill="#14532d">ATECC608A Breakout</text>
+  <text x="725" y="349" text-anchor="middle" font-size="10" fill="#166534">SparkFun DEV-18077 · Qwiic cable</text>
+  <text x="725" y="365" text-anchor="middle" font-size="10" fill="#166534">I²C addr 0x60 · ECC P-256 slot 0</text>
+  <text x="725" y="381" text-anchor="middle" font-size="10" fill="#166534" font-style="italic">provision key before sealing enclosure</text>
+
+  <!-- ── Arrows ────────────────────────────────────────────────────────── -->
+  <!-- Reed switch → A0 -->
+  <line x1="250" y1="181" x2="306" y2="181" stroke="#f59e0b" stroke-opacity="0.7" stroke-width="2" marker-end="url(#ar-amber)"/>
+  <!-- Break-wire → A1 -->
+  <line x1="250" y1="243" x2="306" y2="243" stroke="#a21caf" stroke-opacity="0.7" stroke-width="2" marker-end="url(#ar-purple)"/>
+  <!-- MAIN antenna → u.FL MAIN -->
+  <line x1="610" y1="161" x2="554" y2="161" stroke="#0ea5e9" stroke-opacity="0.7" stroke-width="2" marker-end="url(#ar-sky)"/>
+  <!-- GPS → u.FL GPS -->
+  <line x1="610" y1="251" x2="554" y2="251" stroke="#10b981" stroke-opacity="0.7" stroke-width="2" marker-end="url(#ar-green)"/>
+  <!-- ATECC608A → Qwiic -->
+  <line x1="610" y1="334" x2="554" y2="334" stroke="#16a34a" stroke-opacity="0.7" stroke-width="2" marker-end="url(#ar-emerald)"/>
+
+  <!-- ── Power chain ───────────────────────────────────────────────────── -->
+  <rect x="30" y="480" width="800" height="75" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+  <text x="48" y="500" font-size="12" font-weight="700" fill="#713f12">Power path</text>
+
+  <rect x="50" y="509" width="120" height="32" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="110" y="530" text-anchor="middle" font-size="11" fill="#713f12">LiPo 3.7 V</text>
+
+  <rect x="208" y="509" width="170" height="32" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="293" y="530" text-anchor="middle" font-size="11" fill="#713f12">Mojo (bench only)</text>
+
+  <rect x="418" y="509" width="200" height="32" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="518" y="530" text-anchor="middle" font-size="11" fill="#713f12">Notecarrier +VBAT</text>
+
+  <line x1="170" y1="525" x2="206" y2="525" stroke="#a16207" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-brown)"/>
+  <line x1="378" y1="525" x2="416" y2="525" stroke="#a16207" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-brown)"/>
+
+  <!-- +VBAT drop line -->
+  <line x1="430" y1="441" x2="430" y2="476" stroke="#a16207" stroke-opacity="0.4" stroke-width="1.5" stroke-dasharray="4 3"/>
+
+  <!-- ── Note ──────────────────────────────────────────────────────────── -->
+  <text x="430" y="562" text-anchor="middle" font-size="10" fill="#64748b" font-style="italic">All four cable glands must be sealed (IP65): #1 MAIN antenna · #2 GPS cable · #3 reed-switch leads · #4 break-wire loop ends.</text>
+</svg>
