@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" width="800" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <marker id="ar-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="ar-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/>
+    </marker>
+    <marker id="ar-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16a34a"/>
+    </marker>
+    <marker id="ar-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/>
+    </marker>
+  </defs>
+  <rect width="800" height="480" fill="#ffffff"/>
+
+  <text x="400" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">Data Flow</text>
+  <text x="400" y="56" text-anchor="middle" font-size="12" fill="#64748b">Sample · evaluate · emit</text>
+
+  <!-- Sample block -->
+  <rect x="20" y="90" width="175" height="240" rx="10" fill="#e0f2fe" stroke="#0284c7" stroke-width="1.5"/>
+  <g transform="translate(99,105) scale(0.75)" fill="#0c4a6e"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></g>
+  <text x="107" y="142" text-anchor="middle" font-size="13" font-weight="700" fill="#0c4a6e">Sample</text>
+  <text x="107" y="160" text-anchor="middle" font-size="11" fill="#075985">every 15 min</text>
+  <line x1="40" y1="174" x2="175" y2="174" stroke="#7dd3fc"/>
+  <g font-size="11" fill="#0c4a6e">
+    <text x="107" y="198" text-anchor="middle">Coupler state</text>
+    <text x="107" y="218" text-anchor="middle">Peak shock G</text>
+    <text x="107" y="238" text-anchor="middle">Motion state</text>
+    <text x="107" y="264" text-anchor="middle" fill="#6d28d9">Pressure PSI †</text>
+    <text x="107" y="284" text-anchor="middle" fill="#6d28d9">Tank temp °C †</text>
+    <text x="107" y="310" text-anchor="middle" font-size="9" fill="#94a3b8" font-style="italic">† TANK_CAR only</text>
+  </g>
+
+  <!-- Edge rules block -->
+  <rect x="240" y="90" width="175" height="240" rx="10" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+  <g transform="translate(319,105) scale(0.75)" fill="#7c2d12"><path d="M20 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9.6 13.6L7 13.2l1.4-1.4 2 2 4.6-4.6 1.4 1.4-6 6z"/></g>
+  <text x="327" y="142" text-anchor="middle" font-size="13" font-weight="700" fill="#7c2d12">Edge rules</text>
+  <text x="327" y="160" text-anchor="middle" font-size="11" fill="#9a3412">7 conditions total</text>
+  <line x1="260" y1="174" x2="395" y2="174" stroke="#fed7aa"/>
+  <g font-size="11" fill="#7c2d12">
+    <text x="327" y="198" text-anchor="middle">impact</text>
+    <text x="327" y="218" text-anchor="middle">coupled / decoupled</text>
+    <line x1="262" y1="232" x2="392" y2="232" stroke="#fde68a" stroke-dasharray="3 2"/>
+    <text x="327" y="252" text-anchor="middle" fill="#6d28d9">pressure_high †</text>
+    <text x="327" y="272" text-anchor="middle" fill="#6d28d9">pressure_drop †</text>
+    <text x="327" y="292" text-anchor="middle" fill="#6d28d9">tank_temp_low †</text>
+    <text x="327" y="312" text-anchor="middle" fill="#6d28d9">tank_temp_high †</text>
+  </g>
+
+  <!-- Three output Notefiles -->
+  <!-- railcar_alert.qo -->
+  <rect x="460" y="90" width="185" height="66" rx="10" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+  <g transform="translate(533,100) scale(0.65)" fill="#7f1d1d"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></g>
+  <text x="553" y="132" text-anchor="middle" font-size="12" font-weight="700" fill="#7f1d1d">railcar_alert.qo</text>
+  <text x="553" y="149" text-anchor="middle" font-size="10" fill="#991b1b">hub.sync · immediate delivery</text>
+
+  <!-- railcar_status.qo -->
+  <rect x="460" y="177" width="185" height="66" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+  <g transform="translate(533,187) scale(0.65)" fill="#14532d"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7 17v-3h2v3H7zm4 0V7h2v10h-2zm4 0v-5h2v5h-2z"/></g>
+  <text x="553" y="218" text-anchor="middle" font-size="12" font-weight="700" fill="#14532d">railcar_status.qo</text>
+  <text x="553" y="235" text-anchor="middle" font-size="10" fill="#166534">every 4 h · compact template</text>
+
+  <!-- railcar_location.qo -->
+  <rect x="460" y="264" width="185" height="66" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <g transform="translate(533,274) scale(0.65)" fill="#1e3a8a"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></g>
+  <text x="553" y="305" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">railcar_location.qo</text>
+  <text x="553" y="322" text-anchor="middle" font-size="10" fill="#1e40af">motion edges + every 30 min</text>
+
+  <!-- Notehub -->
+  <rect x="680" y="140" width="110" height="180" rx="10" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+  <g transform="translate(726,155) scale(0.75)" fill="#581c87"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></g>
+  <text x="735" y="196" text-anchor="middle" font-size="13" font-weight="700" fill="#581c87">Notehub</text>
+  <line x1="692" y1="208" x2="778" y2="208" stroke="#e9d5ff"/>
+  <g font-size="11" fill="#6b21a8">
+    <text x="735" y="228" text-anchor="middle">Alerts</text>
+    <text x="735" y="248" text-anchor="middle">Analytics</text>
+    <text x="735" y="268" text-anchor="middle">Geofencing</text>
+    <text x="735" y="288" text-anchor="middle">+ routes</text>
+  </g>
+
+  <!-- Arrows: sample → rules -->
+  <line x1="195" y1="210" x2="238" y2="210" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+
+  <!-- Arrows: rules → notefiles -->
+  <line x1="415" y1="175" x2="458" y2="140" stroke="#dc2626" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-red)"/>
+  <line x1="415" y1="210" x2="458" y2="210" stroke="#16a34a" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-green)"/>
+  <line x1="415" y1="240" x2="458" y2="280" stroke="#2563eb" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-blue)"/>
+
+  <!-- Arrows: notefiles → Notehub -->
+  <line x1="645" y1="140" x2="678" y2="168" stroke="#dc2626" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-red)"/>
+  <line x1="645" y1="210" x2="678" y2="230" stroke="#16a34a" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-green)"/>
+  <line x1="645" y1="280" x2="678" y2="270" stroke="#2563eb" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-blue)"/>
+
+  <text x="400" y="440" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">Three Notefiles, three routes — alerts to on-call, status to analytics, location to geofencing.</text>
+</svg>
