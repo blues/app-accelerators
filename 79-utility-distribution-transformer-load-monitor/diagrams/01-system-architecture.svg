@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 400" width="860" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <marker id="ar-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+  </defs>
+  <rect width="860" height="400" fill="#ffffff"/>
+
+  <text x="430" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">System Architecture</text>
+  <text x="430" y="58" text-anchor="middle" font-size="12" fill="#64748b">Utility Distribution Transformer Load Monitor</text>
+
+  <!-- Sensors block -->
+  <rect x="20" y="110" width="165" height="220" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+  <text x="102" y="138" text-anchor="middle" font-size="13" font-weight="700" fill="#7c2d12">Pole-top sensors</text>
+  <line x1="36" y1="148" x2="169" y2="148" stroke="#fed7aa" stroke-width="1"/>
+  <g font-size="11" fill="#9a3412">
+    <text x="102" y="172" text-anchor="middle">CT-A (A0) — L1 phase</text>
+    <text x="102" y="194" text-anchor="middle">CT-B (A1) — L2 phase</text>
+    <text x="102" y="216" text-anchor="middle">CT-C (A2) — L3 phase</text>
+    <text x="102" y="238" text-anchor="middle">100 A / 50 mA</text>
+    <text x="102" y="260" text-anchor="middle">SCT-013-000</text>
+    <line x1="36" y1="272" x2="169" y2="272" stroke="#fed7aa" stroke-width="1"/>
+    <text x="102" y="292" text-anchor="middle">MCP9808 (I²C)</text>
+    <text x="102" y="314" text-anchor="middle">enclosure temp</text>
+  </g>
+
+  <!-- Edge / enclosure block -->
+  <rect x="240" y="110" width="210" height="220" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+  <text x="345" y="138" text-anchor="middle" font-size="13" font-weight="700" fill="#713f12">Edge enclosure</text>
+  <line x1="256" y1="148" x2="434" y2="148" stroke="#fde68a" stroke-width="1"/>
+  <g font-size="11" fill="#854d0e">
+    <text x="345" y="172" text-anchor="middle">Notecarrier CX</text>
+    <text x="345" y="194" text-anchor="middle">Cygnet STM32L4 host</text>
+    <line x1="256" y1="206" x2="434" y2="206" stroke="#fde68a" stroke-width="1"/>
+    <text x="345" y="226" text-anchor="middle">Notecard Cell+WiFi (MBGLW)</text>
+    <text x="345" y="248" text-anchor="middle">prepaid global SIM</text>
+    <line x1="256" y1="260" x2="434" y2="260" stroke="#fde68a" stroke-width="1"/>
+    <text x="345" y="280" text-anchor="middle">IRM-10-5 AC/DC supply</text>
+    <text x="345" y="302" text-anchor="middle">120 VAC → 5 V DC</text>
+  </g>
+  <text x="345" y="322" text-anchor="middle" font-size="10" fill="#a16207" font-style="italic">sample · threshold rules · sleep</text>
+
+  <!-- Notehub block -->
+  <rect x="510" y="110" width="165" height="220" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="592" y="138" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">Notehub</text>
+  <line x1="526" y1="148" x2="659" y2="148" stroke="#bfdbfe" stroke-width="1"/>
+  <g font-size="11" fill="#1e40af">
+    <text x="592" y="172" text-anchor="middle">Event storage</text>
+    <text x="592" y="194" text-anchor="middle">Env var distribution</text>
+    <text x="592" y="216" text-anchor="middle">Fleet management</text>
+    <text x="592" y="238" text-anchor="middle">Routing engine</text>
+  </g>
+
+  <!-- Routes block -->
+  <rect x="735" y="110" width="110" height="220" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+  <text x="790" y="138" text-anchor="middle" font-size="13" font-weight="700" fill="#581c87">Routes</text>
+  <line x1="751" y1="148" x2="829" y2="148" stroke="#e9d5ff" stroke-width="1"/>
+  <g font-size="11" fill="#6b21a8">
+    <text x="790" y="172" text-anchor="middle">OMS / paging</text>
+    <text x="790" y="194" text-anchor="middle">(alerts)</text>
+    <line x1="751" y1="206" x2="829" y2="206" stroke="#e9d5ff" stroke-width="1"/>
+    <text x="790" y="228" text-anchor="middle">Historian /</text>
+    <text x="790" y="248" text-anchor="middle">analytics</text>
+    <text x="790" y="268" text-anchor="middle">(summaries)</text>
+  </g>
+
+  <!-- Connection labels -->
+  <text x="216" y="92" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">ADC + I²C</text>
+  <text x="480" y="92" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">cellular / WiFi</text>
+  <text x="718" y="92" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">HTTP / MQTT</text>
+
+  <!-- Arrows -->
+  <line x1="186" y1="220" x2="238" y2="220" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <line x1="451" y1="220" x2="508" y2="220" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <line x1="676" y1="220" x2="733" y2="220" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+
+  <text x="430" y="370" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">Cellular backhaul requires no per-pole IT infrastructure — one SKU, one SIM platform, any feeder.</text>
+</svg>

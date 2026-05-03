@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 520" width="860" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <marker id="ar-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="ar-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#ea580c"/>
+    </marker>
+    <marker id="ar-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/>
+    </marker>
+    <marker id="ar-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16a34a"/>
+    </marker>
+  </defs>
+  <rect width="860" height="520" fill="#ffffff"/>
+
+  <text x="430" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">Wiring and Assembly</text>
+  <text x="430" y="58" text-anchor="middle" font-size="12" fill="#64748b">Utility Distribution Transformer Load Monitor</text>
+
+  <!-- AC mains supply chain (top) -->
+  <rect x="20" y="90" width="130" height="64" rx="6" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="85" y="115" text-anchor="middle" font-size="12" font-weight="700" fill="#991b1b">120 VAC</text>
+  <text x="85" y="133" text-anchor="middle" font-size="11" fill="#dc2626">transformer</text>
+  <text x="85" y="148" text-anchor="middle" font-size="11" fill="#dc2626">secondary</text>
+
+  <rect x="200" y="90" width="130" height="64" rx="6" fill="#fff1f2" stroke="#e11d48" stroke-width="1.5"/>
+  <text x="265" y="115" text-anchor="middle" font-size="12" font-weight="700" fill="#881337">Fuse 2A 250V</text>
+  <text x="265" y="133" text-anchor="middle" font-size="11" fill="#e11d48">slow-blow</text>
+  <text x="265" y="148" text-anchor="middle" font-size="11" fill="#e11d48">on Line leg</text>
+
+  <rect x="380" y="90" width="130" height="64" rx="6" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+  <text x="445" y="115" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">IRM-10-5</text>
+  <text x="445" y="133" text-anchor="middle" font-size="11" fill="#ea580c">AC/DC supply</text>
+  <text x="445" y="148" text-anchor="middle" font-size="11" fill="#ea580c">5 V / 2 A out</text>
+
+  <rect x="560" y="90" width="130" height="64" rx="6" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+  <text x="625" y="115" text-anchor="middle" font-size="12" font-weight="700" fill="#713f12">Mojo</text>
+  <text x="625" y="133" text-anchor="middle" font-size="11" fill="#ca8a04">coulomb counter</text>
+  <text x="625" y="148" text-anchor="middle" font-size="11" fill="#ca8a04">bench only</text>
+
+  <rect x="740" y="90" width="100" height="64" rx="6" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+  <text x="790" y="115" text-anchor="middle" font-size="12" font-weight="700" fill="#713f12">+VBAT</text>
+  <text x="790" y="133" text-anchor="middle" font-size="11" fill="#ca8a04">Notecarrier CX</text>
+  <text x="790" y="148" text-anchor="middle" font-size="11" fill="#ca8a04">5 V supply rail</text>
+
+  <!-- AC chain arrows -->
+  <line x1="150" y1="122" x2="198" y2="122" stroke="#dc2626" stroke-width="2" marker-end="url(#ar-orange)"/>
+  <line x1="330" y1="122" x2="378" y2="122" stroke="#dc2626" stroke-width="2" marker-end="url(#ar-orange)"/>
+  <line x1="510" y1="122" x2="558" y2="122" stroke="#475569" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <line x1="690" y1="122" x2="738" y2="122" stroke="#475569" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <text x="175" y="114" text-anchor="middle" font-size="10" fill="#64748b">L / N</text>
+  <text x="355" y="114" text-anchor="middle" font-size="10" fill="#64748b">L / N</text>
+  <text x="534" y="114" text-anchor="middle" font-size="10" fill="#64748b">5 V DC</text>
+  <text x="715" y="114" text-anchor="middle" font-size="10" fill="#64748b">5 V DC</text>
+
+  <!-- Notecarrier CX (center) -->
+  <rect x="300" y="225" width="260" height="200" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+  <text x="430" y="252" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">Notecarrier CX</text>
+  <text x="430" y="271" text-anchor="middle" font-size="11" fill="#3b82f6">Cygnet STM32L4  ·  Notecard MBGLW</text>
+  <line x1="316" y1="280" x2="544" y2="280" stroke="#bfdbfe" stroke-width="1"/>
+  <g font-size="10" fill="#1e40af">
+    <text x="340" y="300">A0 ── Phase-A CT bias circuit</text>
+    <text x="340" y="318">A1 ── Phase-B CT bias circuit</text>
+    <text x="340" y="336">A2 ── Phase-C CT bias circuit</text>
+    <text x="340" y="354">SDA / SCL ── MCP9808 (I²C)</text>
+    <text x="340" y="372">+3V3 / GND ── bias dividers + MCP9808</text>
+    <text x="340" y="390">+VBAT ── 5 V from IRM-10-5 (via Mojo on bench)</text>
+    <text x="340" y="408">u.FL ── cellular antenna</text>
+  </g>
+
+  <!-- CT bias blocks (left) -->
+  <rect x="20" y="225" width="210" height="120" rx="6" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+  <text x="125" y="249" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">CT bias circuit (×3)</text>
+  <text x="125" y="267" text-anchor="middle" font-size="11" fill="#9a3412">one per CT channel (A, B, C)</text>
+  <line x1="36" y1="276" x2="214" y2="276" stroke="#fed7aa" stroke-width="1"/>
+  <g font-size="10" fill="#9a3412">
+    <text x="36" y="296">Rb 22 Ω — burden resistor</text>
+    <text x="36" y="314">R1 10 kΩ + R2 10 kΩ — bias divider</text>
+    <text x="36" y="332">C 10 µF — AC coupling capacitor</text>
+    <text x="36" y="339" font-style="italic">3.5mm TRRS jack breakout</text>
+  </g>
+
+  <!-- CT sensors (far left) -->
+  <rect x="20" y="380" width="210" height="100" rx="6" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+  <text x="125" y="404" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">YHDC SCT-013-000 (×3)</text>
+  <text x="125" y="422" text-anchor="middle" font-size="11" fill="#9a3412">split-core current-output CTs</text>
+  <g font-size="10" fill="#9a3412">
+    <text x="36" y="444">100 A / 50 mA — clamp on conductor</text>
+    <text x="36" y="462">3.5mm plug tip = CT+  sleeve = CT−</text>
+    <text x="36" y="472" font-style="italic">do not open-circuit with load present</text>
+  </g>
+
+  <!-- MCP9808 (right) -->
+  <rect x="630" y="225" width="210" height="100" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="735" y="249" text-anchor="middle" font-size="12" font-weight="700" fill="#14532d">Adafruit MCP9808</text>
+  <text x="735" y="267" text-anchor="middle" font-size="11" fill="#15803d">I²C temp sensor</text>
+  <line x1="646" y1="276" x2="824" y2="276" stroke="#bbf7d0" stroke-width="1"/>
+  <g font-size="10" fill="#15803d">
+    <text x="646" y="295">VDD → +3V3   GND → GND</text>
+    <text x="646" y="313">SDA → SDA   SCL → SCL</text>
+    <text x="646" y="331">I²C addr 0x18 (default)</text>
+  </g>
+
+  <!-- Arrows: CTs → bias circuit -->
+  <line x1="125" y1="380" x2="125" y2="347" stroke="#ea580c" stroke-width="1.5" marker-end="url(#ar-orange)"/>
+
+  <!-- Arrows: bias circuit → Notecarrier A0 -->
+  <line x1="230" y1="285" x2="298" y2="310" stroke="#ea580c" stroke-width="1.5" marker-end="url(#ar-orange)"/>
+  <text x="263" y="292" text-anchor="middle" font-size="10" fill="#ea580c">A0/A1/A2</text>
+
+  <!-- Arrows: MCP9808 → Notecarrier SDA/SCL -->
+  <line x1="630" y1="285" x2="562" y2="340" stroke="#16a34a" stroke-width="1.5" marker-end="url(#ar-green)"/>
+  <text x="600" y="304" text-anchor="middle" font-size="10" fill="#16a34a">SDA / SCL</text>
+
+  <!-- Antenna note (bottom right) -->
+  <rect x="630" y="360" width="210" height="80" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1"/>
+  <text x="735" y="381" text-anchor="middle" font-size="12" font-weight="700" fill="#334155">Cellular antenna</text>
+  <g font-size="10" fill="#475569">
+    <text x="646" y="399">u.FL → SMA pigtail (bulkhead)</text>
+    <text x="646" y="415">Outdoor LTE antenna for field install</text>
+    <text x="646" y="431">Orient vertically, away from mains wiring</text>
+  </g>
+
+  <text x="430" y="496" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">Mojo is bench-only — not installed in deployed unit.  All mains wiring inside NEMA 4X enclosure.</text>
+</svg>

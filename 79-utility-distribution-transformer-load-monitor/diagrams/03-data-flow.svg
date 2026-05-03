@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 480" width="860" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <marker id="ar-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="ar-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/>
+    </marker>
+    <marker id="ar-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/>
+    </marker>
+    <marker id="ar-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16a34a"/>
+    </marker>
+  </defs>
+  <rect width="860" height="480" fill="#ffffff"/>
+
+  <text x="430" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">Data Flow</text>
+  <text x="430" y="58" text-anchor="middle" font-size="12" fill="#64748b">Utility Distribution Transformer Load Monitor</text>
+
+  <!-- Step 1: Sense -->
+  <rect x="20" y="90" width="155" height="130" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+  <text x="97" y="114" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">① Sense</text>
+  <text x="97" y="130" text-anchor="middle" font-size="10" fill="#9a3412">every 5 min (default)</text>
+  <line x1="36" y1="138" x2="159" y2="138" stroke="#fed7aa" stroke-width="1"/>
+  <g font-size="10" fill="#9a3412">
+    <text x="36" y="157">3× CT RMS (two-pass ADC)</text>
+    <text x="36" y="173">i_a, i_b, i_c in amps</text>
+    <text x="36" y="189">MCP9808 → temp_c</text>
+    <text x="36" y="205">noise floor: 0.5 A zeroed</text>
+  </g>
+
+  <!-- Step 2: Accumulate -->
+  <rect x="220" y="90" width="155" height="130" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+  <text x="297" y="114" text-anchor="middle" font-size="12" font-weight="700" fill="#713f12">② Accumulate</text>
+  <text x="297" y="130" text-anchor="middle" font-size="10" fill="#854d0e">per summary window</text>
+  <line x1="236" y1="138" x2="359" y2="138" stroke="#fde68a" stroke-width="1"/>
+  <g font-size="10" fill="#854d0e">
+    <text x="236" y="157">sum_i_a/b/c (loaded only)</text>
+    <text x="236" y="173">valid_samples counter</text>
+    <text x="236" y="189">total_wakes counter</text>
+    <text x="236" y="205">overload_count counter</text>
+  </g>
+
+  <!-- Step 3: Threshold rules -->
+  <rect x="420" y="90" width="200" height="130" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="520" y="114" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">③ Threshold rules</text>
+  <text x="520" y="130" text-anchor="middle" font-size="10" fill="#1e40af">each wake, 3 independent checks</text>
+  <line x1="436" y1="138" x2="604" y2="138" stroke="#bfdbfe" stroke-width="1"/>
+  <g font-size="10" fill="#1e40af">
+    <text x="436" y="157">overload: any phase &gt; rated_amps×pct</text>
+    <text x="436" y="173">imbalance: (max−min)/max &gt; thresh</text>
+    <text x="436" y="189">high_temp: temp_c &gt; temp_alert_c</text>
+    <text x="436" y="205">30-min cooldown per alert type</text>
+  </g>
+
+  <!-- Arrows row 1 -->
+  <line x1="175" y1="155" x2="218" y2="155" stroke="#475569" stroke-opacity="0.7" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <line x1="375" y1="155" x2="418" y2="155" stroke="#475569" stroke-opacity="0.7" stroke-width="2" marker-end="url(#ar-gray)"/>
+
+  <!-- xfmr_alert.qo path (upper right) -->
+  <rect x="670" y="90" width="170" height="80" rx="8" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="755" y="114" text-anchor="middle" font-size="12" font-weight="700" fill="#991b1b">xfmr_alert.qo</text>
+  <text x="755" y="132" text-anchor="middle" font-size="10" fill="#dc2626">sync: true → immediate</text>
+  <g font-size="10" fill="#dc2626">
+    <text x="684" y="152">alert type + phase currents</text>
+    <text x="684" y="165">temp_c + extra field</text>
+  </g>
+  <line x1="621" y1="115" x2="668" y2="115" stroke="#dc2626" stroke-width="1.5" marker-end="url(#ar-red)"/>
+  <text x="644" y="108" text-anchor="middle" font-size="10" fill="#dc2626">trip!</text>
+
+  <!-- xfmr_summary.qo path (lower right) -->
+  <rect x="670" y="200" width="170" height="100" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="755" y="224" text-anchor="middle" font-size="12" font-weight="700" fill="#14532d">xfmr_summary.qo</text>
+  <text x="755" y="242" text-anchor="middle" font-size="10" fill="#15803d">hourly, template-encoded</text>
+  <line x1="684" y1="251" x2="824" y2="251" stroke="#bbf7d0" stroke-width="1"/>
+  <g font-size="10" fill="#15803d">
+    <text x="684" y="268">per-phase RMS, loading %, imbalance %</text>
+    <text x="684" y="284">temp_c avg, overloads, samples, wakes</text>
+  </g>
+
+  <!-- Summary flush path from step 2 -->
+  <line x1="297" y1="220" x2="297" y2="260" stroke="#475569" stroke-opacity="0.5" stroke-width="1.5"/>
+  <line x1="297" y1="260" x2="668" y2="250" stroke="#475569" stroke-opacity="0.5" stroke-width="1.5" marker-end="url(#ar-gray)"/>
+  <text x="460" y="256" text-anchor="middle" font-size="10" fill="#475569">after summary_interval_min</text>
+
+  <!-- Step 4: Sleep / persist -->
+  <rect x="20" y="300" width="350" height="100" rx="8" fill="#f8fafc" stroke="#64748b" stroke-width="1.5"/>
+  <text x="195" y="325" text-anchor="middle" font-size="12" font-weight="700" fill="#334155">④ Persist state → sleep</text>
+  <line x1="36" y1="334" x2="354" y2="334" stroke="#e2e8f0" stroke-width="1"/>
+  <g font-size="10" fill="#475569">
+    <text x="36" y="352">NotePayloadSaveAndSleep() — serialize PersistState to Notecard flash</text>
+    <text x="36" y="368">card.attn cuts host power for sample_interval_sec seconds</text>
+    <text x="36" y="384">on ATTN wake, NotePayloadRetrieveAfterSleep() restores state</text>
+    <text x="36" y="396" font-style="italic">accumulators survive host power-down; cold boot reinitializes</text>
+  </g>
+
+  <!-- Arrows into sleep -->
+  <line x1="97" y1="220" x2="97" y2="298" stroke="#475569" stroke-opacity="0.5" stroke-width="1.5" marker-end="url(#ar-gray)"/>
+  <line x1="297" y1="220" x2="250" y2="298" stroke="#475569" stroke-opacity="0.5" stroke-width="1.5" marker-end="url(#ar-gray)"/>
+
+  <!-- Step 5: Notehub -->
+  <rect x="420" y="300" width="420" height="100" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="630" y="325" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">⑤ Notehub → routes</text>
+  <line x1="436" y1="334" x2="824" y2="334" stroke="#bfdbfe" stroke-width="1"/>
+  <g font-size="10" fill="#1e40af">
+    <text x="436" y="352">Alert notes: Notecard opens radio session immediately (sync:true)</text>
+    <text x="436" y="368">Summary notes: flushed on hourly outbound sync, arrive after next sync window</text>
+    <text x="436" y="384">Env var updates: inbound sync every 2 h — no re-flash for threshold changes</text>
+    <text x="436" y="396">Routes: xfmr_alert.qo → OMS/paging · xfmr_summary.qo → historian</text>
+  </g>
+
+  <!-- Arrows from notefiles to Notehub -->
+  <line x1="755" y1="170" x2="755" y2="298" stroke="#dc2626" stroke-width="1.5" marker-end="url(#ar-red)"/>
+  <line x1="755" y1="300" x2="680" y2="300" stroke="#dc2626" stroke-width="1.5"/>
+  <line x1="755" y1="300" x2="755" y2="298" stroke="#dc2626" stroke-width="0"/>
+  <line x1="755" y1="298" x2="680" y2="298" stroke="#16a34a" stroke-width="1.5"/>
+  <line x1="680" y1="298" x2="680" y2="300" stroke="#16a34a" stroke-width="1.5" marker-end="url(#ar-green)"/>
+
+  <text x="430" y="452" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">Alert notes reach Notehub within seconds of threshold trip. Summary notes are queued locally and delivered on the next outbound sync.</text>
+</svg>
