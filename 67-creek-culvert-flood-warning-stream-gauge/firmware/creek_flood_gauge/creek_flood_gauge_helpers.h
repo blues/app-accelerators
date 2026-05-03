@@ -215,6 +215,7 @@ bool        hubConfigure(const char *productUid);
 bool        configureSkyloTransport();
 bool        checkLocationAcquired();
 bool        defineTemplates();
+bool        defineEnvTemplate();
 void        fetchEnvOverrides();
 float       readWaterLevelMm();
 uint32_t    countRainTips(uint32_t windowMs);

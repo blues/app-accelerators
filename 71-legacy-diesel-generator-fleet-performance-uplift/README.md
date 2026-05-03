@@ -12,7 +12,29 @@ The cost of this information gap is concrete. A standby generator that fails to 
 
 This project closes that gap — for active alarm state, a firmware-observed alarm chronology, and operating data. A Blues Wireless for OPTA snapped onto an Arduino OPTA RS485 industrial **PLC** (programmable logic controller) sits on the DIN rail inside the generator panel, polls seven holding registers once per minute over the controller's Modbus port (including the active alarm bitmask), and routes alert events, an hourly alarm-history log, and hourly summaries to Notehub via cellular. Installation requires new RS-485 wiring to the controller's communications terminals and matching the controller's Modbus serial settings (baud rate, parity, slave address), but involves no writes to start/stop or safety circuits — the firmware is strictly read-only over Modbus. No dependency on the facility network.
 
-> **Firmware-observed alarm chronology.** The firmware polls the controller's active alarm bitmask once per `sample_minutes` (default 1 min) and fires a `controller_alarm` event on first observed assertion — on a zero→non-zero transition, or immediately at the first valid poll after boot if those bits are already set. Every distinct alarm-word transition — initial assertion, any mid-nonzero change where bits are added or cleared while at least one fault remains active, and the final clearance to zero — is appended to an 8-slot on-device ring buffer (`AlarmHistoryEntry`) and flushed as `gen_alarm_log.qo` at every report boundary, giving operations teams a per-window fault-set chronology. Transient faults that assert and clear entirely between two consecutive polls can still be missed. The controller's own internal timestamped alarm log (vendor-specific multi-register reads that may cover events predating the monitor's installation) is a production extension; see [Limitations](#9-limitations-and-next-steps).
+## Quickstart: From Box to First Event
+
+**You will have:** A commissioning note in Notehub confirming Modbus connectivity, hourly summaries showing generator status, and immediate alerts on controller faults.
+
+**Minimum prerequisites:** Arduino IDE or `arduino-cli` v1.3+, a generator controller with accessible Modbus port (DeepSea, Woodward, Kohler, Caterpillar, Cummins, or equivalent), baud rate and slave address from the controller's commissioning menu, and a Notehub project.
+
+**Time required:** 45 min (hardware assembly + wiring), 15 min (firmware + Notehub setup), 5 min (first validation). First event arrives in ~3 hours (one Modbus poll + one report boundary).
+
+**Steps:**
+
+1. **Assemble hardware:** OPTA RS485 + Wireless for OPTA on DIN rail, antenna through cable gland, powered from generator panel's battery-backed 12–24 VDC bus (fused, 3 A, per [Wiring and Assembly](#4-wiring-and-assembly) Step 2).
+2. **Wire Modbus:** OPTA `A/B/COM` to controller `A/B/COM` with 120 Ω terminators at both ends (OPTA and controller). Use twisted pair, shielded, RS-485 rated.
+3. **Flash firmware:** Copy `PRODUCT_UID` from Notehub project settings, paste into `diesel_gen_monitor.ino` line 39. Compile and upload via Arduino IDE, or:
+   ```bash
+   arduino-cli core install "Arduino Mbed OS Opta Boards"
+   arduino-cli lib install "Blues Wireless Notecard" "ArduinoModbus" "ArduinoRS485"
+   sed -i '' 's|com.your-company.your-name:diesel_gen_monitor|YOUR_PRODUCT_UID|g' firmware/diesel_gen_monitor/diesel_gen_monitor.ino
+   arduino-cli compile --fqbn arduino:mbed_opta:opta_wifi firmware/diesel_gen_monitor/ --upload
+   ```
+4. **Set Modbus register addresses:** In Notehub, navigate Fleet → Environment. Add variables `reg_engine_rpm`, `reg_fuel_pct`, `reg_load_pct`, `reg_oil_kpa`, `reg_coolant_c`, `reg_run_hours`, `reg_alarm_word` with the correct addresses from your controller's Modbus map. Set `modbus_baud`, `modbus_slave_id`, `modbus_parity`, `modbus_stop_bits` to match the controller's configuration. The device fetches these on the next inbound sync (120 min by default; to test immediately, set `inbound` to 1 min in `hub.set` on the device).
+5. **Validate:** Open Notehub and wait for the device to appear in the project. After the first Modbus poll (1 min) and report boundary (60 min), you'll see a `gen_summary.qo` note with `data_ok = 1`, fuel level, alarm word, and run status. If `data_ok = 0` on all notes, check wiring, register addresses, baud rate, and slave address against the controller's commissioning menu (see [Validation and Testing](#8-validation-and-testing) / "Modbus first-light").
+
+**Firmware-observed alarm chronology.** The firmware polls the controller's active alarm bitmask once per `sample_minutes` (default 1 min) and fires a `controller_alarm` event on first observed assertion — on a zero→non-zero transition, or immediately at the first valid poll after boot if those bits are already set. Every distinct alarm-word transition — initial assertion, any mid-nonzero change where bits are added or cleared while at least one fault remains active, and the final clearance to zero — is appended to an 8-slot on-device ring buffer (`AlarmHistoryEntry`) and flushed as `gen_alarm_log.qo` at every report boundary, giving operations teams a per-window fault-set chronology. Transient faults that assert and clear entirely between two consecutive polls can still be missed. The controller's own internal timestamped alarm log (vendor-specific multi-register reads that may cover events predating the monitor's installation) is a production extension; see [Limitations](#9-limitations-and-next-steps).
 
 **Why Notecard.** The timing of this deployment is the whole point. The standby generator exists to provide power when mains power fails — which is exactly when the facility's WiFi router also goes dark. A monitoring system that relies on the building's LAN cannot report a failure-to-start at the moment that matters most. Worse, a purely LAN-dependent monitor might be relied on as evidence that everything is fine, right up until the UPS batteries run dry. Cellular with an antenna routed outside the metal generator enclosure provides a communication path that is completely independent of the facility's power and network infrastructure. The cellular path is alive precisely because it draws from the generator panel's own battery-backed DC control bus — the same battery that starts the engine.
 
@@ -72,13 +94,13 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ## 5. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/diesel_gen_monitor/diesel_gen_monitor.ino` as `PRODUCT_UID`.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Once created, open the project dashboard and look for the **ProductUID** in the top-right corner (it looks like `com:yourcompany:projectname`). Copy it and paste it into `firmware/diesel_gen_monitor/diesel_gen_monitor.ino` line 39, replacing `com.your-company.your-name:diesel_gen_monitor`.
 
 2. **Claim the Notecard.** Power the panel; on the first cellular session the Notecard auto-provisions into your project.
 
 3. **Create a Fleet per controller family.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) group devices for shared configuration and routing. Because register addresses and alarm bitmasks differ across generator controller brands, a practical structure is one fleet per controller vendor: one for DeepSea 7000-series generators, another for Woodward EasyGen, and so on. Fleet-level environment variables encode the register addresses and thresholds for that controller family; individual devices can override with their own values if a site has unusual configuration. Use [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) to dynamically route devices between fleets based on a device-level tag or environment variable.
 
-4. **Set environment variables.** All variables below are optional; firmware defaults are shown. Values set in Notehub override the compile-time defaults on the device's next inbound sync — no reflashing required.
+4. **Set environment variables.** All variables below are optional; firmware defaults are shown. Values set in Notehub (navigate Fleet → Environment Variables) override the compile-time defaults on the device's next inbound sync — no reflashing required.
 
    | Variable | Default | Purpose |
    |---|---|---|
@@ -138,9 +160,9 @@ All seven must succeed in a single attempt before the sample is marked valid. Pa
 
 ### Event payload design
 
-Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefiles. Templates store records as fixed-length binary rather than free-form JSON, shrinking on-wire payload 3–5×. For a fleet of 50 generators sending hourly summaries over a prepaid SIM with a finite data budget, that compression is not optional.
+Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefiles. Templates store records as fixed-length binary rather than free-form JSON, shrinking on-wire payload 3–5×. For a fleet of 50 generators sending hourly summaries over a prepaid SIM with a finite data budget, that compression is not optional. Template binary data is decoded by Notehub and displayed as JSON in your browser or API responses.
 
-`gen_summary.qo` (periodic, default hourly) — example shows a standby window where the engine was stopped the entire hour:
+`gen_summary.qo` (periodic, default hourly) — example shows a standby window where the engine was stopped the entire hour. This is the decoded JSON you'll see in the Notehub dashboard or when retrieving notes via API:
 
 ```json
 {
@@ -403,7 +425,28 @@ Confirm on the Mojo trace: idle current between syncs is in the µA range. Durin
 
 In the field, the generator's start battery sustains the control bus through a mains failure, but it is not an infinite reservoir. The dominant continuous load is the OPTA host (0.6–2.2 W per the datasheet); the Notecard expansion's 8–18 µA idle draw is negligible alongside it. Use the ammeter or second Mojo measurement described above to record actual OPTA host current during commissioning, then compare it against the site's rated battery capacity to bound worst-case autonomy — particularly relevant at 12 V sites with smaller batteries. The 3 A fuse required in [Hardware Requirements](#3-hardware-requirements) and installed per [Wiring and Assembly](#4-wiring-and-assembly) Step 2 is sized for worst-case 12 V operation: the OPTA host draws up to ≤183 mA continuous and the Notecard expansion can burst to ≤2 A at the bus input, for a combined worst-case total of ≤2.2 A. To verify sizing at your specific installation, add the measured OPTA supply current to the peak Notecard-expansion burst current (≤2 A) from the Mojo trace and confirm the combined total remains below the installed fuse rating. Sites with 24 V supplies see proportionally lower bus currents, making the 3 A rating conservative; do not omit the fuse.
 
-## 9. Limitations and Next Steps
+## 9. Troubleshooting
+
+**Device appears in Notehub but all `gen_summary.qo` notes show `data_ok = 0`**
+- Modbus polling failed on all retries. Check wiring: are OPTA `A/B/COM` correctly wired to the controller's corresponding terminals? Use a multimeter to verify continuity.
+- Baud rate mismatch. Compare `modbus_baud`, `modbus_parity`, and `modbus_stop_bits` in Notehub (Fleet → Environment) against the controller's Modbus commissioning menu. They must match exactly.
+- Slave address mismatch. Verify `modbus_slave_id` in Notehub matches the controller's configured address (often found in Modbus or network setup menus, defaults to 1).
+- Missing or incorrect termination resistors. Confirm 120 Ω resistors are installed at both physical ends of the RS-485 cable run — at the OPTA and at the controller.
+- First-light validation: before commissioning on the real controller, test with a USB-to-RS-485 adapter and a Modbus simulator (Modbus Mechanic, ModRSsim2) to confirm the firmware's Modbus reads work at all (see [Validation and Testing](#8-validation-and-testing)).
+
+**Register addresses appear wrong or show `−1.0`**
+- Wrong register addresses. The defaults (768–774) are illustrative for a fictional map. Look up your **controller vendor and model** in its Modbus datasheet and set `reg_engine_rpm`, `reg_fuel_pct`, etc. in Notehub (Fleet → Environment) to the correct addresses for your specific controller.
+- `-1.0` sentinels mean the engine was stopped the entire report window (normal for a standby generator). They appear in running-only fields (`load_pct`, `oil_kpa_mean`). A fuel level of `-1.0` or `data_ok = 0` indicates a communication failure, not a sensor issue.
+
+**Antenna connectivity issues**
+- Rubber-duck antennas don't work inside metal generator enclosures. Route the primary cellular antenna (SMA) through a cable gland to the outside. Add a second diversity antenna if signal is marginal.
+- Antenna not seated or damaged. Verify the SMA connector is tightened fully onto the antenna port.
+
+**Alert events not appearing in Notehub**
+- Environment variables not applied. Changes set in Notehub take effect on the device's next **inbound sync**, not immediately. The default `inbound` cadence is 120 min; to test quickly, temporarily set it to 1 min via `hub.set` on the device or via a direct Notehub API call, then revert after testing.
+- Rule thresholds not realistic. If `fuel_low_pct` is set to 100, the device will trigger `fuel_low` on every summary. Verify threshold values match your site's expectations (e.g., `fuel_low_pct = 25.0` for "alert when fuel falls below 25%").
+
+## 10. Limitations and Next Steps
 
 **Simplified for this reference design:**
 
@@ -424,6 +467,6 @@ In the field, the generator's start battery sustains the control bus through a m
 - Fuel consumption rate: derive from the rate of change in fuel level across run events. Combined with load data, this gives a fuel-per-kWh efficiency figure that accumulates across the maintenance history.
 - Automatic weekly test verification: flag a `test_not_detected` event if no engine start is observed in a configurable rolling window, catching test skips before an audit or inspection.
 
-## 10. Summary
+## 11. Summary
 
 The controller sitting inside that generator enclosure has been measuring fuel level, coolant temperature, oil pressure, load, run hours, and active alarm state for years — the data has always existed. What was missing was a communication path that works when the data matters most: when mains power fails, when the facility's network is dark, and when the generator either starts successfully or fails to do so in the next thirty seconds. An OPTA RS485 + Blues Wireless for OPTA mounted on the DIN rail, powered from the generator's own battery-backed control bus, provides exactly that path — a cellular uplink that is structurally independent of facility power and completely indifferent to whether the WiFi router is working. The same Modbus interface that was installed for local diagnostics now provides real-time remote visibility, alarm alerting, and the run-hour and load history needed to get ahead of maintenance intervals. Weekly exercise tests leave a clear signature in the hourly summaries — `engine_starts`, `run_min`, `load_pct`, and `oil_kpa_mean` all show up in the window that captured the test — so a facility manager can review test outcomes without being on site. Automatic detection of a missed test (flagging `test_not_detected` when no start is observed in a configurable rolling window) is a planned next step; see [Limitations](#9-limitations-and-next-steps). The generator doesn't change. Only the information does.

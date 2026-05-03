@@ -4,6 +4,32 @@
 
 A [truck roll reduction](https://blues.com/truck-roll-reduction/) reference design that gives propane dealers per-tank fill telemetry across their entire delivery territory — replacing fixed-schedule routes with demand-driven dispatch and projecting days-until-empty for every tank in the fleet. The design pairs a **4–20 mA LP gauge-port float-type level transmitter** (Rochester Sensors M6300-LP Magnetel® gauge + R6315-12 transmitter, or equivalent — connects at the tank's existing 1¼″ NPT dip-tube gauge port, no additional tank penetrations) and a **DS18B20 temperature probe** (for daily summary analytics and seasonal demand correlation) with a **Blues Notecard Cell+WiFi** for cellular-first connectivity and an optional **Starnote for Skylo** satellite module for sites with no cellular coverage.
 
+## Quick Start
+
+Clone this repository, build the firmware, and deploy:
+
+1. **Get the firmware onto your Notecarrier CX:**
+   ```
+   arduino-cli core install STM32:stm32
+   arduino-cli lib install "Blues Wireless Notecard@1.8.5" OneWire DallasTemperature
+   arduino-cli compile -b STM32:stm32:Nucleo_L476RG firmware/propane_tank_telemetry/
+   arduino-cli upload -b STM32:stm32:Nucleo_L476RG -p /dev/ttyACM0 firmware/propane_tank_telemetry/
+   ```
+   Adjust the port (`/dev/ttyACM0` on Linux/Mac, `COM*` on Windows) and board as needed.
+
+2. **Claim your Notecard to Notehub:**
+   Sign up at [notehub.io](https://notehub.io) and create a project. Copy the ProductUID and paste it into the firmware as `PRODUCT_UID`.
+
+3. **Configure fleet variables in Notehub** — Set these in **Projects → Environment (tab)** at the Fleet level:
+   - `tank_capacity_gal`: your tank's usable capacity (e.g., 500)
+   - `fill_alert_pct`: alert threshold (default 20)
+   - All others have sensible defaults; see [§5](#5-notehub-setup) for the full list.
+
+4. **See your first event:**
+   After a few minutes of network registration, check **Notehub → Devices → [Your device] → Events**. You should see a `tank_status.qo` daily summary note (or a `tank_alert.qo` if your tank is below the alert threshold). The note body carries `fill_pct`, `fill_gal`, `temp_c`, `gal_per_day`, and `days_until_empty`.
+
+Full assembly and commissioning instructions follow in §3–§8.
+
 ## 1. Project Overview
 
 **The problem.** Most propane dealers still run their delivery routes on a fixed calendar: every six weeks, every tank gets a truck. That schedule exists not because it matches demand, but because dealers have no way to know which tanks actually need filling. The result is trucks rolling to tanks that are at 60 % (wasted capacity, wasted diesel) and tanks at remote farm properties that run dry between scheduled visits (angry customer, weekend emergency call). Neither failure is exotic — they're structural consequences of not having fill-level data.
@@ -36,7 +62,7 @@ This project solves all three. A weatherproof electronics enclosure mounted on a
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with onboard Cygnet STM32 host — handles the 12-bit ADC for the 4-20 mA loop and OneWire for the temperature probe with no external MCU needed. |
 | [Notecard Cell+WiFi (MBGLW)](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) | 1 | Cellular removes per-site IT involvement; optional WiFi fallback when credentials are provisioned. Single SKU deploys across the full dealer territory. |
-| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Coulomb counter on the 5 V supply rail for bench-validation of sleep, sampling, and transmit current draw during commissioning. Not deployed to the field. |
+| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | **Bench only.** Coulomb counter on the 5 V supply rail for validating power behavior during commissioning (see §8). Remove and discard for field deployment; not integrated into production units. |
 | Rochester Sensors M6300-LP Magnetel® Rough Rider® LP gas gauge + R6315-12 4-20 mA transmitter — [M6300-LP datasheet](https://rochestergauges.com/wp-content/uploads/M6300-LP.pdf) · [R6315-12 datasheet](https://rochestersensors.com/wp-content/uploads/R6315-12-July-8.pdf) · [6300 series installation guide](https://rochestersensors.com/wp-content/uploads/6300_Magnetel_Gauge.pdf). Available from [John M. Ellsworth Co.](https://www.jmesales.com/rochester-gauge-magnetel-4-20-ma-liquid-level-transmitter/) and LP gas equipment distributors. | 1 | Float-type magnetel level transmitter designed specifically for LP gas service. A float rides the liquid propane surface inside the tank and drives a two-wire 4-20 mA current loop proportional to fill level: 4 mA at 0 % fill, 20 mA at 100 % fill. **Representative orderable assembly:** M6300-LP gauge body (1¼″ NPT, 4″ dial) with R6315-12 transmitter module attached — the R6315-12 clips to the M6300 gauge body and provides the 4-20 mA output. The R6315-12 outputs 4-20 mA proportional to the float position; see the R6315-12 datasheet for electrical specifications and wiring. **Mounting:** the M6300-LP installs at the tank's existing 1¼″ NPT dip-tube gauge port (the standard gauge opening on most horizontal residential and commercial LP tanks). Dip-tube length and float arm length vary by tank geometry — confirm the correct M6300-LP model suffix against the Rochester Sensors product application table and the tank's nameplate before ordering. Some larger commercial tanks use a 2″ NPT gauge boss; Rochester Sensors offers corresponding variants. **Electrical:** two-wire loop-powered, 12–28 V DC supply. **Note:** because the float tracks the liquid surface directly, no density or temperature correction is applied in firmware — the 4-20 mA output is already proportional to fill level regardless of liquid temperature or density. Installation at a propane pressure vessel must be performed by a licensed LP gas technician per NFPA 58. |
 | [SparkFun Waterproof DS18B20 Temperature Sensor (SEN-11050)](https://www.sparkfun.com/products/11050) | 1 | OneWire temperature probe clamped to the tank shell. Included in daily summary notes for cloud-side consumption correlation against ambient conditions. |
 | 120 Ω 0.1 % precision resistor | 1 | Shunt across the 4-20 mA current loop. Converts 4–20 mA to 0.48–2.40 V DC at the Cygnet's A0 ADC pin. The 120 Ω value provides safe electrical headroom for standard 4–20 mA transmitter fault currents: a 24 mA diagnostic output produces only 2.88 V at A0 — well within the 3.3 V ADC absolute maximum. The firmware rejects currents outside the 3.5–21 mA valid window as `NAN` and emits a `sensor_fault` alert; with this shunt the ADC is electrically safe up to ~27 mA (3.3 V ÷ 120 Ω). |
@@ -201,7 +227,7 @@ Required only at sites with no cellular coverage. If adding a Starnote:
 
 4. **Create a Fleet per territory.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) let you group devices for shared configuration and routing. A natural breakdown is one fleet per delivery territory or per tank capacity class — a 250-gallon residential fleet and a 1000-gallon commercial fleet may have different alert thresholds and report cadences. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) can auto-assign new devices by matching tags set at provisioning time (e.g. `tank_size:1000gal`).
 
-5. **Set environment variables.** All variables below are optional; firmware compile-time defaults are shown in parentheses. Any value set in Notehub takes effect on the device's next inbound sync — no firmware re-flash required.
+5. **Set environment variables.** In Notehub, navigate to **Projects → [Your Project] → Environment** and configure a Fleet at the **Fleet level** or **Device level**. All variables below are optional; firmware compile-time defaults are shown in parentheses. Any value set in Notehub takes effect on the device's next inbound sync — no firmware re-flash required. Best practice: set variables on the Fleet, so a single configuration applies to all tanks in the fleet; override at the Device level for per-tank exceptions.
 
    | Variable | Default | Purpose |
    |---|---|---|
@@ -345,7 +371,9 @@ The Notecard is configured in `periodic` mode with an `outbound` period matching
 
 ### Key code snippet 1: template definition
 
-Templates compress daily summary notes to fixed-length records. `14.1` means 4-byte float; `12` means 2-byte signed integer.
+Templates compress daily summary notes to fixed-length records. Notecard template format codes follow the pattern `XY` where `X` is the byte size and `Y` is the type:
+- `14.1`: 4-byte float (±3.4e38, ~7 significant digits — suitable for fill %, consumption rates, days-until-empty)
+- `12`: 2-byte signed integer (−32,768 to 32,767 — not used in this design but shown for reference)
 
 ```cpp
 J *req = notecard.newRequest("note.template");
@@ -361,6 +389,8 @@ JAddNumberToObject(body, "days_until_empty", 14.1);
 JAddNumberToObject(body, "transmitter_ma",   14.1);  // current transmitter output current
 notecard.sendRequest(req);
 ```
+
+For a detailed reference on Notecard template codes, see the [note.template API documentation](https://dev.blues.io/api-reference/notecard-api/note-requests/#note-template).
 
 ### Key code snippet 2: 4-20 mA level transmitter current → fill percentage → fill gallons
 
@@ -483,6 +513,42 @@ Note: the 4-20 mA transmitter loop is powered from the 24 V boost converter circ
 - Refill event detection: when `fill_pct` increases by more than 10 % in a single sample cycle, emit a `refill_detected` note with the pre- and post-fill readings. This lets the dealer's billing system close the loop on deliveries without a separate ticket.
 - Per-tank consumption model: extend the EWMA with seasonal coefficients (summer vs. winter heating demand) so `days_until_empty` is corrected for known demand patterns, not just trailing-average consumption.
 - Over-the-air host firmware updates via [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) once the fleet reaches scale — a threshold recalibration or a new alert type can be pushed fleet-wide without a site visit.
+
+## 10. Troubleshooting
+
+**No device appearing in Notehub after power-up.**
+- Confirm the Notecard MAIN u.FL antenna is connected to an external antenna (not left stubbed internally). A missing or unplugged antenna will prevent cellular registration entirely.
+- Check that `PRODUCT_UID` is defined in the firmware and matches the UUID shown in Notehub under **Projects → ProjectUID**.
+- Verify that the 5 V step-down is outputting exactly 5.0 V (measured at Notecarrier +VBAT pad before applying load).
+- Check the serial console for Notecard and I²C errors. If unavailable, move the device to a location with strong cellular signal (≥2 bars) and reboot.
+
+**Device appears in Notehub but no events are arriving.**
+- Confirm the device is showing a recent session timestamp in Notehub (**Devices → [Your device] → Events → Device Activity**). A stale timestamp means the device is not connecting.
+- Check the Notecard's hub.status: connect via USB to the Notecarrier CX's USB-C port and open the [Notecard Playground](https://dev.blues.io/notecard/notecard-playground/), then issue `{"req":"hub.status"}`. The response should show `"mode": "periodic"` and `"outbound": 24` (hours). If it shows `"status": "error"`, the Notecard may not be properly associated with the project.
+- Verify that environment variables are being delivered. Issue `{"req":"env.list"}` in Notecard Playground. If the response is empty, the device has not yet received the fleet's environment variables — this can take up to 48 hours at the default 24-hour inbound sync cadence (see §5 step 3).
+
+**Fill percentage is incorrect or drifts over time.**
+- Confirm the tank capacity is set correctly in the environment variable `tank_capacity_gal`. An incorrect capacity will scale all fill percentages proportionally.
+- Verify the transmitter is wired correctly: the loop supply must come from the 24 V boost converter output (not the 12 V rail), and the shunt-to-GND junction must connect to A0. At an empty tank (float at bottom), measure A0 with a meter — it should read ~0.48 V. At a full tank, it should read ~2.40 V.
+- If the fill reading is consistently high or low across the full range, the transmitter may have a non-standard live-zero or span. See §8 "Commissioning calibration" for how to adjust `sensor_empty_ma` and `sensor_full_ma`.
+
+**Alerts are firing constantly, or false `sensor_fault` alerts.**
+- A `sensor_fault` alert indicates the transmitter current is outside the 3.5–21 mA window (open circuit or short). Check the loop wiring: confirm both conductors from the transmitter are connected and not damaged, and that the shunt resistor is solidly connected.
+- High-consumption alerts may be false positives after a refill event. The firmware requires `consumption_alert_streak` consecutive above-threshold cycles before alerting; increase `consumption_alert_streak` in environment variables to reduce sensitivity to post-refill transients.
+- Set `alert_cooldown_hr` to increase the minimum hours between repeated alerts of the same type.
+
+**Very high or very low current readings in serial debug.**
+- The firmware reads the transmitter current every sample cycle and prints it to the serial console (USB-C on the Notecarrier CX). At an empty tank you should see ~4.0 mA; at a full tank, ~20.0 mA. If readings are consistently outside this range, re-check the shunt wiring and the 24 V boost converter output voltage (should be exactly 24 V measured at the transmitter + terminal with no load attached).
+
+**Battery drains quickly / device stops after a few hours.**
+- Confirm the host is actually entering deep sleep. The firmware calls `NotePayloadSaveAndSleep` after each sample cycle; if this fails, the host will run continuously and drain the battery in hours. Check that `card.attn` is properly wired (see §4 Step 5) and that the ATTN signal is reaching the Cygnet host.
+- If using the Mojo for validation, confirm it is removed before field deployment. The Mojo adds a continuous measurement load even during deep sleep.
+- For satellite deployments (Starnote), review the [Satellite Best Practices guide](https://dev.blues.io/starnote/satellite-best-practices/) — satellite sessions draw more power than cellular sessions and may require a larger battery or solar panel.
+
+**WiFi is not connecting even after credentials are set.**
+- WiFi credentials are delivered via environment variables and applied on the next inbound sync. At the default 24-hour report cadence, inbound syncs occur every 48 hours — **credentials may take up to 48 hours to reach the device**. Temporarily lower `report_interval_hr` to 1 hour to speed delivery, then restore the original value after confirming connection.
+- Alternatively, set WiFi credentials via USB at the bench (see §5 step 3) before sealing the enclosure.
+- If the Notecard has a WiFi stub antenna inside the enclosure, it may not have sufficient signal. If the enclosure is metal, route the WiFi pigtail externally through Gland 4.
 
 ## 10. Summary
 

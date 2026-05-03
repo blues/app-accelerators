@@ -469,10 +469,14 @@ bool resendPendingNote() {
 // enterSleep
 // Serialize device state into the Notecard and cut host power via ATTN.
 //
-// NotePayloadSaveAndSleep issues card.attn with mode "sleep,motionchange":
+// NotePayloadSaveAndSleep issues card.attn with mode "sleep,arm,motionchange":
 //   "sleep"        → ATTN pin goes low, Cygnet power is cut by the
 //                    Notecarrier CX; payload is held in Notecard memory.
-//   "motionchange" → ATTN also fires early if the accelerometer-based motion
+//   "arm"          → required to enable early-wake sources like motionchange
+//                    while ATTN is held low (per the Blues asset-tracking
+//                    guide). Without arm, motionchange is listed in the mode
+//                    string but is not actually armed and will not fire ATTN.
+//   "motionchange" → ATTN fires early if the accelerometer-based motion
 //                    status transitions (moving↔stopped) before the timer.
 //
 // sleep_sec is derived from the absolute next_heartbeat_epoch so that motion
@@ -500,7 +504,11 @@ void enterSleep(uint32_t now_epoch) {
         sleep_sec = RETRY_WAKE_SEC;
     }
 
-    NotePayloadSaveAndSleep(&payload, sleep_sec, "motionchange");
+    // "arm,motionchange" is passed as the additional-modes argument; note-c
+    // prepends "sleep," producing the final mode "sleep,arm,motionchange".
+    // The "arm" keyword is required for motionchange to actually fire ATTN
+    // during the sleep window — see the Blues asset-tracking guide.
+    NotePayloadSaveAndSleep(&payload, sleep_sec, "arm,motionchange");
 
     // Execution should not reach here under normal operation: the Notecard
     // holds the ATTN pin low, cutting Cygnet power. This delay provides a

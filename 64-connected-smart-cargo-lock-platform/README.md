@@ -4,6 +4,24 @@
 
 A [loss prevention](https://blues.com/loss-prevention/) reference platform for a connected smart lock built on the Blues Notecard for Skylo — combining global cellular with satellite failover in a single M.2 module — paired with a reed shackle sensor, a hall-effect bolt detector, and the Notecard's onboard accelerometer for tamper scoring. The Cygnet host on the Notecarrier CX runs the lock state machine and aggressive duty cycling that makes year-long battery life achievable.
 
+## Quick Start
+
+**Get your first lock online in 20 minutes:**
+
+1. **Assemble.** Wire the reed switch to D5 and SS461A hall sensor to D6 per [§4](#4-wiring-and-assembly). Seat the Notecard for Skylo in the M.2 slot. Connect the 5000 mAh LiPo.
+2. **Claim the ProductUID.** Go to [notehub.io](https://notehub.io), create a project, and copy the ProductUID. Paste it into `firmware/cargo_lock/cargo_lock.ino` line 46 as `PRODUCT_UID`.
+3. **Flash.** In Arduino IDE: File → Open → `firmware/cargo_lock/` → select Notecarrier CX board (STM32 generic with Cygnet variant) → Upload. Or via `arduino-cli`:
+   ```bash
+   arduino-cli compile --fqbn STM32:stm32:Cygnet -u -p /dev/ttyACM0 firmware/cargo_lock/
+   ```
+4. **Verify.** Open Serial Monitor (115200 baud). On each 60-second wake you'll see:
+   ```
+   [cargo_lock] shackle=1 bolt=1 motion=N phys=LOCKED rept=LOCKED new=LOCKED
+   ```
+   Manually open the shackle or retract the bolt — the next wake should show the new state. Within 15–60 seconds (cellular) or 2–5 minutes (satellite), a `lock_event.qo` note appears in your Notehub project's event log.
+
+**What you'll have when you're done:** A lock that wakes every 60 seconds, reads its sensors, emits an immediate alert if opened or tampered with, and sends a 6-hourly status heartbeat. One Notehub project with two Notefiles (`lock_event.qo` for immediate alerts, `lock_status.qo` for audit logs). Year-long battery life on a 5000 mAh cell under cellular-dominant operation.
+
 ## 1. Project Overview
 
 **The problem.** Cargo theft is escalating. North America saw 3,625 reported incidents in 2024 — a 27% jump year-over-year — with losses approaching $455 million. The targets are trailers parked at drop lots, intermodal containers sitting at port for a week, and high-value rolling stock left overnight at a truck stop. In the majority of these thefts, the event isn't detected until the driver opens the door at the destination and finds the container empty.
@@ -92,13 +110,13 @@ The NOTE-NBGLWX also has a `GPS` u.FL port; GNSS location tracking is a recommen
 
 ## 5. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/cargo_lock/cargo_lock.ino` as `PRODUCT_UID`.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/cargo_lock/cargo_lock.ino` line 46 as `PRODUCT_UID`.
 
 2. **Claim the device.** Power the unit; on first cellular (or satellite) session the Notecard associates with your project automatically.
 
 3. **Create Fleets.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) group devices for shared configuration. The natural grouping for a lock platform is one fleet per customer or per shipment lane — a pharmaceutical shipper needs tighter tamper thresholds and more frequent check-ins than a dry-goods trailer. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) can auto-assign devices based on device metadata if your provisioning workflow sets device-level tags.
 
-4. **Set environment variables.** All variables are optional; firmware defaults are shown. Changes take effect on the device's next inbound sync — no firmware update needed.
+4. **Set environment variables.** In Notehub, select a Fleet and click the **Environment** tab. All variables below are optional; firmware defaults are shown. Changes take effect on the device's next inbound sync — no firmware update needed.
 
    | Variable | Default | Purpose |
    |---|---|---|
@@ -108,6 +126,46 @@ The NOTE-NBGLWX also has a `GPS` u.FL port; GNSS location tracking is a recommen
    | `alert_cooldown_sec` | `1800` | Minimum seconds between repeated alerts of the same type. Prevents a sustained attack from flooding the operator's alert channel — one `tamper` alert per 30 min is enough. |
 
 5. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `lock_event.qo` (to a dispatch system, on-call platform, or TMS) and a second for `lock_status.qo` (to an analytics store or audit log). Keeping the two Notefiles separate at the source means you can fan them to different destinations at different urgencies without any filter logic in the route itself.
+
+**Example: What you'll see in Notehub after opening the lock:**
+
+An immediate `lock_event.qo` note appears in your project's Events log:
+
+```json
+{
+  "file": "lock_event.qo",
+  "body": {
+    "event": "opened",
+    "shackle": 0,
+    "bolt": 0,
+    "locked": 0,
+    "motion": 2,
+    "locked_for": 3600
+  },
+  "captured": "2025-05-01T14:23:45Z",
+  "received": "2025-05-01T14:24:10Z",
+  "sync": true
+}
+```
+
+Every 6 hours, a `lock_status.qo` summary arrives with the audit heartbeat:
+
+```json
+{
+  "file": "lock_status.qo",
+  "body": {
+    "state": "LOCKED",
+    "shackle": 1,
+    "bolt": 1,
+    "locked": 1,
+    "tamper_count": 0,
+    "event_count": 1,
+    "uptime_min": 360
+  },
+  "captured": "2025-05-01T14:23:55Z",
+  "received": "2025-05-01T14:24:15Z"
+}
+```
 
 ## 6. Firmware Design
 
@@ -181,7 +239,17 @@ After each sample cycle, the host calls `NotePayloadSaveAndSleep`, which seriali
 
 Sampling and transmission are deliberately decoupled: the host wakes every 60 seconds to check sensors, but the Notecard only opens a radio session every 6 hours for scheduled summaries. Lock events with `sync:true` break the schedule and open an immediate session, but they're rare under normal operation.
 
-**Power budget — per-state current (design guidance; validate with Mojo before committing to a cell size).** The table separates what Blues documentation specifies from what must be measured in your hardware assembly.
+**Projected daily energy (illustrative planning guidance — validate with Mojo before committing to a cell size).**
+
+Assume 1,440 host wakes per 24 hours (every 60 s) and four scheduled radio sessions per day (6-hour cadence). Assuming 2–3 mA average during each 2–5 second wake window and 50 mA average during each LTE-M session (~5 minutes including radio startup, registration, and data transmission), a typical 24-hour profile under strong cellular coverage might consume:
+- Host wakes: 1,440 × 2.5 mA × 5 s = ~100 mAh per 24 h
+- Cellular sessions: 4 × 50 mA × 5 min = ~17 mAh per 24 h  
+- Standby (Notecard idle): ~10 mAh per 24 h
+- **Total: ~125 mAh per 24 h on a cellular-dominant network**
+
+With a 5,000 mAh cell, this projects to ~40 days (year-class) of battery life under ideal conditions. **Satellite-dominant deployments draw 3–5× more energy per session and will reduce endurance substantially.** This calculation assumes no open/tamper events (which force immediate `sync:true` sessions). Use Mojo bench measurements in your specific deployment environment to validate before committing to a cell size.
+
+**Power budget — per-state current (design guidance; validate with Mojo).** The table separates what Blues documentation specifies from what must be measured in your hardware assembly.
 
 | State | Notecard current | Host + sensor current |
 |---|---|---|
@@ -192,11 +260,9 @@ Sampling and transmission are deliberately decoupled: the host wakes every 60 se
 
 Radio sessions dominate the daily energy budget and vary sharply by path. Cellular and satellite sessions are not energy-equivalent; a deployment that depends heavily on the satellite path will have proportionally shorter battery life than one that stays predominantly on cellular.
 
-**Example calculation (illustrative assumptions — planning guidance, not a datasheet spec).** Assume 1,440 host wakes per day (every 60 s), each handling sensor reads and I²C exchanges for a few seconds before the host is cut. Assume four scheduled outbound sessions per day at the default 6-hour cadence. Under these assumptions, host-wake overhead is higher than at a 5-minute interval (roughly 5× more wakes), but radio session energy still dominates the daily total. With a 5,000 mAh cell, near-year-class endurance may be achievable in a cellular-dominant deployment; satellite-dominant legs shorten projected endurance substantially. Operators who need to extend battery life can increase `sample_interval_sec` to 300 (5 min) via the Notehub environment variable — this reduces host-wake energy by ~5× at the cost of a ~4-minute tamper blind window per interval (see [Limitations](#9-limitations-and-next-steps)). Your actual cellular/satellite mix, signal conditions, and alert-event rate determine the real daily total — these are planning inputs, not measured results.
+Operators needing extended battery life can increase `sample_interval_sec` to 300 (5 min) via the Notehub environment variable — this reduces host-wake energy by ~5× at the cost of a ~4-minute tamper blind window per interval (see [Limitations](#9-limitations-and-next-steps)). For extended satellite-only legs (weeks at sea), increase `report_interval_min` to `1440` (once-daily outbound) to reduce the scheduled session count from four to one per day, improving endurance significantly.
 
-For extended satellite-only legs, increasing `report_interval_min` to `1440` (once-daily outbound) via the Notehub environment variable reduces the scheduled session count from four to one per day, improving satellite-path endurance significantly. `sync:true` alert events open additional immediate sessions on top of the scheduled cadence; under normal locked-in-transit operation these are rare, but each satellite session adds materially to the day's total.
-
-**Use Mojo bench measurements** in your specific deployment environment (cellular/satellite mix, event rate, signal conditions) to establish a ground-truth figure before committing to a cell size. The standby current between wakes should reflect only the Notecard's idle current (~8 µA) — not the SS461A's ~4–8 mA quiescent draw. If you see continuous milliamp-level drain between sensor wakes, the +3V3 rail may not be gated by ATTN as expected — confirm that the SS461A VCC and pull-up top rails are wired to the ATTN-gated +3V3 pin rather than an always-on supply, and see [§8](#8-validation-and-testing) for the full Mojo validation procedure.
+**Use Mojo bench measurements** in your specific deployment environment to establish a ground-truth figure before committing to a cell size. The standby current between wakes should reflect only the Notecard's idle current (~8 µA) — not the SS461A's ~4–8 mA quiescent draw. If you see continuous milliamp-level drain between sensor wakes, the +3V3 rail may not be gated by ATTN as expected — confirm that the SS461A VCC and pull-up top rails are wired to the ATTN-gated +3V3 pin rather than an always-on supply, and see [§8](#8-validation-and-testing) for the full Mojo validation procedure.
 
 ### Retry and error handling
 
@@ -210,6 +276,8 @@ For extended satellite-only legs, increasing `report_interval_min` to `1440` (on
 
 Templates define the fixed schema that compresses notes on the wire. The `port` value assigns each Notefile a compact numeric identifier used on the satellite (NTN) path: the Notecard sends that integer over the air instead of the full Notefile name, reducing overhead on the bandwidth-limited Skylo link. On a pure cellular session the port is unused. Notehub routing is configured by Notefile name — `lock_event.qo` fans out to a real-time dispatch channel, `lock_status.qo` to an audit store — not by port number.
 
+The template numbers (`11`, `12`, `14`) are field-type codes. Blues template syntax uses: `11` = 1-byte signed int, `12` = 2-byte signed int, `14` = 4-byte signed int. String fields use an exemplar value whose character count sets the max field width — "tamper" (6 chars) is the longest event type, so the `event` field reserves 6 bytes on the wire for any value up to that width.
+
 ```cpp
 J *req = notecard.newRequest("note.template");
 if (!req) return false;
@@ -219,11 +287,11 @@ J *body = JAddObjectToObject(req, "body");
 // String fields use an exemplar: the character count of the value sets the max field width.
 // "tamper" is 6 chars — the longest of the three event types ("tamper"/"locked"/"opened").
 JAddStringToObject(body, "event",      "tamper"); // 6-char string exemplar
-JAddNumberToObject(body, "shackle",    11);       // 1-byte int
-JAddNumberToObject(body, "bolt",       11);
-JAddNumberToObject(body, "locked",     11);
-JAddNumberToObject(body, "motion",     12);       // 2-byte int
-JAddNumberToObject(body, "locked_for", 14);       // 4-byte int
+JAddNumberToObject(body, "shackle",    11);       // 1-byte int (0–255)
+JAddNumberToObject(body, "bolt",       11);       // 1-byte int
+JAddNumberToObject(body, "locked",     11);       // 1-byte int
+JAddNumberToObject(body, "motion",     12);       // 2-byte int (0–65535)
+JAddNumberToObject(body, "locked_for", 14);       // 4-byte int (0–4.2B seconds)
 notecard.sendRequest(req);
 ```
 
@@ -298,6 +366,18 @@ The [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) connects inline betw
 4. If you see a radio-session spike on every 60-second wake rather than only at the 6-hour outbound cadence, the `note.add` calls with `sync:true` may be firing on every wake — check that the state machine isn't generating spurious transitions.
 
 Once you have a confirmed Mojo average for your specific deployment (cellular vs. satellite mix, event rate), divide the measured cell capacity by the confirmed daily draw to project endurance; factor in ~20–30% capacity reduction at -20°C for cold-chain or northern-winter deployments.
+
+## 8a. Troubleshooting
+
+| Symptom | Cause | Solution |
+|---------|-------|----------|
+| Serial Monitor shows nothing, device doesn't connect to Notehub | `PRODUCT_UID` not set or wrong | Check that `PRODUCT_UID` is defined in `cargo_lock.ino` line 46. Copy it from Notehub project settings (Projects → [Your Project] → Settings → ProductUID). |
+| Device claims fine but no notes appear in Notehub | Notecard hasn't synced to cellular/satellite yet | First sync can take 30–60 s on cellular or 2–5 min on satellite. Check Notehub project Events tab for device last-connect time. If stuck >10 min, check antenna u.FL connection and verify the enclosure lid faces skyward. |
+| Serial Monitor shows `phys=LOCKED` but `motion` count stays at −1 | Accelerometer data unavailable after cold boot | Normal on first wake after power-up. Firmware queues the state-transition note anyway (with `motion: −1` as a sentinel). Motion reading should normalize on the next wake. |
+| Shackle or bolt state doesn't change when physically actuated | Sensor wiring reversed or pin short | Verify D5 and D6 are wired to the correct terminals (see [§4](#4-wiring-and-assembly) pin table). Test with `digitalWrite(PIN_SHACKLE, LOW); delay(100); digitalWrite(PIN_SHACKLE, HIGH);` in a bench sketch to confirm the GPIO responds. |
+| Every wake triggers a large current spike (50+ mA), even during sleep window | Host not entering power-cut sleep | Verify the Notecard's ATTN signal is wired to the Cygnet power-enable pin on the Notecarrier CX. The carrier board routes this internally — no external jumper required — but check the board silk-screen. If using a custom carrier, confirm `card.attn` successfully returns `{"mode":"arm,sleep"}` and the ATTN GPIO is connected to your MCU's power-gating circuit. |
+| Mojo shows 4–8 mA baseline between wakes instead of ~8 µA | +3V3 rail (SS461A, pull-ups) not gated by ATTN | Verify the SS461A VCC and pull-up top rails are wired to the ATTN-gated +3V3 pin (see [§4](#4-wiring-and-assembly)) and not to an always-on rail. |
+| Device repeatedly logs the same state without changing | State machine stuck or sensor is chattering | Check that the reed switch and hall-effect sensor are not being triggered by extraneous fields or vibration. Mount them away from the Notecard (which has a strong internal antenna). Use a 100 nF bypass cap on the SS461A VCC (required by datasheet) to suppress switching noise. |
 
 ## 9. Limitations and Next Steps
 

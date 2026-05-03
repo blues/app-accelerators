@@ -243,22 +243,21 @@ float readIrradiance() {
 //
 // Validity checks:
 //   DEVICE_DISCONNECTED_C  — probe physically absent; no retry will help.
-//   85.0 °C                — DS18B20 power-on reset sentinel; retry once to
-//                            distinguish a genuine 85 °C backsheet reading
-//                            from a startup artifact before rejecting.
 //   < −40 °C or > 110 °C  — outside the DS18B20's rated range and outside
 //                            any physically plausible backsheet temperature.
+//
+// Note on the 85 °C "power-on sentinel": the DS18B20 returns 85.0 only when
+// the master reads the scratchpad BEFORE conversion completes.  Because
+// DallasTemperature::requestTemperatures() blocks for the full conversion
+// time (375 ms at 11-bit), the sentinel does not appear on this code path
+// under normal operation.  Special-casing 85.0 as a fault would falsely
+// reject genuine backsheet readings near 85 °C — a realistic value on a
+// hot-rooftop array in summer — so it is not in the validity checks above.
 // ---------------------------------------------------------------------------
 float readModuleTemp(float irr_wm2) {
     tempSensor.requestTemperatures();
     float t = tempSensor.getTempCByIndex(0);
-    // 85.0 °C is the power-on reset value — retry once to rule out a transient.
-    if (t == 85.0f) {
-        delay(10);
-        tempSensor.requestTemperatures();
-        t = tempSensor.getTempCByIndex(0);
-    }
-    if (t == DEVICE_DISCONNECTED_C || t == 85.0f || t < -40.0f || t > 110.0f) {
+    if (t == DEVICE_DISCONNECTED_C || t < -40.0f || t > 110.0f) {
         Serial.println(F("[app] WARN: DS18B20 invalid reading — sensor fault"));
         // Rate-limit the Notehub-visible alert to once per report window so a
         // persistently disconnected probe does not flood the alert Notefile.
@@ -425,12 +424,14 @@ void accumulateWindow(float v[], float a[], float irr, float mod_temp) {
 // (default 30 min) after each fire.  Cooldown state persists in g_state
 // (Notecard flash) and survives sleep-cycle power cuts.
 //
-// alert_active[] is a last-known-state indicator: it is updated only when
-// Modbus polling succeeds (evaluateAndAlert is not called on Modbus failure or
-// when mod_temp is invalid).  If telemetry drops out across multiple sample
-// cycles the flags carry forward the state from the most recent successful poll.
-// When irradiance falls below g_irradiance_min (overnight, deep overcast) all
-// flags are cleared so low-light summaries do not report stale daytime faults.
+// alert_active[] is a last-known-state indicator.  Above the irradiance
+// threshold it is updated only when Modbus polling succeeds (evaluateAndAlert
+// is not called on Modbus failure or when mod_temp is invalid), so daytime
+// telemetry dropouts let the flags carry forward from the most recent successful
+// poll.  Clearing on low-irradiance windows is handled unconditionally at the
+// loop() level — independent of Modbus/probe success — so overnight and
+// low-light summaries always report 0.  The early-return clear below is
+// belt-and-suspenders and is reached only on the (ok && mod_temp_valid) path.
 // ---------------------------------------------------------------------------
 void evaluateAndAlert(float v[], float a[], float irr, float mod_temp) {
     if (irr < g_irradiance_min) {

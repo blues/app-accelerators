@@ -12,7 +12,7 @@
     - Notecarrier CX (onboard Cygnet STM32L433 host MCU)
     - Notecard Cell+WiFi (MBGLW) in M.2 slot
     - Starnote for Skylo via 6-pin JST NTN cable
-    - SparkFun HX711 (SEN-13879) + single-point shear-beam load cell
+    - SparkFun HX711 (SEN-13879) + Zemic H8C single-ended shear-beam load cell
     - Adafruit SHT31-D (#2857) via 0.1″ jumper wires on SDA/SCL
     - Adafruit MAX9814 (#1713) analog microphone on A0
 ***************************************************************************/

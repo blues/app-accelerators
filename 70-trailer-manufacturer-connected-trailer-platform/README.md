@@ -19,6 +19,45 @@ A connected-trailer platform for trailer OEM integration, targeting manufacturer
 > - **J2497 reefer telemetry:** The firmware parses a simplified POC UART frame and routes the result through the full alert/summary pipeline, but a production data path additionally requires (a) a J2497 application-layer protocol stack (typically licensed), (b) reefer-OEM message mapping under a vendor agreement, and (c) field validation on the target reefer-unit hardware. The `reefer_sensor_loss` alert is gated so it does not fire on a build with no J2497 modem connected. See [§9](#9-limitations-and-next-steps).
 > - **TPMS tire pressure:** The firmware parses a generic POC packet format and routes pressures through the alert/summary pipeline, but production firmware must replace the parser with the chosen vendor's proprietary decode library. See [§9](#9-limitations-and-next-steps).
 
+## Quickstart — From Unboxing to First Event
+
+**What you'll have when you're done:** A Notecarrier CX running templated sensor data to Notehub's cloud, with temperature and door-open alerts firing immediately when thresholds trip. No J2497 reefer or TPMS data yet — those are integration stubs — but the three fully-implemented paths (cargo temperature, door, GPS) are ready to validate the platform on real hardware.
+
+**Time estimate:** 30 minutes to flash and commission on the bench; add 15 minutes if you're wiring thermistors for the first time.
+
+1. **Install firmware dependencies.** 
+   - Install the Arduino core for STM32: In the Arduino IDE, go to **Boards Manager**, search `STM32`, and install `STM32 Cores by STMicroelectronics`.
+   - Install the Blues Wireless Notecard library: Search `Blues Wireless Notecard` in the **Library Manager**, select v1.8.5, and install.
+   - Via CLI: `arduino-cli core install STMicroelectronics:stm32` and `arduino-cli lib install "Blues Wireless Notecard@1.8.5"`.
+
+2. **Get your ProductUID and paste it into the sketch.**
+   - Sign up at [notehub.io](https://notehub.io), create a project, and copy your [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid).
+   - Open `firmware/connected_trailer_platform/connected_trailer_platform.ino` and paste the ProductUID into the empty `PRODUCT_UID` string at the top.
+
+3. **Flash the sketch to Notecarrier CX.**
+   - Plug the Notecarrier CX (with Notecard for Skylo seated in the M.2 slot) into your computer via USB.
+   - Select **Board: Nucleo-L433RC-P** in the Arduino IDE (the Notecarrier CX runs the same STM32L433).
+   - Click **Upload** (or via CLI: `arduino-cli compile -b STMicroelectronics:stm32:Nucleo_L433RC_P --upload firmware/connected_trailer_platform/`).
+
+4. **Apply power and watch Notehub for data.**
+   - Plug a 5 V USB power supply into the Notecarrier's micro-USB port (for bench testing; field units draw power from the 12 V trailer supply via the DC-DC converter).
+   - Open Notehub and navigate to **Devices**. The Notecard associates automatically on first powerup.
+   - Within 1–5 minutes (depending on cellular coverage), a `_session.qo` note appears confirming the device's cellular registration.
+   - Every 5 minutes (default `sample_interval_sec`), a `trailer_summary.qo` event lands in your project with temperature and door fields populated. Without thermistors wired, the temperature fields show −9999.
+
+5. **Wire the three sensors (optional for bench demo).**
+   - Two 10 kΩ NTC thermistors with 10 kΩ 1% series resistors on ADC pins A0 and A1 (see [§4 Wiring](#4-wiring-and-assembly) for voltage-divider schematic).
+   - A magnetic door reed switch on GPIO D9 (pull-up enabled in firmware).
+   - GPS and cellular/satellite antennas: already included with the Notecard for Skylo.
+   
+   With sensors wired, `trailer_summary.qo` reports real `air_t1_*` and `air_t2_*` fields and tracks `door_open_min` and `door_event_count`.
+
+6. **Configure fleet environment variables (optional — defaults work out of the box).**
+   - In Notehub, navigate to **Fleets** and create one (or use the default).
+   - Assign your device to the fleet.
+   - Add **Environment Variables** to tune the thresholds and sync cadences (see [§5 Notehub Setup, step 4](#5-notehub-setup) for the full variable list).
+   - Changes appear on the device at the next inbound sync, no re-flash needed.
+
 ## 1. Project Overview
 
 **The problem.** A refrigerated trailer is a one-time sale that lasts a decade or more. Once it leaves the factory, the manufacturer's recurring revenue opportunity hinges entirely on what services they can sell over that trailer's lifetime — and the telematics layer is the obvious candidate. The trouble is that battle is already being fought on every refrigerated trailer on the road. Thermo King and Carrier, the two dominant **reefer** (refrigeration unit) OEMs, ship their own fleet connectivity built around the reefer unit's proprietary data ports. Aftermarket platform vendors layer on top of those. By the time a trailer reaches a fleet operator's yard, two or three telematics competitors are already reading its temperature and location, and they all have a head start.
@@ -30,6 +69,8 @@ A trailer OEM that wants to own the connectivity layer — rather than ceding it
 **Deployment scenario.** A weatherproof enclosure mounted on the trailer's nose wall (the forward interior wall, adjacent to the reefer unit). The Notecard for Skylo's Skylo-certified flat-patch antenna is exterior-mounted on the trailer roof with a clear sky view; the GPS antenna is also exterior on the roof. **J2497** (SAE J2497) is an industry standard for power-line communications over commercial vehicle trailer wiring. The J2497 PLC signal rides on the **J560 pin 6 circuit** — the always-hot auxiliary/battery feed on the SAE J560 North American seven-pin trailer connector; not a stop-lamp or brake circuit — and a documented integration point for a future J2497 coupling interface is included on that circuit; the firmware scaffolding routes a POC placeholder through the data pipeline, but this is not a delivered sensor path — activating it with real reefer data requires the additional engineering described in [§9 Limitations](#9-limitations-and-next-steps). **Regional note:** SAE J560 is the North American 7-pin standard; European trailers use ISO 1185 (7-pin) or ISO 3731 (13-pin) connectors with different pinouts — J2497 PLC is deployed on the equivalent auxiliary circuit in those standards. Two encapsulated NTC thermistors hang inside the cargo space, front and rear, providing the independent body-air readings shippers use to verify cold-chain integrity at delivery. A documented integration point for a future TPMS (**Tire Pressure Monitoring System**) gateway receiver is included; the firmware scaffolding and note-template fields for four tire positions are in place, but this is not a delivered sensor path — real tire pressure data requires the vendor-specific engineering described in [§9 Limitations](#9-limitations-and-next-steps). A magnetic reed switch on the rear door reports open/close state. The Notecarrier CX and its onboard Cygnet STM32 host run the trailer state machine; the Notecard for Skylo handles all radio management, GNSS positioning, and Notehub data delivery. Power during tractor-connected operation comes from the trailer's 12 V auxiliary/battery circuit — **J560 pin 6** (the always-hot auxiliary feed, distinct from the stop-lamp and brake circuits); during DC dwells when the tractor is disconnected, a power-priority switching circuit transfers automatically to the reefer unit's own 12 V battery — integral to every refrigerated trailer — keeping the power path alive during DC dwells. The host uses `NotePayloadSaveAndSleep` / `card.attn` to sleep at zero current between sample cycles, making multi-day DC-dwell operation within a practical reefer battery budget achievable; see [§6](#6-firmware-design) for the power architecture detail.
 
 ## 2. System Architecture
+
+![System architecture: 2 cargo NTC thermistors, rear-door reed, GPS via Notecard (plus J2497 + TPMS stubs) → Notecarrier CX with Cygnet host and NOTE-NBGLWX → cellular or Skylo NTN satellite → Notehub → dispatch / cold chain / alerts](diagrams/01-system-architecture.svg)
 
 **Device-side responsibilities.** On each sample cycle the Cygnet STM32L433 reads the three fully-implemented sensor inputs — both cargo-air thermistors (12-bit ADC with β-equation conversion), rear-door reed switch, and GPS position from the Notecard's built-in GNSS — plus two UART stub channels: `Serial1` for the J2497 reefer path and `tpmsSerial` for the TPMS path. Both UART parsers handle simplified POC frame formats; neither produces real trailer data without the additional engineering described in §9. The host evaluates threshold rules locally and decides whether a given cycle warrants an immediate alert or feeds the running summary accumulator. Between sample cycles the host is powered off via the Notecard's ATTN signal (see [§6 Low-power strategy](#6-firmware-design)); all accumulated window state survives the sleep in a serialised `PersistState` payload stored in the Notecard. On each wakeup, the host drains both UART channels for 250 ms before the sample cycle begins, and drains again between each blocking Notecard I²C transaction to capture frames arriving during those calls. All Notecard communication goes over I²C via the Notecarrier CX's internal routing; the host never touches the radio or the cellular session.
 
@@ -73,6 +114,8 @@ The following items are **not part of this reference build** and should not be p
 | **TPMS OEM gateway**: PressurePro CORE OEM Module (or equivalent), 315 MHz, 12 V DC, serial data output | 1 | Designed for trailer OEM integration with a serial data port. The firmware's TPMS parser is a POC stub that models a generic one-frame-per-tire format no commercial gateway produces. Production firmware must replace the parser with the chosen vendor's protocol decode library. See [§9](#9-limitations-and-next-steps) and [Future Integration: TPMS Receiver Path](#future-integration-tpms-receiver-path). |
 
 ## 4. Wiring and Assembly
+
+![Wiring: 2 NTC thermistors to A0/A1, rear-door reed to D9 INPUT_PULLUP, MAIN antenna to u.FL (cell + Skylo sat), passive GPS antenna to GPS u.FL; dual 12 V input through OR-circuit and transient protection → DC-DC 5 V → +VBAT](diagrams/02-wiring-assembly.svg)
 
 All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin headers. The Notecard for Skylo seats into the carrier's M.2 slot. The GPS antenna coax exits through the weatherproof u.FL-to-SMA bulkhead feedthrough on the enclosure wall; the Skylo MAIN antenna lead must pass through an IP68 cable gland only — never through a bulkhead adapter or any additional RF connector (see BOM and the MAIN u.FL bullet below). The Mojo sits inline between the DC-DC converter's 5V output and the Notecarrier's +VBAT pad during bench power validation (remove it from the field unit once commissioning is complete, or leave it installed if fleet-level energy telemetry is desired). In field installations the DC-DC converter's VIN is fed from the power-priority switching module (see power chain below), not directly from J560 pin 6.
 
@@ -134,6 +177,8 @@ When a TPMS OEM gateway (e.g., PressurePro CORE OEM Module) is integrated, its c
 2. **Provision the Notecard.** Power the unit; on first cellular or satellite session the Notecard associates with your project automatically. The device appears in Notehub under the Notecard's DeviceUID, ready for fleet assignment.
 3. **Create fleets by customer or cargo class.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) group devices for shared configuration. The natural unit here is one fleet per OEM customer or cargo type — frozen-goods trailers and produce trailers operate with different reefer temperature bands, and fleet-level [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) encode those differences without separate firmware builds. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) can automatically assign trailers to fleets based on device attributes set at provisioning time.
 4. **Set environment variables.** All variables are optional; firmware compile-time defaults apply until an override is received from Notehub. Overrides are delivered to the device on the next inbound sync without a firmware reflash.
+
+   **To set variables in Notehub:** Navigate to **Fleets** → select your fleet → **Environment** tab. Add each variable as a key-value pair (e.g., key `sample_interval_sec`, value `300`). Changes are pushed to assigned devices on the next inbound sync.
 
    **Active on this build (fully-implemented sensor paths):**
 
@@ -236,6 +281,23 @@ Example `trailer_summary.qo` body — bench build with real cargo-air thermistor
 
 *`tpms_N_age` starts at 0 on boot and advances by 1 at each summary boundary where no data was received: age 1 above is correct for the first window on a build with no TPMS gateway. On the second window with no data, ages read 2 (= `TPMS_STALE_COUNT`), after which the pressure field is already at −9999 from initialization and the age counter continues climbing as a diagnostic. A position that reported data in the just-closed window always shows age 0 regardless of prior history — see the full-platform example below.*
 
+**Alert payload — example `trailer_alert.qo`** (fired immediately when `door_open_transit` threshold is exceeded; JSON is untemplated so it carries the full sensor snapshot, not a binary record):
+```json
+{
+  "alert":           "door_open_transit",
+  "reefer_actual_f": -9999.0,
+  "reefer_set_f":    -9999.0,
+  "air_t1_f":        36.8,
+  "air_t2_f":        36.2,
+  "door_open":       true,
+  "tpms_0_psi":      -9999.0,
+  "tpms_1_psi":      -9999.0,
+  "tpms_2_psi":      -9999.0,
+  "tpms_3_psi":      -9999.0
+}
+```
+The Notecard tags every note with the last known GPS position (`_location`) and a device-scoped timestamp (`_time`) set from Notehub's clock on inbound sync. Alerts fire with `sync: true`, triggering an immediate radio session; delivery latency is seconds over cellular, a few minutes over Skylo NTN satellite.
+
 **Full-platform output — expected shape once J2497 and TPMS integrations are complete.** When a real J2497 source and TPMS gateway are connected and the vendor decode libraries are in place, the same template produces a populated record. Fields marked *(stub)* below are −9999 until the corresponding integration is complete.
 
 Example `trailer_summary.qo` body — full platform, frozen-food transit (12-sample window):
@@ -284,7 +346,7 @@ Example `trailer_alert.qo` body (with `sync:true`, immediately transmitted) — 
 
 ### Low-power strategy
 
-**Dwell-capable host sleep via `card.attn`.** The host uses the same power architecture as the Blues reference accelerator 51 (Rooftop HVAC Predictive Maintenance): after each sample cycle `loop()` serialises `PersistState` into the Notecard via `NotePayloadSaveAndSleep()`, which issues `card.attn` with `mode=sleep` and `sleepSeconds=sampleIntervalSec`, then signals the Notecarrier CX to cut host power via the ATTN line. The host draws **zero current** during the sleep interval — only the Notecard's own radio-idle floor remains on the +VBAT rail. The Notecard pulses ATTN after `sampleIntervalSec` seconds; `setup()` re-runs on the next wakeup, restores `PersistState` from the Notecard's storage notefile via `NotePayloadRetrieveAfterSleep()`, and runs one complete sample cycle before sleeping again.
+**Dwell-capable host sleep via `card.attn`.** After each sample cycle `loop()` serialises `PersistState` into the Notecard via `NotePayloadSaveAndSleep()`, which issues `card.attn` with `mode=sleep` and `sleepSeconds=sampleIntervalSec`, then signals the Notecarrier CX to cut host power via the ATTN line. The host draws **zero current** during the sleep interval — only the Notecard's own radio-idle floor remains on the +VBAT rail. The Notecard pulses ATTN after `sampleIntervalSec` seconds; `setup()` re-runs on the next wakeup, restores `PersistState` from the Notecard's storage notefile via `NotePayloadRetrieveAfterSleep()`, and runs one complete sample cycle before sleeping again.
 
 The key power budget figures:
 
@@ -509,6 +571,8 @@ static void updateTrailerState(uint32_t nowEpoch) {
 
 ## 7. Data Flow
 
+![Data flow: per-cycle sample of cargo °C, door state, GPS → threshold rules (cargo high/low, door_open_long, motion/dwell) → trailer_alert.qo (sync:true with 30-min cooldown) and trailer_summary.qo (window aggregate, templated) → Notehub routes](diagrams/03-data-flow.svg)
+
 The Notecard's `card.attn` wakes the host every `sample_interval_sec` (default 300 s / 5 minutes). On each wakeup the host restores `PersistState`, drains both UART channels for 250 ms, reads all sensor inputs, accumulates window statistics, evaluates threshold rules, and may emit one or more immediate alerts before sleeping again. Every `summary_interval_min` (default 60 min) the host emits one templated summary note carrying aggregated statistics for the completed window — not a point-in-time snapshot.
 
 **Collected on each wake cycle:**
@@ -522,7 +586,7 @@ The Notecard's `card.attn` wakes the host every `sample_interval_sec` (default 3
 - `trailer_summary.qo` — one template-encoded window-aggregate record every `summary_interval_min` (default 24 per day per trailer), carrying reefer and cargo-air min/max/mean temperatures, door-open minutes and event count, TPMS last-known pressures and per-position ages, and a sample-count. Queued in the Notecard and flushed on the configured outbound cadence.
 - `trailer_alert.qo` — emitted only on a threshold trip, with `sync:true` for immediate delivery, subject to the 30-minute per-type cooldown window.
 
-**GPS.** `card.location.mode` is set to `periodic` with a 300-second interval and `threshold: 1`. The `threshold` parameter specifies how many accelerometer motion events the Notecard's built-in accelerometer must register before it powers up the GNSS module; setting it to 1 means the GPS radio stays off during stationary DC dwells and powers on only after the Notecard detects trailer movement. The Notecard automatically tags each outbound Note with the last known position.
+**GPS.** `card.location.mode` is set to `periodic` with a 300-second interval. In `periodic` mode the Notecard only powers up the GNSS module if its onboard accelerometer has detected motion since the last fix attempt, so the GPS radio stays off during stationary DC dwells and turns on only after the trailer moves — see [Sampling GPS Readings with Periodic Mode](https://dev.blues.io/notecard/notecard-walkthrough/time-and-location-requests/#sampling-gps-readings-with-periodic-mode). The Notecard automatically tags each outbound Note with the last known position.
 
 **Routed.** Notehub fans `trailer_alert.qo` to the OEM's real-time fleet management or on-call system. `trailer_summary.qo` flows to a cold-chain compliance archive or time-series data store for trend analysis and FSMA (**Food Safety Modernization Act**) recordkeeping.
 

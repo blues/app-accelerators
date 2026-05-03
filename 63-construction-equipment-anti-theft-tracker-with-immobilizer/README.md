@@ -3,6 +3,56 @@
 > This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
 
 A [loss prevention](https://blues.com/loss-prevention/) reference design for construction equipment fleets. A Blues Notecard for Skylo, Notecarrier CX, LiPo battery, and small solar panel turn any skid steer, light tower, portable compressor, or generator into a hardened asset with continuous location monitoring, geofence breach detection, after-hours motion alerts, and a remotely-staged ignition immobilizer proof of concept — all on a self-contained cellular-plus-satellite link that requires zero job-site WiFi or IT involvement.
+## Quick Start — From Bench to Notehub in 15 Minutes
+
+**What you'll have when done:**
+- Device powered and claimed in Notehub, showing real GPS location
+- Real-time geofence alerts when the device moves outside a job-site boundary
+- Ability to stage an immobilizer command from the Notehub UI and verify it fires on the next ignition key-on
+- Confidence in the firmware and sensor behavior before any live equipment wiring
+
+**Fastest path to first event (bench test, no ignition circuit yet):**
+
+1. **Assemble the unit.** Insert Notecard for Skylo into Notecarrier CX M.2 slot. Connect LiPo battery to Notecarrier CX JST battery header. Route antenna cables with slack (MAIN u.FL → Skylo-certified antenna, GPS u.FL → passive GNSS patch) — finalize placement later when enclosure location is set. Mount everything in a NEMA 4X weatherproof box. Power via USB to Notecarrier CX.
+
+2. **Get your ProductUID.** Sign up at [notehub.io](https://notehub.io), create a new project, and copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) from the project settings.
+
+3. **Flash the firmware.**
+   - Install [Arduino IDE](https://www.arduino.cc/en/software) or `arduino-cli`.
+   - In Arduino Boards Manager, install the STM32 core and select board "Blues Cygnet".
+   - In Arduino Library Manager, install "Blues Wireless Notecard" (verify it's v1.8.5 or later).
+   - Open `firmware/construction_equipment_anti_theft/construction_equipment_anti_theft.ino`.
+   - Paste your ProductUID into the `PRODUCT_UID` string at the top of the sketch.
+   - Flash to the Notecarrier CX.
+   
+   **Via arduino-cli:**
+   ```bash
+   arduino-cli compile --fqbn "STMicroelectronics:stm32:Cygnet" \
+     firmware/construction_equipment_anti_theft
+   arduino-cli upload --port /dev/ttyACM0 --fqbn "STMicroelectronics:stm32:Cygnet" \
+     firmware/construction_equipment_anti_theft
+   ```
+
+4. **Claim the device.** Power the unit and keep it powered. The Notecard connects to Skylo cellular on first boot and auto-provisions to your project. Open Notehub, navigate to your project → Devices, and confirm the Notecarrier CX appears in the device list within 30 seconds.
+
+5. **Watch the heartbeat.** Click the device in Notehub and open the Events tab. Within 1–2 minutes you should see `tracker.qo` heartbeat notes showing current `lat`, `lon`, and battery voltage. If nothing appears, check USB power and antenna placement (clear sky view required for Skylo lock).
+
+6. **Test the geofence.** In Notehub's Fleet view, set environment variables:
+   - `fence_enabled` = `1`
+   - `fence_lat` = your current latitude (shown in the device event detail)
+   - `fence_lon` = your current longitude
+   - `fence_radius_m` = `20` (20-meter test radius)
+   
+   Wait 4–5 minutes for the inbound sync to deliver these variables to the device. Then physically move the device ~25 meters away and watch the Events log for a `geofence_breach` alert. Alert should appear within 1–2 wake cycles. If testing during business hours (6 AM–6 PM UTC default), the device wakes every 60 minutes — use the after-hours window (6 PM–6 AM) for faster 2-minute wake cycles.
+
+7. **Test immobilizer staging.** From the Notehub device view, use the command bar to post a Note to `immobilize.qi`:
+   ```json
+   {"cmd":"immobilize"}
+   ```
+   Watch the Events log for `immobilize_armed` — that Note confirms the device received and staged the command. Now simulate a key-on edge: connect the Cygnet's A2 GPIO to GND (ignition OFF state), let it sit for one full wake cycle, then briefly short A2 to 3.3V (ignition ON). On the next wake after the OFF→ON transition, the relay driver pin A1 should pulse HIGH and `ignition_on_immobilized` should appear in the Events log. This confirms the immobilizer path is functional before live wiring.
+
+---
+
 
 ## 1. Project Overview
 
@@ -385,6 +435,45 @@ Satellite session validation requires outdoor antenna placement with clear sky v
 - Consider a dedicated anti-tamper microswitch on the enclosure lid connected to an AUX GPIO, firing `enclosure_opened` as a Note if someone tries to physically remove the device.
 - [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) enables wireless firmware updates to the Cygnet — essential for pushing updated geofence logic, new alert types, or threshold recipes to an entire fleet without any truck roll.
 
-## 10. Summary
+
+## 10. Troubleshooting
+
+**Device not appearing in Notehub after power-on.**
+- Confirm USB power is stable (green LED on Notecarrier CX). If no LED, USB connection may be faulty.
+- Verify ProductUID is correctly pasted into the firmware sketch (top of `construction_equipment_anti_theft.ino`). Empty or mismatched ProductUID prevents auto-provisioning.
+- Check that antenna cables are fully seated in u.FL connectors. Loose MAIN antenna = no cellular lock, no Notehub connection.
+- If using Skylo satellite only (no cellular), first satellite acquisition can take 2–5 minutes with clear sky view. Orient antenna toward southern sky and wait 5 minutes before concluding failure.
+- Monitor Arduino Serial Monitor (9600 baud) if DEBUG_SERIAL is enabled in the firmware to see live I²C activity and Notecard responses.
+
+**Heartbeats appear but `fix_age_s` is always -1 or very large.**
+- `fix_age_s = -1` means `card.time` was unavailable when the note was queued. This is normal on cold boot before the Notecard has synced with Notehub. After one successful outbound sync, `card.time` should populate and `fix_age_s` will show real elapsed seconds.
+- If `fix_age_s` remains `-1` after multiple outbound syncs, check that cellular or satellite sessions are completing (watch Notehub Events for successful sync activity). An isolated device never completes a session and never gets epoch time.
+- If `fix_age_s` is consistently >300 seconds (approaching `heartbeat_moving_min × 60`), the Notecard's GNSS module is not acquiring fresh fixes. Check antenna placement and sky view. GPS acquisition typically takes 20–60 seconds in open sky; metal roofs or urban canyons extend this significantly.
+
+**Geofence alerts never fire even though device moves outside the configured radius.**
+- Confirm that `fence_enabled` is set to `1` and `fence_lat`/`fence_lon` are populated in Notehub (Fleet Settings → Environment). Without `fence_enabled=1`, the firmware falls back to checking that both coordinates are non-zero, which fails at the prime meridian (0°,0°).
+- Verify that the device has woken since the env vars were set. Inbound sync interval is 4 minutes (default `inbound_min` during after-hours) or 60 minutes (default `heartbeat_stopped_min` during business hours). Watch the Events log for a heartbeat after you expect the sync to have completed.
+- If a heartbeat appears but still no alert after moving outside the radius, check the heartbeat's `fix_age_s`. If it is > 300 seconds (stale), the GNSS fix is old and may not reflect your current position. Move the device and wait for the next wake to allow GNSS to re-acquire — this can take 5 minutes if the device was stationary and GNSS was not active.
+- During business hours, the device wakes only every 60 minutes (default). To test geofence quickly, reduce `heartbeat_stopped_min` to `2` in Notehub, wait for the inbound sync to deliver it (~4 min), then move the device and wait for the next 2-minute wake cycle.
+
+**Immobilizer command appears in Notehub but relay never fires.**
+- Confirm that `immobilize_armed` appears in the Events log within the expected latency (worst-case: 60 min inbound sync + 60 min host wake = 2 hours during business hours). If `immobilize_armed` does not appear, the device never received the command.
+- If `immobilize_armed` appears, the command was staged but the relay did not fire. Relay fires on an OFF→ON ignition edge (not a level check). Ensure you simulated the edge correctly: A2 GPIO must be at GND (0V, ignition OFF) for at least one full wake cycle, then transition to 3.3V (ignition ON) before the next wake. The relay asserts only on the wake that observes the transition.
+- Check relay driver wiring: A1 GPIO → BSS138 gate. If A1 wiring is loose or shorted to GND, the relay cannot energize. Verify 10 kΩ pulldown is present (gate to GND) to keep MOSFET off when GPIO is high-impedance.
+- If relay coil shows 12V but does not click, check that 1N4007 diode is properly oriented (cathode to +12V, anode to MOSFET drain). Reversed diode will block the relay's energization path.
+
+**High power draw (Mojo shows >50 mA sustained).**
+- This indicates the Cygnet is not entering deep sleep. Check that `NotePayloadSaveAndSleep` is being called at the end of `runCycle()` and that `card.attn` mode is configured correctly.
+- Verify that DEBUG_SERIAL is commented out (not `#define DEBUG_SERIAL 1`). Serial debug slows startup and can prevent sleep entry.
+- If using bench USB, the Cygnet may not sleep reliably while powered from USB with Serial.begin() active. Disconnect USB and power from LiPo + solar charger to see true sleep behavior.
+- Check Notecard firmware version: `card.version` should show a recent Skylo-certified build. Outdated firmware may have high quiescent current. Update via Notehub [Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) if available.
+
+**Satellite acquisition fails or times out.**
+- Skylo satellites are in geostationary orbit (GEO) over the equator. Antenna must have a clear southern sky view. From northern hemisphere, satellite is low on the southern horizon — objects above 15° south-of-horizon elevation may block the link.
+- First satellite acquisition can take 2–5 minutes. Antenna orientation and sky clarity are critical. See [Satellite Best Practices](https://dev.blues.io/starnote/satellite-best-practices/) for detailed placement guidance.
+- If Skylo is the fallback and cellular is available, the device will prefer cellular and never trigger satellite. To test satellite, disconnect cellular or move the device to an area with no cellular coverage (e.g., rural location, underground bunker after the charger has been removed so it cannot fall back to USB).
+- Verify that the Notecard for Skylo (NOTE-NBGLWX) antenna is the Skylo-certified antenna included with the kit. A substituted antenna may not lock onto the Skylo network — see datasheet for antenna part number.
+
+## 11. Summary
 
 A Notecarrier CX and Notecard for Skylo, a LiPo battery trickle-charged by a solar panel, and two wires into the ignition circuit turn a piece of construction equipment into a recoverable asset. The firmware runs a tight sleep-wake-sense-sleep loop: hourly heartbeats during the business-hour parking window (worst-case 60-minute geofence-detection latency), rapid two-minute after-hours scans that detect unauthorized movement and fire immediate alerts, and a staged relay mechanism that is set to block ignition on the thief's next key-on attempt the Cygnet observes — a next-wake / next-key-on proof-of-concept immobilizer that demonstrates the control path and command flow, with a production latching-relay upgrade as the clear next step. When cellular coverage fails — rural stash yard, shipping container, metal barn — the Skylo satellite link continues to push location and alert notes skyward, because planetary roaming and satellite fallover are not optional extras for this use case. They're the reason a stolen skid steer ends up recovered instead of exported.

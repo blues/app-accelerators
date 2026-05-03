@@ -63,6 +63,11 @@
 #include <Arduino.h>
 #include <SoftwareSerial.h>
 #include <Notecard.h>
+
+// Paste your Notehub ProductUID between the quotes below. Must be defined
+// before #include "trailer_sensors.h" so the header's #ifndef guard picks it up.
+#define PRODUCT_UID ""  // "com.your-company.your-name:connected_trailer"
+
 #include "trailer_sensors.h"
 
 // Define usbSerial to enable USB debug output and the Notecard debug stream.
@@ -173,13 +178,14 @@ static bool defineTemplate() {
 
 // Apply card.location.mode — motion-gated GPS keeps GNSS off during DC dwells
 // and powers it on only after the Notecard's built-in accelerometer detects
-// trailer movement.
+// trailer movement. Periodic mode is inherently motion-gated: the Notecard only
+// powers the GNSS module when its accelerometer has detected motion since the
+// last fix attempt.
 static bool applyLocationMode() {
     J *req = notecard.newRequest("card.location.mode");
     if (!req) return false;
-    JAddStringToObject(req, "mode",      "periodic");
-    JAddNumberToObject(req, "seconds",   300);
-    JAddNumberToObject(req, "threshold", 1);
+    JAddStringToObject(req, "mode",    "periodic");
+    JAddNumberToObject(req, "seconds", 300);
     J *rsp = notecard.requestAndResponse(req);
     if (!rsp) return false;
     bool ok = !notecard.responseError(rsp);

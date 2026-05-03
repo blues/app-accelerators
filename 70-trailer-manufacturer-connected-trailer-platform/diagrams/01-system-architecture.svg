@@ -7,17 +7,18 @@
   <rect width="800" height="380" fill="#ffffff"/>
 
   <text x="400" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">System Architecture</text>
-  <text x="400" y="58" text-anchor="middle" font-size="12" fill="#64748b">Creek / Culvert Flood-Warning Stream Gauge</text>
+  <text x="400" y="58" text-anchor="middle" font-size="12" fill="#64748b">Connected Trailer Platform — cargo, door, GPS</text>
 
   <!-- Sensors -->
-  <rect x="20" y="120" width="170" height="180" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
-  <g transform="translate(96,135) scale(0.75)" fill="#7c2d12"><path d="M7.76 16.24C6.67 15.16 6 13.66 6 12s.67-3.16 1.76-4.24l1.42 1.42C8.45 9.9 8 10.9 8 12c0 1.1.45 2.1 1.17 2.83l-1.41 1.41zm8.48 0l-1.41-1.41C15.55 14.1 16 13.1 16 12c0-1.1-.45-2.1-1.17-2.83l1.41-1.41C17.33 8.84 18 10.34 18 12s-.67 3.16-1.76 4.24zM12 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-7 2c0-1.93.78-3.68 2.05-4.95l-1.42-1.42C4.01 7.26 3 9.51 3 12s1.01 4.74 2.64 6.36l1.42-1.42C5.78 15.68 5 13.93 5 12zm14.36 0c0 1.93-.78 3.68-2.05 4.95l1.41 1.41C21 16.74 22 14.49 22 12s-1.01-4.74-2.64-6.36l-1.41 1.41C19.22 8.32 20 10.07 20 12z"/></g>
-  <text x="105" y="172" text-anchor="middle" font-size="13" font-weight="700" fill="#7c2d12">Sensors</text>
-  <line x1="40" y1="186" x2="170" y2="186" stroke="#fed7aa"/>
+  <rect x="20" y="120" width="180" height="180" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+  <g transform="translate(101,135) scale(0.75)" fill="#7c2d12"><path d="M7.76 16.24C6.67 15.16 6 13.66 6 12s.67-3.16 1.76-4.24l1.42 1.42C8.45 9.9 8 10.9 8 12c0 1.1.45 2.1 1.17 2.83l-1.41 1.41zm8.48 0l-1.41-1.41C15.55 14.1 16 13.1 16 12c0-1.1-.45-2.1-1.17-2.83l1.41-1.41C17.33 8.84 18 10.34 18 12s-.67 3.16-1.76 4.24zM12 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-7 2c0-1.93.78-3.68 2.05-4.95l-1.42-1.42C4.01 7.26 3 9.51 3 12s1.01 4.74 2.64 6.36l1.42-1.42C5.78 15.68 5 13.93 5 12zm14.36 0c0 1.93-.78 3.68-2.05 4.95l1.41 1.41C21 16.74 22 14.49 22 12s-1.01-4.74-2.64-6.36l-1.41 1.41C19.22 8.32 20 10.07 20 12z"/></g>
+  <text x="110" y="172" text-anchor="middle" font-size="13" font-weight="700" fill="#7c2d12">Sensors</text>
+  <line x1="40" y1="186" x2="180" y2="186" stroke="#fed7aa"/>
   <g font-size="11" fill="#9a3412">
-    <text x="105" y="216" text-anchor="middle">MB7389 ultrasonic</text>
-    <text x="105" y="238" text-anchor="middle">Tipping-bucket rain</text>
-    <text x="105" y="260" text-anchor="middle">UART + GPIO</text>
+    <text x="110" y="216" text-anchor="middle">2× cargo NTC</text>
+    <text x="110" y="238" text-anchor="middle">Rear-door reed</text>
+    <text x="110" y="260" text-anchor="middle">GPS (Notecard)</text>
+    <text x="110" y="282" text-anchor="middle" font-style="italic">+ J2497 / TPMS stubs</text>
   </g>
 
   <!-- Edge -->
@@ -30,7 +31,7 @@
     <text x="340" y="238" text-anchor="middle">Cygnet STM32</text>
     <text x="340" y="260" text-anchor="middle">NOTE-NBGLWX</text>
   </g>
-  <text x="340" y="284" text-anchor="middle" font-size="10" fill="#a16207" font-style="italic">solar + LiPo · 5-min wakes</text>
+  <text x="340" y="284" text-anchor="middle" font-size="10" fill="#a16207" font-style="italic">dwell-capable sleep</text>
 
   <!-- Notehub -->
   <rect x="490" y="120" width="170" height="180" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
@@ -50,19 +51,19 @@
   <line x1="720" y1="186" x2="780" y2="186" stroke="#e9d5ff"/>
   <g font-size="11" fill="#6b21a8">
     <text x="750" y="216" text-anchor="middle">Dispatch</text>
-    <text x="750" y="238" text-anchor="middle">Hydrology</text>
-    <text x="750" y="260" text-anchor="middle">Faults</text>
+    <text x="750" y="238" text-anchor="middle">Cold chain</text>
+    <text x="750" y="260" text-anchor="middle">Alerts</text>
   </g>
 
   <!-- Connection labels ABOVE arrows -->
-  <text x="215" y="100" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">UART + GPIO</text>
+  <text x="220" y="100" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">analog + GPIO + UART</text>
   <text x="465" y="100" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">cellular / satellite</text>
   <text x="685" y="100" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">routes</text>
 
   <!-- Arrows -->
-  <line x1="190" y1="210" x2="238" y2="210" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <line x1="200" y1="210" x2="238" y2="210" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
   <line x1="440" y1="210" x2="488" y2="210" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
   <line x1="660" y1="210" x2="708" y2="210" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
 
-  <text x="400" y="345" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">Cellular primary, Skylo NTN fallback — flood alerts get through even when the storm knocks out the local tower.</text>
+  <text x="400" y="345" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">LTE-M/NB-IoT primary, Skylo NTN satellite fallback — cold-chain record stays continuous through dead zones.</text>
 </svg>

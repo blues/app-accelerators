@@ -4,6 +4,16 @@
 
 A [industrial equipment monitoring](https://blues.com/industrial-equipment-monitoring/) reference design that gives machine-tool OEMs **hourly summarized telemetry** from their installed base — spindle load, feed-rate override, run/idle minutes, cycle counts, average cycle time, operator ID, and observed active-alarm-transition counts — with **immediate cellular alarm delivery** for fault and overload events that carries the full alarm code in each alarm note. CNC controllers that expose telemetry over **Modbus TCP** supply the data; a direct point-to-point Ethernet link captures it without touching the machine shop's OT network. Normal telemetry (spindle statistics, run/idle minutes, cycle data) batches into hourly `cnc_summary.qo` notes; alarms bypass that cadence and arrive in Notehub within the Notecard's session-establishment window; operator-ID transitions emit immediate `cnc_operator.qo` notes as they occur.
 
+## Quickstart: First Device in Under Two Hours
+
+1. **Flash the Arduino OPTA** with `firmware/cnc_spindle_tracker.ino` (requires Arduino IDE + Mbed OS Opta Boards core).
+2. **Get ProductUID** from [notehub.io](https://notehub.io), paste it into the sketch, reflash.
+3. **Wire**: Cat6 from OPTA RJ45 → CNC Modbus TCP port (default `192.168.250.1:502`). Cellular antenna through panel door.
+4. **Power**: 24 VDC to OPTA. Notecard auto-claims to your Notehub project on first cellular session (≈5 min).
+5. **Validate**: Check Notehub for `cnc_summary.qo` notes within 60 minutes. One summary per hour, one alarm per event (when triggered).
+
+**When you're done:** You have continuous spindle load, cycle counts, alarm codes, operator IDs, and run/idle telemetry flowing to Notehub every hour, plus real-time cellular alarms on overload or fault transitions. Aggregate the summaries into an OEE dashboard; route alarms to your CMMS or on-call system via Notehub routes.
+
 ## 1. Project Overview
 
 **The problem.** A CNC (computer numerical control) machining center is a six-figure piece of capital equipment. The OEM who built it typically has zero visibility into what happens to it after delivery. Is the spindle running at 80% load twelve hours a day, or is it sitting idle because the shop scheduled it wrong? Is the same alarm code triggering every Tuesday morning — a pattern that, with data, is obviously a tooling-change reminder, but without data is an invisible warranty claim? Is a particular operator overriding the feed rate up to 140% on a finishing pass and burning through inserts?
@@ -19,6 +29,8 @@ Cellular is the answer. A Blues Wireless for OPTA snapped onto the Arduino OPTA'
 **Deployment scenario.** A single Arduino OPTA RS485 + Blues Wireless for OPTA mounts on the machine's electrical panel DIN rail. A two-meter Cat6 patch cable runs from the OPTA's RJ45 port directly to the CNC controller's Modbus TCP Ethernet port — a closed, private connection with its own subnet. The cellular antenna exits through a cable gland on the panel door. The panel's existing 24 VDC supply powers the assembly. First-light is an hour of wiring; the OEM's service technician never needs to interact with the shop's network team.
 
 ## 2. System Architecture
+
+![System architecture: CNC controller (Modbus TCP server) → OPTA + Wireless for OPTA via point-to-point Cat6 → cellular → Notehub → OEE / CMMS / paging](diagrams/01-system-architecture.svg)
 
 **Device-side responsibilities.** The OPTA's STM32H747 Cortex-M7 host acts as a Modbus TCP **client**, polling six holding registers from the CNC controller (the Modbus **server**) once per minute over the OPTA's built-in Ethernet port. The host accumulates hourly rolling statistics — mean and peak spindle load, mean feed-rate override, run/idle minute counts, cycle completions, and average cycle time — and evaluates two sample-based alert rules on every poll (`spindle_overload` and `cnc_alarm`), plus a third connection-failure alarm (`modbus_unreachable`) when the Modbus TCP link cannot be reached after a retry. Operator-ID transitions are detected on every poll; when the operator-ID register changes, an immediate `cnc_operator.qo` Note is emitted. Notes travel from the host to the Notecard inside Blues Wireless for OPTA over I²C through the expansion's AUX connector. The host never touches the cellular modem or session state.
 
@@ -44,13 +56,15 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ## 4. Wiring and Assembly
 
+![Wiring: 24 VDC supply, OPTA RS485, Wireless for OPTA, antennas on DIN rail; Cat6 Ethernet point-to-point to CNC at 192.168.250.1; six contiguous holding registers polled per minute](diagrams/02-wiring-assembly.svg)
+
 > **Safety.** Machine electrical panels contain hazardous voltages on the main power bus, even when control wiring is low-voltage. Installation must be performed by qualified personnel following site lockout/tagout procedures and applicable electrical codes. This reference design is **read-only** over Modbus — it does not issue any commands to the CNC controller.
 
 1. **Mount and power.** Snap the Wireless for OPTA onto the OPTA's right-hand expansion port. The AUX connector between the two carries the I²C bus that the Notecard rides on — use the solderless AUX connector included with Wireless for OPTA. Mount the assembly on the DIN rail. Wire 24 VDC from the panel supply to the OPTA's `+` and `-` terminals. Per the [Wireless for OPTA quickstart](https://dev.blues.io/quickstart/wireless-for-opta-quickstart/), 24 VDC is required for field deployment — USB-C powers the host CPU for programming but does not power the OPTA's output stage or the expansion. Jumper the OPTA's `+24V` terminal to the expansion's corresponding power input so both share the same supply rail.
 
 2. **Antennas.** Drill or gland two SMA bulkhead connectors through the panel door or a side knockout. Route the primary cellular antenna lead to the first SMA port on Wireless for OPTA and the diversity lead to the second. The bundled rubber-duck antennas are suitable for bench testing only — do not rely on them inside a metal panel in the field.
 
-3. **Modbus TCP link.** Run a Cat6 patch cable from the OPTA's RJ45 Ethernet port to the CNC controller's **dedicated Modbus TCP port** (consult the controller's Modbus/Ethernet option documentation for the correct physical connector and TCP port number). This creates a private point-to-point link: two devices on an isolated `/24` subnet with no routing to the shop floor network. Configure the OPTA with a static IP on the same subnet as the CNC's Modbus TCP interface. Defaults in the firmware: OPTA `192.168.250.10`, CNC `192.168.250.1`. IP addressing is **compile-time only** in the current firmware — adjust `LOCAL_IP` in `cnc_spindle_tracker.ino` and `_DEFAULT_CNC_IP` in `cnc_spindle_tracker_helpers.cpp` to match the actual CNC network configuration before building. There is no runtime IP configuration mechanism in this reference design (see [Limitations](#9-limitations-and-next-steps) for the production path).
+3. **Modbus TCP link.** Run a Cat6 patch cable from the OPTA's RJ45 Ethernet port to the CNC controller's **dedicated Modbus TCP port** (consult the controller's Modbus/Ethernet option documentation for the correct physical connector and TCP port number). This creates a private point-to-point link: two devices on an isolated `/24` subnet with no routing to the shop floor network. Configure the OPTA with a static IP on the same subnet as the CNC's Modbus TCP interface. Defaults in the firmware: OPTA `192.168.250.10`, CNC `192.168.250.1`. IP addressing is **compile-time only** in the current firmware — adjust `LOCAL_IP` in `cnc_spindle_tracker.ino` (line 40) and `_DEFAULT_CNC_IP` in `cnc_spindle_tracker_helpers.cpp` (line ~30) to match the actual CNC network configuration before building. There is no runtime IP configuration mechanism in this reference design (see [Limitations](#9-limitations-and-next-steps) for the production path).
 
    > **Deployment variant — shared CNC main port.** Some controllers expose Modbus TCP only on the same port used for the machine tool LAN. Connecting the OPTA in that scenario requires joining the customer's machine network (even if only to reach the CNC) and **does not preserve the private-subnet / no-plant-network-touch property** described in §1. That configuration requires customer network and OT-security approval before deployment and is outside the primary scope of this design.
 
@@ -58,13 +72,13 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ## 5. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/cnc_spindle_tracker.ino` as `PRODUCT_UID`.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/cnc_spindle_tracker.ino` (line 18, uncomment the `#define PRODUCT_UID` and insert your UID).
 
-2. **Claim the device.** Power the panel; on first cellular session the Notecard associates with your project automatically.
+2. **Claim the device.** Flash the OPTA and power the panel. On first cellular session the Notecard associates with your project automatically. Check Notehub **Fleet > Devices** within 5–10 minutes to confirm the device appears.
 
-3. **Create a fleet per controller family or model profile.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) let you push a common configuration to every machine that shares a controller type. Fleet-level [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) encode the shared parameters — Modbus register block base address, unit ID, port, and alert thresholds — so all machines with the same controller model and register map share a configuration without a separate firmware build. Note that IP addressing (`LOCAL_IP` and `DEFAULT_CNC_IP`) remains compile-time in this reference design, so machines whose CNC controllers sit on different network configurations still require a per-build adjustment (see [Limitations](#9-limitations-and-next-steps)). Because register maps frequently differ across CNC models even within the same customer site, organizing fleets by controller family or model profile — rather than solely by site — gives the most precise control over shared settings. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) can automate fleet assignment based on a device tag set during commissioning.
+3. **Create a fleet per controller family or model profile.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) let you push a common configuration to every machine that shares a controller type. Fleet-level [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) — set in the Notehub UI under **Fleet > Environment** — encode the shared parameters: Modbus register block base address, unit ID, port, and alert thresholds. All machines with the same controller model and register map share one configuration without a separate firmware build. Note that IP addressing (`LOCAL_IP` and `DEFAULT_CNC_IP`) remains compile-time in this reference design, so machines whose CNC controllers sit on different network configurations still require a per-build adjustment (see [Limitations](#9-limitations-and-next-steps)). Because register maps frequently differ across CNC models even within the same customer site, organizing fleets by controller family or model profile — rather than solely by site — gives the most precise control over shared settings. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) can automate fleet assignment based on a device tag set during commissioning.
 
-4. **Set environment variables.** All variables are optional; firmware defaults are shown. When you save a change in Notehub the updated value is downloaded to the Notecard on the next inbound sync; the host applies it on the next scheduled `env.get` call — either at boot or at the end of the current report window.
+4. **Set environment variables.** In the Notehub web UI, navigate to **Fleet > Environment** to view all available variables. All variables are optional; firmware defaults are shown. When you save a change in Notehub the updated value is downloaded to the Notecard on the next inbound sync; the host applies it on the next scheduled `env.get` call — either at boot or at the end of the current report window.
 
    | Variable | Default | Purpose |
    |---|---|---|
@@ -76,13 +90,53 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
    | `spindle_overload_pct` | `90.0` | Spindle load (%) above which a `spindle_overload` alarm fires while the machine is in-cycle. |
    | `expected_cycle_sec` | `120` | Reserved for future use. Stored in device config but not transmitted in any Note or evaluated in firmware. |
 
-   > **Cadence constraint.** `sample_minutes` must not exceed `report_minutes`. For accurate run/idle minute totals, `report_minutes` should be a whole-number multiple of `sample_minutes` (e.g., `sample_minutes=5, report_minutes=60`). The firmware enforces the first constraint by clamping `sample_minutes` down to `report_minutes` if the env var would otherwise violate it; non-divisible pairs are accepted with a Serial warning but produce approximate run/idle totals. See [§9 Limitations](#9-limitations-and-next-steps).
+   > **Cadence constraint.** `sample_minutes` must not exceed `report_minutes`. For accurate run/idle minute totals, `report_minutes` should be a whole-number multiple of `sample_minutes` (e.g., `sample_minutes=5, report_minutes=60`). If divisibility is violated (e.g., `sample_minutes=7, report_minutes=60`), run+idle totals in the summary will be less than the window duration. The firmware enforces the first constraint by clamping `sample_minutes` down to `report_minutes` if the env var would otherwise violate it; non-divisible pairs are accepted with a Serial warning. See [§9 Limitations](#9-limitations-and-next-steps).
 
    > **CNC register-map gotchas.** The defaults above are illustrative. Real CNC controllers vary widely on: addressing convention (0-based wire-level vs. 1-based / Fanuc "PLC address" notation); per-register scaling (spindle load may be 0.1 %, 1 %, or % of rated torque); signedness; and whether the cycle count is a 16-bit or 32-bit (two-register) value. Critically, the current firmware only supports a **contiguous six-register layout** — the six values must appear consecutively in the controller's Modbus map starting at `reg_spindle_load`. Production deployments need a vendor-specific register map with a matching contiguous block (or individual per-register reads added to the firmware). See [Limitations](#9-limitations-and-next-steps).
 
-5. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `cnc_alarm.qo` (real-time delivery to the OEM's CMMS or on-call system), a second for `cnc_summary.qo` (batched delivery to the OEE analytics platform), and a third for `cnc_operator.qo` (real-time delivery for best-effort operator-ID transition events — individual events may be lost to comms outages, and any transition that occurs and reverts between consecutive polls is invisible, so this stream is not a complete access log; treat it as a sampled transition feed). Keeping the three Notefiles separate at the source means each can fan out to a different destination at a different urgency without filter logic inside the route.
+5. **Configure routes.** Add [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) to push data to your downstream systems:
+   - **`cnc_alarm.qo`** → real-time delivery to your CMMS, on-call paging system, or Slack webhook.
+   - **`cnc_summary.qo`** → batched hourly delivery to your OEE analytics or data warehouse.
+   - **`cnc_operator.qo`** → real-time delivery to operator-session or access-logging system (best-effort; individual transitions may be lost to comms outages, and transitions that occur and revert between consecutive polls are never recorded).
+   
+   Keeping the three Notefiles separate means each can route to a different destination at a different priority without downstream filter logic.
 
-## 6. Firmware Design
+## 6. Firmware Build and Flash
+
+**Prerequisites:**
+- Arduino IDE 2.3+ or `arduino-cli` (command-line). If using the IDE, install the **Arduino Mbed OS Opta Boards** board package via Tools > Board Manager — search for "Opta".
+- **Dependencies** (install via Library Manager or `arduino-cli`):
+  - [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (v1.8.5 or later; check [releases](https://github.com/blues/note-arduino/releases))
+  - [`ArduinoModbus`](https://github.com/arduino-libraries/ArduinoModbus)
+  - [`ArduinoRS485`](https://github.com/arduino-libraries/ArduinoRS485)
+  - `Ethernet.h` (included with Mbed OS Opta Boards core)
+
+**Build steps (using `arduino-cli`):**
+
+```bash
+# Install the board core
+arduino-cli core install arduino:mbed_opta
+
+# Install dependencies
+arduino-cli lib install "Blues Wireless Notecard" "ArduinoModbus" "ArduinoRS485"
+
+# Edit firmware/cnc_spindle_tracker.ino — uncomment line 18 and paste your ProductUID
+# Edit firmware/cnc_spindle_tracker.ino line 40 — set LOCAL_IP to match your Modbus subnet
+# Edit firmware/cnc_spindle_tracker_helpers.cpp line ~30 — set _DEFAULT_CNC_IP to your CNC controller IP
+
+# Compile
+arduino-cli compile -b arduino:mbed_opta:opta firmware/
+
+# Flash (replace /dev/cu.usbmodem1234567 with your OPTA's USB port)
+arduino-cli upload -b arduino:mbed_opta:opta -p /dev/cu.usbmodem1234567 firmware/
+
+# Open the serial monitor to check for errors
+arduino-cli monitor -p /dev/cu.usbmodem1234567 -c baudrate=115200
+```
+
+**Alternatively, using the Arduino IDE:** Open `firmware/cnc_spindle_tracker.ino`, configure your ProductUID and IPs, select Tools > Board > Arduino OPTA, and click Upload.
+
+## Firmware Architecture
 
 Three files in the `firmware/` directory:
 
@@ -91,13 +145,6 @@ Three files in the `firmware/` directory:
 | [`cnc_spindle_tracker.ino`](firmware/cnc_spindle_tracker.ino) | Main sketch: `setup()`, `loop()`, sample accumulation, alert evaluation, and all global state definitions. |
 | [`cnc_spindle_tracker_helpers.h`](firmware/cnc_spindle_tracker_helpers.h) | Shared types (`Config`, `Sample`, `WindowStats`), compile-time defaults, `extern` declarations for globals, and helper-function prototypes. |
 | [`cnc_spindle_tracker_helpers.cpp`](firmware/cnc_spindle_tracker_helpers.cpp) | Notecard and Modbus helper implementations: `notecardConfigure()`, `defineTemplates()`, `fetchEnvOverrides()`, `modbusConnect()`, `pollCnc()`, `sendSummary()`, `sendAlarm()`, `sendOperatorChange()`, `resetWindow()`. |
-
-**Dependencies:**
-- **Arduino Mbed OS Opta Boards** core (install via the Arduino IDE Boards Manager — search for "Opta").
-- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (`note-arduino`, v1.8.5 at time of writing). Install via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`. Pin the current stable release — check [note-arduino releases](https://github.com/blues/note-arduino/releases) for the latest.
-- [`ArduinoModbus`](https://github.com/arduino-libraries/ArduinoModbus) (install via Library Manager). Provides `ModbusTCPClient` for Ethernet-based Modbus.
-- [`ArduinoRS485`](https://github.com/arduino-libraries/ArduinoRS485) (install via Library Manager). Required by ArduinoModbus even when using TCP mode.
-- `Ethernet.h` is included in the Arduino Mbed OS Opta Boards package; no separate installation needed.
 
 ### Modules
 
@@ -255,6 +302,8 @@ notecard.sendRequest(req);
 
 ## 7. Data Flow
 
+![Data flow: minute-cadence Modbus poll → three edge rules + operator-ID transition detection → cnc_alarm.qo (sync), cnc_operator.qo (sync), cnc_summary.qo (hourly templated) → Notehub routes](diagrams/03-data-flow.svg)
+
 **Collected.** Every `sample_minutes` (default 1 min): spindle load (%), feed-rate override (%), active alarm code, cycle state, cumulative cycle count, and current operator ID (the value presently in the controller's operator-ID register) — six registers in one Modbus TCP transaction.
 
 **Accumulated.** Each sample updates rolling counters: spindle load sum and peak (while running), feed-rate sum (while running), run/idle minute tallies, the per-window cycle-count register delta (difference between consecutive cycleCount register reads — primary source for `cycle_count`), edge-timed cycle durations (for `avg_cycle_sec` only), observed active-alarm-transition count (alarms that assert and clear between polls are never seen), and operator-ID change detection. Cycles that complete entirely within one poll interval are invisible to the edge detector but are still captured in the register delta. See [Limitations](#9-limitations-and-next-steps) for the practical implications of the `avg_cycle_sec` heuristic.
@@ -273,25 +322,51 @@ notecard.sendRequest(req);
 
 ## 8. Validation and Testing
 
-**Expected steady-state behavior.** A healthy, running machine generates one `cnc_summary.qo` per hour and zero `cnc_alarm.qo` notes. During initial commissioning, expect a brief `modbus_unreachable` event until the Modbus IP address and register map are confirmed.
+**Expected steady-state behavior.** A healthy machine generates one `cnc_summary.qo` per hour and zero `cnc_alarm.qo` notes. On first commissioning, you may see one `modbus_unreachable` alarm until the Modbus TCP link is confirmed.
 
-**Modbus first-light.** Before connecting to the real CNC, validate the firmware against a software Modbus TCP simulator (Modbus Mechanic, ModRSsim2, or any open-source Modbus server running on a laptop connected to the OPTA Ethernet port). Populate the six demo registers with realistic values — spindle load 65 (= 6.5 %), cycle state 1 (running), alarm code 0 — and confirm the hourly summary reflects those values in Notehub. Trigger a simulated spindle overload by writing a value above 900 (= 90 %) to the spindle load register and confirm a `cnc_alarm.qo` note with `alert_type: "spindle_overload"` arrives in Notehub within one session-establishment window.
+**Check Notehub for events.** Sign in to [notehub.io](https://notehub.io), navigate to **Fleet > Events**, and filter for your device. Within 1 hour of power-up, you should see a `cnc_summary.qo` note with fields like `spindle_pct_mean`, `run_min`, `cycle_count`, etc. Check the **body** tab to inspect the actual JSON.
 
-**Triggering alerts in a fleet.** To test alert delivery against a real machine in the field, temporarily lower `spindle_overload_pct` to `0` via the Fleet's environment variables in Notehub. The Notecard downloads the updated value on the next inbound sync; the host applies it on the next `env.get` call at the end of the current report window. Once applied, the next Modbus poll with any nonzero spindle reading will trip the spindle overload rule and emit a `cnc_alarm.qo`. Reset the variable once the delivery pipeline is confirmed.
+**Modbus first-light (bench test).** Before connecting to the real CNC:
+1. Run a Modbus TCP simulator (Modbus Mechanic, ModRSsim2, ModbusMaster, or any open-source server) on your laptop.
+2. Connect it to the OPTA Ethernet port (same subnet as OPTA IP, e.g., both on `192.168.250.0/24`).
+3. Create six contiguous holding registers at address 256 with demo values: spindle load 650 (6.5%), cycle state 1 (running), alarm code 0, cycle count 10, operator ID 1.
+4. Flash the firmware pointing to your demo server (set `_DEFAULT_CNC_IP` to the simulator's address).
+5. Wait one sample period (1 min default) plus one report window (60 min default) for the first summary to appear in Notehub. Validate that `spindle_pct_mean ≈ 6.5`, `cycle_count = 0` (register delta), `valid_samples = 60`.
+6. Increase the spindle-load register to 950 (95%) and wait 1 minute. Within 60 seconds of that poll, a `cnc_alarm.qo` with `alert_type: "spindle_overload"` should arrive in Notehub.
 
-**Power validation with Mojo.** Splice the [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) inline between the 24 VDC supply and the Wireless for OPTA power input during bench commissioning. The published Notecard current envelope (from the [Notecard low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/) and the [NOTE-WBNAW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-wbnaw/)):
+**Field alert testing.** To test alert delivery on a live machine:
+1. In Notehub, navigate to **Fleet > Environment**.
+2. Temporarily set `spindle_overload_pct = 0`.
+3. Wait for the next Notecard inbound sync (default every 120 min), then the host will apply the new threshold on the next report window boundary.
+4. Any nonzero spindle reading in the next poll will trigger a `cnc_alarm.qo`.
+5. Reset `spindle_overload_pct` to its normal value (e.g., 90) once tested.
+
+**Power validation (optional Mojo).** Splice the [Mojo coulomb counter](https://dev.blues.io/datasheets/mojo-datasheet/) between the 24 VDC supply and the Wireless for OPTA power input. Expected current envelope (from [Notecard low-power design](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/)):
 
 | Phase | Expected current |
 |---|---|
 | Notecard idle (radio off, between syncs) | ~8–18 µA @ 5 V |
-| Cellular session (LTE Cat-1) | ~250 mA average; ≤2 A burst during transmit |
+| Cellular session (LTE Cat-1) | ~250 mA average; ≤2 A burst |
 | WiFi fallback session | ~80 mA average |
 
-Note that this measurement covers the **entire Wireless for OPTA expansion subsystem** — the Notecard plus the expansion board's onboard regulators and I²C glue — not the OPTA host CPU itself (which is separately powered and not the subject of this measurement). Confirm: (a) idle current is in the µA range between syncs, (b) per-session energy is in the few-mAh range for a routine hourly outbound sync of one queued summary note, and (c) that energy is consistent across consecutive sync cycles. Host MCU power consumption should be characterized separately against the actual hardware using a bench supply with current measurement.
+Confirm: (a) idle current between syncs is in the µA range (ensures the device will run for years on field deployment), (b) per-session energy for one hourly sync is ~10–30 mAh, and (c) energy is consistent across consecutive cycles.
 
-> **Important bench caveat.** The Notecard's lowest-power idle state requires `VUSB` to be absent and the board-level enable lines (such as `AUX_EN`) not held high. When the OPTA is bench-powered and programmed over USB-C, the USB supply keeps the Notecard in a higher-power operating state — **do not expect µA idle current while USB is connected**. To validate true field idle current, power the assembly from the 24 VDC supply only (no USB-C attached) and confirm the gating conditions described in the [Notecard low-power design docs](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/) are met.
+> **Bench caveat:** When the OPTA is powered and programmed over USB-C, the USB rail keeps the Notecard in a higher-power idle state — do not expect µA idle current while USB is connected. For true field idle measurements, power from 24 VDC only (disconnect USB) and verify the conditions in [Notecard low-power design docs](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/).
 
-## 9. Limitations and Next Steps
+## 9. Troubleshooting
+
+| Symptom | Probable Cause | Solution |
+|---------|----------------|----------|
+| Device does not claim to Notehub after first power-up | Missing or malformed `PRODUCT_UID` in firmware | Uncomment and set `PRODUCT_UID` in `cnc_spindle_tracker.ino` line 18; reflash. |
+| No Modbus connection; continuous `modbus_unreachable` alarms | Wrong CNC IP or port; Ethernet cable unplugged; CNC controller powered off or Modbus not enabled | Confirm CNC controller's Modbus TCP IP and port in its documentation. Verify the IP in `_DEFAULT_CNC_IP` (helpers.cpp) matches the CNC. Check Cat6 cable is plugged in at both ends. Confirm `modbus_port` env var matches the CNC's TCP port (default 502). |
+| No `cnc_summary.qo` notes appear in Notehub | Device claimed, but no summaries visible | Check the Notecard's outbound sync interval has elapsed (default 60 min). Verify `valid_samples > 0` in any alarm notes — if `valid_samples = 0`, all Modbus polls in that window failed; check network. Use `arduino-cli monitor` to watch Serial output for poll successes/failures. |
+| `valid_samples = 0` in all summaries | All Modbus polls failed | Serial console should show Modbus errors. Verify CNC is powered and Modbus TCP enabled. Use a Modbus client tool (QModBus, ModRSsim2) on your laptop to confirm you can reach the CNC at the configured IP and port. If you can, but the OPTA cannot, there may be a routing or firewall issue on the Ethernet segment. |
+| Notecard not syncing; no notes leaving the device | I²C communication between OPTA and Notecard failed; or Notecard not powered | Verify the AUX connector is fully seated. Check 24 VDC is applied to both OPTA and Wireless for OPTA. The Notecard has a small blue LED near the SMA connectors — it should blink during a cellular session. If no blink, the Notecard may not be powered or may have failed. |
+| `spindle_overload` alarms fire too frequently | Threshold too low; or noisy spindle-load sensor data | Increase `spindle_overload_pct` in Fleet environment (e.g., from 90 to 95). If the issue persists, the CNC sensor may be noisy; add averaging on the CNC side (most controllers have digital-filter registers) or increase the cooldown in the firmware (line 56 in cnc_spindle_tracker.ino). |
+| `avg_cycle_sec` is wildly wrong | Cycle time shorter than sample interval; or `cycleState` semantics differ from expected | `avg_cycle_sec` is a heuristic limited by the sample period (1 min default) — cycles faster than that are invisible. Increase `sample_minutes` (e.g., to 0.25 for 15-second samples) if your cycles are fast, but understand this increases Modbus polling overhead. Verify the target CNC model maps `cycleState == 1` to "program running" (vendor-specific). |
+| Operator-ID transitions not appearing | `operator_id` register not exposed or always zero | Confirm the CNC controller supports operator-ID over Modbus TCP (many do not). Verify the sixth register in the contiguous block (starting at `reg_spindle_load`) is mapped to operator ID in the controller's Modbus documentation. Check the operator ID is actually changing on the machine (some controllers require login/logout). |
+
+## 10. Limitations and Next Steps
 
 **Simplified for this reference design:**
 
@@ -331,6 +406,6 @@ Note that this measurement covers the **entire Wireless for OPTA expansion subsy
 - Per-machine baseline learning: accumulate a 30-day spindle-load-vs-feed-rate operating envelope and trigger `spindle_overload` against the machine's own learned curve rather than a static percentage.
 - Wire ODFU to the OPTA's BOOT/RESET pins for over-the-air host updates once the AUX path is available.
 
-## 10. Summary
+## 11. Summary
 
 CNC machines are among the most instrumented pieces of capital equipment in manufacturing, and where a controller exposes telemetry over Modbus TCP that data has been stranded on the shop floor by the same OT network policies that protect the plant from IT. This design cuts that knot cleanly for those controllers: a direct point-to-point Ethernet cable from the OPTA to the machine control captures spindle load, cycle counts, alarm codes, and current operator ID locally, while a cellular Notecard carries the data to the OEM's cloud over its own independent channel that machine-shop IT never sees and never needs to approve. The result is the raw material for a credible equipment-as-a-service offer — utilization data granular enough to bill by the spindle-hour, alarm telemetry detailed enough to offer a proactive-service contract, and OEE components accurate enough to benchmark the fleet. What's left after this reference design is a validated, vendor-specific Modbus TCP register map for each target CNC model — a commissioning task, not an architecture problem.

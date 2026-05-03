@@ -317,6 +317,16 @@ void loop() {
     bool  mod_temp_valid = (mod_temp > -9990.0f);
     bool  ok             = readStrings(v, a, g_n_strings, irr, mod_temp);
 
+    // Clear alert_active flags whenever irradiance is below the evaluation
+    // threshold — independent of Modbus/probe success.  evaluateAndAlert is
+    // gated on (ok && mod_temp_valid), so doing this clear only inside that
+    // function would leave stale daytime fault flags in overnight summaries
+    // any time telemetry happened to fail at sunset.  Clearing here makes the
+    // summary's alert_flags reliably read 0 in low-light/overnight windows.
+    if (irr < g_irradiance_min) {
+        for (uint8_t i = 0; i < MAX_STRINGS; i++) g_state.alert_active[i] = false;
+    }
+
     // Always accumulate irradiance — it is valid regardless of sensor or Modbus
     // state, so the summary window mean is never biased by probe or bus failures.
     // Accumulate mod_temp only when the probe returned a valid reading so no

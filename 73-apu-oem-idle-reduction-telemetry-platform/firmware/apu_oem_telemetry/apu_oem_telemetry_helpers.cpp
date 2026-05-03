@@ -9,6 +9,10 @@
 ***************************************************************************/
 #include "apu_oem_telemetry_helpers.h"
 
+// RS-485 UART instance on Cygnet USART2 (PA3=RX, PA2=TX). Declared extern in
+// the header; the STM32duino Cygnet variant does not provide a default Serial2.
+HardwareSerial RS485_SERIAL(PA3, PA2);
+
 // ---------------------------------------------------------------------------
 // ncSend — checked Notecard request helper.
 // Sends req via requestAndResponse, inspects the response for a NULL return

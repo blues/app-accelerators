@@ -4,6 +4,35 @@
 
 An [asset performance optimization](https://blues.com/solutions-asset-performance-optimization/) reference design that turns a solar array into a per-string, continuously-monitored asset — catching soiling, shading, and bad modules from wherever the array happens to be, without WiFi, without site IT involvement, and without touching the existing inverter.
 
+## Quick Start
+
+**What you'll have when you're done:** A cellular-connected device that reads per-string DC voltage and current from your Modbus inverter or combiner every 5 minutes, computes each string's performance ratio (actual power / temperature-derated expected power), fires an immediate alert to Notehub when any string drops below 80% of expected power (with a root-cause hypothesis: shading, soiling, or string fault), and sends an hourly summary note for trend analysis.
+
+**Fastest path to first event (30 minutes):**
+1. Assemble hardware: Notecarrier CX + Notecard Cell+WiFi + RS-485 transceiver + sensors (see §4 Wiring and Assembly).
+2. Claim project in Notehub (§5 step 1–2).
+3. Copy the firmware directory and edit `solar_string_monitor.ino` to replace `PRODUCT_UID` with your Notehub project UID.
+4. Flash via Arduino IDE or CLI (see Build Instructions below).
+5. Power the assembly; on first boot the Notecard registers with your project automatically.
+6. Check Notehub — you should see `solar_summary.qo` and/or `solar_alert.qo` events appear within the next sample interval.
+
+**Build Instructions:**
+
+Using the Arduino IDE:
+- Install the [Arduino core for STM32](https://github.com/stm32duino/Arduino_Core_STM32) via Board Manager.
+- Sketch → Include Library → Manage Libraries, then install: **Notecard**, **ModbusMaster**, **OneWire**, **DallasTemperature**.
+- Select Board: *STM32L4 series* > *Notecarrier CX*, and Port (your debugger/programmer).
+- Paste your ProductUID into the `PRODUCT_UID` define.
+- Upload.
+
+Using Arduino CLI:
+```bash
+arduino-cli core install stm32duino:stm32l4
+arduino-cli lib install "Blues Wireless Notecard" ModbusMaster OneWire DallasTemperature
+arduino-cli compile --fqbn stm32duino:stm32l4:Notecarrier_CX firmware/solar_string_monitor.ino
+arduino-cli upload -p /dev/ttyACM0 --fqbn stm32duino:stm32l4:Notecarrier_CX firmware/solar_string_monitor.ino
+```
+
 ## 1. Project Overview
 
 **The problem.** Utility-scale and large commercial-and-industrial (C&I) solar installations routinely bleed 3–8% of annual production to three mundane, entirely preventable causes: soiling (dust, bird droppings, pollen), partial shading (a branch that grew six inches over winter, a newly-installed HVAC unit on a flat roof), and a single degraded or failed module in a series string. None of these losses are invisible — they all have distinctive electrical signatures in the per-string DC current and voltage data. The problem is that almost nobody reads that data in real time.
@@ -16,7 +45,17 @@ This project adds that missing network path. It reads per-string DC voltage and 
 
 **Deployment scenario.** A metal NEMA 4X enclosure mounted on or near the combiner box or string inverter, powered from the array's AC output via a compact AC/DC converter. Three cables exit the enclosure: one RS-485 shielded pair to the combiner's Modbus port, one pair for the pyranometer, and the DS18B20 backsheet temperature probe cable routed to a representative panel in the array. No inverter modification and no plant-network involvement required.
 
+## Before You Start — Critical Constraints
+
+**Per-string independent voltage required.** This firmware reads a [V, I] register pair per string and classifies root causes by comparing each string's operating voltage and current to the fleet mean. Multi-MPPT inverters (implementing [SunSpec Model 160 Multiple MPPT](https://sunspec.org/sunspec-modbus-specifications/)) expose per-MPPT voltage and current; these work perfectly. Traditional string combiners aggregate multiple strings onto a shared DC bus and expose only per-string current, not per-string voltage — against a combiner-only source, shading root-cause classification will never fire. See [§9 Limitations](#9-limitations-and-next-steps) for details.
+
+**Maximum 4 strings supported.** The compile-time constant `MAX_STRINGS = 4` fits the STM32L433's 64 KB SRAM budget. Scaling beyond 4 requires revalidating static memory footprint and is untested.
+
+**Modbus register map is a demo.** The firmware reads contiguous holding-register pairs `[V, I, V, I, …]` with fixed scaling. Real inverters (SMA SunnyBoy, Fronius Symo, Huawei SUN2000, etc.) have vendor-specific register maps, addressing conventions, and scaling. Production deployments require a vendor-specific firmware build or careful manual register validation (see Modbus first-light in §8).
+
 ## 2. System Architecture
+
+![System architecture: inverter (Modbus RTU), pyranometer, and DS18B20 backsheet probe → Notecarrier CX with Cygnet host and Notecard MBGLW → cellular → Notehub → O&M / yield / alerts](diagrams/01-system-architecture.svg)
 
 **Device-side responsibilities.** The onboard Cygnet STM32L433 host on the Notecarrier CX samples all three inputs every five minutes: per-string DC V and I over Modbus RTU, irradiance from the pyranometer's analog output, and module temperature from the 1-Wire probe. It computes a temperature-derated expected power and a PR for each string, evaluates an alert rule locally, and then either queues a summary note or fires an immediate alert — all over I²C to the Notecard sitting in the carrier's M.2 slot. No modem AT commands, no session management, no raw socket code.
 
@@ -47,6 +86,8 @@ This project adds that missing network path. It reads per-string DC voltage and 
 All Blues hardware ships with a prepaid SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
 ## 4. Wiring and Assembly
+
+![Wiring: BOB-10124 RS-485 transceiver to Cygnet UART (DE/RE on D9); Apogee SP-110-SS pyranometer to A0; DS18B20 to D5 with 4.7 kΩ pull-up; Taoglas GA.111 LTE antenna via SMA-u.FL; 120/240 VAC → IRM-10-5 → Mojo → +VBAT](diagrams/02-wiring-assembly.svg)
 
 > ⚠️ **Electrical Safety — Qualified Personnel Required**
 > Solar PV arrays and associated combiner/inverter equipment involve hazardous DC voltages (typically 300–1000 V on the string bus) and AC mains. All installation, wiring, and commissioning work must be performed by a licensed electrician or qualified PV installer in accordance with:
@@ -171,13 +212,15 @@ Data-path helpers: [`firmware/solar_string_monitor_helpers.cpp`](firmware/solar_
 
 **Pyranometer (Apogee SP-110-SS).** The sensor outputs 0.2 mV per W/m² directly onto A0. The firmware takes an 8-sample average to reduce ADC noise, converts counts to millivolts at the Cygnet's 3.3V / 12-bit reference, then divides by 0.2 to get W/m². At 1000 W/m² (STC) the sensor outputs approximately 200 mV, which lands at roughly 248 ADC counts — adequate resolution for threshold comparisons. Adding a 10× non-inverting op-amp amplifier between the sensor and A0 would improve effective resolution to about 11 bits, which is recommended for production deployments where irradiance measurement quality matters for precise PR calculation.
 
-**DS18B20 module temperature.** 1-Wire `requestTemperatures()` + `getTempCByIndex(0)` at 11-bit resolution (375 ms conversion time). On an invalid reading — disconnected probe, 85 °C power-on sentinel, or out-of-range value — the firmware returns a `−9999` sentinel and emits a rate-limited `temp_probe_fault` alert note (`sync:true`, at most once per report window). PR evaluation and per-string window accumulation are suppressed for that sample cycle so no fabricated expected-power values reach the accumulators or Notehub. `mod_temp_c` emits `−9999` in the summary for any window containing no valid temperature readings, allowing downstream consumers to distinguish a sensor failure from a real near-zero temperature measurement.
+**DS18B20 module temperature.** 1-Wire `requestTemperatures()` + `getTempCByIndex(0)` at 11-bit resolution (375 ms conversion time). On an invalid reading — disconnected probe (`DEVICE_DISCONNECTED_C`) or out-of-range value (< −40 °C or > 110 °C) — the firmware returns a `−9999` sentinel and emits a rate-limited `temp_probe_fault` alert note (`sync:true`, at most once per report window). The DS18B20's 85 °C "power-on sentinel" is *not* in the validity checks because `requestTemperatures()` blocks for the full conversion time, so the scratchpad always holds a real measurement before the read; treating 85 °C as a fault would falsely reject genuine backsheet readings near 85 °C, which is a realistic value on a hot-rooftop array in summer. PR evaluation and per-string window accumulation are suppressed for any sample cycle the probe returns the `−9999` sentinel so no fabricated expected-power values reach the accumulators or Notehub. `mod_temp_c` emits `−9999` in the summary for any window containing no valid temperature readings, allowing downstream consumers to distinguish a sensor failure from a real near-zero temperature measurement.
 
 **Modbus string reads.** A single `readHoldingRegisters(base, 2×n)` call pulls all strings' voltage and current registers in one Modbus transaction, which is roughly 8× more bus-efficient than individual per-register reads. The registers are expected in contiguous pairs `[V1, I1, V2, I2, …]` starting at `reg_base`. Real inverters vary; see [Limitations](#9-limitations-and-next-steps).
 
 ### Event payload design
 
-Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefiles. Templates store notes as fixed-length binary records rather than free-form JSON, reducing per-note wire size by 3–5× — meaningful at 24 summary notes/day per device over a multi-year deployment on a shared SIM. Example alert note:
+Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefiles. Templates store notes as fixed-length binary records rather than free-form JSON, reducing per-note wire size by 3–5× — meaningful at 24 summary notes/day per device over a multi-year deployment on a shared SIM.
+
+**Alert note** (`solar_alert.qo`, `sync:true`, fires on Performance Ratio threshold trip):
 
 ```json
 {
@@ -197,7 +240,15 @@ Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-ban
 }
 ```
 
-Example hourly summary note (4 strings, window of 12 samples):
+Field reference:
+- `string_id`: 1–4 (which string underperformed); 0 = Modbus bus failure
+- `reason`: `"shading"` (low V, normal I), `"soiling"` (normal V, low I), `"string_fault"` (both low), `"degraded"` (unclear pattern or single-string mode), `"temp_probe_fault"`, `"modbus_fail"`
+- `perf_ratio`: actual power / temperature-derated expected power
+- `actual_w`: measured string power at that moment
+- `expected_w`: STC power × (irradiance / 1000) × (1 + temp_coeff × (temp − 25)) — the derated STC expectation
+- Rate-limited: repeat alerts for the same string are suppressed for 30 minutes (configurable `alert_cooldown_sec`)
+
+**Summary note** (`solar_summary.qo`, sent hourly):
 
 ```json
 {
@@ -215,7 +266,14 @@ Example hourly summary note (4 strings, window of 12 samples):
 }
 ```
 
-`irradiance_wm2` and `mod_temp_c` are the window means across all sample cycles in the report window (including cycles where Modbus failed, so the environmental context is always complete). `n_samples` is the number of sample cycles accumulated in the window — 12 in the default 60 min / 5 min configuration (3600 / 300 = 12, which divides evenly). In general, the firmware computes the window length as `⌈(report_interval_min × 60) / sample_interval_sec⌉` using ceiling division, so a non-divisible setting extends the window by one extra sample rather than silently shortening the summary period; `n_samples` always reflects the actual count used. Per-string fields (`sN_v`, `sN_a`, `sN_w`, `sN_ew`, `sN_pr`) are means over Modbus-valid samples only. `alert_flags` is a uint8 bitmask — bit 0 = string 1, bit 1 = string 2, etc. In the example, `4` (binary 0100) means string 3 is currently flagged. `s1_ew` through `s4_ew` are the temperature-derated expected power means; dividing `sN_w` by `sN_ew` reproduces the window-mean PR in the analytics layer. Strings not configured or with no valid Modbus reads emit `−9999` in all per-string fields.
+Field reference:
+- `irradiance_wm2`, `mod_temp_c`: window means across all samples (including Modbus failures), so environmental context is always complete
+- `sN_v`, `sN_a`: voltage and current means over Modbus-valid samples only; `−9999` if no valid reads
+- `sN_w`: actual power mean (V × I)
+- `sN_ew`: temperature-derated expected power mean
+- `sN_pr`: performance ratio mean (sN_w / sN_ew)
+- `alert_flags`: bitmask (bit 0 = string 1, bit 1 = string 2, etc.); `4` = binary 0100 = string 3 is currently flagged
+- `n_samples`: count of sample cycles in the window; default is 12 (60 min ÷ 5 min). If `report_interval_min × 60` is not evenly divisible by `sample_interval_sec`, the window extends by one sample (ceiling division)
 
 ### Low-power strategy
 
@@ -288,7 +346,9 @@ NotePayloadAddSegment(&payload, kSeg, &g_state, sizeof(g_state));
 NotePayloadSaveAndSleep(&payload, g_sample_interval_sec, NULL);
 ```
 
-## 7. Data Flow
+## 7. Data Flow and Payload Format
+
+![Data flow: 5-min sample of per-string V/I plus irradiance and module temp → PR computation with root-cause classification (shading, soiling, string_fault) → solar_alert.qo (sync:true with 30-min cooldown) and solar_summary.qo (hourly templated) → Notehub routes](diagrams/03-data-flow.svg)
 
 **Collected every `sample_interval_sec` (default 5 min):** DC voltage and current for each configured string (from Modbus), irradiance in W/m² (from pyranometer ADC), and module backsheet temperature in °C (from DS18B20).
 
@@ -296,7 +356,7 @@ NotePayloadSaveAndSleep(&payload, g_sample_interval_sec, NULL);
 
 **Transmitted:**
 - `solar_summary.qo` — once per `report_interval_min` (default 24 notes/day), template-encoded, queued and shipped by the Notecard's outbound cellular sync. `irradiance_wm2` and `mod_temp_c` are window means across all sample cycles; per-string fields are means over Modbus-valid samples in the window. Strings with zero valid Modbus reads in the window emit `−9999`. `sample_interval_sec` and `report_interval_min` can be tuned independently, but for the window to cover exactly the configured report period `report_interval_min × 60` must be an integer multiple of `sample_interval_sec`; if it is not, the firmware rounds the window length up (see §5 Timing constraint note).
-- `solar_alert.qo` — emitted immediately on a threshold trip, `sync:true`, with a per-string de-duplication window (default 30 minutes, tunable via `alert_cooldown_sec`). A `modbus_fail` alert (string_id=0) fires when the RS-485 bus is unreachable and is rate-limited to once per report window. The `alert_flags` bitmask in `solar_summary.qo` reflects the **last known active state** of each string: flags are updated only when Modbus polling succeeds (and when the temperature probe is valid), so if telemetry has dropped out across multiple sample cycles they carry forward the state from the most recent successful poll. Flags are cleared when irradiance drops below `irradiance_min_wm2`, so overnight and low-light summaries report 0 rather than carrying forward stale daytime fault states.
+- `solar_alert.qo` — emitted immediately on a threshold trip, `sync:true`, with a per-string de-duplication window (default 30 minutes, tunable via `alert_cooldown_sec`). A `modbus_fail` alert (string_id=0) fires when the RS-485 bus is unreachable and is rate-limited to once per report window. The `alert_flags` bitmask in `solar_summary.qo` reflects the **last known active state** of each string. Flags are cleared unconditionally whenever irradiance drops below `irradiance_min_wm2` — this happens at the loop level, independent of Modbus or probe success, so overnight and low-light summaries always report 0 rather than carrying forward stale daytime fault states even if telemetry happened to drop out at sunset. When irradiance is above the threshold, flags are updated only on sample cycles where Modbus polling succeeds and the temperature probe is valid; if telemetry has dropped out across multiple cycles within a daytime window, the flags carry forward the state from the most recent successful poll.
 
 **Routed.** Both Notefiles reach Notehub and from there are fanned out to whatever downstream the project's routes specify. The O&M operator typically wants `solar_alert.qo` on their existing on-call channel (SMS, CMMS ticket, Slack) and `solar_summary.qo` in a long-term store for energy yield analysis.
 
@@ -308,8 +368,33 @@ NotePayloadSaveAndSleep(&payload, g_sample_interval_sec, NULL);
 - `soiling` — string PR below threshold with operating current significantly lower than fleet mean but voltage near normal. Uniform soiling (dust, pollen, bird droppings) reduces operating current proportionally across all cells in the string; voltage drops only slightly. Requires `n_strings ≥ 2`.
 - `string_fault` — both voltage and current significantly below fleet mean. Indicates a serious fault: broken cell, failed bypass diode, high series resistance, or a physical disconnection. Requires `n_strings ≥ 2`.
 - `degraded` — PR below threshold but V/I signature doesn't fit the above patterns clearly; catch-all for mixed or unclear signatures, and the only hypothesis emitted when `n_strings = 1`.
-- `temp_probe_fault` — DS18B20 backsheet probe returned an invalid reading (disconnected, 85 °C power-on sentinel, or out-of-range value); rate-limited to once per report window. PR evaluation is suppressed for the affected sample cycle; `mod_temp_c` emits `−9999` in any summary window with no valid temperature readings.
+- `temp_probe_fault` — DS18B20 backsheet probe returned an invalid reading (disconnected or out-of-range, i.e. < −40 °C or > 110 °C); rate-limited to once per report window. PR evaluation is suppressed for the affected sample cycle; `mod_temp_c` emits `−9999` in any summary window with no valid temperature readings.
 - `modbus_fail` — Modbus bus unreachable after 3 retries; the whole combiner or the RS-485 cable is suspect.
+
+## 7.5 Commissioning Checklist
+
+Before deploying to a live array:
+
+1. **Verify your inverter or combiner model publishes per-string voltage.** Consult the Modbus RTU communication manual. If only per-string current and a shared bus voltage are available, shading root-cause alerts will not fire; document this for O&M so `soiling`/`string_fault` alerts are understood to also cover undetected shading.
+
+2. **Obtain the correct register map, scaling, and parity from the vendor.** The defaults in §5 are illustrative only. Collect:
+   - Starting register address (`reg_base`) for string 1's voltage
+   - Register layout (are V and I contiguous per string, or in separate blocks?)
+   - Voltage scaling (raw register × factor = volts)
+   - Current scaling (raw register × factor = amps)
+   - Modbus slave ID, baud, parity, stop bits
+
+3. **Bench-test Modbus before field installation.** Use a USB-RS-485 adapter and a Modbus simulator (Modbus Mechanic, ModRSsim2) to confirm register reads match expectations. Adjust `modbus_baud`, `modbus_slave_id`, `modbus_parity`, `modbus_stop_bits`, `reg_base`, `string_v_scale_x100`, `string_a_scale_x1000` via Notehub environment variables (see §5) and verify the next inbound sync delivers the changes (up to 120 min lag).
+
+4. **Set the correct STC power rating per string.** Update `string_stc_w` to match the actual installed string rating (sum of module wattages at STC, or from the MPPT input nameplate). The default `6000` W is a 15-module × 400 W example only.
+
+5. **Adjust temperature coefficient if needed.** The default `temp_coeff_per10000 = −35` is typical for mono-PERC silicon (−0.35 %/°C). Bifacial, thin-film, and heterojunction modules may differ; consult the module datasheet.
+
+6. **Set the Performance Ratio alert threshold.** The default `perf_thresh_pct = 80` fires alerts when PR < 0.80. If your array has chronic low-light or seasonal shadow patterns, a higher threshold (e.g., 75) may reduce false positives; a lower threshold (e.g., 85) increases sensitivity. Test with the alert-simulation technique in §8.
+
+7. **Confirm irradiance sensor placement.** The pyranometer must be co-planar with the array (same tilt and azimuth), within 2–3 m of the array, and free of shadows and nearby shading objects.
+
+8. **Validate sleep/wake profile with Mojo (bench only).** See §8 Validation and Testing for power measurement procedure. Confirm idle current in the expected range; remove Mojo and its Qwiic cable before field enclosure.
 
 ## 8. Validation and Testing
 
@@ -336,6 +421,8 @@ With the default cadence (5-minute samples, hourly sync), a healthy trace shows 
 **Measurement conditions for sleep-current validation.** Approaching the low-idle regime described by the [MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) requires measuring with **USB/VUSB absent** — VUSB present on the Notecarrier holds the Notecard out of its lowest-power state regardless of what the firmware does. Power the assembly exclusively through the Mojo on the +VBAT pad, with no USB cable attached to the Notecarrier. The measured +VBAT idle floor will exceed the bare-Notecard datasheet figure by the Notecarrier regulator overhead; `NotePayloadSaveAndSleep` cuts the Cygnet's 3.3 V rail during sleep, so the RS-485 transceiver, DS18B20, and Cygnet do not contribute. This is expected and normal. If the idle floor is still consistently above 1 mA after removing USB, `NotePayloadSaveAndSleep` is not reaching its sleep call — confirm the sleep path executes on every sample cycle without returning early. As a secondary check, confirm the Notecarrier CX DIP switch is set to `HST` rather than `NC`; `HST` is the correct operating position and eliminates one potential source of spurious UART activity on the Notecard's diagnostic port that can interfere with diagnosing sleep-path issues.
 
 ## 9. Limitations and Next Steps
+
+(Note: This is the detailed per-constraint section referenced throughout. For a quick pre-deployment checklist, see §7.5 Commissioning Checklist above.)
 
 **Simplified for this reference design:**
 
@@ -369,6 +456,19 @@ With the default cadence (5-minute samples, hourly sync), a healthy trace shows 
 - Implement a shadow-mask calendar: suppress shading alerts between known shadow times (calculable from GPS coordinates and sun-position math) so seasonal early-morning or late-afternoon shadows don't flood the alert channel.
 - Field-upgradeable firmware via [Notecard Outboard Firmware Update](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) so register-map recipe updates can be pushed to the fleet without a site visit.
 - Per-device commissioning: record a 7-day baseline PR per string immediately after installation so the alert threshold adapts to site-specific shading and soiling patterns rather than relying on a generic default.
+
+## 9.5 Troubleshooting
+
+| Symptom | Likely Cause | Solution |
+|---------|--------------|----------|
+| Notecard doesn't connect to cellular on first power-up. | No ProductUID set, or invalid UID. | Confirm `PRODUCT_UID` in the sketch is your real Notehub project UID (not the placeholder). Flash again and watch the USB serial monitor for error messages. |
+| No `solar_summary.qo` events appear in Notehub. | Device not claiming to project; Notecard is in wrong project. | Open the In-Browser Terminal and send `{"req":"hub.status"}` to check which project the Notecard has claimed. If it's wrong, try `{"req":"hub.set","product":"your-real-product-uid"}` to re-claim. |
+| `solar_summary.qo` events appear, but all strings report `−9999` (no data). | Modbus read failing silently. | Check `modbus_baud`, `modbus_slave_id`, `modbus_parity`, `modbus_stop_bits` match the inverter configuration. Bench-test with a Modbus simulator (§7.5 step 3). Look for a `modbus_fail` alert in Notehub. |
+| Alerts fire constantly, even on a healthy array. | `string_stc_w` is set too high, or `perf_thresh_pct` is set too low. | Verify the `string_stc_w` matches your actual string rating. The default `6000` W is for a 15×400 W example; adjust it. Simulate with inflated STC (§8) to test the alert path. |
+| No alerts even when strings are visibly shaded or soiled. | `perf_thresh_pct` is too low, or irradiance is below `irradiance_min_wm2`. | Check if `irradiance_wm2` in the summary is below your threshold (default `100` W/m²). At low light, PR evaluation is intentionally suppressed to avoid noise-driven false positives. Increase `perf_thresh_pct` via Notehub to increase sensitivity (e.g., from 80 to 75). Wait up to 120 minutes for the environment variable to sync. |
+| Idle current is 1 mA or higher (should be ~8–18 µA). | USB/VUSB is connected to Notecarrier; Mojo is not reaching its sleep call. | Disconnect USB from the Notecarrier and power through +VBAT only. Confirm the DIP switch is set to `HST` (not `NC`). Check that `NotePayloadSaveAndSleep` completes on every sample cycle. |
+| `temp_probe_fault` alerts fire. | DS18B20 disconnected, out of range (< −40 °C or > 110 °C), or probe is shorted. | Verify the DS18B20 data wire is connected to D5 with a 4.7 kΩ pull-up to 3V3. Inspect the probe tip for corrosion or water damage. Confirm it's attached to a representative panel backsheet. |
+| Pyranometer reads seem consistently low or high. | Pyranometer is shaded, or unit calibration differs from nominal. | Verify the sensor is in full sun, co-planar with the array, and away from shading objects. Each sensor has a calibration tolerance; the default `pyranometer_mv_per_wm2_x1000 = 200` (0.200 mV/W/m²) is the Apogee SP-110-SS nominal. Update it with your unit's calibration certificate value if available. |
 
 ## 10. Summary
 

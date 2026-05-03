@@ -4,6 +4,17 @@
 
 A [downtime prevention](https://blues.com/downtime-prevention/) reference design that turns an industrial centrifugal pump into a predictively-maintained, remotely-monitored asset by reading what the pump's existing **VFD** (variable frequency drive) already knows about itself — over **Modbus RTU**, on a real industrial **PLC** (programmable logic controller), with a cellular Notecard for the uplink.
 
+## Quick Start: Path to First Event
+
+**What you'll have when done:** An OPTA + Notecard assembly mounted in a pump panel, reading six telemetry registers from the VFD once per minute, reporting hourly summaries to Notehub, and emitting immediate alerts when four anomaly rules trigger.
+
+**Minimum steps** (60–90 minutes, assuming site access and a calibrated VFD):
+1. Install Arduino core + libraries (`Arduino Mbed OS Opta Boards`, `note-arduino`, `ArduinoModbus`, `ArduinoRS485`) via Library Manager.
+2. Set `PRODUCT_UID` in the firmware; compile and flash via `arduino-cli` (see [Build and Flash](#build-and-flash) below).
+3. On Notehub: create project, claim Notecard, create one fleet, set `modbus_slave_id` and `modbus_baud` to match your VFD's configuration.
+4. Wire OPTA RS-485 to VFD Modbus port; confirm 120 Ω termination at each end of the bus.
+5. Power up and monitor Notehub's in-browser terminal: `card.status` should report healthy; first `vfd_summary.qo` Note appears within ~60 s.
+
 ## 1. Project Overview
 
 **The problem.** Industrial centrifugal pumps almost universally run behind a VFD. Modern drives from ABB, Yaskawa, Danfoss, and Schneider all expose the pump's operating telemetry through Modbus holding registers — motor current, output frequency, output torque, drive temperature, runtime hours, active fault code — and almost nobody reads them. The VFD is sitting in the cabinet doing the work; the data is right there. What's missing is the network path off the plant floor.
@@ -28,7 +39,34 @@ A failing pump rarely just stops. It signals first: motor current can shift at c
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
 
-## 3. Hardware Requirements
+## 3. Build and Flash
+
+**Prerequisites:** Arduino IDE (or `arduino-cli` on the command line) with the following installed via Boards Manager and Library Manager:
+- Boards: `Arduino Mbed OS Opta Boards`
+- Libraries: `Blues Wireless Notecard`, `ArduinoModbus`, `ArduinoRS485`
+
+**Steps:**
+
+1. Clone or download the repo and open `firmware/vfd_pump_monitor/vfd_pump_monitor.ino` in the Arduino IDE.
+
+2. Replace the placeholder `PRODUCT_UID` at the top of the sketch with your Notehub ProductUID:
+   ```cpp
+   #define PRODUCT_UID  "prod.your-notehub-project-id"
+   ```
+   (Find it in Notehub: Dashboard → Project Settings → ProductUID, or see [Finding a ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid).)
+
+3. **Via Arduino IDE:** Select Tools → Board → `Arduino Opta RS485` (or WiFi), select the correct COM/tty port, then Sketch → Upload.
+
+4. **Via command line (arduino-cli):**
+   ```bash
+   arduino-cli compile --fqbn arduino:mbed_opta:opta_rs485 firmware/vfd_pump_monitor/
+   arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:mbed_opta:opta_rs485 firmware/vfd_pump_monitor/
+   ```
+   (Replace `/dev/ttyACM0` with your OPTA's serial port; on macOS it may be `/dev/cu.usbmodem*` or similar.)
+
+5. Open the Arduino IDE Serial Monitor (115200 baud) to verify the sketch boots and reports "Notecard configuration complete."
+
+## 4. Hardware Requirements
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
@@ -45,7 +83,7 @@ The Arduino OPTA WiFi variant works equally well if WiFi/BLE on the host MCU is 
 
 The Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
-## 4. Wiring and Assembly
+## 5. Wiring and Assembly
 
 ![Wiring: OPTA + Wireless for OPTA on DIN rail; RS-485 A/B/COM daisy to VFD with 120 Ω terminators at each end; antennas through cable glands; 24 VDC supply](diagrams/02-wiring-assembly.svg)
 
@@ -61,12 +99,12 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 4. **Drive configuration.** Configure the VFD as a Modbus RTU **server** (slave); the OPTA acts as the Modbus **client** (master). Defaults the firmware ships with: slave ID `1`, baud rate `19200`, 8 data bits, no parity, 1 stop bit (`8N1`). Real drives vary — match baud, parity, stop bits, and slave address to whatever the VFD is configured for, and override the firmware's defaults via the `modbus_*` environment variables on Notehub. Common vendor parameter groups: ABB `5800–5805`, Yaskawa `H5-xx`, Danfoss `8-3x`, Schneider `Comm-1.x`.
 5. **Bench validation.** During first-light testing, splice the Mojo inline between the 24 VDC supply and the Wireless-for-OPTA power input so it can measure the *expansion + Notecard subsystem* energy per session. The OPTA itself is line-powered and not the subject of measurement.
 
-## 5. Notehub Setup
+## 6. Notehub Setup
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/vfd_pump_monitor/vfd_pump_monitor.ino` as `PRODUCT_UID`.
 2. **Claim the Notecard.** Power up the panel; on first cellular session the Notecard associates with your project automatically.
 3. **Create a Fleet per plant.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) group devices for shared configuration and routing. The natural unit here is *one fleet per plant* — every pump in a plant typically has the same VFD vendor and the same register map, so fleet-level environment variables encode "this plant's pumps all run ABB drives at register 0x0103 for output frequency."
-4. **Set environment variables.** Defaults below are reasonable starting points; any value set in Notehub overrides the firmware default on the device's next inbound sync. The register-address variables let one firmware image work across all four common drive vendors without recompilation.
+4. **Set environment variables.** In Notehub: Projects → your project → Fleets → your fleet → Environment. Defaults below are reasonable starting points; any value set in Notehub overrides the firmware default on the device's next inbound sync. The register-address variables let one firmware image work across all four common drive vendors without recompilation.
 
    | Variable | Default | Purpose |
    |---|---|---|
@@ -93,7 +131,7 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 5. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `vfd_event.qo` (alerts, low-volume, real-time delivery to a CMMS or on-call endpoint) and a second for `vfd_summary.qo` (long-term storage, batched delivery to an analytics/historian system). Splitting the two Notefiles at the source means each can be fanned out to a different destination at a different urgency without filter logic in the route.
 
-## 6. Firmware Design
+## 7. Firmware Design
 
 Single sketch: [`firmware/vfd_pump_monitor/vfd_pump_monitor.ino`](firmware/vfd_pump_monitor/vfd_pump_monitor.ino).
 
@@ -224,7 +262,7 @@ if (g_baseline_seeded[bin] &&
 }
 ```
 
-## 7. Data Flow
+## 8. Data Flow
 
 ![Data flow: poll 6 holding registers → rolling hourly stats with 5 Hz frequency bins and EWMA baselines → four anomaly rules → vfd_event.qo (sync) and vfd_summary.qo (hourly) → Notehub](diagrams/03-data-flow.svg)
 
@@ -244,7 +282,7 @@ if (g_baseline_seeded[bin] &&
 - `runtime_drift` — observed daily runtime exceeds `expected_run_hours_per_day` by more than 25%.
 - `drive_overtemp` — heatsink temperature exceeds `drive_temp_alarm_c`.
 
-## 8. Validation and Testing
+## 9. Validation and Testing
 
 Expected steady-state behavior on a healthy pump: one summary Note per hour and zero event Notes. The Notecard's [`card.status`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-status) and [`hub.status`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-status) requests are useful smoke tests during commissioning — both can be issued from the Notehub in-browser terminal.
 
@@ -262,7 +300,34 @@ Splice the [Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_
 
 **Fault simulation.** Easiest path: drop `current_alarm_factor` to 1.0 in the Fleet's environment variables — the next `inbound` sync will pull the new value, the next hourly summary will trip `load_anomaly`, and the event will land in Notehub within a session-establishment window.
 
-## 9. Limitations and Next Steps
+## 10. Troubleshooting
+
+**Notecard not claiming to the project.**
+- Verify `PRODUCT_UID` in the sketch exactly matches the ProductUID on Notehub (Projects → Project Settings).
+- Confirm cellular signal: in Notehub's in-browser terminal, run `card.status` and check the `"signal"` field. Minimum -100 dBm for LTE Cat-1.
+- If deploying indoors or in a metal cabinet without an external antenna, the bundled rubber-duck antenna will not work — thread the external SMA antenna through a cable gland and screw it to the primary antenna port.
+
+**Modbus reads failing (firmware logs "Modbus error" or no data in summary Notes).**
+- Confirm RS-485 A/B/COM wiring is correct. A and B are easy to swap; the drive will not respond if they're reversed.
+- Verify 120 Ω termination resistor is present at **both ends** of the bus. With one OPTA and one drive, that means two resistors total (one at the OPTA, one at the drive).
+- Check slave ID and baud rate: in Notehub's Fleet Environment, confirm `modbus_slave_id` and `modbus_baud` match the VFD's configuration. Run `card.status` in the terminal after setting the environment variables — it shows inbound sync time and confirms the device pulled the new values.
+- Before connecting to the real drive, test with a [USB-to-RS-485 adapter](https://www.sparkfun.com/products/9822) and a software Modbus simulator (Modbus Mechanic, ModRSsim2) wired to the OPTA's RS-485 terminals. Verify the firmware reads all six registers correctly.
+
+**First event not appearing in Notehub after 60+ seconds.**
+- Check Notehub's Events tab; all Notes (summary and alert) appear there. If empty, the firmware has not yet established a cellular session — wait for the first outbound sync (default 60 minutes) or power-cycle the OPTA to force a session sooner.
+- Confirm the Notecard has cellular coverage (see above: `card.status` signal field).
+- If you need an alert to appear immediately for testing, drop `current_alarm_factor` to 1.0 in the Fleet Environment — the next hourly summary will trigger `load_anomaly`. The alert event will post within a session-establishment window (typically 15–60 seconds after the inbound sync pulls the new threshold).
+
+**Environment variables not taking effect.**
+- Environment variables are fetched at the inbound sync interval (default 120 minutes). To force an immediate fetch, power-cycle the OPTA or reduce `inbound` in Notehub to 1 minute for commissioning.
+- Confirm the variables are set in the correct Fleet, not the project level. In Notehub: Projects → Project Name → Fleets → Fleet Name → Environment.
+
+**Antenna placement considerations.**
+- Rubber-duck antennas supplied with the Wireless for OPTA are for bench testing only. In a metal pump cabinet, they will not maintain reliable LTE Cat-1 coverage.
+- Route the primary antenna outside the cabinet through a cable gland. If the layout allows, also route the diversity antenna (second SMA port) for improved performance in marginal-signal areas.
+- Keep the primary antenna at least 2 m away from high-power electrical equipment (motor starters, VFDs) to reduce RF interference.
+
+## 11. Limitations and Next Steps
 
 **Signal limitations.** VFD telemetry is valuable but it is not equivalent to full pump instrumentation. Current, torque, speed, temperature, and active fault codes can identify abnormal *patterns*, but they cannot conclusively distinguish between worn impeller, clogged suction strainer, closed discharge valve, cavitation, bearing drag, increased fluid viscosity, debris, or process changes — without supporting context such as suction/discharge pressure, flow, vibration, or known duty cycle. Treat every alert this firmware emits as an *early maintenance indicator*, not a diagnosis.
 
@@ -283,6 +348,6 @@ Splice the [Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_
 - Add a `vfd_command.qi` inbound Notefile for service-tech-initiated diagnostic dumps.
 - Wire ODFU to the OPTA's BOOT/RESET pins for over-the-air host updates.
 
-## 10. Summary
+## 12. Summary
 
 This project pairs a real industrial PLC with a cellular Notecard to do exactly what every modern VFD has been quietly inviting for a decade — *expose what it already knows, on demand, off the plant LAN entirely*. Six Modbus holding registers, one cellular session per hour, and four anomaly-detection rules turn a pump from a black box into a continuously-monitored asset whose abnormal operating patterns show up in a CMMS ticket before they show up in a tank that's run dry. The cellular Notecard removes the plant-LAN argument, the OPTA removes the gateway-PC argument, and the prepaid SIM removes the per-site recurring-cost argument. What's left is a device a plant electrician can install on a DIN rail in fifteen minutes, with no dependency on plant network credentials and no special tooling.

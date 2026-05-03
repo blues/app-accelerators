@@ -105,7 +105,10 @@ void setup() {
     // hubConfigure() and defineTemplates() both return bool; we only mark
     // setupDone after both succeed so the next wake retries any failed step.
     if (!recovered || !g_state.setupDone) {
-        bool ok = hubConfigure(PRODUCT_UID) && defineTemplates() && configureSkyloTransport();
+        bool ok = hubConfigure(PRODUCT_UID)
+               && defineTemplates()
+               && defineEnvTemplate()
+               && configureSkyloTransport();
         if (ok) {
 #ifdef BENCH_TEST
             // Bench-test only: stop the accelerometer to reduce idle-current

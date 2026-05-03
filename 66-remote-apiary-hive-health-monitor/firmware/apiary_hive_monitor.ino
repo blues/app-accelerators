@@ -13,7 +13,7 @@
     - Notecard Cell+WiFi (MBGLW) in M.2 slot
     - Starnote for Skylo via 6-pin JST NTN cable to Notecard
     - SparkFun HX711 Load Cell Amplifier (SEN-13879)  →  D5 / D6
-    - 50–200 kg single-point load cell (Wheatstone bridge) → HX711
+    - Zemic H8C 100 kg single-ended shear-beam load cell (Wheatstone bridge) → HX711
     - Adafruit SHT31-D Temperature & Humidity Sensor (#2857)  → SDA / SCL
     - Adafruit MAX9814 Electret Microphone Amplifier (#1713)  → A0
     - SparkFun Sunny Buddy MPPT Solar Charger (PRT-12885)

@@ -2,6 +2,22 @@
 
 > This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
 
+## Quick Start
+
+**What you'll have when done:** A Notecarrier CX with a calibrated PT1000 temperature probe, door switch, and light sensor that sends timestamped readings to Notehub every 5 minutes, with immediate alerts on temperature excursions or prolonged door-open events. Readings accumulate in the Notecard's flash-backed queue and sync on a 60-minute cellular schedule — completely independent of facility WiFi.
+
+**Fastest path to first event (no probe):** 
+1. Obtain a Notecarrier CX + MBGLW, VEML7700 sensor, and magnetic door switch
+2. Wire the three sensors (I²C, GPIO, and Qwiic as shown in [§4](#4-wiring-and-assembly))
+3. Clone this repo; paste your Notehub ProductUID into `firmware/cold_storage_audit_monitor.ino` (line 51)
+4. Flash with `arduino-cli compile -b blues:stm32:Notecarrier_CX firmware/ && arduino-cli upload -b blues:stm32:Notecarrier_CX -p /dev/ttyACM0 firmware/` (adjust port for your OS)
+5. Power up; verify readings appear in Notehub within 60 seconds (may take 1–5 minutes on first power for cellular registration)
+6. Override thresholds in Notehub **Fleet → Environment** (e.g., `temp_high_alert_c: 8.0`, `temp_low_alert_c: 2.0` for refrigerated storage)
+
+**For production:** Follow §9 and obtain a NIST-calibrated PT1000 probe assembly before regulatory deployment.
+
+---
+
 A pharmacy/lab cold-storage monitoring reference application using an independent cellular uplink to deliver individually timestamped per-sample readings and immediate excursion alerts — reaching Notehub even through facility WiFi outages. A Blues Notecard Cell+WiFi, a PT1000 RTD probe (Adafruit 3984) connected via a MAX31865 SPI amplifier (Adafruit 3648) and routed into the storage compartment, a magnetic door switch, and an ambient-light sensor produce a gap-resistant audit-evidence record designed to support monitoring requirements aligned with USP Chapter 659, FDA 21 CFR Part 211.68, and CDC Vaccine Storage and Handling guidelines — when deployed with appropriate calibrated hardware, SOPs, and site validation. Compile-time thresholds default to room-temperature bench values for development convenience; see [§5 Notehub Setup](#5-notehub-setup) for the production refrigerated-storage threshold overrides.
 
 > **Production temperature path.** The firmware reads temperature from an Adafruit Platinum RTD Sensor PT1000 3-Wire 1 m ([Product 3984](https://www.adafruit.com/product/3984)) via an Adafruit MAX31865 PT1000 Amplifier ([Product 3648](https://www.adafruit.com/product/3648)) over SPI. The stainless-steel probe capsule (4 mm × ~30 mm, 316L SS) routes into the refrigerated compartment through the cabinet's probe port or door-gasket pass-through while the MAX31865 board mounts inside the weatherproof electronics enclosure. Before regulatory deployment the specific probe assembly must be submitted to an accredited calibration laboratory to receive a NIST-traceable calibration certificate against that individual unit — this is an operator responsibility, not a firmware feature (see [§9 Limitations and Next Steps](#9-limitations-and-next-steps)). For bench firmware evaluation without the probe, the SparkFun TMP117 breakout (SEN-15805) can be substituted via Qwiic (requires replacing the Adafruit MAX31865 library and the `readTemperatureC()` implementation in `firmware/cold_storage_audit_monitor_helpers.cpp`); the TMP117 bench build measures exterior ambient air, not compartment interior temperature, and is **not a deployable compliance instrument**.
@@ -132,9 +148,9 @@ Position the probe tip at the geometric center of the compartment, away from air
 
 ## 5. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/cold_storage_audit_monitor.ino` as `PRODUCT_UID`.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/cold_storage_audit_monitor.ino` line 51 as `PRODUCT_UID`.
 
-2. **Claim the Notecard.** Power the unit; on first cellular session the Notecard associates with your project automatically.
+2. **Claim the Notecard.** Power the unit; on first cellular session the Notecard associates with your project automatically. Check Notehub **Events** tab to confirm the device has synced.
 
 3. **Create Fleets.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) group devices for shared configuration and routing. A practical starting structure for cold-chain monitoring is one fleet per storage class:
    - `refrigerated` — 2°C to 8°C (vaccines, biologics)
@@ -143,9 +159,9 @@ Position the probe tip at the geometric center of the compartment, away from air
 
    Apply the appropriate temperature thresholds at the fleet level via environment variables so that a single firmware image services all storage classes without recompilation. Use [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) to auto-assign devices based on a device-level environment variable (e.g., `storage_class`).
 
-4. **Set environment variables.** All variables below are optional; firmware defaults are shown. Any variable set in Notehub overrides the compile-time default on the device's next inbound sync — no reflash required.
+4. **Set environment variables.** In Notehub, navigate to **Fleet → Environment**. All variables below are optional; firmware defaults are shown. Any variable set in Notehub overrides the compile-time default on the device's next inbound sync — no reflash required.
 
-   > **Bench vs. production defaults.** The compile-time defaults (`temp_high_alert_c = 30.0`, `temp_low_alert_c = 15.0`) are sized for the bench-mounted exterior temperature sensor, which reads room temperature. A bench unit at ~22 °C will produce zero temperature alerts with these defaults. For production refrigerated storage, override the thresholds in Notehub as shown in the table below — no reflash required.
+   > **Bench vs. production defaults.** The compile-time defaults (`temp_high_alert_c = 30.0`, `temp_low_alert_c = 15.0`) are sized for the bench-mounted exterior temperature sensor, which reads room temperature. A bench unit at ~22 °C will produce zero temperature alerts with these defaults. For production refrigerated storage (2–8°C range per USP 659), override the thresholds in the Fleet Environment variables as shown in the table below — no reflash required.
 
    | Variable | Bench default | Production (refrigerated) | Purpose |
    |---|---|---|---|
@@ -153,10 +169,50 @@ Position the probe tip at the geometric center of the compartment, away from air
    | `temp_low_alert_c` | `15.0` | `2.0` | Temperature (°C) below which `temp_excursion_low` fires. Set to `2.0` for USP 659 refrigerated storage. |
    | `door_open_alert_min` | `10` | `10` | Minutes a door must be continuously open before `door_open_timeout` fires. |
    | `alert_cooldown_min` | `30` | `30` | Minimum minutes between successive alerts of the same type. Prevents alarm fatigue during a slow-developing excursion. |
-   | `sample_interval_sec` | `300` | `300` | Seconds between sensor readings (minimum 60 enforced in firmware). Reducing this value increases per-sample Note volume proportionally. |
+   | `sample_interval_sec` | `300` | `300` | Seconds between sensor readings (minimum 60 enforced in firmware). Reducing this value increases per-sample Note volume proportionally. At 5 minutes (300 s), one bench unit produces ~288 reading Notes per day. |
    | `door_lux_threshold` | `5.0` | `5.0` | Lux value above which the interior is considered lit for the `sensor_disagreement` rule. Set to `120000.0` to disable the rule without a firmware rebuild — required on lamp-free units and on always-on-lamp units where the rule causes persistent false positives. |
 
-5. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `storage_alert.qo` (to an on-call paging system, LIMS, or compliance inbox) and a second for `storage_reading.qo` (to a long-term time-series archive or regulatory data repository). Each `storage_reading.qo` Note represents one 5-minute sample — at the default interval that is 288 Notes per device per day, each individually timestamped. Keeping the two Notefiles separate at the source means each can be delivered to a different destination at a different urgency without any filter logic in the route.
+   **Example:** To set `temp_high_alert_c` to `8.0` in the Fleet Environment, click **+ Add** and enter:
+   ```
+   Key: temp_high_alert_c
+   Type: Number
+   Value: 8.0
+   ```
+
+5. **Configure routes.** In Notehub, add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `storage_alert.qo` (to an on-call paging system, LIMS, or compliance inbox) and a second for `storage_reading.qo` (to a long-term time-series archive or regulatory data repository). Each `storage_reading.qo` Note represents one 5-minute sample — at the default interval that is 288 Notes per device per day, each individually timestamped. Keeping the two Notefiles separate at the source means each can be delivered to a different destination at a different urgency without any filter logic in the route.
+
+   **Example Notehub output** (from the **Events** tab, `storage_reading.qo`):
+   ```json
+   {
+     "file": "storage_reading.qo",
+     "body": {
+       "temp_c": 4.62,
+       "lux": 0.18,
+       "door_open": false,
+       "door_open_sec": 0,
+       "sample_epoch": 1714435200,
+       "time_valid": true,
+       "dropped_readings": 0,
+       "dropped_alerts": 0
+     }
+   }
+   ```
+   **Example alert** (`storage_alert.qo` on excursion):
+   ```json
+   {
+     "file": "storage_alert.qo",
+     "body": {
+       "alert": "temp_excursion_high",
+       "temp_c": 9.2,
+       "lux": 0.12,
+       "door_open": false,
+       "door_open_sec": 0,
+       "time_valid": true,
+       "event_epoch": 1714435200
+     },
+     "sync": true
+   }
+   ```
 
 ## 6. Firmware Design
 
@@ -259,16 +315,16 @@ After each sample cycle, `goToSleep()` calls `NotePayloadSaveAndSleep`, which se
 - Sensor `NAN` returns cause the reading Note to carry per-field sentinels: `temp_c` faults write `−9999`; `lux` faults write `−1.0`. Downstream parsers must check the correct sentinel per field — `−9999` in `temp_c` distinguishes a MAX31865/probe failure or fault from a legitimate near-zero temperature reading, while `−1.0` in `lux` is unambiguously a VEML7700 fault (lux cannot be negative).
 - Alert de-duplication via `alert_cooldown_min` (default 30 minutes per alert type) prevents a sustained excursion from flooding the on-call channel — the first alert fires within one sample cycle of the event; subsequent re-alerts fire only after the cooldown period.
 
-### Key code snippet 1: note.template definition
+### Key code snippet 1: note.template definition (compression via fixed-length binary encoding)
 
-Fixed-length field types. `14.1` = 4-byte float, `24` = 4-byte unsigned int, `true` = boolean.
+The template encodes each reading as a compact fixed-length binary record for the Notehub wire and on-device storage, reducing per-Note overhead compared to variable-length JSON. Template field codes: `14.1` = 4-byte IEEE 754 float, `24` = 4-byte unsigned int, `true` = boolean. When the template is active, the Notecard encodes each `storage_reading.qo` Note as fixed-length binary; Notehub decodes it back to JSON for your routes.
 
 ```cpp
 J *req = notecard.newRequest("note.template");
 JAddStringToObject(req, "file", NOTEFILE_READING);
 JAddNumberToObject(req, "port", 50);
 J *body = JAddObjectToObject(req, "body");
-// 14.1 = 4-byte IEEE 754 float; 24 = 4-byte unsigned int
+// 14.1 = 4-byte IEEE 754 float; 24 = 4-byte unsigned int; true = boolean
 JAddNumberToObject(body, "temp_c",        14.1);  // temperature reading in °C
 JAddNumberToObject(body, "lux",           14.1);  // ambient illuminance in lux
 JAddNumberToObject(body, "door_open_sec", 24);    // seconds door has been continuously open
@@ -370,7 +426,35 @@ On the **deployed USB-C wall-power path** (VUSB present), the Notecard's main su
 
 See the [MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) and the [Notecard low-power firmware design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) for complete, authoritative power figures.
 
-## 9. Limitations and Next Steps
+## 9. Troubleshooting
+
+**Device does not appear in Notehub.**
+- Confirm PRODUCT_UID is correctly pasted into `firmware/cold_storage_audit_monitor.ino` line 51 and that you have flashed the firmware.
+- Check that the SIM card in the Notecard has been activated (all Blues Notecards ship with an active SIM; confirm in the [Blues Shop](https://shop.blues.com/) under your account).
+- Verify antenna connection: the SMA-to-u.FL adapter must be firmly seated on the **CELL** u.FL port (not the GPS port). With no external antenna, or with the antenna inside a metal enclosure, the Notecard may not register on the network.
+- Open the Notehub **Project → Devices** tab and look for the device serial number; if it appears in the device list but shows no Events, check the cellular signal at that location (weak signal can delay first registration).
+
+**Temperature readings are −9999 or missing.**
+- The MAX31865 amplifier or PT1000 probe has a fault. Verify SPI wiring: CLK, SDI (MISO label on CX), SDO (MOSI label on CX), CS (D10), +3.3V, GND. Note the [Notecarrier CX v1.3 label swap](#rtd-temperature-amplifier-max31865) — the silkscreen labels MOSI and MISO are reversed; use the pin table in §4, not the labels.
+- If using a bench TMP117 instead, confirm the Qwiic cable is connected and that you have swapped the library from MAX31865 to SparkFun_TMP117 (see [§3](#3-hardware-requirements)).
+- Open the Notehub **Project → Terminal** tab, select your device, and run `card.status` to check if the Notecard is reporting a fault condition.
+
+**Lux readings are −1.0.**
+- The VEML7700 sensor is not responding on the I²C bus. Verify the Qwiic cable is connected from the Notecarrier CX **Qwiic** connector to the VEML7700 **Qwiic IN** connector. Confirm the cable is not kinked or damaged.
+- Check that you are not using a TMP117 in the production I²C chain — the production design has VEML7700 connected directly to the Notecarrier CX Qwiic port.
+
+**No alerts are firing (or alerts fire when they shouldn't).**
+- Confirm that the Notecard's RTC has synced with Notehub. Check the Notehub **Events** tab — the first few reading Notes may show `time_valid: false`; during this pre-sync window, no alerts fire. Wait at least 5 minutes after power-on, then test.
+- For temperature alerts: verify that you have overridden `temp_high_alert_c` and `temp_low_alert_c` in the Notehub **Fleet → Environment**. The bench defaults (30°C high, 15°C low) will not fire on a refrigerated unit at 4°C.
+- For door alerts: confirm the reed switch is wired to D5 with a pull-up enabled. Open the door and hold it open for longer than `door_open_alert_min` (default 10 minutes). Check **Notehub → Events** for a `storage_alert.qo` Note with `alert: "door_open_timeout"`.
+
+**The device is consuming too much power.**
+- Verify the Notecard is entering sleep mode. On a +VBAT bench setup (no USB-C), the baseline current should be single-digit µA between samples. If the baseline is persistently > 1 mA, the ATTN pin wiring may be incorrect, or the `NotePayloadSaveAndSleep` call may not be executing. Check the ATTN pin connection from the Notecard to the Notecarrier CX enable gate.
+- On a USB-C powered deployment, the Notecard's idle current is higher than the µA bench figures (see [§8 Power validation](#power-validation-with-mojo)). This is expected.
+
+---
+
+## 10. Limitations and Next Steps
 
 **Deployment considerations:**
 
@@ -408,7 +492,7 @@ See the [MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/not
 - Integrate Notehub-side webhook routing to a LIMS or compliance database. The per-sample reading Note body maps directly to a time-series schema; the alert Note maps to an excursion event record.
 - **Ultra-cold storage (−80°C freezers) is not supported by this hardware.** The Adafruit PT1000 probe (Product 3984) is rated to −50°C; using it below that limit is outside the manufacturer's specification and is not appropriate for a regulatory-grade deployment. Ultra-cold monitoring requires a dedicated RTD probe and amplifier chain rated to −80°C or below (e.g., a PT100 probe specified for cryogenic service), a calibration certificate covering that lower temperature range, and validation of the full measurement chain at operating temperature. The firmware architecture (per-sample reading Notes, immediate-sync alert Notes, environment-variable thresholds) is compatible with that extension, but the sensor hardware must be replaced.
 
-## 10. Summary
+## 11. Summary
 
 Most pharmacy cold-chain incidents don't start with a failed sensor — they start with an undocumented excursion that nobody noticed, or a brief door-open event that happened over the weekend when nobody was watching. This design puts a continuously-monitoring, network-independent measurement device beside every cold storage unit that matters: a PT1000 RTD probe (Adafruit 3984 + MAX31865 amplifier 3648) routed into the compartment through the cabinet's probe port or door gasket — submitted to a calibration laboratory for a NIST-traceable certificate before deployment — a door switch that detects prolonged-open events (sampled once per `sample_interval_sec` — open/close cycles shorter than the interval are not captured; see [Limitations](#9-limitations-and-next-steps)), and a light sensor that provides an independent second opinion on door state (exterior door-frame placement recommended — see [Limitations](#9-limitations-and-next-steps) for production condensation-tolerant options). Reading Notes accumulate on the Notecard's local queue through any facility network disruption and sync to Notehub the moment cellular returns — so the monitoring record is complete even when the WiFi is not.
 

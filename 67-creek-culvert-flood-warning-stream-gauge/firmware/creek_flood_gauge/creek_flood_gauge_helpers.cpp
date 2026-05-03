@@ -315,11 +315,44 @@ bool defineTemplates() {
 }
 
 // ===========================================================================
+// defineEnvTemplate — register data-type hints for our environment variables.
+//
+// Notecard for Skylo NTN best practice (see the Notecard for Skylo Quickstart)
+// requires templated environment variables so they can be encoded compactly
+// when synced over the satellite radio.  Without env.template, env-var
+// payloads consume more of the 10 KB Skylo data budget than necessary on
+// every inbound poll.  The hints (integer 11, float 14.1) match the schema
+// expected by fetchEnvOverrides() and Section 5 of the README.
+// Returns true if the request was accepted by the Notecard.
+// ===========================================================================
+bool defineEnvTemplate() {
+    J *req = notecard.newRequest("env.template");
+    if (!req) return false;
+    J *body = JAddObjectToObject(req, "body");
+    JAddNumberToObject(body, "sample_interval_sec",     11);    // integer
+    JAddNumberToObject(body, "summary_interval_min",    11);
+    JAddNumberToObject(body, "inbound_interval_min",    11);
+    JAddNumberToObject(body, "level_warning_mm",        14.1);  // float
+    JAddNumberToObject(body, "level_critical_mm",       14.1);
+    JAddNumberToObject(body, "rate_warning_mm_per_min", 14.1);
+    JAddNumberToObject(body, "rain_intense_tips",       11);
+    JAddNumberToObject(body, "sensor_height_mm",        14.1);
+    JAddNumberToObject(body, "alert_cooldown_sec",      11);
+    return notecard.sendRequestWithRetry(req, 5);
+}
+
+// ===========================================================================
 // fetchEnvOverrides — read per-device / fleet env vars each wake.
 // All values are clamped to documented sane bounds before being applied so a
 // bad fleet value cannot create a tight loop, overflow timing math, or produce
 // nonsensical thresholds.  Re-issues hub.set (without product UID) if
 // summary_interval_min changed to keep the radio schedule aligned.
+//
+// Notecard environment variables are stored and returned as strings on the
+// env.get response — even when env.template provides type hints (the hints
+// affect compact NTN wire encoding, not the host-side JSON response).  Each
+// value is therefore read with JGetString and parsed with atof; an absent
+// field returns "" and parses to 0.0, which the `> 0` check filters out.
 // ===========================================================================
 void fetchEnvOverrides() {
     J *req = notecard.newRequest("env.get");
@@ -340,39 +373,39 @@ void fetchEnvOverrides() {
     if (body != NULL) {
         float v;
 
-        v = JGetNumber(body, "sample_interval_sec");
+        v = (float)atof(JGetString(body, "sample_interval_sec"));
         if (v > 0) g_sampleIntervalSec =
             clampU32(v, 30, 86400, g_sampleIntervalSec);       // 30 s – 24 h
 
-        v = JGetNumber(body, "summary_interval_min");
+        v = (float)atof(JGetString(body, "summary_interval_min"));
         if (v > 0) g_summaryIntervalMin =
             clampU32(v, 1, 1440, g_summaryIntervalMin);         // 1 min – 24 h
 
-        v = JGetNumber(body, "level_warning_mm");
+        v = (float)atof(JGetString(body, "level_warning_mm"));
         if (v > 0) g_levelWarningMm =
             clampF(v, 10.0f, 9999.0f, g_levelWarningMm);
 
-        v = JGetNumber(body, "level_critical_mm");
+        v = (float)atof(JGetString(body, "level_critical_mm"));
         if (v > 0) g_levelCriticalMm =
             clampF(v, 10.0f, 9999.0f, g_levelCriticalMm);
 
-        v = JGetNumber(body, "rate_warning_mm_per_min");
+        v = (float)atof(JGetString(body, "rate_warning_mm_per_min"));
         if (v > 0) g_rateWarningMmPerMin =
             clampF(v, 0.1f, 9999.0f, g_rateWarningMmPerMin);
 
-        v = JGetNumber(body, "rain_intense_tips");
+        v = (float)atof(JGetString(body, "rain_intense_tips"));
         if (v > 0) g_rainIntenseTips =
             clampU32(v, 1, 1000, g_rainIntenseTips);
 
-        v = JGetNumber(body, "sensor_height_mm");
+        v = (float)atof(JGetString(body, "sensor_height_mm"));
         if (v > 0) g_sensorHeightMm =
             clampF(v, 100.0f, 9999.0f, g_sensorHeightMm);
 
-        v = JGetNumber(body, "alert_cooldown_sec");
+        v = (float)atof(JGetString(body, "alert_cooldown_sec"));
         if (v > 0) g_alertCooldownSec =
             clampU32(v, 60, 86400, g_alertCooldownSec);         // 1 min – 24 h
 
-        v = JGetNumber(body, "inbound_interval_min");
+        v = (float)atof(JGetString(body, "inbound_interval_min"));
         if (v > 0) g_inboundIntervalMin =
             clampU32(v, 60, 10080, g_inboundIntervalMin);       // 1 h – 7 days
     }

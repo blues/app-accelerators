@@ -4,6 +4,38 @@
 
 A cellular-connected [energy savings](https://blues.com/energy-savings/) monitor that clips non-invasive **CT** (current transformer) clamps onto branch circuits in a commercial sub-panel, samples RMS current once a minute, and transmits hourly per-circuit profiles to Notehub — giving energy consultants a view into which circuits are burning money at 2 AM, without ever touching the building's corporate network.
 
+## Quickstart Outcome
+
+After completing this README and deploying the firmware, you will have:
+- A Notecarrier CX running the plug-load monitor sketch, sampling four branch circuits at 60-second intervals.
+- One hourly `circuit_summary.qo` note per device arriving in Notehub, carrying per-circuit mean RMS amps, peak RMS amps, and active-minutes (sample JSON below).
+- Optional: after-hours `circuit_alert.qo` notes (real-time, `sync:true`) if you uncomment `PLUG_LOAD_ALERTS` in the firmware.
+- Environment variables editable in the Notehub Fleet UI (no firmware re-flash) to adjust thresholds and timing on running devices.
+
+**Example `circuit_summary.qo` from Notehub:**
+```json
+{
+  "file": "circuit_summary.qo",
+  "when": 1704067200,
+  "body": {
+    "ch1_mean": 8.4,
+    "ch1_peak": 14.1,
+    "ch1_act_min": 58.0,
+    "ch2_mean": 0.1,
+    "ch2_peak": 0.3,
+    "ch2_act_min": 0.0,
+    "ch3_mean": 12.7,
+    "ch3_peak": 15.9,
+    "ch3_act_min": 60.0,
+    "ch4_mean": -9999.0,
+    "ch4_peak": -9999.0,
+    "ch4_act_min": -9999.0,
+    "samples": 60
+  }
+}
+```
+All values are RMS amps except `samples` (count) and `act_min` (minutes above idle threshold). Any field equal to `-9999.0` means that channel's CT was not installed.
+
 ## 1. Project Overview
 
 **The problem.** In most commercial buildings, HVAC systems are heavily instrumented and often metered. Plug loads — the miscellaneous branch circuits feeding workstations, monitors, task lighting, small appliances, AV equipment, server closets, and vending machines — are usually invisible. A typical mid-size office building has 50 to 200 branch circuits on its sub-panels. A meaningful fraction of them are drawing load around the clock when they shouldn't be: workstations that employees never shut down, vending machines that never sleep, building signage that runs from midnight to 5 AM, and network closets cooling equipment that was decommissioned two years ago but never unplugged.
@@ -79,15 +111,33 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
 
 Set the Notecarrier CX DIP switch to `HST` to route USB Serial to the onboard Cygnet host during firmware flashing and debug; flip to `NC` to route USB Serial to the Notecard for direct API testing.
 
-## 5. Notehub Setup
+## 5. Firmware Build & Flash
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/plug_load_monitor_helpers.h` as `PRODUCT_UID`. (The define lives in the shared header so it is visible to both `.ino` and `.cpp` translation units.)
+1. **Install the Arduino STM32 core and Notecard library:**
+   ```bash
+   arduino-cli core install STMicroelectronics:stm32
+   arduino-cli lib install "Blues Wireless Notecard@1.8.5"
+   ```
 
-2. **Claim the Notecard.** Power the enclosure; on first cellular session the Notecard associates with your project automatically.
+2. **Set your Notehub ProductUID.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/plug_load_monitor_helpers.h` as `PRODUCT_UID`. (The define lives in the shared header so it is visible to both `.ino` and `.cpp` translation units.)
 
-3. **Create a Fleet per building.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) (and [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules)) group devices for shared configuration and routing. One fleet per building site is the natural boundary — every device at the same site shares the same time zone and business-hours schedule, so fleet-level environment variables encode those values once and apply to all sub-panels at that site.
+3. **Compile and flash.** Connect the Notecarrier CX via USB and set the DIP switch to `HST` (routes USB serial to the host MCU). Flash with:
+   ```bash
+   arduino-cli compile -b STMicroelectronics:stm32:Nucleo_L433RC_P \
+     --build-properties build.extra_flags="-DNOTECARD_USE_SERIAL" \
+     firmware/plug_load_monitor.ino
+   ```
+   Follow the [stm32duino](https://github.com/stm32duino/Arduino_Core_STM32) upload instructions for your operating system (may require manual bootloader entry; consult the Notecarrier CX datasheet pin-out). Alternatively, use the Arduino IDE: open the sketch, select board `STMicroelectronics → STM32L4 Series → Nucleo L433RC (P)`, compile, and upload.
 
-4. **Set environment variables.** All variables below are optional; firmware defaults are shown. Any value set in Notehub overrides the compile-time default on the device's next inbound sync — no re-flash required. The firmware configures `inbound:360`, so the Notecard checks Notehub for updated env vars every 6 hours; a variable changed in Notehub after the device is already running will not take effect until that next inbound sync. **Commissioning tip:** set any non-default values in Notehub *before first power-up* — they are delivered to the Notecard's local cache on the first successful sync and applied by the firmware on the next host wake after that sync. This is the recommended setup path. If the device is already running, Notehub-terminal commands are subject to the same `inbound:360` delivery window as env vars; they are not delivered on demand and cannot wake a sleeping periodic device early. To force an immediate env-var pickup on an already-running device, connect a USB cable on-site, flip the Notecarrier CX DIP switch to `NC` (routes USB serial directly to the Notecard), and issue `{"req":"hub.sync"}` over the serial connection.
+## 6. Notehub Setup and Environment Variables
+
+1. **Create a project.** Follow [Notehub quickstart](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub) if not already done.
+
+2. **Claim the Notecard and create a Fleet.** Power the enclosure. On first cellular session, the Notecard associates with your project automatically. Create a [Fleet](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) per building site (one fleet = one sub-panel deployment location). [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) allow per-site environment variables without maintaining per-device firmware variants.
+
+3. **Pre-provision environment variables (commissioning best practice).** Navigate to **Projects → [Your Project] → Fleets → [Your Fleet] → Environment** and add any non-default variables *before powering up the device for the first time*. This way they are delivered to the Notecard's local cache on the first successful cellular sync. All variables below are optional; firmware defaults are shown.
+
+   **Sync timing:** The firmware configures `inbound:360`, meaning the Notecard checks Notehub for updated env vars every 6 hours. A variable changed in Notehub after the device is already running will not take effect until that next inbound sync. To force an immediate env-var pickup on an already-running device, connect a USB cable on-site, flip the Notecarrier CX DIP switch to `NC` (routes USB serial directly to the Notecard), and issue `{"req":"hub.sync"}` over the serial connection to trigger an immediate bidirectional session.
 
    | Variable | Default | Purpose |
    |---|---|---|
@@ -97,7 +147,7 @@ Set the Notecarrier CX DIP switch to `HST` to route USB Serial to the onboard Cy
    | `idle_threshold_amps` | `0.50` | RMS amps below which a circuit is treated as "off" for active-minute counting. Adjust upward if the leakage floor of a specific circuit generates false activity counts. |
    | `ct_full_scale_amps` | `30.0` | Full-scale primary current of the installed CT model. Override if using a different CT (e.g. `20.0` for a 20 A model). |
 
-   The following variables are only read by the firmware when `PLUG_LOAD_ALERTS` is defined in `firmware/plug_load_monitor_helpers.h` (see §6). They have no effect in the default build.
+   The following variables are only read by the firmware when `PLUG_LOAD_ALERTS` is defined in `firmware/plug_load_monitor_helpers.h` (see §7). They have no effect in the default build.
 
    | Variable | Default | Purpose (`PLUG_LOAD_ALERTS` builds only) |
    |---|---|---|
@@ -107,9 +157,9 @@ Set the Notecarrier CX DIP switch to `HST` to route USB Serial to the onboard Cy
    | `tz_offset_hours` | `0` | **Whole-integer** hours offset from UTC to convert Notecard timestamps to local time for business-hours evaluation. For US Eastern Standard Time use `-5`; Eastern Daylight Time use `-4`. The firmware stores this value as `int8_t` and does integer arithmetic; sites in half-hour (e.g. India IST UTC+5:30) or 45-minute (e.g. Nepal UTC+5:45) offset zones are not supported — business-hours windows will be evaluated incorrectly at those sites. |
    | `alert_cooldown_min` | `60` | Minimum minutes between repeat after-hours alerts on the same circuit. Prevents alert fatigue on a circuit that holds a sustained load throughout the night. |
 
-5. **Configure routes.** Add a [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `circuit_summary.qo` (batched hourly records — forward to a time-series database or analytics platform for load-profile classification). If building with `PLUG_LOAD_ALERTS` enabled, add a second route for `circuit_alert.qo` — low-volume, time-sensitive records forwarded to an email, Slack, or CMMS destination.
+4. **Configure data routes (Projects → Data & Routing).** Add a [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `circuit_summary.qo` (batched hourly records — forward to a time-series database or analytics platform for load-profile classification). If building with `PLUG_LOAD_ALERTS` enabled, add a second route for `circuit_alert.qo` — low-volume, time-sensitive records forwarded to an email, Slack, or CMMS destination.
 
-## 6. Firmware Design
+## 7. Firmware Design
 
 Three files in `firmware/`:
 
@@ -272,7 +322,7 @@ NotePayloadSaveAndSleep(&payload, CFG_SAMPLE_INTERVAL_SEC, NULL);
 
 `NotePayloadSaveAndSleep` writes the `AppState` struct into Notecard's non-volatile storage and then issues `card.attn` to cut the host power rail. On the next wake, `NotePayloadRetrieveAfterSleep` + `NotePayloadGetSegment` rehydrates the state before any code in `setup()` runs.
 
-## 7. Data Flow
+## 8. Data Flow
 
 ![Data flow: 60s sample of 4 CT channels (RMS amps, two-pass ADC) → window stats and optional after_hours_load rule → circuit_alert.qo (sync:true, optional build) and circuit_summary.qo (hourly templated) → Notehub routes](diagrams/03-data-flow.svg)
 
@@ -285,7 +335,7 @@ Every 60 seconds the host wakes, reads all active CT channels, and checks whethe
 - **Routed.** `circuit_summary.qo` records land in Notehub and route to a time-series store for load-profile classification. When `PLUG_LOAD_ALERTS` is enabled, `circuit_alert.qo` records route separately to a real-time channel.
 - **Downstream classification.** A downstream classifier uses the rolling `circuit_summary.qo` stream to assign each circuit a sustained load profile — always-on, scheduled, or occupied-hours — based on how `act_min` and `mean` vary across the time-of-day distribution over the deployment period. Classification and dashboarding are project-specific integrations outside the scope of this reference design; see Appendix A.
 
-## 8. Validation and Testing
+## 9. Validation and Testing
 
 **Expected steady-state cadence.** In a correctly-behaving deployment, one `circuit_summary.qo` note arrives in Notehub per hour per device. In a `PLUG_LOAD_ALERTS` build, the `circuit_alert.qo` file should be quiet during business hours; after-hours activity depends entirely on what the building's circuits are actually doing — an always-on server room generates a steady non-zero mean across all hours, while a circuit powering desktop workstations should trend toward zero after business hours. In the default build, `circuit_alert.qo` is never created.
 
@@ -303,7 +353,30 @@ Every 60 seconds the host wakes, reads all active CT channels, and checks whethe
 
 Splice the [Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) inline between the AC/DC supply output and the Notecarrier CX `+VBAT` pad. A healthy power trace should show: brief active pulses every 60 seconds (host awake and sampling, typically 1–3 seconds each) followed by a quiet low-current floor, then a longer, higher-current session once per hour when the Notecard transmits. If the trace shows no quiet floor between active phases — the current stays continuously elevated with no periodic drop — the host is likely not sleeping; the most common cause is `card.attn` not reaching the host EN pin correctly. If the current shows continuous high draw at all times, `hub.set` may still be in `continuous` mode from a prior bench session; with the Notecarrier CX DIP switch in `NC` mode, issue `{"req":"hub.set","mode":"periodic","outbound":60,"inbound":360}` directly over the USB serial connection to correct it.
 
-## 9. Limitations and Next Steps
+## 10. Troubleshooting
+
+**No Notehub activity after first power-up (no claims, no notes in Notehub, no LED activity on Notecard).**
+- Confirm the external cellular antenna is screwed onto the SMA bulkhead on the enclosure exterior (not inside the metal panel). A chip or flexible antenna inside metalwork will not obtain a cellular lock.
+- Check that the u.FL to SMA pigtail is securely seated on the Notecard's `MAIN` u.FL connector.
+- Verify the Notecarrier CX DIP switch is not set to `HST` (which routes the host MCU's USB UART to debug); set it to a power-off state if not actively flashing. The default position routes 5V supply.
+- If using WiFi fallback, verify the onboard WiFi antenna is unobstructed; the same metal-enclosure blocking applies.
+
+**Non-zero RMS readings on a circuit with no load (CT plugged in, clamp on de-energized or zero-current wire).**
+- This is normal. The CT's internal burden resistor holds the tip close to the bias node (≈1.65 V), so the RMS is small and stable — typically well below the idle threshold. This is distinct from an unplugged CT (next item).
+
+**Erratic or large readings on one or more channels; no pattern to the values across samples.**
+- Confirm the TRRS jack is **fully seated** in the breakout. A partially seated jack leaves the tip floating, allowing stray 60 Hz capacitive coupling from the panel environment to drive large, noisy ADC readings.
+- Confirm the SLEEVE terminal is connected to the BIAS NODE. If the sleeve is floating or connected elsewhere, the AC signal has no return path and the ADC input can drift and pick up arbitrary noise.
+
+**First summary note appears after many hours, not within the first hour.**
+- The device defaults to a 60-minute reporting window. If powered mid-window, the first note arrives on the next hourly boundary (up to 60 min after power-up). To validate faster, set `report_interval_min=5` in Notehub *before* first power-up, then look for a summary note within 5 minutes of the device appearing in Notehub.
+
+**Summary notes appear with expected values, but alerts (if using `PLUG_LOAD_ALERTS`) never fire.**
+- Confirm `PLUG_LOAD_ALERTS` is uncommented in `firmware/plug_load_monitor_helpers.h` before building.
+- Verify the device has successfully claimed in Notehub (proves at least one cellular session). Business-hours evaluation requires valid network time from `card.time`, which only returns a meaningful epoch after the first successful cellular (or WiFi) sync.
+- Confirm `biz_hours_start`, `biz_hours_end`, and `tz_offset_hours` are set correctly in the Fleet environment variables. By default, business hours are 8 AM–6 PM UTC (which is only meaningful if the building is in the UTC timezone).
+
+## 11. Limitations and Next Steps
 
 **Simplified for this proof-of-concept:**
 
@@ -324,7 +397,7 @@ Splice the [Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_
 - **Over-the-air firmware updates.** Wire the Cygnet's BOOT/RESET pins to Notecard ATTN for [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/), enabling remote firmware pushes across the entire fleet without truck rolls.
 - **Per-circuit calibration offset.** Store a small per-circuit zero-current offset in the env vars (measured at commissioning with the circuit breaker open) to subtract the noise floor from each channel's reading.
 
-## 10. Summary
+## 12. Summary
 
 The fundamental insight here is that energy consultants already know how to find after-hours waste — they just can't deploy the sensors to measure it, because IT says no. A cellular Notecard removes that blocker completely. The consultant clips four CT clamps around branch-circuit hot wires, taps 120 VAC, and sampling starts immediately — with the first summary note delivered to Notehub on the next hourly outbound sync. No network form. No VLAN. No IT ticket that goes unanswered for six weeks.
 

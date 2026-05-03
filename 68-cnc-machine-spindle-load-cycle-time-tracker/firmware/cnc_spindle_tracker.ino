@@ -70,16 +70,20 @@ static uint8_t      g_alarmFifoHead              = 0;
 static uint8_t      g_alarmFifoTail              = 0;
 
 // Cycle-count register baseline for per-window delta computation.
-// 0xFFFF is a sentinel meaning "no prior reading this session"; on first valid
-// sample we record the baseline without adding a delta. Persists across report
-// windows — do not reset in resetWindow().
-static uint16_t     g_lastCycleCount             = 0xFFFF;
+// On the first valid sample we record the baseline without adding a delta;
+// the explicit `…Initialized` flag avoids any collision with a real register
+// value of 0xFFFF (which a high-throughput controller will eventually reach
+// at counter wrap — using a magic sentinel would silently drop the wrap delta).
+// Persists across report windows — do not reset in resetWindow().
+static bool         g_cycleCountInitialized      = false;
+static uint16_t     g_lastCycleCount             = 0;
 
-// Operator-ID change tracking.
-// 0xFFFF is a sentinel meaning "not yet observed"; first sample establishes the
-// baseline without emitting an event (no prior state to report as "previous").
+// Operator-ID change tracking. First sample establishes the baseline without
+// emitting an event (no prior state to report as "previous"); the explicit
+// flag means a real operator_id of 0xFFFF is not mistaken for "uninitialized".
 // Persists across report windows.
-static uint16_t     g_lastOperatorId             = 0xFFFF;
+static bool         g_operatorIdInitialized      = false;
+static uint16_t     g_lastOperatorId             = 0;
 
 static uint32_t g_lastSampleMs       = 0;
 static uint32_t g_lastReportMs       = 0;
@@ -219,9 +223,10 @@ static void accumulateSample(const Sample &s) {
     // distinguished from a natural wrap and would inflate one window's delta —
     // an accepted corner case given the rarity of mid-session resets on CNC
     // controllers.
-    if (g_lastCycleCount == 0xFFFF) {
+    if (!g_cycleCountInitialized) {
         // First valid sample: record the baseline without adding a delta yet.
-        g_lastCycleCount = s.cycleCount;
+        g_lastCycleCount        = s.cycleCount;
+        g_cycleCountInitialized = true;
     } else {
         const uint16_t delta = (uint16_t)(s.cycleCount - g_lastCycleCount);
         g_lastCycleCount = s.cycleCount;
@@ -313,10 +318,11 @@ static void evaluateAlerts(const Sample &s) {
     // consecutive polls is invisible to the firmware. The hourly summary
     // snapshot captures only the most recently observed operator ID at window
     // close — not a complete record of all transitions within the window.
-    if (g_lastOperatorId == 0xFFFF) {
+    if (!g_operatorIdInitialized) {
         // First observation: record baseline without emitting an event
         // (there is no prior state to report as "previous ID").
-        g_lastOperatorId = s.operatorId;
+        g_lastOperatorId        = s.operatorId;
+        g_operatorIdInitialized = true;
     } else if (s.operatorId != g_lastOperatorId) {
         const uint16_t prevId = g_lastOperatorId;
         g_lastOperatorId = s.operatorId;

@@ -4,6 +4,27 @@
 
 A [downtime prevention](https://blues.com/downtime-prevention/) retrofit for municipal wastewater lift stations that catches pump failures, discharge obstructions, and high-water conditions before they become a sanitary overflow. Three sensor types, a cellular or satellite Notecard, and a Cygnet host MCU transform a sealed concrete vault into a remotely-monitored station that delivers alerts to the on-call crew within minutes via cellular — or on the next available satellite pass for Option B remote stations — not hours after a manual site visit.
 
+## Quickstart: Get Your First Alert in 15 Minutes (Bench)
+
+**What you'll have:** A Notecarrier CX + Notecard sending sample lift_alert and lift_summary events to your Notehub project every 60 seconds without needing sensors in the field.
+
+1. **Create a Notehub project** at [notehub.io](https://notehub.io) and copy its ProductUID.
+2. **Flash the firmware:**
+   ```bash
+   arduino-cli board install stm32duino:STM32:1.11.0
+   arduino-cli lib install "Blues Wireless Notecard@1.8.5"
+   cd firmware/lift_station_monitor
+   arduino-cli compile --fqbn stm32duino:STM32:Notecarrier_CX \
+     --build-property "compiler.cpp.extra_flags=-DPRODUCT_UID=\"com.example:demo\"" \
+     -u -p /dev/ttyACM0
+   ```
+   (Replace `/dev/ttyACM0` with your Notecarrier serial port; on macOS use `/dev/tty.usbmodem*`; on Windows use `COM*`.)
+3. **Open serial monitor** at 115200 baud; verify logs show "Notecard configured," `hub.set` requests, and `note.add` calls.
+4. **Check Notehub Devices** — your Notecard appears within 60 seconds. Click it to see `lift_alert.qo` and `lift_summary.qo` events in the Events panel.
+5. **Tune thresholds** — in the Fleet panel, set environment variables (e.g., `high_level_pct: 50.0`) and watch the serial log show the updated values on the next wake.
+
+For bench-only testing, use compile-time flags to inject synthetic sensor values (see [Bench fault simulation](#bench-fault-simulation) in Section 8).
+
 Two connectivity SKUs cover the full deployment spectrum. Stations within LTE coverage use a **Notecard Cell+WiFi (MBGLW)**. Truly rural stations beyond reliable cellular reach use a **[Starnote](https://dev.blues.io/datasheets/starnote/starnote-for-skylo/)**, which routes telemetry over the Skylo satellite network. The firmware is identical for both variants; Notehub configuration is shared, though satellite deployments benefit from wider inbound sync intervals to conserve bundled satellite data — see [Satellite-specific considerations](#satellite-specific-considerations-option-b--starnote) in Section 2.
 
 ## 1. Project Overview
@@ -125,20 +146,33 @@ The Gems RS-500-Y-PP provides a galvanically isolated SPST N.O. dry contact rate
 
 ## 5. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into the firmware as `PRODUCT_UID`.
-2. **Claim the Notecard.** Power the station monitor. On first cellular sync the Notecard associates with your project automatically — no manual claim step required.
-3. **Create a Fleet per service zone.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) group devices for shared configuration. One fleet per service area (north district, rural extensions, downtown core, etc.) is a practical starting point — it lets you tune thresholds at the fleet level while still allowing per-station overrides for stations with unusual wet-well geometries or pump capacities.
-4. **Set environment variables.** All thresholds below are optional overrides of firmware defaults. Any variable set in Notehub is picked up by the device on its next inbound sync without a firmware reflash.
+### 5.1 Project and Device Claim
 
-   | Variable | Default | Purpose |
-   |---|---|---|
-   | `pump_on_amps` | `3.0` | Current draw (A) above which a pump is considered running. Adjust for larger/smaller motors. |
-   | `high_level_pct` | `85.0` | Wet-well fill level (%) at which the fail-to-start check activates. Should be set below the float switch trip point. |
-   | `rising_rate_pct` | `2.0` | Level rise (% per 60-second sample) while a pump is running that triggers a clog alert. |
-   | `summary_interval_min` | `60` | Minutes between summary notes. The firmware also re-issues `hub.set outbound` to match this value whenever it changes, keeping the Notecard's outbound sync window aligned with the summary rate. |
-   | `inbound_interval_min` | `120` | Minutes between inbound syncs (environment-variable pulls from Notehub). **Satellite deployments:** set to `240` or higher to conserve bundled satellite data (~50 bytes per inbound sync). The firmware re-issues `hub.set inbound` to match this value whenever it changes — no firmware reflash required. |
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into the firmware as `PRODUCT_UID` (in `lift_station_monitor_helpers.h`). Rebuild and flash.
+2. **Claim the Notecard.** Power the Notecarrier CX. On first cellular sync, the Notecard associates with your project automatically — no manual claim step required. Watch the **Devices** panel in Notehub; your Notecard appears within 60 seconds.
 
-5. **Configure routes.** Add a [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `lift_alert.qo` targeting the municipality's on-call notification endpoint, and a second route for `lift_summary.qo` targeting a long-term analytics store. Keeping the two Notefiles separate at the source means each can go to a different destination at a different urgency — real-time notification for alerts, batched ingest for summaries — without any filter logic in the route itself. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for supported destination types and configuration details.
+### 5.2 Environment Variables for Threshold Tuning
+
+All thresholds below are optional overrides of firmware defaults. Set them via **Notehub > Fleet > Environment**, not in the firmware. Any variable set in Notehub is picked up by the device on its next inbound sync without a firmware reflash.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `pump_on_amps` | `3.0` | Current draw (A) above which a pump is considered running. Adjust for larger/smaller motors. |
+| `high_level_pct` | `85.0` | Wet-well fill level (%) at which the fail-to-start check activates. Should be set below the float switch trip point. |
+| `rising_rate_pct` | `2.0` | Level rise (% per 60-second sample) while a pump is running that triggers a clog alert. |
+| `summary_interval_min` | `60` | Minutes between summary notes. The firmware also re-issues `hub.set outbound` to match this value whenever it changes, keeping the Notecard's outbound sync window aligned with the summary rate. |
+| `inbound_interval_min` | `120` | Minutes between inbound syncs (environment-variable pulls from Notehub). **Satellite deployments:** set to `240` or higher to conserve bundled satellite data (~50 bytes per inbound sync). The firmware re-issues `hub.set inbound` to match this value whenever it changes — no firmware reflash required. |
+
+To set variables: Click your project's **Fleet**, then the **Environment** tab. Add each variable as a key-value pair (e.g., `high_level_pct = 75.0`), then click **Save**. The device pulls the updated values on its next inbound sync.
+
+### 5.3 Routing Events to the Outside World
+
+Add [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) in **Notehub > Routes** to forward events to your on-call notification system (PagerDuty, Slack, email, webhook) or analytics backend:
+
+- **Alert route:** Route `lift_alert.qo` to your real-time on-call service (Notehub supports HTTP, MQTT, AWS SNS, Azure Event Hubs, Slack, PagerDuty, and others).
+- **Summary route:** Route `lift_summary.qo` to a long-term analytics store (Snowflake, BigQuery, TimescaleDB, etc. via HTTPS or JDBC).
+
+Keeping alerts and summaries in separate Notefiles means each route handles them independently — alerts fire immediately for urgent notification, summaries batch for efficient storage. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for supported destination types and step-by-step setup.
 
 ## 6. Firmware Design
 
@@ -184,7 +218,7 @@ The `.ino` file is self-contained for the Arduino IDE (which compiles `.ino` + `
 
 Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefiles. Templates give both files a fixed-width wire encoding, shrinking each note by roughly 3–5× versus free-form JSON — meaningful over a multi-year deployment with 24 summary notes per day per station.
 
-`lift_alert.qo` (immediate, `sync:true`, on fault detection):
+**`lift_alert.qo`** — Emitted immediately (within seconds for cellular, minutes for satellite) when any fault rule trips. Example:
 
 ```json
 {
@@ -200,7 +234,13 @@ Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-ban
 }
 ```
 
-`lift_summary.qo` (hourly, batched cellular sync):
+Fields:
+- `alert`: one of `"pump_fail_to_start"`, `"pump_clog"`, or `"high_water_alarm"`.
+- `level_pct`: wet-well fill at time of alert.
+- `pump1_amps`, `pump2_amps`: instantaneous current draw on each motor supply at time of alert.
+- `float_sw`: whether the high-water float switch is closed (active) at time of alert.
+
+**`lift_summary.qo`** — Queued every 60 minutes (or `summary_interval_min`) and flushed in the next Notecard outbound session. Example:
 
 ```json
 {
@@ -221,7 +261,14 @@ Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-ban
 }
 ```
 
-The `level_pct` field in the summary is the instantaneous reading at summary time; `level_avg_pct` is the mean of all samples collected in the window (60 at the default 60-minute cadence, fewer if `summary_interval_min` was changed mid-window). `pump1_run_min` and `pump2_run_min` reflect how many minutes each pump was detected running during the window — a useful proxy for station loading and lead/lag duty balance. The `alert_count` field makes it easy to spot summary windows that were eventful without loading the full alert Notefile. The three `*_faults` counters record how many samples in the window returned a sensor-fault sentinel (ADC out of range for the level loop; bias-network failure or rail saturation on a CT) so an operator can immediately tell when an average-or-instantaneous field is degraded by hardware faults rather than reflecting actual station state.
+Fields:
+- `level_pct`: instantaneous reading at the end of the summary window.
+- `level_avg_pct`: mean of all 60 samples collected during the window (or fewer if `summary_interval_min` was changed mid-window).
+- `pump1_amps_avg`, `pump2_amps_avg`: average current draw per pump across the window.
+- `pump1_run_min`, `pump2_run_min`: how many minutes each pump was detected running (useful for lead/lag duty balance assessment).
+- `float_sw`: whether the float switch is closed at summary time.
+- `alert_count`: how many alerts fired during this window (0 = clean window, >0 = trouble).
+- `level_faults`, `ct1_faults`, `ct2_faults`: count of samples where the sensor ADC returned an out-of-range value (open circuit, short, rail saturation, or other hardware fault). If nonzero, the associated average field is degraded by hardware issues, not actual station state.
 
 ### Low-power strategy
 
@@ -323,7 +370,12 @@ bool ok = notecard.sendRequestWithRetry(req, 5);
 
 ## 8. Validation and Testing
 
-**Expected steady-state.** In normal operation a properly functioning lift station generates one `lift_summary.qo` note per summary interval and zero `lift_alert.qo` notes. A healthy summary shows `level_avg_pct` well below `high_level_pct`, `alert_count: 0`, and at least one pump with non-zero runtime in the window. Lead/lag stations commonly show one pump carrying the entire load in a quiet hour — zero runtime on the lag pump during a single interval is normal, not an alarm condition.
+**Expected steady-state.** In normal operation a properly functioning lift station generates one `lift_summary.qo` note per summary interval (default 60 minutes) and zero `lift_alert.qo` notes. A healthy summary shows `level_avg_pct` well below `high_level_pct`, `alert_count: 0`, and at least one pump with non-zero runtime in the window. Lead/lag stations commonly show one pump carrying the entire load in a quiet hour — zero runtime on the lag pump during a single interval is normal, not an alarm condition.
+
+**Checking events in Notehub.** After flashing and powering the board:
+1. Open **Notehub > Devices**.
+2. Click your Notecard; the **Events** tab shows all `lift_alert.qo` and `lift_summary.qo` notes received.
+3. Click any event to expand its JSON payload and inspect the body fields (level, current, alert type, fault counts).
 
 **Bench fault simulation.** The firmware clamps `high_level_pct` to a minimum of **1.0 %** and `rising_rate_pct` to a minimum of **0.1 %**, so setting either to `0.0` in Notehub has no effect — the firmware retains its last valid value. Use the compile-time test flags below for guaranteed bench triggering, or follow the hardware-assisted procedures:
 
@@ -352,18 +404,53 @@ bool ok = notecard.sendRequestWithRetry(req, 5);
 | Satellite session only, host asleep (batched summary) | up to 350 mA sustained on VMODEM_P | ~0 µA | ~350 mA |
 | Host active + immediate satellite session (alert `sync:true`) | up to 350 mA sustained | ~20–30 mA | ~370 mA |
 
-The Starnote's idle current is lower than the MBGLW's, but its peak transmit envelope is comparable. The HDR-15-5 (3 A rated) handles both variants with margin. The Mojo trace pattern for a Starnote station is similar to the MBGLW trace — near-zero idle spikes followed by a higher-amplitude modem session — but satellite session duration is variable and depends on sky visibility and satellite geometry.
+**24-hour energy budget (Option A — cellular, powered continuously from 120 VAC supply):**
 
-Peak transmit current for the MBGLW (≤600 mA) and the Starnote (up to 350 mA sustained) is short-lived relative to the sleep interval, and the HDR-15-5 (3 A rated) handles it with margin. Over a 24-hour period the dominant energy consumer is the periodic modem session, not the 60-second host wake spikes.
+- Idle: ~20 µA × 3584 s (59.7 min/hr) = ~72 mC/hr = ~1.7 mAh/day
+- Host wakes: ~25 mA × 0.3 s × 60 wakes/hr × 24 hr = ~108 mC/day = ~30 mAh/day
+- Outbound session: ~250 mA avg × 3 s × 24 sessions/day = ~180 mC/day = ~50 mAh/day
+- Occasional alert (assume 2/day): ~250 mA × 2 s × 2 ≈ negligible
 
-Leave the system running for 24 hours and confirm the Mojo trace shows the expected pattern:
-- 60-second intervals of near-zero draw (host and Notecard both in low-power idle).
-- 2–4 second active spikes every 60 seconds when the host wakes, reads sensors, and issues I²C transactions.
-- A longer, higher-amplitude session every ~60 minutes when the Notecard transmits the queued summary (~250 mA avg for MBGLW; up to ~350 mA for Starnote, with variable session length).
+**Total: ~80 mAh/day**. The MeanWell HDR-15-5 (85–264 VAC input, 5 VDC 3 A output) provides continuous power from the station's 120 VAC control supply, so energy budgeting is not the deployment constraint — but validating these current draws with Mojo confirms the sleep/wake architecture is working.
 
-If you see a continuous mid-level draw rather than this spike pattern, the ATTN pin is likely not cutting host power — typically a `card.attn` wiring or firmware issue. The Notecarrier CX exposes the Notecard's `ATTN` interrupt and an `EN` input that gates the on-board host's 3.3 V rail; ATTN-driven host power gating requires that those two pins be tied together so the Notecard's wake/sleep signal actually de-energizes the Cygnet. Verify that connection (per your carrier wiring) before assuming a firmware bug — the HST/NC DIP switch on the Notecarrier CX selects only which device is connected to the USB serial interface and has no effect on host power. Mojo is the fastest way to confirm that the sleep architecture is actually working before the unit goes underground.
+**Expected Mojo trace over 24 hours:**
+- Dominant pattern: 60-second intervals of near-zero current (~20 µA, host and Notecard idle).
+- Every 60 seconds: 300 ms spike at ~25 mA (host wakes, reads sensors, issues I²C).
+- Every ~60 minutes: longer spike at ~250–350 mA lasting ~2–5 s (Notecard modem session for summary).
+- Occasional taller/longer spikes: alerts firing with `sync:true` (variable timing, depends on fault events).
 
-## 9. Limitations and Next Steps
+**Troubleshooting constant mid-level draw:** If Mojo shows a continuous ~10–50 mA rather than this spike pattern, the ATTN pin is likely not cutting host power. The Notecarrier CX pairs the Notecard's `ATTN` interrupt with an `EN` input that gates the on-board host's 3.3 V rail; ATTN-driven host power gating requires those two pins be tied together. Verify that connection (check your Notecarrier wiring diagram) before assuming a firmware bug — the HST/NC DIP switch on the Notecarrier CX selects only which device is connected to the USB serial interface and has no effect on host power. Mojo is the fastest way to confirm sleep architecture is working before the unit goes underground.
+
+## 9. Troubleshooting
+
+**Firmware won't compile.** Ensure you have the correct board package and library versions:
+```bash
+arduino-cli board install stm32duino:STM32:1.11.0
+arduino-cli lib install "Blues Wireless Notecard@1.8.5"
+```
+
+**Notecard not appearing in Notehub.** Check the firmware serial log:
+1. Open a serial terminal at 115200 baud.
+2. Power the Notecarrier CX; watch for `Notecard configured` and `hub.set` messages.
+3. Verify `PRODUCT_UID` in `lift_station_monitor_helpers.h` is not empty and matches your Notehub project UID.
+4. If `hub.set` fails, the Notecard may not have cellular or WiFi coverage. Check antenna connection and signal strength (use `card.signal` request via serial via the [Notecard CLI](https://dev.blues.io/notecard/notecard-cli/)).
+
+**No events appearing in Notehub after 5 minutes.** Check:
+1. **Network availability** — does the Notecard have cellular or WiFi? Use the serial log or `card.signal` to verify.
+2. **Event payload size** — for Starnote (Option B), Notes exceeding 256 bytes are silently dropped. Check the serial log for `note.add` success/failure status.
+3. **Outbound sync window** — summaries are queued and synced every 60 minutes by default. Alerts fire immediately with `sync:true`, so if you've triggered an alert and the Notecard has coverage, it should appear within 60 seconds. If not, check the serial log for `sendAlert` and `note.add` output.
+
+**Constant non-zero current when powered (Mojo shows ~10–50 mA instead of spike pattern).** The ATTN pin is not cutting host power:
+1. Verify the Notecarrier CX `ATTN` and `EN` pins are tied together (check the specific carrier revision wiring diagram).
+2. Re-flash the firmware — if `setup()` is crashing before reaching `NotePayloadRetrieveAfterSleep`, the host MCU may stay powered.
+3. If still stuck, try a cold power-off (disconnect 120 VAC for 10 seconds), then reconnect.
+
+**Sensors read all-zero or invalid values.** Check:
+1. **Level sensor (A0):** Verify the 150 Ω shunt resistor is connected in series between the sensor's negative wire and GND. The ADC should read 745–3723 counts (0–100 %). If it reads <745, the loop is open or the shunt is missing/damaged.
+2. **CT channels (A1, A2):** Verify the 10 kΩ bias divider and 10 µF decoupling cap are correctly installed. The DC bias should read around 2048 counts (VREF/2 ≈ 1.65 V). If the bias is outside 1024–3072, the resistors are mismatched or the CT is shorted.
+3. **Float switch (D2):** The pin is `INPUT_PULLUP`, so a logic LOW (GND) is active (alarm). Jumper D2 to GND to test.
+
+## 10. Limitations and Next Steps
 
 **Simplified for the POC:**
 
@@ -384,6 +471,6 @@ If you see a continuous mid-level draw rather than this spike pattern, the ATTN 
 - Pump cycle-count tracking: log each pump start and stop (transition from below to above `pump_on_amps`) to accumulate lifetime cycle counts and flag motors approaching their rated duty cycle limits.
 - Integration with the municipal SCADA or CMMS: a `lift_alert.qo` Notehub route that creates a CMMS work order automatically, so the on-call response begins the moment the Notecard transmits, not the moment an engineer reads an SMS.
 
-## 10. Summary
+## 11. Summary
 
 Every municipality is already sitting on the data it needs to prevent SSOs — the level is there, the pump current is there, the float switch is there. What's missing is a network path out. The Notecarrier CX plus a Notecard MBGLW or Starnote — depending on where the station sits relative to LTE coverage — and three sensor types provides that path for the full spread of municipal infrastructure: from the station three blocks from city hall to the one at the edge of the service territory where the nearest building is a grain elevator. The firmware runs entirely at the edge — three rules, 60-second samples, 30-minute alert cooldowns — and the Notecard handles everything else: the periodic outbound session, the local queue, the environment-variable distribution that lets an operator retune thresholds from a browser without touching a single vault lid. The M.2 module and antenna are the only hardware difference between a cellular station and a satellite station; the firmware, Notehub project, routes, and thresholds are shared across the fleet. The two variants do differ in alert delivery timing — a cellular alert reaches the on-call engineer within a minute of detection; a satellite alert arrives on the next available Skylo pass, typically within a few minutes. In either case, when a pump fails at 2 AM on a holiday weekend, the alert reaches the on-call engineer as soon as the configured thresholds are crossed — not after a Monday morning site visit.

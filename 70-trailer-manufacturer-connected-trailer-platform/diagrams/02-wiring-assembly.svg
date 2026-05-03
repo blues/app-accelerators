@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 540" width="800" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 580" width="800" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
   <defs>
     <marker id="ar-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#f59e0b"/>
@@ -16,10 +16,10 @@
       <path d="M0,0 L10,5 L0,10 z" fill="#a16207"/>
     </marker>
   </defs>
-  <rect width="800" height="540" fill="#ffffff"/>
+  <rect width="800" height="580" fill="#ffffff"/>
 
   <text x="400" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">Wiring &amp; Assembly</text>
-  <text x="400" y="58" text-anchor="middle" font-size="12" fill="#64748b">Ultrasonic on UART · rain gauge on D5 · solar/LiPo power · MAIN + GPS antennas</text>
+  <text x="400" y="58" text-anchor="middle" font-size="12" fill="#64748b">2 NTC thermistors · door reed · MAIN + GPS antennas · dual 12 V power</text>
 
   <!-- Notecarrier CX center -->
   <rect x="320" y="100" width="160" height="280" rx="10" fill="#f1f5f9" stroke="#0f172a" stroke-width="2"/>
@@ -28,8 +28,8 @@
   <text x="400" y="170" text-anchor="middle" font-size="10" fill="#475569">+ Cygnet · NOTE-NBGLWX</text>
 
   <g font-size="11" fill="#0f172a">
-    <text x="335" y="204">RX (UART)</text>
-    <text x="335" y="284">D5</text>
+    <text x="335" y="204">A0 / A1</text>
+    <text x="335" y="284">D9</text>
     <text x="465" y="204" text-anchor="end">MAIN</text>
     <text x="465" y="284" text-anchor="end">GPS</text>
     <text x="400" y="358" text-anchor="middle">+VBAT</text>
@@ -42,29 +42,29 @@
     <circle cx="400" cy="380" r="4" fill="#0ea5e9"/>
   </g>
 
-  <!-- Top-left: MB7389 ultrasonic -->
+  <!-- Top-left: NTC thermistors -->
   <rect x="40" y="170" width="180" height="60" rx="8" fill="#fff7ed" stroke="#f59e0b" stroke-width="1.5"/>
-  <g transform="translate(56,184) scale(0.55)" fill="#7c2d12"><path d="M20.38 8.57l-1.23 1.85a8 8 0 0 1-.22 7.58H5.07A8 8 0 0 1 15.58 6.85l1.85-1.23A10 10 0 0 0 3.35 19a2 2 0 0 0 1.72 1h13.85a2 2 0 0 0 1.74-1 10 10 0 0 0-.27-10.44z"/></g>
-  <text x="135" y="198" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">MB7389 ultrasonic</text>
-  <text x="135" y="218" text-anchor="middle" font-size="10" fill="#9a3412">9600 baud UART · IP67</text>
+  <g transform="translate(56,184) scale(0.55)" fill="#7c2d12"><path d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4z"/></g>
+  <text x="135" y="198" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">Cargo NTC × 2</text>
+  <text x="135" y="218" text-anchor="middle" font-size="10" fill="#9a3412">10 kΩ · front + rear</text>
 
-  <!-- Bottom-left: Tipping-bucket rain gauge -->
+  <!-- Bottom-left: Door reed -->
   <rect x="40" y="250" width="180" height="60" rx="8" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
-  <g transform="translate(56,264) scale(0.55)" fill="#7f1d1d"><path d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8z"/></g>
-  <text x="135" y="278" text-anchor="middle" font-size="12" font-weight="700" fill="#7f1d1d">Rain gauge</text>
-  <text x="135" y="298" text-anchor="middle" font-size="10" fill="#991b1b">reed switch · INPUT_PULLUP</text>
+  <g transform="translate(56,264) scale(0.55)" fill="#7f1d1d"><path d="M14 6v15H3v-2h2V3h9v1h5v15h2v2h-4V6h-3zm-4 7h2v-2h-2v2z"/></g>
+  <text x="135" y="278" text-anchor="middle" font-size="12" font-weight="700" fill="#7f1d1d">Rear-door reed</text>
+  <text x="135" y="298" text-anchor="middle" font-size="10" fill="#991b1b">N.C. · INPUT_PULLUP</text>
 
-  <!-- Top-right: MAIN antenna (cell + sat) -->
+  <!-- Top-right: Skylo MAIN antenna -->
   <rect x="580" y="170" width="180" height="60" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
   <g transform="translate(596,184) scale(0.55)" fill="#1e3a8a"><path d="M3 10h5v4H3z M9 6h6v12H9z M16 10h5v4h-5z M11 3h2v3h-2z M11 18h2v3h-2z"/></g>
-  <text x="675" y="198" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">Skylo MAIN antenna</text>
-  <text x="675" y="218" text-anchor="middle" font-size="10" fill="#1e40af">cell + NTN · u.FL</text>
+  <text x="675" y="198" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">MAIN antenna</text>
+  <text x="675" y="218" text-anchor="middle" font-size="10" fill="#1e40af">Skylo · cell + sat</text>
 
-  <!-- Bottom-right: GPS antenna -->
+  <!-- Bottom-right: GPS passive -->
   <rect x="580" y="250" width="180" height="60" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
   <g transform="translate(596,264) scale(0.55)" fill="#581c87"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></g>
-  <text x="675" y="278" text-anchor="middle" font-size="12" font-weight="700" fill="#581c87">GPS antenna</text>
-  <text x="675" y="298" text-anchor="middle" font-size="10" fill="#6b21a8">YCA001BA · u.FL</text>
+  <text x="675" y="278" text-anchor="middle" font-size="12" font-weight="700" fill="#581c87">GPS passive antenna</text>
+  <text x="675" y="298" text-anchor="middle" font-size="10" fill="#6b21a8">u.FL → SMA bulkhead</text>
 
   <!-- Translucent connection lines -->
   <line x1="220" y1="200" x2="316" y2="200" stroke="#f59e0b" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-amber)"/>
@@ -72,24 +72,30 @@
   <line x1="580" y1="200" x2="484" y2="200" stroke="#3b82f6" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-blue)"/>
   <line x1="580" y1="280" x2="484" y2="280" stroke="#9333ea" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-purple)"/>
 
-  <!-- Power chain bottom -->
-  <rect x="20" y="430" width="760" height="90" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+  <!-- Power chain bottom: dual input → OR circuit → DC-DC → +VBAT -->
+  <rect x="20" y="430" width="760" height="125" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
   <g transform="translate(30,438) scale(0.65)" fill="#713f12"><path d="M11 21h-1l1-7H7.5c-.88 0-.33-.75-.31-.78C8.48 10.94 10.42 7.54 13.01 3h1l-1 7h3.51c.4 0 .62.19.4.66C12.97 17.55 11 21 11 21z"/></g>
-  <text x="58" y="454" font-size="12" font-weight="700" fill="#713f12">Solar power chain</text>
+  <text x="58" y="454" font-size="12" font-weight="700" fill="#713f12">Power chain — dual 12 V input · OR-circuit · transient protected</text>
 
-  <rect x="40" y="475" width="120" height="35" rx="4" fill="#ffffff" stroke="#a16207"/>
-  <text x="100" y="497" text-anchor="middle" font-size="11" fill="#713f12">Solar 6 V / 6 W</text>
+  <rect x="40" y="475" width="140" height="35" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="110" y="497" text-anchor="middle" font-size="11" fill="#713f12">J560 pin 6 (tractor)</text>
 
-  <rect x="190" y="475" width="160" height="35" rx="4" fill="#ffffff" stroke="#a16207"/>
-  <text x="270" y="497" text-anchor="middle" font-size="11" fill="#713f12">Adafruit 4755 MPPT</text>
+  <rect x="40" y="515" width="140" height="35" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="110" y="537" text-anchor="middle" font-size="11" fill="#713f12">Reefer battery</text>
 
-  <rect x="380" y="475" width="160" height="35" rx="4" fill="#ffffff" stroke="#a16207"/>
-  <text x="460" y="497" text-anchor="middle" font-size="11" fill="#713f12">LiPo 6600 mAh</text>
+  <rect x="220" y="495" width="140" height="35" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="290" y="517" text-anchor="middle" font-size="11" fill="#713f12">OR + MOV/TVS</text>
 
-  <rect x="570" y="475" width="200" height="35" rx="4" fill="#ffffff" stroke="#a16207"/>
-  <text x="670" y="497" text-anchor="middle" font-size="11" font-weight="700" fill="#713f12">Notecarrier +VBAT</text>
+  <rect x="400" y="495" width="140" height="35" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="470" y="517" text-anchor="middle" font-size="11" fill="#713f12">DC-DC 5 V</text>
 
-  <line x1="160" y1="492" x2="188" y2="492" stroke="#a16207" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-brown)"/>
-  <line x1="350" y1="492" x2="378" y2="492" stroke="#a16207" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-brown)"/>
-  <line x1="540" y1="492" x2="568" y2="492" stroke="#a16207" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-brown)"/>
+  <rect x="580" y="495" width="180" height="35" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="670" y="517" text-anchor="middle" font-size="11" font-weight="700" fill="#713f12">Notecarrier +VBAT</text>
+
+  <line x1="180" y1="492" x2="218" y2="510" stroke="#a16207" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-brown)"/>
+  <line x1="180" y1="532" x2="218" y2="515" stroke="#a16207" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-brown)"/>
+  <line x1="360" y1="512" x2="398" y2="512" stroke="#a16207" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-brown)"/>
+  <line x1="540" y1="512" x2="578" y2="512" stroke="#a16207" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-brown)"/>
+
+  <text x="400" y="565" text-anchor="middle" font-size="10" fill="#64748b" font-style="italic">J2497 (Serial1) and TPMS (D5/D6) are firmware integration-point stubs — see README §9 for activation.</text>
 </svg>

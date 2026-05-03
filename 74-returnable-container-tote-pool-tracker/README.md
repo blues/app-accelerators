@@ -6,6 +6,18 @@ An [asset location tracking](https://blues.com/solutions-location-tracking/) sol
 
 **What you'll have when you're done:** a bench/POC Notecarrier CX prototype that validates the concept end-to-end — the assembly wakes itself on motion, delivers a triangulated-location event to Notehub within a session-establishment window after the motion threshold is crossed (typically 15–60 s depending on network conditions and bucket settings), then returns to deep sleep until the next motion event or daily timer fires. No external sensors. No site networking. Operators tune heartbeat interval and motion sensitivity from Notehub without re-flashing. The LiPo power path makes this build appropriate for bench validation and limited field trials (12–24 months per charge cycle); a multi-year production deployment requires the custom carrier and Li-SOCl₂ primary-cell stack described in [§9](#9-limitations-and-next-steps).
 
+## Quickest Path to First Event
+
+1. Clone this repo and open `/firmware/tote_pool_tracker.ino` in Arduino IDE.
+2. Replace the empty `#define PRODUCT_UID ""` with your Notehub project's ProductUID.
+3. Install the **Arduino Core for STM32** and **Blues Wireless Notecard** library (see [§6.1](#61-installing-and-flashing)).
+4. Select board **Generic STM32L4 series → Cygnet** under **Tools → Board**.
+5. Click **Upload**. The Notecarrier CX's ST-Link interface appears as a USB device — no external programmer needed.
+6. Power the assembly (USB or battery). On first cellular connect, the device auto-associates with your Notehub project. Within 1–2 minutes it appears in the **Devices** tab.
+7. Tap or shake the assembly firmly for 3–4 seconds. A `tote_event.qo` with `"event":"departed"` should arrive in Notehub within ~30 seconds. Set it down; after 30 s of stillness, a `"event":"arrived"` follows.
+
+Detailed assembly, firmware, and Notehub configuration follow in the sections below.
+
 ## 1. Project Overview
 
 **The problem.** Reusable containers are the circulatory system of supply chains — plastic totes move produce from farm to distribution center, pressurized cylinders ferry gases between filling plants and customer sites, stainless kegs make the brewery-to-bar loop thousands of times before retirement. The economics only work when the containers keep circulating. But they leak out of their pools constantly: left on a loading dock past their pickup window, mislaid in a back corner of a customer warehouse, loaded onto the wrong carrier, or simply forgotten at a rail interchange for six months. Industry estimates peg pool shrinkage at anywhere from 5% to 20% annually per container type — a quiet, diffuse cost that rarely generates a single dramatic incident but steadily erodes the pool's working capacity and replacement budget.
@@ -24,6 +36,49 @@ This project takes a better approach. The Notecard's built-in accelerometer watc
 
 ![System architecture: Notecard MBGLW built-in accelerometer and cellular → Notecarrier CX Cygnet host → cellular → Notehub → routes](diagrams/01-system-architecture.svg)
 
+### Event Format in Notehub
+
+The firmware emits two note types; Notehub automatically appends location and routes them independently:
+
+**Motion event (`tote_event.qo`) — appears within ~30 s after motion threshold crossed:**
+
+```json
+{
+  "file": "tote_event.qo",
+  "body": {
+    "event":      "departed",
+    "moving":     true,
+    "battery_mv": 3851.0,
+    "cycle":      14
+  },
+  "sync": true,
+  "where_lat":   35.9728,
+  "where_lon":  -86.7653,
+  "where_location": "Nashville TN USA",
+  "where_country": "US"
+}
+```
+
+**Daily heartbeat (`tote_heartbeat.qo`) — fires once per `heartbeat_hours` (default 24 h):**
+
+```json
+{
+  "file": "tote_heartbeat.qo",
+  "body": {
+    "battery_mv":  3920.0,
+    "moving":      false,
+    "cycle_count": 42,
+    "reason":      1
+  },
+  "sync": true,
+  "where_lat":   35.9728,
+  "where_lon":  -86.7653,
+  "where_location": "Nashville TN USA"
+}
+```
+
+The `reason` field is `0` (boot), `1` (heartbeat), or `2` (low battery). The `where_*` fields are appended by Notehub after cell-tower triangulation — no firmware code required to produce location data.
+
 **Device-side responsibilities.** The onboard Cygnet STM32 host on the Notecarrier CX handles duty-cycle management and decision logic. On each wake — triggered by either a motion-state change or the daily heartbeat timer — the Cygnet evaluates why it woke, formats the appropriate note, queues it to the Notecard over I²C, and returns to sleep within seconds. The host MCU is powered off entirely between wakes by the Notecard's ATTN pin: the host rail draws essentially zero current during idle periods, which can be 23+ hours out of every 24. All accelerometer monitoring runs on the Notecard's own low-power IMU; the Cygnet is only involved for the seconds it takes to queue a note.
 
 **Notecard responsibilities.** The Notecard continuously monitors its built-in accelerometer for motion-state changes, firing the ATTN pin as soon as the configured motion threshold is crossed. On each Notehub session it scans surrounding cell towers and nearby WiFi APs for [cell-tower and WiFi triangulation](https://dev.blues.io/blog/cell-tower-wifi-triangulation-without-gps/), which Notehub resolves to a latitude/longitude and appends to every event automatically — no per-event firmware code required. The Notecard queues [Notes](https://dev.blues.io/api-reference/glossary/#note) locally through outages and delivers them in order when connectivity returns. [Environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) pushed from Notehub are delivered on each inbound sync and decoded by the Cygnet on its next wake, allowing threshold tuning without a firmware update or a truck roll.
@@ -34,14 +89,14 @@ This project takes a better approach. The Notecard's built-in accelerometer watc
 
 ## 3. Hardware Requirements
 
-> **Bench/POC BOM.** The components below equip the bench prototype documented here — the Notecarrier CX and its LiPo charge path are the right platform for bench validation and limited field trials. A production deployment targeting 3–5+ years between swaps requires a custom carrier board with a direct +VBAT input and a Li-SOCl₂ primary cell instead of the LiPo; see [§9](#9-limitations-and-next-steps) for that path.
+> **Bench/POC BOM.** The components below equip the bench prototype documented here — the Notecarrier CX and its LiPo charge path are the right platform for bench validation and limited field trials. A production deployment targeting 3–5+ years between swaps requires a custom carrier board with a direct +VBAT input and a Li-SOCl₂ primary cell instead of the LiPo; see [§10](#10-limitations-and-next-steps) for that path.
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an onboard Cygnet STM32 host MCU — no separate host board needed. ATTN power-gating cuts the Cygnet power rail entirely during sleep. |
 | [Notecard Cell+WiFi (MBGLW)](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) | 1 | Cellular connectivity plus built-in accelerometer for motion detection. The Cell+WiFi variant enables both cell-tower and WiFi AP triangulation (`mode:"wifi,cell"`), improving location accuracy in AP-dense environments while transparently falling back to cell-only where no APs are present. Per the [NOTE-MBGLW datasheet antenna requirements](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/#antenna-requirements), the MBGLW includes a PCB antenna for its WiFi function; **no external WiFi hardware is needed in plastic or polycarbonate enclosures** — the on-board PCB antenna scans nearby WiFi APs through non-metallic walls without modification. The MBGLW also exposes a dedicated WiFi U.FL connector so a 2.4 GHz external antenna can be substituted; other Blues reference builds that deploy the same Notecard inside a metal enclosure (e.g., a commercial HVAC RTU sidecar) do connect an external lead to this connector — that is a consequence of the metal enclosure blocking the on-board PCB antenna's 2.4 GHz signal, not a different hardware topology on the Notecard itself. In this plastic-tote deployment the on-board PCB antenna is the correct and sufficient choice. In metal-enclosure or metal-bodied-container installations, the metal itself shields the 2.4 GHz signal regardless of which antenna is connected internally — both the on-board PCB antenna and any antenna placed entirely inside the metal box are equally blocked; WiFi AP triangulation will be degraded unless the antenna's radiating element is mounted outside the metal shell or positioned behind a verified non-metallic RF window — see the optional WiFi antenna row below. |
 | [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) *(commissioning/validation)* | 1 | Coulomb counter spliced inline on the battery rail for ground-truth energy validation during bring-up. Not deployed with the field tracker; kept at the bench as commissioning and regression-testing equipment. |
-| [SparkFun Lithium Ion Battery — 2 Ah (PRT-13855)](https://www.sparkfun.com/products/13855) | 1 | 3.7 V / 2000 mAh LiPo with JST PH connector matching the Notecarrier CX battery port. POC power source; realistic service life is 12–24 months — see [§9](#9-limitations-and-next-steps) for the Li-SOCl₂ production path. |
+| [SparkFun Lithium Ion Battery — 2 Ah (PRT-13855)](https://www.sparkfun.com/products/13855) | 1 | 3.7 V / 2000 mAh LiPo with JST PH connector matching the Notecarrier CX battery port. POC power source; realistic service life is 12–24 months — see [§10](#10-limitations-and-next-steps) for the Li-SOCl₂ production path. |
 | [Hammond Manufacturing 1554C2GY](https://www.hammfg.com/part/1554C2GY) *(field deployment enclosure — IP67/NEMA 4X)* | 1 | 120 × 65 × 40 mm UV-stabilized polycarbonate enclosure, NEMA 4X / IP67–IP68, silicone gasket, flat lid. Internal cavity (~113 × 58 × 34 mm) fits the Notecarrier CX (76 × 38 mm board) oriented lengthwise with the LiPo pack lying flat on top of the board. Rated for outdoor service at truck yards, rail interchanges, port terminals, and keg/cylinder washdown environments. Clear-lid variant **1554C2GYCL** available for installations where visual LED inspection through the lid is useful. Stocked at Mouser, DigiKey, and RS Components. |
 | [Hammond Manufacturing 1591XXBSFLBK](https://www.hammfg.com/part/1591XXBSFLBK) *(bench bring-up only — IP54, not suitable for outdoor or field deployment)* | 1 | 113 × 63 × 28 mm ABS enclosure, IP54, flanged gasketed lid with integral PCB standoffs. Adequate for bench bring-up and sheltered indoor environments only. **Do not use for outdoor field deployment** — truck yards, rail interchanges, port terminals, and container washdown workflows require a minimum IP67 enclosure; use the Hammond 1554C2GY above. Available from Hammond, Mouser, and RS Components. |
 | [SparkFun SMA to U.FL Cable — 150 mm (WRL-18568)](https://www.sparkfun.com/sma-to-u-fl-cable-150mm.html) *(optional, external antenna path)* | 1 | Routes the cellular signal from the Notecard's u.FL socket to an SMA female connector seated in the enclosure wall. Required only for enclosed or stacked-container deployments where the bundled patch antenna has insufficient sky view. |
@@ -87,7 +142,7 @@ No external sensors are required for this project — the Notecard's built-in ac
 
 **4. Organize into Fleets.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) group devices for shared configuration. A natural grouping for a mixed container pool is one fleet per container type (totes, kegs, cylinders) or per customer region — each fleet can carry different `motion_threshold` values tuned to the handling environment. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) can auto-assign new devices to the correct fleet based on device name or serial number prefix, avoiding manual configuration at scale.
 
-**5. Set environment variables.** In Notehub, navigate to **Fleet → Environment** (or **Device → Environment** for a per-device override). All variables are optional; firmware defaults are shown. The device picks up changes on its next inbound sync without re-flashing.
+**5. Set environment variables.** In Notehub, select the fleet you created above and navigate to **Environment** (left sidebar). These variables are optional; firmware defaults are shown. The device fetches them on its next inbound sync — changes take effect without re-flashing.
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -203,9 +258,9 @@ Motion events are untemplated — they're low-volume (at most a handful per day 
 
 ### 6.5 Low-power strategy
 
-The firmware's entire application logic runs in `setup()`. After queuing the appropriate note, `enterSleep()` serializes the device state into the Notecard and calls `NotePayloadSaveAndSleep()`, which issues a [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) request with `mode:"sleep,motionchange"` and a `seconds` value equal to the remaining time until the absolute `next_heartbeat_epoch` deadline — so motion wakes re-arm only the time still owed rather than resetting a fresh full interval. When the epoch is unavailable (before the first cellular sync), the function falls back to the full configured interval. When `failed_send_count` is non-zero, sleep is additionally capped at `RETRY_WAKE_SEC` (15 min) so a pending note is retried promptly. The Notecard pulls the ATTN pin low; the Notecarrier CX's ATTN-to-power-enable circuit then cuts power to the Cygnet entirely. The host MCU cold-boots from `setup()` on every wake — `loop()` is never reached.
+The firmware's entire application logic runs in `setup()`. After queuing the appropriate note, `enterSleep()` serializes the device state into the Notecard and calls `NotePayloadSaveAndSleep()`, which issues a [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) request with `mode:"sleep,arm,motionchange"` and a `seconds` value equal to the remaining time until the absolute `next_heartbeat_epoch` deadline — so motion wakes re-arm only the time still owed rather than resetting a fresh full interval. When the epoch is unavailable (before the first cellular sync), the function falls back to the full configured interval. When `failed_send_count` is non-zero, sleep is additionally capped at `RETRY_WAKE_SEC` (15 min) so a pending note is retried promptly. The Notecard pulls the ATTN pin low; the Notecarrier CX's ATTN-to-power-enable circuit then cuts power to the Cygnet entirely. The host MCU cold-boots from `setup()` on every wake — `loop()` is never reached.
 
-The `"motionchange"` addition to the sleep mode means the Notecard wakes the host on whichever fires first: a motion-state transition (accelerometer threshold crossed) or the heartbeat timer expiry. Sleep current remains very low (the Cygnet is completely off), but total battery energy is driven mainly by the number of cellular sessions — each daily heartbeat and each `"departed"`/`"arrived"` motion event initiates its own cellular session via `sync:true`. A container that moves several times per day therefore burns materially more energy than one that sits still for a week.
+The `"arm,motionchange"` addition to the sleep mode means the Notecard wakes the host on whichever fires first: a motion-state transition (accelerometer threshold crossed) or the heartbeat timer expiry. The `arm` keyword is required for `motionchange` to actually fire ATTN during the sleep window — without it, the keyword is accepted in the mode string but the wake source is never armed (per the [asset tracking guide](https://dev.blues.io/guides-and-tutorials/notecard-guides/asset-tracking-with-gps/#wake-host-or-send-note-on-motion-status-change)). Sleep current remains very low (the Cygnet is completely off), but total battery energy is driven mainly by the number of cellular sessions — each daily heartbeat and each `"departed"`/`"arrived"` motion event initiates its own cellular session via `sync:true`. A container that moves several times per day therefore burns materially more energy than one that sits still for a week.
 
 Both note types are queued with `sync:true`, which causes the Notecard to open a cellular session as soon as the note is ready, bypassing the `outbound` cadence timer entirely. This guarantees that each daily heartbeat arrives in Notehub within a session-establishment window of the on-device timer firing — not deferred to the next periodic outbound sync, and unaffected by any intervening motion-triggered sessions. [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound`/`inbound` is still set to match `heartbeat_hours` and is reapplied at runtime whenever the value changes, keeping the Notecard's inbound polling cadence — which pulls environment variable updates from Notehub — aligned with the heartbeat schedule.
 
@@ -242,9 +297,11 @@ void enterSleep(uint32_t now_epoch) {
         sleep_sec = RETRY_WAKE_SEC;
     }
 
-    // "motionchange" adds a second wake source: ATTN also fires if the
+    // "arm,motionchange" adds a second wake source: ATTN also fires if the
     // accelerometer-based motion status changes before the timer expires.
-    NotePayloadSaveAndSleep(&payload, sleep_sec, "motionchange");
+    // "arm" is required so motionchange actually arms — without it the
+    // keyword is silently accepted but the wake source never fires.
+    NotePayloadSaveAndSleep(&payload, sleep_sec, "arm,motionchange");
 
     // Execution normally never reaches here — the Notecard cuts Cygnet power.
     delay(30000);
@@ -308,7 +365,7 @@ notecard.sendRequest(req);
 
 **Routed.** Both Notefiles pass through Notehub, which resolves and appends `where_lat`, `where_lon`, `where_location`, `where_country`, and `where_timezone` to each event as it arrives. From Notehub, [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) can fan the events out to any supported destination — HTTP/HTTPS webhook to a WMS (warehouse management system) or TMS (transportation management system), MQTT to a real-time fleet portal, or Snowflake/cloud storage for historical pool analytics. Route configuration is project-specific; this reference design ships no downstream endpoint.
 
-**In-band alerts.** The `reason` code `2` (low battery) in `tote_heartbeat.qo` is the primary in-band signal for battery maintenance scheduling. Additional alerting logic — such as detecting containers outside expected site boundaries — is best implemented downstream, not in firmware; see [§9](#9-limitations-and-next-steps).
+**In-band alerts.** The `reason` code `2` (low battery) in `tote_heartbeat.qo` is the primary in-band signal for battery maintenance scheduling. Additional alerting logic — such as detecting containers outside expected site boundaries — is best implemented downstream, not in firmware; see [§10](#10-limitations-and-next-steps).
 
 ## 8. Validation and Testing
 
@@ -325,11 +382,11 @@ Expected 24-hour energy at one heartbeat per day with no motion events and good 
 | Deep sleep (Notecard idle, Cygnet off) | ~23.98 h | ~8 µA | ~0.19 mAh |
 | Heartbeat wake and note queue (~5 s Cygnet + I²C) | ~5 s | ~15–20 mA | ~0.03 mAh |
 | Heartbeat sync:true cellular session (~20 s at ~150 mA avg LTE-M) | ~20 s | ~150 mA | ~0.83 mAh |
-| **Total** | | | **~1.1 mAh/day** |
+| **Total active drain** | | | **~1.1 mAh/day** |
 
-At ~1.1 mAh/day active consumption, the 2000 mAh LiPo's active-drain budget would last roughly 5 years in theory — but that calculation ignores LiPo self-discharge, which dominates at this duty cycle. A 2000 mAh LiPo typically self-discharges at 1–2% per month (~480 mAh/year), consuming roughly half the pack capacity over 2 years before the first daily heartbeat even fires. Accounting for self-discharge and cell aging, a **realistic LiPo service life in this build is 12–24 months** in a low-motion, good-signal deployment. Weak-signal retries, motion events, and low-temperature operation each reduce that further.
+On paper, the 2000 mAh LiPo's active-drain budget alone would last ~5 years. **However, this ignores LiPo self-discharge, which dominates at this duty cycle.** A typical 2000 mAh LiPo self-discharges at 1–2% per month (~480 mAh/year), consuming roughly half the pack capacity over 2 years even while sitting still. Accounting for self-discharge and cell aging, a **realistic LiPo service life is 12–24 months in a low-motion, good-signal deployment**. Weak-signal retries, motion events, and low-temperature operation each further reduce that window. This is why this build is documented as bench/POC rather than production. Multi-year deployments require the Li-SOCl₂ primary-cell path described in [§10](#10-limitations-and-next-steps).
 
-Multi-year service life — 3 to 5+ years between swaps — requires a Li-SOCl₂ primary cell (under 1% annual self-discharge, much higher volumetric capacity). That path requires a different carrier with no charging circuitry; see [§9](#9-limitations-and-next-steps). The energy figures in the table above are still useful for sizing the active-drain budget regardless of chemistry.
+Multi-year service life — 3 to 5+ years between swaps — requires a Li-SOCl₂ primary cell (under 1% annual self-discharge, much higher volumetric capacity). That path requires a different carrier with no charging circuitry; see [§10](#10-limitations-and-next-steps). The energy figures in the table above are still useful for sizing the active-drain budget regardless of chemistry.
 
 Useful Mojo bench validation: leave the assembly running for 24 h and confirm the Mojo tally is in the 1–5 mAh range. Deviations larger than ~5× typically indicate one of:
 
@@ -337,7 +394,37 @@ Useful Mojo bench validation: leave the assembly running for 24 h and confirm th
 - **Excessive cellular retries:** sync bursts are longer than expected or firing more than once per day. Check signal strength via [`card.wireless`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-wireless) or [`hub.status`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-status) in the Notehub in-browser terminal.
 - **Motion false triggers:** `tote_event.qo` notes are accumulating from dock-floor vibration or transport. Raise `motion_threshold` via the Fleet environment variable and watch the event rate drop without reflashing.
 
-## 9. Limitations and Next Steps
+## 9. Troubleshooting
+
+**Device doesn't appear in Notehub Devices tab after 3–5 minutes.**
+
+- Verify the `PRODUCT_UID` in your sketch matches exactly (copy-paste from Notehub, not retyped). A mismatch is the most common cause.
+- Check the serial monitor at 115200 baud (uncomment `#define DEBUG` in `tote_pool_tracker_helpers.h` and reflash to see Notecard I²C trace output).
+- Confirm USB power is connected or the LiPo battery is properly seated in the JST connector (polarity enforced by keyed connector; do not force).
+- Verify the Notecard is fully seated in the M.2 slot.
+- Check signal strength: the Notecard may be registered but slow to sync. Wait up to 10 minutes in a weak-signal area.
+
+**Device appears but never sends an event.**
+
+- Shake or tap the assembly firmly for 3–4 seconds. The accelerometer's low sample rate during motion-detect mode requires sustained motion to accumulate events. Gentle handling or a single brief tap is not enough to cross the motion threshold.
+- Confirm the motion threshold is tuned for your environment. If running high (e.g., `motion_threshold: 15`), normal dock handling may not trigger detection. Lower the value via the **Fleet → Environment** panel and wait for the next inbound sync (~24 hours by default, or manually on the next cellular session if you bump a motion event).
+- Verify that `tote_heartbeat.qo` appears at least once per day in the **Events** tab. If heartbeats never arrive, motion events won't either (same root cause — connectivity or configuration).
+
+**Event arrives once per minute instead of at motion state changes.**
+
+- The motion threshold is too sensitive. Raising `motion_threshold` from 5 to 10–15 in **Fleet → Environment** reduces false triggers from dock vibration. Increase `motion_bucket_sec` to 60 or higher to require sustained motion over a longer window.
+
+**Battery drains much faster than expected (>5 mAh/day consumed).**
+
+- Confirm the ATTN pin power-gating is active: use the Mojo coulomb counter or measure the Cygnet current rail directly. If the host is drawing continuous 10–80 mA, the ATTN power-gating is not functioning. On a Notecarrier CX the ATTN pin is internally routed to the `EN` input (confirmed in the board's [v1.3 datasheet](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/)). If adapting this design to a different carrier, verify the ATTN-to-host-power wiring (see the [Attention Pin Guide](https://dev.blues.io/guides-and-tutorials/notecard-guides/attention-pin-guide/)).
+- Check signal strength. Weak-signal retries add extra cellular sessions and burn more energy. Use [`card.wireless`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-wireless) in the Notehub in-browser terminal to inspect RSSI and bars.
+- Motion events are accumulating more than once per day. Raise `motion_threshold` and increase `motion_bucket_sec` to reduce false triggers.
+
+**Event payload is missing a field (e.g., `cycle` is absent).**
+
+- Check the firmware version. Early versions may have had different payloads. Ensure you've uploaded the latest sketch and that the installed **Blues Wireless Notecard** library is v1.8.5 or later.
+
+## 10. Limitations and Next Steps
 
 **Simplified for the POC:**
 
@@ -365,7 +452,7 @@ Useful Mojo bench validation: leave the assembly running for 24 h and confirm th
 - [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) for over-the-air host firmware updates to the entire fleet — essential for a tracker that may be affixed to a container for 5+ years without a hands-on service visit.
 - Per-container asset metadata (container ID, type, tare weight, inspection due date) stored as Notehub device-level environment variables and appended to events by a JSONata route transform, so the fleet portal can display rich container profiles without requiring the tracker to store or transmit that data itself.
 
-## 10. Summary
+## 11. Summary
 
 Losing track of returnable containers is one of those costs that never appears as a single line item — it's diffuse, persistent, and easy to rationalize quarter after quarter until the replacement budget catches up. A tracker that clips to the container, wakes only when something interesting happens, and costs essentially nothing to operate between wakes is the right match for assets that spend most of their time sitting still.
 

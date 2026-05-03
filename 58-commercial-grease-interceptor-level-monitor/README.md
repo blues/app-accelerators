@@ -2,7 +2,11 @@
 
 > This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
 
-A [truck-roll reduction](https://blues.com/truck-roll-reduction/) device for pumping providers who service **commercial grease interceptors**. A waterproof ultrasonic distance sensor installed in the access hatch reports fill level over cellular, so trucks are dispatched on actual condition — not a calendar. **This reference implementation is scoped to hydromechanical (HGI) and batch-collection interceptors without a fixed outlet weir** — geometries where the liquid surface rises predictably with FOG accumulation, making fill percentage a direct proxy for pump-out urgency. See §1 and §9 before deploying on a conventional constant-level gravity interceptor where a fixed weir holds the surface height independent of FOG-layer depth.
+A [truck-roll reduction](https://blues.com/truck-roll-reduction/) device for pumping providers who service **commercial grease interceptors**. A waterproof ultrasonic distance sensor installed in the access cover reports fill level over cellular every 15 minutes; when the level reaches a threshold, an alert dispatches immediately to Notehub. Trucks are routed on actual condition, not a fixed calendar.
+
+**What you'll have at the end:** A weatherproof wall-mounted enclosure with a Notecarrier CX + Notecard Cell+WiFi that samples a DFRobot ultrasonic sensor every 15 minutes, publishes daily summaries and threshold alerts to Notehub, and lets you tune alert thresholds and sample intervals via fleet-level environment variables without re-flashing.
+
+**This reference implementation is scoped to hydromechanical (HGI) and batch-collection interceptors without a fixed outlet weir** — geometries where the liquid surface rises predictably with FOG accumulation, making fill percentage a direct proxy for pump-out urgency. See §1 and §9 before deploying on a conventional constant-level gravity interceptor where a fixed weir holds the surface height independent of FOG-layer depth.
 
 ## 1. Project Overview
 
@@ -99,6 +103,27 @@ Route the cable from the cover to the enclosure box on the adjacent wall and ent
 
 ## 6. Firmware Design
 
+### Building and Flashing
+
+1. **Clone this repository** and open the sketch in the Arduino IDE or use `arduino-cli` from the command line.
+2. **Install dependencies:**
+   ```bash
+   arduino-cli lib install "Blues Wireless Notecard"
+   arduino-cli core install STMicroelectronics:stm32
+   ```
+3. **Configure the board:** Select **Tools > Board > STMicroelectronics STM32 > Notecarrier CX** (if using Arduino IDE), or pass the equivalent to `arduino-cli`.
+4. **Set your Product UID:** Edit `grease_interceptor_monitor.ino` line 43 and paste your Notehub `ProductUID`:
+   ```cpp
+   #define PRODUCT_UID "com.your-company.your-name:your_project"
+   ```
+5. **Build and upload:**
+   ```bash
+   arduino-cli compile --board STMicroelectronics:stm32:Notecarrier_CX firmware/
+   arduino-cli upload --port /dev/ttyUSB0 --board STMicroelectronics:stm32:Notecarrier_CX firmware/
+   ```
+   (Replace `/dev/ttyUSB0` with your serial port; use `arduino-cli board list` to find it.)
+6. **Monitor the serial output** at 115200 baud to confirm sensor readings and Notecard communication.
+
 Firmware files:
 
 | File | Purpose |
@@ -132,39 +157,15 @@ The A02YYUW streams 4-byte UART packets continuously at 9600 baud: `[0xFF][high]
 
 ### Event payload design
 
-One [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) daily summary note (`grease_summary.qo`), plus an untemplated immediate alert (`grease_alert.qo`) whenever `fill_pct` is at or above the alert threshold and the 1-hour cooldown has elapsed — which means a new alert fires every cooldown interval for as long as the interceptor remains above threshold. The template fixes each summary to a compact binary record (approximately 28 bytes on the wire), a meaningful saving over a full deployment lifetime with a sensor that's been installed for years in hundreds of interceptors. Example of the two note shapes:
-
-**Daily summary** (`grease_summary.qo`, templated):
-```json
-{
-  "file": "grease_summary.qo",
-  "body": {
-    "fill_pct_avg":  42.3,
-    "fill_pct_peak": 51.7,
-    "fill_pct_now":  44.1,
-    "valid_samples": 94
-  }
-}
-```
-
-**Threshold alert** (`grease_alert.qo`, `sync:true`):
-```json
-{
-  "file": "grease_alert.qo",
-  "body": {
-    "alert":         "fill_threshold_exceeded",
-    "fill_pct":      76.4,
-    "threshold_pct": 75.0
-  },
-  "sync": true
-}
-```
+One [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) daily summary note (`grease_summary.qo`), plus an untemplated immediate alert (`grease_alert.qo`) whenever `fill_pct` is at or above the alert threshold and the 1-hour cooldown has elapsed — which means a new alert fires every cooldown interval for as long as the interceptor remains above threshold. The template fixes each summary to a compact binary record (approximately 28 bytes on the wire), a meaningful saving over a full deployment lifetime with a sensor that's been installed for years in hundreds of interceptors. See "Example payloads routed to Notehub" below (§7) for the payload shape.
 
 ### Low-power strategy
 
 Even though a back-of-house HGI installation has mains power available, the firmware still puts the host to sleep between samples — less heat in the enclosure and a firmware pattern that ports to a solar- or battery-backed variant without rearchitecting. After each sample cycle the host calls `NotePayloadSaveAndSleep`, which serializes the runtime state into Notecard flash and uses [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) to cut host power for `sample_interval_sec` seconds. The Notecard itself idles at roughly 8 µA between cellular wakes when powered via `+VBAT` with VUSB absent — which this build achieves by routing the 5 V DC pigtail from the wall adapter to the CX's `+VBAT` header pin rather than its USB-C port. The A02YYUW draws ≤8 mA from the `+3V3_OUT` pin; the firmware does not actively switch sensor power, and the Notecarrier CX datasheet does not document whether the `+3V3_OUT` rail is cut when `NotePayloadSaveAndSleep` puts the Cygnet to sleep. Treat the sensor current as a continuous ~8 mA load when sizing the power budget. A continuous 8 mA sensor draw accumulates roughly 192 mAh over a 24-hour day — far more than a single daily LTE-M sync (~250 mA average for ≤60 s ≈ 4 mAh). The cellular sync is the dominant current spike, but the always-on sensor is likely the dominant daily energy consumer unless the `+3V3_OUT` rail is switched off during host sleep (its behavior during sleep is not documented in the CX datasheet and has not been verified for this build). Sensor power switching — a GPIO-controlled load switch on the sensor supply rail — is therefore the primary optimization to pursue before moving to a battery-backed installation (see §9). Until that is confirmed empirically with Mojo, treat the sensor as always powered (see §8 Mojo validation).
 
 Sampling and summary cadence are deliberately decoupled: the sensor fires every `sample_interval_sec` (default 15 minutes, 96 times per day at default), but outbound summary syncs occur only once per `report_interval_min` (default 24 hours). Separately, the Notecard opens an **inbound** session every 2 hours (`HUB_INBOUND_MIN = 120`) to poll Notehub for updated environment variables — these inbound sessions require a full radio wake and session establishment and must be budgeted in any power analysis (see §8). At the default 2-hour inbound cadence, expect up to 12 inbound wakes per day in addition to the single daily outbound sync and any alert syncs. Alert notes set `sync:true` and bypass both scheduled windows entirely, waking the radio immediately on each alert fire — which repeats every cooldown interval as long as fill remains at or above threshold.
+
+**Typical power draw at 5 V DC (bench, with 5 V wall adapter):** The dominant consumer is the always-on A02YYUW sensor at approximately 8 mA continuous (~192 mAh over 24 hours). The Notecard idles at ~8 µA between syncs. One daily outbound sync (LTE-M, ~30–60 s at ~250 mA average) adds roughly 4–8 mAh; 12 daily inbound polls (~15 s at similar current) add approximately 50 mAh. **Conservative daily budget: ~250 mAh.** On a UL-listed 2 A 5 V wall adapter (minimum recommended), the power supply can sustain the peak 2 A Notecard transmit bursts indefinitely and has margin for future expansion. Mojo coulomb-counter validation (§8) is recommended before any battery-backed variant to confirm the sensor rail behavior during host sleep.
 
 ### Retry and error handling
 
@@ -174,9 +175,16 @@ Sampling and summary cadence are deliberately decoupled: the sensor fires every 
 - `env.get` is called with a `names` array on every wake so the response always reflects the current operator-configured values, regardless of which variable was most recently updated on the server.
 - Whenever `report_interval_min` changes, `fetchEnvOverrides` immediately re-issues `hub.set` with the new `outbound` value so the Notecard's cellular sync cadence stays aligned with the local summary period. Without this, summaries queued at the new (shorter) interval would sit in the Notecard's store until the old (longer) outbound window fired.
 
+### Note template format codes (abbreviated syntax)
+
+Notehub templates use numeric codes to denote field types in compact form:
+- `TFLOAT32` (`14.1`) — 4-byte IEEE 754 single-precision float
+- `TUINT32` (`13`) — 4-byte unsigned integer  
+- Full list: [Notehub template field types](https://dev.blues.io/api-reference/notecard-api/note-requests/#note-template)
+
 ### Key code snippet 1: note template definition
 
-The template makes each summary a fixed-length record. `TFLOAT32` (= `14.1`) is a 4-byte IEEE 754 float; `TUINT32` (= `13`) is a 4-byte unsigned integer.
+The template makes each summary a fixed-length record.
 
 ```cpp
 J *req = notecard.newRequest("note.template");
@@ -235,11 +243,57 @@ Every 15 minutes the Cygnet host wakes, fires the sensor five times, takes the m
 
 **Alert triggers on:** `fill_pct >= alert_threshold_pct` (default 75%) — level-triggered, not edge-triggered. A new alert fires each time the `ALERT_COOLDOWN_SEC` (1 hour) expires and the interceptor is still above threshold, so a persistently full interceptor generates repeated hourly alerts until it is serviced.
 
+### Example payloads routed to Notehub
+
+**Daily summary** (one per `report_interval_min`, templated, ~28 bytes):
+```json
+{
+  "file": "grease_summary.qo",
+  "body": {
+    "fill_pct_avg": 42.3,
+    "fill_pct_peak": 51.7,
+    "fill_pct_now": 44.1,
+    "valid_samples": 94
+  }
+}
+```
+
+**Threshold alert** (fires whenever `fill_pct >= threshold_pct` after cooldown, `sync:true`):
+```json
+{
+  "file": "grease_alert.qo",
+  "body": {
+    "alert": "fill_threshold_exceeded",
+    "fill_pct": 76.4,
+    "threshold_pct": 75.0
+  },
+  "sync": true
+}
+```
+
+These Notefiles are separate so you can route them to different endpoints: summaries to a long-term analytics database, alerts to a real-time dispatch webhook or SMS gateway.
+
 ## 8. Validation and Testing
 
-**Expected steady-state behavior.** On a correctly-behaving install, one `grease_summary.qo` event appears in Notehub every 24 hours and zero `grease_alert.qo` events appear. The `valid_samples` field in the summary is the most useful commissioning diagnostic — after the first complete 24-hour reporting interval, a correctly-behaving unit should show roughly 96 valid samples at the default 15-minute interval. (The very first summary fires on cold boot with only the samples collected since power-on; do not treat a low count in that first event as a fault.) A count materially below 96 on subsequent days indicates intermittent sensor reads (cable length, probe positioning, or FOG reflectivity issues). If a summary note is missing from Notehub for a given day, **do not immediately conclude that the firmware emitted nothing.** A note that was correctly created on the device may not yet be visible in Notehub because the Notecard has not completed an outbound sync for that period, the device is temporarily offline or in a poor-signal location, queued notes are still waiting for the next outbound window, or a Notehub route or forwarding step failed silently. Before diagnosing a firmware-level suppression, verify the device-side state first: query `hub.status` and `card.status` via the serial monitor or the in-browser Notecard Playground, or watch the USB serial debug output during a live wake cycle and look for a `note.add` request and a reply without an `err` field. If the Notecard confirms a successful `note.add` and shows a non-empty outbound queue, the firmware emitted the note correctly — the gap is upstream (sync timing, connectivity, or routing), not in the firmware. Only if the outbound queue is empty and no `note.add` was attempted for the reporting window should you look for firmware-level suppression. In that case, the firmware suppressed the summary because `valid_samples` remained zero for the entire reporting window — the firmware gates `sendSummary` on `valid_samples > 0`, so a complete read failure produces no note rather than a note with `valid_samples: 0`. Check UART wiring, cable continuity, and the probe connector — and confirm that `interceptor_depth_mm` is not set shorter than the true sensor-to-surface distance at pump-out (a value set too low causes the firmware's `interceptor_depth_mm × 1.1` acceptance gate to reject every reading; see §6 sensor reading strategy).
+### Quickstart: First Event in Minutes
 
-**Cold-boot and unsynced-clock behavior.** On initial power-up the Notecard may not have synced its clock yet (`card.time` returns 0 until the first cellular session completes). The firmware allows at most one cold-boot summary and at most one cold-boot threshold alert before the clock is available, then suppresses further reports until time sync succeeds — preventing repeated low-count summaries or repeated threshold alerts from flooding Notehub before the device has a real timestamp. Once the Notecard syncs time, normal interval-based cadence resumes. If the device is in a poor-signal location and takes several wake cycles to establish its first session, no additional summaries or alerts will fire during that window; the fill accumulator continues running in the background and will be included in the first post-sync summary.
+1. **Flash the firmware** (§6) with your ProductUID.
+2. **Set DIP switch to HST** and connect USB-C to a laptop. Open the serial monitor at 115200 baud.
+3. **Take a tape measurement** from the sensor face to the liquid surface.
+4. **Override `sample_interval_sec`** to `60` via Notehub fleet environment variables (Fleet → Environment) so you get a reading every minute instead of every 15.
+5. **Watch the serial output** for `[DBG] median distance mm: XXX` on each wake. Compare against your tape measurement — should match within 1–2 cm.
+6. **Check Notehub events:** Within a few minutes you should see a `grease_summary.qo` arrive (or `grease_alert.qo` if you also lowered `alert_threshold_pct` to 5 to test the alert path).
+7. **Restore `sample_interval_sec` to 900** before leaving the site.
+
+### Expected Steady-State Behavior
+
+On a correctly-behaving install, one `grease_summary.qo` event appears in Notehub every 24 hours and zero `grease_alert.qo` events appear (unless the interceptor is genuinely near full). The `valid_samples` field in the summary is the most useful commissioning diagnostic — after the first complete 24-hour reporting interval, a correctly-behaving unit should show roughly 96 valid samples at the default 15-minute interval. (The very first summary fires on cold boot with only the samples collected since power-on; do not treat a low count in that first event as a fault.) A count materially below 96 on subsequent days indicates intermittent sensor reads (cable length, probe positioning, or FOG reflectivity issues). 
+
+If a summary note is missing from Notehub for a given day, **do not immediately conclude that the firmware emitted nothing.** A note that was correctly created on the device may not yet be visible in Notehub because the Notecard has not completed an outbound sync for that period, the device is temporarily offline or in a poor-signal location, queued notes are still waiting for the next outbound window, or a Notehub route or forwarding step failed silently. Before diagnosing a firmware-level suppression, verify the device-side state first: query `hub.status` and `card.status` via the serial monitor or the in-browser Notecard Playground, or watch the USB serial debug output during a live wake cycle and look for a `note.add` request and a reply without an `err` field. If the Notecard confirms a successful `note.add` and shows a non-empty outbound queue, the firmware emitted the note correctly — the gap is upstream (sync timing, connectivity, or routing), not in the firmware. Only if the outbound queue is empty and no `note.add` was attempted for the reporting window should you look for firmware-level suppression. In that case, the firmware suppressed the summary because `valid_samples` remained zero for the entire reporting window — the firmware gates `sendSummary` on `valid_samples > 0`, so a complete read failure produces no note rather than a note with `valid_samples: 0`. Check UART wiring, cable continuity, and the probe connector — and confirm that `interceptor_depth_mm` is not set shorter than the true sensor-to-surface distance at pump-out (a value set too low causes the firmware's `interceptor_depth_mm × 1.1` acceptance gate to reject every reading; see §6 sensor reading strategy).
+
+### Cold-Boot and Clock Sync
+
+On initial power-up the Notecard may not have synced its clock yet (`card.time` returns 0 until the first cellular session completes). The firmware allows at most one cold-boot summary and at most one cold-boot threshold alert before the clock is available, then suppresses further reports until time sync succeeds — preventing repeated low-count summaries or repeated threshold alerts from flooding Notehub before the device has a real timestamp. Once the Notecard syncs time, normal interval-based cadence resumes. If the device is in a poor-signal location and takes several wake cycles to establish its first session, no additional summaries or alerts will fire during that window; the fill accumulator continues running in the background and will be included in the first post-sync summary.
 
 **Speed up commissioning with a shorter sample interval.** The default 15-minute sample interval is correct for production but makes bench positioning slow. Before committing to final probe depth and cable dressing, temporarily set `sample_interval_sec` to `60` via a Notehub device-level environment variable (or by editing the `DEFAULT_SAMPLE_INTERVAL_SEC` constant in firmware during development). At 60 s per cycle you can watch several readings appear in the serial monitor within a few minutes and confirm stable fill-percentage values at multiple probe depths. Restore `sample_interval_sec` to `900` (or your production value) before leaving the site.
 

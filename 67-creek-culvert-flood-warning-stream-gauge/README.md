@@ -26,6 +26,32 @@ This project is a self-contained, edge-intelligent stream gauge that measures th
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route configuration is project-specific. See the [Notehub routing documentation](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) are the natural way to group gauges by watershed or jurisdiction for threshold management.
 
+## Quick Start: Flash and Deploy
+
+**Minimum viable path (30 minutes):**
+
+1. **Claim a ProductUID.** At [notehub.io](https://notehub.io), create a free project and copy its ProductUID from the project settings pane.
+2. **Set ProductUID in firmware.** Open `firmware/creek_flood_gauge/creek_flood_gauge.ino`, uncomment the `PRODUCT_UID` line near line 36, and paste your actual ProductUID.
+3. **Install Arduino CLI and the STM32 core** (if not already present):
+   ```bash
+   arduino-cli config init
+   arduino-cli core install STMicroelectronics:stm32
+   arduino-cli lib install "Blues Wireless Notecard"
+   ```
+4. **Compile and flash.** Connect the Notecarrier CX to your computer via USB; then:
+   ```bash
+   arduino-cli compile --fqbn STMicroelectronics:stm32:Nucleo_L152RE:usb=CDC \
+     --output-dir build firmware/creek_flood_gauge
+   arduino-cli upload --fqbn STMicroelectronics:stm32:Nucleo_L152RE:usb=CDC \
+     --port /dev/ttyACM0 --input-dir build
+   ```
+   (Adjust `--port` to match your system: `/dev/ttyUSB0` on Linux, `COM3` on Windows.)
+5. **Power the enclosure.** Within a few minutes, the device appears in Notehub. You now have a live gauge sampling every 5 minutes and ready to receive threshold tuning via environment variables.
+
+**Expected outcome:** One `gauge_reading.qo` note per hour in Notehub, zero `gauge_alert.qo` notes in dry conditions. See Section 8 for how to simulate water-level and rain events to validate alert firing.
+
+---
+
 ## 3. Hardware Requirements
 
 | Part | Qty | Rationale |
@@ -44,6 +70,8 @@ This project is a self-contained, edge-intelligent stream gauge that measures th
 | [Blues Flexible Dual LTE/Wi-Fi and GPS/GNSS Antenna (Quectel YCA001BA)](https://shop.blues.com/products/dual-flexible-antenna-cell-wi-fi?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Multi-band passive flexible antenna with u.FL connector covering LTE (700–960 MHz, 1710–2690 MHz) and GNSS L1 (1560–1620 MHz, including GPS L1 at 1575 MHz). Although it is a multi-band antenna, its GNSS L1 coverage makes it suitable for the NOTE-NBGLWX `GPS` u.FL port. Required — the Notecard needs accurate location to establish Skylo satellite sessions. Route the lead through a dedicated cable gland and mount on the enclosure exterior with a clear sky view. |
 
 The Notecard for Skylo and Notecarrier CX ship with an active SIM including 500 MB of cellular data and 10 KB of Skylo satellite data — no activation fees, no monthly commitment.
+
+**Deployed energy budget (typical dry-weather day):** At the default 5-minute sample cadence with hourly summaries and 24-hour inbound polls, the device consumes approximately 40–50 mAh per day in cellular coverage (primarily the 250 mA hourly sync burst). During multi-day storms the 6600 mAh battery provides 5–8 days of reserve before solar recovery. Measure your exact deployment using Mojo (Section 8) to account for site-specific GNSS commission time and cellular versus satellite session overhead.
 
 > **Hardware deviation note.** The project description suggests a Swan MCU. The Cygnet STM32 embedded in the Notecarrier CX is fully sufficient for this sensor mix: the MB7389 speaks 9600-baud UART and the rain gauge is a GPIO; no exotic peripheral or MCU-specific library requires a separate host board.
 
@@ -96,7 +124,7 @@ Mount antennas on the exterior of the enclosure lid pointing skyward. Under a br
 
 3. **Create a Fleet per watershed.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) group devices for shared threshold configuration. Organizing by watershed (e.g., "Mill Creek Basin") means you can lower the `rate_warning_mm_per_min` threshold for the whole drainage simultaneously when an upstream storm is forecast. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) can further dynamically assign devices based on location or tag.
 
-4. **Set environment variables.** All variables are optional; the firmware defaults are shown. Any value set in Notehub overrides the compile-time default on the device's next inbound sync — no reflash required.
+4. **Set environment variables.** In Notehub, navigate to **Fleet → Environment** (or click a device and select **Environment** in its sidebar). All variables are optional; the firmware defaults are shown. Any value set here overrides the compile-time default on the device's next inbound sync — no reflash required.
 
    | Variable | Default | Purpose |
    |---|---|---|
@@ -131,7 +159,7 @@ Three-file Arduino project in `firmware/creek_flood_gauge/`:
 
 | Responsibility | Where |
 |---|---|
-| Notecard hub configuration (`hub.set` with decoupled outbound/inbound cadences, compact note templates) | `hubConfigure`, `defineTemplates` |
+| Notecard hub configuration (`hub.set` with decoupled outbound/inbound cadences, compact note templates, environment-variable type hints) | `hubConfigure`, `defineTemplates`, `defineEnvTemplate` |
 | Skylo transport selection (`cell-ntn`) and bounded three-phase GNSS commissioning (continuous → timeout fallback → daily periodic) | `configureSkyloTransport`, `checkLocationAcquired` |
 | Environment-variable fetch (per wake) | `fetchEnvOverrides` |
 | MB7389 UART read | `readWaterLevelMm` |
@@ -210,7 +238,7 @@ Sampling and transmission are intentionally decoupled: the device samples every 
 
 ### Key code snippet 1: compact template definition
 
-All three Notefiles (`gauge_reading.qo`, `gauge_alert.qo`, `gauge_fault.qo`) use compact format. The `port` field is required for compact templates; `tips_window` and `tips_total` use unsigned integer encodings (`22` = 2-byte unsigned, `24` = 4-byte unsigned) to avoid negative-sentinel ambiguity. The `kind` field in `gauge_alert.qo` and `gauge_fault.qo` is declared with `"16"` characters to accommodate the longest alert identifier (`level_critical`, 14 characters).
+All three Notefiles (`gauge_reading.qo`, `gauge_alert.qo`, `gauge_fault.qo`) use [compact format](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates). The `port` field is required for compact templates; `tips_window` and `tips_total` use unsigned integer encodings (`22` = 2-byte unsigned, `24` = 4-byte unsigned) to avoid negative-sentinel ambiguity. The `kind` field in `gauge_alert.qo` and `gauge_fault.qo` is declared with `"16"` (16 characters) to accommodate the longest alert identifier (`level_critical`, 14 characters). For floating-point fields, `"14.1"` means 14 bits of range, 1 bit of fractional precision—sufficient for millimeters and mm/min rates without bloating each note's byte count.
 
 ```cpp
 J *req = notecard.newRequest("note.template");
@@ -268,6 +296,24 @@ NotePayloadSaveAndSleep(&payload, g_sampleIntervalSec, NULL);
 
 **Routed.** Notehub fans `gauge_alert.qo` to an emergency-notification or dispatch endpoint, `gauge_reading.qo` to a hydrology data store or time-series dashboard, and `gauge_fault.qo` to an installer notification endpoint. The three Notefiles are deliberately separate so they can be fanned out to different destinations at different urgencies without filter logic in the routes.
 
+**Example alert in Notehub:** When a rising-water alert fires, the JSON delivered to your route looks like this:
+```json
+{
+  "product_uid": "com.your-company.your-name:creek_gauge",
+  "device_sn": "501234abc567",
+  "file": "gauge_alert.qo",
+  "captured": "2025-05-01T14:37:45Z",
+  "body": {
+    "kind": "rate_rising",
+    "level_mm": 612,
+    "depth_mm": 888,
+    "rate_mm_per_min": 24.3,
+    "tips_window": 18
+  }
+}
+```
+The `kind` field indicates which threshold was crossed (one of `level_critical`, `level_warning`, `rate_rising`, `rain_intense`). Downstream systems can route based on `kind` and apply emergency-specific actions (close road, dispatch crew, etc.).
+
 **`gauge_alert.qo` threshold-alert kinds** (evaluated in priority order each wake, at most one per wake, subject to the shared cooldown):
 
 | Alert `kind` | Trigger |
@@ -315,7 +361,32 @@ Key things to look for on the Mojo trace:
 
 Because the MB7389 is unpowered during ATTN sleep (Notecarrier CX's `EN` pin cuts the host 3.3V rail), the sensor's ~3.3 mA draw applies only during the brief ~5-second wake window — not across the full 5-minute sample period. The dominant sleep-floor consumer is Notecard idle + charger quiescent (~100 µA). Despite the low sleep floor, the hourly cellular sync burst (~250 mA for tens of seconds) and any Skylo satellite sessions drive the daily energy budget. Measure the full-system daily energy consumption with Mojo across at least one full day (including any satellite sessions) and divide into the 6600 mAh capacity for a deployment-specific reserve estimate.
 
-## 9. Limitations and Next Steps
+## 9. Troubleshooting
+
+**Device does not appear in Notehub after powering on.**
+- Verify ProductUID is correctly set in the sketch (line 36 of `.ino`). Recompile and reflash.
+- Confirm USB/SIM connection: the Notecard should be fully seated in the M.2 slot, and the antenna u.FL connectors should be attached before boot.
+- Check Notehub for the device SerialNumber in **Devices** list; if it appears, it has claimed to the project. If not, the Notecard may not have cellular coverage — try a location with clear sky view.
+
+**No alerts firing even though water is rising.**
+- Verify the current sensor reading via Notehub: click the device, go to **Environment**, and check the `Events` tab to see the latest `gauge_reading.qo` notes. `level_mm` should reflect actual distance; if it is always -9999, the sensor is offline (check UART wiring and `+3V3_OUT` power to pin 1).
+- Check that thresholds are set correctly. In Notehub **Fleet → Environment**, verify `level_critical_mm` and `rate_warning_mm_per_min` have been applied (look for the checkmark or "Synced" badge on each variable).
+- Confirm the alert cooldown (`alert_cooldown_sec`, default 900 s = 15 min) has expired since the previous alert. During the cooldown window, no new alert of any kind will fire, even if multiple thresholds are simultaneously above limit. Temporarily lower to 60 s for testing.
+- If `rain_intense` alerts are not firing, remember that the rain-gauge window is only 3 seconds per 5-minute wake cycle; at typical rainfall rates, most bucket tips occur during the 297-second sleep and go uncounted. Set `rain_intense_tips` to 1 for testing, and apply a jumper-wire closure to D5 during the wake window (approximately 1–2 s after the device wakes).
+
+**High battery drain (sleep floor above 1 mA per Mojo).**
+- Verify `card.attn` sleep is being reached: check the firmware logs or add a debug output just before `NotePayloadSaveAndSleep`. If the sleep call is not reached, the device is cycling rapidly — check for I²C communication errors or sensor read timeouts that might be restarting the main loop.
+- Confirm the MB7389 is powered off during sleep: with a multimeter, measure `+3V3_OUT` during ATTN sleep — it should be 0 V. If it stays at 3.3 V, the Notecarrier CX `EN` pin is not being driven low by the Notecard; check the I²C command sequence in `configureSkyloTransport` and ensure `card.attn` is being sent correctly.
+- During the first 30 minutes of operation (GNSS commissioning Phase 1), the baseline is expected to be ~25–35 mA; this is normal. After the first fix, it should drop to < 100 µA. If it remains elevated beyond 30 minutes, a `gnss_timeout` fault note will be emitted to `gauge_fault.qo` — check Notehub for it and verify the GNSS antenna has an unobstructed equatorial sky view.
+
+**Satellite fallback not working during cellular outage.**
+- The Notecard for Skylo requires a valid GNSS location to establish a Skylo session. Verify the device has obtained a fix: check Notehub **Devices → [device] → Signals** — you should see a `location` object with non-zero latitude/longitude.
+- Confirm the cellular/NTN antenna is mounted on the exterior of the enclosure with a clear view of the southern sky (equatorial sky from the northern hemisphere). A bridge soffit or under-deck mount blocks the Skylo link.
+- Test in a confirmed cellular-dead zone with good sky view. The Notecard's fallback is automatic; no additional configuration is needed beyond `card.transport method=cell-ntn` (set in `configureSkyloTransport`).
+
+---
+
+## 10. Limitations and Next Steps
 
 **Simplified for the POC:**
 
@@ -340,7 +411,7 @@ Because the MB7389 is unpowered during ATTN sleep (Notecarrier CX's `EN` pin cut
 - Correlate gauge data with a National Weather Service forecast API: if heavy rain is predicted, tighten the rate threshold automatically before the event, not after. Route gauge events to an external service that fetches the forecast and, when it crosses a trigger, calls the Notehub API to push updated environment variables to the fleet.
 - Consider a solar panel with a wider tilt angle or a south-facing companion mount at bridge sites with limited sky view. Under a deep bridge soffit the panel may be shaded for most of the day; a 10 m cable extension to a roadside post mount may be needed.
 
-## 10. Summary
+## 11. Summary
 
 A Notecarrier CX, a Notecard for Skylo, a MaxBotix MB7389, and a tipping-bucket rain gauge (contributing a coarse rainfall-activity hint — see Section 9 for the production path to calibrated rainfall accounting) can turn an unmonitored culvert into a continuous flood-warning sensor — sampling every 5 minutes, alerting on trend rather than a single threshold crossing, and staying online via satellite even when the storm takes out the cell tower it's been relying on. The hardware installs in an afternoon, the thresholds tune in the field without reflashing, and the satellite fallback is there exactly when it's most needed: during the flood itself. For counties managing dozens of low-water crossings across a rural road network, the same firmware image and Notehub project handle the whole fleet — each gauge configuring itself from fleet-level environment variables, routing alerts to the same on-call endpoint, and dropping summaries into the same hydrology data store.
 

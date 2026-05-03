@@ -61,7 +61,7 @@
   <g transform="translate(340,344) scale(0.65)" fill="#14532d"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 6.43 5 4.14 7.29 3 6.43 1.43 8 2.86 9.57 1.43 11.14 2.86 12 4.29 10.43 13.86 19 5.29 17.43 6.86 19 8.43 17.43 10 19 11.57 17.43 13.14 22 17.71 20.43 16.14z"/></g>
   <text x="410" y="375" text-anchor="middle" font-size="13" font-weight="700" fill="#14532d">Generator Controller (Modbus server)</text>
   <text x="410" y="398" text-anchor="middle" font-size="11" fill="#166534">A · B · signal-common comms terminals</text>
-  <text x="410" y="420" text-anchor="middle" font-size="10" fill="#166534" font-style="italic">120 Ω terminator at this end  ·  match Modbus serial settings in controller menu</text>
+  <text x="410" y="420" text-anchor="middle" font-size="10" fill="#166534" font-style="italic">120 Ω terminator at this end</text>
 
   <!-- 120Ω note at OPTA end -->
   <text x="155" y="262" text-anchor="middle" font-size="10" fill="#a16207">120 Ω at OPTA end</text>

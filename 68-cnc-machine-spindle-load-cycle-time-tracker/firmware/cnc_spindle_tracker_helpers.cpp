@@ -584,8 +584,9 @@ void sendOperatorChange(uint16_t prevId, uint16_t newId) {
 // ---------------------------------------------------------------------------
 void resetWindow(void) {
     memset(&g_window, 0, sizeof(g_window));
-    // g_lastCycleState, g_lastCycleCount, and g_lastOperatorId are intentionally
-    // NOT reset here — they persist across report windows so that:
+    // g_lastCycleState, g_lastCycleCount, g_cycleCountInitialized,
+    // g_lastOperatorId, and g_operatorIdInitialized are intentionally NOT reset
+    // here — they persist across report windows so that:
     //   - the first sample of a new window does not trigger spurious edge detections,
     //   - the register-delta baseline remains valid across the window boundary, and
     //   - operator-ID changes are tracked continuously across hourly summaries.

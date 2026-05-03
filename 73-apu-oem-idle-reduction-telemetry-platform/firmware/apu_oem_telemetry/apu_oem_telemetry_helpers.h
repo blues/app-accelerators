@@ -16,7 +16,9 @@
 // ---------------------------------------------------------------------------
 // Pin assignments (Notecarrier CX header — adjust to match your wiring)
 // ---------------------------------------------------------------------------
-#define RS485_SERIAL        Serial2   // Cygnet USART2: PA2=TX, PA3=RX
+// RS-485 UART on Cygnet USART2 (PA2=TX, PA3=RX). The STM32duino Cygnet variant
+// does not pre-define `Serial2`; instantiate it explicitly in the .cpp.
+extern HardwareSerial RS485_SERIAL;
 #define RS485_DE_PIN        2         // Direction control → BOB-10124 RTS/DE
 #define ONE_WIRE_PIN        3         // OneWire data bus for both DS18B20 probes
 #define IGNITION_PIN        A0        // Voltage-divided ignition sense (12/24 V)

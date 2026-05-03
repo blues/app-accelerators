@@ -627,11 +627,15 @@ void loop() {
             // changes — one alert per assertion period avoids alarm fatigue on
             // gradually-evolving fault sets.
             if (s.alarm_word != 0 && !g_active_controller_alarm) {
-                // 0→nonzero: first detection of this assertion period. Log exactly
-                // once (g_alarm_logged_controller gate); subsequent send retries
-                // re-call sendEvent() but skip logAlarmHistory() so the ring buffer
-                // never accumulates duplicate entries for the same assertion.
-                if (!g_alarm_logged_controller) {
+                // 0→nonzero: first detection of this assertion period, OR a retry
+                // of a previously-failed send while the assertion is still active.
+                // Log every distinct alarm_word value: the initial entry on first
+                // observation, and any new value seen during the failed-send retry
+                // window (e.g. a second fault asserts before the first event ever
+                // queued). Repeated polls with the same alarm_word skip logging so
+                // the ring buffer never accumulates duplicate entries for one
+                // unchanged assertion.
+                if (!g_alarm_logged_controller || s.alarm_word != g_current_alarm_word) {
                     logAlarmHistory("controller_alarm", s.alarm_word);
                     g_alarm_logged_controller = true;
                 }
@@ -746,10 +750,15 @@ void loop() {
         flushAlarmHistory();
         bool summary_sent = sendSummary();
 
-        // Only advance the report deadline after a confirmed successful note.add.
-        // If sendSummary() failed (transient I2C / Notecard hiccup), next_report_ms
-        // stays fixed so the report is retried on the next loop() iteration instead
-        // of silently stretching the aggregation window into the following period.
+        // Only advance the report deadline by a full report interval after a
+        // confirmed successful note.add. On failure (transient I²C / Notecard
+        // hiccup), defer the next attempt by REPORT_RETRY_MS rather than letting
+        // the report block fire every loop() iteration. Without this defer, a
+        // sustained Notecard fault triggers fetchEnvOverrides() + evaluateRules()
+        // + flushAlarmHistory() + sendSummary() at the loop's 50 ms cadence,
+        // generating continuous I²C traffic against an already-struggling bus.
+        // Stats remain preserved across the retry so no window data is dropped.
+        static const uint32_t REPORT_RETRY_MS = 60UL * 1000UL;
         if (summary_sent) {
             if (g_report_minutes != prev_report_minutes) {
                 // Cadence changed via env override: reanchor the next deadline from
@@ -768,6 +777,8 @@ void loop() {
             if (g_sample_minutes != prev_sample_minutes) {
                 next_sample_ms = now + (uint32_t)g_sample_minutes * 60UL * 1000UL;
             }
+        } else {
+            next_report_ms = now + REPORT_RETRY_MS;
         }
     }
 

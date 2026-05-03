@@ -4,6 +4,32 @@
 
 A solar-powered [remote monitoring](https://blues.com/solutions-remote-monitoring/) system for off-grid livestock water tanks. An ultrasonic level sensor watches the water surface, a clamp-on current transformer measures pump current draw as contextual telemetry, and a battery-voltage divider tracks the solar system's health — all reported to Notehub via a Blues Notecard for Skylo that uses cellular where coverage exists and falls back to satellite via the Skylo NTN network where it doesn't, with the radio transmitting only on the 4-hour summary cadence or when an immediate alert fires.
 
+## What You'll Build
+
+After following this guide, you will have a solar-powered off-grid tank monitor that:
+- **Samples tank level, pump current, and battery voltage** every 15 minutes via analog sensors wired to a Notecarrier CX
+- **Alerts the rancher immediately** (via Notehub routes to SMS/push/webhook) when the tank drops below 20% full (alert) or 10% full (critical)
+- **Reports system health** (battery voltage, pump current) every 4 hours to a time-series database for trend analysis
+- **Falls back to satellite** (Skylo NTN) when cellular is unavailable, with the identical firmware handling both transports
+- **Runs for weeks on solar** even during cloudy stretches, thanks to an adaptive sleep strategy that extends the sample interval when the battery is low
+
+Expected data consumption: ~6 KB/month on the 500 MB included prepaid Blues data plan (cellular path; satellite is separate). First production event visible in Notehub within 4 hours of power-on.
+
+## Quickstart
+
+1. **Assemble hardware.** Order the BOM from §3, build the circuit per §4, and mount the enclosure on the tank post.
+2. **Flash firmware.** Clone this repo, set your Notehub ProductUID in the sketch, and flash via Arduino IDE:
+   ```bash
+   arduino-cli compile --fqbn STMicroelectronics:stm32:Nucleo_L433RC \
+     firmware/livestock_water_tank_monitor/livestock_water_tank_monitor.ino
+   arduino-cli upload -p /dev/ttyACM0 --fqbn STMicroelectronics:stm32:Nucleo_L433RC \
+     firmware/livestock_water_tank_monitor
+   ```
+3. **Set calibration.** Power on and wait for the device to sync to Notehub (first cellular connection within minutes if coverage exists, or satellite within ~10 minutes if cellular is unavailable). Once a `tank_status.qo` Note appears in Notehub, measure your actual tank geometry and set `tank_depth_mm` and `sensor_min_mm` as environment variables in Notehub (see §5 step 4 for the path). After the next sync, `level_pct` will report accurate percentages.
+4. **Set routes.** In Notehub, add two routes: one for `tank_alert.qo` (to SMS/push service) and one for `tank_status.qo` (to your time-series database or data lake). See §5 and the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub).
+
+Full assembly and calibration instructions follow in later sections; this quickstart gets you to first event in under an hour.
+
 ## 1. Project Overview
 
 **The problem.** Stock tanks in remote pastures are one of agriculture's oldest and most persistent operational problems. A rancher managing a spread across multiple pastures — each with its own poly or galvanized stock tank and a submersible pump pulling from a well — has to physically drive every road to verify that every tank is full. On a working ranch with pastures spread over thousands of acres, that inspection loop can take several hours and still miss a dry tank that empties between visits. The consequences aren't just inconvenience: cattle deprived of water for even a few hours in summer heat suffer rapid decline in health, and emergency water delivery is expensive before factoring in animal losses at all.
@@ -32,7 +58,7 @@ The failure modes are simple and repeatable. Tanks go dry because a float valve 
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an embedded Cygnet STM32L433 host — no separate MCU needed for this all-analog sensor mix. |
 | [Notecard for Skylo (NOTE-NBGLWX)](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) | 1 | Cellular (LTE-M/NB-IoT/GPRS) where a tower is reachable; Skylo NTN satellite where it isn't. One module, one prepaid plan, no SIM activation or carrier contract — transport selection is fully automatic and transparent to the host firmware. |
-| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Bench energy-validation instrument — spliced inline during commissioning to confirm the sleep/wake duty cycle. Not read by the deployed firmware; no power telemetry appears in transmitted Notes. |
+| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | **Bench-only commissioning tool** — spliced inline during validation to confirm the sleep/wake duty cycle. Not read by the deployed firmware; no power telemetry appears in transmitted Notes. Remove before field deployment. |
 | [MaxBotix HRXL-MaxSonar-WRL (MB7389)](https://www.maxbotix.com/ultrasonic_sensors/mb7389.htm) | 1 | IP67-rated weatherproof ultrasonic sensor; 300–5000 mm range, ±1 mm resolution, 2.7–5.5 V supply, and analog voltage output (V_cc/5120 per mm) require no microcontroller timing — a single ADC pin is all the interface needed. Internal temperature compensation keeps readings accurate across the wide ambient swings of an outdoor stock tank installation. |
 | [YHDC SCT-013-030 split-core CT, 30 A / 1 V voltage-output (e.g. SparkFun SEN-11005)](https://www.sparkfun.com/products/11005) | 1 | Clamp-on CT; measures pump RMS current without breaking or modifying the supply circuit. The 30 A range covers ½–2 HP submersible pumps typical of agricultural water systems. This design requires the **voltage-output** variant (30 A:1 V, built-in burden resistor); the current-output variant has no built-in burden and will damage the ADC pin without an external resistor. |
 | [SparkFun TRRS 3.5mm Jack Breakout (BOB-11570)](https://www.sparkfun.com/products/11570) | 1 | Exposes the CT's 3.5mm TRRS plug as screw terminals for wire termination. |
@@ -124,6 +150,32 @@ The voltage scaling is unchanged: `battery_V = V_adc / 0.175`, mapping 0–14.5 
    | `alert_cooldown_sec` | `3600` | Minimum seconds between repeated `level_low` and `level_critical` alerts. The `battery_low` alert is edge-triggered instead and is not subject to this cooldown — it fires once per episode and re-arms only after the voltage recovers above `battery_alert_v + 0.5V`. |
 
 5. **Configure routes.** Add at minimum one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `tank_alert.qo` (to an SMS gateway, push-notification service, or on-call webhook) and a second for `tank_status.qo` (to a time-series store for trend analysis and historical review). The Notefile separation means you can send alerts to your phone immediately while batching summaries to a database nightly, without any filtering logic in the route.
+
+   **Example alert payload** (immediate, `sync:true`):
+   ```json
+   {
+     "alert_code": 1,
+     "level_pct": 8.5,
+     "pump_amps": 0.0,
+     "battery_v": 12.4,
+     "_time": 1717200000
+   }
+   ```
+   Alert codes: `0` = tank at 20% (low alert), `1` = tank at 10% (critical), `2` = battery below 11.5V.
+
+   **Example status payload** (every 4 hours):
+   ```json
+   {
+     "level_pct": 68.4,
+     "distance_mm": 542.0,
+     "pump_amps": 7.2,
+     "pump_on": true,
+     "battery_v": 12.8,
+     "alerts": 3,
+     "_time": 1717200000
+   }
+   ```
+   `alerts` = count of `tank_alert.qo` Notes sent since the last summary; `pump_on` is derived from window-average `pump_amps` vs. the `pump_on_amps` threshold.
 
 ## 6. Firmware Design
 
@@ -224,7 +276,13 @@ When the firmware detects battery voltage below 12.0V (moderately discharged), i
 
 ### Key code snippet 1 — template registration
 
-The template uses `"compact"` format and an explicit `port` — both required for the NOTE-NBGLWX Starnote/NTN satellite path. Type hints are literal numeric values: `14.1` signals a 32-bit float field; `12` signals a 2-byte signed integer field (int16_t, −32,768 to +32,767); `true` signals a boolean field; `14` signals the `_time` timestamp field (auto-populated by the Notecard from its own clock on each `note.add` — no change to `sendSummary` is needed).
+The template uses `"compact"` format and an explicit `port` — both required for the NOTE-NBGLWX Starnote/NTN satellite path. Type hints are literal numeric values representing field types:
+- `14.1` = 32-bit float (e.g., `level_pct`, `pump_amps`, `battery_v`)
+- `12` = 2-byte signed integer / int16_t (e.g., `alerts` field, range −32,768 to +32,767)
+- `true` = boolean field (e.g., `pump_on`)
+- `14` = Unix timestamp field; auto-populated by the Notecard on each `note.add` — no change to firmware is needed
+
+Template-backed Notes reduce per-event wire size by ~4× and are required for satellite delivery.
 
 ```cpp
 J *req = notecard.newRequest("note.template");
@@ -347,6 +405,18 @@ On a satellite-primary Mojo trace you will see: an ~18 µA floor between syncs, 
 If the Mojo trace shows continuous multi-mA draw with no idle transitions, the host MCU is not sleeping — check `card.attn` wiring and the `NotePayloadSaveAndSleep` call.
 
 **Validating the satellite path.** To confirm satellite delivery before field deployment, take the device to a location with no usable cellular coverage and trigger a `tank_alert.qo` Note by lowering `level_alert_pct` to 99 in Notehub. With a clear equator-facing sky view, the NOTE-NBGLWX will switch to the Skylo satellite path. Confirm the alert Note appears in Notehub — it will carry the same body as a cellular-delivered Note but the session metadata will reflect the satellite transport. Session establishment may take several minutes; allow up to 10 minutes before concluding satellite is not working. Common issues: antenna blocked or not facing the equator-facing direction, obstructions between the antenna and the horizon, or the device too close to a building or tree line. Refer to the [Satellite Best Practices guide](https://dev.blues.io/starnote/satellite-best-practices/) for a complete troubleshooting checklist.
+
+## 8a. Troubleshooting
+
+| Symptom | Root Cause | Fix |
+|---------|-----------|-----|
+| No `tank_status.qo` Notes appear in Notehub after 4 hours | Device has not synced yet; check connectivity | If indoors or in a valley, move the antenna to an exterior location with sky view. For cellular, confirm you are in LTE-M/NB-IoT coverage (check a carrier map). For satellite, confirm the antenna has unobstructed equator-facing sky view. |
+| `level_pct` reads 0% or 100% regardless of actual tank fill | `tank_depth_mm` or `sensor_min_mm` not calibrated correctly | Follow the calibration procedure in §8. Tank must be held at full and completely empty for one 5-minute window each while sampling every 60 seconds. |
+| `level_pct` fluctuates wildly or reads negative | Sensor is outside the 300–5000 mm range, or mounting is unstable | Check that the MB7389 is mounted vertically (face pointing straight down) with at least 300 mm clearance above the maximum water surface. Secure the mounting bracket so it does not vibrate. |
+| `pump_amps` reads 0 even when pump is running | CT is not clamped around the pump supply line, or CT jaws are open | Verify the CT jaws are fully closed around a single conductor of the pump supply cable. Check the bias circuit wiring (10 kΩ divider, 10 µF cap, Notecarrier A1). Use a calibrated clamp meter on the same conductor to verify current is present. |
+| Device sends an alert every 15 minutes instead of respecting `alert_cooldown_sec` | Alert cooldown timer was not persisted across a reboot (state loss from power interruption) | This is expected behavior immediately after power-on if the Notecard's real-time clock (RTC) has not yet synced to the network. Once the first network sync completes, RTC is set and cooldown works. If alerts continue to repeat after multiple syncs, check `alert_cooldown_sec` in Notehub and confirm it is present in `env.get` responses (enable `TANK_MONITOR_DEBUG` in the sketch to view I²C traces). |
+| Device stops reporting after several days | Battery voltage has dropped below the critical-discharge threshold | Check the solar panel is unobstructed and receiving adequate sunlight. Check the charge controller's LOAD output is supplying 5V to the step-down regulator. If the panel or controller is faulty, the battery will deplete and the device will go silent when the step-down regulator voltage drops below ~4.3V. Check Notehub's last-seen timestamp to estimate when the device lost power. |
+| Satellite acquisition times out (no Note appears in 10+ minutes) | Antenna has poor or no sky view, or device is too close to structures that block the horizon | Move the antenna outdoors or to an elevated position with unobstructed equator-facing sky (south in northern hemisphere, north in southern hemisphere). Refer to the [Satellite Best Practices guide](https://dev.blues.io/starnote/satellite-best-practices/). If the site truly has no equator-facing sky view, satellite will not work; confirm cellular coverage as fallback. |
 
 ## 9. Limitations and Next Steps
 

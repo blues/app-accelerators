@@ -139,7 +139,52 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
    When `expires_epoch` is set, the device automatically reverts to its TOU-scheduled mode (which may be `peak_discharge`, `overnight_charge`, or `normal` depending on the current UTC hour) when the epoch arrives — providing a built-in recovery if the cloud system fails to send an explicit release command.
 
-## 6. Firmware Design
+   **Posting a dispatch command via curl:** Replace `{projectUID}`, `{deviceUID}`, and `{apiToken}` with your actual Notehub credentials (create an API token in Notehub → Settings → API keys):
+
+   ```bash
+   curl -X POST https://api.notefile.io/v1/projects/{projectUID}/devices/{deviceUID}/notes/dispatch.qi \
+     -H "Authorization: Bearer {apiToken}" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "body": {
+         "mode": "dr_curtail",
+         "expires_epoch": '$(( $(date +%s) + 600 ))'
+       }
+     }'
+   ```
+
+   This example issues a DR curtailment that automatically expires in 10 minutes. The device will respond with a `dr_event.qo` note and close RELAY4 (DR indicator) and open RELAY1 (grid export) on the next sample cycle.
+
+## 6. Firmware Quickstart
+
+To compile and flash the firmware to an Arduino OPTA RS485:
+
+1. **Claim a Notehub project and copy its ProductUID.** Sign up at [notehub.io](https://notehub.io), create a new project, and copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid).
+
+2. **Edit the firmware.** Open `firmware/solar_battery_dispatcher/solar_battery_dispatcher.ino` and replace the placeholder `PRODUCT_UID` with your project's actual ProductUID:
+   ```cpp
+   #define PRODUCT_UID "com.example.mycompany:solar_battery_dispatcher"
+   ```
+
+3. **Install dependencies via the Arduino IDE.** Install these from Boards Manager and Library Manager:
+   - **Boards:** Arduino Mbed OS Opta Boards (search "opta")
+   - **Libraries:** Blues Wireless Notecard, ArduinoModbus, ArduinoRS485
+
+4. **Compile and upload using arduino-cli (optional, for CI/headless builds):**
+   ```bash
+   arduino-cli core install "arduino:mbed_opta"
+   arduino-cli lib install "Blues Wireless Notecard"
+   arduino-cli lib install ArduinoModbus ArduinoRS485
+   arduino-cli compile -b "arduino:mbed_opta:opta" firmware/solar_battery_dispatcher
+   arduino-cli upload -b "arduino:mbed_opta:opta" -p /dev/ttyACM0 firmware/solar_battery_dispatcher
+   ```
+   (Replace `/dev/ttyACM0` with your OPTA's USB serial port — use `arduino-cli board list` to find it.)
+
+5. **Power the OPTA.** Provide 24 VDC to the board's power terminals. Within the first inbound sync window (up to 5 minutes), the Notecard automatically associates with your Notehub project.
+
+6. **Verify Notehub registration.** Open the [Notehub browser terminal](https://dev.blues.io/notehub/notehub-walkthrough/#using-the-notecard-api-from-notehub) and issue `card.status` to confirm `connected:true`, then `hub.status` to verify the project UID and at least one completed sync.
+
+## 7. Firmware Design
 
 Five files in [`firmware/solar_battery_dispatcher/`](firmware/solar_battery_dispatcher/):
 
@@ -182,7 +227,7 @@ Each device allows up to three retries per poll cycle. If all three fail, `valid
 
 Two Notefiles, with different urgencies and destinations.
 
-`solar_telemetry.qo` is [template-encoded](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) and transmitted on the `report_minutes` cadence (default 15 min). Templates compress these notes from free-form JSON into fixed-length records — at 96 records per day across a multi-year deployment on a prepaid SIM, the 3–5× bandwidth savings is material. Example body:
+`solar_telemetry.qo` is [template-encoded](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) and transmitted on the `report_minutes` cadence (default 15 min). Templates compress these notes from free-form JSON into fixed-length records — at 96 records per day across a multi-year deployment on a prepaid SIM, the 3–5× bandwidth savings is material. Example body when all devices are reachable:
 
 ```json
 {
@@ -198,6 +243,25 @@ Two Notefiles, with different urgencies and destinations.
   }
 }
 ```
+
+When a Modbus device becomes unreachable (inverter or BMS), all fields for that device are replaced with the sentinel value `-9999` until communications recover. For example, if the BMS is unreachable:
+
+```json
+{
+  "file": "solar_telemetry.qo",
+  "body": {
+    "pv_w": 4820.0,
+    "ac_out_w": 2340.0,
+    "grid_w": -680.0,
+    "batt_soc_pct": -9999.0,
+    "batt_v": -9999.0,
+    "batt_a": -9999.0,
+    "mode": "low_soc_protect"
+  }
+}
+```
+
+Downstream consumers can filter on `-9999` to detect and alert on communication loss.
 
 `dr_event.qo` is an untemplated note emitted with `sync:true` on every mode transition — when `peak_discharge` kicks in at the start of the TOU peak window, or when a DR curtailment arrives from the cloud, or when a command expires and the system returns to normal. The immediate uplink ensures operators and downstream systems see the transition in under a minute. Example:
 
@@ -358,7 +422,7 @@ void applyRelays(DispatchMode mode, float soc_pct, bool bms_valid) {
 }
 ```
 
-## 7. Data Flow
+## 8. Data Flow
 
 ![Dispatch and data-flow diagram showing inbound dispatch.qi, mode resolution with TOU schedule and SOC guards, and outbound solar_telemetry.qo and dr_event.qo to Notehub](diagrams/03-data-flow.svg)
 
@@ -386,7 +450,11 @@ void applyRelays(DispatchMode mode, float soc_pct, bool bms_valid) {
 
 **Expected steady-state behavior.** In normal operation, the device generates one `solar_telemetry.qo` note every 15 minutes and one `dr_event.qo` note each time the mode transitions (typically twice per day — peak-window entry and exit). During commissioning, simulate a DR event by posting a `dispatch.qi` note via the Notehub API with `"mode": "dr_curtail"` and `"expires_epoch"` set 10 minutes in the future. Within `5 min + sample_minutes` of queuing the note (next inbound sync plus the following sample cycle), the `RELAY_DR_INDICATOR` relay should close and a `dr_event.qo` note should appear in Notehub. At the default `sample_minutes = 1` this is at most **6 minutes**. If `sample_minutes` has been set to `5` (the firmware-enforced maximum), allow up to 10 minutes before expecting relay closure. Ten minutes after queuing the note, the relay should release and a second `dr_event.qo` should record the reversion to the current scheduled mode (typically `normal` if the bench test is run outside any configured TOU window; run the test outside any active peak or charge window for a deterministic `normal` reversion).
 
-**Modbus first-light.** Before connecting real inverter and BMS hardware, validate the Modbus link using a USB-to-RS-485 adapter and a software Modbus simulator (Modbus Mechanic or ModRSsim2) wired to the OPTA's RS-485 terminals. Confirm that four-register reads from slave IDs 1 and 2 return the values the simulator is publishing. This is faster and safer than commissioning against live solar hardware.
+**Modbus first-light.** Before connecting real inverter and BMS hardware, validate the Modbus link using a USB-to-RS-485 adapter and a software Modbus simulator. Two widely used open-source simulators are:
+- **ModRSsim2** — [github.com/eModbus/ModRSsim2](https://github.com/eModbus/ModRSsim2) — cross-platform, provides an RS-485 virtual serial port
+- **pymodbus simulator** — `pip install pymodbus && python -m pymodbus.simulator tcp --host 127.0.0.1` (for TCP; can also use serial)
+
+Connect your USB-to-RS-485 adapter to the OPTA's RS-485 terminals and configure the OPTA's Modbus address and serial settings to match the simulator. Confirm that four-register reads from slave IDs 1 and 2 return the values the simulator is publishing. This approach is faster and safer than commissioning against live solar hardware.
 
 **Using Mojo to validate power behavior.** The Wireless for OPTA expansion runs from the 24 VDC supply. Splice the [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) inline between the 24 VDC supply and the expansion's power input to capture session energy data. There are two distinct measurement layers to keep separate:
 
@@ -400,11 +468,38 @@ void applyRelays(DispatchMode mode, float soc_pct, bool bms_valid) {
 
 **Layer 2 — What Mojo validates at the 24 V expansion input.** Because the Wireless for OPTA expansion uses a switching regulator to step the 24 V supply down to the Notecard's operating voltage, the current Mojo measures on the 24 V rail is substantially lower than the supply-rail figures above — the conversion ratio and regulator efficiency change both the magnitude and the shape of the current waveform. Validate the expansion subsystem in terms of *input power* (V × I as displayed by Mojo) and *session energy* (Mojo's coulomb counter integrated over each session) rather than expecting to read the supply-rail milliamp figures directly at the 24 V input.
 
+**Power acceptance criteria (target):** At 24 VDC input with default sync cadence (5-minute inbound, 15-minute outbound), the Wireless for OPTA expansion consumes approximately **1–2 mAh per 24-hour period** (dominated by inbound polling). Peak current during a cellular session is ≤200 mA at 24 V. These figures do not include the OPTA MCU itself, which adds a constant baseline draw of ~50–100 mA depending on firmware activity.
+
 The useful bench exercise is confirming that: (a) the 5-minute inbound cadence produces an energy pulse roughly every five minutes on the Mojo trace — with every third pulse at the 15-minute outbound boundary being visibly larger as it also flushes the outbound queue — and (b) a `sync:true` mode-change event produces an additional pulse outside the normal cadence. If instead you see continuously elevated power draw with no return to a lower idle level between pulses, the cellular session is not terminating correctly — check the `inbound` and `outbound` values in your `hub.set` configuration.
 
 Note that the OPTA itself is an always-on 24 VDC device whose steady-state draw will substantially exceed the Wireless for OPTA expansion's and will dominate the Mojo trace at the system level. For this bench measurement, read the Mojo trace in terms of the **periodic pulse pattern** rather than absolute current figures: look for the regular ~5-minute inbound pulses, the larger ~15-minute outbound pulses, and any out-of-cadence `sync:true` pulses, all riding on top of the OPTA's constant baseline. The Notecard low-power design guide's supply-rail figures (table above) are not directly visible on the 24 V rail; they are useful for understanding what fraction of each pulse is attributable to the Notecard versus the OPTA's own logic.
 
-## 9. Limitations and Next Steps
+## 9. Troubleshooting
+
+**No cellular connection or "Offline" in Notehub.**
+- Verify the external antenna is properly connected via SMA lead (rubber-duck antenna inside a metal cabinet will not work).
+- Check that the Wireless for OPTA is fully seated onto the OPTA's expansion port.
+- Ensure the 24 VDC power supply voltage is stable (use a multimeter at the OPTA power terminals).
+- Look for any error messages on the USB serial debug port (`115200 baud`). Issue a `card.status` from the Notehub terminal to check registration.
+
+**Modbus polling shows -9999 (device unreachable).**
+- Verify that inverter and BMS are configured to the same baud rate, parity, and stop bits. See `modbus_baud`, `modbus_parity`, `modbus_stop_bits` in Section 5.
+- Check that RS-485 A and B lines are wired correctly and terminators (120 Ω resistors) are present at both ends of the daisy-chain.
+- Confirm inverter and BMS slave IDs match the configured `modbus_slave_inv` and `modbus_slave_bms` environment variables (defaults: 1 and 2).
+- Use a USB-to-RS-485 adapter and a Modbus simulator to test the wiring in isolation before connecting to real hardware.
+
+**Relay doesn't respond to DR dispatch command.**
+- Verify dispatch latency: at `sample_minutes=1`, expect relay closure within 5–6 minutes. Longer if `sample_minutes` is higher.
+- Confirm the command was queued via the Notehub API by checking the device's `dispatch.qi` Notefile in the Notehub UI.
+- Verify the firmware is reading dispatch commands: call `checkDispatch()` in the loop and look for debug output on the serial port.
+- Ensure the relay output wires are connected to the correct field-device digital input terminals and that the input voltage rating matches.
+
+**Dispatch command expires too soon or TOU window doesn't transition as expected.**
+- Verify the Notecard has acquired valid UTC time from at least one Notehub sync. Call `card.time` from the Notehub terminal and confirm `time` is non-zero.
+- Check that TOU window hours (`peak_start_utc`, `peak_end_utc`, etc.) are in UTC. The firmware does not perform local-time conversion.
+- Verify the corresponding environment variables are set to non-equal values (equal values disable the window).
+
+## 10. Limitations and Next Steps
 
 **Simplified for this reference design:**
 
@@ -430,7 +525,7 @@ Note that the OPTA itself is an always-on 24 VDC device whose steady-state draw 
 - Fleet-level SOC and energy telemetry aggregated in Notehub → historian for PPA performance reporting: total kWh discharged per DR event, aggregate daily export, battery cycle count, etc.
 - Over-the-air host firmware updates: [Notecard Outboard Firmware Update](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) is supported on the STM32H7 MCU family (the OPTA's processor) but requires AUX wiring that Blues Wireless for OPTA does not currently break out. Host firmware updates remain local-only via USB-C until that hardware path changes. When it does, Outboard DFU enables pushing a new vendor register map or TOU algorithm to the entire fleet without a truck roll.
 
-## 10. Summary
+## 11. Summary
 
 This project pairs an Arduino OPTA RS485 with a Blues Wireless for OPTA expansion to do something deceptively simple: close a relay when the utility calls for it, and open it again when the window closes. The elegance is in the architecture. The inverter and BMS already speak Modbus and already have the data and control inputs needed to participate in a demand-response program. What's been missing is an independent, cellular uplink that lets the asset owner — not the building's IT team, not a proprietary cloud portal — receive and act on utility signals on their own terms. The Wireless for OPTA adds that channel in a form factor that slots onto the same DIN rail as the rest of the equipment, runs on the 24 VDC already in the cabinet, and requires no building network involvement.
 

@@ -4,6 +4,19 @@
 
 A [safety assurance](https://blues.com/safety-assurance/) reference design that turns a construction site into a continuously monitored, GPS-stamped area monitoring point — tracking PM2.5, PM10, and dB(A) sound levels in real time without any site WiFi, power outlets, or IT coordination.
 
+## Quickstart
+
+1. **Clone and configure**: Download this repo and open `firmware/construction_env_monitor.ino`. Replace `PRODUCT_UID` constant with your Notehub project UID (see §5 step 1).
+2. **Build and flash**: Use Arduino IDE or `arduino-cli`:
+   ```bash
+   arduino-cli compile --fqbn STMicroelectronics:stm32:GenL0 firmware/
+   arduino-cli upload -p /dev/ttyUSB0 --fqbn STMicroelectronics:stm32:GenL0 firmware/
+   ```
+3. **Power and observe**: Connect LiPo (or USB for bench testing). The device samples every 5 minutes, queues summaries, and transmits to Notehub every 30 minutes. Watch `env_summary.qo` notes arrive in Notehub within 30 minutes of first power-on.
+4. **Set thresholds**: In Notehub, navigate to your Fleet → Environment Variables and set `pm25_alert_ug_m3`, `pm10_alert_ug_m3`, and `db_a_alert` (see §5). Alerts fire immediately when thresholds are breached.
+
+**What you'll have:** A solar-powered cellular area monitor that streams PM2.5, PM10, and sound levels as templated notes to Notehub, with real-time alerts on threshold breach.
+
 ## 1. Project Overview
 
 **The problem.** OSHA regulations governing construction sites require documented monitoring of worker exposure to silica dust, general particulate matter, and noise. OSHA 29 CFR 1926.1153 mandates air monitoring when workers may be exposed to respirable crystalline silica above the action level (25 µg/m³). Similarly, OSHA's noise standard (29 CFR 1926.52) requires monitoring and protection when **TWA** (time-weighted average) noise levels reach 85 dB(A) over an 8-hour shift. Compliant silica exposure documentation requires filter-based personal samplers analyzed by X-ray diffraction (NIOSH Method 7500); compliant noise documentation requires a dosimeter worn by each worker for a full shift. Both paradigms share the same problem: data arrives too late to act on — the shift is over before anyone reviews it, and the opportunity to intervene in real time has passed.
@@ -28,22 +41,22 @@ This project is a solar-powered cellular **area monitor** — a fixed, perimeter
 
 ## 3. Hardware Requirements
 
-| Part | Qty | Rationale |
-|------|-----|-----------|
-| [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an embedded Cygnet STM32 host, LiPo JST connector, Qwiic I²C port, and 6-channel ADC header — no separate MCU needed. |
-| [Notecard Cell+WiFi (MBGLW)](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) | 1 | Cellular removes per-site WiFi dependency; the MBGLW includes built-in GNSS for geo-stamping every reading without a separate GPS module. |
-| [Blues Flexible LTE, Wi-Fi, or GPS/GNSS Antenna](https://shop.blues.com/products/flexible-cellular-or-wi-fi-antenna?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 2 | One for the MBGLW **MAIN** (cellular) u.FL port; one for the **GPS** u.FL port. The same Molex-manufactured Blues flexible antenna covers both: its 698 MHz–4.0 GHz broadband range includes GPS L1 at 1575 MHz. The MBGLW also has a **WIFI** u.FL port; that port is left unconnected in this design — cellular is the sole wireless path and the WiFi radio is not used. Because the Hammond 1554CGY enclosure is ABS plastic (RF-transparent), both flex antennas mount **inside** the enclosure on interior surfaces; no cable glands or external mounting are required for the antennas. |
-| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Coulomb counter for bench-side energy validation; confirms that sleep current, active sampling current, and per-session transmit energy match expected figures. |
-| [Adafruit PMSA003I Air Quality Breakout (#4632)](https://www.adafruit.com/product/4632) | 1 | I²C optical particle counter reporting PM2.5 and PM10 in µg/m³. The Adafruit breakout includes an onboard 5V boost circuit so it runs correctly from the Notecarrier CX's 3.3V Qwiic rail. |
-| [DFRobot Gravity Analog Sound Level Meter (SEN0232)](https://www.dfrobot.com/product-1663.html) | 1 | A-weighted analog sound meter, 30–130 dB(A), 3.3–5 V supply, analog voltage output. Op-amp output connects directly to the Cygnet's 12-bit ADC with no additional circuitry required. |
-| [SparkFun Sunny Buddy MPPT Solar Charger (PRT-12885)](https://www.sparkfun.com/products/12885) | 1 | Maximum power point tracking solar charger for a single-cell LiPo. Extracts maximum current from the panel across varying light conditions — critical for a north-facing or partially shaded site fence mount. |
-| [Adafruit 6V 6W Solar Panel (#1525)](https://www.adafruit.com/product/1525) | 1 | Weatherproof monocrystalline panel, 930 mA peak. At 5 peak-sun hours per day, generates well over the daily energy budget for this duty-cycled system. Mounts flat on the NEMA enclosure lid with included screws. |
-| [Adafruit Lithium Ion Polymer Battery 3.7V 1200 mAh (#258)](https://www.adafruit.com/product/258) | 1 | Single-cell LiPo with 2-pin JST-PH connector. Validate actual system draw with the Mojo bench exercise in §8 before sizing for deployment. |
-| JST-PH 2-pin pigtail cable, female connector to bare-wire leads, ~100–150 mm (e.g., Adafruit #3814 or equivalent) | 1 | Connects the Sunny Buddy `LOAD+`/`LOAD–` through-hole pads to the Notecarrier CX LiPo JST receptacle. Solder the bare-wire end to the LOAD pads; plug the JST-PH female connector into the Notecarrier's battery input. |
-| Qwiic / STEMMA QT cable, 100 mm | 2 | One connects the Notecarrier CX Qwiic port to the PMSA003I STEMMA QT connector for permanent field use. A second cable (bench only) continues the daisy-chain from the PMSA003I's second STEMMA QT port to the Mojo's Qwiic port, enabling I²C readback of the Mojo's LTC2959 coulomb counter during validation — see §4 bench wiring and §8. |
-| NEMA 4X weatherproof enclosure, ~8×6×3″ (e.g., Hammond Manufacturing 1554CGY, ~9.4×6.0×3.1″, NEMA 4X ABS) | 1 | IP66-rated housing for outdoor mounting. Requires sensor-port hardware listed below to maintain weather resistance once openings are cut. |
-| IP-rated sintered-PE vent, M20 or M16 (e.g., Würth Elektronik 3800301 or equivalent) | 2 | Provides PM2.5/PM10 sensor airflow (inlet + exhaust) while preserving the enclosure's weather rating. Sintered-PE construction passes particulate-laden air for measurement without allowing bulk water ingress. |
-| Weatherproof acoustic vent plug, 20–25 mm PTFE-membrane type (e.g., Würth Elektronik WE-AVE 3820101 or equivalent) | 1 | Allows sound pressure waves to reach the SEN0232 microphone capsule while sealing against rain and splash. Mount with the board's microphone aperture aligned directly behind the vent opening. A bare hole — even with foam packing — does not maintain IP/NEMA weather resistance. |
+| Part | Qty | Type | Rationale |
+|------|-----|------|-----------|
+| [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Required | Integrated carrier with an embedded Cygnet STM32 host, LiPo JST connector, Qwiic I²C port, and 6-channel ADC header — no separate MCU needed. |
+| [Notecard Cell+WiFi (MBGLW)](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) | 1 | Required | Cellular removes per-site WiFi dependency; the MBGLW includes built-in GNSS for geo-stamping every reading without a separate GPS module. |
+| [Blues Flexible LTE, Wi-Fi, or GPS/GNSS Antenna](https://shop.blues.com/products/flexible-cellular-or-wi-fi-antenna?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 2 | Required | One for the MBGLW **MAIN** (cellular) u.FL port; one for the **GPS** u.FL port. The same Molex-manufactured Blues flexible antenna covers both: its 698 MHz–4.0 GHz broadband range includes GPS L1 at 1575 MHz. The MBGLW also has a **WIFI** u.FL port; that port is left unconnected in this design — cellular is the sole wireless path and the WiFi radio is not used. Because the Hammond 1554CGY enclosure is ABS plastic (RF-transparent), both flex antennas mount **inside** the enclosure on interior surfaces; no cable glands or external mounting are required for the antennas. |
+| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Optional (bench only) | Coulomb counter for bench-side energy validation; confirms that sleep current, active sampling current, and per-session transmit energy match expected figures. Not required for field deployment. |
+| [Adafruit PMSA003I Air Quality Breakout (#4632)](https://www.adafruit.com/product/4632) | 1 | Required | I²C optical particle counter reporting PM2.5 and PM10 in µg/m³. The Adafruit breakout includes an onboard 5V boost circuit so it runs correctly from the Notecarrier CX's 3.3V Qwiic rail. |
+| [DFRobot Gravity Analog Sound Level Meter (SEN0232)](https://www.dfrobot.com/product-1663.html) | 1 | Required | A-weighted analog sound meter, 30–130 dB(A), 3.3–5 V supply, analog voltage output. Op-amp output connects directly to the Cygnet's 12-bit ADC with no additional circuitry required. |
+| [SparkFun Sunny Buddy MPPT Solar Charger (PRT-12885)](https://www.sparkfun.com/products/12885) | 1 | Required | Maximum power point tracking solar charger for a single-cell LiPo. Extracts maximum current from the panel across varying light conditions — critical for a north-facing or partially shaded site fence mount. |
+| [Adafruit 6V 6W Solar Panel (#1525)](https://www.adafruit.com/product/1525) | 1 | Required | Weatherproof monocrystalline panel, 930 mA peak. At 5 peak-sun hours per day, generates well over the daily energy budget for this duty-cycled system. Mounts flat on the NEMA enclosure lid with included screws. |
+| [Adafruit Lithium Ion Polymer Battery 3.7V 1200 mAh (#258)](https://www.adafruit.com/product/258) | 1 | Required | Single-cell LiPo with 2-pin JST-PH connector. Validate actual system draw with the Mojo bench exercise in §8 before sizing for deployment. |
+| JST-PH 2-pin pigtail cable, female connector to bare-wire leads, ~100–150 mm (e.g., Adafruit #3814 or equivalent) | 1 | Required | Connects the Sunny Buddy `LOAD+`/`LOAD–` through-hole pads to the Notecarrier CX LiPo JST receptacle. Solder the bare-wire end to the LOAD pads; plug the JST-PH female connector into the Notecarrier's battery input. |
+| Qwiic / STEMMA QT cable, 100 mm | 2 | Required | One connects the Notecarrier CX Qwiic port to the PMSA003I STEMMA QT connector for permanent field use. A second cable (optional, bench only) continues the daisy-chain from the PMSA003I's second STEMMA QT port to the Mojo's Qwiic port, enabling I²C readback of the Mojo's LTC2959 coulomb counter during validation — see §4 bench wiring and §8. |
+| NEMA 4X weatherproof enclosure, ~8×6×3″ (e.g., Hammond Manufacturing 1554CGY, ~9.4×6.0×3.1″, NEMA 4X ABS) | 1 | Required | IP66-rated housing for outdoor mounting. Requires sensor-port hardware listed below to maintain weather resistance once openings are cut. |
+| IP-rated sintered-PE vent, M20 or M16 (e.g., Würth Elektronik 3800301 or equivalent) | 2 | Required | Provides PM2.5/PM10 sensor airflow (inlet + exhaust) while preserving the enclosure's weather rating. Sintered-PE construction passes particulate-laden air for measurement without allowing bulk water ingress. |
+| Weatherproof acoustic vent plug, 20–25 mm PTFE-membrane type (e.g., Würth Elektronik WE-AVE 3820101 or equivalent) | 1 | Required | Allows sound pressure waves to reach the SEN0232 microphone capsule while sealing against rain and splash. Mount with the board's microphone aperture aligned directly behind the vent opening. A bare hole — even with foam packing — does not maintain IP/NEMA weather resistance. |
 
 All Blues parts ship with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
@@ -91,10 +104,10 @@ The Hammond 1554CGY enclosure is ABS plastic, which is RF-transparent — cellul
 
 ## 5. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into the `PRODUCT_UID` constant in the firmware.
-2. **Claim the Notecard.** Power the enclosure. On first cellular session the Notecard automatically associates with your project using the ProductUID.
-3. **Create a Fleet per site.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) (and [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules)) group devices for shared configuration and routing. A natural unit is one fleet per active construction site — all sensors on that site share the same threshold environment variables, which can be tuned to the specific trade activities happening there this week. When a site closes, archive the fleet; when a new site opens, create a fresh one.
-4. **Set environment variables.** All variables below are optional; firmware defaults are shown. Any value pushed through Notehub overrides the firmware default on the device's next inbound sync — thresholds can be retightened or relaxed without a firmware update or a truck roll to the site.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into the `PRODUCT_UID` constant in the firmware (line ~15 of `construction_env_monitor.ino`).
+2. **Claim the Notecard.** Power the enclosure. On first cellular session the Notecard automatically associates with your project using the ProductUID. You will see the device appear on the Notehub dashboard within 1–2 minutes.
+3. **Create a Fleet per site.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) (and [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules)) group devices for shared configuration and routing. A natural unit is one fleet per active construction site — all sensors on that site share the same threshold environment variables, which can be tuned to the specific trade activities happening there this week. When a site closes, archive the fleet; when a new site opens, create a fresh one. To add the device to a fleet: Notehub dashboard → Devices → select your device → assign to Fleet.
+4. **Set environment variables.** All variables below are optional; firmware defaults are shown. To set them: Notehub dashboard → Fleets → select your fleet → Settings → Environment Variables → Add. Any value pushed through Notehub overrides the firmware default on the device's next inbound sync — thresholds can be retightened or relaxed without a firmware update or a truck roll to the site. The device syncs environment changes within 30 minutes; to force an immediate sync, issue `{"req":"hub.sync"}` from the Notecard's in-browser serial terminal (accessible via Notehub → Devices → select device → In-Browser Serial).
 
    | Variable | Default | Purpose |
    |---|---|---|
@@ -110,15 +123,28 @@ The Hammond 1554CGY enclosure is ABS plastic, which is RF-transparent — cellul
 
 ## 6. Firmware Design
 
-Sketch files:
+### Build and Flash
+
+**Prerequisites:**
+- Arduino IDE 2.0+ with [Arduino core for STM32](https://github.com/stm32duino/Arduino_Core_STM32) installed, or `arduino-cli` v0.21+.
+- Required libraries:
+  - `Blues Wireless Notecard` (v1.8.5+): `arduino-cli lib install "Blues Wireless Notecard"`
+  - `Adafruit PM25 AQI Sensor`: `arduino-cli lib install "Adafruit PM25 AQI Sensor"`
+
+**Using Arduino IDE:** Open `firmware/construction_env_monitor.ino`, select board `STMicroelectronics → STM32L → Notecarrier CX`, update `PRODUCT_UID`, and click Upload.
+
+**Using `arduino-cli`:**
+```bash
+arduino-cli compile --fqbn STMicroelectronics:stm32:GenL0 firmware/
+arduino-cli upload -p /dev/ttyUSB0 --fqbn STMicroelectronics:stm32:GenL0 firmware/
+```
+(Adjust `-p` to your serial port; on Windows use `COM3`, on macOS use `/dev/tty.usbserial-*`.)
+
+### Source Files
+
 - [`construction_env_monitor.ino`](firmware/construction_env_monitor.ino) — global state definitions, `setup()`, `loop()`
 - [`construction_env_monitor_helpers.h`](firmware/construction_env_monitor_helpers.h) — shared constants, `AppState` struct, extern declarations, function prototypes
 - [`construction_env_monitor_helpers.cpp`](firmware/construction_env_monitor_helpers.cpp) — sensor helpers, Notecard config helpers, note-send helpers
-
-Dependencies:
-- Arduino core for STM32 ([`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32)).
-- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (the `note-arduino` library, stable v1.8.5 at time of writing). Install via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`. Verify the current release at the [note-arduino releases page](https://github.com/blues/note-arduino/releases).
-- [`Adafruit PM25 AQI Sensor`](https://github.com/adafruit/Adafruit_PM25AQI). Install via the Arduino Library Manager or `arduino-cli lib install "Adafruit PM25 AQI Sensor"`.
 
 ### Modules
 
@@ -278,9 +304,11 @@ Every 5 minutes (default), the Cygnet wakes, reads both sensors (sound first, th
 
 **Expected steady-state cadence.** A freshly deployed unit on a quiet morning should generate two `env_summary.qo` events per hour (one every 30 minutes at default settings) and zero `env_alert.qo` events. In practice, a working construction site will generate occasional `db_a_high` alerts when heavy equipment operates near the sensor and occasional `pm25_high` alerts during active cutting, grinding, or sweeping operations.
 
+**Notehub verification.** After first power-on, the device claims itself to the project on its first cellular session (~1–2 minutes). On the Notehub dashboard, Devices page, you should see your Notecard appear with a device name (defaulting to the Notecard's serial number). Within 30 minutes, the first `env_summary.qo` note appears in the Events table. Click on it to inspect the JSON payload — verify that `pm25_avg`, `pm10_avg`, `db_a_avg` are present and non-zero, and that `lat`/`lon` are non-zero if the device has GPS sky view. `location_valid: false` on the first few summaries is normal; it becomes `true` after the GNSS acquires a fresh fix at the current site.
+
 **First-light sanity check — two phases.**
 
-**Phase 1: USB bench (boot and I²C validation).** Connect the Notecarrier CX to a computer via USB-C, with no LiPo connected. In USB mode the Cygnet stays powered continuously; `card.attn` cannot cut the host rail because there is no ATTN-controlled LiPo path. `setup()` executes exactly **once**, running one full sample cycle including the 30-second PM warm-up. Because `NotePayloadSaveAndSleep` cannot cut host power in USB-only mode, it returns without sleeping and `loop()` takes over. `loop()` delays for the remaining interval (approximately `sample_interval_sec` minus the active-cycle time), re-applies any changed config, and runs another full sample cycle — repeating indefinitely, producing periodic data without any wiring changes. Expect to see in the debug serial output from `setup()`: Notecard I²C init, `hub.set`, `note.template`, `env.get` requests, a `card.location` attempt, PM warm-up and sensor reads, and sound-level ADC samples. By default you will **not** see a summary `note.add` after the first cycle: the report countdown is initialised to 1800 seconds (30 minutes) and is decremented after a single cycle. After approximately six cycles (~30 minutes of `loop()` iterations), the report countdown fires and an `env_summary.qo` note is queued. An alert `note.add` to `env_alert.qo` will only appear if a threshold is tripped during a sample — which does not happen under normal lab conditions. To verify an alert path in USB mode: push `pm25_alert_ug_m3` to `1.0` in the Fleet environment variables, then wait for the Notecard to complete an **inbound sync** from Notehub — this is when the updated value is delivered to the Notecard's local environment store. Environment variable changes made in Notehub are not present on the device until after that sync; a reboot alone does not guarantee the new value has arrived. You can monitor sync status on the Notehub device page, or shorten the wait by issuing `{"req":"hub.sync"}` from the Notecard's in-browser serial terminal to force an immediate sync. Once the inbound sync has completed, the next `loop()` iteration calls `fetchEnvOverrides()` and picks up the updated value automatically — no power-cycle is required. The following sample cycle fires a `pm25_high` `env_alert.qo` note (visible in Notehub within a cellular session establishment window). Power-cycling the Cygnet (unplugging and replugging USB-C) is optional; `fetchEnvOverrides()` runs at the top of every loop cycle.
+**Phase 1: USB bench (boot and I²C validation).** Connect the Notecarrier CX to a computer via USB-C, with no LiPo connected. In USB mode the Cygnet stays powered continuously; `card.attn` cannot cut the host rail because there is no ATTN-controlled LiPo path. `setup()` executes once, running one full sample cycle including the 30-second PM warm-up. Because `NotePayloadSaveAndSleep` cannot cut host power in USB-only mode, it returns without sleeping and `loop()` takes over. `loop()` repeats indefinitely, delaying between cycles and executing fresh sample cycles without any re-flashing. Open the serial monitor (115200 baud) to watch debug output. Expect to see: Notecard I²C init, `hub.set`, `note.template`, `env.get` requests, PM warm-up and sensor reads, and sound-level ADC samples. By default you will **not** see a summary `note.add` after the first cycle — the report countdown initialises to 1800 seconds (30 minutes). After approximately six cycles (~30 minutes of elapsed wall-clock time), the countdown fires and an `env_summary.qo` note is queued. To verify the alert path: (a) Set `pm25_alert_ug_m3` to `1.0` in Notehub Fleet Environment Variables; (b) Wait for the device's next inbound sync (~30 min default, or force one with `{"req":"hub.sync"}` in the in-browser serial terminal); (c) The next sample cycle fires `pm25_high` immediately. Reset the variable to `35.0` afterward.
 
 **Phase 2: LiPo/solar (repeated-sampling validation).** Disconnect USB-C. Wire the Sunny Buddy LOAD to the Notecarrier CX LiPo JST and connect a charged LiPo (see §4 power chain). On Notecarrier CX, ATTN-controlled sleep is already wired to the Cygnet host power rail — no additional wiring is required. The host now wakes every `sample_interval_sec` (default 5 minutes), runs one full `setup()` sample cycle, saves state, and sleeps. Expect `env_summary.qo` to appear in Notehub approximately 30 minutes after first power-on (six 5-minute cycles). If the countdown fires but no note appears, check `hub.status` in the Notehub in-browser terminal for any cellular registration errors.
 

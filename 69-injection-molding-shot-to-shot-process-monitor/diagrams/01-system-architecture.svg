@@ -7,7 +7,7 @@
   <rect width="800" height="380" fill="#ffffff"/>
 
   <text x="400" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">System Architecture</text>
-  <text x="400" y="58" text-anchor="middle" font-size="12" fill="#64748b">Creek / Culvert Flood-Warning Stream Gauge</text>
+  <text x="400" y="58" text-anchor="middle" font-size="12" fill="#64748b">Injection Molding Shot-to-Shot Process Monitor</text>
 
   <!-- Sensors -->
   <rect x="20" y="120" width="170" height="180" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
@@ -15,9 +15,10 @@
   <text x="105" y="172" text-anchor="middle" font-size="13" font-weight="700" fill="#7c2d12">Sensors</text>
   <line x1="40" y1="186" x2="170" y2="186" stroke="#fed7aa"/>
   <g font-size="11" fill="#9a3412">
-    <text x="105" y="216" text-anchor="middle">MB7389 ultrasonic</text>
-    <text x="105" y="238" text-anchor="middle">Tipping-bucket rain</text>
-    <text x="105" y="260" text-anchor="middle">UART + GPIO</text>
+    <text x="105" y="216" text-anchor="middle">Pressure transducer</text>
+    <text x="105" y="238" text-anchor="middle">4–20 mA loop</text>
+    <text x="105" y="260" text-anchor="middle">K-type thermocouple</text>
+    <text x="105" y="282" text-anchor="middle">SPI · MAX31855</text>
   </g>
 
   <!-- Edge -->
@@ -27,10 +28,10 @@
   <line x1="260" y1="186" x2="420" y2="186" stroke="#fde68a"/>
   <g font-size="11" fill="#854d0e">
     <text x="340" y="216" text-anchor="middle">Notecarrier CX</text>
-    <text x="340" y="238" text-anchor="middle">Cygnet STM32</text>
-    <text x="340" y="260" text-anchor="middle">NOTE-NBGLWX</text>
+    <text x="340" y="238" text-anchor="middle">Cygnet STM32L433</text>
+    <text x="340" y="260" text-anchor="middle">Notecard MBGLW</text>
   </g>
-  <text x="340" y="284" text-anchor="middle" font-size="10" fill="#a16207" font-style="italic">solar + LiPo · 5-min wakes</text>
+  <text x="340" y="284" text-anchor="middle" font-size="10" fill="#a16207" font-style="italic">10/20 Hz capture · features</text>
 
   <!-- Notehub -->
   <rect x="490" y="120" width="170" height="180" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
@@ -45,18 +46,18 @@
 
   <!-- Routes -->
   <rect x="710" y="120" width="80" height="180" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
-  <g transform="translate(741,135) scale(0.75)" fill="#581c87"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></g>
+  <g transform="translate(741,135) scale(0.75)" fill="#581c87"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7 17v-3h2v3H7zm4 0V7h2v10h-2zm4 0v-5h2v5h-2z"/></g>
   <text x="750" y="172" text-anchor="middle" font-size="13" font-weight="700" fill="#581c87">Routes</text>
   <line x1="720" y1="186" x2="780" y2="186" stroke="#e9d5ff"/>
   <g font-size="11" fill="#6b21a8">
-    <text x="750" y="216" text-anchor="middle">Dispatch</text>
-    <text x="750" y="238" text-anchor="middle">Hydrology</text>
-    <text x="750" y="260" text-anchor="middle">Faults</text>
+    <text x="750" y="216" text-anchor="middle">Quality</text>
+    <text x="750" y="238" text-anchor="middle">Historian</text>
+    <text x="750" y="260" text-anchor="middle">Alerts</text>
   </g>
 
   <!-- Connection labels ABOVE arrows -->
-  <text x="215" y="100" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">UART + GPIO</text>
-  <text x="465" y="100" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">cellular / satellite</text>
+  <text x="215" y="100" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">analog + SPI</text>
+  <text x="465" y="100" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">cellular / WiFi</text>
   <text x="685" y="100" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">routes</text>
 
   <!-- Arrows -->
@@ -64,5 +65,5 @@
   <line x1="440" y1="210" x2="488" y2="210" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
   <line x1="660" y1="210" x2="708" y2="210" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
 
-  <text x="400" y="345" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">Cellular primary, Skylo NTN fallback — flood alerts get through even when the storm knocks out the local tower.</text>
+  <text x="400" y="345" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">No mold modification — hydraulic injection pressure tapped at the manifold block; cellular bypasses the OT LAN.</text>
 </svg>
