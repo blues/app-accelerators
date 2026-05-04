@@ -13,10 +13,60 @@ A pack-level sentinel for the backup battery inside a **traffic-signal controlle
 1. **Notehub** — create a [Notehub project](https://notehub.io) and copy the ProductUID.
 2. **Wire the bench rig** — Notecarrier CX + Notecard MBGLW + INA228 on Qwiic + NTC divider on A0 + LiPo on JST. Full pinout in [§4](#4-wiring-and-assembly).
 3. **Edit one line** — set `PRODUCT_UID` in [`firmware/cabinet_battery_sentinel/cabinet_battery_sentinel_helpers.h`](firmware/cabinet_battery_sentinel/cabinet_battery_sentinel_helpers.h).
-4. **Flash** — select the Cygnet board in Arduino IDE; see [§6.1](#61-installing-and-flashing) for `arduino-cli` instructions.
-5. **Watch** — open Notehub → **Events** tab. You should see `_session.qo` immediately, `battery_summary.qo` within an hour, and `battery_alert.qo` in real time if any threshold trips.
+4. **Flash via CLI:**
+   ```bash
+   arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/cabinet_battery_sentinel/
+   arduino-cli upload -b STMicroelectronics:stm32:GenL4:pnum=CYGNET -p /dev/cu.usbmodem* firmware/cabinet_battery_sentinel/
+   ```
+   Or use Arduino IDE (Tools → Board → Cygnet; Upload).
+5. **Watch for success** — open Notehub → **Events** tab. You know it's working when:
+   - `_session.qo` appears within **2–3 minutes** — this confirms the Notecard reached Notehub over cellular
+   - `battery_summary.qo` appears within **60 minutes** — this is your hourly health summary (sample JSON below)
+   - `battery_alert.qo` appears immediately if any alert condition trips (sample JSON below)
+   
+   If you don't see `_session.qo` after 5 minutes, check your PRODUCT_UID matches your Notehub project exactly and verify cellular coverage at your location. See §9.1 troubleshooting if the Notecard never reaches Notehub.
+
+   Example `battery_summary.qo` (healthy 12 V VRLA at float):
+   ```json
+   {
+     "volt_v": 13.65,
+     "curr_ma": 12.5,
+     "power_mw": 170.6,
+     "charge_ah": 0.0125,
+     "soc_pct": 97.3,
+     "temp_c": 24.3,
+     "volt_min_v": 13.52,
+     "curr_min_ma": 0.0,
+     "temp_max_c": 25.1,
+     "samples": 30
+   }
+   ```
+
+   Example `battery_alert.qo` (power outage event):
+   ```json
+   {
+     "alert": "power_outage",
+     "volt_v": 12.4,
+     "curr_ma": -3200.0,
+     "temp_c": 25.5
+   }
+   ```
 
 The rest of this README expands each step and explains why the firmware is shaped the way it is. If you are doing a real cabinet install rather than a bench bring-up, also read [§9 Limitations](#9-limitations-and-next-steps) before committing to a shunt and power topology.
+
+## Table of Contents
+- [1. Project Overview](#1-project-overview)
+- [2. System Architecture](#2-system-architecture)
+- [3. Hardware Requirements](#3-hardware-requirements)
+- [4. Wiring and Assembly](#4-wiring-and-assembly)
+- [5. Notehub Setup](#5-notehub-setup)
+- [6. Firmware Design](#6-firmware-design)
+- [7. Data Flow](#7-data-flow)
+- [8. Validation and Testing](#8-validation-and-testing)
+- [9. Limitations and Next Steps](#9-limitations-and-next-steps)
+- [9.1 Troubleshooting](#91-troubleshooting)
+- [9.2 Environment Variables — Quick Reference](#92-environment-variables--quick-reference)
+- [10. Summary](#10-summary)
 
 ## 1. Project Overview
 
@@ -26,7 +76,7 @@ The failure signal that *does* show up early is float current. A healthy VRLA ba
 
 This project instruments it. A precision bidirectional current monitor sits in series with the battery's positive terminal, measuring float current with milliamp resolution. When the charger current reverses and the battery starts discharging — because mains power failed — the Notecard fires an immediate alert. When float current climbs steadily over weeks, the hourly summary captures the trend for a downstream analytics system to act on.
 
-**Chemistry scope.** The float-current capacity-degradation signal is a VRLA mechanism. LFP batteries do not sulfate, and elevated float current on an LFP pack indicates a charger or BMS configuration fault rather than cell-level degradation. LFP installations still benefit fully from three of the five battery-condition alert modes this design provides — power-outage detection (current reversal), pack voltage bounds checking, and surface temperature alerting — but float-current trending as a capacity-health proxy does not apply to LFP without chemistry-specific calibration. See §7 for per-alert chemistry guidance and §9 for LFP threshold commissioning notes.
+**Chemistry scope.** The float-current capacity-degradation signal is a VRLA mechanism. LFP batteries do not sulfate, and elevated float current on an LFP pack indicates a charger or BMS configuration fault rather than cell-level degradation. LFP installations still benefit fully from four of the six battery-condition alert modes this design provides — power-outage detection (current reversal), pack voltage bounds checking, surface temperature alerting, and low-SoC threshold tripping — but float-current trending as a capacity-health proxy does not apply to LFP without chemistry-specific calibration. See §7 for per-alert chemistry guidance and §9 for LFP threshold commissioning notes.
 
 **Why Notecard.** The Notecard's independence from site infrastructure is the fundamental feature here. A traffic-cabinet controller, a roadside LoRaWAN gateway, or a roadside remote terminal unit all have their own modems and radios — but those are exactly the devices the backup battery is supposed to keep running during a mains failure. You cannot use the site's LTE modem to report that the site's LTE modem just went down because the backup battery was dead.
 
@@ -38,7 +88,7 @@ The Notecard runs on its own cellular service, from its own SIM, on a power path
 
 ![System architecture: battery sensors → Notecarrier CX edge enclosure → cellular/WiFi → Notehub → routes](diagrams/01-system-architecture.svg)
 
-**Device-side responsibilities.** The onboard Cygnet STM32L433 host on the Notecarrier CX wakes every two minutes, reads pack voltage and bidirectional current from the INA228 over Qwiic, reads surface temperature from the NTC thermistor on A0, then evaluates five battery-condition rules plus one sensor-health alert locally. Any rule that trips emits an alert [Note](https://dev.blues.io/api-reference/glossary/#note) with `sync:true` for immediate delivery. All per-window statistics accumulate in a state struct serialised into Notecard flash by `NotePayloadSaveAndSleep` before the host powers off; [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) handles the host power-gating so the MCU is off entirely between samples. Window-average power (`voltAvg × currAvg`) is derived at summary time, not sampled per-read from the INA228 power register.
+**Device-side responsibilities.** The onboard Cygnet STM32L433 host on the Notecarrier CX wakes every two minutes, reads pack voltage and bidirectional current from the INA228 over Qwiic, reads surface temperature from the NTC thermistor on A0, then evaluates six battery-condition rules plus one sensor-health alert locally. Any rule that trips emits an alert [Note](https://dev.blues.io/api-reference/glossary/#note) with `sync:true` for immediate delivery. All per-window statistics accumulate in a state struct serialised into Notecard flash by `NotePayloadSaveAndSleep` before the host powers off; [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) handles the host power-gating so the MCU is off entirely between samples. Window-average power (`voltAvg × currAvg`) is derived at summary time, not sampled per-read from the INA228 power register.
 
 **Notecard responsibilities.** The Notecard stores Notes in its on-device queue, establishes cellular (or WiFi) sessions on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 minutes), and flushes `sync:true` alert Notes immediately. It also distributes [environment variable](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) updates from Notehub to the host on its inbound schedule — operators can retune every threshold and both cadence values without reflashing.
 
@@ -52,7 +102,7 @@ The Notecard runs on its own cellular service, from its own SIM, on a power path
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Compact carrier with an embedded Cygnet STM32L433 host MCU, Qwiic I2C port, and an onboard JST LiPo charger circuit — essential for keeping the sentinel powered through the outages it's built to detect. Accepts regulated 4.5–5.5 V on the +VBAT header pin. |
 | [Notecard Cell+WiFi (MBGLW)](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) | 1 | Cellular uplink that is independent of the site equipment being backed up; WiFi acts as an opportunistic fallback for sites that happen to have rooftop coverage. |
-| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Bench-validation coulomb counter; splice inline on the 5 V power path during bring-up to confirm the expected low-power trace — sensor wakes, transmit bursts, and idle baseline. Not deployed in production hardware — see §8. |
+| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | **BENCH VALIDATION ONLY** — not deployed in production. Splice inline on the 5 V power path during bring-up to measure the complete device's idle baseline, sensor-wake current, and cellular-session bursts. See §8 for analysis and §4 for wiring. Remove before field deployment. |
 | [Adafruit INA228 Power Monitor Breakout (#5832)](https://www.adafruit.com/product/5832) | 1 | 20-bit I2C precision monitor measuring bus voltage up to 85 V and bidirectional current through its onboard 15 mΩ shunt. The onboard shunt handles up to approximately 8 A continuous — appropriate for installations where peak discharge current does not exceed that limit (typically batteries up to roughly 40 Ah at a C/5 discharge rate). For higher-current installations, use the breakout's external-shunt footprint with a lower-value busbar shunt. |
 | 10 kΩ NTC thermistor, β=3950, waterproof probe | 1 | Surface-mounted to the battery case; detects elevated case temperature that can signal charging faults, poor cabinet ventilation, or abnormal battery conditions — and provides a per-sample temperature for the hourly summary. |
 | 10 kΩ 1% resistor | 1 | Pull-up resistor in the thermistor voltage divider. |
@@ -68,13 +118,21 @@ The Notecard runs on its own cellular service, from its own SIM, on a power path
 
 All Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
+### Safety and Installation Requirements (Read Before Wiring)
+
+**Safety-critical step: inline fuse.** Install a **1 A fuse in series on the positive-bus cable between the battery bus (+) and the DC-DC converter input** (the sentinel's own power supply). Battery strings and busbars can deliver thousands of amperes of short-circuit current; the fuse sized for 1 A — well above the sentinel's ≤500 mA peak draw during a cellular session — will clear a wiring fault before causing arc damage or fire.
+
+**INA228 shunt installation.** The INA228 sits **in series on the battery's positive terminal** and must be installed on a battery branch that already has an **upstream circuit breaker or fuse rated for the expected load current**. Do not install the INA228 shunt on a battery segment with no existing overcurrent protection.
+
+**Lockout/tagout.** Before making any connections to an energised battery bus: isolate and lock out the battery charger and all parallel discharge paths (lockout/tagout procedure), use insulated tools, remove metallic jewelry and watchbands, and confirm the bus is de-energized before touching conductors. For cabinet installations with multiple parallel battery strings, all strings must be isolated simultaneously before working in the positive-bus circuit.
+
 > **Voltage range note.** This BOM targets a **positive-referenced DC bus** — the INA228 high-side sensing topology and the non-isolated 5 V step-down converter both reference the negative bus as circuit ground. It covers **12 V and 24 V positive-referenced** VRLA and LFP charger buses (e.g., 12 V VRLA at 13.5–14.7 V float; 24 V VRLA at 27–29.4 V float). For 24 V systems, update `volt_min_v` and `volt_max_v` to match your charger's float window — see §5 — and use the Pololu D24V50F5 listed in the BOM. Also verify that the expected peak discharge current is within the shunt's rating (≤8 A for the onboard 15 mΩ shunt; use an external shunt for higher-current installations).
 
 ## 4. Wiring and Assembly
 
 ![Wiring diagram: INA228 high-side current sensing and Qwiic I²C, NTC thermistor voltage divider on A0, LiPo on JST, power chain from cabinet bus through DC-DC module to Notecarrier CX +VBAT](diagrams/02-wiring-assembly.svg)
 
-> **Safety.** Battery strings and busbars can deliver thousands of amperes of short-circuit current even at nominally low voltages — a momentary short across a 12 V or 24 V battery bus is enough to arc, weld tool tips, and ignite fires. All work on energised battery systems must be performed by qualified electrical personnel. Before making any connections: isolate and lock out the battery charger and all parallel discharge paths (lockout/tagout procedure), use insulated tools, remove metallic jewellery and watchbands, and confirm the bus is de-energised before touching conductors. Install the 1 A inline fuse listed in the BOM in series with the battery-bus feed to the DC-DC converter (the sentinel's own power supply line). The INA228 shunt path — wired in series with the battery's positive terminal and the load bus — carries the full site load current; before adding the shunt in series, verify that the battery installation already includes an upstream circuit breaker or fuse sized for the expected maximum load current, and that wiring in the shunt path is rated for that current. Do not install the INA228 in series on a battery segment with no existing upstream overcurrent protection. For cabinet installations with multiple parallel battery strings, all strings must be isolated simultaneously before working in the positive-bus circuit.
+> **Safety reminder:** Review the safety requirements in §3 before proceeding. Ensure the inline fuse is installed on the sentinel's power supply and the INA228 shunt is on a battery branch with upstream overcurrent protection.
 
 All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header and Qwiic connector. The Notecard Cell+WiFi seats into the M.2 slot.
 
@@ -151,9 +209,9 @@ Remove Mojo from the power path for production deployment; see §8.
    |---|---|---|
    | `sample_interval_sec` | `120` | Seconds between sensor wakes. Min 30, max 3600. At 120 s the device takes 30 samples per hourly summary. |
    | `summary_interval_min` | `60` | Minutes between `battery_summary.qo` notes. Changing this value also re-applies `hub.set` on the next wake so the Notecard's outbound session cadence stays in sync with the new summary interval. |
-   | `volt_min_v` | `13.2` | Pack voltage (V) below which `float_voltage_low` fires. Calibrated for 12 V VRLA at 25 °C — the low end of the normal float window is approximately 13.2–13.5 V (2.20–2.25 V/cell); below that, the charger is failing to maintain float. For 24 V systems set to ~26.4. |
-   | `volt_max_v` | `14.8` | Pack voltage (V) above which `float_voltage_high` fires. Typical 12 V VRLA float is 13.5–13.8 V; the default gives 1 V of margin above the absorption ceiling. For 24 V systems set to ~29.0. |
-   | `float_current_hi_ma` | `500` | Float current (mA) above which `float_current_high` fires. A healthy 100 Ah VRLA draws <50 mA at float; 500 mA is a clear anomaly signal. **VRLA-first metric:** elevated float current is a reliable early-warning signal for VRLA degradation (sulfation, internal resistance growth). For LFP packs it primarily flags a charging-system fault rather than cell degradation; commission a chemistry-appropriate threshold at installation. |
+   | `volt_min_v` | `13.2` | Pack voltage (V) below which `float_voltage_low` fires. **Default calibrated for 12 V VRLA** — the low end of the normal float window is approximately 13.2–13.5 V (2.20–2.25 V/cell). For 24 V systems set to ~26.4; for LFP systems, set chemistry-appropriate thresholds per the Chemistry-Specific Alert Notes in §7. |
+   | `volt_max_v` | `14.8` | Pack voltage (V) above which `float_voltage_high` fires. **Default calibrated for 12 V VRLA** — typical float is 13.5–13.8 V; the default gives 1 V of margin above the absorption ceiling. For 24 V systems set to ~29.0; for LFP, see §7. |
+   | `float_current_hi_ma` | `500` | Float current (mA) above which `float_current_high` fires. **Default calibrated for 12 V VRLA** — a healthy 100 Ah VRLA draws <50 mA at float; 500 mA is a clear anomaly signal. See the "Chemistry-Specific Alert Notes" sidebar in §7 for VRLA vs. LFP interpretation and commission a chemistry-appropriate threshold at installation. |
    | `temp_alert_c` | `40` | Pack surface temperature (°C) above which `temp_high` fires. VRLA batteries age roughly 2× faster for every 10 °C above 25 °C; 40 °C is the standard service-alert threshold. |
    | `discharge_ma` | `-200` | Current (mA) below which `power_outage` fires. −200 mA provides a clear margin above float-current noise while catching any sustained discharge within a single sample. |
    | `usable_capacity_ah` | `100` | Battery bank usable capacity (Ah) used for coulomb-counting SoC. Set this to the battery's nameplate capacity (or measured usable capacity from a full-discharge cycle). Required for meaningful `soc_pct` values — the firmware uses the default 100 Ah until overridden. For a 200 Ah bank set to `200`. |
@@ -167,24 +225,9 @@ Remove Mojo from the power path for production deployment; see §8.
 Within a minute of first power-on the **Events** tab should begin populating. Three event kinds matter:
 
 - **`_session.qo`** — automatic Notecard housekeeping on each cellular session; confirms the radio is reaching Notehub.
-- **`battery_summary.qo`** — one per `summary_interval_min`. A healthy 12 V VRLA in good condition looks like:
-  ```json
-  {
-    "volt_v": 13.65,
-    "curr_ma": 12.5,
-    "power_mw": 170.6,
-    "charge_ah": 0.0125,
-    "soc_pct": 97.3,
-    "temp_c": 24.3,
-    "volt_min_v": 13.52,
-    "curr_min_ma": 0.0,
-    "temp_max_c": 25.1,
-    "samples": 30
-  }
-  ```
-  `charge_ah` is the net coulombs over the summary window: 12.5 mA average × 1 hour = 0.0125 Ah (12.5 mAh) of float charge delivered in this example. A large negative `charge_ah` means the site spent time on battery. `soc_pct` is the running coulomb-counted state-of-charge estimate; `−9999` means `soc_pct_init` has not yet been commissioned. `curr_min_ma` tracks the deepest discharge current (most-negative value) seen in the window; `0.0` means no discharge occurred — all samples were positive float current. A non-zero negative value here (e.g., `−3200.0`) means the battery was discharging during the window.
+- **`battery_summary.qo`** — one per `summary_interval_min`. `charge_ah` is the net coulombs over the summary window: positive values during float operation, large negative values during site discharge. `soc_pct` is the running coulomb-counted state-of-charge estimate; `−9999` means `soc_pct_init` has not yet been commissioned. `curr_min_ma` tracks the deepest discharge current (most-negative value) seen in the window; `0.0` means no discharge occurred. See the Quickstart section for full example JSON.
 
-- **`battery_alert.qo`** — emitted only on a threshold trip or sensor fault, transmitted immediately. The `alert` field is one of `float_voltage_low`, `float_voltage_high`, `float_current_high`, `temp_high`, `power_outage`, or `ina228_unreachable`.
+- **`battery_alert.qo`** — emitted only on a threshold trip or sensor fault, transmitted immediately. The `alert` field is one of `float_voltage_low`, `float_voltage_high`, `float_current_high`, `temp_high`, `power_outage`, `soc_low`, or `ina228_unreachable`. See the Quickstart section for example JSON.
 
 ## 6. Firmware Design
 
@@ -240,7 +283,7 @@ Then the host powers off for the sample interval and the monitor goes quiet. `IN
 | INA228 init and per-wake calibration | `initINA228` (helpers.cpp) |
 | Battery voltage and current reads | `readBatteryVoltage`, `readBatteryCurrent` (helpers.cpp) |
 | NTC thermistor temperature read | `readPackTempC` (helpers.cpp) |
-| Five battery-condition alert rules plus sensor-health fault, all with per-alert cooldowns | Inline in `setup()` (cabinet_battery_sentinel.ino) |
+| Six battery-condition alert rules plus sensor-health fault, all with per-alert cooldowns | Inline in `setup()` (cabinet_battery_sentinel.ino) |
 | INA228 persistent-fault remote notification | Inline in `setup()` + `sendAlert` |
 | Hourly summary accumulation and emission | `sendSummary` (helpers.cpp) |
 | Immediate-sync alert emission | `sendAlert` (helpers.cpp) |
@@ -264,37 +307,13 @@ The INA228 has an internal power register, but this design does not read it; `po
 
 `battery_summary.qo` is [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates), giving it a fixed wire schema and a ~3–5× smaller on-wire footprint than free-form JSON — material for a device that will send 24 notes per day for years. `battery_alert.qo` is untemplated and uses `sync:true` for immediate delivery.
 
-Example `battery_summary.qo` body (12 V VRLA, normal float operation — no discharge event during the window):
+Field semantics:
+- `power_mw` is derived as `voltAvg × currAvg` — a window-average approximation, not a per-sample hardware read from the INA228 power register.
+- `charge_ah` is the **net coulombs** delivered to or drawn from the battery during the window — a per-window delta only, not running state-of-charge.
+- `soc_pct` is the **running state-of-charge estimate** maintained across windows by integrating current against the commissioned `usable_capacity_ah` baseline; `−9999` means not yet commissioned.
+- `curr_min_ma` tracks the most-negative (deepest discharge) current seen in the window; `0.0` means no discharge occurred; a negative value (e.g., `−3200.0`) means the battery was actively discharging at 3.2 A into the load.
 
-```json
-{
-  "volt_v": 13.65,
-  "curr_ma": 12.5,
-  "power_mw": 170.6,
-  "charge_ah": 0.0125,
-  "soc_pct": 97.3,
-  "temp_c": 24.3,
-  "volt_min_v": 13.52,
-  "curr_min_ma": 0.0,
-  "temp_max_c": 25.1,
-  "samples": 30
-}
-```
-
-`power_mw` is derived as `voltAvg × currAvg` — a window-average approximation, not a per-sample hardware read from the INA228 power register. `charge_ah` is the **net coulombs** delivered to or drawn from the battery during the window: 12.5 mA average × 1 h = 0.0125 Ah (12.5 mAh) here — a per-window delta only. `soc_pct` is the **running state-of-charge estimate** maintained across windows by integrating current against the commissioned `usable_capacity_ah` baseline; `−9999` means SoC has not yet been commissioned — see §5. `curr_min_ma` tracks the deepest discharge current (most-negative value seen in the window) and reports `0.0` when no discharge occurred during the window; a negative value here — e.g., `−3200.0` — means the battery was actively discharging into the load at some point in the hour.
-
-Example `battery_alert.qo` body (power outage event):
-
-```json
-{
-  "alert": "power_outage",
-  "volt_v": 12.4,
-  "curr_ma": -3200.0,
-  "temp_c": 25.5
-}
-```
-
-A `curr_ma` of −3200 mA means the battery is discharging at 3.2 A into the load — that's an immediately actionable signal.
+Example JSON is shown in the Quickstart section above.
 
 ### 6.5 Low-power strategy
 
@@ -311,11 +330,17 @@ The Notecard itself is set to `periodic` mode with `outbound:60`. Summary notes 
 - **Note delivery.** `sendSummary()` and `sendAlert()` each retry `note.add` up to three times with a 500 ms delay between attempts. `sendSummary()` returns a boolean; metric accumulators and the window elapsed timer are only reset after a confirmed successful delivery — a transient Notecard I2C fault preserves the window data so the next wake retries with the data intact rather than losing the window silently.
 - **Alert gating.** `float_voltage_low`, `float_voltage_high`, and `float_current_high` are suppressed during active battery discharge (`curr < discharge_ma`) to prevent misleading float-fault alerts during legitimate power-outage events. `float_current_high` is additionally suppressed for 30 minutes after the last discharge sample (the `postDischargeSec` settling window in the state struct) so normal bulk-recharge current following an outage recovery is not misclassified as elevated float current.
 - **Env var range clamping.** `g_sampleSec` is clamped to [30, 3600] and `g_summaryMin` to [5, 1440] so a misconfigured variable cannot produce absurd sleep intervals or an unreachable summary window. When `sample_interval_sec` changes mid-window, `windowElapsedSec` is reset so the next summary covers exactly the newly configured interval rather than an unintended hybrid duration.
-- **All five battery-condition rules and the sensor-health alert** use separate cooldown counters and fire independently. A battery that is simultaneously low-voltage and overtemperature fires both alerts; neither suppresses the other.
+- **All six battery-condition rules and the sensor-health alert** use separate cooldown counters and fire independently. A battery that is simultaneously low-voltage and overtemperature fires both alerts; neither suppresses the other.
 
 ### 6.7 Key code snippet 1 — template registration
 
-The template registers the `battery_summary.qo` schema as a fixed-length wire record. `14.2` means 4-byte IEEE-754 float encoded to 2 decimal places on the wire; `12` means 2-byte signed integer. Any subsequent `note.add` with a body that doesn't match this shape is rejected by the Notecard, catching firmware mistakes at the device rather than corrupting the downstream time series.
+The template registers the `battery_summary.qo` schema as a fixed-length wire record, compressing every note to a fixed byte count for ~3–5× smaller over-the-air footprint. Format codes use the notation `<type><decimals>`:
+- `14.2` = 4-byte IEEE-754 float, encoded to 2 decimal places on the wire (e.g. `13.65` V becomes two bytes instead of the full float)
+- `14.1` = 4-byte float, 1 decimal place (e.g., `12.5` mA)
+- `14.3` = 4-byte float, 3 decimal places (e.g., `0.0125` Ah)
+- `12` = 2-byte signed integer (e.g., `30` samples)
+
+Any subsequent `note.add` with a body that doesn't match this schema is rejected by the Notecard, catching firmware mistakes at the device rather than corrupting the downstream time series.
 
 ```cpp
 J *req = notecard.newRequest("note.template");
@@ -363,7 +388,7 @@ NotePayloadSaveAndSleep(&payload, g_sampleSec, NULL);
 
 ## 7. Data Flow
 
-![Data flow: sensors sampled every 120 s → five battery-condition rules plus one sensor-health alert → battery_alert.qo (sync:true) and battery_summary.qo (hourly templated) → Notehub → routes](diagrams/03-data-flow.svg)
+![Data flow: sensors sampled every 120 s → six battery-condition rules plus one sensor-health alert → battery_alert.qo (sync:true) and battery_summary.qo (hourly templated) → Notehub → routes](diagrams/03-data-flow.svg)
 
 **Collected** every `sample_interval_sec` (default 120 s): pack voltage in V, float/discharge current in mA, and pack surface temperature in °C. Window-average power (mW) is derived as `voltAvg × currAvg` at summary time — not sampled directly from the INA228 power register.
 
@@ -375,17 +400,23 @@ NotePayloadSaveAndSleep(&payload, g_sampleSec, NULL);
 
 **Routed:** Notehub fans both Notefiles to configured routes. Natural split: `battery_alert.qo` → real-time on-call, CMMS, or SMS gateway; `battery_summary.qo` → time-series database for multi-week float-current trend analysis.
 
-**Alert triggers** — five battery-condition rules plus one sensor-health alert:
+**Alert triggers** — six battery-condition rules plus one sensor-health alert:
 
 | Alert | Condition | Diagnostic meaning |
 |---|---|---|
 | `float_voltage_low` | Voltage < `volt_min_v` **while charger present** (`curr ≥ discharge_ma`) | Charger not supplying enough current, failed cell, or battery unable to reach float voltage under load. Suppressed during active discharge so a legitimate voltage sag while running on battery does not generate a spurious float-fault alert. |
 | `float_voltage_high` | Voltage > `volt_max_v` **while charger present** (`curr ≥ discharge_ma`) | Charger overvoltage fault; in VRLA, accelerates plate corrosion and electrolyte loss via gassing. Suppressed during active discharge for the same reason as `float_voltage_low`. |
-| `float_current_high` | Current > `float_current_hi_ma` **while charger present and post-discharge settling window expired** | Elevated float current. In **VRLA** systems this is a reliable early indicator of sulfation, increased internal resistance, or approaching end-of-life. This is a **pack-level aggregate signal**: it indicates the string as a whole requires more continuous charge current than a healthy pack, which is consistent with one or more degraded cells — but it does not identify which cell has failed and is not equivalent to per-cell imbalance measurement (which requires dedicated per-cell voltage sensing hardware; see §9). **Not a universal LFP metric**: LFP float behavior differs significantly; on an LFP pack this alert primarily flags a charger or BMS fault, not cell degradation. See §9. Suppressed during active discharge and for 30 minutes after the last discharge sample (the post-discharge settling window) so normal bulk-recharge current following an outage recovery is not misclassified as float degradation. |
+| `float_current_high` | Current > `float_current_hi_ma` **while charger present and post-discharge settling window expired** | Elevated float current. See "Chemistry-Specific Alert Notes" sidebar below. Suppressed during active discharge and for 30 minutes after the last discharge sample so normal bulk-recharge current following an outage recovery is not misclassified as float degradation. |
 | `temp_high` | Temperature > `temp_alert_c` | Elevated battery case temperature. A single surface thermistor cannot identify the heat source or confirm specific failure modes — it indicates the battery, charger, or enclosure is running abnormally warm. Sustained elevated temperature accelerates battery aging. Inspect charger output, enclosure ventilation, and battery condition. |
 | `power_outage` | Current < `discharge_ma` | Site is running on battery. The event the whole system was built to detect — and to survive long enough to report. |
 | `soc_low` | `soc_pct` < `soc_low_pct` **and SoC has been commissioned** | State-of-charge has fallen below the operator-configured threshold. Only fires after `soc_pct_init` has been set; `soc_pct` is included automatically in the alert note. Inspect whether a recent discharge event was deeper or longer than expected — a battery that drives SoC low during a brief outage has less reserve than its nameplate rating suggests. |
 | `ina228_unreachable` | INA228 `begin()` fails on I2C NACK | The primary current and voltage sensor is not responding. All INA228-derived telemetry is blind until the fault clears. Rate-limited to once per 30 minutes. Inspect Qwiic wiring, I2C address (A0/A1 jumpers), and 3.3 V supply. |
+
+#### Chemistry-Specific Alert Notes
+
+**VRLA batteries:** Elevated float current is a reliable early indicator of sulfation, internal resistance growth, or approaching end-of-life — typically weeks before a battery fails a load test. This is a **pack-level aggregate signal** indicating the string as a whole requires more continuous charge current than a healthy pack, consistent with one or more degraded cells, but does not identify which cell or confirm per-cell imbalance. **Default thresholds are calibrated for 12 V VRLA** (`volt_min_v=13.2`, `volt_max_v=14.8`, `float_current_hi_ma=500`). For 24 V VRLA, scale voltage thresholds proportionally (`volt_min_v≈26.4`, `volt_max_v≈29.0`).
+
+**LFP (lithium iron phosphate) batteries:** Elevated float current does *not* indicate cell degradation — LFP packs do not sulfate. On an LFP pack, elevated float current typically signals a charger or BMS configuration fault instead. Voltage monitoring, `power_outage` detection, and `temp_high` remain fully applicable. **Do not commission LFP systems on default VRLA thresholds**; set `volt_min_v`, `volt_max_v`, and `float_current_hi_ma` to values calibrated for your specific LFP charger curve (typically narrower than VRLA — e.g., float ~13.5–13.8 V, absorption ~14.6 V for most LFP). Commission thresholds at installation after observing your charger's normal operating range.
 
 ## 8. Validation and Testing
 
@@ -395,12 +426,13 @@ NotePayloadSaveAndSleep(&payload, g_sampleSec, NULL);
 
 **Using Mojo to validate power behavior.** The Notecard's published datasheet current figures — see the [low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) for authoritative numbers across SKUs and modes:
 
-| Phase | Notecard datasheet current |
+| Phase | Current @ 5 V |
 |---|---|
-| Notecard idle (radio off, host fully gated by `card.attn`) | ~8 µA @ 5V |
-| Cellular session, LTE-M (one small queued note) | ~200–300 mA average, 15–30 s |
+| Idle baseline (host powered off, radio off) | ~8 µA (Notecard only) |
+| Host wake, sensor read (Cygnet + INA228 + ADC) | ~15–20 mA for <1 s |
+| Cellular session, LTE-M (one queued note) | ~200–300 mA average, 15–30 s |
 
-These are **Notecard-only** figures. The Mojo is spliced on the 5 V power rail and therefore measures the **entire assembled device** — Notecard, Notecarrier CX regulators, DC-DC converter quiescent draw, and any other loads on the rail. The actual idle baseline visible on a Mojo trace will be above the Notecard's own 8 µA, dominated by the DC-DC module's quiescent current and Notecarrier CX LDO(s). Use the trace **shape** — blips, bursts, and a flat floor — to confirm correct sleep/wake behaviour rather than treating the floor as an absolute figure to hit.
+**Whole-device power profile.** The figures above for Notecard idle and cellular are datasheet specs. On the assembled device, the idle baseline (host powered off via `card.attn`, radio idle) measured on a 5 V power rail includes the Notecard's ~8 µA plus the DC-DC converter's quiescent draw (~2 mA for RECOM R-78E5.0-1.0 or Pololu D24V50F5) plus Notecarrier CX regulator quiescent — typically **2–5 mA total at no load**. Use the trace **shape** — a 2-minute wake blip (~15–20 mA for <1 s), an hourly burst (~200–300 mA for 15–30 s), and a flat floor in between — to confirm correct sleep/wake behavior. The Mojo is spliced on the 5 V power rail and measures the entire assembled device; focus on a *flat* baseline at the expected quiescent level for your DC-DC converter rather than chasing sub-milliamp absolutes.
 
 A useful Mojo trace pattern for a healthy unit:
 - **Blip every 2 minutes** (<1 s at roughly 15–20 mA) — Cygnet awake reading sensors
@@ -428,7 +460,7 @@ Mojo is not required in deployed hardware — it is a bench bring-up and regress
 
 - **SoC is estimated by coulomb counting — not a dedicated fuel-gauge IC.** `soc_pct` in `battery_summary.qo` maintains a running state-of-charge estimate by integrating current each sample against a commissioned `usable_capacity_ah` baseline. This approach requires two operator steps at installation: (1) set `usable_capacity_ah` to the battery bank's nameplate capacity; (2) after a confirmed full charge (charger holding float voltage with current at minimum), set `soc_pct_init` to `100`. From that baseline, every ampere-hour in or out updates the estimate. Known limitations of coulomb counting: accumulated measurement noise slowly biases the estimate over weeks; the `usable_capacity_ah` baseline itself degrades as the battery ages, so a 100 Ah nameplate battery that has lost 20 % capacity due to sulfation will report SoC as if it still has 100 Ah of reserve. Periodically recalibrate by letting the battery reach a known full-charge state and updating `soc_pct_init`. For higher-accuracy long-term SoC — particularly for batteries undergoing measurable capacity fade — a hardware fuel-gauge IC (e.g. TI BQ27220 on Qwiic/I2C) with factory-programmed chemistry models provides better results; that is an architectural extension, not a limitation of the current design. `charge_ah` in the summary note remains a **per-window delta** — distinct from the running `soc_pct` estimate.
 
-- **Default thresholds are calibrated for 12 V VRLA; float-current trending is VRLA-first.** The defaults (`volt_min_v = 13.2`, `volt_max_v = 14.8`, `float_current_hi_ma = 500`) target a standard 12 V VRLA at 25 °C. LFP packs operate at a narrower float window (~13.5–13.8 V float, 14.6 V absorption) and need separately commissioned thresholds; 24 V systems need proportionally scaled voltage thresholds (`volt_min_v ≈ 26.4`, `volt_max_v ≈ 29.0`). All values are env-var overridable, but the defaults will produce incorrect alerts on non-12V-VRLA chemistry without reconfiguration. More importantly, **elevated float current is a reliable VRLA degradation signal** (indicating sulfation or internal resistance growth) **but is not a universal LFP metric**: LFP batteries behave differently at float, and elevated float current on an LFP pack typically indicates a charger or BMS configuration issue rather than cell degradation. For LFP deployments, voltage monitoring, `power_outage` detection, and `temp_high` remain fully applicable; float-current trending as a capacity-degradation proxy does not apply without chemistry-specific calibration.
+- **Default thresholds are calibrated for 12 V VRLA.** The defaults (`volt_min_v = 13.2`, `volt_max_v = 14.8`, `float_current_hi_ma = 500`) target a standard 12 V VRLA at 25 °C. 24 V systems and LFP chemistries require separately commissioned thresholds. See the "Chemistry-Specific Alert Notes" sidebar in §7 for guidance; all threshold values are env-var overridable so no reflash is required when commissioning a new chemistry or site.
 
 - **Temperature compensation is not applied.** VRLA float voltage should decrease approximately **3–4 mV/°C per cell** above 25 °C. For a standard 12 V VRLA pack (six cells), the pack-level correction is roughly **18–24 mV/°C**; at 45 °C (20 °C above the 25 °C reference), the compensated float ceiling is approximately 360–480 mV lower than the room-temperature set point. Without compensation, `float_voltage_high` may fire on a hot summer day for a charger that is correctly tracking the temperature-compensated set point. Firmware-side compensation using the NTC reading is a straightforward production enhancement.
 
@@ -445,6 +477,36 @@ Mojo is not required in deployed hardware — it is a bench bring-up and regress
 - Hardware fuel-gauge IC (e.g. TI BQ27220 on I2C/Qwiic) for higher-accuracy SoC and capacity models: the BQ27220 uses Impedance Track chemistry models that account for aging and temperature, providing more stable long-term SoC than pure coulomb counting. Replace or supplement `soc_pct` with the gauge's reported SoC and full-charge capacity fields.
 - Temperature-compensated voltage thresholds using the NTC reading: reduce `volt_max_v` by `(3–4 mV/°C/cell × cell_count) × (temp_c − 25)` dynamically — for a standard 12 V six-cell VRLA pack this is approximately 18–24 mV per °C above 25 °C, eliminating false positives on warm days when the charger is correctly tracking the temperature-compensated set point.
 - [Notecard Outboard Firmware Update](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) integration for over-the-air host firmware updates — eliminating the need to physically visit each installed cabinet to update thresholds embedded in a compiled constant.
+
+## 9.1 Troubleshooting
+
+| Symptom | Root cause | Solution |
+|---|---|---|
+| No `_session.qo` in Notehub Events tab after 5 minutes | Cellular or WiFi signal unavailable, or device not associated with Notehub project | Check PRODUCT_UID matches exactly; verify coverage at location; confirm Notecard insertion and u.FL antenna connection. Move antenna away from cabinet walls. |
+| `[sentinel] ERROR: PRODUCT_UID is empty` on serial monitor | PRODUCT_UID not set in firmware | Open `cabinet_battery_sentinel_helpers.h`, replace `#define PRODUCT_UID ""` with your actual ProductUID, recompile and reflash. |
+| `[sentinel] INA228 FAIL` message; no voltage/current readings | INA228 not responding on I2C | Check Qwiic cable seated firmly on both Notecarrier CX and INA228 breakout; verify 3.3 V supply to INA228; check I2C address jumpers (A0/A1) on the breakout match firmware default (address 0x40). |
+| `[sentinel] NTC open/shorted` message; no temperature reading | Thermistor probe disconnected or wiring fault | Verify 10 kΩ pull-up resistor is soldered between +3V3 and A0; confirm NTC probe is connected between A0 and GND; test with multimeter at 25 °C — a healthy 10 kΩ probe should read close to 10 kΩ. |
+| No serial output after upload | Host not waking from sleep, or serial monitor not connected | Confirm monitor is set to **115200 baud** and correct COM port; wait 2 minutes for first sample interval; check that Notecarrier CX is powered (JST LiPo connected or 5 V on +VBAT header). |
+| `battery_alert.qo` fires immediately with `float_voltage_low` | Voltage thresholds not calibrated for your battery chemistry or bus voltage | For 12 V VRLA use default (`volt_min_v=13.2`); for 24 V set to ~26.4. Read charger nameplate float voltage and adjust `volt_min_v` and `volt_max_v` via Notehub Fleet → Environment. |
+| `soc_pct` shows `-9999` in all summaries | State-of-charge not commissioned | Charge the battery to full float, then in Notehub set `soc_pct_init=100` via Fleet → Environment (or Device → Environment for per-device override); the next sample will initialize SoC tracking. |
+| Mojo current trace shows continuous 80–150 mA baseline | Cygnet not sleeping; `card.attn` not gating host power | Verify you are using a Notecarrier CX (not an older Notecarrier B); check `NotePayloadSaveAndSleep` is executing (`[sentinel] volt=...` lines should appear once per sample interval, then serial monitor goes silent for 120 s). |
+
+## 9.2 Environment Variables — Quick Reference
+
+Set these in Notehub **Fleet → Environment** or **Device → Environment** (device values override fleet). No reflash needed; pulled on next inbound sync.
+
+| Variable | Type | Default | Range | Notes |
+|---|---|---|---|---|
+| `sample_interval_sec` | integer | `120` | 30–3600 | Seconds between sensor reads. Shorter intervals increase power draw but catch shorter outages. |
+| `summary_interval_min` | integer | `60` | 5–1440 | Minutes between `battery_summary.qo` notes. Changing this re-applies `hub.set` to sync outbound cadence. |
+| `volt_min_v` | float | `13.2` | 0–85 | Minimum float voltage (V). Calibrate for your chemistry: 12 V VRLA ≈ 13.2; 24 V VRLA ≈ 26.4; LFP ≈ 13.5. |
+| `volt_max_v` | float | `14.8` | 0–85 | Maximum float voltage (V). Default allows 1 V above typical VRLA absorption. 24 V VRLA ≈ 29.0. |
+| `float_current_hi_ma` | float | `500` | 0–100000 | Float current threshold (mA). Healthy 100 Ah VRLA < 50 mA; 500 is a clear anomaly. For LFP, set chemistry-appropriate threshold. |
+| `temp_alert_c` | float | `40` | -40–85 | Temperature threshold (°C). VRLA standard is 40 °C. |
+| `discharge_ma` | float | `-200` | -100000–0 | Discharge current threshold (mA). Negative value. −200 mA catches discharge within ±20 mA float noise. |
+| `usable_capacity_ah` | float | `100` | 1–10000 | Battery bank capacity (Ah). Set to nameplate capacity for meaningful SoC. Update if measured capacity differs. |
+| `soc_low_pct` | float | `20` | 0–100 | SoC threshold (%) below which `soc_low` alert fires. Only fires after `soc_pct_init` is commissioned. |
+| `soc_pct_init` | float | *(unset)* | 0–100 or -1 | **Do not set before first full charge.** After battery is fully charged (charger at float, minimal current), set to `100` to initialize SoC tracking. Leave unset or set to `−1` to defer commissioning. Change value to recalibrate. |
 
 ## 10. Summary
 

@@ -114,6 +114,12 @@ struct AppState {
     bool     night_bath_pending;      // Rule B: condition met, send failed — retry next cycle
     bool     bed_empty_pending;       // Rule C: condition met, send failed — retry next cycle
 
+    // Snapshot of night_bathroom_count taken when night_bath_pending is first
+    // set. Used in the retry detail string so a pending alert delivered after
+    // the sleep-end counter reset still reports the count that originally
+    // triggered the rule, not the post-reset zero.
+    uint8_t  night_bath_pending_count;
+
     // Outbound cadence last confirmed applied via hub.set. Persisted in SRAM
     // across Stop mode wakes; resets to DEFAULT_SUMMARY_INTERVAL_MIN on power-on
     // (the first runCycle() then re-applies it to the Notecard if needed).

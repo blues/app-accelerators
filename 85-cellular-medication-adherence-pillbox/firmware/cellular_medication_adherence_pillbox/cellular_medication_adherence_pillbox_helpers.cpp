@@ -41,7 +41,7 @@ void setupPins() {
 // sendRequestWithRetry() papers over the cold-boot I2C race where the host
 // MCU comes up before the Notecard is ready.
 // ════════════════════════════════════════════════════════════════════════════
-void initNotecard(const char *product_uid, uint32_t outbound_min,
+void initNotecard(const char *product_uid, uint16_t outbound_min,
                   uint16_t inbound_min) {
     J *req = notecard.newRequest("hub.set");
     if (!req) return;
@@ -463,27 +463,36 @@ uint32_t utcDayAndHour(uint32_t *hour_out) {
 // ════════════════════════════════════════════════════════════════════════════
 // sleepHost — persist state to the Notecard and gate host power off
 //
-// NotePayloadSaveAndSleep serializes PillboxState into Notecard flash, then
-// issues a card.attn sleep request. On a correctly wired Notecarrier CX the
-// Notecard cuts the host 3.3V rail (ATTN -> EN) and re-powers it after
-// poll_sec seconds — this function should never return in production.
+// NotePayloadSaveAndSleep serializes PillboxState into Notecard flash and
+// issues a card.attn sleep command (cmd, no response). The function returns
+// once the command is dispatched — it is the Notecard's subsequent
+// ATTN -> EN de-assertion that actually cuts host power on a correctly wired
+// Notecarrier CX. Blues' own Example7_PowerControl uses the same idiom and
+// follows the call with delay()/halt scaffolding for the same reason.
 //
 // PILLBOX_BENCH_MODE (defined in helpers.h): if the ATTN pin is not wired to
-// EN, sleepHost() falls back to delay() + NVIC_SystemReset() so bring-up can
-// proceed without full power-gating hardware in place.
+// EN, the host stays powered after the call returns. sleepHost() falls back
+// to delay() + NVIC_SystemReset() so bring-up can proceed without full
+// power-gating hardware in place.
 //
-// Production (PILLBOX_BENCH_MODE undefined): a return from
-// NotePayloadSaveAndSleep() is an ATTN->EN wiring fault. The firmware logs
-// the condition, emits a pill_diag.qo Note so the fault is visible in
-// Notehub, then halts. Halting prevents silent battery drain; the device
-// requires a manual power cycle after the wiring is inspected and corrected.
+// Production (PILLBOX_BENCH_MODE undefined): the host should be cut off by
+// ATTN -> EN within milliseconds of the call returning. If it isn't (a
+// wiring fault on the Notecarrier CX) the firmware logs over USB if
+// available and halts. We deliberately do NOT attempt a Notehub diagnostic
+// here — the Notecard has just been told to enter sleep mode and may have
+// already de-asserted ATTN, so any further note.add request is racing the
+// power cut and is unreliable. The fault surfaces in Notehub through the
+// absence of _session.qo events combined with the bench debug output.
 // ════════════════════════════════════════════════════════════════════════════
 void sleepHost(PillboxState &s) {
     NotePayloadDesc payload = {0, 0, 0};
     NotePayloadAddSegment(&payload, STATE_SEG_ID, &s, sizeof(s));
     NotePayloadSaveAndSleep(&payload, s.poll_sec, NULL);
 
-    // Reaching here means power gating did not cut the host rail as expected.
+    // Returning from NotePayloadSaveAndSleep is expected: the call dispatches
+    // the sleep command and returns. On a correctly wired Notecarrier CX the
+    // host loses power within a few milliseconds, before any of the code
+    // below executes.
 
 #ifdef PILLBOX_BENCH_MODE
     // Bench fallback: ATTN->EN is not wired on this test configuration. Wait
@@ -492,24 +501,16 @@ void sleepHost(PillboxState &s) {
     delay(s.poll_sec * 1000UL);
     NVIC_SystemReset();
 #else
-    // Production fault path: ATTN->EN power gating did not cut the host rail.
-    // Emit a diagnostic Note so the fault is visible in Notehub, log it over
-    // USB if available, then halt. The device must be manually power-cycled
-    // after the ATTN and EN wiring is inspected and corrected.
+    // Production: if the host is still alive after the sleep command was
+    // dispatched, ATTN -> EN power gating is not working. Halt rather than
+    // spin so the fault is visible in any bench monitoring (continuous high
+    // baseline on Mojo, no _session.qo cadence in Notehub) and so the LiPo
+    // is not silently drained by a free-running busy-wait.
 #ifdef usbSerial
-    usbSerial.println("[FATAL] NotePayloadSaveAndSleep returned — "
-                      "ATTN->EN power-gating fault. Check ATTN/EN wiring. Halting.");
+    usbSerial.println("[FATAL] NotePayloadSaveAndSleep returned and host did not "
+                      "lose power — ATTN->EN power-gating fault. Check ATTN/EN "
+                      "wiring on the Notecarrier CX. Halting.");
 #endif
-    {
-        J *req = notecard.newRequest("note.add");
-        if (req) {
-            JAddStringToObject(req, "file", NOTEFILE_DIAG);
-            JAddBoolToObject(req, "sync", true);
-            J *body = JAddObjectToObject(req, "body");
-            JAddStringToObject(body, "error", "attn_en_fault");
-            notecard.sendRequest(req);
-        }
-    }
     while (true) { delay(1000); }
 #endif
 }

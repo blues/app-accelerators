@@ -6,6 +6,18 @@ A [remote patient monitoring](https://blues.com/remote-patient-monitoring/) hub 
 
 **What you'll have when you're done:** a discreet, wall-powered hub that counts every PIR motion event and every door-open edge via volatile ISR counters that increment during Stop mode sleep, samples all four sensors every five minutes, evaluates three wellness-pattern rules locally, and surfaces exceptions to whatever downstream endpoint the care team already uses — over cellular, with no dependency on the patient's WiFi router, their network password, or anyone in the household doing anything at all.
 
+## Quickstart: From Assembly to First Event
+
+1. **Assemble hardware** (§3–4): Notecarrier CX + Notecard Cell+WiFi, four sensors, hookup wire. Route cables as shown in the wiring diagram.
+2. **Create Notehub project**: sign up at [notehub.io](https://notehub.io), create a new project, copy the **ProductUID** (looks like `com.your-company.your-name:activity-hub`).
+3. **Set ProductUID in firmware**: open `firmware/activity_hub/app_state.h`, replace the empty `PRODUCT_UID` string with your value.
+4. **Flash the hub**: plug Notecarrier CX into USB-C. In Arduino IDE, select **Tools → Board → Generic STM32L4 series → Cygnet**, open `firmware/activity_hub/activity_hub.ino`, hit **Upload**. (Or use `arduino-cli`: `arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/activity_hub/ && arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbmodem* firmware/activity_hub/`.)
+5. **Plug into wall power** (5 V USB-C adapter, ≥ 1 A).
+6. **Verify in Notehub**: within 1–2 minutes your device will appear under **Devices**. The **Events** tab will show `_session.qo` notes (radio is reaching Notehub). Within one hour you'll see your first `activity_summary.qo` note.
+7. **Configure alerts** (§5): add two routes — one for `activity_alert.qo` (real-time notifications) and one for `activity_summary.qo` (hourly analytics).
+
+See §6 for detailed firmware structure and §8 for power validation with the Mojo coulomb counter.
+
 ## 1. Project Overview
 
 **The problem.** For patients who are aging in place or who have recently been discharged from a hospital or rehabilitation facility, the most useful early-warning signal for a clinician or family caregiver isn't a continuous stream of vitals — it's a confirmation that normal daily patterns are still intact. Did the patient get up this morning? Did they sleep through the night without repeated bathroom trips that might indicate a urinary tract infection or medication side effect? Is there any detected bed vibration during expected sleep hours, or has the sensor been quiet long enough that a check-in is warranted?
@@ -33,6 +45,8 @@ Nothing the patient interacts with. Nothing that needs charging.
 
 ## 2. System Architecture
 
+![System architecture](diagrams/01-system-architecture.svg)
+
 **Device-side responsibilities.** The onboard Cygnet STM32L4 host on the Notecarrier CX runs continuously at ultra-low power in STM32 Stop mode between 5-minute sensor cycles. PIR and door-contact edges are captured immediately by EXTI interrupt service routines (ISRs) that increment volatile event counters in SRAM, so every motion event and bathroom trip that occurs during sleep is counted regardless of when it occurs relative to the scheduled sample cycle. Every five minutes the MCU wakes from Stop mode, atomically copies and clears the ISR counters, reads all four sensors, updates in-RAM accumulators, evaluates three anomaly rules against the current time-of-day, and returns to Stop mode. Application state is a static SRAM global — retained across Stop mode wakes, reset on power-on. The Notecard handles all I²C communication and the cellular connection; the host never manages a modem directly.
 
 **Notecard responsibilities.** The Notecard queues [Notes](https://dev.blues.io/api-reference/glossary/#note) in its own on-device flash, establishes a cellular (or WiFi) session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 minutes), and flushes any `sync:true` alert notes immediately. It also distributes [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) pushed from Notehub — so the care team can re-tune activity thresholds (morning window, nighttime bathroom limit, etc.) without a firmware update or a truck roll.
@@ -47,7 +61,7 @@ Nothing the patient interacts with. Nothing that needs charging.
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/)) | 1 | Compact carrier with an embedded Cygnet STM32L4 host MCU — no separate Feather board required for this sensor mix. Onboard I²C pull-ups, analog reference, and dual 16-pin headers with GPIO, I²C, analog, and UART breakout are all included. |
 | [Notecard Cell+WiFi (NOTE-MBGLW)](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) | 1 | LTE Cat-1 bis cellular with 2.4 GHz WiFi fallback; 500 MB of prepaid global data. Cellular-first design means the hub works even when the patient's WiFi is absent or changes. No SIM activation or monthly fee. Cellular and WiFi u.FL antennas are included in the box — route them outside any metal enclosure for best performance. |
-| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/mojo-datasheet/)) | 1 | Coulomb counter placed inline on the +VBAT rail during bench bring-up to validate power behavior — specifically that the MCU Stop mode idle current is in the expected low-µA range and that cellular sessions have the expected duration. Not needed for permanent deployment. |
+| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/mojo-datasheet/)) | 1 | **Bench-only.** Coulomb counter placed inline on the +VBAT rail during validation to measure idle current (should be < 25 µA) and cellular session energy. Removed before permanent deployment. See §8 for usage. |
 | [Adafruit Mini PIR Motion Sensor with 3-Pin Header (ID 4871)](https://www.adafruit.com/product/4871) ([tech docs](https://learn.adafruit.com/pir-passive-infrared-proximity-motion-sensor/)) | 1 | Breadboard-friendly PIR based on the AM312 sensor: 3–12 V supply, 3.3 V digital output — directly compatible with the Cygnet's 3.3 V GPIO logic. Up to 5 m detection range, 100° field of view, ~2 s output hold-off. Detects any occupant movement in the living area. |
 | [Adafruit Magnetic Contact Switch — Door Sensor (ID 375)](https://www.adafruit.com/product/375) | 1 | Normally-open reed switch in a plastic enclosure; closes within ~13 mm of its magnet. Full electrical specifications are on the product page. Installs on any door frame without modification. Mounts on the bathroom door for nighttime trip counting. |
 | [Adafruit Sensirion SHT31-D Temp & Humidity Breakout (ID 2857)](https://www.adafruit.com/product/2857) ([Sensirion SHT31 datasheet](https://sensirion.com/products/catalog/SHT31-DIS-B/)) | 1 | ±2% RH, ±0.3°C accuracy over I²C; 3 V or 5 V compatible. In this POC the firmware reports the most recent reading as telemetry in each hourly summary and maintains a slow EWMA baseline; shower/bath inference from humidity spikes is a planned enhancement (see [§9](#9-limitations-and-next-steps)). Mounts at the bathroom door frame alongside the reed switch. |
@@ -63,6 +77,8 @@ Nothing the patient interacts with. Nothing that needs charging.
 All Blues parts include an active global SIM with 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
 ## 4. Wiring and Assembly
+
+![Wiring and assembly](diagrams/02-wiring-assembly.svg)
 
 All host I/O lands on the Notecarrier CX dual 16-pin header. The Notecard Cell+WiFi (MBGLW) seats into the carrier's M.2 slot; connect the included cellular and WiFi u.FL antennas and route them so they are not folded against the PCB or enclosed in metal — a cellular antenna inside a closed metal box will have poor performance.
 
@@ -200,8 +216,27 @@ Add at minimum two [routes](https://dev.blues.io/notehub/notehub-walkthrough/#ro
 Within a minute of first power-on, the **Events** tab in your project should start populating. Three event kinds matter for this project:
 
 - **`_session.qo`** — automatic Notecard housekeeping events on each cellular session. If you see these, the radio is reaching Notehub. If the device never appears in the **Devices** tab, the most common causes are: `PRODUCT_UID` is empty or wrong, the cellular antenna is folded inside a metal enclosure, or there is no cellular coverage at the test site.
-- **`activity_summary.qo`** — one per `summary_interval_min` (default: 60 min). A correctly-deployed hub generates one per hour in steady state. See [§6.4](#64-event-payload-design-activity_summaryqo-and-activity_alertqo) for the full field descriptions. Any field reading `-9999` (humidity or temperature) means no valid SHT31 sample has been recorded — treat it as a sensor fault, not a near-zero measurement.
-- **`activity_alert.qo`** — only emitted when an anomaly rule trips; transmitted immediately via `sync:true`. A healthy patient in a quiet home will generate zero of these per day. To test alert delivery during bench bring-up: (1) set `night_bathroom_limit` to `1`; (2) set `sleep_start_hour=0` and `sleep_end_hour=23` so the entire clock-day counts as the sleep window — door trips increment `night_bathroom_count` only when the current local time is inside the configured sleep window, so the alert will not fire if the current hour falls outside it; (3) force an environment sync by power-cycling the hub or issuing `{"req":"hub.sync"}` from the Notecard's USB serial console. Once the new values are pulled, open the bathroom door — the rule fires on the next `runCycle()` call. Worst-case alert latency from door-open to Notehub delivery is one full sample interval (up to 5 minutes at the default cadence) plus 15–60 seconds for cellular session establishment; allow up to 6 minutes before concluding the alert did not fire.
+- **`activity_summary.qo`** — one per `summary_interval_min` (default: 60 min). A correctly-deployed hub generates one per hour in steady state. Example:
+  ```json
+  {
+    "pir_count": 14,
+    "door_count": 2,
+    "humidity_pct": 48.6,
+    "temp_c": 21.2,
+    "bed_motion_pct": 88,
+    "night_bath_count": 1,
+    "morning_activity": true
+  }
+  ```
+  See [§6.4](#64-event-payload-design-activity_summaryqo-and-activity_alertqo) for the full field descriptions. Any field reading `-9999` (humidity or temperature) means no valid SHT31 sample has been recorded — treat it as a sensor fault, not a near-zero measurement.
+- **`activity_alert.qo`** — only emitted when an anomaly rule trips; transmitted immediately via `sync:true`. A healthy patient in a quiet home will generate zero of these per day. Example:
+  ```json
+  {
+    "alert": "night_bathroom_pattern",
+    "detail": "night_trips=4 limit=3"
+  }
+  ```
+  To test alert delivery during bench bring-up: (1) set `night_bathroom_limit` to `1`; (2) set `sleep_start_hour=0` and `sleep_end_hour=23` so the entire clock-day counts as the sleep window — door trips increment `night_bathroom_count` only when the current local time is inside the configured sleep window, so the alert will not fire if the current hour falls outside it; (3) force an environment sync by power-cycling the hub or issuing `{"req":"hub.sync"}` from the Notecard's USB serial console. Once the new values are active, open the bathroom door — the rule fires on the next `runCycle()` call. Worst-case alert latency from door-open to Notehub delivery is one full sample interval (up to 5 minutes at the default cadence) plus 15–60 seconds for cellular session establishment; allow up to 6 minutes before concluding the alert did not fire.
 
 ## 6. Firmware Design
 
@@ -224,8 +259,8 @@ Sketch folder: [`firmware/activity_hub/`](firmware/activity_hub/). The main entr
 arduino-cli board listall | grep -i cygnet
 
 # Compile and upload (replace FQBN with what listall reported)
-arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/activity_hub/
-arduino-cli upload  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET \
+arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/activity_hub/
+arduino-cli upload  -b STMicroelectronics:stm32:Blues:pnum=CYGNET \
                     -p /dev/cu.usbmodem* firmware/activity_hub/
 ```
 
@@ -386,6 +421,8 @@ bool inWindow(uint8_t hour, uint8_t start_h, uint8_t end_h) {
 
 ## 7. Data Flow
 
+![Data flow](diagrams/03-data-flow.svg)
+
 **Collected every 5 minutes:** PIR event count (ISR counter accumulated during Stop mode sleep plus any currently-active signal), door-open event count (ISR counter accumulated during Stop mode sleep plus any level transition detected at sample time), SHT31 temperature (°C) and relative humidity (%), piezo bed-vibration amplitude. These samples accumulate in the static `AppState` global in SRAM, which is retained across Stop mode wakes.
 
 **Transmitted hourly:** one `activity_summary.qo` note containing the motion and door event counts, the most recent humidity and temperature readings, the percentage of samples with detected bed vibration, the nightly bathroom trip count, and whether morning-window activity was detected. This note queues in Notecard flash and ships when the Notecard's `outbound` timer fires.
@@ -428,6 +465,18 @@ The Notecard Cell+WiFi idles at ~18 µA @ 5 V on the VBAT path (VUSB absent). Ce
 - *No bursts at all* — the Notecard is not syncing. Verify `PRODUCT_UID` matches the Notehub project and that `hub.set mode:periodic` was applied correctly (check the serial monitor on first boot).
 
 **Bed sensor calibration.** The firmware ships with a `CALIBRATION_MODE` compile flag (see the `#define CALIBRATION_MODE` comment near the top of `app_state.h`). **You must uncomment both `#define CALIBRATION_MODE` and `#define DEBUG_SERIAL`** — `CALIBRATION_MODE` has no effect unless `DEBUG_SERIAL` is also active. With both defines enabled, recompile and flash. With the hub connected to the serial monitor at 115200 baud, every bed measurement will print a line like `Bed peak-to-peak (ADC counts): 143`. Set `bed_threshold` to a value between the vibration-present and quiet clusters, with some margin, then re-comment `CALIBRATION_MODE` and reflash before deployment. A typical mattress and firm mattress pad combination might produce amplitude readings of 80–200 counts with a person present vs. 2–8 counts on an unoccupied mattress.
+
+## 8.5. Troubleshooting Common Issues
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Device doesn't appear in **Devices** tab after 5 minutes | `PRODUCT_UID` empty or wrong, or no cellular coverage | Check that you replaced the empty `PRODUCT_UID` string in `app_state.h`. Verify cellular antenna is outside any metal enclosure. Test from a location with known coverage. |
+| `_session.qo` appears but no `activity_summary.qo` after 90 minutes | Cellular radio is reaching Notehub, but Notecard is not syncing on schedule. Check `hub.set` was applied. | Uncomment `#define DEBUG_SERIAL` in `app_state.h`, reflash, open serial monitor at 115200 baud. Verify `hub.set` succeeded on first boot. Reissue `{"req":"hub.sync"}` from serial console. |
+| SHT31 initialization fails (`SHT31 init failed` in serial output) | I²C communication problem; likely with extender wiring if distance > 1.5 m | Check all JST-SH pin headers are fully seated. Verify SDAP/SDAN and SCLP/SCLN are not swapped on the PCA9615. Confirm Board B has +3V3 at its VIN pin. If using direct wiring (no extender), confirm SDA/SCL are not open-circuit. |
+| PIR or door sensor never counts events | GPIO not configured or pin is wrong. | Check pin assignments in `app_state.h` match your wiring. Verify the sensor output is reaching the correct GPIO. Temporarily add `#define DEBUG_SERIAL` and check serial output for rising edge detections. |
+| Bed vibration never detected (`bed_motion_pct` always 0) | ADC threshold too high, or divider/clamp circuit fault. | Uncomment both `#define DEBUG_SERIAL` and `#define CALIBRATION_MODE` in `app_state.h`, reflash. With hub powered, move the mattress above the piezo. Serial output will print "Bed peak-to-peak (ADC counts): N". Adjust `bed_threshold` to a value between active and quiet clusters. Re-comment `CALIBRATION_MODE` and reflash. |
+| Alerts never fire even with `night_bathroom_limit=1` | Alert cooldown or latch prevention. Also verify environment variables pulled. | Check current local time falls inside the configured sleep window (`sleep_start_hour` to `sleep_end_hour`). Issue `{"req":"hub.sync"}` to force environment variable fetch. Verify cooldown has expired (30 minutes after last same-type alert). Check serial output for "Alert cooldown" messages. |
+| High idle current (mA) even in Stop mode, or no sleep/wake cycles | MCU not entering Stop mode, or USB-C power is inhibiting Notecard low-power state. | If USB-C is connected for this test, that's expected — Notecard idles at ~1–3 mA with VUSB present. For accurate power measurement, use the Mojo on the +VBAT rail with USB-C disconnected. Check serial output for exceptions or early returns preventing `LowPower.deepSleep()` from being reached. |
 
 ## 9. Limitations and Next Steps
 

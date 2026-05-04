@@ -4,7 +4,7 @@
 
 A [remote patient monitoring](https://blues.com/remote-patient-monitoring/) device that catches missed doses before they become clinical events. A Blues Notecard Cell+WiFi riding on a Notecarrier CX wakes every 30 seconds, reads seven snap-action micro-switches inside a standard weekly pillbox, and uploads a cellular event to Notehub **each time a compartment lid is detected open during a scheduled 30-second poll** — no WiFi configuration, no smartphone, and nothing for the patient to set up.
 
-**What you'll have when you're done:** a battery-powered, cellular-connected 7-day pillbox monitor that reports compartment lid-open events — detected via 30-second polling — in near-real time, uploads those events to Notehub for clinician or caregiver review, and queues a daily adherence summary at the configured summary hour showing exactly which compartments were opened.
+**What you'll have when you're done:** a battery-powered, cellular-connected 7-day pillbox monitor that reports compartment lid-open events — detected via 30-second polling — in near-real time to Notehub for clinician or caregiver review, and queues a daily adherence summary at the configured summary hour showing exactly which compartments were opened. Expected runtime: 5–15 months on a single 2500 mAh LiPo charge (depending on open event frequency).
 
 ### Quickstart at a glance
 
@@ -31,6 +31,8 @@ Existing IoT pillboxes have tried to close this gap, and most fail in the same p
 ---
 
 ## 2. System Architecture
+
+![System architecture](diagrams/01-system-architecture.svg)
 
 **Device-side responsibilities.** The onboard Cygnet STM32 host on the Notecarrier CX wakes every 30 seconds, reads seven compartment GPIO pins, and detects lid-open events via rising-edge comparison against the previous wake's pin state. On detecting a new open, it enqueues a `pill_open.qo` [Note](https://dev.blues.io/api-reference/glossary/#note) with `sync:true`, which instructs the Notecard to transmit immediately rather than waiting for the next scheduled outbound window. State (previous pin values, daily bitmask, UTC day) is persisted across sleep cycles using the `NotePayloadSaveAndSleep` / `NotePayloadRetrieveAfterSleep` helpers so no external EEPROM or flash chip is needed.
 
@@ -62,6 +64,8 @@ All Blues hardware ships with an active SIM including 500 MB of data and 10 year
 ---
 
 ## 4. Wiring and Assembly
+
+![Wiring and assembly](diagrams/02-wiring-assembly.svg)
 
 The Notecard Cell+WiFi (NOTE-MBGLW) seats into the Notecarrier CX's M.2 connector and is powered from the same VBAT rail. All host I/O lands on the [Notecarrier CX dual 16-pin header](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/).
 
@@ -137,7 +141,7 @@ Retain the LiPo inside the enclosure with a strip of hook-and-loop tape (Velcro)
 
 Within a minute of first power-on, the **Events** tab should start populating. Three event types matter for this project:
 
-- **`_session.qo`** — automatic Notecard housekeeping on each cellular session. The presence of these events is the fastest way to confirm the radio is reaching Notehub.
+- **`_session.qo`** — automatic Notecard housekeeping on each cellular session. The presence of these events is the fastest way to confirm the radio is reaching Notehub. If you see no `_session.qo` events in the first 2–3 minutes, check that `PRODUCT_UID` matches your Notehub project exactly and that cellular coverage is available.
 - **`pill_open.qo`** — one Note per detected lid-open event. Detection latency is up to 30 seconds (next poll wake); Notecard cellular session establishment then adds roughly 15–60 seconds, for a typical end-to-end window of under two minutes from physical open to Notehub receipt. For this to be reliable, the lid must remain open (or be re-opened) until the next poll fires — a lid opened and re-closed within the same 30-second interval is not detected. Multiple opens of the same compartment lid in one day each produce a separate Note. The body looks like:
   ```json
   {
@@ -147,7 +151,7 @@ Within a minute of first power-on, the **Events** tab should start populating. T
     "opened_this_poll": 8
   }
   ```
-  `day_opens_mask` is a 7-bit bitmask of every compartment opened so far today (including this one), so each event body is self-contained and the full picture can be reconstructed from a single Note. `opened_this_poll` is the bitmask of compartments detected open in this specific 30-second polling wake — when multiple bits are set, it indicates that several compartments were opened simultaneously (or at least within the same polling interval), which is a strong signal of a weekly tray-refill session rather than a routine single-dose open. Downstream route logic can threshold on the bit-count of `opened_this_poll` to distinguish refill clusters from individual dose events; see [§9](#9-limitations-and-next-steps) for the full discussion.
+  `day_opens_mask` is a 7-bit bitmask of every compartment opened so far today (including this one), so each event body is self-contained and the full picture can be reconstructed from a single Note. Bit positions map directly to compartment numbers (bit 0 = compartment 1 = SUN, bit 6 = compartment 7 = SAT). `opened_this_poll` is the bitmask of compartments detected open in this specific 30-second polling wake — when multiple bits are set, it indicates that several compartments were opened simultaneously (or at least within the same polling interval), which is a strong signal of a weekly tray-refill session rather than a routine single-dose open. Downstream route logic can threshold on the bit-count of `opened_this_poll` to distinguish refill clusters from individual dose events; see [§9](#9-limitations-and-next-steps) for the full discussion.
 
 - **`pill_summary.qo`** — one Note per UTC day, queued at the `summary_hour_utc` threshold (default midnight UTC) on the day following each data-collection period and then delivered on the next Notecard sync session — either the scheduled outbound sync or any earlier sync triggered by a `pill_open.qo` event. The body looks like:
   ```json
@@ -158,9 +162,9 @@ Within a minute of first power-on, the **Events** tab should start populating. T
   ```
   `opens_mask` uses the same bitmask convention as `pill_open.qo`. Bit 0 = Sunday (compartment 1), bit 6 = Saturday (compartment 7). `opens_count = 0` means no compartments were opened that day — the patient missed all doses — which the `full:true` flag on `note.add` ensures is preserved through the template's omitempty suppression.
 
-- **`pill_diag.qo`** — an exceptional diagnostic Note. Two conditions produce it:
-  - **ATTN→EN power-gating fault** (production mode only, `PILLBOX_BENCH_MODE` **not** defined): emitted with `error: "attn_en_fault"` if `NotePayloadSaveAndSleep` returns unexpectedly. The device halts and requires a manual power cycle after the ATTN/EN wiring is corrected. This variant does **not** appear during normal operation. See the [Troubleshooting](#troubleshooting) table.
-  - **Pending-event queue overflow**: emitted with `error: "pending_overflow"` and a `dropped` count when the 28-entry retry ring buffer fills and the oldest queued open event is evicted. A matching `error: "pending_overflow_cleared"` Note — with the total `dropped` count for the episode — is emitted when the queue subsequently drains. These Notes appear in both bench and production modes and indicate that adherence data was lost while the Notecard was unable to accept `note.add` requests. Route `pill_diag.qo` alongside `pill_open.qo` if data-integrity alerting is required.
+- **`pill_diag.qo`** — an exceptional diagnostic Note emitted on **pending-event queue overflow**: `error: "pending_overflow"` and a `dropped` count when the 28-entry retry ring buffer fills and the oldest queued open event is evicted. A matching `error: "pending_overflow_cleared"` Note — with the total `dropped` count for the episode — is emitted when the queue subsequently drains. These Notes appear in both bench and production modes and indicate that adherence data was lost while the Notecard was unable to accept `note.add` requests. Route `pill_diag.qo` alongside `pill_open.qo` if data-integrity alerting is required.
+
+  An ATTN→EN power-gating fault (host MCU never loses power after `NotePayloadSaveAndSleep`) is **not** reported through this Notefile because any `note.add` issued in that race window is dispatched while the Notecard is already entering sleep mode and is unreliable. Detect this fault instead via the absence of the expected `_session.qo` cadence in Notehub and the bench-mode USB serial output noted in [§6.1](#61-installing-and-flashing).
 
 ---
 
@@ -183,19 +187,29 @@ The firmware is split across a main sketch and two helper files — all three li
 
 **Flashing — `arduino-cli`:** from the firmware directory,
 ```bash
-# List installed STM32 boards to find the right FQBN for your installed core version
-arduino-cli board listall | grep -i cygnet
+# Confirm the FQBN for your installed core version (the Cygnet variant lives
+# under the "Blues boards" group, not under "Generic STM32L4 series").
+arduino-cli board details -b STMicroelectronics:stm32:Blues | grep -i cygnet
 
-# Then compile + upload (replace the FQBN below with what `listall` reported)
-arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET cellular_medication_adherence_pillbox.ino
-arduino-cli upload  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET -p /dev/cu.usbmodem* cellular_medication_adherence_pillbox.ino
+# Find the USB port the Notecarrier enumerates as (typically /dev/cu.usbmodem*
+# on macOS, COMx on Windows, or /dev/ttyACM* on Linux). The ST-Link shows up as
+# "STMicroelectronics STM32 STLink" in your system device list.
+# On macOS: ls -la /dev/cu.* | grep usb
+# On Linux: ls -la /dev/ttyACM*
+# On Windows: check Device Manager > Ports.
+
+# Then compile + upload (replace the FQBN and port below with your values).
+arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET cellular_medication_adherence_pillbox.ino
+arduino-cli upload  -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbmodem14201 cellular_medication_adherence_pillbox.ino
 ```
-
-The exact FQBN is whatever the current `stm32duino` core ships for the Cygnet variant — the `board listall` command above is the authoritative source for your specific core version. Replace `/dev/cu.usbmodem*` with whatever port the Notecarrier enumerates as on your machine — typically `COMx` on Windows, `/dev/ttyACM*` on Linux.
 
 After upload, open the serial monitor at **115200 baud**. On first boot you should see `[init] Notecard configured` and `[init] Templates defined`, then the device goes silent as it enters its first 30-second sleep cycle. Opening a compartment lid on the next wake prints `[open] compartment=N (DAY) day_mask=0bXXXXXXX`.
 
-**Bench mode vs. production mode.** The helper header ships with `PILLBOX_BENCH_MODE` commented out (production default). When this define is uncommented in `cellular_medication_adherence_pillbox_helpers.h`, `sleepHost()` falls back to a software `delay()` + `NVIC_SystemReset()` after `NotePayloadSaveAndSleep()` returns — useful for bring-up on configurations where the Notecard ATTN pin is not wired to the host EN rail. **Before deploying to a battery-powered Notecarrier CX, confirm that `PILLBOX_BENCH_MODE` remains commented out.** In production mode, if `NotePayloadSaveAndSleep()` unexpectedly returns, the firmware halts and emits a `pill_diag.qo` diagnostic Note rather than spinning on a software delay, preventing silent battery drain and making the ATTN→EN wiring fault immediately visible in Notehub.
+**Bench mode vs. production mode.** `NotePayloadSaveAndSleep()` always returns to the host once it has dispatched the `card.attn` sleep command — it is the Notecard's subsequent ATTN de-assertion that actually cuts host power on a correctly wired carrier. The helper header ships with `PILLBOX_BENCH_MODE` commented out (production default). When this define is uncommented in `cellular_medication_adherence_pillbox_helpers.h`, `sleepHost()` falls back to `delay()` + `NVIC_SystemReset()` — useful for bring-up on configurations where the Notecard ATTN pin is not wired to the host EN rail. **Before deploying to a battery-powered Notecarrier CX, confirm that `PILLBOX_BENCH_MODE` remains commented out.** In production mode, if the host is still alive after the sleep command was dispatched (an ATTN→EN wiring fault), the firmware logs over USB serial if available and halts, preventing silent battery drain. The fault surfaces in Notehub as a missing `_session.qo` cadence; it is not signalled by a `pill_diag.qo` Note because any `note.add` request issued in the post-sleep race window is dispatched while the Notecard is already entering sleep mode and would not be reliably delivered.
+
+### 6.1a Bench mode critical note
+
+Before deploying to a battery-powered Notecarrier CX, **verify that `PILLBOX_BENCH_MODE` remains commented out** in `cellular_medication_adherence_pillbox_helpers.h`. In production mode, the Notecard ATTN pin gates the host's 3.3V rail, cutting power between polling wakes. If ATTN→EN is miswired or disconnected, the host stays alive and drains the LiPo continuously. The firmware will halt and log `[FATAL] NotePayloadSaveAndSleep returned and host did not lose power` over USB serial, preventing silent battery drain. You'll detect this in Notehub as a missing `_session.qo` cadence; never ignore consecutive gaps in session events — it signals a power-gating fault that must be corrected before patient deployment.
 
 ### 6.2 Modules
 
@@ -260,7 +274,7 @@ The Notecard itself remains powered continuously and idles at approximately 8–
 
 ### 6.7 Key code snippet 1 — template definition
 
-`TUINT8` is defined in `note-c` as `21`, encoding a 1-byte unsigned integer in the Note template.
+`TUINT8` is defined in `note-c` as the integer constant `21`, which tells the Notecard to encode each templated field as a 1-byte unsigned integer (0–255). The template registers this encoding with the Notecard's on-device compression layer, so every `pill_summary.qo` Note is stored as a fixed 2-byte binary record rather than variable-length JSON. This compression keeps the on-device queue compact across a full month of data if cellular connectivity is temporarily unavailable. For downstream integrations, the Notecard automatically decompresses these records back to JSON when they reach Notehub.
 
 ```cpp
 J *req  = notecard.newRequest("note.template");
@@ -302,6 +316,8 @@ NotePayloadSaveAndSleep(&payload, state.poll_sec, NULL);
 
 ## 7. Data Flow
 
+![Data flow](diagrams/03-data-flow.svg)
+
 **Collected.** Every 30 seconds: a 7-bit bitmask of compartment lid states, compared against the previous sample. The firmware does not transmit on every wake — only on a state transition.
 
 **Transmitted.**
@@ -321,7 +337,7 @@ NotePayloadSaveAndSleep(&payload, state.poll_sec, NULL);
 
 **Expected cadence after deployment.** In steady state, a patient who takes medication once per day generates one `pill_open.qo` event per day and one `pill_summary.qo` per day. A correctly behaving device with no lids opened should still send a daily `pill_summary.qo` with `opens_count: 0`.
 
-**Bench functional test.** The firmware fires an open event on a LOW→HIGH rising edge — when the pin transitions from LOW (actuator pressed, switch closed, lid closed) to HIGH (actuator released, switch open, lid open). A common mistake is to hold the switch actuator depressed and expect an open event; that simulates a closed lid, not an open one. The correct procedure:
+**Bench functional test.** The firmware fires an open event on a LOW→HIGH rising edge — when the pin transitions from LOW (actuator pressed, switch closed, lid closed) to HIGH (actuator released, switch open, lid open). **A common mistake is holding the switch actuator depressed and expecting an open event; that simulates a closed lid, not an open one.** The correct procedure:
 
 1. **Establish a closed baseline.** Press the switch actuator (or install the switch so the lid depresses it) so the pin reads LOW. Let at least one 30-second poll fire while the actuator is held closed — this records the LOW state in `prev_pin_mask` for that compartment. A faster shortcut: power the device on with the actuator already pressed. The first-boot code snapshots the current pin state as the baseline, so the LOW is captured immediately without waiting for a second poll.
 2. **Simulate a lid open.** Release the actuator (or open the lid) and leave it released until the next poll fires. The pin rises to HIGH, creating the LOW→HIGH transition the firmware detects as a lid-open event. The serial monitor should print `[open] compartment=N (DAY) day_mask=0bXXXXXXX`.
@@ -352,6 +368,8 @@ The daily summary is queued on the first wake after UTC midnight (or after the c
 
 At 30-second polling with the default 12-hour outbound sync and roughly 2–3 open events per day triggering immediate syncs, the modeled daily energy total is on the order of **5–15 mAh/day** — treat this as an estimated starting point until confirmed with a bench trace.
 
+**Quick runway estimate:** With a 2500 mAh LiPo and 5–15 mAh/day, expect 5–15 months of continuous operation between charges (165–500 days). In a real patient deployment with variable cellular signal and temperature swings, always validate with a 24-hour Mojo trace before setting a charge schedule. Poor cellular signal or frequent refill sessions will increase daily consumption.
+
 A good Mojo trace on this device looks like: an essentially flat near-zero baseline punctuated by brief millisecond blips every 30 seconds (host wake), with occasional 15–30-second bursts at hundreds of milliamps (cellular session). If the baseline is continuously 10–80 mA, the host is not sleeping — check that the ATTN → EN path is intact on the Notecarrier CX and that `NotePayloadSaveAndSleep` is returning normally. If cellular bursts occur much more frequently than expected, verify `sync:true` is only set on open events and that the outbound cadence is not set to a very low value.
 
 With a 2500 mAh LiPo and an estimated 5–15 mAh/day, modeled runtime is roughly 165–500 days between charges. Actual runtime will vary with cellular signal strength, session frequency, and temperature; confirm with bench data before committing to a deployment charge schedule.
@@ -369,7 +387,7 @@ Mojo is a **bench and commissioning tool** for this project — it is not deploy
 | `opens_count` in the daily summary is missing (field absent from the Notehub event). | `full:true` was not applied. | Verify the firmware calls `note.add` with `JAddBoolToObject(req, "full", true)` before sending the summary. Without `full:true`, the template's omitempty behavior suppresses the zero value. |
 | Environment variable changes don't take effect. | Inbound sync hasn't occurred yet (default every 2 hours). | Use Notehub's **Sync Now** (inbound) button on the device page to trigger an immediate inbound sync. Alternatively, lower `inbound_min` in the fleet environment to `15`; the device re-applies `hub.set` automatically once it picks up the change, tightening the fetch cadence for subsequent updates. |
 | Mojo trace shows a continuous ~20 mA baseline instead of near-zero idle. | Host is not being put to sleep — ATTN is not gating the host power rail. | Confirm you're using a Notecarrier CX (which routes ATTN to EN). On a bare-board or different carrier, `NotePayloadSaveAndSleep` falls back to the software delay at the end of `sleepHost()`, which does not cut power. |
-| `pill_diag.qo` appears in Notehub with `error: "attn_en_fault"`. | `NotePayloadSaveAndSleep` returned instead of gating host power off — production-mode ATTN→EN power-gating fault. The device has halted. | Inspect the ATTN and EN wiring on the Notecarrier CX. Once corrected, manually power-cycle the device (disconnect and reconnect the LiPo) to restart. Note: if `PILLBOX_BENCH_MODE` is defined this Note is never emitted — it is a production-only fault indicator. |
+| Mojo trace shows host stuck at active draw with no sleep cycles AND no `_session.qo` events arrive in Notehub. | Production-mode ATTN→EN power-gating fault — `NotePayloadSaveAndSleep` returned and the host did not lose power. The firmware halts after logging over USB serial. | Connect a USB cable and watch for the `[FATAL] NotePayloadSaveAndSleep returned and host did not lose power` line on the bench DIP switch's `HST` position. Inspect ATTN and EN wiring on the Notecarrier CX, then manually power-cycle (disconnect and reconnect the LiPo) to restart. The fault is intentionally not reported via `pill_diag.qo` because that `note.add` would race the Notecard's sleep transition and is unreliable. |
 | `pill_diag.qo` appears with `error: "pending_overflow"` or `"pending_overflow_cleared"`. | The 28-entry retry ring buffer filled while the Notecard was unable to accept `note.add` requests; the oldest buffered adherence events were evicted and lost. | Check for gaps in `_session.qo` events indicating a connectivity outage. The `dropped` field on the `pending_overflow` Note shows how many `pill_open.qo` events are missing. Once the Notecard recovers, the queue drains automatically and a `pending_overflow_cleared` Note confirms the episode is closed. Mark the affected interval in your downstream adherence record as incomplete. |
 
 If a problem isn't on this list, the [Blues community forum](https://discuss.blues.com) is the fastest place to get a second pair of eyes on a Notecard and sensor setup.

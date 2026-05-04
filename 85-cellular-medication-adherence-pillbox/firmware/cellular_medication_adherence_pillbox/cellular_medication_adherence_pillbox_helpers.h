@@ -23,15 +23,20 @@
 // Define PILLBOX_BENCH_MODE when testing on a bench setup where the Notecard
 // ATTN pin is NOT connected to the host EN rail.
 //
-// Bench mode: if NotePayloadSaveAndSleep() returns, sleepHost() falls back to
-// delay() + NVIC_SystemReset(), allowing bring-up without full power-gating
-// hardware in place.
+// NotePayloadSaveAndSleep() always returns to the host once it has dispatched
+// the card.attn sleep command — it is the Notecard's subsequent ATTN
+// de-assertion that actually cuts host power on a correctly wired carrier.
 //
-// Production (PILLBOX_BENCH_MODE undefined): a return from
-// NotePayloadSaveAndSleep() is an ATTN->EN wiring fault. sleepHost() logs the
-// condition, emits a pill_diag.qo Note so the fault is visible in Notehub,
-// then halts. Halting rather than delaying prevents silent battery drain and
-// makes the fault immediately obvious without needing a USB serial connection.
+// Bench mode: if ATTN->EN is not wired, the host stays alive after the call
+// returns. sleepHost() falls back to delay() + NVIC_SystemReset(), allowing
+// bring-up without full power-gating hardware in place.
+//
+// Production (PILLBOX_BENCH_MODE undefined): on a correctly wired Notecarrier
+// CX the host loses power within milliseconds of NotePayloadSaveAndSleep()
+// returning. If it doesn't (an ATTN->EN wiring fault) sleepHost() logs the
+// condition over USB serial if available and halts the host. Halting rather
+// than busy-waiting prevents silent LiPo drain and makes the fault visible
+// in Notehub as a missing _session.qo cadence.
 //
 // Comment out this line before deploying to a battery-powered Notecarrier CX.
 // #define PILLBOX_BENCH_MODE
@@ -48,11 +53,14 @@
 // ── Notefiles ────────────────────────────────────────────────────────────────
 #define NOTEFILE_OPEN    "pill_open.qo"    // immediate open event, sync:true
 #define NOTEFILE_SUMMARY "pill_summary.qo" // daily adherence summary, templated
-#define NOTEFILE_DIAG    "pill_diag.qo"    // ATTN->EN fault diagnostic (production only)
+#define NOTEFILE_DIAG    "pill_diag.qo"    // pending-event queue overflow diagnostic
 
 // ── Persistent state ─────────────────────────────────────────────────────────
-#define STATE_SEG_ID          "PIL"
-#define PILLBOX_STATE_VERSION   4   // increment whenever PillboxState layout changes
+// Segment IDs in note-c are 4-character identifiers (NP_SEGTYPE_LEN == 4).
+// Use a full 4-character ID per the documented contract; Blues sample code
+// follows the same convention ("GLOB", "TEMP", "VOLT", etc.).
+#define STATE_SEG_ID          "PILL"
+#define PILLBOX_STATE_VERSION   5   // increment whenever PillboxState layout changes
 
 // Maximum number of failed pill_open.qo events buffered across wakes. When
 // the queue is full the oldest entry is evicted and pending_overflow is
@@ -105,7 +113,7 @@ extern Notecard notecard;
 
 // ── Helper function declarations ─────────────────────────────────────────────
 void     setupPins();
-void     initNotecard(const char *product_uid, uint32_t outbound_min,
+void     initNotecard(const char *product_uid, uint16_t outbound_min,
                       uint16_t inbound_min);
 void     defineTemplates();
 void     fetchEnvOverrides(PillboxState &s);

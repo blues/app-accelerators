@@ -412,9 +412,15 @@ static void runCycle() {
              state.night_bath_pending) &&
             !state.night_bath_alerted &&
             cooldownExpired(state, ALERT_IDX_NIGHT_BATH, now)) {
+            // First attempt only: snapshot the count so a delayed retry that
+            // crosses the sleep-end reset still reports the value that
+            // originally triggered the rule, not the post-reset zero.
+            if (!state.night_bath_pending) {
+                state.night_bath_pending_count = state.night_bathroom_count;
+            }
             char detail[48];
             snprintf(detail, sizeof(detail), "night_trips=%u limit=%d",
-                     state.night_bathroom_count, g_night_bathroom_limit);
+                     state.night_bath_pending_count, g_night_bathroom_limit);
             if (sendAlert("night_bathroom_pattern", detail)) {
                 state.last_alert_time[ALERT_IDX_NIGHT_BATH] = now;
                 state.night_bath_alerted = true;

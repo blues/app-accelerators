@@ -260,8 +260,9 @@ static void hrDataCallback(BLEClientCharacteristic * /*chr*/,
 static bool doDiscoverAndSubscribe(uint16_t connHandle) {
     if (s_weightSvc.discover(connHandle)) {
         DBG_PRINTLN("[BLE] Weight scale — subscribing");
+        s_weightChar.setIndicateCallback(weightDataCallback);
         if (!s_weightChar.discover() ||
-            !s_weightChar.enableIndicate(weightDataCallback)) {
+            !s_weightChar.enableIndicate()) {
             DBG_PRINTLN("[BLE] Weight: subscription failed — disconnecting");
             Bluefruit.disconnect(connHandle);
             return false;
@@ -270,8 +271,9 @@ static bool doDiscoverAndSubscribe(uint16_t connHandle) {
 
     } else if (s_bpSvc.discover(connHandle)) {
         DBG_PRINTLN("[BLE] Blood pressure cuff — subscribing");
+        s_bpChar.setIndicateCallback(bpDataCallback);
         if (!s_bpChar.discover() ||
-            !s_bpChar.enableIndicate(bpDataCallback)) {
+            !s_bpChar.enableIndicate()) {
             DBG_PRINTLN("[BLE] BP: subscription failed — disconnecting");
             Bluefruit.disconnect(connHandle);
             return false;
@@ -280,8 +282,9 @@ static bool doDiscoverAndSubscribe(uint16_t connHandle) {
 
     } else if (s_pulseOxSvc.discover(connHandle)) {
         DBG_PRINTLN("[BLE] Pulse oximeter — subscribing");
+        s_pulseOxChar.setIndicateCallback(spo2DataCallback);
         if (!s_pulseOxChar.discover() ||
-            !s_pulseOxChar.enableIndicate(spo2DataCallback)) {
+            !s_pulseOxChar.enableIndicate()) {
             DBG_PRINTLN("[BLE] SpO2: subscription failed — disconnecting");
             Bluefruit.disconnect(connHandle);
             return false;
@@ -290,8 +293,9 @@ static bool doDiscoverAndSubscribe(uint16_t connHandle) {
 
     } else if (s_hrSvc.discover(connHandle)) {
         DBG_PRINTLN("[BLE] Activity band (Heart Rate Service) — subscribing");
+        s_hrChar.setNotifyCallback(hrDataCallback);
         if (!s_hrChar.discover() ||
-            !s_hrChar.enableNotify(hrDataCallback)) {
+            !s_hrChar.enableNotify()) {
             DBG_PRINTLN("[BLE] HR: subscription failed — disconnecting");
             Bluefruit.disconnect(connHandle);
             return false;
@@ -560,8 +564,8 @@ void initBLE() {
     // them at every boot.  For Privacy-enabled devices the SoftDevice resolves
     // the RPA using the stored IRK automatically (addr_id_peer=1 in scan reports).
     // Devices with stable public/static addresses must be listed in ENROLLED_DEVICES.
-    Bluefruit.Security.setIOCaps(BLE_GAP_IO_CAPS_NONE);
-    Bluefruit.Security.setMITMProtect(false);  // consistent with Just Works / no IO caps
+    Bluefruit.Security.setIOCaps(false, false, false);  // No display, no yes/no, no keyboard → Just Works
+    Bluefruit.Security.setMITM(false);                  // consistent with Just Works / no IO caps
     Bluefruit.Security.setPairCompleteCallback(blePairCompleteCallback);
     Bluefruit.Security.setSecuredCallback(bleSecuredCallback);
 

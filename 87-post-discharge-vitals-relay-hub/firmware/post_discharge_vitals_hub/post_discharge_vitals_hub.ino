@@ -144,10 +144,14 @@ void setup() {
 // disconnect and measurement timeout, and periodically refreshes the threshold
 // env vars.
 //
-// Each copy-and-clear is wrapped in noInterrupts()/interrupts(), which map to
-// FreeRTOS taskENTER_CRITICAL/EXIT_CRITICAL on the Adafruit nRF52 BSP.  This
-// prevents a BLE callback from partially overwriting a multi-field struct
-// while loop() is reading it, which could produce torn snapshots or lost samples.
+// Each copy-and-clear is wrapped in noInterrupts()/interrupts().  On the
+// Adafruit nRF52 BSP these map to the CMSIS __disable_irq()/__enable_irq()
+// macros, which mask all unprivileged interrupts including the FreeRTOS
+// scheduler's PendSV — so the few-instruction struct copy cannot be preempted
+// by the BLE callback task.  This prevents a callback from partially
+// overwriting a multi-field struct while loop() reads it.  The window is
+// brief (a struct copy of ≤12 bytes), well below any threshold that would
+// disturb SoftDevice radio timing.
 
 void loop() {
     // ── Consume a completed weight reading ──────────────────────────────────
