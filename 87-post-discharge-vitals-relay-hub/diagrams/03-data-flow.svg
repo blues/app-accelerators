@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 430" width="800" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <marker id="ar-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="ar-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/>
+    </marker>
+    <marker id="ar-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16a34a"/>
+    </marker>
+    <marker id="ar-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/>
+    </marker>
+  </defs>
+  <rect width="800" height="430" fill="#ffffff"/>
+
+  <text x="400" y="34" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">Data Flow</text>
+  <text x="400" y="56" text-anchor="middle" font-size="12" fill="#64748b">Event-driven capture · threshold routing · immediate or scheduled sync</text>
+
+  <!-- BLE Event -->
+  <rect x="15" y="100" width="145" height="190" rx="10" fill="#faf5ff" stroke="#9333ea" stroke-width="1.5"/>
+  <g transform="translate(76,113) scale(0.75)" fill="#581c87"><path d="M17.71 7.18C16.25 5.71 14.22 5 12 5s-4.25.71-5.71 2.18C4.84 8.63 4 10.48 4 12.5s.84 3.87 2.29 5.32L8 16.11C6.93 15.05 6.25 13.6 6.25 12c0-1.56.6-2.98 1.58-4.04l.01-.01A5.744 5.744 0 0 1 12 6.25c1.57 0 3 .64 4.04 1.67l.01.01c.99 1.06 1.6 2.48 1.6 4.04 0 1.6-.68 3.05-1.75 4.11l1.71 1.71C18.84 16.23 19.75 14.47 19.75 12.5c0-2.02-.84-3.87-2.29-5.32z"/><circle cx="12" cy="12.5" r="2.5"/></g>
+  <text x="88" y="155" text-anchor="middle" font-size="13" font-weight="700" fill="#581c87">BLE Event</text>
+  <text x="88" y="173" text-anchor="middle" font-size="11" fill="#7c3aed">patient-initiated</text>
+  <line x1="30" y1="185" x2="145" y2="185" stroke="#e9d5ff"/>
+  <g font-size="11" fill="#6b21a8">
+    <text x="88" y="207" text-anchor="middle">scale reading</text>
+    <text x="88" y="225" text-anchor="middle">BP measurement</text>
+    <text x="88" y="243" text-anchor="middle">SpO2 spot-check</text>
+    <text x="88" y="261" text-anchor="middle">HR notification</text>
+  </g>
+
+  <!-- Parse + Plausibility -->
+  <rect x="195" y="100" width="155" height="190" rx="10" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+  <g transform="translate(258,113) scale(0.75)" fill="#7c2d12"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></g>
+  <text x="273" y="155" text-anchor="middle" font-size="13" font-weight="700" fill="#7c2d12">Parse</text>
+  <text x="273" y="173" text-anchor="middle" font-size="11" fill="#9a3412">GATT decode</text>
+  <line x1="210" y1="185" x2="335" y2="185" stroke="#fed7aa"/>
+  <g font-size="11" fill="#7c2d12">
+    <text x="273" y="207" text-anchor="middle">uint16 (weight)</text>
+    <text x="273" y="225" text-anchor="middle">SFLOAT (BP, SpO2)</text>
+    <text x="273" y="243" text-anchor="middle">uint8/16 (HR)</text>
+    <text x="273" y="265" text-anchor="middle" font-size="10" fill="#9a3412" font-style="italic">plausibility guard</text>
+  </g>
+
+  <!-- Threshold Check -->
+  <rect x="385" y="100" width="155" height="190" rx="10" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
+  <g transform="translate(448,113) scale(0.75)" fill="#713f12"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></g>
+  <text x="463" y="155" text-anchor="middle" font-size="13" font-weight="700" fill="#713f12">Threshold</text>
+  <text x="463" y="171" text-anchor="middle" font-size="11" fill="#92400e">env var rules</text>
+  <line x1="400" y1="183" x2="525" y2="183" stroke="#fde68a"/>
+  <g font-size="11" fill="#713f12">
+    <text x="463" y="205" text-anchor="middle">weight_delta_kg</text>
+    <text x="463" y="223" text-anchor="middle">bp_systolic/diastolic</text>
+    <text x="463" y="241" text-anchor="middle">spo2_low</text>
+    <text x="463" y="259" text-anchor="middle">hr_high / hr_low</text>
+  </g>
+
+  <!-- Alert path (top right) -->
+  <rect x="575" y="100" width="205" height="88" rx="10" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+  <g transform="translate(586,110) scale(0.65)" fill="#7f1d1d"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></g>
+  <text x="678" y="135" text-anchor="middle" font-size="12" font-weight="700" fill="#7f1d1d">Immediate Sync</text>
+  <line x1="585" y1="143" x2="770" y2="143" stroke="#fecaca"/>
+  <text x="678" y="163" text-anchor="middle" font-size="10" fill="#991b1b">measurement note (sync:true)</text>
+  <text x="678" y="179" text-anchor="middle" font-size="10" fill="#991b1b">+ vitals_alert.qo (sync:true)</text>
+
+  <!-- Normal path (bottom right) -->
+  <rect x="575" y="204" width="205" height="86" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+  <g transform="translate(586,214) scale(0.65)" fill="#14532d"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></g>
+  <text x="678" y="235" text-anchor="middle" font-size="12" font-weight="700" fill="#14532d">Queue 15 min</text>
+  <line x1="585" y1="243" x2="770" y2="243" stroke="#bbf7d0"/>
+  <text x="678" y="265" text-anchor="middle" font-size="10" fill="#166534">weight.qo · bp.qo</text>
+  <text x="678" y="281" text-anchor="middle" font-size="10" fill="#166534">spo2.qo · activity.qo</text>
+
+  <!-- Notehub + Routes (bottom, spanning both paths) -->
+  <rect x="575" y="310" width="205" height="90" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <g transform="translate(630,320) scale(0.65)" fill="#1e3a8a"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></g>
+  <text x="678" y="345" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">Notehub</text>
+  <line x1="585" y1="353" x2="770" y2="353" stroke="#bfdbfe"/>
+  <text x="678" y="372" text-anchor="middle" font-size="10" fill="#1e40af">alerts → care coordinator route</text>
+  <text x="678" y="388" text-anchor="middle" font-size="10" fill="#1e40af">readings → analytics / EHR route</text>
+
+  <!-- Env vars feedback arrow from Notehub area back to Threshold -->
+  <path d="M575 355 Q520 355 520 305 Q520 260 538 230" stroke="#2563eb" stroke-opacity="0.35" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#ar-blue)"/>
+  <text x="488" y="302" text-anchor="middle" font-size="10" fill="#1e40af" font-style="italic">env vars</text>
+  <text x="488" y="316" text-anchor="middle" font-size="10" fill="#1e40af" font-style="italic">(inbound 60 min)</text>
+
+  <!-- Arrows left section -->
+  <line x1="160" y1="195" x2="193" y2="195" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <line x1="350" y1="195" x2="383" y2="195" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+
+  <!-- Fork arrows from Threshold -->
+  <line x1="540" y1="160" x2="573" y2="144" stroke="#dc2626" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-red)"/>
+  <line x1="540" y1="230" x2="573" y2="247" stroke="#16a34a" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-green)"/>
+
+  <!-- Down arrows to Notehub -->
+  <line x1="678" y1="188" x2="678" y2="202" stroke="#dc2626" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-red)"/>
+  <line x1="678" y1="290" x2="678" y2="308" stroke="#16a34a" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-green)"/>
+
+  <text x="400" y="400" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">Threshold trips bypass the 15-minute queue — measurement + alert notes arrive within a single cellular session (~15–60 s).</text>
+</svg>
