@@ -60,7 +60,11 @@
 //   0x45564357 ('E','V','C','W') — added window_elapsed_sec (wall-clock availability
 //                                   denominator) and last_valid_import_kwh (safe kWh
 //                                   closing baseline); sample_coverage_pct in template
-#define STATE_MAGIC             0x45564357u
+//   0x45564358 ('E','V','C','X') — added window_kwh_baseline_set: defers window_start_kwh
+//                                   anchoring until the first valid meter read after window
+//                                   open or summary reset; prevents inflated total_kwh when
+//                                   the first time-synced wake had an invalid meter poll
+#define STATE_MAGIC             0x45564358u
 
 // ── Meter reading returned by pollMeter() ────────────────────────────────────
 struct MeterReading {
@@ -124,6 +128,11 @@ struct State {
     uint32_t window_start_epoch;           // epoch when current window opened
     float    window_start_kwh;             // meter import_kwh at window open;
                                            // window total kWh = last_valid_import_kwh − window_start_kwh
+    bool     window_kwh_baseline_set;      // true once window_start_kwh has been anchored to a valid
+                                           // meter reading.  Set lazily on the first successful poll
+                                           // after window open (and after each summary reset) so a
+                                           // failed first-poll cannot leave window_start_kwh at 0
+                                           // and inflate total_kwh by the meter's lifetime energy.
     float    last_valid_import_kwh;        // most recent successfully-read import_kwh; used as the
                                            // closing meter reading when computing window total_kwh
                                            // so a failed poll at summary time cannot force total_kwh

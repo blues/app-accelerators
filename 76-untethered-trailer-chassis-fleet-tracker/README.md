@@ -10,9 +10,11 @@ The unit mounts on the trailer roof or chassis frame, runs a parked/moving state
 
 ### Quickstart at a glance
 
+**What you'll have when you're done:** A solar-powered trailer or chassis tracker that reports motion-triggered departure/arrival events and position updates to Notehub over LTE-M (primary) or Iridium LEO satellite (automatic fallback). No tractor hookup, no site IT, global pole-to-pole coverage.
+
 1. **Notehub** — create a [Notehub project](https://notehub.io) and copy its ProductUID.
 2. **Wire the bench rig** — Notecarrier XI + Swan + cellular Notecard + Starnote for Iridium + solar chain; full pinout in [§4.1](#41-notecarrier-xi--swan).
-3. **Edit one line** of [`firmware/trailer_fleet_tracker_starnote/trailer_fleet_tracker_starnote_helpers.h`](firmware/trailer_fleet_tracker_starnote/trailer_fleet_tracker_starnote_helpers.h) — set `PRODUCT_UID` to your project's value.
+3. **Edit one line** of [`firmware/trailer_fleet_tracker_starnote/trailer_fleet_tracker_starnote_helpers.h`](firmware/trailer_fleet_tracker_starnote/trailer_fleet_tracker_starnote_helpers.h) — set `PRODUCT_UID` to your Notehub project's ProductUID (in Notehub: **Project Settings → ProductUID**).
 4. **Flash** via Arduino IDE or `arduino-cli` (see [§6.1](#61-dependencies-and-flashing)).
 5. **Watch** — open Notehub → **Events** tab. You should see a `_session.qo` within a few minutes of power-on — this confirms the first cellular session and clock sync. The firmware then queues a `trailer_heartbeat.qo` locally on the next parked-check wake (~5 min in). Because heartbeat notes are **not** marked `sync:true`, they wait for the next scheduled outbound sync window rather than transmitting immediately: **~60 minutes** at a full battery (`voutbound high:60`) or **~120 minutes** at nominal charge (`voutbound normal:120`). Budget **1–2 hours from first power-on** before the first heartbeat appears in Notehub.
 
@@ -284,6 +286,14 @@ For **arrival events**, `captureGnssState()` is called while GPS is still in per
 
 All three Notefiles use [`"format":"compact"`](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) templates to minimize over-the-air size. Iridium SBD enforces a maximum payload size per message, and the compact format strips the JSON envelope and stores Notes as fixed-length binary records; at the field sizes used here (uint8, float16, float32, int32), each Note is approximately 14–20 bytes on the wire — well within the limit.
 
+**Payload Reference (for downstream integrators):**
+
+| Notefile | Trigger | Fields | Notes |
+|---|---|---|---|
+| `trailer_event.qo` | Departure or arrival | `type` (1=departed, 2=arrived), `dwell_h` (parked duration in hours), `gps_valid` (1=fix, 0=none), `lat`, `lon`, `evt_time` | `sync:true`; immediate cellular delivery. Iridium fallback on next window if cellular unavailable. |
+| `trailer_location.qo` | Moving state, interval elapsed | `lat`, `lon`, `gps_valid`, `volt` | Batched; sent at next outbound window (60–360 min depending on battery state). |
+| `trailer_heartbeat.qo` | Parked state, interval elapsed | `volt`, `gps_valid` | Batched; sent every 6 hours (default, overridable). Used to confirm solar charging (declining volt = charging failure). |
+
 Sample `trailer_event.qo` (departed, 18.5 hours of dwell, GPS fix confirmed at detection time):
 
 ```json
@@ -485,6 +495,42 @@ Three Mojo trace signatures to recognize:
 For the arrival event, note the **asymmetric detection latency**: once the tracker transitions to STATE_MOVING, it sleeps for `moving_ping_secs` (default 15 minutes) between wakes. Departure detection is bounded by `parked_check_mins` (5 min default), while arrival detection is bounded by `moving_ping_mins` (15 min default). To see a `type:2` note after letting the unit sit still, wait up to **`moving_ping_mins` + sync time** (roughly 16–17 minutes at defaults).
 
 ---
+
+## 8.1 Troubleshooting
+
+**Device won't stay asleep (stuck awake, draining battery fast):**
+- Check that the **ATTN wiring** on Notecarrier XI is intact (Swan ATTN line to Notecarrier pin).
+- Watch serial output with `usbSerial` enabled (uncomment in helpers.h). You should see `[sleep]` log every cycle.
+- If no `[sleep]` line appears, `NotePayloadSaveAndSleep` is not being called or the Swan is waking immediately from the ATTN interrupt.
+- Verify that `card.attn` is configured in `notecardConfigure()` to use the ATTN interrupt mode.
+
+**No departure/arrival events in Notehub:**
+- Confirm the accelerometer is working: check Notehub for `_session.qo` events (connection handshakes). If none appear, the Notecard isn't connecting.
+- Check that `PRODUCT_UID` is set correctly in `helpers.h` (Notehub: **Project Settings → ProductUID**).
+- Physically move the device to trigger a departure. **Departure detection is bounded by `parked_check_mins` (default 5 min)**; wait up to 6 minutes and check Notehub.
+- For **arrival** (the device must be in MOVING state), wait up to **`moving_ping_mins` + sync time** (default ~16 minutes) for the note to appear.
+
+**Position always shows as GPS invalid (gps_valid=0):**
+- When parked, GPS is deliberately off (see §6.3). Trigger a departure so the device enters MOVING state and enables periodic GPS.
+- Once moving, GPS acquisition takes 30–90 seconds for first fix. Position notes embed the most recent fix; early notes in a trip may show `gps_valid=0` if no fix was acquired yet.
+- Check antenna routing: the Starnote's u.FL port must route through the SMA bulkhead fitting to the combined Iridium+GPS antenna on the enclosure exterior.
+
+**Low battery warnings (volt < 3.6V) persist:**
+- The 0.6 W solar panel provides ~250–300 mAh/day under good conditions (4 peak sun hours). In cloudy weather or high-latitude winter, this won't offset the ~30–50 µA quiescent draw.
+- Run a Mojo current-draw trace (§8) to confirm the measured quiescent floor. If it's significantly above the expected 30–60 µA range, a supporting regulator may be failing.
+- For harsh environments, upgrade to a **3–5 W panel** and a **4 Ah LiPo** (see §9).
+
+**Iridium fallback isn't triggering (device only sends on cellular):**
+- Iridium satellite mode activates automatically only when cellular is unavailable. On a bench with cellular available, events will always use LTE-M.
+- To test Iridium: move the device to a location with no cellular coverage (verified with a phone). On the next transmission window, the Notecard will route through the Starnote.
+- Check that the Starnote firmware is up-to-date; Blues periodically releases Starnote firmware via Notehub OTA. See [Notehub documentation](https://dev.blues.io/notehub/notehub-walkthrough/system-applications/).
+
+**Template registration fails (see error in serial log):**
+- The compact templates (port 50, 51, 52) are registered once on first boot. If registration fails, the device retries after 60 seconds (CONFIG_RETRY_SECS).
+- Confirm Notehub connectivity by checking for `_session.qo` events.
+- If the same ProductUID is used on multiple devices or in multiple projects, template port collisions can occur. Ensure each device uses a unique PRODUCT_UID.
+
+----
 
 ## 9. Limitations and Next Steps
 

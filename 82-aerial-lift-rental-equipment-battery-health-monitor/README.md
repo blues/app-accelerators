@@ -6,6 +6,22 @@ A [battery management systems](https://blues.com/battery-management-systems/) re
 
 **What you'll have when you're done:** a weatherproof, pack-powered sidecar that samples the battery pack every five minutes, transmits an hourly summary to Notehub, and fires an immediate alert over cellular or Skylo satellite whenever a threshold trips — without requiring site WiFi, a local gateway, or any customer IT coordination. Fleet operators can retune alert thresholds for any machine from Notehub without a truck roll or firmware re-flash.
 
+## Quick Start (5 minutes to first event)
+
+1. **Flash firmware.** Clone the repo, edit `firmware/lift_battery_monitor/lift_battery_monitor.ino` to set your `PRODUCT_UID` (from your [notehub.io](https://notehub.io) project), then compile and upload:
+   ```bash
+   arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/lift_battery_monitor/
+   arduino-cli upload  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET \
+     -p /dev/cu.usbmodem* firmware/lift_battery_monitor/
+   ```
+   (Replace `/dev/cu.usbmodem*` with your platform's serial port; `COM*` on Windows.)
+
+2. **Wire on the bench.** Connect INA228 over I²C (Qwiic), a 48V bench supply to INA228 `VIN+`, and an electronic load to `VIN−`. Open the serial monitor at 115200 baud and watch for `[meas]` lines reporting pack voltage and current.
+
+3. **Check Notehub.** Within one minute, the **Devices** tab should show your board. The **Events** tab will populate with `_session.qo` (confirming radio), `battery_status.qo` (hourly summary), and `battery_alert.qo` (on threshold trip). Within `report_interval_m` minutes (default 60), you should see the first summary with voltage, current, temperature, SoC, SoH, cycle Ah, and CAN health.
+
+That's it. The device is now sampling every 5 minutes, reporting hourly, and firing immediate alerts on pack fault conditions.
+
 ## 1. Project Overview
 
 **The problem.** Electric scissor lifts, boom lifts, and telehandlers are increasingly displacing diesel units on job sites. The electric machines are quieter, cleaner, and cheaper to run — but they introduce a failure mode that diesel never had: a machine that looks fine in the yard shows up at a job site with a dead or nearly dead pack, and the rental company loses a day of revenue before anyone knows there's a problem.
@@ -23,6 +39,8 @@ This project is the watcher. A small monitoring device clipped to the pack reads
 **Deployment scenario.** A sealed IP67 enclosure strapped to the battery pack housing or bolted to the machine frame near the pack, powered from the machine's 12V auxiliary circuit (derived internally from the main pack and available on most electric lifts as a utility supply). Two sensing leads run from the enclosure to the INA228 bus-voltage monitor, whose `VIN+` pad connects to the pack's positive terminal for high-side bus-voltage measurement; a single NTC probe wire runs to the pack housing; and, in field builds (`ENABLE_ACS758 1`), a separate ACS758 Hall-effect sensor connects inline on the main traction conductor for pack-current sensing. When the machine's BMS is CAN-accessible, an OBD-style cable runs to the machine's service port. No BMS modification, no charger modification, no customer involvement.
 
 ## 2. System Architecture
+
+![System architecture: INA228 power monitor + NTC pack temperature (plus optional ACS758 hall and CAN BMS) → Notecarrier CX with Cygnet host and NOTE-NBGLWX → cellular or Skylo NTN satellite → Notehub → rental ERP / analytics / on-call](diagrams/01-system-architecture.svg)
 
 **Device-side responsibilities.** The onboard Cygnet STM32 host on the Notecarrier CX wakes every `sample_interval_s` seconds (default 300 s / 5 min), reads pack voltage from the INA228 over I²C (and pack current via INA228 `readCurrent()` through an external precision shunt in the default field build (`ENABLE_ACS758 0`), or from an ACS758 Hall-effect sensor on A1 in the alternative field build (`ENABLE_ACS758 1`), or from the onboard INA228 shunt in bench builds (`BENCH_ONLY 1`)), reads the pack temperature from the NTC thermistor, and optionally polls cell-group voltages from the machine's BMS over the SPI CAN interface. (**CAN BMS integration requires vendor-specific CAN ID and frame parser configuration before the feature will function with any real BMS** — the shipped firmware is a placeholder for this path; see §6.3 and §9.) From this data, it updates SoC via a voltage-based OCV (open-circuit voltage) lookup table, accumulates absolute current above a 0.5 A noise floor into a running cycle Ah throughput total (one sampled Ah estimate per wake), and updates a rolling SoH estimate when a heuristic pseudo-cycle completes — SoC dips below 30% then recovers above 90%. Threshold checks run after every sample; any trip fires an immediate note. Between wakes, [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) cuts host power; the Notecard idles, but the assembled device also draws quiescent current from the buck regulator, INA228, thermistor divider, and any optional CAN hardware — materially above the Notecard's own idle figure. See [§8](#8-validation-and-testing) for Mojo-measured whole-device figures.
 
@@ -58,6 +76,8 @@ This project is the watcher. A small monitoring device clipped to the pack reads
 All Blues hardware ships with an active SIM and no activation fees or monthly commitment.
 
 ## 4. Wiring and Assembly
+
+![Wiring: INA228 on I²C, NTC thermistor on ADC, optional ACS758 on A1 or CAN BMS on SPI; MAIN antenna for cellular + Skylo NTN; 12 V pack aux → buck regulator → Mojo (bench) → +VBAT](diagrams/02-wiring-assembly.svg)
 
 All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard for Skylo seats in the carrier's M.2 slot. The Mojo sits inline between the 5V supply output and the Notecarrier's VBAT+ pad during bench validation.
 
@@ -202,10 +222,10 @@ The Waveshare MCP2515 CAN Bus Module runs at 5V logic; all SPI lines must pass t
 
 ### What you should see in Notehub
 
-Within a minute of first power-on, the **Events** tab should start populating. Three event types matter:
+Within a minute of first power-on, the **Events** tab should start populating. Three event types appear:
 
-- **`_session.qo`** — automatic Notecard housekeeping on each cellular or satellite session. Confirms the radio is reaching Notehub.
-- **`battery_status.qo`** — one per `report_interval_m` (default hourly). Sample body:
+- **`_session.qo`** (appears first) — automatic Notecard housekeeping on each cellular or satellite session. Confirms the radio is reaching Notehub. No custom body; the Notecard logs this automatically.
+- **`battery_status.qo`** (appears after `report_interval_m` minutes; default 60) — hourly rolling summary with all data from the sample window. Sample body:
   ```json
   {
     "pack_v":         48.2,
@@ -217,8 +237,13 @@ Within a minute of first power-on, the **Events** tab should start populating. T
     "can_ok":         true
   }
   ```
-  `cur_a` is positive during discharge with the documented high-side wiring. All seven fields are always present. `temp_c` is averaged over valid (non-NaN) temperature reads only; if the thermistor produces no valid reads in the window, `temp_c` will be `-9999.0` — check thermistor wiring if you see `temp_c: -9999.0` alongside reasonable `pack_v` values. `can_ok` will be `false` whenever `ENABLE_CAN_BMS` is 0 (the default compile-time setting) — this is expected behavior, not a fault indicator; it means the CAN feature is not compiled in. `can_ok` only reflects live CAN bus health when `ENABLE_CAN_BMS` is 1 and a CAN module is wired.
-- **`battery_alert.qo`** — emitted only on a threshold trip. All alert types except `can_error` carry `sync:true` and are transmitted immediately over cellular or Skylo satellite. `can_error` is the explicit exception: it fires on the first failed CAN poll (once the Notecard clock is set) and then at most once per hour thereafter; it queues for normal outbound delivery rather than triggering an immediate cellular session, since it is not an emergency-response alert. The `alert` field is one of: `soc_low`, `temp_high`, `temp_low`, `soh_low`, `cell_imbalance` (CAN-only), or `can_error` (CAN-only). See [§7](#7-data-flow) for the per-alert payload shapes.
+  **Field notes:**
+  - `cur_a` is positive during discharge. Negative during charge (if the pack is being actively charged).
+  - All seven fields are always present. Expect them on every summary.
+  - `temp_c` is averaged over valid (non-NaN) reads only. If the thermistor produces no valid reads in the window, `temp_c` will be `-9999.0` — check thermistor wiring if you see this alongside reasonable `pack_v`.
+  - `can_ok` is always `false` when `ENABLE_CAN_BMS` is 0 (the default); this is expected behavior, not a fault. It only reflects live CAN bus health when `ENABLE_CAN_BMS` is 1 and a CAN module is wired.
+
+- **`battery_alert.qo`** (appears only on threshold trip) — emitted immediately (within 15–60 seconds) with `sync:true` for all alert types except `can_error`. All five fields always present: `alert` (string), `pack_v` (V), `soc_pct` (%), `temp_c` (°C), `extra_v` (alert-specific value). See §7 for the per-alert payload shapes. `can_error` is the explicit exception: it queues for normal outbound delivery (not `sync:true`) and is suppressed once per hour after each emission to avoid flooding the Notefile if the BMS is powered off.
 
 ## 6. Firmware Design
 
@@ -242,15 +267,25 @@ Four files in [`firmware/lift_battery_monitor/`](firmware/lift_battery_monitor/)
 
 **Flashing — `arduino-cli`:**
 
+First, confirm your STM32 core version and FQBN:
 ```bash
-# Confirm the FQBN for the installed STM32 core version
 arduino-cli board listall | grep -i cygnet
+```
 
-# Compile and upload (replace FQBN with what listall reports)
+If output shows `GenL4` as the board name (most common), use this compile and upload sequence:
+```bash
+# Compile
 arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/lift_battery_monitor/
+
+# Upload (replace /dev/cu.usbmodem* with your serial port)
 arduino-cli upload  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET \
   -p /dev/cu.usbmodem* firmware/lift_battery_monitor/
 ```
+
+**Platform-specific serial ports:**
+- **macOS:** `/dev/cu.usbmodem*` (wildcard matches the Notecarrier CX's ST-Link VCP)
+- **Linux:** `/dev/ttyACM*` or `/dev/ttyUSB*` (check `ls /dev/tty*` after plugging in)
+- **Windows:** `COM3` (or higher; check Device Manager → Ports)
 
 Open the serial monitor at **115200 baud** to watch `[meas]` lines during bring-up. After each sample cycle, the host sleeps for `sample_interval_s` seconds — the serial output will go quiet until the next wake. That's normal; it means `card.attn` is correctly cutting host power.
 
@@ -326,6 +361,13 @@ The Notecard itself idles at ~8–18 µA between cellular sessions — this is t
 
 `format: "compact"` is required for notes to be transmittable over the Skylo NTN satellite link. The `port` is a unique integer (1–100) that lets the Notecard reference the Notefile over the air by number rather than full string. `delete: true` on the hourly summary prevents it from being routed over the metered satellite link.
 
+**Compact format type hints:** The template body uses numeric "hints" to encode field types for on-wire compression:
+- `14.1` = 32-bit IEEE 754 float (4 bytes) — used for voltages, currents, temperatures, Ah
+- `21` = 8-bit unsigned integer (1 byte) — used for percentages (SoC, SoH, 0–100)
+- `true` / `false` = boolean (1 bit, packed) — used for status flags like `can_ok`
+
+These type codes are how the Notecard knows to pack `pack_v: 48.2` and `soc_pct: 74` into minimal bytes for satellite transmission.
+
 ```cpp
 J *req = notecard.newRequest("note.template");
 JAddStringToObject(req, "file", "battery_status.qo");
@@ -394,6 +436,8 @@ float voltageToSoC(float voltage, bool isLithium) {
 
 ## 7. Data Flow
 
+![Data flow: 5-min sample of pack V/I/temp → SoC and Ah-throughput accumulation → battery_alert.qo (sync:true on threshold trip) and battery_status.qo (hourly templated, suppressed on NTN to conserve satellite budget) → Notehub](diagrams/03-data-flow.svg)
+
 Every `sample_interval_s` seconds the firmware wakes, reads up to four data sources, and decides what to emit. The two transmit paths — alerts and summaries — run on independent timers and are completely decoupled from each other.
 
 **Collected** (per wake):
@@ -419,12 +463,14 @@ Every `sample_interval_s` seconds the firmware wakes, reads up to four data sour
 
 All alert notes share a fixed compact schema with five fields always present: `alert` (string), `pack_v` (V), `soc_pct` (%), `temp_c` (°C; `-9999.0` if no valid thermistor read at fire time), and `extra_v` (float, always emitted — `0.0` when no auxiliary value applies). Downstream consumers should expect all five fields on every alert note.
 
-- `soc_low` — SoC drops below `soc_alert_pct`. `extra_v` is `0.0`. Example: `{ "alert":"soc_low", "pack_v":43.1, "soc_pct":18, "temp_c":27.3, "extra_v":0.0 }`.
-- `temp_high` — temperature exceeds `temp_high_c`. `extra_v` = temperature at trip (°C), same value as `temp_c`. Lithium cells lose capacity above ~45°C and risk thermal runaway above 60°C.
-- `temp_low` — temperature falls below `temp_low_c`. `extra_v` = temperature at trip (°C). Lithium cells must not be charged below 0°C.
-- `soh_low` — rolling SoH drops below `soh_alert_pct`. `extra_v` = current SoH (%). Signal to schedule pack inspection or replacement.
-- `cell_imbalance` *(CAN-only)* — max minus min cell-group voltage exceeds `cell_delta_mv`. `extra_v` = voltage delta in mV. `pack_v` is `0.0` and `temp_c` is `-9999.0` (the CAN path does not re-sample the sensors at imbalance check time).
-- `can_error` *(CAN-only)* — no CAN frame was received from the BMS during the current wake's poll window. Fires immediately on the first failed poll (once the Notecard clock is set); subsequent failures are suppressed for one hour after each emission so a powered-off BMS does not flood the Notefile with noise. `pack_v` is `0.0` and `temp_c` is `-9999.0` (sensors are not re-sampled for CAN error notes). `extra_v` is `0.0`. No `sync` flag — queues for normal outbound rather than triggering an immediate cellular session.
+| Alert Type | Trigger | `extra_v` value | Notes |
+|---|---|---|---|
+| `soc_low` | SoC drops below `soc_alert_pct` | `0.0` | Example: `{"alert":"soc_low","pack_v":43.1,"soc_pct":18,"temp_c":27.3,"extra_v":0.0}` |
+| `temp_high` | Temp exceeds `temp_high_c` | Temperature at trip (°C) | Same as `temp_c`. Lithium loses capacity above ~45°C; runaway risk above 60°C. |
+| `temp_low` | Temp falls below `temp_low_c` | Temperature at trip (°C) | Lithium must not charge below 0°C. |
+| `soh_low` | Rolling SoH drops below `soh_alert_pct` | Current SoH (%) | Signal to schedule pack inspection or replacement. |
+| `cell_imbalance` (CAN) | Max–min cell voltage exceeds `cell_delta_mv` | Voltage delta (mV) | `pack_v` = `0.0`, `temp_c` = `-9999.0` (CAN poll doesn't re-sample V/I/T). |
+| `can_error` (CAN) | No CAN frame received during poll window | `0.0` | Fires on first failure; suppressed 1 hour after each emission. `pack_v` = `0.0`, `temp_c` = `-9999.0`. Queues for normal outbound (not `sync:true`). |
 
 **Routing:** Notehub fans `battery_alert.qo` to a real-time notification channel and `battery_status.qo` to a long-term analytics store for cycle trending and fleet-level SoH dashboards. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for setup details — this project ships no specific downstream endpoint.
 

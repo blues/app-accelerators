@@ -10,6 +10,27 @@ An [energy monitoring](https://blues.com/solutions-energy-monitoring/) solution 
 
 ---
 
+## Quickstart: Get to First Event in 30 Minutes
+
+**What you need:**
+- Notecarrier CX + Notecard Cell+WiFi (MBGLW)
+- 3× YHDC SCT-013-000 CTs + 3.5 mm jack breakouts
+- Per-CT burden circuit: 22 Ω, 2× 10 kΩ, 10 µF cap (see §4)
+- MCP9808 I²C temperature sensor
+- 5V/2A AC/DC supply (e.g., MeanWell IRM-10-5)
+- Computer with Arduino IDE or `arduino-cli`
+
+**Bench validation (no live transformer needed):**
+1. Assemble the three CT bias circuits on A0, A1, A2 (see §4 wiring diagram).
+2. Connect MCP9808 to I²C (SDA/SCL).
+3. Flash firmware: set `PRODUCT_UID` in `transformer_load_monitor.ino` to your Notehub project ID, then upload via USB.
+4. Open serial monitor at 115200 baud. You should see `[sample] i_a=...` lines every 5 minutes.
+5. Create a project in Notehub (notehub.io) if you haven't — the Notecard auto-associates on first cellular connect.
+6. After 60 minutes you'll see `[summary] queued` on serial. Wait for the device's next outbound sync (default hourly) and check Notehub **Devices → Events** for an `xfmr_summary.qo` entry.
+7. Clamp a CT on a known 120VAC load (a lamp works well) and verify the current value in the summary matches the expected load (within ~5%).
+
+---
+
 ## 1. Project Overview
 
 **The problem.** A distribution transformer is the last powered device between the high-voltage grid and a customer's service entrance. Utilities typically instrument their substations carefully — real-time SCADA, demand data, fault recorders — but the transformer hanging on the pole outside a neighborhood has none of that. The utility knows what's flowing into the substation; it doesn't know what's flowing through any individual transformer until something fails.
@@ -50,7 +71,7 @@ CT installation is **non-invasive**: the split-core sensors clamp directly onto 
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with onboard Cygnet STM32L4 host — three ADC-capable analog pins for the CT channels, I²C for the temperature sensor, and ATTN-based host power control for deep sleep. No separate MCU needed. |
 | [Notecard Cell+WiFi (MBGLW)](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) | 1 | Cellular removes per-pole IT dependency; one SKU with a prepaid global SIM spans urban and rural feeders without carrier contracts or per-site activation. |
-| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) *(bench / commissioning only)* | 1 | Coulomb counter required for bench bring-up and power-budget validation before field deployment. The Mojo stays on the bench — it is not shipped with the pole-mount unit. See [§8](#8-validation-and-testing) for the expected current trace to look for. |
+| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) *(bench / commissioning only, optional)* | 1 | Coulomb counter for bench power-budget validation. Not shipped with the pole-mount unit — stays on the bench during commissioning. Optional; use to verify the device achieves expected current draw before field deployment. See [§8](#8-validation-and-testing) for the expected current trace to look for. |
 | YHDC SCT-013-000 split-core CT, 100A / 50mA ([manufacturer product page](https://www.yhdc.com/en/product/SCT013-000/)) | 3 | Non-invasive, clip-on **current-output** CT. The 100A / 50mA variant covers residential distribution transformers up to approximately 20 kVA at 240V secondary (~83A full-load). For transformers at or above 25 kVA at 240V (~104A at full load), use a higher-range current-output CT; see the note below. Interfaces directly with the resistor bias circuit; no integrator stage required. Widely available from Mouser and Amazon. |
 | 22 Ω 1% resistor (burden, 1 per CT) | 3 | Converts the 50mA CT output to ~1.1V RMS at 100A — squarely within the Cygnet ADC's 0–3.3V input range after biasing. |
 | 10 kΩ 1% resistor (bias divider, 2 per CT) | 6 | Creates the Vcc/2 (~1.65V) DC bias point that centers the AC CT signal within the ADC input range. |
@@ -172,6 +193,8 @@ Clamp each CT around a single secondary conductor — never around two conductor
 
 ### What you should see in Notehub
 
+**Note:** Template fields use numeric type hints to encode type and size: `14.1` = 4-byte IEEE-754 float; `12` = 2-byte signed integer. This compact binary format is decoded automatically by Notehub.
+
 - **`_session.qo`** — Notecard session housekeeping on each cellular connect. If this is showing up, the radio link is healthy.
 - **`xfmr_summary.qo`** — one per `summary_interval_min`. Annotated example payload (field comments are explanatory — actual JSON contains no comments):
   ```
@@ -217,18 +240,34 @@ The Arduino IDE and `arduino-cli` automatically compile every `.ino`, `.h`, and 
 
 **Flashing — `arduino-cli`:**
 ```bash
+# Install the STM32 core and libraries first if not already done
+arduino-cli core install STMicroelectronics:stm32
+arduino-cli lib install "Blues Wireless Notecard" "Adafruit MCP9808 Library"
+
 # List installed Cygnet FQBNs for your specific core version
 arduino-cli board listall | grep -i cygnet
 
 # Compile and upload — target the sketch folder so all three source files
-# are included (substitute the FQBN reported above)
+# are included (substitute the FQBN reported above; /dev/cu.usbmodem* for Mac, /dev/ttyACM* for Linux)
 arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/transformer_load_monitor
 arduino-cli upload  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET -p /dev/cu.usbmodem* firmware/transformer_load_monitor
 ```
 
-After flashing, open the serial monitor at **115200 baud**. On first boot you should see `[sample] i_a=...` lines every `sample_interval_sec` seconds. After `summary_interval_min` minutes you will see `[summary] queued (0 loaded / 12 total wakes)` if no CT is connected — the summary Note is queued to the Notecard's local on-device store at that point; it reaches Notehub on the next outbound cellular sync (default 60 minutes later). The summary is always emitted as a liveness heartbeat even with no load. When CTs are clamped on live conductors the sample lines show non-zero current values and the summary line reports the number of loaded intervals versus total wakes in that window.
+After flashing, open the serial monitor at **115200 baud**. On first boot you should see `[sample] i_a=...` lines every `sample_interval_sec` seconds (default 5 minutes). After `summary_interval_min` minutes (default 60) you will see `[summary] queued (0 loaded / 12 total wakes)` if no CT is connected — the summary Note is queued to the Notecard's local on-device store at that point; it reaches Notehub on the next outbound cellular sync (default 60 minutes later). The summary is always emitted as a liveness heartbeat even with no load. When CTs are clamped on live conductors the sample lines show non-zero current values and the summary line reports the number of loaded intervals versus total wakes in that window.
 
-### 6.2 Modules
+### 6.2 Firmware constants and environment variables
+
+The firmware defines several key tuning constants in `transformer_load_monitor_helpers.h`:
+
+| Constant | Default | Meaning |
+|---|---|---|
+| `CT_SCALE` | `(3.3/4096) × (2000/22)` | Converts raw ADC counts to primary amps. Numerator (2000/22) is the scale inverse of the 22 Ω burden at 100A CT rating; denominator 4096 is 12-bit ADC count range; 3.3V is supply. Use this formula as-is for the SCT-013-000 100A CT with 22 Ω burden. For higher-range CTs, recompute: (supply_v / adc_max_counts) × (ct_rated_ma / burden_ohms). |
+| `CT_TURNS_RATIO` | `1.0` | Nameplate ratio (primary amps / secondary amps). For SCT-013-000 = 1.0. Higher-range CTs change this; e.g., SCT-036-200 has ratio ~4.0. |
+| `CT_BURDEN_OHMS` | `22` | Burden resistor value. Change this only if you substitute a different burden; also update `CT_SCALE` if changed. |
+| `CT_NOISE_FLOOR_A` | `0.5` | Current values below this (in amps) are zeroed to suppress noise floor pickup. Increase to 1.0 if you see non-zero readings with no load. |
+| `CT_SAMPLE_PERIOD_US` | `225` | Pacing interval (microseconds) between ADC samples. 225 µs = ~4.44 kHz sampling; ~333 ms window for RMS = ~20 mains cycles at 60 Hz. Do not change unless you understand the mains-cycle alignment issue described in §6.3. |
+
+### 6.3 Modules
 
 | Responsibility | Function |
 |---|---|
@@ -243,13 +282,13 @@ After flashing, open the serial monitor at **115200 baud**. On first boot you sh
 | Persistent state save + host sleep | `NotePayloadSaveAndSleep` (library helper) |
 | State restore on wake | `NotePayloadRetrieveAfterSleep` (library helper) |
 
-### 6.3 Sensor reading strategy
+### 6.4 Sensor reading strategy
 
-**CTs.** Each SCT-013-000 produces an AC current signal proportional to the line current flowing through its core. The external 22Ω burden resistor converts this to an AC voltage of approximately 1.1 V RMS (≈1.56 V peak) at 100 A RMS primary current, centered on the ADC's DC bias point (~1.65V = Vcc/2). The firmware uses a two-pass algorithm: 256 samples establish the actual DC offset (which may drift slightly from Vcc/2 due to component tolerance), then 1480 samples compute the RMS of the centred signal. At the Cygnet's ADC throughput, 1480 samples cover approximately 20 mains cycles at 60 Hz (~330 ms per channel). Three channels are read sequentially; total active measurement time is approximately 1 second. The scale factor `CT_SCALE = (3.3/4096) × (2000/22)` converts ADC RMS counts directly to primary amps. Readings below 0.5 A are zeroed to suppress noise-floor pickup.
+**CTs.** Each SCT-013-000 produces an AC current signal proportional to the line current flowing through its core. The external 22Ω burden resistor converts this to an AC voltage of approximately 1.1 V RMS (≈1.56 V peak) at 100 A RMS primary current, centered on the ADC's DC bias point (~1.65V = Vcc/2). The firmware uses a two-pass algorithm: 256 samples establish the actual DC offset (which may drift slightly from Vcc/2 due to component tolerance), then 1480 samples compute the RMS of the centred signal. Both passes pace samples to a fixed 225 µs period (≈4.44 kHz) using `micros()` and `delayMicroseconds()`, so the 1480-sample RMS window spans a deterministic ~333 ms — approximately 20 mains cycles at 60 Hz, or ~16.7 cycles at 50 Hz. Without that pacing, the Cygnet ADC's native single-digit-µs throughput would finish the burst in well under one full mains cycle and produce RMS values that drift with whichever waveform fragment was captured. Three channels are read sequentially; total active measurement time is approximately 1 second. The scale factor `CT_SCALE = (3.3/4096) × (2000/22)` converts ADC RMS counts directly to primary amps. Readings below 0.5 A are zeroed to suppress noise-floor pickup.
 
 **Temperature.** The Adafruit MCP9808 is initialized on every wake (since host power is fully cycled by `card.attn`), configured to 0.0625°C resolution, read once, and put to shutdown mode before the host sleeps. An absent or unresponsive sensor returns –999.0°C. The firmware tracks a separate `valid_temp_samples` counter that increments only when the reading passes the –40°C to +125°C sanity range; the summary average divides `sum_temp_c` by that counter rather than by total wake cycles. A window with zero valid temperature readings emits –999.0°C in the summary rather than a biased-low average. The Notecarrier CX's on-board I²C pull-ups are shared by the MCP9808 and the Notecard on the same bus — no external resistors are needed.
 
-### 6.4 Event payload design
+### 6.5 Event payload design
 
 One [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefile for summaries (`xfmr_summary.qo`), one untemplated Notefile for alerts (`xfmr_alert.qo`). Templates trade flexibility for efficiency: the Notecard stores fixed-length binary records internally and the wire payload is ~3–5× smaller than free-form JSON, which matters across a fleet that may transmit daily summaries for a decade.
 
@@ -270,7 +309,7 @@ Sample alert body (phase imbalance event):
 ```
 The `extra` field carries alert-type-specific context: for `overload` it is the loading percentage of the worst phase; for `phase_imbalance` it is the computed imbalance percentage (max−min)/max; for `high_temp` it is the total current across all phases at the time of the alert.
 
-### 6.5 Low-power strategy
+### 6.6 Low-power strategy
 
 The device is grid-tied (120VAC tap on the transformer secondary), so energy budget is not life-critical — but the sleep pattern matters anyway. Keeping the host off between samples eliminates a continuous 50–80mA baseline, reduces enclosure heat buildup, and makes the power profile immediately legible on a Mojo trace during bench validation.
 
@@ -278,7 +317,7 @@ After each sample cycle the host calls `NotePayloadSaveAndSleep`, which serializ
 
 The Notecard Cell+WiFi itself idles at [~18 µA @ 5V](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) between cellular sessions. Alert notes with `sync:true` bypass the outbound queue and wake the radio immediately; summary notes accumulate in the on-device queue and are flushed together once per hour.
 
-### 6.6 Retry and error handling
+### 6.7 Retry and error handling
 
 - The first Notecard transaction (`hub.set` on cold boot) uses `sendRequestWithRetry(req, 5)` to handle the cold-boot I²C race the `note-arduino` library documents.
 - Individual `env.get` calls return the default value if the Notecard returns NULL or an empty `text` field. Config values are then clamped to sane ranges (e.g., `sample_interval_sec` floored at 30 s) to guard against a misconfigured env var causing erratic behavior.
@@ -286,7 +325,7 @@ The Notecard Cell+WiFi itself idles at [~18 µA @ 5V](https://dev.blues.io/notec
 - Alert cooldown counters per alert type (default 6 cycles = 30 min at 5-min sample rate) prevent a sustained overload condition from paging the operations center every 5 minutes. Each alert type arms and disarms independently.
 - `fetchEnvOverrides` updates the `hub.set` outbound period if `summary_interval_min` has changed since the last successful fetch, keeping the Notecard's transmit timer synchronized with the firmware's summary window.
 
-### 6.7 Key code snippet 1: note template definition
+### 6.8 Key code snippet 1: note template definition
 
 Template fields use [numeric type hints](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates): `14.1` means 4-byte IEEE-754 float; `12` means 2-byte signed integer.
 
@@ -308,29 +347,43 @@ JAddNumberToObject(body, "total_wakes",   12);  // all wakes (loaded + idle)
 notecard.sendRequest(req);
 ```
 
-### 6.8 Key code snippet 2: CT RMS two-pass algorithm
+### 6.9 Key code snippet 2: CT RMS two-pass algorithm
 
-Pass 1 determines the actual DC bias offset (should be ~2048 counts for a well-built circuit; the measured value accounts for component tolerance). Pass 2 computes RMS of the centered AC signal using float accumulation to avoid 32-bit integer overflow at full-scale input.
+Pass 1 determines the actual DC bias offset (should be ~2048 counts for a well-built circuit; the measured value accounts for component tolerance). Pass 2 computes RMS of the centered AC signal using float accumulation to avoid 32-bit integer overflow at full-scale input. Both passes pace samples to a fixed 225 µs period so the RMS burst spans a deterministic ~333 ms (≈20 mains cycles at 60 Hz) regardless of the host ADC's native throughput — see [§6.3](#63-sensor-reading-strategy) for why this matters.
 
 ```cpp
 float readCtRms(uint8_t pin) {
-    // Pass 1: establish DC offset
+    // Pass 1: establish DC offset (paced sampling — see §6.3).
     long sum = 0;
-    for (int i = 0; i < 256; i++) sum += analogRead(pin);
-    int offset = (int)(sum / 256);
+    uint32_t next_us = micros();
+    for (int i = 0; i < CT_DC_SAMPLES; i++) {
+        sum += analogRead(pin);
+        next_us += CT_SAMPLE_PERIOD_US;
+        int32_t wait = (int32_t)(next_us - micros());
+        if (wait > 0 && wait < (int32_t)CT_SAMPLE_PERIOD_US) {
+            delayMicroseconds((uint32_t)wait);
+        }
+    }
+    int offset = (int)(sum / CT_DC_SAMPLES);
 
-    // Pass 2: AC RMS
+    // Pass 2: AC RMS over ~333 ms (≈20 mains cycles at 60 Hz).
     float sum_sq = 0.0f;
-    for (int i = 0; i < 1480; i++) {
+    next_us = micros();
+    for (int i = 0; i < CT_RMS_SAMPLES; i++) {
         float s = (float)(analogRead(pin) - offset);
         sum_sq += s * s;
+        next_us += CT_SAMPLE_PERIOD_US;
+        int32_t wait = (int32_t)(next_us - micros());
+        if (wait > 0 && wait < (int32_t)CT_SAMPLE_PERIOD_US) {
+            delayMicroseconds((uint32_t)wait);
+        }
     }
-    float i_rms = sqrtf(sum_sq / 1480) * CT_SCALE;
-    return (i_rms < 0.5f) ? 0.0f : i_rms;  // zero noise floor
+    float i_rms = sqrtf(sum_sq / CT_RMS_SAMPLES) * CT_SCALE;
+    return (i_rms < CT_NOISE_FLOOR_A) ? 0.0f : i_rms;  // zero noise floor
 }
 ```
 
-### 6.9 Key code snippet 3: immediate-sync alert
+### 6.10 Key code snippet 3: immediate-sync alert
 
 `sync:true` tells the Notecard to skip the outbound queue timer and open a cellular session immediately. On cellular the alert typically reaches Notehub within 15–60 seconds of the threshold trip.
 
@@ -348,7 +401,7 @@ JAddNumberToObject(body, "extra",    imbalance_pct);
 notecard.sendRequest(req);
 ```
 
-### 6.10 Key code snippet 4: sleep and state persistence
+### 6.11 Key code snippet 4: sleep and state persistence
 
 After sending any queued notes, the host serializes its runtime state to the Notecard and cuts its own power for the next sample interval. On the next ATTN wake, `NotePayloadRetrieveAfterSleep` restores the struct; execution re-enters `setup()` from the top.
 
@@ -358,6 +411,19 @@ NotePayloadAddSegment(&out, SEG_ID, &state, sizeof(state));
 NotePayloadSaveAndSleep(&out, cfg.sample_interval_sec, NULL);
 // Execution does not continue past here under normal operation.
 ```
+
+---
+
+## 6.12 Troubleshooting
+
+| Symptom | Cause | Solution |
+|---|---|---|
+| Serial console shows `[sample]` lines but no `[summary]` lines after 60+ minutes | Summary not being queued | Check that `summary_interval_min` env var is set (default 60). If you see `[summary] queued` but no Notehub events, the Notecard is not syncing; see "No events in Notehub" row below. |
+| No events appearing in Notehub **Events** tab after 2+ hours | Device not syncing to Notehub | Verify the Notecard has a valid SIM (Blues prepaid or user-provided). Check Notecard's cellular signal with `card.signal` request in Notehub **Devices → Terminal**. If signal is poor, relocate the antenna away from the transformer core or switch to an outdoor SMA antenna (see §4). |
+| Mojo trace shows sustained elevated baseline (not just brief ~1 s spikes every 5 min) | Host not sleeping between samples | Verify `card.attn` wiring is correct on the Notecarrier CX (see §4). If `NotePayloadSaveAndSleep()` is not working, check for exceptions in the serial log. Most common cause: `PRODUCT_UID` is not set, causing the firmware to return early before calling sleep. |
+| Current readings are non-zero even with no load on CTs | Bias circuit error or ADC offset drift | Verify all three bias circuits are correctly wired (see §4 diagram). Check that the capacitor's positive plate points toward the ADC pin. If wiring is correct, the AD offset may be outside the 0.5 A noise floor; reduce the noise floor temporarily by modifying `CT_NOISE_FLOOR_A` in the firmware for debugging. |
+| CT readings are consistently wrong (e.g., reading 50 A when the load is 100 A) | Incorrect `CT_SCALE` constant or ADC resolution mismatch | Verify `analogReadResolution(12)` is called before any analogRead (it is, in setup()). If a different ADC resolution was selected before flashing, the scale factor is off by a factor of (new_bits / 12). Recalculate `CT_SCALE = (3.3 / 4096) × (2000 / 22)` for 12-bit resolution; see §6.3 for the formula. |
+| Mojo shows correct steady state but summary payload has temp_c = -999.0 | MCP9808 not responding | Verify I²C wiring (SDA/SCL). Check I²C address is 0x18 (default). Try the Adafruit_MCP9808 example sketch to confirm the sensor responds. |
 
 ---
 

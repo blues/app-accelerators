@@ -529,9 +529,10 @@ SummaryResult sendSummary(PersistState &s, uint32_t now) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CAN BMS polling — compiled only when ENABLE_CAN_BMS == 1.
-// Update BMS_CELL_GROUP_ID and parseCellGroupFrame() to match your BMS vendor's
-// CAN message layout. Many rental-equipment BMS units publish cell-group
-// voltages on SAE J1939 PGNs at 250 kbps; consult the machine's service manual.
+// Update BMS_CELL_GROUP_ID (in lift_battery_monitor_config.h) and
+// parseCellGroupFrame() (below) to match your BMS vendor's CAN message layout.
+// Many rental-equipment BMS units publish cell-group voltages on SAE J1939
+// PGNs at 250 kbps; consult the machine's service manual.
 // ─────────────────────────────────────────────────────────────────────────────
 #if ENABLE_CAN_BMS
 // parseCellGroupFrame — fill gCellMv[] from a CAN frame and return the number

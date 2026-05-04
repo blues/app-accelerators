@@ -71,11 +71,24 @@ bool notecardConfigure()
         return false;
     }
 
+    // card.voltage — define the LiPo voltage thresholds that classify the
+    // current power state into usb / high / normal / low / dead buckets.
+    // This MUST be configured before voltage-variable strings (voutbound,
+    // vinbound) take effect: the Notecard's default voltage mode only defines
+    // `normal:2.5;dead:0`, so without this call the high / low levels in the
+    // VOUTBOUND_PROFILE / VINBOUND_PROFILE strings are silently never applied
+    // and the solar-aware sync stretching this firmware advertises does not
+    // happen.  "lipo" expands to usb:4.6;high:4.0;normal:3.5;low:3.2;dead:0.
+    J *req = notecard.newRequest("card.voltage");
+    if (!req) return false;
+    JAddStringToObject(req, "mode", "lipo");
+    if (!sendAndCheck(req, "card.voltage")) return false;
+
     // hub.set — periodic sync with voltage-variable outbound cadence.
     // The voutbound / vinbound profiles stretch sync intervals as the solar
     // battery drains, keeping the trailer visible even in extended cloudy
     // dwell periods.  Transition events use sync:true to bypass this schedule.
-    J *req = notecard.newRequest("hub.set");
+    req = notecard.newRequest("hub.set");
     if (!req) return false;
     JAddStringToObject(req, "product",   PRODUCT_UID);
     JAddStringToObject(req, "mode",      "periodic");

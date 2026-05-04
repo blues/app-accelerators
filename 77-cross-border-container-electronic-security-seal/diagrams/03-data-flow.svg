@@ -1,148 +1,60 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 520" width="920" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" width="800" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
   <defs>
-    <marker id="ar-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+    <marker id="ar-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
     </marker>
-    <marker id="ar-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+    <marker id="ar-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/>
     </marker>
-    <marker id="ar-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 z" fill="#9333ea"/>
-    </marker>
-    <marker id="ar-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 z" fill="#d97706"/>
-    </marker>
-    <marker id="ar-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+    <marker id="ar-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#16a34a"/>
     </marker>
-    <marker id="ar-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 z" fill="#0d9488"/>
-    </marker>
   </defs>
-  <rect width="920" height="520" fill="#ffffff"/>
+  <rect width="800" height="420" fill="#ffffff"/>
 
-  <text x="460" y="34" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">Data Flow</text>
-  <text x="460" y="54" text-anchor="middle" font-size="12" fill="#64748b">Sample · detect · sign · emit</text>
+  <text x="400" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">Data Flow</text>
+  <text x="400" y="58" text-anchor="middle" font-size="12" fill="#64748b">Sample · evaluate · emit</text>
 
-  <!-- ── Column 1: Sample ─────────────────────────────────────────────── -->
-  <rect x="14" y="78" width="148" height="270" rx="10" fill="#e0f2fe" stroke="#0284c7" stroke-width="1.5"/>
-  <text x="88" y="104" text-anchor="middle" font-size="13" font-weight="700" fill="#0c4a6e">Sample</text>
-  <text x="88" y="120" text-anchor="middle" font-size="11" fill="#075985">every 30 s</text>
-  <line x1="28" y1="130" x2="148" y2="130" stroke="#7dd3fc" stroke-width="1"/>
-  <g font-size="10" fill="#0c4a6e">
-    <text x="88" y="152" text-anchor="middle" font-weight="600">Reed switch (A0)</text>
-    <text x="88" y="168" text-anchor="middle">door open / sealed</text>
-    <text x="88" y="189" text-anchor="middle" font-weight="600">Break-wire loop (A1)</text>
-    <text x="88" y="205" text-anchor="middle">wire intact / cut</text>
-    <text x="88" y="226" text-anchor="middle">Battery voltage</text>
-    <text x="88" y="245" text-anchor="middle">GPS fix (Notecard</text>
-    <text x="88" y="261" text-anchor="middle">6-hour periodic)</text>
+  <rect x="20" y="120" width="170" height="180" rx="10" fill="#e0f2fe" stroke="#0284c7" stroke-width="1.5"/>
+  <g transform="translate(96,135) scale(0.75)" fill="#0c4a6e"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></g>
+  <text x="105" y="172" text-anchor="middle" font-size="13" font-weight="700" fill="#0c4a6e">Sample</text>
+  <text x="105" y="190" text-anchor="middle" font-size="11" fill="#075985">every 30 s</text>
+  <line x1="40" y1="204" x2="170" y2="204" stroke="#7dd3fc"/>
+  <g font-size="11" fill="#0c4a6e">
+    <text x="105" y="232" text-anchor="middle">Door reed</text>
+    <text x="105" y="254" text-anchor="middle">Break-wire continuity</text>
+    <text x="105" y="276" text-anchor="middle">Sign with ATECC608A</text>
   </g>
 
-  <!-- ── Column 2: Evaluate ───────────────────────────────────────────── -->
-  <rect x="180" y="78" width="148" height="270" rx="10" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
-  <text x="254" y="104" text-anchor="middle" font-size="13" font-weight="700" fill="#7c2d12">Evaluate</text>
-  <text x="254" y="120" text-anchor="middle" font-size="11" fill="#9a3412">per wake</text>
-  <line x1="194" y1="130" x2="314" y2="130" stroke="#fed7aa" stroke-width="1"/>
-  <g font-size="10" fill="#7c2d12">
-    <text x="254" y="152" text-anchor="middle">Door state changed?</text>
-    <text x="254" y="170" text-anchor="middle">Seal wire broken?</text>
-    <text x="254" y="188" text-anchor="middle">Heartbeat due?</text>
-    <text x="254" y="206" text-anchor="middle">Pending event</text>
-    <text x="254" y="222" text-anchor="middle">to retry?</text>
-    <text x="254" y="240" text-anchor="middle">Overflow audit</text>
-    <text x="254" y="256" text-anchor="middle">gap to report?</text>
+  <rect x="230" y="120" width="170" height="180" rx="10" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+  <g transform="translate(306,135) scale(0.75)" fill="#7c2d12"><path d="M20 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9.6 13.6L7 13.2l1.4-1.4 2 2 4.6-4.6 1.4 1.4-6 6z"/></g>
+  <text x="315" y="172" text-anchor="middle" font-size="13" font-weight="700" fill="#7c2d12">Edge rules</text>
+  <text x="315" y="190" text-anchor="middle" font-size="11" fill="#9a3412">breach detection</text>
+  <line x1="250" y1="204" x2="380" y2="204" stroke="#fed7aa"/>
+  <g font-size="11" fill="#7c2d12">
+    <text x="315" y="232" text-anchor="middle">seal_broken</text>
+    <text x="315" y="254" text-anchor="middle">door_open</text>
+    <text x="315" y="276" text-anchor="middle">GPS waypoint</text>
   </g>
 
-  <!-- ── Column 3: Sign (ATECC608A) ───────────────────────────────────── -->
-  <rect x="346" y="78" width="148" height="270" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
-  <text x="420" y="104" text-anchor="middle" font-size="13" font-weight="700" fill="#14532d">Sign</text>
-  <text x="420" y="120" text-anchor="middle" font-size="11" fill="#166534">ATECC608A (I²C)</text>
-  <line x1="360" y1="130" x2="480" y2="130" stroke="#bbf7d0" stroke-width="1"/>
-  <g font-size="10" fill="#14532d">
-    <text x="420" y="152" text-anchor="middle">19-byte payload:</text>
-    <text x="420" y="168" text-anchor="middle">event_time · type</text>
-    <text x="420" y="184" text-anchor="middle">seal_broken · door_open · breaches</text>
-    <text x="420" y="200" text-anchor="middle">lat/lon lroundf(×1e6)</text>
-    <text x="420" y="221" text-anchor="middle">→ SHA-256 digest</text>
-    <text x="420" y="237" text-anchor="middle">→ ECDSA P-256 sign</text>
-    <text x="420" y="258" text-anchor="middle">4-byte prefix: sig</text>
-    <text x="420" y="274" text-anchor="middle">64-byte full sig</text>
-    <text x="420" y="290" text-anchor="middle" font-style="italic">(heartbeats: 11-byte</text>
-    <text x="420" y="306" text-anchor="middle" font-style="italic">payload, same key)</text>
-  </g>
+  <rect x="440" y="120" width="170" height="80" rx="10" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+  <g transform="translate(516,130) scale(0.65)" fill="#7f1d1d"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></g>
+  <text x="525" y="166" text-anchor="middle" font-size="12" font-weight="700" fill="#7f1d1d">seal_event.qo</text>
+  <text x="525" y="186" text-anchor="middle" font-size="10" fill="#991b1b">sync:true · signed</text>
 
-  <!-- ── Column 4: Notefiles ──────────────────────────────────────────── -->
-  <!-- seal_event.qo — door breach/re-seal -->
-  <rect x="514" y="78" width="168" height="74" rx="8" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
-  <text x="598" y="103" text-anchor="middle" font-size="12" font-weight="700" fill="#7f1d1d">seal_event.qo</text>
-  <text x="598" y="119" text-anchor="middle" font-size="10" fill="#991b1b">breach / re-seal · sync:true</text>
-  <text x="598" y="135" text-anchor="middle" font-size="10" fill="#991b1b">open · breaches · event_time · sig</text>
+  <rect x="440" y="220" width="170" height="80" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+  <g transform="translate(516,230) scale(0.65)" fill="#14532d"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7 17v-3h2v3H7zm4 0V7h2v10h-2zm4 0v-5h2v5h-2z"/></g>
+  <text x="525" y="266" text-anchor="middle" font-size="12" font-weight="700" fill="#14532d">seal_heartbeat.qo</text>
+  <text x="525" y="286" text-anchor="middle" font-size="10" fill="#166534">6-hr · signed</text>
 
-  <!-- seal_event.qo — seal-wire break -->
-  <rect x="514" y="164" width="168" height="74" rx="8" fill="#fdf4ff" stroke="#9333ea" stroke-width="1.5"/>
-  <text x="598" y="189" text-anchor="middle" font-size="12" font-weight="700" fill="#581c87">seal_event.qo</text>
-  <text x="598" y="205" text-anchor="middle" font-size="10" fill="#6b21a8">seal_broken:true · sync:true</text>
-  <text x="598" y="221" text-anchor="middle" font-size="10" fill="#6b21a8">independent of door state · sig</text>
+  <rect x="650" y="120" width="130" height="180" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <g transform="translate(706,180) scale(0.75)" fill="#1e3a8a"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></g>
+  <text x="715" y="220" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">Notehub</text>
+  <text x="715" y="240" text-anchor="middle" font-size="11" fill="#1e40af">+ routes</text>
 
-  <!-- seal_sig_full.qo — full signature companion -->
-  <rect x="514" y="250" width="168" height="74" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
-  <text x="598" y="275" text-anchor="middle" font-size="12" font-weight="700" fill="#14532d">seal_sig_full.qo</text>
-  <text x="598" y="291" text-anchor="middle" font-size="10" fill="#166534">full 64-byte sig (R‖S hex)</text>
-  <text x="598" y="307" text-anchor="middle" font-size="10" fill="#166534">cellular delivery · correlate event_time</text>
-
-  <!-- seal_event.qo — audit gap -->
-  <rect x="514" y="336" width="168" height="56" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
-  <text x="598" y="361" text-anchor="middle" font-size="12" font-weight="700" fill="#92400e">seal_event.qo</text>
-  <text x="598" y="377" text-anchor="middle" font-size="10" fill="#78350f">audit_gap:true · sync:true</text>
-
-  <!-- seal_heartbeat.qo -->
-  <rect x="514" y="404" width="168" height="56" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-  <text x="598" y="429" text-anchor="middle" font-size="12" font-weight="700" fill="#14532d">seal_heartbeat.qo</text>
-  <text x="598" y="445" text-anchor="middle" font-size="10" fill="#166534">waypoint + health · sig · batched</text>
-
-  <!-- ── Column 5: Notehub ────────────────────────────────────────────── -->
-  <rect x="704" y="78" width="200" height="382" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
-  <text x="804" y="116" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">Notehub</text>
-  <text x="804" y="134" text-anchor="middle" font-size="11" fill="#1e40af">+ routes</text>
-  <line x1="716" y1="142" x2="892" y2="142" stroke="#bfdbfe" stroke-width="1"/>
-  <g font-size="10" fill="#1e40af">
-    <text x="804" y="162" text-anchor="middle">seal_event.qo</text>
-    <text x="804" y="178" text-anchor="middle" font-style="italic">(breach / reseal /</text>
-    <text x="804" y="194" text-anchor="middle" font-style="italic">seal-break / audit-gap)</text>
-    <text x="804" y="216" text-anchor="middle">seal_sig_full.qo</text>
-    <text x="804" y="232" text-anchor="middle" font-style="italic">(cellular, full sig)</text>
-    <text x="804" y="254" text-anchor="middle">seal_heartbeat.qo</text>
-    <text x="804" y="270" text-anchor="middle" font-style="italic">(batched)</text>
-  </g>
-
-  <!-- ── Arrows: Sample → Evaluate ───────────────────────────────────── -->
-  <line x1="162" y1="213" x2="178" y2="213" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
-
-  <!-- Evaluate → Sign (door / seal-break / heartbeat) -->
-  <line x1="328" y1="150" x2="344" y2="150" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
-  <line x1="328" y1="200" x2="344" y2="200" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
-  <line x1="328" y1="240" x2="344" y2="240" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
-
-  <!-- Sign → seal_event breach -->
-  <line x1="494" y1="140" x2="512" y2="118" stroke="#dc2626" stroke-opacity="0.55" stroke-width="2" marker-end="url(#ar-red)"/>
-  <!-- Sign → seal_event wire-break -->
-  <line x1="494" y1="190" x2="512" y2="203" stroke="#9333ea" stroke-opacity="0.55" stroke-width="2" marker-end="url(#ar-purple)"/>
-  <!-- Sign → seal_sig_full -->
-  <line x1="494" y1="240" x2="512" y2="275" stroke="#16a34a" stroke-opacity="0.55" stroke-width="2" marker-end="url(#ar-green)"/>
-  <!-- Evaluate → audit-gap (no signing path — unsigned) -->
-  <line x1="328" y1="295" x2="512" y2="360" stroke="#d97706" stroke-opacity="0.6" stroke-width="1.8" marker-end="url(#ar-amber)"/>
-  <!-- Sign → heartbeat -->
-  <line x1="494" y1="290" x2="512" y2="428" stroke="#16a34a" stroke-opacity="0.55" stroke-width="2" marker-end="url(#ar-green)"/>
-
-  <!-- Notefiles → Notehub -->
-  <line x1="682" y1="115" x2="702" y2="160" stroke="#dc2626" stroke-opacity="0.4" stroke-width="1.8" marker-end="url(#ar-red)"/>
-  <line x1="682" y1="201" x2="702" y2="175" stroke="#9333ea" stroke-opacity="0.4" stroke-width="1.8" marker-end="url(#ar-purple)"/>
-  <line x1="682" y1="283" x2="702" y2="222" stroke="#16a34a" stroke-opacity="0.4" stroke-width="1.8" marker-end="url(#ar-green)"/>
-  <line x1="682" y1="364" x2="702" y2="262" stroke="#d97706" stroke-opacity="0.4" stroke-width="1.8" marker-end="url(#ar-amber)"/>
-  <line x1="682" y1="432" x2="702" y2="280" stroke="#16a34a" stroke-opacity="0.4" stroke-width="1.8" marker-end="url(#ar-green)"/>
-
-  <!-- ── Legend ────────────────────────────────────────────────────────── -->
-  <text x="14" y="487" font-size="10" fill="#64748b">Breach/seal-break: sync:true (satellite or cellular immediately). Heartbeat: batched at outbound_min (default 12 h).</text>
-  <text x="14" y="503" font-size="10" fill="#64748b">seal_sig_full.qo carries full 64-byte ECDSA sig; delivered cellular only. Audit-gap notes are unsigned chain-of-custody gap indicators.</text>
+  <line x1="190" y1="210" x2="228" y2="210" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <line x1="400" y1="170" x2="438" y2="160" stroke="#dc2626" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-red)"/>
+  <line x1="400" y1="250" x2="438" y2="260" stroke="#16a34a" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-green)"/>
+  <line x1="610" y1="160" x2="648" y2="180" stroke="#dc2626" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-red)"/>
+  <line x1="610" y1="260" x2="648" y2="240" stroke="#16a34a" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-green)"/>
 </svg>

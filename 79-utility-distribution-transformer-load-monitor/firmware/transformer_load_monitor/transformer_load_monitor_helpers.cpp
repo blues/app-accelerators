@@ -240,23 +240,41 @@ void fetchEnvOverrides(EnvConfig &c) {
 }
 
 // ---------------------------------------------------------------------------
-// CT RMS measurement — two-pass approach.
+// CT RMS measurement — two-pass approach with deterministic sample pacing.
 // Pass 1: estimate DC bias offset (~2048 counts for a centred bias network).
 // Pass 2: compute AC RMS relative to that offset.
+//
+// Both passes pace samples to CT_SAMPLE_PERIOD_US (225 µs ≈ 4.44 kHz) so the
+// 1480-sample RMS window spans ~333 ms regardless of analogRead() throughput
+// on the Cygnet ADC.  Without this pacing the burst would finish in <20 ms —
+// less than one full 60 Hz cycle — and the RMS value would depend on which
+// fragment of the waveform the loop happened to capture.
 // ---------------------------------------------------------------------------
 float readCtRms(uint8_t pin) {
-    // Pass 1: DC offset
+    // Pass 1: DC offset (~57 ms at the configured sample period).
     long sum = 0;
+    uint32_t next_us = micros();
     for (int i = 0; i < CT_DC_SAMPLES; i++) {
         sum += analogRead(pin);
+        next_us += CT_SAMPLE_PERIOD_US;
+        int32_t wait = (int32_t)(next_us - micros());
+        if (wait > 0 && wait < (int32_t)CT_SAMPLE_PERIOD_US) {
+            delayMicroseconds((uint32_t)wait);
+        }
     }
     int offset = (int)(sum / CT_DC_SAMPLES);
 
-    // Pass 2: AC RMS
+    // Pass 2: AC RMS (~333 ms ≈ 20 cycles @ 60 Hz / 16.7 cycles @ 50 Hz).
     float sum_sq = 0.0f;
+    next_us = micros();
     for (int i = 0; i < CT_RMS_SAMPLES; i++) {
         float s = (float)(analogRead(pin) - offset);
         sum_sq += s * s;
+        next_us += CT_SAMPLE_PERIOD_US;
+        int32_t wait = (int32_t)(next_us - micros());
+        if (wait > 0 && wait < (int32_t)CT_SAMPLE_PERIOD_US) {
+            delayMicroseconds((uint32_t)wait);
+        }
     }
     float rms_counts = sqrtf(sum_sq / CT_RMS_SAMPLES);
 
@@ -296,7 +314,7 @@ void checkAlerts(float i_a, float i_b, float i_c, float temp_c) {
     const uint32_t interval = (cfg.sample_interval_sec > 0)
                               ? cfg.sample_interval_sec : 1U;
     uint32_t raw_cycles = (cfg.alert_cooldown_sec > 0)
-        ? max(1U, (cfg.alert_cooldown_sec + interval - 1U) / interval)
+        ? max((uint32_t)1, (cfg.alert_cooldown_sec + interval - 1U) / interval)
         : 0U;
     if (raw_cycles > 65535U) raw_cycles = 65535U;
     const uint16_t cooldown_cycles = (uint16_t)raw_cycles;

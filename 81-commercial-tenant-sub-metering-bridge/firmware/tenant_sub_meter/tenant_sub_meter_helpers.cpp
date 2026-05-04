@@ -102,9 +102,11 @@ ChannelMeasurement measureChannel(uint8_t current_pin) {
     }
 
     // ── Current-channel saturation check ─────────────────────────────────────
-    // RMS of the DC-removed current signal must stay below 85 % of the 1.65 V
-    // half-swing.  Exceeding this threshold indicates ADC rail clipping, which
-    // distorts both the power computation and the RMS current result.
+    // Trips when the DC-removed current signal's RMS exceeds the RMS-equivalent of
+    // 85 % of the 1.65 V half-rail peak amplitude (≈ 0.99 V RMS, ≈ 1230 ADC counts;
+    // see SATURATION_RMS_COUNTS rationale in helpers.h).  Crossing this threshold
+    // means the signal is nearing ADC rail clipping, which would distort both the
+    // active-power computation and the RMS current result.
     float i_rms_counts = sqrtf(i_sq / (float)ADC_SAMPLES);
     if (i_rms_counts > SATURATION_RMS_COUNTS) {
         m.fault |= FAULT_SATURATED;
@@ -127,7 +129,9 @@ ChannelMeasurement measureChannel(uint8_t current_pin) {
         m.fault |= FAULT_VOLTAGE_REF;
     }
     if (v_rms_counts > SATURATION_RMS_COUNTS) {
-        // Voltage-path saturation: ADC rail clipping on the transducer output.
+        // Voltage-path approaching saturation: signal nearing ADC rail clipping
+        // on the transducer output (same threshold rationale as the current
+        // channel — see SATURATION_RMS_COUNTS in helpers.h).
         m.fault |= FAULT_VOLTAGE_REF;
     }
     if (line_v_rms < VOLTAGE_MIN_V_RMS) {

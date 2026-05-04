@@ -43,3 +43,17 @@
 // production configuration.  Setting BENCH_ONLY 1 while ENABLE_ACS758 is also
 // 1 triggers a compile-time #error (contradictory flags).
 #define BENCH_ONLY  0
+
+// ─── CAN BMS hardware parameters (edit to match your BMS vendor) ─────────────
+// These constants are referenced from both lift_battery_monitor.ino (for the
+// MCP2515 instance and gCellMv[] array sizing) and lift_battery_monitor_helpers.cpp
+// (inside pollCanBms / parseCellGroupFrame).  They live here so both
+// translation units see identical values.
+#if ENABLE_CAN_BMS
+#define PIN_CAN_CS          5            // SPI CS for MCP2515 — Notecarrier CX D5 (see README §4)
+#define BMS_CELL_COUNT      8            // array capacity for decoded cell-group voltages;
+                                         // a single classic CAN frame (DLC ≤ 8 bytes) holds
+                                         // at most four 16-bit values — BMS_CELL_COUNT may
+                                         // exceed that if the BMS uses a multi-frame protocol
+#define BMS_CELL_GROUP_ID  0x18FF50E5UL  // 29-bit extended CAN ID (placeholder)
+#endif

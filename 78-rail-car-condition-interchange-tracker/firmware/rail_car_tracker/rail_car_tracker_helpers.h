@@ -78,7 +78,10 @@
 #define FILE_LOCATION  "railcar_location.qo"  // dedicated position stream
 
 // ── NotePayload segment ID ────────────────────────────────────────────────────
-#define STATE_SEG_ID  1
+// 4-character tag (NP_SEGTYPE_LEN) identifying the PersistState segment within
+// the Notecard-flash payload. The note-c API requires `const char[4]`, not an
+// integer.
+#define STATE_SEG_ID  "RAIL"
 
 // ── Configuration schema version ─────────────────────────────────────────────
 // Stored in PersistState.configVersion. CONFIG_VERSION encodes both the schema

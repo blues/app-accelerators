@@ -40,6 +40,14 @@ PersistState    state;
 // sampleMin published by setup() so loop() uses the same interval for sleep.
 static uint32_t g_sampleMin = SAMPLE_INTERVAL_MIN_DEFAULT;
 
+// True only after setup() has successfully run NotePayloadRetrieveAfterSleep so
+// that `state` reflects either the previously persisted payload or a known
+// fresh-boot zero. While false, loop() must NOT call NotePayloadSaveAndSleep:
+// `state` is in its BSS-zero post-reset representation, and writing those zeros
+// to Notecard flash would clobber the real persisted state (latches,
+// accumulators, configVersion) that survived the prior sleep cycle.
+static bool     g_persistStateValid = false;
+
 // ─────────────────────────────────────────────────────────────────────────────
 void setup() {
     debugSerial.begin(115200);
@@ -59,8 +67,10 @@ void setup() {
     // ── Per-boot Notecard readiness ping ─────────────────────────────────────
     // Retries card.version for up to 10 s to let the Notecard I²C stack
     // settle before any real request. Abort the entire cycle on failure;
-    // loop() will save state and issue a fallback sleep so the host does not
-    // spin indefinitely if the Notecard is unresponsive this wake.
+    // loop() will see g_persistStateValid == false, skip the save (so the
+    // existing persisted PersistState in Notecard flash is preserved intact),
+    // and fall through to the card.attn / WFI sleep fallback so the host does
+    // not spin indefinitely if the Notecard is unresponsive this wake.
     if (!notecardReady()) {
         debugSerial.println("[error] Notecard not ready — aborting cycle; will retry next wake");
         return;
@@ -81,6 +91,10 @@ void setup() {
                                                &state, sizeof(state));
         NotePayloadFree(&restorePayload);
     }
+    // From this point on `state` is in a known-consistent representation
+    // (either the restored payload or a clean zero-init for the first boot),
+    // so it is safe for loop() to write it back to Notecard flash on sleep.
+    g_persistStateValid = true;
 
     // ── hub.set: always applied at each boot ──────────────────────────────────
     // hub.set is idempotent; re-issuing it every boot ensures a PRODUCT_UID
@@ -433,29 +447,44 @@ void loop() {
     // persisted PersistState after alerts were queued in setup() would reset
     // shockCooldownRemMin to zero, skew summary window counters, and allow
     // duplicate edge-triggered alerts on the next wake.
-    NotePayloadDesc savePayload = {0, 0, 0};
-    bool segOk   = NotePayloadAddSegment(&savePayload, STATE_SEG_ID,
-                                         &state, sizeof(state));
+    //
+    // When g_persistStateValid is false, setup() returned before
+    // NotePayloadRetrieveAfterSleep completed (e.g. notecardReady() failed)
+    // and `state` is still BSS-zero. Saving that to Notecard flash would
+    // overwrite the real persisted state from the prior sleep cycle, so the
+    // save/segment step is skipped entirely and we fall straight through to
+    // the card.attn sleep fallback below — which sleeps the host without
+    // touching the saved payload.
+    bool segOk   = false;
     bool sleepOk = false;
-    if (segOk) {
-        for (uint8_t attempt = 0; attempt < 3 && !sleepOk; attempt++) {
-            if (attempt > 0) {
-                debugSerial.print("[warn] NotePayload save/sleep retry ");
-                debugSerial.println(attempt);
-                delay(500);
+    NotePayloadDesc savePayload = {0, 0, 0};
+    if (g_persistStateValid) {
+        segOk = NotePayloadAddSegment(&savePayload, STATE_SEG_ID,
+                                      &state, sizeof(state));
+        if (segOk) {
+            for (uint8_t attempt = 0; attempt < 3 && !sleepOk; attempt++) {
+                if (attempt > 0) {
+                    debugSerial.print("[warn] NotePayload save/sleep retry ");
+                    debugSerial.println(attempt);
+                    delay(500);
+                }
+                sleepOk = NotePayloadSaveAndSleep(&savePayload, g_sampleMin * 60U, NULL);
             }
-            sleepOk = NotePayloadSaveAndSleep(&savePayload, g_sampleMin * 60U, NULL);
         }
+    } else {
+        debugSerial.println("[warn] state not restored this cycle — skipping persist save to protect Notecard flash");
     }
 
-    if (!segOk || !sleepOk) {
-        // All NotePayloadSaveAndSleep attempts failed. State is not persisted
-        // for this cycle: shock cooldown resets to zero on the next wake,
-        // accumulated summary counters may skew, and edge-triggered alerts
-        // already queued this wake could be re-queued on the next wake.
-        // Fall back to card.attn sleep to avoid leaving the host fully awake
-        // for the entire sample interval (tens of mA on a solar device).
-        debugSerial.println("[error] NotePayload save/sleep failed — issuing fallback sleep");
+    if (!sleepOk) {
+        // Either NotePayloadSaveAndSleep failed for this cycle, or the save
+        // was deliberately skipped because state had not been restored. In
+        // the failed-save case, state is not persisted for this cycle: shock
+        // cooldown resets to zero on the next wake, accumulated summary
+        // counters may skew, and edge-triggered alerts already queued this
+        // wake could be re-queued on the next wake. Fall back to card.attn
+        // sleep to avoid leaving the host fully awake for the entire sample
+        // interval (tens of mA on a solar device).
+        debugSerial.println("[info] issuing card.attn sleep fallback (no persist save this cycle)");
         bool attnOk = false;
         for (uint8_t attempt = 0; attempt < 3 && !attnOk; attempt++) {
             if (attempt > 0) delay(500);

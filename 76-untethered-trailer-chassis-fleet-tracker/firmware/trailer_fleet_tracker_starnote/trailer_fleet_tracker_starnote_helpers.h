@@ -57,8 +57,9 @@
 #define DEFAULT_HEARTBEAT_SECS      21600   //  6 hr:  alive-ping cadence when parked
 
 // Voltage-variable outbound sync (hub.set voutbound) — reduces cellular
-// activity on a low or depleted solar battery.
-// high ≈ >3.9V, normal ≈ >3.7V, low ≈ >3.5V, dead ≈ <3.5V
+// activity on a low or depleted solar battery.  notecardConfigure() issues
+// `card.voltage {"mode":"lipo"}` which sets the bucket thresholds to:
+// usb >= 4.6V, high >= 4.0V, normal >= 3.5V, low >= 3.2V, dead < 3.2V.
 #define VOUTBOUND_PROFILE   "high:60;normal:120;low:360;dead:0"
 #define VINBOUND_PROFILE    "high:120;normal:240;low:720;dead:0"
 

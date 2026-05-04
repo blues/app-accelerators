@@ -28,9 +28,16 @@
 #define CT_NOISE_FLOOR_A  0.5f  // readings below this are treated as zero (A)
 
 // Two-pass RMS sampling — 256 samples to establish the DC bias offset;
-// 1480 samples (~20 mains cycles at 60 Hz) to compute the AC RMS component.
-#define CT_DC_SAMPLES   256
-#define CT_RMS_SAMPLES  1480
+// 1480 samples to compute the AC RMS component.  Samples are paced at
+// CT_SAMPLE_PERIOD_US so the 1480-sample window spans a deterministic ~333 ms
+// (≈20 mains cycles at 60 Hz / ≈16.7 cycles at 50 Hz) regardless of the host
+// ADC's native throughput.  Without explicit pacing, analogRead() on the
+// Cygnet (STM32L4) runs in single-digit µs and the whole burst would complete
+// in well under one mains cycle, producing nonsense RMS values that drift
+// with whatever phase of the wave the loop happens to start on.
+#define CT_DC_SAMPLES         256
+#define CT_RMS_SAMPLES        1480
+#define CT_SAMPLE_PERIOD_US   225U  // 4.44 kHz; 1480 × 225 µs ≈ 333 ms
 
 // ADC full-scale count — must match the resolution set by analogReadResolution()
 // in setup().  CT_SCALE is derived from this; a mismatch shifts every reading.

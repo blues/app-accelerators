@@ -363,18 +363,12 @@ void setup()
     NotePayloadAddSegment(&out, kStateSegId, &state, sizeof(state));
     NotePayloadSaveAndSleep(&out, sleep_secs, NULL);
 
-    for (uint8_t retries = 0; retries < 3; ++retries) {
+    // If sleep ever returns, the call freed the payload descriptor internally
+    // — calling it again with the same descriptor would be a no-op (state lost)
+    // or worse.  Reset the host so the next setup() rebuilds the descriptor
+    // and retries sleep cleanly with current state.
 #ifdef usbSerial
-        usbSerial.print("[sleep] NotePayloadSaveAndSleep returned unexpectedly; retry ");
-        usbSerial.print(retries + 1);
-        usbSerial.println("/3");
-#endif
-        delay(2000);
-        NotePayloadSaveAndSleep(&out, sleep_secs, NULL);
-    }
-
-#ifdef usbSerial
-    usbSerial.println("[sleep] all sleep retries failed; forcing host reset");
+    usbSerial.println("[sleep] NotePayloadSaveAndSleep returned unexpectedly; forcing host reset");
     delay(100);
 #endif
     NVIC_SystemReset();

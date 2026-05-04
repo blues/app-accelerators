@@ -32,6 +32,8 @@ This is not a niche edge case. Billing disputes are among the most contentious i
 
 ## 2. System Architecture
 
+![System architecture: 4 Rogowski coils + ZMPT101B voltage transducer → Notecarrier CX with Cygnet host and Notecard MBGLW → cellular → Notehub → bill-back / analytics / property management](diagrams/01-system-architecture.svg)
+
 **Device-side responsibilities.** The onboard Cygnet STM32L433 host on the Notecarrier CX wakes every five minutes (default), reads each active tenant channel by interleaving ADC samples from the voltage transducer output and the Rogowski integrator output, computes active power (W) via the V×I cross-product, accumulates estimated interval energy (Wh), 15-minute blocked-average demand (W), and a per-channel hardware-fault bitmask per tenant in a RAM struct persisted to Notecard flash across sleep cycles, and falls back to sleep. Once per hour it emits a summary note containing the accumulated energy, peak demand, and fault flags. The host reads all configuration at every wake from [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) distributed by Notehub, so sensor sensitivity and volt scaling can be adjusted in the field without a reflash.
 
 **Notecard responsibilities.** The Notecard stores [Notes](https://dev.blues.io/api-reference/glossary/#note) in its on-device queue, wakes the cellular radio on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 min), and flushes the queue to Notehub in a single cellular session. The Notecard also distributes environment variable changes pushed from Notehub on its `inbound` cadence (default 120 min), and uses [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) sleep mode to cut host power between samples — ensuring the Cygnet draws essentially zero current from the supply between wakeups.
@@ -68,6 +70,8 @@ Use this BOM for firmware bring-up, calibration, and evaluation. The ZMPT101B mo
 All Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
 ## 4. Wiring and Assembly
+
+![Wiring: 4 Rogowski coils on A0–A3, ZMPT101B voltage on A4, MCP6004 op-amp integrator; cellular antenna via u.FL; 120 VAC → 5 V supply → Mojo (bench) → +VBAT](diagrams/02-wiring-assembly.svg)
 
 All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard MBGLW seats into the M.2 slot on the carrier. Mojo (bench-only) sits inline between the 5 V supply output and the Notecarrier CX `+VBAT` pad.
 
@@ -153,6 +157,19 @@ Each Rogowski coil wraps around **one conductor only** of the tenant's single-ph
 
 > **Electrical safety.** Panel interiors operate at hazardous voltages. Installation must be performed by a licensed electrician following applicable electrical code, site lockout/tagout procedures, and the panel manufacturer's instructions. The Rogowski coils and voltage transducer are galvanically isolated from the mains; the hazard is the bus bars and termination points nearby during installation.
 
+## 5. Firmware Flash Checklist
+
+Before powering on for the first time:
+
+- [ ] **PRODUCT_UID set** — edited `tenant_sub_meter_helpers.h` line 17 with your Notehub ProductUID (e.g., `com.your-company:your-app`).
+- [ ] **Core installed** — Arduino core for STM32 added via Boards Manager. Search "STM32 MCU based boards".
+- [ ] **Blues Notecard library installed** — installed via Library Manager. Version 1.8.5 or later.
+- [ ] **DIP switch set to HST** — on the Notecarrier CX, before connecting USB.
+- [ ] **Compiled and uploaded** — `arduino-cli compile` succeeds with no errors. `arduino-cli upload` completes successfully.
+- [ ] **Serial monitor at 115200 baud** — after upload, watch for `[init]` and `[sample]` lines (host is running).
+
+If compilation fails with "PRODUCT_UID is not defined", you missed step 1. If upload fails with "board not found", check the DIP switch and USB cable.
+
 ## 5. Notehub Setup
 
 ### Fast path to first event
@@ -160,8 +177,14 @@ Each Rogowski coil wraps around **one conductor only** of the tenant's single-ph
 1. **Notehub** — create a [Notehub project](https://notehub.io), copy its ProductUID.
 2. **Wire the bench rig** — Notecarrier CX + Notecard MBGLW + four Rogowski integrator circuits on A0–A3 + ZMPT101B on A4. Full pinout in [§4](#4-wiring-and-assembly).
 3. **Edit one line** in [`firmware/tenant_sub_meter/tenant_sub_meter_helpers.h`](firmware/tenant_sub_meter/tenant_sub_meter_helpers.h) — replace `#define PRODUCT_UID ""` with your project's value.
-4. **Flash** — `arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET` then upload. Full instructions in [§6.1](#61-installing-and-flashing).
-5. **Watch** — open Notehub → **Events** tab. A `_session.qo` appears within minutes; the first `meter_summary.qo` typically arrives in the initial session, shortly after the first sample cycle completes.
+4. **Flash** — 
+   ```bash
+   arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/tenant_sub_meter/
+   arduino-cli upload -b STMicroelectronics:stm32:GenL4:pnum=CYGNET -p /dev/cu.usbmodem* firmware/tenant_sub_meter/
+   ```
+   Full troubleshooting in [§6.1](#61-installing-and-flashing). Connect the Notecarrier CX with USB and set the DIP switch to `HST`.
+5. **Watch serial** — open the serial monitor at 115200 baud. You will see Notecard configuration, then channel sample lines. After the first sleep cycle, serial goes quiet (host is powered off) for 5 minutes — that silence is expected and healthy.
+6. **Check Notehub** — open **Events** tab. A `_session.qo` appears within minutes. The first `meter_summary.qo` typically arrives in the initial session, shortly after the first sample cycle completes (within an hour).
 
 ---
 
@@ -173,21 +196,39 @@ Each Rogowski coil wraps around **one conductor only** of the tenant's single-ph
 
 4. **Create a Fleet per property.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) group devices for shared configuration. The natural unit here is *one fleet per building* — every panel in the same building typically operates at the same line voltage and uses the same Rogowski coil model, so fleet-level environment variables encode "this building's panels all use these sensor calibrations." Use [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) to auto-assign devices by serial number prefix for multi-property deployments.
 
-5. **Set environment variables.** In Notehub, navigate to **Fleet → Environment** (or **Device → Environment** for per-device overrides). The device pulls them on its next `inbound` sync — no reflash, no truck roll.
+5. **Set environment variables.** Navigate in Notehub to **Fleet → Environment** (or **Device → Environment** for per-device overrides). Edit the table below, then save. The device pulls them on its next `inbound` sync (default: every 2 hours) — no reflash, no truck roll.
 
-   | Variable | Default | Purpose |
-   |---|---|---|
-   | `sample_interval_sec` | `300` | Seconds between samples (minimum 60). |
-   | `summary_interval_min` | `60` | Minutes between summary notes (minimum 15, maximum 1440). The minimum of 15 matches the 15-minute demand window: a shorter summary period would always report `t*_demand_w = 0` because no full demand window could close in time. |
-   | `rogowski_amps_per_volt` | `400.0` | Rogowski coil + integrator sensitivity in A/V (primary amps rated ÷ integrator output V RMS at rated amps). Measure with a clamp meter reference and trim per installation. |
-   | `volt_scale` | `1200.0` | Voltage transducer calibration constant: line-voltage V RMS ÷ ADC-pin V RMS. The default 1200.0 matches the ZMPT101B module at 120 V with its factory burden resistor; trim per installation against a precision AC voltmeter reference. |
-   | `num_tenants` | `4` | Number of active current channels (1–4). Reduces unnecessary ADC reads for partial buildouts. |
+   | Variable | Default | Purpose | When to adjust |
+   |---|---|---|---|
+   | `sample_interval_sec` | `300` | Seconds between measurements (minimum 60, max 86400). | Leave at 300 for most installs; smaller values consume more power and produce more frequent events. |
+   | `summary_interval_min` | `60` | Minutes between hourly summaries (minimum 15, max 1440). The minimum of 15 matches the 15-minute demand window. | Leave at 60 for standard hourly billing. Values < 15 are silently clamped to 15. |
+   | `rogowski_amps_per_volt` | `400.0` | Rogowski coil + integrator sensitivity in A/V. Derivation: rated primary amps ÷ integrator output V RMS at rated load. | **Critical**: Calibrate against a reference clamp meter at a known full load before billing. Incorrect values produce proportionally wrong energy readings. See [§8](#8-validation-and-testing) calibration note. |
+   | `volt_scale` | `1200.0` | Voltage transducer calibration: line-voltage V RMS ÷ ADC-pin V RMS. | Default (1200.0) matches ZMPT101B at 120 V nominal. Measure line voltage with a precision AC voltmeter and trim for accuracy. |
+   | `num_tenants` | `4` | Active current channels to sample (1–4). | Set to the actual number of tenants metered to skip unnecessary ADC reads. |
 
 6. **Configure routes.** Route `meter_summary.qo` to your time-series database or billing platform. This is the canonical energy record and the correct source for monthly aggregation — sum each tenant's `t*_wh` values across all hourly events over the billing period using the [Notehub Event Query API](https://dev.blues.io/api-reference/notehub-api/api-introduction/). See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for destination types.
 
 ### What you should see in Notehub
 
-Within minutes of first power-on, the **Events** tab in your project should show a `_session.qo`. The firmware emits a summary note on first boot, so the first `meter_summary.qo` typically arrives in the initial session.
+Within minutes of first power-on, the **Events** tab in your project should show a `_session.qo` (the cellular handshake). The firmware emits a summary note on first boot, so the first `meter_summary.qo` typically arrives in the initial session.
+
+**Example `meter_summary.qo` payload:**
+
+```json
+{
+  "t1_wh":       482.3,
+  "t1_demand_w": 3120.0,
+  "t2_wh":       214.1,
+  "t2_demand_w": 1480.5,
+  "t3_wh":       673.8,
+  "t3_demand_w": 4220.0,
+  "t4_wh":       149.2,
+  "t4_demand_w":  980.0,
+  "fault_mask":  0
+}
+```
+
+This arrives hourly. `t*_wh` is estimated interval energy in watt-hours per tenant over the past hour; sum these across all hourly events over a billing period to derive monthly kWh. `t*_demand_w` is the peak 15-minute average demand (in watts) in that hour. `fault_mask = 0` means all channels passed hardware health checks.
 
 ## 6. Firmware Design
 
@@ -206,17 +247,37 @@ Three-file implementation — all three must be present in the same sketch direc
 
 **Flashing — Arduino IDE:** Open `tenant_sub_meter.ino`, select the Cygnet board, and click **Upload**. The Notecarrier CX exposes the ST-Link interface on the same USB cable — no external programmer needed. Set the DIP switch to `HST` before flashing to route USB serial to the host MCU.
 
-**Flashing — `arduino-cli`:**
+**Flashing — `arduino-cli` (step by step):**
+
+First, confirm the board and port:
 
 ```bash
-# Confirm the FQBN for your installed core version
+# List all recognized boards
 arduino-cli board listall | grep -i cygnet
-
-# Compile and upload (replace FQBN and port to match your system)
-arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/tenant_sub_meter/
-arduino-cli upload  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET \
-                    -p /dev/cu.usbmodem* firmware/tenant_sub_meter/
+# Expected output: STMicroelectronics:stm32:GenL4:pnum=CYGNET
 ```
+
+Then set the DIP switch on the Notecarrier CX to `HST` and compile/upload:
+
+```bash
+# Compile only (no upload yet)
+arduino-cli compile \
+  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET \
+  firmware/tenant_sub_meter/
+
+# List USB ports connected to see your device
+arduino-cli board list
+
+# Upload (replace /dev/cu.usbmodem* with your actual port from board list)
+arduino-cli upload \
+  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET \
+  -p /dev/cu.usbmodem* \
+  firmware/tenant_sub_meter/
+
+# Watch the progress — when upload is complete, disconnect USB and flip DIP to NCD
+```
+
+On Windows, ports are named `COM3`, `COM4`, etc.; on macOS / Linux, `/dev/cu.usbmodem*` or `/dev/ttyUSB*`.
 
 After flashing, open the serial monitor at **115200 baud**. On first power-on you will see the Notecard configuration exchange, then the first channel sample lines. After the first sleep, the serial output goes quiet for `sample_interval_sec` — that silence is expected; the host is fully powered off and will re-enter `setup()` from cold on the next wake.
 
@@ -252,7 +313,7 @@ A Rogowski coil installed with reversed lead polarity produces a consistently ne
 
 **Summary interval and demand window floor.** `summary_interval_min` is clamped to a minimum of 15 in firmware (`MIN_SUMMARY_INTERVAL_MIN`), matching `DEMAND_INTERVAL_SEC / 60`. A summary period shorter than one demand window would always emit `t*_demand_w = 0` because no complete 15-minute window could close within it — not a hardware fault, just a window-timing gap. Operators who need finer-grained reporting should use the `t*_wh` field and accumulate their own demand windows in the downstream system.
 
-**Per-channel fault bitmask.** Each call to `measureChannel()` checks four conditions per channel nibble: `FAULT_BIAS_RANGE` (0x01) when the ADC DC offset falls outside the expected 1.40–1.90 V half-rail window; `FAULT_SATURATED` (0x02) when the RMS signal exceeds 85 % of the half-swing, indicating likely ADC rail clipping; bit 2 reserved (formerly `FAULT_NO_SIGNAL` — retired because a legitimately unloaded tenant circuit is indistinguishable from a disconnected Rogowski coil by current magnitude alone; see the commissioning diagnostic note below); and `FAULT_VOLTAGE_REF` (0x08) when the shared voltage reference path is suspect (bias out of range, signal saturated, or measured line RMS below `VOLTAGE_MIN_V_RMS`). Because the voltage reference is shared, `FAULT_VOLTAGE_REF` is propagated into every active channel's fault nibble simultaneously so downstream billing can identify periods where all tenant watt calculations are compromised. Fault flags are OR'd across all sample wakes in the summary period and packed into the `fault_mask` field of `meter_summary.qo` as a 4-bit nibble per tenant channel (T1 in bits 3:0, T4 in bits 15:12). A `fault_mask` of 0 means all channels passed all checks on every sample in the period. Downstream billing systems should reject or flag any summary where `fault_mask != 0`. Low RMS current (below 0.05 A) is logged to Serial as a commissioning diagnostic only — it is never placed in `fault_mask`.
+**Per-channel fault bitmask.** Each call to `measureChannel()` checks four conditions per channel nibble: `FAULT_BIAS_RANGE` (0x01) when the ADC DC offset falls outside the expected 1.40–1.90 V half-rail window; `FAULT_SATURATED` (0x02) when the centered signal's RMS exceeds the RMS-equivalent of 85 % of the 1.65 V half-rail peak amplitude (≈ 0.99 V RMS at the ADC pin), indicating that the waveform is approaching ADC rail clipping; bit 2 reserved (formerly `FAULT_NO_SIGNAL` — retired because a legitimately unloaded tenant circuit is indistinguishable from a disconnected Rogowski coil by current magnitude alone; see the commissioning diagnostic note below); and `FAULT_VOLTAGE_REF` (0x08) when the shared voltage reference path is suspect (bias out of range, signal saturated, or measured line RMS below `VOLTAGE_MIN_V_RMS`). Because the voltage reference is shared, `FAULT_VOLTAGE_REF` is propagated into every active channel's fault nibble simultaneously so downstream billing can identify periods where all tenant watt calculations are compromised. Fault flags are OR'd across all sample wakes in the summary period and packed into the `fault_mask` field of `meter_summary.qo` as a 4-bit nibble per tenant channel (T1 in bits 3:0, T4 in bits 15:12). A `fault_mask` of 0 means all channels passed all checks on every sample in the period. Downstream billing systems should reject or flag any summary where `fault_mask != 0`. Low RMS current (below 0.05 A) is logged to Serial as a commissioning diagnostic only — it is never placed in `fault_mask`.
 
 ### 6.4 Event payload design
 
@@ -352,6 +413,8 @@ NotePayloadSaveAndSleep(&out, cfg.sample_interval_sec, NULL);
 
 ## 7. Data Flow
 
+![Data flow: 5-min sample of V × I cross-product → per-tenant Wh accumulation and 15-min demand block → meter_summary.qo (hourly templated) → Notehub event-query API for monthly bill-back](diagrams/03-data-flow.svg)
+
 **Collected.** Every `sample_interval_sec` (default 5 min): 2000 sequential interleaved V+I ADC sample pairs per active tenant channel. The V×I cross-product yields active power (W); RMS current (A) is computed as an intermediate value and is available to callers but is not transmitted in the current firmware. Adding per-channel RMS current to the summary note is a straightforward future extension — see [§9](#9-limitations-and-next-steps).
 
 **Accumulated on-device.** Between summaries: per-tenant estimated Wh (sum of W_sample × sample_interval_sec / 3600); per-tenant peak 15-minute blocked-average demand W (highest completed `DEMAND_INTERVAL_SEC` window average; see §6.3); per-tenant hardware-fault flags (OR of FAULT_* bits across all wakes in the period).
@@ -365,33 +428,46 @@ NotePayloadSaveAndSleep(&out, cfg.sample_interval_sec, NULL);
 
 **Expected cadence in steady state.** A correctly-operating unit generates one `meter_summary.qo` event per hour. The first `_session.qo` should appear in Notehub within two minutes of first power-on; the first `meter_summary.qo` typically arrives in the initial session shortly after the first sample cycle completes.
 
+**Calibration — before deployment.** Each Rogowski coil and integrator combination has a unique sensitivity. Before using readings for billing:
+
+1. Load one tenant circuit to a known stable draw (e.g., 10 A measured by a calibrated clamp meter).
+2. Wait one hour for a `meter_summary.qo` to arrive in Notehub.
+3. Calculate expected energy: `loaded_amps × hours_run × 120_V = Wh_expected`. For 10 A @ 1 hour at 120 V ≈ 1200 Wh.
+4. Compare `t*_wh` in that hour's summary against expected. The ratio is your per-coil correction factor.
+5. Update `rogowski_amps_per_volt` in Notehub Fleet Environment: `(default_400 × expected_wh) / reported_wh`. Push the change; device fetches it on next inbound sync (default: 2 hours).
+6. Repeat for a second load point (e.g., 20 A) to confirm linearity. Repeat for each active tenant channel.
+
+Skipping calibration leaves you with readings that may be off by ±10–30% depending on coil model and integrator tolerance.
+
 **Using Mojo to validate power behavior.** The Blues Mojo coulomb counter connects inline between the 5 V supply output and the Notecarrier CX `+VBAT` input and reports cumulative mAh to the Notecard over its Qwiic connector. Published current figures from the [Notecard low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) and the [MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/):
 
 | Phase | Expected current |
 |---|---|
-| Notecard idle (between syncs, radio off) | ~18 µA @ 5 V (Cell+WiFi variant — see [low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/)) |
+| Notecard idle (between syncs, radio off) | ~18 µA @ 5 V (Cell+WiFi variant) |
 | Host active (sampling four channels) | ~15–30 mA for < 1 s |
-| Notecard cellular session (LTE Cat-1 bis) | varies; the [Blues low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) reports ~0.28 mAh per warm sync and ~0.49 mAh after a cold restart for the MBGLW under good signal |
+| Notecard cellular session (LTE Cat-1 bis) | ~0.28 mAh per warm sync; ~0.49 mAh after cold restart; depends on signal strength |
 | Host off (card.attn sleep, between wakes) | essentially 0 mA from +VBAT |
 
-The dominant energy cost is the once-per-hour cellular session. Because the supply is line-powered, absolute mAh is less important than the *shape* of the trace:
+The dominant energy cost is the once-per-hour cellular session. Because the supply is line-powered, absolute mAh is less important than the *shape* of the current trace:
 
 - **Healthy trace:** near-zero baseline, brief (<1 s) micro-spikes every 5 minutes as the host wakes and samples, one 10–20 s burst at 80–150 mA once per hour.
 - **Host not sleeping:** continuous 15–30 mA baseline. Almost always a `card.attn` routing fault — verify the ATTN pin is driving the EN rail on the Notecarrier CX.
-- **Cellular sessions running long:** correctly-spaced hourly bursts but each lasting 60+ s. Usually a weak-signal site; check antenna placement or move the unit closer to a window.
+- **Cellular sessions running long (60+ s):** correctly-spaced hourly bursts but each running long. Usually a weak-signal site; check antenna placement or move closer to a window.
 
 ### Troubleshooting
 
 | Symptom | Likely cause | What to check |
 |---|---|---|
-| Device never appears in Notehub **Devices** tab. | `PRODUCT_UID` empty or wrong; cellular antenna disconnected. | Re-verify `PRODUCT_UID` matches the Notehub project exactly. Check `_session.qo` — none means no cellular. Move unit near a window or outside. |
-| `_session.qo` appears but no `meter_summary.qo` after 90+ minutes. | `note.add` failing silently; or the note is reaching Notehub but is not visible because no route is configured. Zero-load channels still produce a `meter_summary.qo` with zero values. | Check the **Events** tab in Notehub directly — if the note arrived it appears there regardless of routes. Watch serial output for `[summary] note.add failed` messages. |
-| All channels read the same non-zero value when one is unloaded. | Cross-talk between bias nodes sharing a 3.3 V supply with inadequate decoupling. | Verify each bias node has its own dedicated 10 µF cap to GND. |
-| `t*_wh` readings are consistently zero on one channel even under known load. | Reversed Rogowski coil polarity (watts clamped to zero by firmware). | Swap the coil's two output leads at the R_in input of the integrator and re-test. |
-| `t*_wh` values are implausibly large. | `rogowski_amps_per_volt` env var is wrong for the installed coil/integrator; or coil is not fully closed. | Verify `rogowski_amps_per_volt` in Notehub Fleet Environment. Confirm the Rogowski coil snap-closes fully. |
-| Mojo bench trace shows continuous 15–30 mA baseline. | Host not sleeping — ATTN is not gating power. | Confirm assembly is on a Notecarrier CX (which routes ATTN to EN). On a Notecarrier F or raw breakout, ATTN must be wired externally to the EN pin. |
+| Device never appears in Notehub **Devices** tab. | `PRODUCT_UID` empty or wrong; cellular antenna disconnected; poor cellular coverage. | Re-verify `PRODUCT_UID` in firmware matches Notehub project ProductUID exactly. Check serial monitor for `[init] hub.set failed` messages (firmware can't reach Notehub). Move unit near a window or outside. |
+| `_session.qo` appears but no `meter_summary.qo` after 90+ minutes. | Template registration failed; or note reaches Notehub but no route is configured. Zero-load channels still produce events. | Check Notehub **Events** tab directly — `meter_summary.qo` appears there regardless of routes. Watch serial for `[summary] note.add failed` messages. If template failed, restart firmware (cold power-cycle device). |
+| Serial monitor shows `[sample] T*: negative watts` or `[sample] T*: 0 watts` under known load. | Rogowski coil leads reversed (polarity inverted). | Swap the coil's two output leads at the R_in resistor input on the integrator board and re-test. |
+| One channel reads large values, another reads zero, while under identical load. | Coil not fully closed (gap in the flexible snap coupler); or integrator component failure. | Inspect the affected coil snap-coupler for a gap. Confirm all four integrator resistor values (R_in, R_f) and capacitor (C_f) match the values in [§4](#4-wiring-and-assembly). |
+| All four channels read the same non-zero value even when unloaded. | Cross-talk or bias-node coupling issue; inadequate decoupling on shared 3.3 V supply. | Verify each of the five bias nodes (four current + one voltage) has its own dedicated 10 µF electrolytic cap to GND, placed as close as possible to the node. Check the shared `+3V3` rail for low impedance using a voltmeter under load. |
+| `t*_wh` values are implausibly large or small (off by 10%+ vs. clamp meter). | Calibration constant `rogowski_amps_per_volt` is wrong for the installed coil/integrator. | Follow the calibration procedure in [§8](#8-validation-and-testing) above. Measure a known load with a calibrated clamp meter, wait for one hourly summary, and compute the correction factor. |
+| Mojo bench trace shows continuous 15–30 mA instead of sleep pulses. | Host not sleeping — ATTN is not gating power to EN. | Confirm you are using a Notecarrier CX, which routes ATTN→EN internally. On a Notecarrier F or raw breakout board, ATTN must be wired externally to the EN pin. |
+| Cellular session bursts occur every 5 minutes instead of once per hour. | `hub.set` not persisted correctly; or Notecard reverted to defaults. | Watch serial for `[init] hub.set` on each wake. If present, the config is not sticking. Restart the Notecard: issue `{"req":"card.restore","mode":"factory"}` in the [Notecard in-browser terminal](https://dev.blues.io/tools/notecard-playground/), then power-cycle the device and reflash firmware. |
 
-If a problem is not on this list, the [Blues community forum](https://discuss.blues.com) is the fastest path to a second pair of eyes on a specific Notecard + sensor bring-up issue.
+If a problem is not on this list, visit the [Blues community forum](https://discuss.blues.com) — it's the fastest path to a second pair of eyes on a specific Notecard + sensor bring-up issue.
 
 ## 9. Limitations and Next Steps
 
@@ -403,7 +479,7 @@ If a problem is not on this list, the [Blues community forum](https://discuss.bl
 
 **`t*_demand_w` matches the 15-minute demand-charge window but energy is still estimated.** The `t*_demand_w` field reports the peak 15-minute blocked-average demand (average watts over the highest completed 900-second window in the summary period). This matches the most common North American utility demand-charge billing interval and is a useful load-profile indicator and a reasonable input for internal bill-back proportioning. However, the underlying energy is still derived from periodic power snapshots, not a continuous integral. For 30-minute demand tariffs, change `DEMAND_INTERVAL_SEC` to `1800` in the firmware and reflash.
 
-**Runtime sensor-fault detection is best-effort, not certified.** `fault_mask` currently reflects three categories of hardware condition: `FAULT_BIAS_RANGE` (ADC DC offset outside the expected 1.40–1.90 V half-rail window), `FAULT_SATURATED` (signal RMS exceeding 85 % of the ADC half-swing), and `FAULT_VOLTAGE_REF` (shared voltage-reference path bias, saturation, or implausibly low line voltage — propagated simultaneously into every active channel's nibble). Low or absent current is intentionally excluded from `fault_mask`: a legitimately unloaded tenant circuit produces the same near-zero current reading as a disconnected Rogowski coil, so treating it as a hard fault would quarantine valid zero-usage billing intervals. These checks can catch gross hardware faults but cannot distinguish a genuinely zero-load tenant from a silently failed sensor. A production deployment that requires more rigorous fault coverage should add a commissioning-time baseline capture and cross-check `fault_mask` against historical baselines in the downstream system.
+**Runtime sensor-fault detection is best-effort, not certified.** `fault_mask` currently reflects three categories of hardware condition: `FAULT_BIAS_RANGE` (ADC DC offset outside the expected 1.40–1.90 V half-rail window), `FAULT_SATURATED` (centered-signal RMS approaching the ADC rail — trips when RMS exceeds the equivalent of 85 % of the 1.65 V half-rail peak amplitude, ≈ 0.99 V RMS at the ADC pin), and `FAULT_VOLTAGE_REF` (shared voltage-reference path bias, saturation, or implausibly low line voltage — propagated simultaneously into every active channel's nibble). Low or absent current is intentionally excluded from `fault_mask`: a legitimately unloaded tenant circuit produces the same near-zero current reading as a disconnected Rogowski coil, so treating it as a hard fault would quarantine valid zero-usage billing intervals. These checks can catch gross hardware faults but cannot distinguish a genuinely zero-load tenant from a silently failed sensor. A production deployment that requires more rigorous fault coverage should add a commissioning-time baseline capture and cross-check `fault_mask` against historical baselines in the downstream system.
 
 **Single-phase circuits only.** Each Rogowski coil wraps one conductor. A split-phase (120/240 V) tenant feed requires two coils per tenant; a three-phase feed requires three. This design uses A0–A4, leaving one remaining on-board analog input (A5) before an external analog multiplexer or ADC is required.
 

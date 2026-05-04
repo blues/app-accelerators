@@ -6,6 +6,18 @@ A retrofit [asset location tracking](https://blues.com/solutions-location-tracki
 
 **What you'll have when you're done:** a weatherproof, battery-backed sidecar that clips magnetically onto any steel chassis, wakes every 30 seconds to sample the accelerometer, classifies the vibration as "engine running," "being transported," or "idle," and transmits a utilization summary on a rolling window (24 hours by default) plus an immediate cellular or satellite event every time the state changes — from anywhere, including remote pipeline corridors, open-pit mines, and wind-farm construction zones where the nearest cell tower is more of a suggestion than a certainty.
 
+## Quickstart (under 10 minutes)
+
+1. Create a [Notehub project](https://notehub.io) and copy your ProductUID.
+2. Wire the bench: Notecarrier CX + NOTE-NBGLWX + LSM6DSOX on I2C (see [§4](#4-wiring-and-assembly) for pinout).
+3. Edit `firmware/equipment_hours_tracker/equipment_hours_tracker_helpers.h` — replace the empty `#define PRODUCT_UID ""` with your project value (format: `com.your-company.your-name:tracker`).
+4. Install board core: `arduino-cli core install STMicroelectronics:stm32 --additional-urls https://raw.githubusercontent.com/stm32duino/BoardManagerFiles/main/STM32/package_stm_index.json`
+5. Compile and upload (see [§6.1](#61-installing-and-flashing) for full `arduino-cli` commands with your port).
+6. Open serial monitor at **115200 baud**. You should see `[BOOT] Cold boot` or `[VIB]` log lines every 30 seconds.
+7. Power the device. Open Notehub → your project → **Events** tab. You should see `_session.qo` within ~1 minute on cellular (longer on satellite depending on sky view). Tap the enclosure to trigger vibration; state-change events appear in `equip_event.qo`.
+
+See [Appendix: Quickstart at a Glance](#appendix-quickstart-at-a-glance) for more details.
+
 ## 1. Project Overview
 
 **The problem.** A piece of rental heavy equipment is a revenue-generating asset measured in hours. The excavator that a contractor rented on Monday morning needs an accurate engine-hour count for billing on Friday afternoon, a warranty-hours check before the next delivery, and a predictive-maintenance flag at 250-hour service intervals. Hardwired telematics — OBD-II interfaces, CAN-bus taps, hour-meter relays — work well on new fleet acquisitions but are expensive to retrofit on older machines, often require equipment downtime for installation, and occasionally void warranties when they involve accessing the engine control unit.
@@ -19,6 +31,8 @@ Vibration-based hour detection solves the retrofit problem entirely. A small enc
 ---
 
 ## 2. System Architecture
+
+![System architecture: LSM6DSOX accelerometer → Notecarrier CX with Cygnet host and NOTE-NBGLWX → cellular or Skylo NTN satellite → Notehub → billing / CMMS / alerts](diagrams/01-system-architecture.svg)
 
 **Device-side responsibilities.** The onboard Cygnet STM32 host on the Notecarrier CX wakes every 30 seconds via [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) host power gating, initializes the Adafruit LSM6DSOX accelerometer over I2C, collects a 2-second burst of 3-axis samples at 104 Hz, and runs the vibration classifier. The classifier output — IDLE, RUNNING, or TRANSPORT — updates an in-RAM hour-meter accumulator and is compared against the previous wake's state to detect transitions. Transitions trigger immediate events; elapsed summary-window totals trigger summary notes. Between wakes, the host is fully powered off: the Notecard holds the persisted state struct in its internal flash and reapplies host power when the `ATTN` timer fires.
 
@@ -51,6 +65,8 @@ The Notecard for Skylo ships with a factory-provisioned SIM, global cellular and
 
 ## 4. Wiring and Assembly
 
+![Wiring: LSM6DSOX accelerometer on I²C; ATTN→EN jumper required for sleep gating; MAIN antenna for cellular/satellite plus GPS antenna via Notecard u.FL; solar 2 W → LiPo 2 Ah → Mojo (bench) → +VBAT](diagrams/02-wiring-assembly.svg)
+
 The Notecard for Skylo seats into the Notecarrier CX's M.2 Key E slot. The Adafruit LSM6DSOX connects via the Notecarrier CX's I2C header — a Qwiic/STEMMA QT cable makes this a single two-connector snap if you own the matching Qwiic cable, otherwise use four discrete wires. The Mojo sits inline on the main power feed during bench validation.
 
 Pin-by-pin:
@@ -61,7 +77,7 @@ Pin-by-pin:
 - **SCL** → LSM6DSOX `SCL`
 - **Solar JST** → 6V solar panel (observe polarity marked on connector; red = positive)
 - **LiPo JST** → 3.7V 2000 mAh LiPo cell (JST-PH 2-pin, same polarity convention)
-- **ATTN** → **no external jumper or trace cut is required on Notecarrier CX v1.3 (current production revision).** The Notecard's `ATTN` output is wired onboard to the Cygnet's power-enable rail through the carrier's built-in power management circuit. When `goToSleep()` issues `card.attn mode:sleep`, the Notecard drives `ATTN` to cut power to the Cygnet; `SAMPLE_INTERVAL_SEC` later the Notecard reasserts `ATTN` to power the Cygnet back up and re-enter `setup()`. Verify the path is functioning by confirming the Cygnet's serial output stops during the sleep window. If the host never sleeps, check that no external wire between the `ATTN` pad and any GPIO has been added, and confirm `NotePayloadSaveAndSleep` is not returning early (the serial monitor will show if it falls through to `loop()`). See the [Notecarrier CX v1.3 datasheet](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) and the [card.attn host power management guide](https://dev.blues.io/guides-and-tutorials/notecard-guides/notecard-and-notecarrier-b/#low-power-design) for the full circuit description.
+- **ATTN → EN jumper (REQUIRED for host power-gating).** On Notecarrier CX v1.3, `ATTN` (the Notecard's configurable interrupt output) and `EN` (the input that gates the carrier's host 3.3 V rail to the Cygnet) are exposed as **separate** pins on the dual 16-pin header — see the [Notecarrier CX v1.3 datasheet header description](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/#notecarrier-cx-dual-16-pin-headers). They are **not** connected internally. To make `card.attn mode:sleep` actually cut power to the Cygnet, run a short jumper wire from the `ATTN` header pin to the `EN` header pin. With that wire in place, when `goToSleep()` issues `card.attn mode:sleep`, the Notecard drives `ATTN` low → `EN` low → the host 3.3 V rail collapses and the Cygnet powers off. `SAMPLE_INTERVAL_SEC` later the Notecard reasserts `ATTN` high → `EN` high → the Cygnet powers up and re-enters `setup()`. Without the `ATTN→EN` jumper the host runs continuously between samples; the firmware's `loop()` fall-back will keep functional sampling working, but baseline current will be ~5–10 mA instead of the ~20–60 µA target, and the solar/battery budget in §8 will not hold. Verify the jumper is functioning by confirming the Cygnet's serial output stops during the sleep window. See the [`card.attn` API reference](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) and the [Feather MCU low-power guide](https://dev.blues.io/guides-and-tutorials/notecard-guides/feather-mcu-low-power-management/) for additional context on this pattern.
 
 **Antenna placement.** The NOTE-NBGLWX has exactly two u.FL antenna ports:
 
@@ -139,7 +155,21 @@ Confirm the port assignments in the [NOTE-NBGLWX datasheet](https://dev.blues.io
   }
   ```
   `bat_v` below ~3.5V is a low-battery warning. `transport_h` provides a secondary utilization metric: time spent moving between sites. `fault_ct` is the number of state-change events dropped due to event-queue overflow since the last summary; a non-zero value indicates the Notecard was unreachable for multiple consecutive wakes.
-- **`_track.qo`** — automatic Notecard location heartbeat (every 4 hours) and geofence events. Not generated by firmware code; the Notecard's GPS subsystem owns these.
+- **`_track.qo`** — automatic Notecard location heartbeat (every 4 hours) and geofence events. Not generated by firmware code; the Notecard's GPS subsystem owns these. Example geofence-exit event (when equipment leaves the configured job site):
+  ```json
+  {
+    "when":       1746023400,
+    "location":   {
+      "lat":      37.7749,
+      "lon":      -122.4194,
+      "accuracy": 48
+    },
+    "tower":      true,
+    "type":       "geofence_exit",
+    "status":     "success"
+  }
+  ```
+  Key fields: `type` distinguishes geofence-exit events from routine heartbeats; `location` carries coordinates and GPS accuracy (meters); `when` is the Unix timestamp. Use the `type` and timestamp fields in a Notehub route to trigger alerts when equipment leaves the fence.
 
 ---
 
@@ -165,17 +195,24 @@ Arduino build tooling automatically compiles every `.ino`, `.h`, and `.cpp` file
 
 **Flashing via `arduino-cli`:**
 ```bash
+# One-time: install the STM32 board core
+arduino-cli core install STMicroelectronics:stm32 \
+    --additional-urls https://raw.githubusercontent.com/stm32duino/BoardManagerFiles/main/STM32/package_stm_index.json
+
 # Find the FQBN for the Cygnet variant on your installed core
 arduino-cli board listall | grep -i cygnet
 
-# Compile and upload (replace FQBN and port with your values)
+# Find your device's USB port
+arduino-cli board list
+
+# Compile and upload (replace port with your value from 'board list' above)
 arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET \
     firmware/equipment_hours_tracker/
 arduino-cli upload  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET \
     -p /dev/cu.usbmodem* \
     firmware/equipment_hours_tracker/
 ```
-Replace `/dev/cu.usbmodem*` with the port shown by `arduino-cli board list` — typically `COMx` on Windows, `/dev/ttyACM*` on Linux.
+Replace `/dev/cu.usbmodem*` with the port shown by `arduino-cli board list`. On Windows this is typically `COMx`, on Linux `/dev/ttyACM*`. The Notecarrier CX presents the device over a single USB cable (the ST-Link programmer is built-in).
 
 Open the serial monitor at **115200 baud** after flashing. You will see `[BOOT] Cold boot` on first power-on, then `[VIB]` lines on each 30-second wake showing the RMS and CV readings in real time.
 
@@ -241,7 +278,7 @@ GPS coordinates are automatically attached to both note types by the Notecard fr
 
 Power efficiency matters for a solar-trickle-charged deployment. Three levers are pulled:
 
-1. **Host off between samples.** `NotePayloadSaveAndSleep` serializes the `PersistState` struct into Notecard flash, then issues a `card.attn` sleep command that cuts host power via the Notecarrier CX's ATTN-gated regulator. The host consumes essentially zero current between wakes. On wake, `NotePayloadRetrieveAfterSleep` rehydrates the struct.
+1. **Host off between samples.** `NotePayloadSaveAndSleep` serializes the `PersistState` struct into Notecard flash, then issues a `card.attn` sleep command. With the `ATTN → EN` jumper described in §4 in place, the Notecard's `ATTN` line drives the Notecarrier CX `EN` input low, collapsing the host 3.3 V rail and powering the Cygnet off. The host consumes essentially zero current between wakes. On wake, `NotePayloadRetrieveAfterSleep` rehydrates the struct.
 
 2. **Gyroscope shut down.** `sox.setGyroDataRate(LSM6DS_RATE_SHUTDOWN)` turns off the gyroscope immediately after init — it's not needed for this application and saves ~0.5 mA during the 2-second sampling window.
 
@@ -278,22 +315,28 @@ return (cv < g_vib_cv_max) ? ST_RUNNING : ST_TRANSPORT;
 
 The `_lat`/`_lon` keywords in a compact template body instruct the Notecard to embed the most recent GPS fix into the note automatically. No explicit coordinate plumbing in `note.add` calls.
 
+Compact template value encoding (the numeric code parameter):
+- **14.1** = IEEE 754 4-byte float (32-bit), 1 decimal place in display. Use for large dynamic ranges (hours, totals, coordinates).
+- **12.1** = 2-byte signed float (16-bit), 1 decimal place in display. Use for smaller ranges with moderate precision (voltage, relative measurements).
+- **12** = 2-byte signed integer (16-bit), no decimal. Use for counters, small integers, or flags.
+
 ```cpp
-// Template value encoding: 14.1 = 4-byte float, 12.1 = 2-byte float, 12 = 2-byte integer
 J *req = notecard.newRequest("note.template");
 JAddStringToObject(req, "file",   "equip_summary.qo");
 JAddNumberToObject(req, "port",    50);
 JAddStringToObject(req, "format", "compact");
 J *body = JAddObjectToObject(req, "body");
-JAddNumberToObject(body, "run_h",         14.1);
-JAddNumberToObject(body, "run_h_total",   14.1);
-JAddNumberToObject(body, "transport_h",   14.1);
-JAddNumberToObject(body, "bat_v",         12.1);
-JAddNumberToObject(body, "fault_ct",      12);    // event-queue overflow counter (2-byte int)
-JAddNumberToObject(body, "_lat",          14.1);   // auto-populated by Notecard
-JAddNumberToObject(body, "_lon",          14.1);   // auto-populated by Notecard
+JAddNumberToObject(body, "run_h",         14.1);      // 4-byte float, hours this window
+JAddNumberToObject(body, "run_h_total",   14.1);      // 4-byte float, lifetime total hours
+JAddNumberToObject(body, "transport_h",   14.1);      // 4-byte float, transport hours this window
+JAddNumberToObject(body, "bat_v",         12.1);      // 2-byte float, battery voltage
+JAddNumberToObject(body, "fault_ct",      12);        // 2-byte int, event-queue overflow counter
+JAddNumberToObject(body, "_lat",          14.1);      // 4-byte float, auto-populated by Notecard
+JAddNumberToObject(body, "_lon",          14.1);      // 4-byte float, auto-populated by Notecard
 notecard.sendRequest(req);
 ```
+
+See [Notecard compact template documentation](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) for the complete list of format codes and their ranges.
 
 ### 6.9 Key code snippet 3: immediate event with session duration
 
@@ -332,6 +375,8 @@ notecard.sendRequest(notecard.newRequest("hub.sync"));
 
 ## 7. Data Flow
 
+![Data flow: 30-s accelerometer burst → RMS + CV vibration classifier → idle/running/transport state machine → equip_event.qo (sync:true on state change) and equip_summary.qo (daily templated) → Notehub](diagrams/03-data-flow.svg)
+
 **Collected** on each 30-second wake: per-sample 3-axis acceleration magnitudes at 104 Hz for 2 seconds → RMS and CV → one of three equipment states: IDLE, RUNNING, TRANSPORT.
 
 **Accumulated** in flash: running hours today, lifetime running hours, transport hours today, session start timestamp.
@@ -362,7 +407,14 @@ notecard.sendRequest(notecard.newRequest("hub.sync"));
 - Tap the enclosure rhythmically against a surface at ~10 Hz (not perfectly on beat — vary the interval slightly to mimic engine combustion irregularity). The CV should drop below 0.40 and the classifier should output `ST_RUNNING`.
 - Shake the enclosure sharply then randomly (slap → pause → slap → pause). This models road bounce: high CV, `ST_TRANSPORT`.
 
-If the classifier misfires at default thresholds, adjust `vib_run_mg` and `vib_cv_max` via Notehub environment variables and confirm the new values appear in the serial output on the next wake.
+**Tuning the classifier on your equipment.** If the classifier misfires at default thresholds (false RUNNING on transport, or failure to detect idle):
+
+1. Tap the enclosure in the three states and note the RMS and CV values printed on the serial monitor.
+2. If **idle is triggering as RUNNING**, raise `vib_run_mg` slightly (try 18.0 or 20.0). This raises the activity floor.
+3. If **transport is triggering as RUNNING**, lower `vib_cv_max` (try 0.35 or 0.30). This tightens the "engine-like vibration" criterion.
+4. If **engine start is missed entirely**, lower `vib_run_mg` (try 12.0 or 10.0) or raise `vib_cv_max` (try 0.45).
+
+Update the environment variables in Notehub (**Fleet → Environment**), and the device will pull the new thresholds on the next inbound sync (~8 hours by default, or immediately if you trigger a manual sync in Notehub). Confirm the new values appear in the serial output on the next wake — the firmware logs `[ENV] vib_run_mg=X.X vib_cv_max=Y.YY`. Iterate with live equipment until classification is reliable for your specific engine type and chassis.
 
 **Power validation with Mojo.** The [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) reports cumulative mAh over its Qwiic link. For bench measurements, Mojo replaces the normal battery feed: **leave the LiPo JST unplugged** and power the carrier's `VBAT` pad exclusively through the Mojo — bench supply (or the LiPo with its JST lead brought out directly) → Mojo `BAT` input → Mojo `LOAD` output → Notecarrier CX `VBAT` pad. **Also disconnect the solar panel** — the Notecarrier CX's solar charger input is a separate rail; leaving it connected during bench testing means solar current offsets the load draw, understating actual consumption and making the measurement non-repeatable across different light conditions. With both the LiPo JST and solar panel disconnected and power flowing exclusively through the Mojo, all load current passes through the Mojo's coulomb counter and the measurement reflects the true whole-device draw.
 
@@ -387,9 +439,25 @@ A healthy Mojo trace at default settings will show the following pattern:
 - **Additional radio sessions for each state-change event** — after each `equip_event.qo` note is accepted by the Notecard, the firmware issues a `hub.sync` request to trigger an immediate Notecard sync outside the scheduled cadence. A typical active work day produces 2–6 state-change events (engine start, stop, possible midday transport legs), so expect 2–6 additional sessions above the baseline. Combined, expect roughly **6–10 total sessions per active work day** at default settings.
 - **Geofence-triggered transmissions** (if `geofence_radius_m` is set) — the Notecard emits a `_track.qo` autonomously on geofence exit and syncs it immediately.
 
-If the baseline is continuously 10+ mA, the Cygnet is not sleeping — check that the Notecarrier CX ATTN-to-EN path is intact and that `NotePayloadSaveAndSleep` is not returning early (the serial output will confirm). If a cellular or NTN session is unusually long (>60 s on LTE-M), the radio is struggling with signal quality; check the MAIN antenna placement, verify it has an unobstructed sky view, and confirm the antenna is the Skylo-certified unit that ships with the NOTE-NBGLWX.
+If the baseline is continuously 10+ mA, the Cygnet is not sleeping — confirm that the `ATTN → EN` jumper described in §4 is physically present and seated, then check that `NotePayloadSaveAndSleep` is not returning early (the serial output will confirm). If a cellular or NTN session is unusually long (>60 s on LTE-M), the radio is struggling with signal quality; check the MAIN antenna placement, verify it has an unobstructed sky view, and confirm the antenna is the Skylo-certified unit that ships with the NOTE-NBGLWX.
 
 **Solar viability estimate.** Because the Mojo is on the load rail, it measures consumption only — current flowing through the Notecarrier CX's separate solar charger input is invisible to it. With the solar panel disconnected and the unit running from a known LiPo or bench supply, run the Mojo for a full 24-hour period and note total mAh consumed. Compare that figure against the theoretical harvest for your panel size and site: a 1W panel with 4 effective sun-hours produces **4 Wh (4000 mWh) raw**; after typical derating for panel temperature and incidence angle (~80%), charger conversion efficiency (~85%), and soiling (~90%), usable harvest is roughly **2.4 Wh — approximately 480 mAh at 5V**. At default settings the GPS cadence alone adds ~15–30 mAh/day; combined with host wakes, three daily inbound check-ins, one outbound sync, and typically 2–6 event sessions on active days, expect whole-device consumption of **65–120 mAh/day**. A 1W panel with ≥3 effective sun-hours per day typically covers this on cellular; satellite sessions draw more per session, so size the panel per-site. If Mojo shows a rising deficit across repeated 24-hour tests (solar disconnected), consider a 2–5 W panel, a higher-capacity LiPo, or a longer GPS period (`GPS_PERIOD_SECONDS`). To validate actual panel and charger harvest rather than relying on the derating model, place a DC current meter inline on the solar cable itself and log it over a representative sun-exposed day.
+
+---
+
+## 8.1 Troubleshooting
+
+| Symptom | Likely Cause | Solution |
+|---------|--------------|----------|
+| Serial monitor shows no output after upload | Board not selected correctly, or USB driver missing | Verify **Generic STM32L4 → Cygnet** is selected in Arduino IDE; on Windows, install [ST-Link drivers](https://www.st.com/en/development-tools/stsw-link009.html). |
+| `[IMU] Not found` message | Accelerometer not powered or miswired | Check I2C connections (SDA, SCL, +3V3, GND) and verify LSM6DSOX is recognized by `Wire.scan()`. See [§4](#4-wiring-and-assembly). |
+| No `_session.qo` appearing in Notehub after several minutes | PRODUCT_UID mismatch, missing antenna, or no cellular/NTN coverage | Verify `PRODUCT_UID` matches the value you created in Notehub (copy-paste from Notehub → your project settings). Confirm MAIN antenna is mounted outside with unobstructed sky view; check the Notecard LED activity — it should flash briefly during sync attempts. If satellite, allow 5+ minutes for Skylo session establishment depending on sky visibility. |
+| Classifier always outputs `IDLE` even when tapping | Thresholds too high | Lower `vib_run_mg` to 10.0 (via Notehub Fleet → Environment); wait for next inbound sync (~8 hours) or manually trigger a device fetch. |
+| Classifier falsely triggers `RUNNING` during idle periods | Thresholds too low | Raise `vib_run_mg` to 20.0 and lower `vib_cv_max` to 0.30. |
+| `ATTN → EN` jumper error or baseline current 5–10 mA (not sleeping) | Jumper not installed or miswired | Verify the jumper physically connects `ATTN` and `EN` pins on the Notecarrier CX header (see [§4](#4-wiring-and-assembly), "ATTN → EN jumper" line). Measure with a multimeter to confirm continuity. Without it, the host runs continuously and the power budget collapses. |
+| Battery voltage in `equip_summary.qo` declining over days | Solar input inadequate | Check that the 6V solar panel is receiving adequate direct sunlight (≥3 effective sun-hours per day in temperate climates). If deployment is shaded or at high latitude in winter, upgrade to a 2–5 W panel. Use a DC meter inline on the solar cable to confirm actual harvest. |
+| Duplicate `equip_event.qo` notes in Notehub | I2C acknowledgement lost after Notecard accepted note | This is an edge case by design (at-least-once delivery). Downstream routes should dedup by `epoch` + `event` pair (the note's timestamp and event type are unique per transition). |
+| Arduino-cli reports "board not found" or FQBN error | Core not installed or board name wrong | Run `arduino-cli core list` to confirm STMicroelectronics:stm32 is installed. If not, run the full `core install` command from [§6.1](#61-installing-and-flashing). Verify the FQBN is `STMicroelectronics:stm32:GenL4:pnum=CYGNET` (case-sensitive). |
 
 ---
 
@@ -438,8 +506,12 @@ For rental companies the data pipeline is clear: any `equip_event.qo` with `sess
 
 ## Appendix: Quickstart at a Glance
 
+For a complete step-by-step walkthrough, start at the top of this README under [Quickstart (under 10 minutes)](#quickstart-under-10-minutes). Below is a summary checklist:
+
 1. **Notehub** — create a [Notehub project](https://notehub.io) and copy the ProductUID.
 2. **Wire the bench rig** — Notecarrier CX + Notecard for Skylo + Adafruit LSM6DSOX on I2C + Blues Mojo inline on the power rail (optional for first-light; useful for the power-validation workflow in [§8](#8-validation-and-testing)). Full pinout in [§4](#4-wiring-and-assembly).
 3. **Edit one line** in [`firmware/equipment_hours_tracker/equipment_hours_tracker_helpers.h`](firmware/equipment_hours_tracker/equipment_hours_tracker_helpers.h) — set `PRODUCT_UID` to your project value.
-4. **Flash** — `arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET` then upload. Details in [§6](#6-firmware-design).
-5. **Watch** — open Notehub → your project → **Events**. You should see `_session.qo` within about a minute on cellular, or when NTN service is available and the MAIN antenna has adequate sky view when operating off-cellular — Skylo NTN session establishment is not pass-timed; latency varies with sky visibility and signal conditions. Tap the enclosure to trigger a vibration reading; state-change events appear in `equip_event.qo`.
+4. **Install core** (one-time) — `arduino-cli core install STMicroelectronics:stm32 --additional-urls https://raw.githubusercontent.com/stm32duino/BoardManagerFiles/main/STM32/package_stm_index.json`
+5. **Flash** — `arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/equipment_hours_tracker/` then upload. Details in [§6.1](#61-installing-and-flashing).
+6. **Watch serial** — open at 115200 baud; you should see `[BOOT]` or `[VIB]` output every 30 seconds.
+7. **Watch Notehub** — open Notehub → your project → **Events**. You should see `_session.qo` within about a minute on cellular, or when NTN service is available and the MAIN antenna has adequate sky view when operating off-cellular — Skylo NTN session establishment is not pass-timed; latency varies with sky visibility and signal conditions. Tap the enclosure to trigger a vibration reading; state-change events appear in `equip_event.qo`.

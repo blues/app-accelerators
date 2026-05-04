@@ -48,15 +48,10 @@
 // Change only if another sketch on the same Notecard needs a different label.
 #define STATE_SEG_ID  "LIFT"
 
-// ─── CAN BMS hardware parameters (edit to match your BMS vendor) ─────────────
-#if ENABLE_CAN_BMS
-#define PIN_CAN_CS          5            // SPI CS for MCP2515 — Notecarrier CX D5 (see README §4)
-#define BMS_CELL_COUNT      8            // array capacity for decoded cell-group voltages;
-                                         // a single classic CAN frame (DLC ≤ 8 bytes) holds
-                                         // at most four 16-bit values — BMS_CELL_COUNT may
-                                         // exceed that if the BMS uses a multi-frame protocol
-#define BMS_CELL_GROUP_ID  0x18FF50E5UL  // 29-bit extended CAN ID (placeholder)
-#endif
+// ─── CAN BMS hardware parameters ──────────────────────────────────────────────
+// PIN_CAN_CS, BMS_CELL_COUNT, and BMS_CELL_GROUP_ID are defined in
+// lift_battery_monitor_config.h so both this translation unit and
+// lift_battery_monitor_helpers.cpp see identical values — edit them there.
 
 // ─── Firmware-default runtime configuration ───────────────────────────────────
 // All values are overridable at runtime via Notehub environment variables

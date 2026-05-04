@@ -21,44 +21,85 @@
 #include <stdlib.h>
 
 // -------------------------------------------------------------------------
+// parseVEDLong — strict integer parse for a VE.Direct field value.
+//
+// VE.Direct broadcasts the literal three-dash sentinel "---" when a field
+// has no data (e.g. T="---" when no temperature sensor is connected;
+// SOC="---" on an unsynchronised SmartShunt).  atol("---") silently returns
+// 0, which would let a missing sensor masquerade as a real 0°C / 0 %
+// reading, producing false alerts and corrupting averaged metrics.
+//
+// Returns true only when `value` parses cleanly as an integer with no
+// trailing characters; on any other input (empty, "---", "n/a", "1.2",
+// "12abc"), returns false and leaves *out unchanged.  Callers must skip
+// the field assignment on a false return so the struct's sentinel default
+// is preserved.
+// -------------------------------------------------------------------------
+static bool parseVEDLong(const char *value, long *out) {
+    if (!value || !*value) return false;
+    char *end = NULL;
+    long v = strtol(value, &end, 10);
+    if (end == value || end == NULL || *end != '\0') return false;
+    *out = v;
+    return true;
+}
+
+// -------------------------------------------------------------------------
 // Internal: apply parsed label/value pairs to a VEDirectData struct.
+//
+// Every numeric field is parsed through parseVEDLong() so that VE.Direct's
+// "---" no-data sentinel is rejected rather than silently coerced to 0.
+// On parse failure the field assignment is skipped, leaving the sentinel
+// defaults set by readVEDirectFrame() in place.
 // -------------------------------------------------------------------------
 static void applyField(const char *label, const char *value, VEDirectData &d) {
+    long v;
+
     // --- Battery / SmartShunt fields ---
     if (strcmp(label, "V") == 0) {
-        d.bat_v = atol(value) / 1000.0f;       // mV → V
+        if (parseVEDLong(value, &v)) d.bat_v = v / 1000.0f;       // mV → V
 
     } else if (strcmp(label, "I") == 0) {
-        d.bat_a = atol(value) / 1000.0f;       // mA → A (signed)
+        if (parseVEDLong(value, &v)) d.bat_a = v / 1000.0f;       // mA → A (signed)
 
     } else if (strcmp(label, "P") == 0) {
-        d.bat_w = (float)atol(value);           // W (signed)
+        if (parseVEDLong(value, &v)) d.bat_w = (float)v;          // W (signed)
 
     } else if (strcmp(label, "SOC") == 0) {
-        d.soc_pct = atol(value) / 10.0f;       // ‰ → %
+        // SmartShunt broadcasts "---" until the first 100 % synchronisation.
+        // On parse failure, soc_pct stays at its sentinel (-1.0f) so the
+        // accumulator and alert evaluator skip the sample rather than treat
+        // an uncalibrated shunt as a 0 % reading and fire a false soc_low.
+        if (parseVEDLong(value, &v)) d.soc_pct = v / 10.0f;       // ‰ → %
 
     } else if (strcmp(label, "T") == 0) {
-        // Only present when a battery temp sensor is wired to the SmartShunt.
-        d.bat_temp_c = (float)atol(value);     // °C
+        // T="---" is broadcast when no temperature sensor is connected to
+        // the SmartShunt.  On parse failure, bat_temp_c stays at the
+        // no-sensor sentinel (-99.0f) so accumulate's > -50°C gate
+        // correctly skips it and the summary emits SUMMARY_SENTINEL_F.
+        if (parseVEDLong(value, &v)) d.bat_temp_c = (float)v;     // °C
 
     } else if (strcmp(label, "TTG") == 0) {
-        d.ttg_min = atol(value);                // minutes; -1 = not discharging
+        // Spec value -1 means "not discharging / N/A"; some firmwares
+        // emit "---" for the same condition.  Treat both identically by
+        // skipping on parse failure (default is already -1).
+        if (parseVEDLong(value, &v)) d.ttg_min = (int32_t)v;       // minutes
 
     // --- Solar / SmartSolar MPPT fields ---
     } else if (strcmp(label, "VPV") == 0) {
-        d.pv_v = atol(value) / 1000.0f;        // mV → V
+        if (parseVEDLong(value, &v)) d.pv_v = v / 1000.0f;        // mV → V
 
     } else if (strcmp(label, "PPV") == 0) {
-        d.pv_w = (float)atol(value);           // W
+        if (parseVEDLong(value, &v)) d.pv_w = (float)v;           // W
 
     } else if (strcmp(label, "CS") == 0) {
-        d.cs = (int16_t)atoi(value);           // charge state (int16: codes 245-252 exceed int8 range)
+        if (parseVEDLong(value, &v)) d.cs = (int16_t)v;           // charge state (int16: codes 245-252 exceed int8 range)
 
     } else if (strcmp(label, "H20") == 0) {
-        d.yield_kwh = atol(value) / 100.0f;    // 0.01 kWh units → kWh
+        if (parseVEDLong(value, &v)) d.yield_kwh = v / 100.0f;    // 0.01 kWh units → kWh
 
     } else if (strcmp(label, "ERR") == 0) {
-        d.err = (int8_t)atoi(value);
+        if (parseVEDLong(value, &v)) d.err = (int8_t)v;
     }
     // All other labels (HSDS, H1-H19, H21, Alarm, Relay, etc.) are ignored.
 }
@@ -67,10 +108,13 @@ static void applyField(const char *label, const char *value, VEDirectData &d) {
 // readVEDirectFrame — public API
 // -------------------------------------------------------------------------
 bool readVEDirectFrame(Stream &serial, VEDirectData &out, uint32_t timeout_ms) {
-    // Initialise output to sentinel defaults.
+    // Initialise output to sentinel defaults.  Each "may-be-absent" field is
+    // initialised so that, after a successful frame parse, downstream code can
+    // distinguish "field absent or broadcast as ---" from a real zero reading.
     memset(&out, 0, sizeof(out));
     out.bat_temp_c = -99.0f;   // no temp sensor attached
     out.ttg_min    = -1;       // not discharging / N/A
+    out.soc_pct    = -1.0f;    // SmartShunt unsynchronised (SOC="---")
 
     // Per-line parser state
     char   label[VED_FIELD_LEN] = {0};
@@ -124,6 +168,7 @@ bool readVEDirectFrame(Stream &serial, VEDirectData &out, uint32_t timeout_ms) {
                 memset(&out, 0, sizeof(out));
                 out.bat_temp_c = -99.0f;
                 out.ttg_min    = -1;
+                out.soc_pct    = -1.0f;
                 checksum = 0;
                 memset(label, 0, sizeof(label));
                 memset(value, 0, sizeof(value));

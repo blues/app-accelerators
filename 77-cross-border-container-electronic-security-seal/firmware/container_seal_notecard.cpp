@@ -618,7 +618,8 @@ uint32_t sealGetEpoch(Notecard &nc) {
     J *rsp = nc.requestAndResponse(nc.newRequest("card.time"));
     uint32_t epoch = 0;
     if (rsp != NULL) {
-        if (!JGetObjectItem(rsp, "err")) {
+        const char *err = JGetString(rsp, "err");
+        if (!err || !*err) {
             epoch = (uint32_t)JGetInt(rsp, "time");
         }
         nc.deleteResponse(rsp);

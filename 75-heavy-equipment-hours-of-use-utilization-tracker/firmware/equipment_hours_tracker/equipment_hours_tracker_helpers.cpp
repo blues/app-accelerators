@@ -616,8 +616,12 @@ float getBatteryVoltage(void) {
 
 // ── Sleep — persist state and cut host power via ATTN ─────────────────────────
 // NotePayloadSaveAndSleep serialises g_s into Notecard flash, then issues
-// card.attn mode:sleep.  On Notecarrier CX, ATTN drives the host EN rail.
-// SAMPLE_INTERVAL_SEC later the Cygnet powers up and re-enters setup().
+// card.attn mode:sleep.  On Notecarrier CX v1.3, ATTN and EN are separate
+// header pins; an external jumper wire from ATTN to EN must be installed for
+// the Notecard to gate the Cygnet's 3.3V host rail (see README §4).  With the
+// jumper in place, SAMPLE_INTERVAL_SEC later the Cygnet powers up and re-enters
+// setup().  Without the jumper the host stays powered and loop() takes over as
+// the (higher-power) fallback path.
 void goToSleep(void) {
     NotePayloadDesc payload = {0, 0, 0};
     NotePayloadAddSegment(&payload, SEG_ID, &g_s, sizeof(g_s));

@@ -31,7 +31,8 @@ struct VEDirectData {
     float   bat_v;       // Battery voltage, V (e.g. 25.6)
     float   bat_a;       // Battery current, A (positive=charging, negative=discharging)
     float   bat_w;       // Battery power, W (positive=charging, negative=discharging)
-    float   soc_pct;     // State of charge, % (0.0 – 100.0)
+    float   soc_pct;     // State of charge, % (0.0 – 100.0). Sentinel -1.0 =
+                         // SmartShunt unsynchronised (SOC="---" on the wire).
     float   bat_temp_c;  // Battery temperature, °C. Sentinel -99.0 = no sensor.
     int32_t ttg_min;     // Time to go, minutes. -1 = not discharging / N/A.
 

@@ -133,8 +133,8 @@
  * Dependencies
  * ------------
  *   SparkFun_ATECCX08a_Arduino_Library  (install via Arduino Library Manager)
- *   Crypto (by Rhys Weatherley)         (install via Arduino Library Manager)
- *     → provides the SHA256 class used to hash the canonical payload
+ *     → provides both the ATECC608A driver and the on-chip SHA-256 helper
+ *       used to hash the canonical payload before signing.
  */
 
 #pragma once

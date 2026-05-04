@@ -1,160 +1,75 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 550" width="800" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
-  <defs>
-    <marker id="ar-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 z" fill="#f59e0b"/>
-    </marker>
-    <marker id="ar-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 540" width="800" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>    <marker id="ar-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#3b82f6"/>
-    </marker>
-    <marker id="ar-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 z" fill="#ea580c"/>
-    </marker>
-    <marker id="ar-brown" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+    </marker>    <marker id="ar-green2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#10b981"/>
+    </marker>    <marker id="ar-red2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#ef4444"/>
+    </marker>    <marker id="ar-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#9333ea"/>
+    </marker>    <marker id="ar-brown" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#a16207"/>
-    </marker>
-  </defs>
-  <rect width="800" height="550" fill="#ffffff"/>
+    </marker>    <marker id="ar-sky" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0ea5e9"/>
+    </marker>  </defs>
+  <rect width="800" height="540" fill="#ffffff"/>
 
-  <text x="400" y="34" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">Wiring &amp; Assembly</text>
-  <text x="400" y="55" text-anchor="middle" font-size="12" fill="#64748b">Solar power chain · dual-antenna routing · Notecarrier XI</text>
+  <text x="400" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">Wiring &amp; Assembly</text>
+  <text x="400" y="58" text-anchor="middle" font-size="12" fill="#64748b">Notecard built-in motion · Iridium Starnote · solar-trickled LiPo</text>
 
-  <!-- ═══════════════════════════════════════════════
-       CENTER: Notecarrier XI carrier board
-  ═══════════════════════════════════════════════ -->
-  <rect x="262" y="78" width="276" height="335" rx="10" fill="#f8fafc" stroke="#0f172a" stroke-width="2"/>
-  <g transform="translate(333,93) scale(0.75)" fill="#0f172a">
-    <path d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z"/>
+  <rect x="320" y="100" width="160" height="280" rx="10" fill="#f1f5f9" stroke="#0f172a" stroke-width="2"/>
+  <g transform="translate(391,115) scale(0.75)" fill="#0f172a"><path d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z"/></g>
+  <text x="400" y="152" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Notecarrier XI</text>
+  <text x="400" y="170" text-anchor="middle" font-size="10" fill="#475569">Swan + Notecard + Starnote</text>
+
+  <g font-size="11" fill="#0f172a">
+    <text x="335" y="204">I²C</text>
+    <text x="335" y="284">LIPO</text>
+    <text x="465" y="204" text-anchor="end">IRD</text>
+    <text x="465" y="284" text-anchor="end">CELL</text>
+    <text x="400" y="358" text-anchor="middle">+VBAT</text>
   </g>
-  <text x="400" y="131" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Notecarrier XI</text>
-  <text x="400" y="148" text-anchor="middle" font-size="10" fill="#475569">+ Swan · NOTE-WBEX · Starnote for Iridium</text>
-  <line x1="282" y1="162" x2="518" y2="162" stroke="#cbd5e1"/>
-
-  <!-- Module labels inside carrier box -->
-  <g font-size="11" fill="#334155">
-    <text x="400" y="186" text-anchor="middle" font-weight="600">Swan STM32U5</text>
-    <text x="400" y="202" text-anchor="middle" font-size="10" fill="#64748b">(Feather slot · USB-C debug)</text>
-    <line x1="282" y1="214" x2="518" y2="214" stroke="#e2e8f0"/>
-    <text x="400" y="232" text-anchor="middle" font-weight="600">NOTE-WBEX</text>
-    <text x="400" y="248" text-anchor="middle" font-size="10" fill="#64748b">(M.2 slot · MAIN u.FL)</text>
-    <line x1="282" y1="260" x2="518" y2="260" stroke="#e2e8f0"/>
-    <text x="400" y="278" text-anchor="middle" font-weight="600">Starnote for Iridium</text>
-    <text x="400" y="294" text-anchor="middle" font-size="10" fill="#64748b">(Starnote connector · Iridium u.FL)</text>
-    <line x1="282" y1="306" x2="518" y2="306" stroke="#e2e8f0"/>
-    <text x="400" y="324" text-anchor="middle" font-size="10" fill="#64748b">Qwiic → Mojo (bench) · +VBAT screw terminal</text>
+  <g>
+    <circle cx="320" cy="200" r="4" fill="#3b82f6"/>
+    <circle cx="320" cy="280" r="4" fill="#10b981"/>
+    <circle cx="480" cy="200" r="4" fill="#ef4444"/>
+    <circle cx="480" cy="280" r="4" fill="#9333ea"/>
+    <circle cx="400" cy="380" r="4" fill="#0ea5e9"/>
   </g>
+  <rect x="40" y="170" width="180" height="60" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+  <g transform="translate(56,184) scale(0.55)" fill="#1e3a8a"><path d="M0 15h2V9H0v6zm3 2h2V7H3v10zm19-8v6h2V9h-2zm-3 8h2V7h-2v10zM16.5 3h-9C6.67 3 6 3.67 6 4.5v15c0 .83.67 1.5 1.5 1.5h9c.83 0 1.5-.67 1.5-1.5v-15c0-.83-.67-1.5-1.5-1.5zM15 19H9V5h6v14z"/></g>
+  <text x="135" y="198" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">Notecard motion</text>
+  <text x="135" y="218" text-anchor="middle" font-size="10" fill="#1e40af">card.motion polled</text>
+  <rect x="40" y="250" width="180" height="60" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
+  <g transform="translate(56,264) scale(0.55)" fill="#064e3b"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33C16.4 22 17 21.4 17 20.67V5.33C17 4.6 16.4 4 15.67 4z"/></g>
+  <text x="135" y="278" text-anchor="middle" font-size="12" font-weight="700" fill="#064e3b">LiPo 2 Ah</text>
+  <text x="135" y="298" text-anchor="middle" font-size="10" fill="#065f46">JST-PH · solar charge</text>
+  <rect x="580" y="170" width="180" height="60" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+  <g transform="translate(596,184) scale(0.55)" fill="#7f1d1d"><path d="M3 10h5v4H3z M9 6h6v12H9z M16 10h5v4h-5z M11 3h2v3h-2z M11 18h2v3h-2z"/></g>
+  <text x="675" y="198" text-anchor="middle" font-size="12" font-weight="700" fill="#7f1d1d">Iridium antenna</text>
+  <text x="675" y="218" text-anchor="middle" font-size="10" fill="#991b1b">clear sky view · SMA</text>
+  <rect x="580" y="250" width="180" height="60" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+  <g transform="translate(596,264) scale(0.55)" fill="#581c87"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></g>
+  <text x="675" y="278" text-anchor="middle" font-size="12" font-weight="700" fill="#581c87">Cellular antenna</text>
+  <text x="675" y="298" text-anchor="middle" font-size="10" fill="#6b21a8">u.FL → SMA bulkhead</text>
 
-  <!-- Connection points on left edge of carrier box -->
-  <circle cx="262" cy="330" r="5" fill="#f59e0b"/>   <!-- +VBAT -->
-  <text x="278" y="328" font-size="10" fill="#92400e">+VBAT</text>
+  <line x1="220" y1="200" x2="316" y2="200" stroke="#3b82f6" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-blue)"/>
+  <line x1="220" y1="280" x2="316" y2="280" stroke="#10b981" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-green2)"/>
+  <line x1="580" y1="200" x2="484" y2="200" stroke="#ef4444" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-red2)"/>
+  <line x1="580" y1="280" x2="484" y2="280" stroke="#9333ea" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-purple)"/>
 
-  <!-- Connection points on right edge of carrier box -->
-  <circle cx="538" cy="240" r="5" fill="#3b82f6"/>    <!-- NOTE-WBEX MAIN u.FL -->
-  <text x="525" y="228" text-anchor="end" font-size="10" fill="#1e40af">MAIN u.FL</text>
-
-  <circle cx="538" cy="330" r="5" fill="#ea580c"/>    <!-- Starnote Iridium u.FL -->
-  <text x="525" y="348" text-anchor="end" font-size="10" fill="#9a3412">Iridium u.FL</text>
-
-  <!-- ═══════════════════════════════════════════════
-       LEFT: Solar power chain (vertical)
-  ═══════════════════════════════════════════════ -->
-
-  <!-- Solar panel -->
-  <rect x="22" y="100" width="178" height="58" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
-  <g transform="translate(36,112) scale(0.6)" fill="#713f12">
-    <path d="M11 21h-1l1-7H7.5c-.88 0-.33-.75-.31-.78C8.48 10.94 10.42 7.54 13.01 3h1l-1 7h3.51c.4 0 .62.19.4.66C12.97 17.55 11 21 11 21z"/>
-  </g>
-  <text x="125" y="124" text-anchor="middle" font-size="12" font-weight="700" fill="#713f12">Solar panel</text>
-  <text x="125" y="143" text-anchor="middle" font-size="10" fill="#854d0e">0.6 W, 6 V ETFE (roof mount)</text>
-
-  <!-- Down arrow: Solar → Sunny Buddy -->
-  <line x1="111" y1="158" x2="111" y2="196" stroke="#a16207" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-brown)"/>
-  <text x="120" y="182" font-size="9" fill="#a16207">SOLAR IN</text>
-
-  <!-- Sunny Buddy MPPT -->
-  <rect x="22" y="198" width="178" height="58" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
-  <g transform="translate(36,210) scale(0.6)" fill="#7c2d12">
-    <path d="M11 21h-1l1-7H7.5c-.88 0-.33-.75-.31-.78C8.48 10.94 10.42 7.54 13.01 3h1l-1 7h3.51c.4 0 .62.19.4.66C12.97 17.55 11 21 11 21z"/>
-  </g>
-  <text x="125" y="222" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">Sunny Buddy MPPT</text>
-  <text x="125" y="241" text-anchor="middle" font-size="10" fill="#9a3412">LT3652 · charges LiPo at ≤450 mA</text>
-
-  <!-- Down arrow: Sunny Buddy → LiPo -->
-  <line x1="111" y1="256" x2="111" y2="294" stroke="#a16207" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-brown)"/>
-  <text x="120" y="280" font-size="9" fill="#a16207">LIPO terminal</text>
-
-  <!-- LiPo battery -->
-  <rect x="22" y="296" width="178" height="58" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
-  <g transform="translate(36,308) scale(0.6)" fill="#064e3b">
-    <path d="M11 21h-1l1-7H7.5c-.88 0-.33-.75-.31-.78C8.48 10.94 10.42 7.54 13.01 3h1l-1 7h3.51c.4 0 .62.19.4.66C12.97 17.55 11 21 11 21z"/>
-  </g>
-  <text x="125" y="320" text-anchor="middle" font-size="12" font-weight="700" fill="#064e3b">LiPo battery</text>
-  <text x="125" y="339" text-anchor="middle" font-size="10" fill="#065f46">3.7 V / 2 Ah · JST-PH 2 mm</text>
-
-  <!-- Right arrow: LiPo → +VBAT on carrier board -->
-  <line x1="200" y1="330" x2="256" y2="330" stroke="#f59e0b" stroke-opacity="0.7" stroke-width="2" marker-end="url(#ar-amber)"/>
-  <text x="228" y="323" text-anchor="middle" font-size="9" fill="#92400e">+VBAT</text>
-
-  <!-- ═══════════════════════════════════════════════
-       RIGHT: Antenna assembly
-  ═══════════════════════════════════════════════ -->
-
-  <!-- Cellular antenna -->
-  <rect x="608" y="120" width="172" height="65" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
-  <g transform="translate(622,133) scale(0.6)" fill="#1e3a8a">
-    <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/>
-  </g>
-  <text x="705" y="148" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">Cellular antenna</text>
-  <text x="705" y="165" text-anchor="middle" font-size="10" fill="#1e40af">included with NOTE-WBEX</text>
-  <text x="705" y="178" text-anchor="middle" font-size="10" fill="#1e40af">SMA · exterior-mounted</text>
-
-  <!-- Left arrow: NOTE-WBEX u.FL → cellular antenna (reversed) -->
-  <line x1="606" y1="240" x2="542" y2="240" stroke="#3b82f6" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-blue)"/>
-  <!-- Bend line from antenna to arrow -->
-  <line x1="694" y1="185" x2="694" y2="240" stroke="#3b82f6" stroke-opacity="0.4" stroke-width="1.5" stroke-dasharray="4,3"/>
-  <line x1="606" y1="240" x2="694" y2="240" stroke="#3b82f6" stroke-opacity="0.4" stroke-width="1.5" stroke-dasharray="4,3"/>
-  <text x="574" y="253" text-anchor="middle" font-size="9" fill="#1e40af">pigtail → SMA bulkhead</text>
-
-  <!-- Iridium+GPS combined antenna -->
-  <rect x="608" y="290" width="172" height="75" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
-  <g transform="translate(622,303) scale(0.6)" fill="#7c2d12">
-    <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/>
-  </g>
-  <text x="705" y="318" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">Iridium+GPS antenna</text>
-  <text x="705" y="335" text-anchor="middle" font-size="10" fill="#9a3412">included with Starnote</text>
-  <text x="705" y="348" text-anchor="middle" font-size="10" fill="#9a3412">Iridium-certified · clear sky view</text>
-  <text x="705" y="358" text-anchor="middle" font-size="10" fill="#9a3412">SMA · exterior-mounted</text>
-
-  <!-- Left arrow: Starnote u.FL → Iridium+GPS antenna (reversed) -->
-  <line x1="606" y1="330" x2="542" y2="330" stroke="#ea580c" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-orange)"/>
-  <text x="574" y="343" text-anchor="middle" font-size="9" fill="#9a3412">pigtail → SMA bulkhead</text>
-
-  <!-- ═══════════════════════════════════════════════
-       BOTTOM: Mojo bench-only strip
-  ═══════════════════════════════════════════════ -->
-  <rect x="22" y="446" width="756" height="82" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5" stroke-dasharray="6,3"/>
-  <g transform="translate(33,455) scale(0.6)" fill="#713f12">
-    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7 17v-3h2v3H7zm4 0V7h2v10h-2zm4 0v-5h2v5h-2z"/>
-  </g>
-  <text x="60" y="468" font-size="12" font-weight="700" fill="#713f12">Blues Mojo  <tspan font-weight="400" font-style="italic">(bench bring-up only — remove before field deployment)</tspan></text>
-
-  <!-- Mojo inline power path -->
-  <rect x="70" y="477" width="100" height="32" rx="4" fill="#ffffff" stroke="#a16207"/>
-  <text x="120" y="498" text-anchor="middle" font-size="10" fill="#713f12">LiPo battery</text>
-
-  <rect x="220" y="477" width="100" height="32" rx="4" fill="#ffffff" stroke="#a16207"/>
-  <text x="270" y="498" text-anchor="middle" font-size="10" fill="#713f12">Mojo BAT in</text>
-
-  <rect x="370" y="477" width="100" height="32" rx="4" fill="#ffffff" stroke="#a16207"/>
-  <text x="420" y="498" text-anchor="middle" font-size="10" fill="#713f12">Mojo LOAD out</text>
-
-  <rect x="520" y="477" width="130" height="32" rx="4" fill="#ffffff" stroke="#a16207"/>
-  <text x="585" y="498" text-anchor="middle" font-size="10" fill="#713f12">+VBAT screw terminal</text>
-
-  <rect x="700" y="477" width="65" height="32" rx="4" fill="#ffffff" stroke="#a16207"/>
-  <text x="732" y="498" text-anchor="middle" font-size="10" fill="#713f12">Qwiic</text>
-
-  <line x1="170" y1="493" x2="218" y2="493" stroke="#a16207" stroke-opacity="0.5" stroke-width="1.5" marker-end="url(#ar-brown)"/>
-  <line x1="320" y1="493" x2="368" y2="493" stroke="#a16207" stroke-opacity="0.5" stroke-width="1.5" marker-end="url(#ar-brown)"/>
-  <line x1="470" y1="493" x2="518" y2="493" stroke="#a16207" stroke-opacity="0.5" stroke-width="1.5" marker-end="url(#ar-brown)"/>
-  <line x1="650" y1="493" x2="698" y2="493" stroke="#a16207" stroke-opacity="0.5" stroke-width="1.5" marker-end="url(#ar-brown)"/>
+  <rect x="40" y="430" width="720" height="80" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+  <g transform="translate(50,438) scale(0.65)" fill="#713f12"><path d="M11 21h-1l1-7H7.5c-.88 0-.33-.75-.31-.78C8.48 10.94 10.42 7.54 13.01 3h1l-1 7h3.51c.4 0 .62.19.4.66C12.97 17.55 11 21 11 21z"/></g>
+  <text x="78" y="454" font-size="12" font-weight="700" fill="#713f12">Power path</text>
+  <rect x="60" y="465" width="110" height="35" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="115" y="487" text-anchor="middle" font-size="11" fill="#713f12">Solar 0.6 W</text>
+  <rect x="200" y="465" width="140" height="35" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="270" y="487" text-anchor="middle" font-size="11" fill="#713f12">LT3652 charger</text>
+  <rect x="370" y="465" width="110" height="35" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="425" y="487" text-anchor="middle" font-size="11" fill="#713f12">LiPo 2 Ah</text>
+  <rect x="510" y="465" width="200" height="35" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="610" y="487" text-anchor="middle" font-size="11" fill="#713f12">Notecarrier +VBAT</text>
+  <line x1="170" y1="482" x2="198" y2="482" stroke="#a16207" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-brown)"/>
+  <line x1="340" y1="482" x2="368" y2="482" stroke="#a16207" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-brown)"/>
+  <line x1="480" y1="482" x2="508" y2="482" stroke="#a16207" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-brown)"/>
 </svg>

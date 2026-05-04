@@ -7,13 +7,13 @@
  * verification guidance.
  *
  * Dependencies (install via Arduino Library Manager):
- *   SparkFun_ATECCX08a_Arduino_Library  — ATECC608A driver
- *   Crypto (by Rhys Weatherley)         — SHA256 class
+ *   SparkFun_ATECCX08a_Arduino_Library  — ATECC608A driver (also provides
+ *                                         on-chip SHA-256 used to hash the
+ *                                         canonical payload before signing)
  */
 
 #include "container_seal_sign.h"
 #include <SparkFun_ATECCX08a_Arduino_Library.h>
-#include <SHA256.h>   // from "Crypto" library by Rhys Weatherley
 #include <math.h>     // lroundf
 
 static ATECCX08A g_atecc;
@@ -42,31 +42,36 @@ bool sealSignBegin(void) {
 static uint32_t signPayload(const uint8_t *payload, size_t len,
                              uint8_t *sigFull) {
     // ---- Compute SHA-256 of canonical payload -----------------------------
-    // The ATECC608A's generateSignature() expects a 32-byte digest, not raw
-    // data.  We compute SHA-256 in software (Crypto library) then pass the
-    // digest to the hardware for signing.
-    SHA256 hasher;
-    hasher.reset();
-    hasher.update(payload, len);
+    // The ATECC608A's createSignature() expects a 32-byte digest, not raw
+    // data.  We use the chip's on-chip SHA-256 engine via the SparkFun
+    // library's sha256() helper so the same secure element that holds the
+    // private key also produces the digest — no extra software-crypto
+    // dependency required.
     uint8_t hash[32];
-    hasher.finalize(hash, sizeof(hash));
-
-    // ---- Sign with ATECC608A ECC P-256 private key in slot 0 --------------
-    // generateSignature(message, signature, slot):
-    //   message   — 32-byte SHA-256 digest
-    //   signature — 64-byte output buffer (R‖S, big-endian)
-    //   slot      — ATECC608A key slot holding the private ECC key
-    // Returns true on success; false if the chip is not provisioned (config
-    // or data zone not locked), the slot does not hold an ECC key, or an I²C
-    // communication error occurred.
-    uint8_t sig64[64] = {0};
-    if (!g_atecc.generateSignature(hash, sig64, SEAL_SIGN_KEY_SLOT)) {
-        Serial.println("[seal] WARN: ATECC608A generateSignature failed — sig will be 0");
+    if (!g_atecc.sha256((uint8_t *)payload, len, hash)) {
+        Serial.println("[seal] WARN: ATECC608A sha256 failed — sig will be 0");
         if (sigFull) {
             memset(sigFull, 0, 64);
         }
         return 0;
     }
+
+    // ---- Sign with ATECC608A ECC P-256 private key in slot 0 --------------
+    // createSignature(data, slot):
+    //   data — 32-byte SHA-256 digest loaded into TempKey, then signed
+    //   slot — ATECC608A key slot holding the private ECC key
+    // The 64-byte ECDSA signature (R‖S, big-endian) is written to the public
+    // member g_atecc.signature[].  Returns true on success; false if the chip
+    // is not provisioned (config or data zone not locked), the slot does not
+    // hold an ECC key, or an I²C communication error occurred.
+    if (!g_atecc.createSignature(hash, SEAL_SIGN_KEY_SLOT)) {
+        Serial.println("[seal] WARN: ATECC608A createSignature failed — sig will be 0");
+        if (sigFull) {
+            memset(sigFull, 0, 64);
+        }
+        return 0;
+    }
+    const uint8_t *sig64 = g_atecc.signature;
 
     // Copy full signature to caller buffer if requested.
     if (sigFull) {

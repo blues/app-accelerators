@@ -2,7 +2,21 @@
 
 > This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
 
-A cellular [energy monitoring](https://blues.com/solutions-energy-monitoring/) retrofit for Level 2 EV chargers — mount a DIN-rail energy meter on the charger's AC feed, bolt a Blues Notecard inside the electrical panel, and get per-session metered kWh, peak power, session duration, hourly utilization rates, and charger availability in Notehub without touching the charger itself, enrolling in a charging network, or involving site IT. Energy is measured by a hardware-metered, dual voltage-and-current instrument; charger availability is tracked from the meter's V_rms register — when mains voltage is absent the circuit is definitively offline. See [§9](#9-limitations-and-next-steps) for design boundaries and production expansion paths.
+## What you'll have when you're done
+
+A cellular [energy monitoring](https://blues.com/solutions-energy-monitoring/) retrofit for Level 2 EV chargers — mount a DIN-rail energy meter on the charger's AC feed, bolt a Blues Notecard inside the electrical panel, and within minutes you'll see three types of data arriving in Notehub: per-session metered kWh and peak power (`charger_session.qo`, one per charged vehicle), hourly utilization and availability summaries (`charger_summary.qo`, one per hour), and mains-offline alerts (`charger_alert.qo` when the charger circuit loses power). Energy is measured by a hardware-metered instrument; charger availability is tracked from the meter's V_rms register — when mains voltage is absent the circuit is definitively offline. No modification to the charger hardware, no OCPP enrollment, no site IT involvement required. See [§9](#9-limitations-and-next-steps) for design boundaries and production expansion paths.
+
+## Quickstart: From bench to Notehub in 5 steps
+
+Before diving into the full documentation, here's the fastest path from parts to first event in Notehub:
+
+1. **Create a Notehub project** at [notehub.io](https://notehub.io) and copy its ProductUID (looks like `com.your-company:ev-charger-monitor`).
+2. **Wire the bench rig** — Notecarrier CX + Notecard MBGLW + SDM120-Modbus energy meter + SparkFun BOB-10124 RS-485 transceiver (D0/D1/D2 pins). Full wiring details in [§4](#4-wiring-and-assembly).
+3. **Edit firmware/ev_charger_session_monitor/ev_charger_session_monitor.ino** — replace the empty string on line 53 (`#define PRODUCT_UID ""`) with your ProductUID.
+4. **Flash with Arduino IDE** — open the sketch, select **Generic STM32L4 series → Cygnet** as the board, hit **Upload**. Or use `arduino-cli` (see [§6.1](#61-installing-and-flashing) for commands).
+5. **Watch Notehub** — open your project's **Events** tab. You'll see `_session.qo` within seconds (proves radio works), a `charger_summary.qo` within the hour, and a `charger_session.qo` after you run a test load (see [§8](#8-validation-and-testing)).
+
+For detailed component selection, wiring, Notehub configuration, and validation, read on.
 
 ## 1. Project Overview
 
@@ -21,6 +35,8 @@ Cellular sidesteps all of that. A Notecard Cell+WiFi (MBGLW) with its included p
 **Panel placement note.** Whether the DIN-rail assembly can be mounted inside the main EVSE panel depends on the enclosure's listing and local electrical code — not all listed enclosures permit third-party low-voltage auxiliary equipment in the mains compartment. Where the panel interior is not available, mount the assembly in a separately listed auxiliary enclosure bolted adjacent to the main panel and route the RS-485 signal cable and AC supply conductors between the two enclosures through a listed conduit entry or knockout. The auxiliary-enclosure approach is the safe default for any installation where the main panel's suitability cannot be confirmed.
 
 ## 2. System Architecture
+
+![System architecture: SDM120 energy meter via Modbus RTU → Notecarrier CX with Cygnet host and Notecard MBGLW → cellular → Notehub → utilization / analytics / on-call](diagrams/01-system-architecture.svg)
 
 **Device-side responsibilities.** The onboard Cygnet STM32L4 host on the Notecarrier CX wakes every 30 seconds via [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn), polls the SDM120 energy meter over Modbus RTU (three register reads: V_rms, active power, import kWh), and runs a two-state session machine that tracks whether the charger is actively delivering energy. Session energy is computed from the meter's cumulative import-kWh register delta (close reading minus open reading), so no voltage or power-factor assumptions are required. Charger availability is tracked each wake via two counters: `window_elapsed_sec` advances unconditionally (wall-clock time) and `window_available_sec` advances only when the meter is valid and V_rms ≥ `voltage_present_v`, so `availability_pct` = `available_min / elapsed_min × 100` correctly penalises any wake where the circuit was offline or unreadable. State is persisted to the Notecard between wakes using `NotePayloadSaveAndSleep`, which serialises the state struct into Notecard flash before cutting host power. When the session ends, the host queues a `charger_session.qo` Note immediately with `sync:true`. Hourly window statistics queue into `charger_summary.qo` on the report cadence. The host never stays awake longer than it takes to poll the meter, check thresholds, and hand off to the Notecard — typically under two seconds per wake.
 
@@ -47,6 +63,8 @@ Cellular sidesteps all of that. A Notecard Cell+WiFi (MBGLW) with its included p
 All Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
 ## 4. Wiring and Assembly
+
+![Wiring: SDM120 energy meter via BOB-10124 RS-485 transceiver; cellular antenna via u.FL; bench Mojo on Qwiic; 120/240 VAC → HDR-15-5 → Mojo → +VBAT](diagrams/02-wiring-assembly.svg)
 
 > **Electrical safety.** The 120/240VAC feed inside an electrical panel is hazardous. This installation inserts the SDM120 energy meter **in series** on the EVSE feed, which requires interrupting and re-terminating the live mains conductors. Panel work **must be performed by a qualified electrician** following applicable electrical codes and lockout/tagout procedures.
 
@@ -88,7 +106,7 @@ Pin summary:
 
 3. **Create a Fleet per property.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) group devices for shared configuration and routing. One fleet per property or tenant is the natural unit here — every charger at a given site shares the same line voltage, the same session-detection thresholds, and the same routing destinations. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) can auto-assign new devices to the correct fleet at commissioning time; within a single Notehub project all devices share the same ProductUID, so fleet rules should discriminate on a device attribute that varies by site — for example, an installer-applied tag (e.g., `site:depot-north`), a serial/UID range reserved per property during provisioning, or location metadata populated during the first sync.
 
-4. **Set environment variables.** In Notehub: **Fleet → Environment** (or **Device → Environment** for a per-device override). The device fetches updated variables on its next inbound sync — no reflash, no site visit required. All are optional; firmware defaults are shown.
+4. **Set environment variables.** In Notehub, navigate to **Fleet → Environment** tab (or **Device → Environment** for a per-device override). Add or update any of the variables below; the device will fetch them on its next inbound sync — no reflash needed. All variables are optional; the firmware defaults shown below apply if you don't set them.
 
    | Variable | Default | Purpose |
    |---|---|---|
@@ -164,17 +182,21 @@ The firmware lives in three files inside `firmware/ev_charger_session_monitor/`:
 **Flashing — `arduino-cli`:** from the firmware directory,
 
 ```bash
-# List installed STM32 boards to find the right FQBN for your installed core version
-arduino-cli board listall | grep -i cygnet
-
-# Compile and upload (replace the FQBN below with what `listall` reported)
+# Typical modern stm32duino core
+cd firmware/ev_charger_session_monitor
 arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET ev_charger_session_monitor.ino
 arduino-cli upload  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET -p /dev/cu.usbmodem* ev_charger_session_monitor.ino
 ```
 
-The exact FQBN is whatever the current `stm32duino` core ships for the Cygnet variant — the `board listall` command above is the authoritative source for your specific core version. Replace `/dev/cu.usbmodem*` with whatever port the Notecarrier enumerates on your machine — typically `COMx` on Windows, `/dev/ttyACM*` on Linux.
+If the upload fails with "Unknown board," first list available FQBN variants:
 
-Open the serial monitor at **115200 baud** after flashing. On cold boot you'll see `[app] cold boot — will configure Notecard`. Once the meter is connected, subsequent wakes print `[app] V=240.1 V  P=0 W  kWh=12.345` and then go quiet for 30 seconds as the host powers down. If the meter is absent or misconfigured you'll see `[app] WARN: Modbus voltage read error 0x02` (or similar error code) each wake instead.
+```bash
+arduino-cli board listall | grep -i cygnet
+```
+
+and replace `STMicroelectronics:stm32:GenL4:pnum=CYGNET` above with whatever `listall` reported. Replace `/dev/cu.usbmodem*` with the port the Notecarrier enumerates on your machine — typically `COMx` on Windows, `/dev/ttyACM*` on Linux, or `/dev/cu.usbmodem*` on macOS.
+
+Open the serial monitor at **115200 baud** after flashing. On cold boot you'll see `[app] cold boot — will configure Notecard`. Once the meter is connected, subsequent wakes print `[app] V=240.1 V  P=0 W  kWh=12.345` and then go quiet for 30 seconds as the host powers down. If the meter is absent, unpowered, or wired incorrectly you'll see `[app] WARN: Modbus voltage read error 0xE2` (response timeout) each wake. A `0x02` error indicates the slave responded but rejected the register address (typical of a slave-ID or register-map mismatch); other ModbusMaster error codes are documented in the library header.
 
 ### 6.2 Modules
 
@@ -222,6 +244,8 @@ JAddNumberToObject(body, "availability_pct",    14.1);  // available_min / elaps
 JAddNumberToObject(body, "sample_coverage_pct", 14.1);  // total_min / elapsed_min × 100
 notecard.sendRequest(req);
 ```
+
+**Template notation explained:** `12` means a 2-byte signed integer (range -32,768 to 32,767); `14.1` means a 4-byte IEEE-754 float with 1 decimal place in transmission. The template compresses each full summary record from roughly 200 bytes of free-form JSON to about 40 bytes on the wire, meaningful over a 500 MB SIM lifetime at one record per hour per device.
 
 ### 6.5 Low-power strategy
 
@@ -297,6 +321,8 @@ static float regsToFloat(uint16_t hi, uint16_t lo) {
 ```
 
 ## 7. Data Flow
+
+![Data flow: 30-s Modbus polls of V_rms/W/kWh → session state machine + offline detection → charger_alert.qo (sync:true on mains_absent) and charger_summary.qo (hourly templated) → Notehub](diagrams/03-data-flow.svg)
 
 **Collected.** Every `sample_interval_sec` (default 30 s): V_rms, active power (W), and cumulative import kWh from the SDM120 via three Modbus RTU reads. The SDM120 performs all measurement and computation internally; the firmware reads the already-computed result registers.
 
@@ -385,14 +411,3 @@ This project demonstrates that actionable EV charger visibility — per-session 
 
 For fleet operators and facilities teams, the data that emerges answers two questions at once: not just "how are the chargers we have being used?" but also "how reliably are they available to be used?" A site where `utilization_pct` is running at 85% during the morning rush and `availability_pct` is 100% needs scheduling policy, not more hardware. A site where `availability_pct` is 72% needs a maintenance visit. A site where two chargers are maxed out while six others sit idle has a fleet routing problem. None of those signals is visible without instrumentation — and cellular makes the instrumentation deployable everywhere, regardless of who owns the charger or the parking lot.
 
----
-
-### Quickstart at a glance
-
-If you want the fastest path from "parts on the bench" to "first event in Notehub":
-
-1. **Notehub** — create a [Notehub project](https://notehub.io), copy its ProductUID.
-2. **Wire the bench rig** — Notecarrier CX + Notecard MBGLW + SDM120-Modbus energy meter + SparkFun BOB-10124 RS-485 transceiver (D0/D1/D2). Full wiring is in [§4](#4-wiring-and-assembly).
-3. **Edit one line** of [`firmware/ev_charger_session_monitor/ev_charger_session_monitor.ino`](firmware/ev_charger_session_monitor/ev_charger_session_monitor.ino) — replace the empty string on the `#define PRODUCT_UID ""` line with your project's value.
-4. **Flash** — open the sketch in Arduino IDE, select the Cygnet board, hit **Upload**. See [§6.1](#61-installing-and-flashing) for `arduino-cli` commands.
-5. **Watch** — open Notehub → your project → **Events** tab. You should see a `_session.qo` immediately and a `charger_summary.qo` within the hour. To see a `charger_session.qo`, run a bench simulation (see [§8](#8-validation-and-testing)) — the session Note is emitted after the simulated charging session ends, once the below-threshold grace period has elapsed.

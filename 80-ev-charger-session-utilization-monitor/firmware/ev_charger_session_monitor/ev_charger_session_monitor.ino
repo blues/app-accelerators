@@ -151,23 +151,35 @@ void setup() {
 
     // ── Track mains presence for offline alert ───────────────────────────────
     // Update last_mains_epoch whenever V_rms is above the present threshold.
-    // Reset offline_alert_sent so the alert can re-fire if mains returns and
-    // then fails again after the configured absence period.
+    // Only overwrite the stored epoch when `now > 0`; a transient card.time
+    // failure that returns 0 must not erase a previously-confirmed epoch and
+    // collapse the offline_ref fallback to commissioning time.  The suppress
+    // flag is always cleared when mains is present so the alert can re-fire.
     if (meter.valid && meter.voltage_v >= state.voltage_present_v) {
-        state.last_mains_epoch   = now;
+        if (now > 0) state.last_mains_epoch = now;
         state.offline_alert_sent = false;
     }
 
     // ── Open hourly window on first wake with valid time ─────────────────────
-    // Must precede runSessionStateMachine() so that window accumulators are
-    // only incremented once a valid epoch exists.  Also initialise the kWh
-    // baseline so total_kwh in the first summary is computed from a valid delta.
+    // Must precede runSessionStateMachine() so window accumulators are only
+    // incremented once a valid epoch exists.  The kWh baseline is anchored
+    // lazily below — see comment block.
     if (state.window_start_epoch == 0 && now > 0) {
         state.window_start_epoch = now;
-        if (meter.valid) {
-            state.window_start_kwh = meter.import_kwh;
-        }
         Serial.println("[app] reporting window opened");
+    }
+
+    // ── Anchor window kWh baseline on first valid meter read after open ──────
+    // Deferring this until meter.valid is true prevents the corner case where
+    // the first time-synced wake has a failed Modbus poll: if window_start_kwh
+    // were left at 0 (or any stale value from a prior window with no valid
+    // reads), the next successful poll would set last_valid_import_kwh to the
+    // meter's lifetime kWh and the first summary would report that lifetime
+    // total as the window's energy — wildly inflated.
+    if (state.window_start_epoch > 0 && !state.window_kwh_baseline_set && meter.valid) {
+        state.window_start_kwh         = meter.import_kwh;
+        state.window_kwh_baseline_set  = true;
+        Serial.println("[app] window kWh baseline anchored");
     }
 
     // ── Session state machine ────────────────────────────────────────────────

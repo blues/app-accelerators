@@ -15,18 +15,18 @@
   <rect width="800" height="540" fill="#ffffff"/>
 
   <text x="400" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">Wiring &amp; Assembly</text>
-  <text x="400" y="58" text-anchor="middle" font-size="12" fill="#64748b">Reed + break-wire on Swan GPIO · ATECC608A on I²C · cellular + Iridium</text>
+  <text x="400" y="58" text-anchor="middle" font-size="12" fill="#64748b">LSM6DSOX I²C · MAIN + GPS antennas · solar + LiPo</text>
 
   <rect x="320" y="100" width="160" height="280" rx="10" fill="#f1f5f9" stroke="#0f172a" stroke-width="2"/>
   <g transform="translate(391,115) scale(0.75)" fill="#0f172a"><path d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z"/></g>
-  <text x="400" y="152" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Notecarrier XI</text>
-  <text x="400" y="170" text-anchor="middle" font-size="10" fill="#475569">Swan + Notecard + Starnote</text>
+  <text x="400" y="152" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Notecarrier CX</text>
+  <text x="400" y="170" text-anchor="middle" font-size="10" fill="#475569">+ Cygnet · NOTE-NBGLWX</text>
 
   <g font-size="11" fill="#0f172a">
-    <text x="335" y="204">A0</text>
-    <text x="335" y="284">A1</text>
+    <text x="335" y="204">SDA/SCL</text>
+    <text x="335" y="284">ATTN-EN</text>
     <text x="465" y="204" text-anchor="end">MAIN</text>
-    <text x="465" y="284" text-anchor="end">IRD/GPS</text>
+    <text x="465" y="284" text-anchor="end">GPS</text>
     <text x="400" y="358" text-anchor="middle">+VBAT</text>
   </g>
   <g>
@@ -37,21 +37,21 @@
     <circle cx="400" cy="380" r="4" fill="#0ea5e9"/>
   </g>
   <rect x="40" y="170" width="180" height="60" rx="8" fill="#fff7ed" stroke="#f59e0b" stroke-width="1.5"/>
-  <g transform="translate(56,184) scale(0.55)" fill="#7c2d12"><path d="M14 6v15H3v-2h2V3h9v1h5v15h2v2h-4V6h-3zm-4 7h2v-2h-2v2z"/></g>
-  <text x="135" y="198" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">Door reed switch</text>
-  <text x="135" y="218" text-anchor="middle" font-size="10" fill="#9a3412">A0 · INPUT_PULLUP</text>
-  <rect x="40" y="250" width="180" height="60" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+  <g transform="translate(56,184) scale(0.55)" fill="#7c2d12"><path d="M0 15h2V9H0v6zm3 2h2V7H3v10zm19-8v6h2V9h-2zm-3 8h2V7h-2v10zM16.5 3h-9C6.67 3 6 3.67 6 4.5v15c0 .83.67 1.5 1.5 1.5h9c.83 0 1.5-.67 1.5-1.5v-15c0-.83-.67-1.5-1.5-1.5zM15 19H9V5h6v14z"/></g>
+  <text x="135" y="198" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">LSM6DSOX accel</text>
+  <text x="135" y="218" text-anchor="middle" font-size="10" fill="#9a3412">I²C · 104 Hz burst</text>
+  <rect x="40" y="250" width="180" height="60" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="5,3"/>
   <g transform="translate(56,264) scale(0.55)" fill="#7f1d1d"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></g>
-  <text x="135" y="278" text-anchor="middle" font-size="12" font-weight="700" fill="#7f1d1d">Break-wire loop</text>
-  <text x="135" y="298" text-anchor="middle" font-size="10" fill="#991b1b">A1 · seal-continuity</text>
+  <text x="135" y="278" text-anchor="middle" font-size="12" font-weight="700" fill="#7f1d1d">ATTN→EN jumper</text>
+  <text x="135" y="298" text-anchor="middle" font-size="10" fill="#991b1b">required for sleep gating</text>
   <rect x="580" y="170" width="180" height="60" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
-  <g transform="translate(596,184) scale(0.55)" fill="#1e3a8a"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></g>
-  <text x="675" y="198" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">Cellular antenna</text>
-  <text x="675" y="218" text-anchor="middle" font-size="10" fill="#1e40af">u.FL · cable gland</text>
+  <g transform="translate(596,184) scale(0.55)" fill="#1e3a8a"><path d="M3 10h5v4H3z M9 6h6v12H9z M16 10h5v4h-5z M11 3h2v3h-2z M11 18h2v3h-2z"/></g>
+  <text x="675" y="198" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">MAIN antenna</text>
+  <text x="675" y="218" text-anchor="middle" font-size="10" fill="#1e40af">Skylo · cell + sat</text>
   <rect x="580" y="250" width="180" height="60" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
-  <g transform="translate(596,264) scale(0.55)" fill="#581c87"><path d="M3 10h5v4H3z M9 6h6v12H9z M16 10h5v4h-5z M11 3h2v3h-2z M11 18h2v3h-2z"/></g>
-  <text x="675" y="278" text-anchor="middle" font-size="12" font-weight="700" fill="#581c87">Iridium + GPS combo</text>
-  <text x="675" y="298" text-anchor="middle" font-size="10" fill="#6b21a8">Starnote · sky view</text>
+  <g transform="translate(596,264) scale(0.55)" fill="#581c87"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></g>
+  <text x="675" y="278" text-anchor="middle" font-size="12" font-weight="700" fill="#581c87">GPS antenna</text>
+  <text x="675" y="298" text-anchor="middle" font-size="10" fill="#6b21a8">via Notecard u.FL</text>
 
   <line x1="220" y1="200" x2="316" y2="200" stroke="#f59e0b" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-amber)"/>
   <line x1="220" y1="280" x2="316" y2="280" stroke="#ef4444" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-red2)"/>
@@ -61,12 +61,15 @@
   <rect x="40" y="430" width="720" height="80" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
   <g transform="translate(50,438) scale(0.65)" fill="#713f12"><path d="M11 21h-1l1-7H7.5c-.88 0-.33-.75-.31-.78C8.48 10.94 10.42 7.54 13.01 3h1l-1 7h3.51c.4 0 .62.19.4.66C12.97 17.55 11 21 11 21z"/></g>
   <text x="78" y="454" font-size="12" font-weight="700" fill="#713f12">Power path</text>
-  <rect x="60" y="465" width="150" height="35" rx="4" fill="#ffffff" stroke="#a16207"/>
-  <text x="135" y="487" text-anchor="middle" font-size="11" fill="#713f12">LiPo (sealed)</text>
-  <rect x="240" y="465" width="130" height="35" rx="4" fill="#ffffff" stroke="#a16207"/>
-  <text x="305" y="487" text-anchor="middle" font-size="11" fill="#713f12">Mojo (bench)</text>
-  <rect x="400" y="465" width="200" height="35" rx="4" fill="#ffffff" stroke="#a16207"/>
-  <text x="500" y="487" text-anchor="middle" font-size="11" fill="#713f12">Notecarrier +VBAT</text>
-  <line x1="210" y1="482" x2="238" y2="482" stroke="#a16207" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-brown)"/>
-  <line x1="370" y1="482" x2="398" y2="482" stroke="#a16207" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-brown)"/>
+  <rect x="60" y="465" width="100" height="35" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="110" y="487" text-anchor="middle" font-size="11" fill="#713f12">Solar 2 W</text>
+  <rect x="190" y="465" width="130" height="35" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="255" y="487" text-anchor="middle" font-size="11" fill="#713f12">LiPo 2 Ah</text>
+  <rect x="350" y="465" width="130" height="35" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="415" y="487" text-anchor="middle" font-size="11" fill="#713f12">Mojo (bench)</text>
+  <rect x="510" y="465" width="200" height="35" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="610" y="487" text-anchor="middle" font-size="11" fill="#713f12">Notecarrier +VBAT</text>
+  <line x1="160" y1="482" x2="188" y2="482" stroke="#a16207" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-brown)"/>
+  <line x1="320" y1="482" x2="348" y2="482" stroke="#a16207" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-brown)"/>
+  <line x1="480" y1="482" x2="508" y2="482" stroke="#a16207" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-brown)"/>
 </svg>

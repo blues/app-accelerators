@@ -6,18 +6,7 @@ A tamper-evident electronic security seal for international containerized cargo.
 
 **What you'll have when you're done:** a battery-powered security-seal assembly you can mount on a container door that wakes every 30 seconds to check two independent sensors: a door-state reed switch and a break-wire seal-continuity loop. It signs every `seal_event.qo` and `seal_heartbeat.qo` payload with a hardware-rooted ATECC608A ECDSA key; the full 64-byte signature travels as a companion `seal_sig_full.qo` note for forensic chain-of-custody audit. It logs breach, seal-break, and re-seal events with immediate sync. It emits GPS waypoints every six hours. In port it syncs over cellular. At sea it queues events and transmits them via Iridium satellite on a configurable outbound schedule — all without any intervention from the container operator.
 
-
-## Quickstart (5 minutes)
-
-**Before you start:** You'll need a Notehub account (free at [notehub.io](https://notehub.io)), the hardware from §3, Arduino IDE or `arduino-cli`, and two libraries: Blues Wireless Notecard (v1.8.5) and SparkFun ATECCX08a Arduino Library. Install via Arduino Library Manager or: `arduino-cli lib install "Blues Wireless Notecard" && arduino-cli lib install "SparkFun ATECCX08a Arduino Library"`.
-
-1. **Create a Notehub project** at [notehub.io](https://notehub.io). Copy its ProductUID and paste into `firmware/container_seal.ino` at the `PRODUCT_UID` define (line 23).
-2. **Provision the ATECC608A** (one-time, before first flash): Flash and run `firmware/provision_atecc608a/provision_atecc608a.ino` per [§6.2](#62-provisioning-the-atecc608a); record the public key.
-3. **Flash the main firmware**: `arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=SWAN firmware/container_seal.ino` then upload (full command in §6.1).
-4. **Power up and check Notehub Events** for a `_session.qo` event within 60 seconds. **Do not seal and deploy until you see this event** — it delivers the Unix epoch required for correct operation (see §5 step 2).
-5. **Test the sensors**: hold the reed-switch magnet against the sensor, then pull away. A `seal_event.qo` should appear within 60 seconds with non-zero `sig` if ATECC608A is provisioned. Disconnect the break-wire loop — another `seal_event.qo` with `seal_broken:true` should appear on the next wake (≤30 seconds).
-
-For a complete walkthrough, see [§4 Wiring and Assembly](#4-wiring-and-assembly), [§5 Notehub Setup](#5-notehub-setup), and [§6 Firmware](#6-firmware).
+---
 
 ## 1. Project Overview
 
@@ -119,7 +108,7 @@ Mount the enclosure on the container door latch side, approximately 150 mm from 
 
 3. **Create a Fleet.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) (and [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules)) group devices for shared configuration. For a container fleet, one fleet per trade lane (e.g., `trans-pacific`, `asia-europe`) lets you set the heartbeat cadence appropriate to each route's typical voyage duration and signal environment.
 
-4. **Set environment variables.** In Notehub, navigate to **Fleet** (from the project dropdown, select or create a Fleet), then click **Environment** to set variables that the device will pull on the next scheduled inbound sync. All values below are optional — firmware defaults are used if not overridden. Note: the device caches env vars and only refreshes on inbound sync; a power cycle alone does not pull fresh values. To force an immediate refresh during commissioning, trigger a manual sync from the Notehub in-browser terminal: `hub.sync`. In Notehub, navigate to **Fleet → Environment** (or **Device → Environment** for single-device overrides). All values are optional — firmware defaults are shown. The device pulls environment variable updates on its next scheduled inbound sync window. By default `inbound_min` is 10080 minutes (7 days), and this cadence applies regardless of whether the Notecard is on cellular or satellite — being in port does not by itself trigger an earlier env-var refresh. To pull changes sooner, either lower `inbound_min` (see table below) or trigger a manual sync from the Notehub in-browser terminal (`hub.sync`).
+4. **Set environment variables.** In Notehub, navigate to **Fleet → Environment** (or **Device → Environment** for single-device overrides). All values are optional — firmware defaults are shown. The device pulls environment variable updates on its next scheduled inbound sync window. By default `inbound_min` is 10080 minutes (7 days), and this cadence applies regardless of whether the Notecard is on cellular or satellite — being in port does not by itself trigger an earlier env-var refresh. To pull changes sooner, either lower `inbound_min` (see table below) or trigger a manual sync from the Notehub in-browser terminal (`hub.sync`).
 
    | Variable | Default | Purpose |
    |---|---|---|
@@ -131,8 +120,6 @@ Mount the enclosure on the container door latch side, approximately 150 mm from 
 5. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `seal_event.qo` (to a compliance database or real-time alert endpoint) and a second for `seal_heartbeat.qo` (to a voyage-tracking or long-term audit store). The two Notefiles are deliberately separate so their destinations, urgency, and retention policies can differ without filter logic in the route.
 
 ### What you should see in Notehub
-
-When the device boots and begins operation, Notehub displays events in the **Events** tab as they arrive. Each Notefile (`_session.qo`, `seal_heartbeat.qo`, `seal_event.qo`, `seal_sig_full.qo`) appears as a separate row showing the timestamp, device ID, and event body (JSON). Location fields (`best_lat`, `best_lon`, `when`) are populated by Notehub based on the Notecard's timestamp and GPS cache; compare these against the device-generated fields in the JSON (`event_lat`, `event_lon`, `event_time`) to reconstruct the exact breach moment. The examples below show the structure of each event type you'll see.
 
 Four Notefiles matter for this project:
 

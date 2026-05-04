@@ -98,9 +98,15 @@ static const uint8_t FAULT_VOLTAGE_REF = 0x08;  // shared voltage-path fault (bi
 //   1.90 V / 3.30 V × 4095 ≈ 2359 counts (upper bound)
 static const float BIAS_MIN_COUNTS       = 1738.0f;
 static const float BIAS_MAX_COUNTS       = 2359.0f;
-// Saturation guard: 85 % of the 1.65 V half-swing ≈ 1.40 V RMS.
-//   1.40 V / 3.30 V × 4095 ≈ 1739 counts RMS (as computed from i_sq/ADC_SAMPLES)
-static const float SATURATION_RMS_COUNTS = 1739.0f;
+// Saturation guard: trips when the centered signal's RMS exceeds the RMS-equivalent
+// of 85 % of the 1.65 V half-rail peak amplitude.  For a sine wave, peak amplitude
+// ≤ ADC_FULL_SCALE/2 (≈ 2047 counts at 12-bit resolution) and RMS ≤ peak/√2 ≈
+// 1448 counts; trying to compare an RMS value against a peak threshold (e.g. ~1740
+// counts) would never trip on an unclipped sine wave.  Convert peak → RMS with /√2:
+//   0.85 × (4095 / 2) / √2 ≈ 1230 counts RMS  →  ≈ 0.99 V RMS at the ADC pin
+// This trips before the signal actually rails, providing margin to flag waveforms
+// approaching distortion.
+static const float SATURATION_RMS_COUNTS = 1230.0f;
 // Commissioning-only low-current threshold: NOT propagated to fault_mask.
 // See FAULT_VOLTAGE_REF note above and measureChannel() implementation.
 static const float MIN_SIGNAL_AMPS       = 0.05f;

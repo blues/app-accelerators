@@ -198,13 +198,20 @@ void setup() {
     // the first 12 bytes (e.g. PendingEvent grew): cfg fields land at a
     // different offset and come back as garbage.  Reset to defaults if any
     // field is out of its valid range.
+    bool cadenceResyncNeeded = false;
     if (resumed && g_state.initialized && !cfgIsValid(g_state.cfg)) {
         Serial.println("[seal] cfg out of range after restore — resetting to defaults");
         g_state.cfg.checkIntervalSec     = DEFAULT_CHECK_INTERVAL_SEC;
         g_state.cfg.heartbeatIntervalMin = DEFAULT_HEARTBEAT_INTERVAL_MIN;
         g_state.cfg.outboundMin          = DEFAULT_OUTBOUND_MIN;
         g_state.cfg.inboundMin           = DEFAULT_INBOUND_MIN;
-        sealApplyCadence(notecard, g_state.cfg.outboundMin, g_state.cfg.inboundMin);
+        if (!sealApplyCadence(notecard, g_state.cfg.outboundMin, g_state.cfg.inboundMin)) {
+            // Notecard's actual cadence is unknown until the next successful
+            // hub.set.  Force a cadence resync after the env-var refresh below
+            // even if env vars match the defaults we just installed in cfg.
+            Serial.println("[seal] cfg-recovery hub.set failed; will retry this wake");
+            cadenceResyncNeeded = true;
+        }
     }
 
     // Guard against a corrupt or stale pendingCount.
@@ -352,7 +359,8 @@ void setup() {
                 Serial.println("[seal] Env vars updated");
 
                 if (g_state.cfg.outboundMin != prevOutbound ||
-                    g_state.cfg.inboundMin  != prevInbound) {
+                    g_state.cfg.inboundMin  != prevInbound ||
+                    cadenceResyncNeeded) {
                     if (sealApplyCadence(notecard,
                                          g_state.cfg.outboundMin,
                                          g_state.cfg.inboundMin)) {
@@ -366,10 +374,15 @@ void setup() {
                             Serial.print(g_state.cfg.inboundMin);
                             Serial.println(" min");
                         }
+                        cadenceResyncNeeded = false;
                     } else {
                         Serial.println("[seal] hub.set cadence update failed; will retry next wake");
                         g_state.cfg.outboundMin = prevOutbound;
                         g_state.cfg.inboundMin  = prevInbound;
+                        // The next env-var refresh will re-detect any change
+                        // and retry hub.set normally.  In the rare case where
+                        // env vars exactly match defaults, the Notecard may
+                        // run a stale cadence until the next env-var update.
                     }
                 }
                 if (g_state.cfg.heartbeatIntervalMin != prevHeartbeat) {

@@ -51,7 +51,6 @@
  */
 
 #include <Notecard.h>
-#include <NotePayload.h>
 #include <SoftwareSerial.h>
 #include "solar_battery_controller_helpers.h"
 #include "solar_battery_controller_notecard_helpers.h"
@@ -317,7 +316,12 @@ static void accumulate(const VEDirectData &shunt, const VEDirectData &mppt) {
         state.bat_v_sum  += shunt.bat_v;    state.bat_v_cnt++;
         state.bat_a_sum  += shunt.bat_a;    state.bat_a_cnt++;
         state.bat_w_sum  += shunt.bat_w;    state.bat_w_cnt++;
-        state.soc_sum    += shunt.soc_pct;  state.soc_cnt++;
+        // Skip SoC accumulation on an unsynchronised SmartShunt (SOC="---" →
+        // soc_pct = -1.0f sentinel) so the window's average is not skewed
+        // by a bogus zero before the shunt completes its first 100 % sync.
+        if (shunt.soc_pct >= 0.0f) {
+            state.soc_sum += shunt.soc_pct; state.soc_cnt++;
+        }
         if (shunt.bat_temp_c > -50.0f) {    // temp sensor present
             state.temp_sum += shunt.bat_temp_c; state.temp_cnt++;
         }
@@ -418,8 +422,13 @@ static void checkHarvestDeficit() {
 // silently drop the cooldown.
 // ---------------------------------------------------------------------------
 static void checkAndSendAlerts(const VEDirectData &shunt, const VEDirectData &mppt) {
-    // soc_low — battery approaching dark-site threshold
-    if (shunt.valid) {
+    // soc_low — battery approaching dark-site threshold.
+    // Gate on shunt.soc_pct >= 0.0f so an unsynchronised SmartShunt
+    // (SOC="---" on the wire → -1.0f sentinel) cannot fire a false soc_low
+    // before the bank has been calibrated.  The same path also clears stale
+    // active/cooldown state on a telemetry dropout or unsynchronised shunt
+    // so the first valid wake fires immediately if the condition genuinely holds.
+    if (shunt.valid && shunt.soc_pct >= 0.0f) {
         if (shunt.soc_pct < state.soc_alert_pct) {
             // Decrement cooldown before evaluating so the alert re-fires after
             // exactly ALERT_COOLDOWN_SAMPLES wakes (~30 min at the default interval).
@@ -435,9 +444,9 @@ static void checkAndSendAlerts(const VEDirectData &shunt, const VEDirectData &mp
             state.soc_alert_cd     = 0;
         }
     } else {
-        // SmartShunt frame absent — clear stale state so the next valid reading
-        // fires immediately rather than being suppressed by pre-dropout active
-        // flag or a residual cooldown counter.
+        // SmartShunt frame absent or SoC unsynchronised — clear stale state so
+        // the next valid reading fires immediately rather than being suppressed
+        // by a pre-dropout active flag or a residual cooldown counter.
         state.soc_alert_active = false;
         state.soc_alert_cd     = 0;
     }

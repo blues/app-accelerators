@@ -569,8 +569,12 @@ bool emitSummaryNote(uint32_t now) {
     // Total kWh from the last-valid meter reading — avoids a bogus zero when the
     // poll fails on the summary wake and prevents window_start_kwh from being
     // reset to a synthetic fallback that would inflate the following window.
+    // The baseline_set guard suppresses total_kwh for windows that never had a
+    // valid meter read — without it, a window opened during a meter fault would
+    // report (last_valid_import_kwh − 0) = the meter's lifetime energy.
     float total_kwh = 0.0f;
-    if (state.last_valid_import_kwh >= state.window_start_kwh)
+    if (state.window_kwh_baseline_set &&
+        state.last_valid_import_kwh >= state.window_start_kwh)
         total_kwh = state.last_valid_import_kwh - state.window_start_kwh;
 
     // Availability uses elapsed wall-clock time as the denominator so that
@@ -623,10 +627,17 @@ bool emitSummaryNote(uint32_t now) {
         state.window_available_sec         = 0;
         state.window_elapsed_sec           = 0;
         state.window_start_epoch           = now;
-        // Anchor the new window's kWh baseline to the last confirmed reading.
-        // Using last_valid_import_kwh (never a synthetic fallback) prevents the
-        // next window from inheriting energy that was already counted here.
-        state.window_start_kwh             = state.last_valid_import_kwh;
+        // Anchor the new window's kWh baseline to the last confirmed reading
+        // — but only if the window we just summarised had at least one valid
+        // poll.  If it did not, last_valid_import_kwh is stale (or 0), so we
+        // defer baseline anchoring to the lazy-set in the .ino, which fires
+        // on the next valid poll and prevents a stale baseline from inflating
+        // the following window's total_kwh.
+        if (state.window_kwh_baseline_set) {
+            state.window_start_kwh = state.last_valid_import_kwh;
+        } else {
+            state.window_start_kwh = 0.0f;
+        }
         Serial.println("[app] summary Note emitted — window reset");
     }
     return ok;
