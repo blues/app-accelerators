@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 400" width="840" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <marker id="ar-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="ar-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/>
+    </marker>
+    <marker id="ar-violet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#7c3aed"/>
+    </marker>
+  </defs>
+  <rect width="840" height="400" fill="#ffffff"/>
+
+  <text x="420" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">System Architecture</text>
+  <text x="420" y="57" text-anchor="middle" font-size="12" fill="#64748b">Reefer Trailer Cold-Chain &amp; Door-Event Monitor</text>
+
+  <!-- Sensors -->
+  <rect x="20" y="110" width="170" height="210" rx="8" fill="#ecfdf5" stroke="#059669" stroke-width="1.5"/>
+  <!-- thermometer icon -->
+  <g transform="translate(96,124) scale(0.75)" fill="#065f46"><path d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4z"/></g>
+  <text x="105" y="162" text-anchor="middle" font-size="13" font-weight="700" fill="#065f46">Sensors</text>
+  <line x1="36" y1="176" x2="174" y2="176" stroke="#a7f3d0"/>
+  <g font-size="11" fill="#047857">
+    <text x="105" y="200" text-anchor="middle">DS18B20 probe ×2</text>
+    <text x="105" y="220" text-anchor="middle">(forward-air &amp; return)</text>
+    <text x="105" y="248" text-anchor="middle">Magnetic reed switch</text>
+    <text x="105" y="268" text-anchor="middle">(door open/close)</text>
+    <text x="105" y="296" text-anchor="middle" font-style="italic" fill="#059669">1-Wire on A0</text>
+    <text x="105" y="312" text-anchor="middle" font-style="italic" fill="#059669">GPIO on A1</text>
+  </g>
+
+  <!-- Edge -->
+  <rect x="240" y="110" width="200" height="210" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+  <!-- chip icon -->
+  <g transform="translate(331,124) scale(0.75)" fill="#713f12"><path d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z"/></g>
+  <text x="340" y="162" text-anchor="middle" font-size="13" font-weight="700" fill="#713f12">Edge device</text>
+  <line x1="256" y1="176" x2="424" y2="176" stroke="#fde68a"/>
+  <g font-size="11" fill="#854d0e">
+    <text x="340" y="200" text-anchor="middle">Notecarrier CX</text>
+    <text x="340" y="220" text-anchor="middle">Cygnet STM32 host</text>
+    <text x="340" y="248" text-anchor="middle">NOTE-NBGLWX</text>
+    <text x="340" y="268" text-anchor="middle">(LTE-M / NB-IoT / GPRS</text>
+    <text x="340" y="284" text-anchor="middle">+ Skylo NTN + GNSS)</text>
+    <text x="340" y="308" text-anchor="middle" font-style="italic" fill="#a16207">samples · rules · sleep</text>
+  </g>
+
+  <!-- Notehub -->
+  <rect x="510" y="110" width="160" height="210" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <!-- cloud icon -->
+  <g transform="translate(581,124) scale(0.75)" fill="#1e3a8a"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></g>
+  <text x="590" y="162" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">Notehub</text>
+  <line x1="526" y1="176" x2="654" y2="176" stroke="#bfdbfe"/>
+  <g font-size="11" fill="#1e40af">
+    <text x="590" y="200" text-anchor="middle">Storage</text>
+    <text x="590" y="220" text-anchor="middle">Routing</text>
+    <text x="590" y="248" text-anchor="middle">Env vars</text>
+    <text x="590" y="268" text-anchor="middle">Smart Fleets</text>
+    <text x="590" y="296" text-anchor="middle" font-style="italic" fill="#3b82f6">trailer_alert.qo</text>
+    <text x="590" y="312" text-anchor="middle" font-style="italic" fill="#3b82f6">trailer_log_cell.qo</text>
+  </g>
+
+  <!-- Routes -->
+  <rect x="730" y="110" width="90" height="210" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+  <!-- bell icon -->
+  <g transform="translate(761,124) scale(0.75)" fill="#581c87"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></g>
+  <text x="775" y="162" text-anchor="middle" font-size="13" font-weight="700" fill="#581c87">Routes</text>
+  <line x1="738" y1="176" x2="812" y2="176" stroke="#e9d5ff"/>
+  <g font-size="11" fill="#6b21a8">
+    <text x="775" y="200" text-anchor="middle">TMS /</text>
+    <text x="775" y="218" text-anchor="middle">Dispatch</text>
+    <text x="775" y="246" text-anchor="middle">On-call</text>
+    <text x="775" y="264" text-anchor="middle">channel</text>
+    <text x="775" y="292" text-anchor="middle">Cold-chain</text>
+    <text x="775" y="310" text-anchor="middle">archive</text>
+  </g>
+
+  <!-- Connection label row ABOVE arrows -->
+  <text x="215" y="92" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">1-Wire + GPIO</text>
+  <!-- two transport labels above the split arrows -->
+  <text x="480" y="78" text-anchor="middle" font-size="11" font-weight="600" fill="#2563eb">cellular (LTE-M)</text>
+  <text x="480" y="94" text-anchor="middle" font-size="11" font-weight="600" fill="#7c3aed">NTN satellite (Skylo)</text>
+  <text x="705" y="92" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">routes</text>
+
+  <!-- Arrows -->
+  <line x1="190" y1="215" x2="238" y2="215" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <!-- cellular arrow (slight offset up) -->
+  <line x1="440" y1="208" x2="508" y2="208" stroke="#2563eb" stroke-opacity="0.55" stroke-width="2" marker-end="url(#ar-blue)"/>
+  <!-- NTN arrow (slight offset down) -->
+  <line x1="440" y1="224" x2="508" y2="224" stroke="#7c3aed" stroke-opacity="0.55" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#ar-violet)"/>
+  <line x1="670" y1="215" x2="728" y2="215" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+
+  <text x="420" y="370" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">Alerts ride cellular or Skylo NTN satellite. Per-sample logs and summaries are cellular/WiFi only.</text>
+</svg>

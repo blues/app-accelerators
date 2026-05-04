@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 580" width="840" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <marker id="ar-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#059669"/>
+    </marker>
+    <marker id="ar-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/>
+    </marker>
+    <marker id="ar-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d97706"/>
+    </marker>
+    <marker id="ar-violet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#7c3aed"/>
+    </marker>
+    <marker id="ar-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/>
+    </marker>
+  </defs>
+  <rect width="840" height="580" fill="#ffffff"/>
+
+  <text x="420" y="34" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">Wiring &amp; Assembly</text>
+  <text x="420" y="55" text-anchor="middle" font-size="12" fill="#64748b">Notecarrier CX sensor pinout and power chain</text>
+
+  <!-- ── Notecarrier CX (centre) ──────────────────────────────── -->
+  <rect x="310" y="100" width="210" height="310" rx="10" fill="#f1f5f9" stroke="#0f172a" stroke-width="2"/>
+  <!-- chip icon -->
+  <g transform="translate(396,114) scale(0.75)" fill="#0f172a"><path d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z"/></g>
+  <text x="415" y="152" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Notecarrier CX</text>
+  <text x="415" y="168" text-anchor="middle" font-size="10" fill="#475569">Cygnet STM32  ·  NOTE-NBGLWX</text>
+
+  <!-- pin labels -->
+  <g font-size="11" fill="#0f172a" font-weight="600">
+    <text x="325" y="215">A0</text>
+    <text x="325" y="270">A1</text>
+    <text x="495" y="215" text-anchor="end">MAIN u.FL</text>
+    <text x="495" y="270" text-anchor="end">GPS u.FL</text>
+    <text x="415" y="390" text-anchor="middle">+VBAT</text>
+  </g>
+  <!-- pin dots -->
+  <circle cx="310" cy="211" r="5" fill="#059669"/>
+  <circle cx="310" cy="266" r="5" fill="#2563eb"/>
+  <circle cx="520" cy="211" r="5" fill="#7c3aed"/>
+  <circle cx="520" cy="266" r="5" fill="#d97706"/>
+  <circle cx="415" cy="410" r="5" fill="#0ea5e9"/>
+
+  <!-- ── DS18B20 probes (left) ──────────────────────────────────── -->
+  <rect x="20" y="160" width="196" height="75" rx="8" fill="#ecfdf5" stroke="#059669" stroke-width="1.5"/>
+  <!-- thermometer icon small -->
+  <g transform="translate(34,172) scale(0.55)" fill="#065f46"><path d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4z"/></g>
+  <text x="118" y="180" text-anchor="middle" font-size="12" font-weight="700" fill="#065f46">DS18B20 probes ×2</text>
+  <text x="118" y="198" text-anchor="middle" font-size="10" fill="#047857">VDD (red) → +3V3</text>
+  <text x="118" y="214" text-anchor="middle" font-size="10" fill="#047857">GND (blk) → GND</text>
+  <text x="118" y="230" text-anchor="middle" font-size="10" fill="#047857">DATA (yel) → A0  + 4.7 kΩ pull-up to +3V3</text>
+
+  <!-- ── Reed switch (left, lower) ──────────────────────────────── -->
+  <rect x="20" y="260" width="196" height="60" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"/>
+  <g transform="translate(34,272) scale(0.55)" fill="#1e3a8a"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></g>
+  <text x="118" y="280" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">Magnetic reed switch</text>
+  <text x="118" y="298" text-anchor="middle" font-size="10" fill="#1e40af">Lead 1 → A1  (INPUT_PULLUP)</text>
+  <text x="118" y="314" text-anchor="middle" font-size="10" fill="#1e40af">Lead 2 → GND</text>
+
+  <!-- ── Cellular/NTN antenna (right upper) ──────────────────────── -->
+  <rect x="614" y="160" width="206" height="60" rx="8" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
+  <g transform="translate(628,172) scale(0.55)" fill="#4c1d95"><path d="M12 3C6.95 3 3 6.95 3 12s3.95 9 9 9 9-3.95 9-9-3.95-9-9-9zm0 16c-3.86 0-7-3.14-7-7s3.14-7 7-7 7 3.14 7 7-3.14 7-7 7zm-1-7.93V5h2v5.93l3.54 3.54-1.41 1.41L11 12.41V11.07z"/></g>
+  <text x="717" y="178" text-anchor="middle" font-size="12" font-weight="700" fill="#4c1d95">Cellular / NTN antenna</text>
+  <text x="717" y="196" text-anchor="middle" font-size="10" fill="#5b21b6">Skylo-certified flex included</text>
+  <text x="717" y="212" text-anchor="middle" font-size="10" fill="#5b21b6">with NOTE-NBGLWX  →  MAIN u.FL</text>
+
+  <!-- ── GNSS antenna (right lower) ────────────────────────────── -->
+  <rect x="614" y="240" width="206" height="60" rx="8" fill="#fefce8" stroke="#d97706" stroke-width="1.5"/>
+  <g transform="translate(628,252) scale(0.55)" fill="#78350f"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></g>
+  <text x="717" y="258" text-anchor="middle" font-size="12" font-weight="700" fill="#78350f">GNSS antenna</text>
+  <text x="717" y="276" text-anchor="middle" font-size="10" fill="#92400e">Passive flex included</text>
+  <text x="717" y="292" text-anchor="middle" font-size="10" fill="#92400e">with NOTE-NBGLWX  →  GPS u.FL</text>
+
+  <!-- ── Arrows left side ────────────────────────────────────────── -->
+  <line x1="216" y1="198" x2="306" y2="211" stroke="#059669" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-green)"/>
+  <line x1="216" y1="290" x2="306" y2="266" stroke="#2563eb" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-blue)"/>
+
+  <!-- ── Arrows right side ───────────────────────────────────────── -->
+  <line x1="614" y1="190" x2="524" y2="211" stroke="#7c3aed" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-violet)"/>
+  <line x1="614" y1="270" x2="524" y2="266" stroke="#d97706" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-amber)"/>
+
+  <!-- ── Power chain (bottom) ───────────────────────────────────── -->
+  <rect x="20" y="460" width="800" height="90" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+  <!-- power icon -->
+  <g transform="translate(30,468) scale(0.65)" fill="#713f12"><path d="M11 21h-1l1-7H7.5c-.88 0-.33-.75-.31-.78C8.48 10.94 10.42 7.54 13.01 3h1l-1 7h3.51c.4 0 .62.19.4.66C12.97 17.55 11 21 11 21z"/></g>
+  <text x="60" y="478" font-size="12" font-weight="700" fill="#713f12">Power path</text>
+  <text x="60" y="494" font-size="10" fill="#92400e">12 V trailer DC → inline 3 A fuse</text>
+
+  <rect x="20" y="502" width="140" height="36" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="90" y="525" text-anchor="middle" font-size="11" fill="#713f12">Pololu D24V22F5</text>
+
+  <rect x="200" y="502" width="130" height="36" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="265" y="520" text-anchor="middle" font-size="11" fill="#713f12">Blues Mojo</text>
+  <text x="265" y="534" text-anchor="middle" font-size="9" fill="#a16207">(commissioning only)</text>
+
+  <rect x="375" y="502" width="160" height="36" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="455" y="525" text-anchor="middle" font-size="11" fill="#713f12">Notecarrier CX +VBAT</text>
+
+  <text x="565" y="520" text-anchor="start" font-size="10" fill="#a16207" font-style="italic">Remove Mojo in production:</text>
+  <text x="565" y="534" text-anchor="start" font-size="10" fill="#a16207" font-style="italic">Pololu VOUT → +VBAT directly</text>
+
+  <!-- power chain arrows -->
+  <line x1="160" y1="520" x2="198" y2="520" stroke="#a16207" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-amber)"/>
+  <line x1="330" y1="520" x2="373" y2="520" stroke="#a16207" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-amber)"/>
+
+  <!-- down arrow from +VBAT block to notecarrier dot -->
+  <line x1="415" y1="502" x2="415" y2="414" stroke="#0ea5e9" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-blue)"/>
+</svg>
