@@ -68,9 +68,9 @@
 // Encoding: OUTBOUND * 100 000 + INBOUND * 100 + SCHEMA_VERSION.
 //
 // Schema history:
-//   5 — added motion_valid (TUINT16) to cargo_log.db template so unavailable
+//   5 — added motion_valid (TUINT16) to cargo_log.qo template so unavailable
 //         card.motion is distinguishable from genuine zero motion.
-//   4 — added boot_seg (TUINT16) to cargo_log.db template.
+//   4 — added boot_seg (TUINT16) to cargo_log.qo template.
 // ---------------------------------------------------------------------------
 #define SCHEMA_VERSION   5U
 #define CONFIG_VERSION   ((uint32_t)(OUTBOUND_INTERVAL_MIN) * 100000UL + \
@@ -116,7 +116,7 @@
 // ---------------------------------------------------------------------------
 #define NOTE_SUMMARY   "cargo_data.qo"    // compact-templated hourly summary
 #define NOTE_ALERT     "cargo_alert.qo"   // immediate-sync threshold alerts
-#define NOTE_LOG       "cargo_log.db"     // compact-templated per-sample tamper-evident log
+#define NOTE_LOG       "cargo_log.qo"     // compact-templated per-sample tamper-evident log
 #define NOTE_STATE     "cargo_state.qo"   // immediate-sync shipment-state transitions
 
 // INVALID_F is non-zero so it survives compact-template omitempty and signals
@@ -193,7 +193,7 @@ struct ColdChainState {
     uint32_t config_version;
 
     // ── Tamper-evident local log ─────────────────────────────────────────────
-    // seq: monotonically incremented before each cargo_log.db entry.  A gap
+    // seq: monotonically incremented before each cargo_log.qo entry.  A gap
     //   in Notehub's seq sequence indicates a missed or dropped entry.
     // chain_crc: rolling 32-bit hash that chains seq + sensor readings for
     //   every sample cycle.  Downstream consumers can replay the chain from
@@ -230,7 +230,7 @@ struct ColdChainState {
     //   uncontrolled power loss).  Persisted to the Notecard sleep payload for
     //   planned-sleep resilience AND to the local Notecard notefile
     //   chain_boot.dbx for cold-boot resilience (power-loss safe).
-    //   Included in every cargo_log.db entry so downstream verifiers can split
+    //   Included in every cargo_log.qo entry so downstream verifiers can split
     //   chain verification at boot-segment boundaries.  seq and chain_crc reset
     //   to 0 at the start of each new boot_seg; each segment's chain is
     //   independent and replayed from seq=1, seed=0.

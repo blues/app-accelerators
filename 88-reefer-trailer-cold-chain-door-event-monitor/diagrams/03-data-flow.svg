@@ -73,15 +73,15 @@
   <!-- ── Notehub block ───────────────────────────────────────────── -->
   <rect x="700" y="100" width="140" height="210" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
   <!-- cloud icon -->
-  <g transform="translate(761,160) scale(0.75)" fill="#1e3a8a"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></g>
-  <text x="770" y="210" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">Notehub</text>
-  <text x="770" y="228" text-anchor="middle" font-size="11" fill="#1e40af">+ routes</text>
-  <line x1="710" y1="244" x2="830" y2="244" stroke="#bfdbfe"/>
+  <g transform="translate(761,131) scale(0.75)" fill="#1e3a8a"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></g>
+  <text x="770" y="181" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">Notehub</text>
+  <text x="770" y="199" text-anchor="middle" font-size="11" fill="#1e40af">+ routes</text>
+  <line x1="710" y1="215" x2="830" y2="215" stroke="#bfdbfe"/>
   <g font-size="10" fill="#1e40af">
-    <text x="770" y="264" text-anchor="middle">TMS / dispatch</text>
-    <text x="770" y="280" text-anchor="middle">(trailer_alert.qo)</text>
-    <text x="770" y="308" text-anchor="middle">cold-chain archive</text>
-    <text x="770" y="323" text-anchor="middle">(logs + summaries)</text>
+    <text x="770" y="231" text-anchor="middle">TMS / dispatch</text>
+    <text x="770" y="246" text-anchor="middle">(trailer_alert.qo)</text>
+    <text x="770" y="263" text-anchor="middle">cold-chain archive</text>
+    <text x="770" y="276" text-anchor="middle">(logs + summaries)</text>
   </g>
 
   <!-- ── Arrows ──────────────────────────────────────────────────── -->

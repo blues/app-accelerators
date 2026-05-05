@@ -5,9 +5,10 @@
  *
  * Reads two DS18B20 waterproof temperature probes and a magnetic door reed
  * switch; routes temperature excursions and door-state events via the
- * Notecard for Skylo (NOTE-NBGLWX) to Notehub.  The Notecard automatically
- * selects the best available radio — LTE-M / NB-IoT / GPRS cellular, or Skylo
- * NTN satellite — with no firmware involvement.
+ * Notecard for Skylo (NOTE-NBGLWX) to Notehub.  Once the firmware sets
+ * `card.transport` to `wifi-cell-ntn` at first boot, the Notecard handles
+ * radio selection autonomously — preferring WiFi, then LTE-M / NB-IoT / GPRS
+ * cellular, then Skylo NTN satellite — with no further firmware involvement.
  *
  * NTN data-budget strategy (Skylo satellite best practices):
  *   Critical alerts are written to a single NTN-compatible notefile

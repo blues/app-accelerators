@@ -160,6 +160,29 @@ void applyDynamicOutbound() {
 // A missing baseline_orientation (first-ever activation) leaves
 // gState.baseline_orientation empty; setup() will populate it on the first
 // successful card.motion read and call persistBaselineOrientation() to save it.
+// writeChainBootNote: upsert the chain_boot.dbx "v1" note containing the
+// current boot_seg and (if set) baseline_orientation.  Tries note.update first
+// — that's the steady-state path once the note has been created.  On failure
+// (most commonly because the note does not yet exist on the very first cold
+// boot) falls back to note.add to create it.  Without this fallback the
+// counter and the tilt baseline would never persist to local flash and the
+// uncontrolled cold-boot resilience guarantee would be lost.
+static bool writeChainBootNote() {
+    for (int attempt = 0; attempt < 2; attempt++) {
+        const char *op = (attempt == 0) ? "note.update" : "note.add";
+        J *req = notecard.newRequest(op);
+        JAddStringToObject(req, "file", "chain_boot.dbx");
+        JAddStringToObject(req, "note", "v1");
+        J *body = JAddObjectToObject(req, "body");
+        JAddNumberToObject(body, "boot_seg", (double)gState.boot_seg);
+        if (gState.baseline_orientation[0]) {
+            JAddStringToObject(body, "baseline_orientation", gState.baseline_orientation);
+        }
+        if (ncSend(req)) return true;
+    }
+    return false;
+}
+
 uint16_t loadOrIncrementBootSeg() {
     uint16_t stored = 0;
     J *req = notecard.newRequest("note.get");
@@ -193,15 +216,7 @@ uint16_t loadOrIncrementBootSeg() {
     // Persist the incremented counter back to Notecard local flash.
     // Also carry forward the baseline_orientation if it was already stored so
     // a subsequent cold boot can restore it again.
-    req = notecard.newRequest("note.update");
-    JAddStringToObject(req, "file", "chain_boot.dbx");
-    JAddStringToObject(req, "note", "v1");
-    J *body = JAddObjectToObject(req, "body");
-    JAddNumberToObject(body, "boot_seg", (double)newSeg);
-    if (gState.baseline_orientation[0]) {
-        JAddStringToObject(body, "baseline_orientation", gState.baseline_orientation);
-    }
-    if (!ncSend(req)) {
+    if (!writeChainBootNote()) {
         Serial.println("[cargo] chain_boot.dbx write failed — boot_seg and orientation "
                        "baseline may not survive the next uncontrolled cold boot");
     }
@@ -219,13 +234,7 @@ uint16_t loadOrIncrementBootSeg() {
 // No-op if baseline_orientation is empty (nothing to persist yet).
 void persistBaselineOrientation() {
     if (!gState.baseline_orientation[0]) return;
-    J *req = notecard.newRequest("note.update");
-    JAddStringToObject(req, "file", "chain_boot.dbx");
-    JAddStringToObject(req, "note", "v1");
-    J *body = JAddObjectToObject(req, "body");
-    JAddNumberToObject(body, "boot_seg", (double)gState.boot_seg);
-    JAddStringToObject(body, "baseline_orientation", gState.baseline_orientation);
-    if (!ncSend(req)) {
+    if (!writeChainBootNote()) {
         Serial.println("[cargo] chain_boot.dbx: failed to persist orientation baseline — "
                        "baseline may re-seed from current orientation on next "
                        "uncontrolled cold boot");
@@ -268,7 +277,7 @@ void defineTemplates() {
         allOk = false;
     }
 
-    // ── cargo_log.db — compact per-sample tamper-evident log ─────────────────
+    // ── cargo_log.qo — compact per-sample tamper-evident log ─────────────────
     // One record per sample cycle.  Not synced immediately — entries batch with
     // the regular outbound window (port 51) so no extra satellite session is
     // consumed per sample.  The chain_crc field lets downstream systems verify
@@ -301,7 +310,7 @@ void defineTemplates() {
     JAddNumberToObject(body, "boot_seg",     TUINT16);   // boot-segment counter
     JAddNumberToObject(body, "chain_crc",    TUINT32);   // rolling integrity hash
     if (!ncSend(req)) {
-        Serial.println("[cargo] cargo_log.db template failed — will retry on next wake");
+        Serial.println("[cargo] cargo_log.qo template failed — will retry on next wake");
         allOk = false;
     }
 
@@ -792,7 +801,7 @@ static uint32_t chainUpdate(uint32_t prev, uint32_t seq, uint16_t boot_seg,
     return h;
 }
 
-// sendLogEntry: append one per-sample record to cargo_log.db.
+// sendLogEntry: append one per-sample record to cargo_log.qo.
 // seq and chain_crc are advanced before the note.add so the chain represents
 // the physical event sequence.  A failed note.add burns the seq number —
 // the resulting gap in Notehub is itself evidence of a dropped transmission.

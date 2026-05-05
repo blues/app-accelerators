@@ -99,7 +99,8 @@
 #define TEMPLATE_PORT_ALERT  51
 
 // ── State segment ID for NotePayloadSaveAndSleep ──────────────────────────────
-#define STATE_SEG_ID  1
+// 4-char tag per note-c NP_SEGTYPE_LEN; identifies the AppState blob in payload.
+#define STATE_SEG_ID  "STAT"
 
 // ── Sentinel for a disconnected or failed DS18B20 probe ──────────────────────
 // DallasTemperature returns DEVICE_DISCONNECTED_C (-127.0) on failure.

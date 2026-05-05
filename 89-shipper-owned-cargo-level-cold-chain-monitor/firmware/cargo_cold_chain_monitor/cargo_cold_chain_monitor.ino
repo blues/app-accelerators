@@ -30,7 +30,7 @@
       samples continue collecting while the snapshot is retried.  A stale
       snapshot that cannot be delivered before the next window closes is
       discarded; fixed-window boundaries are never stretched by a failed send.
-    - Appends one compact-templated cargo_log.db entry per sample cycle for
+    - Appends one compact-templated cargo_log.qo entry per sample cycle for
       a tamper-evident per-sample log.  Each entry carries a monotonic
       sequence number (seq), a rolling integrity chain hash (chain_crc)
       computed over all sensor readings, and a boot_seg counter that
@@ -69,7 +69,7 @@
   Notefiles
     cargo_data.qo   — compact-templated summary (adaptive interval)
     cargo_alert.qo  — immediate sync on any threshold trip
-    cargo_log.db    — compact-templated per-sample tamper-evident log
+    cargo_log.qo    — compact-templated per-sample tamper-evident log
     cargo_state.qo  — immediate sync on shipment-state transitions
 
   Alert types
@@ -164,7 +164,7 @@ void setup() {
         gState.chain_crc      = 0;
         // Increment and persist the boot-segment counter in Notecard local flash
         // (chain_boot.dbx) so every uncontrolled cold boot produces a distinct,
-        // traceable chain-segment boundary in cargo_log.db.  Must run after
+        // traceable chain-segment boundary in cargo_log.qo.  Must run after
         // notecard.begin() and before the first sendLogEntry().
         loadOrIncrementBootSeg();
         notecardConfigure();
@@ -296,7 +296,7 @@ void setup() {
     // ── Per-sample tamper-evident log entry ──────────────────────────────────
     // Written every sample cycle (including anchor/cadence-change skips) for
     // a complete chain-of-custody record.  Gated on templates_registered:
-    // cargo_log.db is compact-templated; a note sent before template
+    // cargo_log.qo is compact-templated; a note sent before template
     // registration would be rejected by the Notecard.
     // motionOk is forwarded so sendLogEntry can set motion_valid correctly —
     // distinguishing "card.motion unavailable" from "no motion occurred."

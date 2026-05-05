@@ -50,7 +50,7 @@
   <text x="118" y="180" text-anchor="middle" font-size="12" font-weight="700" fill="#065f46">DS18B20 probes ×2</text>
   <text x="118" y="198" text-anchor="middle" font-size="10" fill="#047857">VDD (red) → +3V3</text>
   <text x="118" y="214" text-anchor="middle" font-size="10" fill="#047857">GND (blk) → GND</text>
-  <text x="118" y="230" text-anchor="middle" font-size="10" fill="#047857">DATA (yel) → A0  + 4.7 kΩ pull-up to +3V3</text>
+  <text x="118" y="230" text-anchor="middle" font-size="10" fill="#047857">DATA (yel) → A0 · 4.7 kΩ pull-up</text>
 
   <!-- ── Reed switch (left, lower) ──────────────────────────────── -->
   <rect x="20" y="260" width="196" height="60" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"/>

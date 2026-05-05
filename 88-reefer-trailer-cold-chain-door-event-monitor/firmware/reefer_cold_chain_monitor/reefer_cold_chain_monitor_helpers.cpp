@@ -15,9 +15,9 @@
 // =============================================================================
 // Notecard configuration (runs on first boot only)
 //
-// Returns true when hub.set and card.location.mode both succeed.
-// Returns false on any NULL allocation, Notecard error, or I²C failure; the
-// caller will retry on subsequent wakes until both succeed.
+// Returns true when hub.set, card.transport, and card.location.mode all
+// succeed.  Returns false on any NULL allocation, Notecard error, or I²C
+// failure; the caller will retry on subsequent wakes until all succeed.
 // =============================================================================
 bool hubConfigure(void) {
     // hub.set — sendRequestWithRetry guards the cold-boot I²C race where the
@@ -33,6 +33,30 @@ bool hubConfigure(void) {
             DEBUG_PRINTLN(F("[cfg] hub.set failed"));
             return false;
         }
+    }
+
+    // card.transport — enable WiFi → cellular → NTN automatic fallback.
+    // Without this, the Notecard for Skylo will not fall back to satellite when
+    // terrestrial coverage is unavailable; the device's bundled NTN budget
+    // would never be used and alerts would queue indefinitely in cellular
+    // dead zones.  See:
+    //   https://dev.blues.io/api-reference/notecard-api/card-requests/#card-transport
+    //   https://dev.blues.io/support/connection-retry-and-fallback-behaviors/
+    {
+        J *req = notecard.newRequest("card.transport");
+        if (req == NULL) return false;
+        JAddStringToObject(req, "method", "wifi-cell-ntn");
+        J *rsp = notecard.requestAndResponse(req);
+        if (rsp == NULL) {
+            DEBUG_PRINTLN(F("[cfg] card.transport failed (null response)"));
+            return false;
+        }
+        if (notecard.responseError(rsp)) {
+            DEBUG_PRINTLN(F("[cfg] card.transport returned error"));
+            notecard.deleteResponse(rsp);
+            return false;
+        }
+        notecard.deleteResponse(rsp);
     }
 
     // card.location.mode — periodic GNSS tracking every 10 minutes.
