@@ -8,7 +8,39 @@ This reference application is intended to provide inspiration and help you get s
 
 A shot-level process monitor for plastic [injection molding](https://blues.com/industrial-equipment-monitoring/) machines. A hydraulic injection pressure transducer and a mold thermocouple sample a coarse shot profile at the edge; the Cygnet host extracts the features that matter — peak pressure, fill time, pack pressure, mold temperature, shot sequence — and a Blues [Notecard Cell+WiFi](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) carries them off the shop floor without touching the plant's OT network.
 
-## Quickstart — Path to First Event (5–10 min bench demo)
+## Expected Outcome
+
+After completing this project, you will have:
+- A compact DIN-rail enclosure mounted in the machine's electrical cabinet
+- Hydraulic injection pressure and mold temperature collected continuously at the edge
+- Five shot-level metrics (`peak_psi`, `fill_ms`, `pack_psi`, `temp_avg_c`, cooling-rate slope) in Notehub's `shot.qo` Notefile — one event per shot (or per N shots, configurable)
+- Real-time alerts routed to your CMMS, webhook, or quality system whenever any metric exceeds configurable thresholds
+- No modification to the machine, no touching the mold, no plant-network involvement — 100% cellular
+- Commissioning takes ~50–100 shots to establish baseline thresholds; thereafter the system runs autonomously
+
+## 1. Project Overview
+
+**The problem.** Plastic injection molding is a process that looks stable until it isn't. A mold that cycled flawlessly through ten thousand shots can begin producing scrap on shot ten-thousand-and-one — a worn gate land, a slightly off-spec resin lot, a cooling circuit that's partially fouled, a worn check ring on the screw. None of these failures announce themselves dramatically. What they do is introduce subtle, shot-to-shot variation in the two signals that matter most: hydraulic injection pressure at the cylinder's manifold block (the upstream hydraulic forcing function that drives how completely the cavity fills and how aggressively it is packed) and mold temperature (which governs cooling rate, crystallinity, and cycle time). Both of those signals are measurable continuously. Almost nobody measures them continuously.
+
+**Why Notecard.** Plastics processors run their production equipment on isolated **OT** (operational technology) networks — isolated by design, because the machines that run 24/7 production cannot share a network path with corporate IT systems. An OEM that wants to offer a remote process-monitoring service faces a hard choice: either negotiate a network path through every customer's IT and OT security teams (slow, expensive, different every time), or deploy a connectivity solution that bypasses the plant network entirely. The Notecard Cell+WiFi variant does exactly that — it carries data directly to [Notehub](https://notehub.io) over cellular, with WiFi available as an opportunistic fallback for plants that permit it, and the OEM ships the same hardware SKU to every customer regardless of how the plant's networks are organized.
+
+**Deployment scenario.** A compact DIN-rail or panel-mount enclosure installed in or adjacent to the machine's electrical cabinet, powered from the machine's existing 24 VDC control rail. The hydraulic injection pressure transducer taps into a 1/4-18 NPT port on the injection cylinder's hydraulic manifold block — on the hydraulic oil side of the machine, with no contact with the polymer melt — so **no mold modification is required**. The thermocouple probe is seated in the mold's existing thermocouple pocket. No modification to the machine's controller, no connection to the plant LAN, no IT ticket.
+
+## 2. System Architecture
+
+![System architecture: hydraulic pressure transducer + K-type thermocouple → Notecarrier CX with Cygnet host and Notecard MBGLW → cellular/WiFi → Notehub → quality / historian / alerts](diagrams/01-system-architecture.svg)
+
+**Device-side responsibilities.** The Notecarrier CX's onboard Cygnet STM32L433 host runs continuously (this is a line-powered machine; no deep-sleep cycling needed). It polls injection-manifold pressure at 10 Hz during idle; when the pressure signal crosses the shot-detection threshold, it enters capture mode at 20 Hz (50 ms per sample), filling a RAM buffer with a pressure and temperature profile for feature extraction. After each shot the host computes five shot-level features from the buffer, increments a per-boot-session shot counter, and queues a [Note](https://dev.blues.io/api-reference/glossary/#note) for transmission. All of this happens in the STM32's 64 KB SRAM — a 102-second shot captured at 20 Hz produces at most 16 KB of profile data, well within budget.
+
+**Notecard responsibilities.** The Notecard stores Notes in its on-device queue, establishes the cellular (or WiFi) session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 minutes), and flushes any `sync:true` alert Notes immediately regardless of the outbound schedule. The Notecard also handles [environment variable](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) distribution — operators adjust detection thresholds and alert bands from Notehub without reflashing.
+
+**Notehub responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to [Notehub](https://dev.blues.io/notehub/notehub-walkthrough/) over the Internet; Notehub ingests events, stores them, and applies project-level [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub). Two separate [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile) — `shot.qo` for periodic process data and `shot_alert.qo` for out-of-spec events — allow different downstream routes at different urgencies without any filter logic in the route itself.
+
+**Routing (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations. This project ships no specific downstream endpoint. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for setup options.
+
+## 2.5 Quickstart
+
+**Path to First Event (5–10 min bench demo)**
 
 1. **Assemble the minimum bench kit** (no production hydraulics needed):
    - Notecarrier CX + Notecard Cell+WiFi
@@ -41,36 +73,6 @@ A shot-level process monitor for plastic [injection molding](https://blues.com/i
    - The serial log and Notehub events are the source of truth during commissioning
 
 > **Design scope: hydraulic injection pressure — no mold modification required.** This monitor measures **hydraulic injection pressure at the injection cylinder's manifold block** using an off-the-shelf 4–20 mA strain-gauge transducer that taps a standard NPT port on the hydraulic circuit. Hydraulic pressure is the forcing function the injection unit applies; in-cavity pressure is the actual polymer pressure the mold cavity sees — the two differ by nozzle, gate, and runner losses that vary with resin, temperature, and wear. Because the measurement point is on the hydraulic circuit rather than inside the mold, this approach can be retrofitted to any hydraulic press in an afternoon without touching the mold, without accessing a sensor port, and without production interruption. It is appropriate for shot-to-shot consistency monitoring, filling and packing trend detection, and early-warning alerting. It is **not** a substitute for direct cavity pressure measurement in applications that require it — such as closed-loop pack control, or high-precision medical or optical parts where the manifold-to-cavity pressure relationship cannot be assumed stable. For those use cases a mold-mounted piezoelectric transducer with dedicated signal conditioning is required.
-
-## Expected Outcome
-
-After completing this project, you will have:
-- A compact DIN-rail enclosure mounted in the machine's electrical cabinet
-- Hydraulic injection pressure and mold temperature collected continuously at the edge
-- Five shot-level metrics (`peak_psi`, `fill_ms`, `pack_psi`, `temp_avg_c`, cooling-rate slope) in Notehub's `shot.qo` Notefile — one event per shot (or per N shots, configurable)
-- Real-time alerts routed to your CMMS, webhook, or quality system whenever any metric exceeds configurable thresholds
-- No modification to the machine, no touching the mold, no plant-network involvement — 100% cellular
-- Commissioning takes ~50–100 shots to establish baseline thresholds; thereafter the system runs autonomously
-
-## 1. Project Overview
-
-**The problem.** Plastic injection molding is a process that looks stable until it isn't. A mold that cycled flawlessly through ten thousand shots can begin producing scrap on shot ten-thousand-and-one — a worn gate land, a slightly off-spec resin lot, a cooling circuit that's partially fouled, a worn check ring on the screw. None of these failures announce themselves dramatically. What they do is introduce subtle, shot-to-shot variation in the two signals that matter most: hydraulic injection pressure at the cylinder's manifold block (the upstream hydraulic forcing function that drives how completely the cavity fills and how aggressively it is packed) and mold temperature (which governs cooling rate, crystallinity, and cycle time). Both of those signals are measurable continuously. Almost nobody measures them continuously.
-
-**Why Notecard.** Plastics processors run their production equipment on isolated **OT** (operational technology) networks — isolated by design, because the machines that run 24/7 production cannot share a network path with corporate IT systems. An OEM that wants to offer a remote process-monitoring service faces a hard choice: either negotiate a network path through every customer's IT and OT security teams (slow, expensive, different every time), or deploy a connectivity solution that bypasses the plant network entirely. The Notecard Cell+WiFi variant does exactly that — it carries data directly to [Notehub](https://notehub.io) over cellular, with WiFi available as an opportunistic fallback for plants that permit it, and the OEM ships the same hardware SKU to every customer regardless of how the plant's networks are organized.
-
-**Deployment scenario.** A compact DIN-rail or panel-mount enclosure installed in or adjacent to the machine's electrical cabinet, powered from the machine's existing 24 VDC control rail. The hydraulic injection pressure transducer taps into a 1/4-18 NPT port on the injection cylinder's hydraulic manifold block — on the hydraulic oil side of the machine, with no contact with the polymer melt — so **no mold modification is required**. The thermocouple probe is seated in the mold's existing thermocouple pocket. No modification to the machine's controller, no connection to the plant LAN, no IT ticket.
-
-## 2. System Architecture
-
-![System architecture: hydraulic pressure transducer + K-type thermocouple → Notecarrier CX with Cygnet host and Notecard MBGLW → cellular/WiFi → Notehub → quality / historian / alerts](diagrams/01-system-architecture.svg)
-
-**Device-side responsibilities.** The Notecarrier CX's onboard Cygnet STM32L433 host runs continuously (this is a line-powered machine; no deep-sleep cycling needed). It polls injection-manifold pressure at 10 Hz during idle; when the pressure signal crosses the shot-detection threshold, it enters capture mode at 20 Hz (50 ms per sample), filling a RAM buffer with a pressure and temperature profile for feature extraction. After each shot the host computes five shot-level features from the buffer, increments a per-boot-session shot counter, and queues a [Note](https://dev.blues.io/api-reference/glossary/#note) for transmission. All of this happens in the STM32's 64 KB SRAM — a 102-second shot captured at 20 Hz produces at most 16 KB of profile data, well within budget.
-
-**Notecard responsibilities.** The Notecard stores Notes in its on-device queue, establishes the cellular (or WiFi) session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 minutes), and flushes any `sync:true` alert Notes immediately regardless of the outbound schedule. The Notecard also handles [environment variable](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) distribution — operators adjust detection thresholds and alert bands from Notehub without reflashing.
-
-**Notehub responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to [Notehub](https://dev.blues.io/notehub/notehub-walkthrough/) over the Internet; Notehub ingests events, stores them, and applies project-level [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub). Two separate [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile) — `shot.qo` for periodic process data and `shot_alert.qo` for out-of-spec events — allow different downstream routes at different urgencies without any filter logic in the route itself.
-
-**Routing (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations. This project ships no specific downstream endpoint. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for setup options.
 
 ## 3. Hardware Requirements
 
@@ -173,7 +175,7 @@ Single sketch: [`firmware/injection_molding_shot_monitor/injection_molding_shot_
 
 **Dependencies:**
 - Arduino core for STM32 ([`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32)), installed via the Arduino IDE Boards Manager.
-- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (the `note-arduino` library, v1.8.5 current stable at time of writing). Install via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`.
+- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (the `note-arduino` library). Install via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`.
 
 ### Modules
 

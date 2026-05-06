@@ -19,20 +19,6 @@ After following this guide, you will have a solar-powered off-grid tank monitor 
 
 Expected data consumption: ~6 KB/month on the 500 MB included prepaid Blues data plan (cellular path; satellite is separate). First production event visible in Notehub within 4 hours of power-on.
 
-## Quickstart
-
-1. **Assemble hardware.** Order the BOM from §3, build the circuit per §4, and mount the enclosure on the tank post.
-2. **Flash firmware.** Clone this repo, set your Notehub ProductUID in the sketch, and flash via Arduino IDE:
-   ```bash
-   arduino-cli compile --fqbn STMicroelectronics:stm32:Nucleo_L433RC \
-     firmware/livestock_water_tank_monitor/livestock_water_tank_monitor.ino
-   arduino-cli upload -p /dev/ttyACM0 --fqbn STMicroelectronics:stm32:Nucleo_L433RC \
-     firmware/livestock_water_tank_monitor
-   ```
-3. **Set calibration.** Power on and wait for the device to sync to Notehub (first cellular connection within minutes if coverage exists, or satellite within ~10 minutes if cellular is unavailable). Once a `tank_status.qo` Note appears in Notehub, measure your actual tank geometry and set `tank_depth_mm` and `sensor_min_mm` as environment variables in Notehub (see §5 step 4 for the path). After the next sync, `level_pct` will report accurate percentages.
-4. **Set routes.** In Notehub, add two routes: one for `tank_alert.qo` (to SMS/push service) and one for `tank_status.qo` (to your time-series database or data lake). See §5 and the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub).
-
-Full assembly and calibration instructions follow in later sections; this quickstart gets you to first event in under an hour.
 
 ## 1. Project Overview
 
@@ -55,6 +41,22 @@ The failure modes are simple and repeatable. Tanks go dry because a float valve 
 **Notehub responsibilities.** [Notehub](https://notehub.io) receives and stores every event — whether it arrived via the cellular or satellite transport — and applies project-level routes. Periodic summaries and alerts land in separate [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile), so routes can fan them to different destinations: alerts to an SMS gateway or push-notification service, summaries to a long-term time-series store for trend analysis. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) can classify devices automatically by pasture name or tank ID so that fleet-level environment variables encode site-specific calibration values without touching the firmware.
 
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and other destinations; route configuration is project-specific and outside the scope of this reference design. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no downstream endpoint.
+
+## 2.5 Quickstart
+
+1. **Assemble hardware.** Order the BOM from §3, build the circuit per §4, and mount the enclosure on the tank post.
+2. **Flash firmware.** Clone this repo, set your Notehub ProductUID in the sketch, and flash via Arduino IDE:
+   ```bash
+   arduino-cli compile --fqbn STMicroelectronics:stm32:Nucleo_L433RC \
+     firmware/livestock_water_tank_monitor/livestock_water_tank_monitor.ino
+   arduino-cli upload -p /dev/ttyACM0 --fqbn STMicroelectronics:stm32:Nucleo_L433RC \
+     firmware/livestock_water_tank_monitor
+   ```
+3. **Set calibration.** Power on and wait for the device to sync to Notehub (first cellular connection within minutes if coverage exists, or satellite within ~10 minutes if cellular is unavailable). Once a `tank_status.qo` Note appears in Notehub, measure your actual tank geometry and set `tank_depth_mm` and `sensor_min_mm` as environment variables in Notehub (see §5 step 4 for the path). After the next sync, `level_pct` will report accurate percentages.
+4. **Set routes.** In Notehub, add two routes: one for `tank_alert.qo` (to SMS/push service) and one for `tank_status.qo` (to your time-series database or data lake). See §5 and the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub).
+
+Full assembly and calibration instructions follow in later sections; this quickstart gets you to first event in under an hour.
+
 
 ## 3. Hardware Requirements
 
@@ -193,7 +195,7 @@ The implementation spans three files in the [`firmware/livestock_water_tank_moni
 
 **Dependencies:**
 - Arduino core for STM32 ([`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32)).
-- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) — the `note-arduino` library, **v1.8.5** (the verified stable release used for this project). Install via the Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard@1.8.5"`) or download directly from the [note-arduino v1.8.5 release](https://github.com/blues/note-arduino/releases/tag/1.8.5).
+- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) — the `note-arduino` library. Install via the Arduino Library Manager or download from the [note-arduino releases](https://github.com/blues/note-arduino/releases).
 
 ### Modules
 

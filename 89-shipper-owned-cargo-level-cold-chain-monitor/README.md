@@ -10,16 +10,6 @@ A pallet-attached cold chain logger — a [supply chain tracking](https://blues.
 
 **What you'll have when you're done:** a battery-powered logger that samples a NIST-traceable PT100 temperature probe, relative humidity, interior cargo-bay light level, and vibration every five minutes; writes a tamper-evident per-sample log entry with a monotonic sequence number and integrity chain hash; detects shipment state (dwell, in-transit, handling) from motion and light and emits an immediate note on every state change; generates adaptive summary notes and dynamically extends the Notecard outbound sync cadence during confirmed warehouse dwell — reducing both summary volume and satellite session frequency to conserve NTN data budget; and dispatches an alert note on any threshold trip — synced immediately over cellular, WiFi, or satellite, with no site IT coordination required at any point in the journey.
 
-### Quickstart at a glance
-
-1. **Notehub** — create a [Notehub project](https://notehub.io), copy its ProductUID.
-2. **Wire the bench rig** — Notecarrier CX + Notecard for Skylo + MAX31865 on SPI + PT100 probe + SHT41 on I²C + VEML7700 on I²C. Full pinout in [§4](#4-wiring-and-assembly).
-3. **Edit one line** in [`firmware/cargo_cold_chain_monitor/cargo_cold_chain_monitor_helpers.h`](firmware/cargo_cold_chain_monitor/cargo_cold_chain_monitor_helpers.h) — set `PRODUCT_UID` to your project's value.
-4. **Flash** — run `arduino-cli board listall | grep -i cygnet` to confirm the FQBN for your installed STM32 core, then compile and upload. Full instructions in [§6.1](#61-installing-and-flashing).
-5. **Watch** — Notehub → your project → **Events** tab. You should see `_session.qo` on first contact, `cargo_data.qo` after the first summary interval, `cargo_log.qo` entries batching with each outbound sync, `cargo_state.qo` on the first confirmed dwell or motion event, and any threshold trips as `cargo_alert.qo` within one sample interval of the triggering event.
-
-> **First event timeline:** On power-up, the device acquires time and signals contact via `_session.qo` within 1–2 minutes (cellular/WiFi) or several minutes (Skylo NTN with clear sky). The first `cargo_log.qo` entry appears one sample interval later (~5 min). The first `cargo_data.qo` summary appears ~60 minutes after the device obtains a valid epoch from Notehub's `card.time` API.
-
 ---
 
 ## 1. Project Overview
@@ -60,6 +50,18 @@ When the state changes, a `cargo_state.qo` note is dispatched immediately via `s
 **Notecard responsibilities.** The Notecard for Skylo stores [Notes](https://dev.blues.io/api-reference/glossary/#note) in its on-device flash queue, manages multi-RAT connectivity autonomously, and flushes the queue on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) outbound cadence (default 60 minutes). Alert and state-change notes marked `sync:true` bypass the outbound queue and trigger an immediate radio session on whichever RAT is currently available. The Notecard also owns [environment variable](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) distribution — operators can change threshold values, sample cadence, and summary cadence without reflashing firmware.
 
 **Notehub responsibilities.** The [Notecard manages its own cellular and Skylo NTN satellite sessions](https://notehub.io) against the supported carrier networks worldwide via its embedded global SIM and delivers data to Notehub over the Internet; [Notehub](https://notehub.io) ingests events, stores them with their original timestamp, and applies project-level [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub). The four Notefiles (`cargo_alert.qo`, `cargo_state.qo`, `cargo_data.qo`, `cargo_log.qo`) are separate so they can be routed independently — alerts and state changes to a TMS or on-call endpoint, summaries to a cold-chain analytics platform, and log entries to a compliance data store.
+
+---
+
+## 2.5 Quickstart
+
+1. **Notehub** — create a [Notehub project](https://notehub.io), copy its ProductUID.
+2. **Wire the bench rig** — Notecarrier CX + Notecard for Skylo + MAX31865 on SPI + PT100 probe + SHT41 on I²C + VEML7700 on I²C. Full pinout in [§4](#4-wiring-and-assembly).
+3. **Edit one line** in [`firmware/cargo_cold_chain_monitor/cargo_cold_chain_monitor_helpers.h`](firmware/cargo_cold_chain_monitor/cargo_cold_chain_monitor_helpers.h) — set `PRODUCT_UID` to your project's value.
+4. **Flash** — run `arduino-cli board listall | grep -i cygnet` to confirm the FQBN for your installed STM32 core, then compile and upload. Full instructions in [§6.1](#61-installing-and-flashing).
+5. **Watch** — Notehub → your project → **Events** tab. You should see `_session.qo` on first contact, `cargo_data.qo` after the first summary interval, `cargo_log.qo` entries batching with each outbound sync, `cargo_state.qo` on the first confirmed dwell or motion event, and any threshold trips as `cargo_alert.qo` within one sample interval of the triggering event.
+
+> **First event timeline:** On power-up, the device acquires time and signals contact via `_session.qo` within 1–2 minutes (cellular/WiFi) or several minutes (Skylo NTN with clear sky). The first `cargo_log.qo` entry appears one sample interval later (~5 min). The first `cargo_data.qo` summary appears ~60 minutes after the device obtains a valid epoch from Notehub's `card.time` API.
 
 ---
 
@@ -242,7 +244,7 @@ Single sketch: [`firmware/cargo_cold_chain_monitor/cargo_cold_chain_monitor.ino`
 **Dependencies:**
 
 - **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Install via the Arduino Boards Manager by adding the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs** and searching **STM32 MCU based boards**.
-- **`Blues Wireless Notecard`** library ([`note-arduino`](https://github.com/blues/note-arduino), current stable **v1.8.5** at time of writing) — install via `arduino-cli lib install "Blues Wireless Notecard@1.8.5"` or search "Blues Wireless Notecard" in the Arduino IDE Library Manager.
+- **`Blues Wireless Notecard`** library ([`note-arduino`](https://github.com/blues/note-arduino)) — install via `arduino-cli lib install "Blues Wireless Notecard"` or search "Blues Wireless Notecard" in the Arduino IDE Library Manager.
 - **`Adafruit MAX31865 library`** — install via Library Manager (search "Adafruit MAX31865").
 - **`Adafruit SHT4x Library`** — install via Library Manager (search "Adafruit SHT4x").
 - **`Adafruit VEML7700 Library`** — install via Library Manager (search "Adafruit VEML7700").

@@ -10,18 +10,6 @@ This reference application is intended to provide inspiration and help you get s
 
 A cellular [energy monitoring](https://blues.com/solutions-energy-monitoring/) retrofit for Level 2 EV chargers — mount a DIN-rail energy meter on the charger's AC feed, bolt a Blues Notecard inside the electrical panel, and within minutes you'll see three types of data arriving in Notehub: per-session metered kWh and peak power (`charger_session.qo`, one per charged vehicle), hourly utilization and availability summaries (`charger_summary.qo`, one per hour), and mains-offline alerts (`charger_alert.qo` when the charger circuit loses power). Energy is measured by a hardware-metered instrument; charger availability is tracked from the meter's V_rms register — when mains voltage is absent the circuit is definitively offline. No modification to the charger hardware, no OCPP enrollment, no site IT involvement required. See [§9](#9-limitations-and-next-steps) for design boundaries and production expansion paths.
 
-## Quickstart: From bench to Notehub in 5 steps
-
-Before diving into the full documentation, here's the fastest path from parts to first event in Notehub:
-
-1. **Create a Notehub project** at [notehub.io](https://notehub.io) and copy its ProductUID (looks like `com.your-company:ev-charger-monitor`).
-2. **Wire the bench rig** — Notecarrier CX + Notecard MBGLW + SDM120-Modbus energy meter + SparkFun BOB-10124 RS-485 transceiver (D0/D1/D2 pins). Full wiring details in [§4](#4-wiring-and-assembly).
-3. **Edit firmware/ev_charger_session_monitor/ev_charger_session_monitor.ino** — replace the empty string on line 53 (`#define PRODUCT_UID ""`) with your ProductUID.
-4. **Flash with Arduino IDE** — open the sketch, select **Generic STM32L4 series → Cygnet** as the board, hit **Upload**. Or use `arduino-cli` (see [§6.1](#61-installing-and-flashing) for commands).
-5. **Watch Notehub** — open your project's **Events** tab. You'll see `_session.qo` within seconds (proves radio works), a `charger_summary.qo` within the hour, and a `charger_session.qo` after you run a test load (see [§8](#8-validation-and-testing)).
-
-For detailed component selection, wiring, Notehub configuration, and validation, read on.
-
 ## 1. Project Overview
 
 **The problem.** Fleet managers, facilities teams, and third-party charging network operators are installing Level 2 **EVSE** (electric vehicle supply equipment) at workplace parking lots, fleet depots, and retail locations — and almost universally, they have no idea how those chargers are actually used. Is the 48-amp circuit in Bay 3 running at 90% utilization while Bay 4 sits idle all day? Are sessions clustering in the morning rush so that employees arriving at 9 a.m. find every port occupied? Without instrumentation, all of these questions get answered by anecdote or not at all.
@@ -50,6 +38,18 @@ Cellular sidesteps all of that. A Notecard Cell+WiFi (MBGLW) with its included p
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and other destinations. Route setup is project-specific and outside the scope of this reference — see the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for detailed configuration.
 
+
+## 2.5 Quickstart
+
+Before diving into the full documentation, here's the fastest path from parts to first event in Notehub:
+
+1. **Create a Notehub project** at [notehub.io](https://notehub.io) and copy its ProductUID (looks like `com.your-company:ev-charger-monitor`).
+2. **Wire the bench rig** — Notecarrier CX + Notecard MBGLW + SDM120-Modbus energy meter + SparkFun BOB-10124 RS-485 transceiver (D0/D1/D2 pins). Full wiring details in [§4](#4-wiring-and-assembly).
+3. **Edit firmware/ev_charger_session_monitor/ev_charger_session_monitor.ino** — replace the empty string on line 53 (`#define PRODUCT_UID ""`) with your ProductUID.
+4. **Flash with Arduino IDE** — open the sketch, select **Generic STM32L4 series → Cygnet** as the board, hit **Upload**. Or use `arduino-cli` (see [§6.1](#61-installing-and-flashing) for commands).
+5. **Watch Notehub** — open your project's **Events** tab. You'll see `_session.qo` within seconds (proves radio works), a `charger_summary.qo` within the hour, and a `charger_session.qo` after you run a test load (see [§8](#8-validation-and-testing)).
+
+For detailed component selection, wiring, Notehub configuration, and validation, read on.
 ## 3. Hardware Requirements
 
 | Part | Qty | Rationale |
@@ -178,7 +178,7 @@ The firmware lives in three files inside `firmware/ev_charger_session_monitor/`:
 **Dependencies:**
 
 - **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Add the board manager URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**. Select **Generic STM32L4 series → Cygnet** as the board.
-- **`Blues Wireless Notecard`** library — [`note-arduino`](https://github.com/blues/note-arduino) **v1.8.5** (current stable release at time of writing). Install via the Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard"`) or search "Blues Wireless Notecard" in the IDE Library Manager. See the [note-arduino releases page](https://github.com/blues/note-arduino/releases) for any newer stable version.
+- **`Blues Wireless Notecard`** library — [`note-arduino`](https://github.com/blues/note-arduino). Install via the Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard"`) or search "Blues Wireless Notecard" in the IDE Library Manager. See the [note-arduino releases page](https://github.com/blues/note-arduino/releases) for any newer stable version.
 - **`ModbusMaster`** library — by Doc Walker, available in the Arduino Library Manager. Install with `arduino-cli lib install "ModbusMaster"` or search "ModbusMaster" in the IDE. Version ≥ 2.0.1. Provides the Modbus RTU master implementation used to communicate with the SDM120 over Serial1.
 
 **Flashing — Arduino IDE:** open `ev_charger_session_monitor.ino`, select the Cygnet board, hit **Upload**. The Notecarrier CX exposes the ST-Link interface on the USB cable — no external programmer needed.

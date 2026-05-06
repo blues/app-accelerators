@@ -8,35 +8,6 @@ This reference application is intended to provide inspiration and help you get s
 
 An [asset performance optimization](https://blues.com/solutions-asset-performance-optimization/) reference design that turns a solar array into a per-string, continuously-monitored asset — catching soiling, shading, and bad modules from wherever the array happens to be, without WiFi, without site IT involvement, and without touching the existing inverter.
 
-## Quick Start
-
-**What you'll have when you're done:** A cellular-connected device that reads per-string DC voltage and current from your Modbus inverter or combiner every 5 minutes, computes each string's performance ratio (actual power / temperature-derated expected power), fires an immediate alert to [Notehub](https://notehub.io) when any string drops below 80% of expected power (with a root-cause hypothesis: shading, soiling, or string fault), and sends an hourly summary note for trend analysis.
-
-**Fastest path to first event (30 minutes):**
-1. Assemble hardware: Notecarrier CX + Notecard Cell+WiFi + RS-485 transceiver + sensors (see §4 Wiring and Assembly).
-2. Claim project in Notehub (§5 step 1–2).
-3. Copy the firmware directory and edit `solar_string_monitor.ino` to replace `PRODUCT_UID` with your Notehub project UID.
-4. Flash via Arduino IDE or CLI (see Build Instructions below).
-5. Power the assembly; on first boot the Notecard registers with your project automatically.
-6. Check Notehub — you should see `solar_summary.qo` and/or `solar_alert.qo` events appear within the next sample interval.
-
-**Build Instructions:**
-
-Using the Arduino IDE:
-- Install the [Arduino core for STM32](https://github.com/stm32duino/Arduino_Core_STM32) via Board Manager.
-- Sketch → Include Library → Manage Libraries, then install: **Notecard**, **ModbusMaster**, **OneWire**, **DallasTemperature**.
-- Select Board: *STM32L4 series* > *Notecarrier CX*, and Port (your debugger/programmer).
-- Paste your ProductUID into the `PRODUCT_UID` define.
-- Upload.
-
-Using Arduino CLI:
-```bash
-arduino-cli core install stm32duino:stm32l4
-arduino-cli lib install "Blues Wireless Notecard" ModbusMaster OneWire DallasTemperature
-arduino-cli compile --fqbn stm32duino:stm32l4:Notecarrier_CX firmware/solar_string_monitor.ino
-arduino-cli upload -p /dev/ttyACM0 --fqbn stm32duino:stm32l4:Notecarrier_CX firmware/solar_string_monitor.ino
-```
-
 ## 1. Project Overview
 
 **The problem.** Utility-scale and large commercial-and-industrial (C&I) solar installations routinely bleed 3–8% of annual production to three mundane, entirely preventable causes: soiling (dust, bird droppings, pollen), partial shading (a branch that grew six inches over winter, a newly-installed HVAC unit on a flat roof), and a single degraded or failed module in a series string. None of these losses are invisible — they all have distinctive electrical signatures in the per-string DC current and voltage data. The problem is that almost nobody reads that data in real time.
@@ -68,6 +39,35 @@ This project adds that missing network path. It reads per-string DC voltage and 
 **Notehub responsibilities.** [Notehub](https://dev.blues.io/notehub/notehub-walkthrough/) ingests events over the Internet, stores every event, and applies project-level [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub). Summary notes and alert notes land in separate [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile) so they can be fanned out to different destinations at different urgencies without any filter logic in the route. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) are how a multi-site O&M operator would segment the portfolio — one fleet per customer, or one fleet per technology type (monocrystalline vs bifacial) — each with its own environment variable overrides.
 
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
+
+## 2.5 Quickstart
+
+**What you'll have when you're done:** A cellular-connected device that reads per-string DC voltage and current from your Modbus inverter or combiner every 5 minutes, computes each string's performance ratio (actual power / temperature-derated expected power), fires an immediate alert to [Notehub](https://notehub.io) when any string drops below 80% of expected power (with a root-cause hypothesis: shading, soiling, or string fault), and sends an hourly summary note for trend analysis.
+
+**Fastest path to first event (30 minutes):**
+1. Assemble hardware: Notecarrier CX + Notecard Cell+WiFi + RS-485 transceiver + sensors (see §4 Wiring and Assembly).
+2. Claim project in Notehub (§5 step 1–2).
+3. Copy the firmware directory and edit `solar_string_monitor.ino` to replace `PRODUCT_UID` with your Notehub project UID.
+4. Flash via Arduino IDE or CLI (see Build Instructions below).
+5. Power the assembly; on first boot the Notecard registers with your project automatically.
+6. Check Notehub — you should see `solar_summary.qo` and/or `solar_alert.qo` events appear within the next sample interval.
+
+**Build Instructions:**
+
+Using the Arduino IDE:
+- Install the [Arduino core for STM32](https://github.com/stm32duino/Arduino_Core_STM32) via Board Manager.
+- Sketch → Include Library → Manage Libraries, then install: **Notecard**, **ModbusMaster**, **OneWire**, **DallasTemperature**.
+- Select Board: *STM32L4 series* > *Notecarrier CX*, and Port (your debugger/programmer).
+- Paste your ProductUID into the `PRODUCT_UID` define.
+- Upload.
+
+Using Arduino CLI:
+```bash
+arduino-cli core install stm32duino:stm32l4
+arduino-cli lib install "Blues Wireless Notecard" ModbusMaster OneWire DallasTemperature
+arduino-cli compile --fqbn stm32duino:stm32l4:Notecarrier_CX firmware/solar_string_monitor.ino
+arduino-cli upload -p /dev/ttyACM0 --fqbn stm32duino:stm32l4:Notecarrier_CX firmware/solar_string_monitor.ino
+```
 
 ## 3. Hardware Requirements
 
@@ -191,7 +191,7 @@ Data-path helpers: [`firmware/solar_string_monitor_helpers.cpp`](firmware/solar_
 
 **Dependencies** (install via Arduino Library Manager or `arduino-cli lib install`):
 - **Arduino core for STM32** (`stm32duino/Arduino_Core_STM32`) — supports the Cygnet STM32L433.
-- [**Blues Wireless Notecard**](https://github.com/blues/note-arduino) (`note-arduino`) v1.8.5 — the `note-arduino` library.
+- [**Blues Wireless Notecard**](https://github.com/blues/note-arduino) (`note-arduino`) — the `note-arduino` library.
 - [**ModbusMaster**](https://github.com/4-20ma/ModbusMaster) by 4-20ma — portable Modbus RTU client that works with any Arduino `Stream`-compatible serial port, including `Serial1` on the Cygnet.
 - [**OneWire**](https://www.pjrc.com/teensy/td_libs_OneWire.html) and [**DallasTemperature**](https://github.com/milesburton/Arduino-Temperature-Control-Library) — DS18B20 1-Wire driver.
 

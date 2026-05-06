@@ -9,23 +9,6 @@ This reference application is intended to provide inspiration and help you get s
 A [battery management systems](https://blues.com/battery-management-systems/) reference design that turns the electric battery pack on a rental scissor lift, boom lift, or telehandler into a continuously-monitored asset — surfacing state of charge, depth of discharge, rolling state of health, and thermal status to the rental company's fleet management platform, over cellular with satellite fallback, wherever the lift happens to be sitting.
 
 **What you'll have when you're done:** a weatherproof, pack-powered sidecar that samples the battery pack every five minutes, transmits an hourly summary to Notehub, and fires an immediate alert over cellular or Skylo satellite whenever a threshold trips — without requiring site WiFi, a local gateway, or any customer IT coordination. Fleet operators can retune alert thresholds for any machine from Notehub without a truck roll or firmware re-flash.
-
-## Quick Start (5 minutes to first event)
-
-1. **Flash firmware.** Clone the repo, edit `firmware/lift_battery_monitor/lift_battery_monitor.ino` to set your `PRODUCT_UID` (from your [notehub.io](https://notehub.io) project), then compile and upload:
-   ```bash
-   arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/lift_battery_monitor/
-   arduino-cli upload  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET \
-     -p /dev/cu.usbmodem* firmware/lift_battery_monitor/
-   ```
-   (Replace `/dev/cu.usbmodem*` with your platform's serial port; `COM*` on Windows.)
-
-2. **Wire on the bench.** Connect INA228 over I²C (Qwiic), a 48V bench supply to INA228 `VIN+`, and an electronic load to `VIN−`. Open the serial monitor at 115200 baud and watch for `[meas]` lines reporting pack voltage and current.
-
-3. **Check Notehub.** Within one minute, the **Devices** tab should show your board. The **Events** tab will populate with `_session.qo` (confirming radio), `battery_status.qo` (hourly summary), and `battery_alert.qo` (on threshold trip). Within `report_interval_m` minutes (default 60), you should see the first summary with voltage, current, temperature, SoC, SoH, cycle Ah, and CAN health.
-
-That's it. The device is now sampling every 5 minutes, reporting hourly, and firing immediate alerts on pack fault conditions.
-
 ## 1. Project Overview
 
 **The problem.** Electric scissor lifts, boom lifts, and telehandlers are increasingly displacing diesel units on job sites. The electric machines are quieter, cleaner, and cheaper to run — but they introduce a failure mode that diesel never had: a machine that looks fine in the yard shows up at a job site with a dead or nearly dead pack, and the rental company loses a day of revenue before anyone knows there's a problem.
@@ -55,6 +38,22 @@ This project is the watcher. A small monitoring device clipped to the pack reads
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, and Snowflake, among other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint or dashboard.
 
 **Satellite data budget.** The Notecard for Skylo includes 10 KB of satellite data. Hourly summaries are suppressed over satellite (the `battery_status.qo` template sets `delete:true`, so any queued summaries are cleared when the Notecard establishes an NTN session rather than being routed over the expensive satellite link). Critical alerts — low SoC, thermal excursion, SoH degradation — carry no `delete` flag and travel over whatever link is available, including satellite. This ensures fleet operators are notified of dangerous pack conditions even on job sites with no cellular coverage.
+
+## 2.5 Quickstart
+
+1. **Flash firmware.** Clone the repo, edit `firmware/lift_battery_monitor/lift_battery_monitor.ino` to set your `PRODUCT_UID` (from your [notehub.io](https://notehub.io) project), then compile and upload:
+   ```bash
+   arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/lift_battery_monitor/
+   arduino-cli upload  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET \
+     -p /dev/cu.usbmodem* firmware/lift_battery_monitor/
+   ```
+   (Replace `/dev/cu.usbmodem*` with your platform's serial port; `COM*` on Windows.)
+
+2. **Wire on the bench.** Connect INA228 over I²C (Qwiic), a 48V bench supply to INA228 `VIN+`, and an electronic load to `VIN−`. Open the serial monitor at 115200 baud and watch for `[meas]` lines reporting pack voltage and current.
+
+3. **Check Notehub.** Within one minute, the **Devices** tab should show your board. The **Events** tab will populate with `_session.qo` (confirming radio), `battery_status.qo` (hourly summary), and `battery_alert.qo` (on threshold trip). Within `report_interval_m` minutes (default 60), you should see the first summary with voltage, current, temperature, SoC, SoH, cycle Ah, and CAN health.
+
+That's it. The device is now sampling every 5 minutes, reporting hourly, and firing immediate alerts on pack fault conditions.
 
 ## 3. Hardware Requirements
 
@@ -263,7 +262,7 @@ Four files in [`firmware/lift_battery_monitor/`](firmware/lift_battery_monitor/)
 **Dependencies:**
 
 - **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Install via Arduino IDE Boards Manager (search "STM32 MCU based boards") or add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**. Select **Generic STM32L4 series → Cygnet** as the board target.
-- **`Blues Wireless Notecard`** (note-arduino v1.8.5) — install via Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`. See [note-arduino releases](https://github.com/blues/note-arduino/releases) for the latest.
+- **`Blues Wireless Notecard`** — install via Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`. See [note-arduino releases](https://github.com/blues/note-arduino/releases) for the latest.
 - **`Adafruit INA228`** — install via Library Manager or `arduino-cli lib install "Adafruit INA228"`. Pulls in `Adafruit BusIO` as a dependency. The firmware calls `readBusVoltage()` and `readCurrent()` — the modern API defined on the `Adafruit_INA2xx` base class; these names were verified against the current library source (`Adafruit_INA2xx.h`).
 - **`mcp2515`** by autowp *(only if `ENABLE_CAN_BMS` is set to `1` in `lift_battery_monitor_config.h`)* — install via Library Manager or `arduino-cli lib install "mcp2515"`.
 

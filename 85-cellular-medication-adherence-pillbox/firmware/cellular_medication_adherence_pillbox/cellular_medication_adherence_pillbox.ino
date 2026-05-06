@@ -23,7 +23,7 @@
  *
  * Hardware: Notecarrier CX + Notecard Cell+WiFi (NOTE-MBGLW) + Blues Mojo
  * Host MCU: Cygnet STM32L4 (onboard, Notecarrier CX)
- * Library:  Blues Wireless Notecard (note-arduino) v1.8.5
+ * Library:  Blues Wireless Notecard (note-arduino)
  *
  * Helper functions, struct definitions, pin/notefile constants, and the
  * usbSerial debug toggle live in:

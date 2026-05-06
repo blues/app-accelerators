@@ -10,14 +10,6 @@ A [remote patient monitoring](https://blues.com/remote-patient-monitoring/) devi
 
 **What you'll have when you're done:** a battery-powered, cellular-connected 7-day pillbox monitor that reports compartment lid-open events — detected via 30-second polling — in near-real time to Notehub for clinician or caregiver review, and queues a daily adherence summary at the configured summary hour showing exactly which compartments were opened. Expected runtime: 5–15 months on a single 2500 mAh LiPo charge (depending on open event frequency).
 
-### Quickstart at a glance
-
-1. **Notehub** — create a [Notehub project](https://notehub.io), copy its ProductUID.
-2. **Wire the bench rig** — Notecarrier CX + Notecard MBGLW + 7 snap-action micro-switches on D5, D6, D9–D13. Full pinout in [§4](#4-wiring-and-assembly).
-3. **Edit one line** of [`firmware/cellular_medication_adherence_pillbox/cellular_medication_adherence_pillbox.ino`](firmware/cellular_medication_adherence_pillbox/cellular_medication_adherence_pillbox.ino) — search for `#define PRODUCT_UID` and set it to your project's value.
-4. **Flash** — select the Cygnet board in the Arduino IDE, hit Upload. Full instructions in [§6.1](#61-installing-and-flashing).
-5. **Watch** — open Notehub → your project → **Events** tab. You should see a `_session.qo` within a minute and a `pill_open.qo` each time you open a compartment.
-
 ---
 
 ## 1. Project Overview
@@ -45,6 +37,16 @@ Existing IoT pillboxes have tried to close this gap, and most fail in the same p
 **Notehub responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to [Notehub](https://notehub.io) over the Internet; Notehub ingests events, stores every event, and applies project-level routes. `pill_open.qo` events land in near-real time for clinician review; `pill_summary.qo` notes accumulate for trend analysis. [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) can group devices by care coordinator, practice, or patient tier, with per-fleet environment variables applied to all devices in the group at once.
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
+
+---
+
+## 2.5 Quickstart
+
+1. **Notehub** — create a [Notehub project](https://notehub.io), copy its ProductUID.
+2. **Wire the bench rig** — Notecarrier CX + Notecard MBGLW + 7 snap-action micro-switches on D5, D6, D9–D13. Full pinout in [§4](#4-wiring-and-assembly).
+3. **Edit one line** of [`firmware/cellular_medication_adherence_pillbox/cellular_medication_adherence_pillbox.ino`](firmware/cellular_medication_adherence_pillbox/cellular_medication_adherence_pillbox.ino) — search for `#define PRODUCT_UID` and set it to your project's value.
+4. **Flash** — select the Cygnet board in the Arduino IDE, hit Upload. Full instructions in [§6.1](#61-installing-and-flashing).
+5. **Watch** — open Notehub → your project → **Events** tab. You should see a `_session.qo` within a minute and a `pill_open.qo` each time you open a compartment.
 
 ---
 
@@ -185,7 +187,7 @@ The firmware is split across a main sketch and two helper files — all three li
 **Dependencies:**
 
 - **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Install via the Arduino Boards Manager by adding the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**, then search for "STM32 MCU based boards" and install. Select **Generic STM32L4 series → Cygnet** as the board target.
-- **`Blues Wireless Notecard`** library (`note-arduino`) **v1.8.5** (current stable at time of writing). Install via the Arduino Library Manager (search "Blues Wireless Notecard") or run `arduino-cli lib install "Blues Wireless Notecard"`. See [note-arduino releases](https://github.com/blues/note-arduino/releases) for changelog and any newer stable versions.
+- **`Blues Wireless Notecard`** library (`note-arduino`). Install via the Arduino Library Manager (search "Blues Wireless Notecard") or run `arduino-cli lib install "Blues Wireless Notecard"`. See [note-arduino releases](https://github.com/blues/note-arduino/releases) for changelog and any newer stable versions.
 
 **Flashing — Arduino IDE:** open `cellular_medication_adherence_pillbox.ino`, select the Cygnet board, hit **Upload**. The Notecarrier CX exposes the ST-Link interface on the USB cable — no external programmer needed.
 

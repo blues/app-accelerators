@@ -32,8 +32,8 @@
 // here — it requires an external BLE module and a separate authentication library.
 //
 // Dependencies:
-//   Blues Wireless Notecard  (note-arduino v1.8.5)  — install via Arduino Library Manager
-//   stm32duino/Arduino_Core_STM32                   — install via Arduino Boards Manager
+//   Blues Wireless Notecard  (note-arduino)  — install via Arduino Library Manager
+//   stm32duino/Arduino_Core_STM32            — install via Arduino Boards Manager
 //
 // State-machine edge detection, pending-event retry, and template encoding are
 // documented inline in cargo_lock_helpers.cpp.

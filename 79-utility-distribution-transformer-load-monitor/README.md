@@ -14,27 +14,6 @@ An [energy monitoring](https://blues.com/solutions-energy-monitoring/) solution 
 
 ---
 
-## Quickstart: Get to First Event in 30 Minutes
-
-**What you need:**
-- Notecarrier CX + Notecard Cell+WiFi (MBGLW)
-- 3× YHDC SCT-013-000 CTs + 3.5 mm jack breakouts
-- Per-CT burden circuit: 22 Ω, 2× 10 kΩ, 10 µF cap (see §4)
-- MCP9808 I²C temperature sensor
-- 5V/2A AC/DC supply (e.g., MeanWell IRM-10-5)
-- Computer with Arduino IDE or `arduino-cli`
-
-**Bench validation (no live transformer needed):**
-1. Assemble the three CT bias circuits on A0, A1, A2 (see §4 wiring diagram).
-2. Connect MCP9808 to I²C (SDA/SCL).
-3. Flash firmware: set `PRODUCT_UID` in `transformer_load_monitor.ino` to your Notehub project ID, then upload via USB.
-4. Open serial monitor at 115200 baud. You should see `[sample] i_a=...` lines every 5 minutes.
-5. Create a project in [Notehub](https://notehub.io) if you haven't — the Notecard auto-associates on first cellular connect.
-6. After 60 minutes you'll see `[summary] queued` on serial. Wait for the device's next outbound sync (default hourly) and check Notehub **Devices → Events** for an `xfmr_summary.qo` entry.
-7. Clamp a CT on a known 120VAC load (a lamp works well) and verify the current value in the summary matches the expected load (within ~5%).
-
----
-
 ## 1. Project Overview
 
 **The problem.** A distribution transformer is the last powered device between the high-voltage grid and a customer's service entrance. Utilities typically instrument their substations carefully — real-time SCADA, demand data, fault recorders — but the transformer hanging on the pole outside a neighborhood has none of that. The utility knows what's flowing into the substation; it doesn't know what's flowing through any individual transformer until something fails.
@@ -66,6 +45,27 @@ CT installation is **non-invasive**: the split-core sensors clamp directly onto 
 **Notehub responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to [Notehub](https://notehub.io) over the Internet; Notehub ingests events, stores them, and applies project-level routes. Two Notefiles carry the data out: `xfmr_summary.qo` (hourly, templated, suitable for long-term trending) and `xfmr_alert.qo` (event-triggered, immediate). Organizing devices into [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) by service territory or transformer rating lets fleet engineers set threshold [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) that apply across all units in a group, while still allowing per-device overrides for unusual transformers. [Smart Fleet rules](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) can automatically assign a Notecard to the correct fleet based on its reported data.
 
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS IoT Core, Azure IoT Hub, GCP Pub/Sub, Snowflake, and other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint. Alert and summary Notefiles are deliberately separate so each can be routed independently: alerts to an outage-management or on-call system with low-latency delivery, summaries to a historian or analytics store with higher-volume, batched ingest.
+
+---
+
+## 2.5 Quickstart: Get to First Event in 30 Minutes
+
+**What you need:**
+- Notecarrier CX + Notecard Cell+WiFi (MBGLW)
+- 3× YHDC SCT-013-000 CTs + 3.5 mm jack breakouts
+- Per-CT burden circuit: 22 Ω, 2× 10 kΩ, 10 µF cap (see §4)
+- MCP9808 I²C temperature sensor
+- 5V/2A AC/DC supply (e.g., MeanWell IRM-10-5)
+- Computer with Arduino IDE or `arduino-cli`
+
+**Bench validation (no live transformer needed):**
+1. Assemble the three CT bias circuits on A0, A1, A2 (see §4 wiring diagram).
+2. Connect MCP9808 to I²C (SDA/SCL).
+3. Flash firmware: set `PRODUCT_UID` in `transformer_load_monitor.ino` to your Notehub project ID, then upload via USB.
+4. Open serial monitor at 115200 baud. You should see `[sample] i_a=...` lines every 5 minutes.
+5. Create a project in [Notehub](https://notehub.io) if you haven't — the Notecard auto-associates on first cellular connect.
+6. After 60 minutes you'll see `[summary] queued` on serial. Wait for the device's next outbound sync (default hourly) and check Notehub **Devices → Events** for an `xfmr_summary.qo` entry.
+7. Clamp a CT on a known 120VAC load (a lamp works well) and verify the current value in the summary matches the expected load (within ~5%).
 
 ---
 
@@ -237,7 +237,7 @@ The Arduino IDE and `arduino-cli` automatically compile every `.ino`, `.h`, and 
 **Dependencies:**
 
 - **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Add the board index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**, then install "STM32 MCU based boards." Select **Generic STM32L4 series → Cygnet** as the board.
-- **`Blues Wireless Notecard`** library ([`note-arduino`](https://github.com/blues/note-arduino)) — pinned at **v1.8.5**. Install via the Arduino Library Manager (search "Blues Wireless Notecard") or `arduino-cli lib install "Blues Wireless Notecard"`.
+- **`Blues Wireless Notecard`** library ([`note-arduino`](https://github.com/blues/note-arduino)) — Install via the Arduino Library Manager (search "Blues Wireless Notecard") or `arduino-cli lib install "Blues Wireless Notecard"`.
 - **`Adafruit MCP9808 Library`** — install via the Arduino Library Manager (search "MCP9808"). Requires the Adafruit BusIO dependency, which the Library Manager installs automatically.
 
 **Flashing — Arduino IDE:** use **File → Open…** and select the folder `firmware/transformer_load_monitor/` (or double-click `transformer_load_monitor.ino` — the IDE loads all three files from the folder automatically). Select the Cygnet board, click **Upload**. The Notecarrier CX exposes the ST-Link interface on the same USB cable, so no external programmer is needed.

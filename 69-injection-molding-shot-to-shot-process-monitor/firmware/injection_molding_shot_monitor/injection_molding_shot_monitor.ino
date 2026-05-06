@@ -18,7 +18,7 @@
 //   SparkFun MAX31855K thermocouple breakout (SEN-13266) → SPI / D10
 //
 // Dependencies:
-//   Blues Wireless Notecard (note-arduino) v1.8.5
+//   Blues Wireless Notecard (note-arduino)
 //     arduino-cli lib install "Blues Wireless Notecard"
 //   Arduino core for STM32 (stm32duino/Arduino_Core_STM32) via Boards Manager
 //

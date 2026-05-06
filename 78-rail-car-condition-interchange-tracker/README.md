@@ -10,18 +10,6 @@ A [supply chain tracking](https://blues.com/solutions-supply-chain-tracking/) re
 
 > **POC scope.** This reference design delivers the car-level telemetry foundation for condition and interchange tracking: continuous GPS location, coupler-state transitions, motion detection, shock event scoring, and — on TANK_CAR builds — low-pressure fitting absolute pressure via the Adafruit MPRLS (0–25 PSI absolute, suitable for vent ports and low-pressure access fittings only) and single-point lading temperature via a waterproof DS18B20 probe. That location, coupler, and motion stream is exactly what downstream geofencing services consume to detect when a car crosses a railroad territory boundary and changes custody — but **on-device interchange detection is not implemented**: the boundary-crossing logic and EDI integration are downstream production steps described in [§9](#9-limitations-and-next-steps). **Full tank-car pressure sensing is not part of this design.** DOT-rated cargo pressure requires a certified industrial transducer rated for the lading and pressure class (DOT-111, DOT-105, etc.); this is described as a production next step in [§9](#9-limitations-and-next-steps). The DS18B20 provides a single-point temperature reading appropriate for basic cargo monitoring; a multi-point or certified cargo temperature system is a production next step.
 
-## Quick Start
-
-**What you'll have when you're done:** a weatherproof, solar-powered electronics sidecar that mounts to a freight car, samples sensors every 15 minutes, scores shock events, detects coupler state changes, and reports GPS location and condition through Notehub — automatically using cellular when available, switching to satellite in remote areas, and queuing everything offline until connectivity returns.
-
-**Fastest path to first event (bench rig, ~1 hour):**
-
-1. Create a [Notehub project](https://notehub.io), copy the **ProductUID** (shown under **Project Settings → ProductUID**).
-2. Set `PRODUCT_UID` in `firmware/rail_car_tracker/rail_car_tracker_helpers.h` (line 40: replace `""` with your ProductUID).
-3. Connect ADXL345 accelerometer and reed switch to [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) over I²C/D5 (see [§4 Wiring](#4-wiring-and-assembly) for pinout).
-4. Flash with `arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/rail_car_tracker/ && arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbmodem* firmware/rail_car_tracker/` (exact commands in [§6.1](#61-installing-and-flashing)).
-5. Open Notehub **Devices** tab — the Notecard appears within a few minutes. Within 15 minutes you'll see `railcar_status.qo` with `coupled`, `moving`, `shock_peak_g`, and `shock_windows` fields. See [§5 What you should see](#what-you-should-see-in-notehub) for sample JSON payloads.
-
 ## 1. Project Overview
 
 **The problem.** A leased tank car or intermodal flat leaves a chemical plant in Texas headed for a refinery in New Jersey. It crosses four railroads, rolls through a classification yard in Tennessee for three days, then moves overnight to a second yard before final delivery. The lessor has no idea where it is unless the lessee files an EDI interchange report — which may or may not be accurate, and which tells the lessor nothing about *condition*. Did the car take a hard coupling impact? Is a fitting pressure trending down, suggesting a valve leak? Was the car decoupled from its consist somewhere in Iowa at 2 AM? Without on-car telemetry, none of those questions have timely answers.
@@ -47,6 +35,18 @@ This architecture maps directly to Blues' [supply chain tracking](https://blues.
 **Routing (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, and Snowflake routes. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for setup — this project ships no specific downstream endpoint. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) can organize cars by lessee, route, or car type (tank vs. flat) and route them differently at the fleet level.
 
 ![System architecture: on-car sensors → Notecarrier CX with Cygnet host + Notecard for Skylo → LTE-M/NB-IoT + Skylo NTN satellite → Notehub → routes](diagrams/01-system-architecture.svg)
+
+## 2.5 Quickstart
+
+**What you'll have when you're done:** a weatherproof, solar-powered electronics sidecar that mounts to a freight car, samples sensors every 15 minutes, scores shock events, detects coupler state changes, and reports GPS location and condition through Notehub — automatically using cellular when available, switching to satellite in remote areas, and queuing everything offline until connectivity returns.
+
+**Fastest path to first event (bench rig, ~1 hour):**
+
+1. Create a [Notehub project](https://notehub.io), copy the **ProductUID** (shown under **Project Settings → ProductUID**).
+2. Set `PRODUCT_UID` in `firmware/rail_car_tracker/rail_car_tracker_helpers.h` (line 40: replace `""` with your ProductUID).
+3. Connect ADXL345 accelerometer and reed switch to [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) over I²C/D5 (see [§4 Wiring](#4-wiring-and-assembly) for pinout).
+4. Flash with `arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/rail_car_tracker/ && arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbmodem* firmware/rail_car_tracker/` (exact commands in [§6.1](#61-installing-and-flashing)).
+5. Open Notehub **Devices** tab — the Notecard appears within a few minutes. Within 15 minutes you'll see `railcar_status.qo` with `coupled`, `moving`, `shock_peak_g`, and `shock_windows` fields. See [§5 What you should see](#what-you-should-see-in-notehub) for sample JSON payloads.
 
 ## 3. Hardware Requirements
 
@@ -241,7 +241,7 @@ In the default standard build, the MPRLS is never initialized, the `pressure_psi
 **Dependencies:**
 
 - **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Add the board index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**, then install "STM32 MCU based boards." Select **Generic STM32L4 series → Cygnet** as the board target.
-- **`Blues Wireless Notecard`** (`note-arduino`) **v1.8.5** (stable at time of writing). Install via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"` — see [note-arduino releases](https://github.com/blues/note-arduino/releases) for later versions.
+- **`Blues Wireless Notecard`** (`note-arduino`). Install via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"` — see [note-arduino releases](https://github.com/blues/note-arduino/releases) for available versions.
 - **`Adafruit MPRLS Library`** — **TANK_CAR builds only.** Install via Library Manager (`arduino-cli lib install "Adafruit MPRLS Library"`). Not required for standard (non-tank) builds.
 - **`OneWire`** — **TANK_CAR builds only.** Install via Library Manager (`arduino-cli lib install "OneWire"`). Provides the 1-Wire bus driver used by the DS18B20 probe.
 - **`DallasTemperature`** — **TANK_CAR builds only.** Install via Library Manager (`arduino-cli lib install "DallasTemperature"`). High-level API for Dallas/Maxim DS18B20 temperature sensors over the OneWire bus.

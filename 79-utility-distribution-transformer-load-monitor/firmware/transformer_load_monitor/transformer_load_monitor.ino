@@ -32,7 +32,7 @@
     - Adafruit MCP9808 I²C temperature sensor (default address 0x18)
 
   Dependencies:
-    - Blues Wireless Notecard library (note-arduino) v1.8.5
+    - Blues Wireless Notecard library (note-arduino)
       https://github.com/blues/note-arduino
     - Adafruit MCP9808 library (install via Arduino Library Manager)
       https://github.com/adafruit/Adafruit_MCP9808_Library

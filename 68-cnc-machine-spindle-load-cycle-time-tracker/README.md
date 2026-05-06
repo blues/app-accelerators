@@ -8,16 +8,6 @@ This reference application is intended to provide inspiration and help you get s
 
 A [industrial equipment monitoring](https://blues.com/industrial-equipment-monitoring/) reference design that gives machine-tool OEMs **hourly summarized telemetry** from their installed base — spindle load, feed-rate override, run/idle minutes, cycle counts, average cycle time, operator ID, and observed active-alarm-transition counts — with **immediate cellular alarm delivery** for fault and overload events that carries the full alarm code in each alarm note. CNC controllers that expose telemetry over **Modbus TCP** supply the data; a direct point-to-point Ethernet link captures it without touching the machine shop's OT network. Normal telemetry (spindle statistics, run/idle minutes, cycle data) batches into hourly `cnc_summary.qo` notes; alarms bypass that cadence and arrive in Notehub within the Notecard's session-establishment window; operator-ID transitions emit immediate `cnc_operator.qo` notes as they occur.
 
-## Quickstart: First Device in Under Two Hours
-
-1. **Flash the Arduino OPTA** with `firmware/cnc_spindle_tracker.ino` (requires Arduino IDE + Mbed OS Opta Boards core).
-2. **Get ProductUID** from [notehub.io](https://notehub.io), paste it into the sketch, reflash.
-3. **Wire**: Cat6 from OPTA RJ45 → CNC Modbus TCP port (default `192.168.250.1:502`). Cellular antenna through panel door.
-4. **Power**: 24 VDC to OPTA. Notecard auto-claims to your Notehub project on first cellular session (≈5 min).
-5. **Validate**: Check Notehub for `cnc_summary.qo` notes within 60 minutes. One summary per hour, one alarm per event (when triggered).
-
-**When you're done:** You have continuous spindle load, cycle counts, alarm codes, operator IDs, and run/idle telemetry flowing to Notehub every hour, plus real-time cellular alarms on overload or fault transitions. Aggregate the summaries into an OEE dashboard; route alarms to your CMMS or on-call system via Notehub routes.
-
 ## 1. Project Overview
 
 **The problem.** A CNC (computer numerical control) machining center is a six-figure piece of capital equipment. The OEM who built it typically has zero visibility into what happens to it after delivery. Is the spindle running at 80% load twelve hours a day, or is it sitting idle because the shop scheduled it wrong? Is the same alarm code triggering every Tuesday morning — a pattern that, with data, is obviously a tooling-change reminder, but without data is an invisible warranty claim? Is a particular operator overriding the feed rate up to 140% on a finishing pass and burning through inserts?
@@ -43,6 +33,16 @@ Cellular is the answer. A [Blues Wireless for OPTA](https://shop.blues.com/produ
 **Notehub responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to [Notehub](https://notehub.io) over the Internet; [Notehub](https://notehub.io) ingests events, stores them, and applies project-level routes. [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) and [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) are the natural unit of organization here — one fleet per controller family or model profile, carrying the register block base address, unit ID, port, and alert thresholds as fleet-level environment variables. Organizing by controller model rather than by customer site gives more precise control, because register maps often differ across CNC models even within the same facility. Note that IP addressing remains compile-time in this reference design, so machines on different network configurations still require a per-build adjustment (see [§9 Limitations](#9-limitations-and-next-steps)).
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS IoT Core, Azure IoT Hub, GCP Pub/Sub, Snowflake, and several other targets; see the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub). This project does not ship a specific downstream endpoint — the OEE dashboard is routed from Notehub as a project-specific integration.
+
+## 2.5 Quickstart
+
+1. **Flash the Arduino OPTA** with `firmware/cnc_spindle_tracker.ino` (requires Arduino IDE + Mbed OS Opta Boards core).
+2. **Get ProductUID** from [notehub.io](https://notehub.io), paste it into the sketch, reflash.
+3. **Wire**: Cat6 from OPTA RJ45 → CNC Modbus TCP port (default `192.168.250.1:502`). Cellular antenna through panel door.
+4. **Power**: 24 VDC to OPTA. Notecard auto-claims to your Notehub project on first cellular session (≈5 min).
+5. **Validate**: Check Notehub for `cnc_summary.qo` notes within 60 minutes. One summary per hour, one alarm per event (when triggered).
+
+**When you're done:** You have continuous spindle load, cycle counts, alarm codes, operator IDs, and run/idle telemetry flowing to Notehub every hour, plus real-time cellular alarms on overload or fault transitions. Aggregate the summaries into an OEE dashboard; route alarms to your CMMS or on-call system via Notehub routes.
 
 ## 3. Hardware Requirements
 
@@ -110,7 +110,7 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 **Prerequisites:**
 - Arduino IDE 2.3+ or `arduino-cli` (command-line). If using the IDE, install the **Arduino Mbed OS Opta Boards** board package via Tools > Board Manager — search for "Opta".
 - **Dependencies** (install via Library Manager or `arduino-cli`):
-  - [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (v1.8.5 or later; check [releases](https://github.com/blues/note-arduino/releases))
+  - [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (check [releases](https://github.com/blues/note-arduino/releases))
   - [`ArduinoModbus`](https://github.com/arduino-libraries/ArduinoModbus)
   - [`ArduinoRS485`](https://github.com/arduino-libraries/ArduinoRS485)
   - `Ethernet.h` (included with Mbed OS Opta Boards core)

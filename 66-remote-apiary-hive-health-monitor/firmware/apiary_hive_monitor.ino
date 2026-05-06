@@ -20,7 +20,7 @@
     - Blues Mojo inline on +VBAT (bench power validation)
 
   Libraries (install via Arduino Library Manager):
-    - "Blues Wireless Notecard"  (note-arduino v1.8.5)
+    - "Blues Wireless Notecard"  (note-arduino)
     - "HX711 Arduino Library"    by Bogdan Necula & Lukas Bachschwell
     - "Adafruit SHT31 Library"   by Adafruit
 

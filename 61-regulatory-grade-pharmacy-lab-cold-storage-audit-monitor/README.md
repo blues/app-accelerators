@@ -6,28 +6,6 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-## Quick Start
-
-**What you'll have when done:** A Notecarrier CX with a calibrated PT1000 temperature probe, door switch, and light sensor that sends timestamped readings to Notehub every 5 minutes, with immediate alerts on temperature excursions or prolonged door-open events. Readings accumulate in the Notecard's flash-backed queue and sync on a 60-minute cellular schedule — completely independent of facility WiFi.
-
-**Fastest path to first event (no probe):** 
-1. Obtain a Notecarrier CX + MBGLW, VEML7700 sensor, and magnetic door switch
-2. Wire the three sensors (I²C, GPIO, and Qwiic as shown in [§4](#4-wiring-and-assembly))
-3. Clone this repo; paste your Notehub ProductUID into `firmware/cold_storage_audit_monitor.ino` (line 51)
-4. Flash with `arduino-cli compile -b blues:stm32:Notecarrier_CX firmware/ && arduino-cli upload -b blues:stm32:Notecarrier_CX -p /dev/ttyACM0 firmware/` (adjust port for your OS)
-5. Power up; verify readings appear in Notehub within 60 seconds (may take 1–5 minutes on first power for cellular registration)
-6. Override thresholds in Notehub **Fleet → Environment** (e.g., `temp_high_alert_c: 8.0`, `temp_low_alert_c: 2.0` for refrigerated storage)
-
-**For production:** Follow §9 and obtain a NIST-calibrated PT1000 probe assembly before regulatory deployment.
-
----
-
-A pharmacy/lab cold-storage [safety-assurance](https://blues.com/safety-assurance/) monitoring reference application using an independent cellular uplink to deliver individually timestamped per-sample readings and immediate excursion alerts — reaching Notehub even through facility WiFi outages. A Blues Notecard Cell+WiFi, a PT1000 RTD probe (Adafruit 3984) connected via a MAX31865 SPI amplifier (Adafruit 3648) and routed into the storage compartment, a magnetic door switch, and an ambient-light sensor produce a gap-resistant audit-evidence record designed to support monitoring requirements aligned with USP Chapter 659, FDA 21 CFR Part 211.68, and CDC Vaccine Storage and Handling guidelines — when deployed with appropriate calibrated hardware, SOPs, and site validation. Compile-time thresholds default to room-temperature bench values for development convenience; see [§5 Notehub Setup](#5-notehub-setup) for the production refrigerated-storage threshold overrides.
-
-> **Production temperature path.** The firmware reads temperature from an Adafruit Platinum RTD Sensor PT1000 3-Wire 1 m ([Product 3984](https://www.adafruit.com/product/3984)) via an Adafruit MAX31865 PT1000 Amplifier ([Product 3648](https://www.adafruit.com/product/3648)) over SPI. The stainless-steel probe capsule (4 mm × ~30 mm, 316L SS) routes into the refrigerated compartment through the cabinet's probe port or door-gasket pass-through while the MAX31865 board mounts inside the weatherproof electronics enclosure. Before regulatory deployment the specific probe assembly must be submitted to an accredited calibration laboratory to receive a NIST-traceable calibration certificate against that individual unit — this is an operator responsibility, not a firmware feature (see [§9 Limitations and Next Steps](#9-limitations-and-next-steps)). For bench firmware evaluation without the probe, the SparkFun TMP117 breakout (SEN-15805) can be substituted via Qwiic (requires replacing the Adafruit MAX31865 library and the `readTemperatureC()` implementation in `firmware/cold_storage_audit_monitor_helpers.cpp`); the TMP117 bench build measures exterior ambient air, not compartment interior temperature, and is **not a deployable compliance instrument**.
-
-> **Operator responsibility.** This reference design demonstrates data collection, cellular transmission, and alert delivery — it is not a validated, compliance-ready system as shipped. Deploying as part of a monitored, compliant storage program requires: site-specific validation and IQ/OQ/PQ documentation; written SOPs for monitoring, excursion response, and corrective action; a calibration management program with NIST-traceable certificates and recertification schedules; a record-retention policy meeting applicable regulatory requirements; and, where electronic records are regulated (e.g., 21 CFR Part 11), a separate compliance assessment of the Notehub data path, access controls, and audit-trail requirements. These are operator responsibilities — not firmware features.
-
 ## 1. Project Overview
 
 **The problem.** Pharmacies, clinical laboratories, and vaccine depots are subject to a patchwork of overlapping regulations — USP Chapter 659 (Packaging and Storage Requirements), FDA 21 CFR Part 211.68, state board-of-pharmacy rules, and for federally funded programs, CDC Vaccine Storage and Handling guidelines. Every one of those frameworks requires automated temperature records with defined excursion thresholds: 2°C–8°C for most refrigerated vaccines and biologics, with documentation of any deviation, its duration, and the corrective action taken.
@@ -55,6 +33,20 @@ WiFi fallback on the MBGLW is available as a secondary path, but only for sites 
 **Notehub responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to [Notehub](https://dev.blues.io/notehub/notehub-walkthrough/) over the Internet; [Notehub](https://dev.blues.io/notehub/notehub-walkthrough/) ingests events, stores them, and applies project-level routes. Reading and alert Notes arrive in separate [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile) so they can be fanned out to different destinations at different urgencies — readings to a long-term compliance archive, alerts to an on-call paging system or LIMS (laboratory information management system). [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) can group units by storage type (refrigerator vs. freezer vs. ultra-cold) with different threshold presets applied fleet-wide.
 
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
+
+## 2.5 Quickstart
+
+**What you'll have when done:** A Notecarrier CX with a calibrated PT1000 temperature probe, door switch, and light sensor that sends timestamped readings to Notehub every 5 minutes, with immediate alerts on temperature excursions or prolonged door-open events. Readings accumulate in the Notecard's flash-backed queue and sync on a 60-minute cellular schedule — completely independent of facility WiFi.
+
+**Fastest path to first event (no probe):** 
+1. Obtain a Notecarrier CX + MBGLW, VEML7700 sensor, and magnetic door switch
+2. Wire the three sensors (I²C, GPIO, and Qwiic as shown in [§4](#4-wiring-and-assembly))
+3. Clone this repo; paste your Notehub ProductUID into `firmware/cold_storage_audit_monitor.ino` (line 51)
+4. Flash with `arduino-cli compile -b blues:stm32:Notecarrier_CX firmware/ && arduino-cli upload -b blues:stm32:Notecarrier_CX -p /dev/ttyACM0 firmware/` (adjust port for your OS)
+5. Power up; verify readings appear in Notehub within 60 seconds (may take 1–5 minutes on first power for cellular registration)
+6. Override thresholds in Notehub **Fleet → Environment** (e.g., `temp_high_alert_c: 8.0`, `temp_low_alert_c: 2.0` for refrigerated storage)
+
+**For production:** Follow §9 and obtain a NIST-calibrated PT1000 probe assembly before regulatory deployment.
 
 ## 3. Hardware Requirements
 
@@ -232,7 +224,7 @@ The sketch is split across three files, all directly under `firmware/`:
 
 Dependencies:
 - Arduino core for STM32 ([`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32)).
-- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (the `note-arduino` library, current stable **v1.8.5**). Install via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`.
+- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (the `note-arduino` library). Install via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`.
 - [`Adafruit MAX31865`](https://github.com/adafruit/Adafruit_MAX31865) **≥ v1.1.0** (returns `bool` from `begin()`). Install via Library Manager: search "Adafruit MAX31865". Requires Adafruit BusIO.
 - [`Adafruit VEML7700`](https://github.com/adafruit/Adafruit_VEML7700). Install via Library Manager: search "Adafruit VEML7700". Requires Adafruit BusIO.
 

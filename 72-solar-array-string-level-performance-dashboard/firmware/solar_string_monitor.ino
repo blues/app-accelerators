@@ -25,7 +25,7 @@
 
   Dependencies (install via Arduino Library Manager)
   --------------------------------------------------
-  - Blues Wireless Notecard  v1.8.5
+  - Blues Wireless Notecard
   - ModbusMaster  (4-20-ma/ModbusMaster)
   - OneWire
   - DallasTemperature

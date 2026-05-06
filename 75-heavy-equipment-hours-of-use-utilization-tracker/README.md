@@ -10,18 +10,6 @@ A retrofit [asset location tracking](https://blues.com/solutions-location-tracki
 
 **What you'll have when you're done:** a weatherproof, battery-backed sidecar that clips magnetically onto any steel chassis, wakes every 30 seconds to sample the accelerometer, classifies the vibration as "engine running," "being transported," or "idle," and transmits a utilization summary on a rolling window (24 hours by default) plus an immediate cellular or satellite event every time the state changes — from anywhere, including remote pipeline corridors, open-pit mines, and wind-farm construction zones where the nearest cell tower is more of a suggestion than a certainty.
 
-## Quickstart (under 10 minutes)
-
-1. Create a [Notehub project](https://notehub.io) and copy your ProductUID.
-2. Wire the bench: Notecarrier CX + NOTE-NBGLWX + LSM6DSOX on I2C (see [§4](#4-wiring-and-assembly) for pinout).
-3. Edit `firmware/equipment_hours_tracker/equipment_hours_tracker_helpers.h` — replace the empty `#define PRODUCT_UID ""` with your project value (format: `com.your-company.your-name:tracker`).
-4. Install board core: `arduino-cli core install STMicroelectronics:stm32 --additional-urls https://raw.githubusercontent.com/stm32duino/BoardManagerFiles/main/STM32/package_stm_index.json`
-5. Compile and upload (see [§6.1](#61-installing-and-flashing) for full `arduino-cli` commands with your port).
-6. Open serial monitor at **115200 baud**. You should see `[BOOT] Cold boot` or `[VIB]` log lines every 30 seconds.
-7. Power the device. Open Notehub → your project → **Events** tab. You should see `_session.qo` within ~1 minute on cellular (longer on satellite depending on sky view). Tap the enclosure to trigger vibration; state-change events appear in `equip_event.qo`.
-
-See [Appendix: Quickstart at a Glance](#appendix-quickstart-at-a-glance) for more details.
-
 ## 1. Project Overview
 
 **The problem.** A piece of rental heavy equipment is a revenue-generating asset measured in hours. The excavator that a contractor rented on Monday morning needs an accurate engine-hour count for billing on Friday afternoon, a warranty-hours check before the next delivery, and a predictive-maintenance flag at 250-hour service intervals. Hardwired telematics — OBD-II interfaces, CAN-bus taps, hour-meter relays — work well on new fleet acquisitions but are expensive to retrofit on older machines, often require equipment downtime for installation, and occasionally void warranties when they involve accessing the engine control unit.
@@ -47,6 +35,18 @@ Vibration-based hour detection solves the retrofit problem entirely. A small enc
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS IoT Core, Azure IoT Hub, GCP Pub/Sub, Snowflake, and other destinations. State-change events (`equip_event.qo`) are good candidates to route to an on-call webhook or work-order system; daily summaries (`equip_summary.qo`) suit a time-series historian or billing database. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for configuration — this project ships no specific downstream endpoint.
 
 ---
+
+## 2.5 Quickstart
+
+1. Create a [Notehub project](https://notehub.io) and copy your ProductUID.
+2. Wire the bench: Notecarrier CX + NOTE-NBGLWX + LSM6DSOX on I2C (see [§4](#4-wiring-and-assembly) for pinout).
+3. Edit `firmware/equipment_hours_tracker/equipment_hours_tracker_helpers.h` — replace the empty `#define PRODUCT_UID ""` with your project value (format: `com.your-company.your-name:tracker`).
+4. Install board core: `arduino-cli core install STMicroelectronics:stm32 --additional-urls https://raw.githubusercontent.com/stm32duino/BoardManagerFiles/main/STM32/package_stm_index.json`
+5. Compile and upload (see [§6.1](#61-installing-and-flashing) for full `arduino-cli` commands with your port).
+6. Open serial monitor at **115200 baud**. You should see `[BOOT] Cold boot` or `[VIB]` log lines every 30 seconds.
+7. Power the device. Open Notehub → your project → **Events** tab. You should see `_session.qo` within ~1 minute on cellular (longer on satellite depending on sky view). Tap the enclosure to trigger vibration; state-change events appear in `equip_event.qo`.
+
+See [Appendix: Quickstart at a Glance](#appendix-quickstart-at-a-glance) for more details.
 
 ## 3. Hardware Requirements
 
@@ -192,7 +192,7 @@ Arduino build tooling automatically compiles every `.ino`, `.h`, and `.cpp` file
 **Dependencies:**
 
 - **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Install via the Arduino Boards Manager (search "STM32 MCU based boards") and select **Generic STM32L4 series → Cygnet** as the board target.
-- **`Blues Wireless Notecard`** — [`note-arduino`](https://github.com/blues/note-arduino), tested on **v1.8.5**. Install via the Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard@1.8.5"`), or select version 1.8.5 in the IDE Library Manager. See [note-arduino releases](https://github.com/blues/note-arduino/releases) if you need to pin a newer stable release.
+- **`Blues Wireless Notecard`** — [`note-arduino`](https://github.com/blues/note-arduino). Install via the Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard"`), or select the latest stable version in the IDE Library Manager. See [note-arduino releases](https://github.com/blues/note-arduino/releases) for available versions.
 - **`Adafruit LSM6DS`** — install via Library Manager (`arduino-cli lib install "Adafruit LSM6DS"`). Also installs the `Adafruit Unified Sensor` dependency if not already present.
 
 **Flashing via Arduino IDE:** open `equipment_hours_tracker.ino`, select the Cygnet board (Generic STM32L4 → Cygnet), and click **Upload**. The Notecarrier CX presents the ST-Link interface on the same USB cable — no external programmer required.

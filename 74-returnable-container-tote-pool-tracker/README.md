@@ -10,18 +10,6 @@ An [asset location tracking](https://blues.com/solutions-location-tracking/) sol
 
 **What you'll have when you're done:** a bench/POC [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) prototype that validates the concept end-to-end — the assembly wakes itself on motion, delivers a triangulated-location event to Notehub within a session-establishment window after the motion threshold is crossed (typically 15–60 s depending on network conditions and bucket settings), then returns to deep sleep until the next motion event or daily timer fires. No external sensors. No site networking. Operators tune heartbeat interval and motion sensitivity from Notehub without re-flashing. The LiPo power path makes this build appropriate for bench validation and limited field trials (12–24 months per charge cycle); a multi-year production deployment requires the custom carrier and Li-SOCl₂ primary-cell stack described in [§9](#9-limitations-and-next-steps).
 
-## Quickest Path to First Event
-
-1. Clone this repo and open `/firmware/tote_pool_tracker.ino` in Arduino IDE.
-2. Replace the empty `#define PRODUCT_UID ""` with your Notehub project's ProductUID.
-3. Install the **Arduino Core for STM32** and **Blues Wireless Notecard** library (see [§6.1](#61-installing-and-flashing)).
-4. Select board **Generic STM32L4 series → Cygnet** under **Tools → Board**.
-5. Click **Upload**. The Notecarrier CX's ST-Link interface appears as a USB device — no external programmer needed.
-6. Power the assembly (USB or battery). On first cellular connect, the device auto-associates with your Notehub project. Within 1–2 minutes it appears in the **Devices** tab.
-7. Tap or shake the assembly firmly for 3–4 seconds. A `tote_event.qo` with `"event":"departed"` should arrive in Notehub within ~30 seconds. Set it down; after 30 s of stillness, a `"event":"arrived"` follows.
-
-Detailed assembly, firmware, and Notehub configuration follow in the sections below.
-
 ## 1. Project Overview
 
 **The problem.** Reusable containers are the circulatory system of supply chains — plastic totes move produce from farm to distribution center, pressurized cylinders ferry gases between filling plants and customer sites, stainless kegs make the brewery-to-bar loop thousands of times before retirement. The economics only work when the containers keep circulating. But they leak out of their pools constantly: left on a loading dock past their pickup window, mislaid in a back corner of a customer warehouse, loaded onto the wrong carrier, or simply forgotten at a rail interchange for six months. Industry estimates peg pool shrinkage at anywhere from 5% to 20% annually per container type — a quiet, diffuse cost that rarely generates a single dramatic incident but steadily erodes the pool's working capacity and replacement budget.
@@ -90,6 +78,18 @@ The `reason` field is `0` (boot), `1` (heartbeat), or `2` (low battery). The `wh
 **Notehub responsibilities.** The [Notecard](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to [Notehub](https://notehub.io) over the Internet; [Notehub](https://dev.blues.io/notehub/notehub-walkthrough/) ingests events, stores every event, resolves cell-tower data to human-readable location, and applies project-level routes. Events land in two separate [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile) — `tote_event.qo` for motion events and `tote_heartbeat.qo` for daily heartbeats — so routes can be configured to fan them to different destinations at different urgencies without filter logic in the route itself. [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) and [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) group devices for shared configuration, allowing per-fleet environment variable overrides (e.g., different motion thresholds for totes versus kegs versus cylinders without separate firmware builds).
 
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint. A typical fleet integration routes `tote_event.qo` to a warehouse management system (WMS) or custom fleet portal in real-time, and `tote_heartbeat.qo` to long-term storage for pool health analytics.
+
+## 2.5 Quickstart
+
+1. Clone this repo and open `/firmware/tote_pool_tracker.ino` in Arduino IDE.
+2. Replace the empty `#define PRODUCT_UID ""` with your Notehub project's ProductUID.
+3. Install the **Arduino Core for STM32** and **Blues Wireless Notecard** library (see [§6.1](#61-installing-and-flashing)).
+4. Select board **Generic STM32L4 series → Cygnet** under **Tools → Board**.
+5. Click **Upload**. The Notecarrier CX's ST-Link interface appears as a USB device — no external programmer needed.
+6. Power the assembly (USB or battery). On first cellular connect, the device auto-associates with your Notehub project. Within 1–2 minutes it appears in the **Devices** tab.
+7. Tap or shake the assembly firmly for 3–4 seconds. A `tote_event.qo` with `"event":"departed"` should arrive in Notehub within ~30 seconds. Set it down; after 30 s of stillness, a `"event":"arrived"` follows.
+
+Detailed assembly, firmware, and Notehub configuration follow in the sections below.
 
 ## 3. Hardware Requirements
 
@@ -182,7 +182,7 @@ The Arduino toolchain automatically compiles the `.h` and `.cpp` alongside the `
 **Dependencies:**
 
 - **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**. Select **Generic STM32L4 series → Cygnet** as the board target.
-- **`Blues Wireless Notecard`** library — [`note-arduino`](https://github.com/blues/note-arduino). Install via the Arduino Library Manager (search "Blues Wireless Notecard") or `arduino-cli lib install "Blues Wireless Notecard"`. Current stable version at time of publication: **v1.8.5**. See the [note-arduino releases page](https://github.com/blues/note-arduino/releases) for the version available when you install.
+- **`Blues Wireless Notecard`** library — [`note-arduino`](https://github.com/blues/note-arduino). Install via the Arduino Library Manager (search "Blues Wireless Notecard") or `arduino-cli lib install "Blues Wireless Notecard"`. See the [note-arduino releases page](https://github.com/blues/note-arduino/releases) for the version available when you install.
 
 **Flashing — Arduino IDE:** Open `firmware/tote_pool_tracker.ino`, select the Cygnet board under Tools → Board, and click Upload. The Notecarrier CX presents the ST-Link interface over USB — no external programmer needed.
 
@@ -426,7 +426,7 @@ Useful Mojo bench validation: leave the assembly running for 24 h and confirm th
 
 **Event payload is missing a field (e.g., `cycle` is absent).**
 
-- Check the firmware version. Early versions may have had different payloads. Ensure you've uploaded the latest sketch and that the installed **Blues Wireless Notecard** library is v1.8.5 or later.
+- Check the firmware version. Early versions may have had different payloads. Ensure you've uploaded the latest sketch and that the installed **Blues Wireless Notecard** library is up to date.
 
 ## 10. Limitations and Next Steps
 

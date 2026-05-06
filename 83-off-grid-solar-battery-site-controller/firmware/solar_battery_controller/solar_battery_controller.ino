@@ -11,10 +11,10 @@
  *
  * Board:    Blues Notecarrier CX (onboard Cygnet STM32L433 host)
  * Notecard: NOTE-MBGLW (cellular) or NOTE-NBGLWX (Skylo NTN satellite) in M.2 slot
- * Library:  Blues Wireless Notecard (note-arduino) v1.8.5
+ * Library:  Blues Wireless Notecard (note-arduino)
  *
  * Dependencies (install via Arduino Library Manager):
- *   - "Blues Wireless Notecard"  (note-arduino v1.8.5)
+ *   - "Blues Wireless Notecard"  (note-arduino)
  *   - STMicroelectronics STM32 core (stm32duino) with Cygnet board support
  *
  * Source is split across three modules:

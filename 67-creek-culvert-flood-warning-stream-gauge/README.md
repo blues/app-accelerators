@@ -30,7 +30,7 @@ This project is a self-contained, edge-intelligent stream gauge that measures th
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route configuration is project-specific. See the [Notehub routing documentation](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) are the natural way to group gauges by watershed or jurisdiction for threshold management.
 
-## Quick Start: Flash and Deploy
+## 2.5 Quickstart
 
 **Minimum viable path (30 minutes):**
 
@@ -53,8 +53,6 @@ This project is a self-contained, edge-intelligent stream gauge that measures th
 5. **Power the enclosure.** Within a few minutes, the device appears in Notehub. You now have a live gauge sampling every 5 minutes and ready to receive threshold tuning via environment variables.
 
 **Expected outcome:** One `gauge_reading.qo` note per hour in Notehub, zero `gauge_alert.qo` notes in dry conditions. See Section 8 for how to simulate water-level and rain events to validate alert firing.
-
----
 
 ## 3. Hardware Requirements
 
@@ -157,7 +155,7 @@ Three-file Arduino project in `firmware/creek_flood_gauge/`:
 **Dependencies:**
 
 - Arduino core for STM32 ([`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32)).
-- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (the `note-arduino` library, stable v1.8.5). Install via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`. Check [note-arduino releases](https://github.com/blues/note-arduino/releases) for a newer version before installing.
+- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (the `note-arduino` library). Install via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`. Check [note-arduino releases](https://github.com/blues/note-arduino/releases) for the latest version.
 
 ### Modules
 

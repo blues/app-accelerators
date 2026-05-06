@@ -13,30 +13,6 @@ A bank-level solar and battery monitoring solution — a Blues [battery manageme
 ## 1. Project Overview
 
 > **Interface note.** This project reads the [Victron VE.Direct text protocol](https://www.victronenergy.com/upload/documents/VE.Direct-Protocol-3.34.pdf) — a one-wire broadcast interface that exposes battery-bank aggregates (SoC, voltage, current, temperature, and charge state) and solar-side metrics (panel voltage, power, and daily yield). These are exactly the signals needed to detect the site-uptime failure modes this design targets: persistent recharge deficit, low SoC, thermal overtemperature, and excessive load draw. Bank-level aggregates are the correct scope for a bank-level site-uptime monitor. **Cell-imbalance monitoring was explicitly evaluated during design and scoped out**: per-cell voltages and imbalance data are not broadcast on the VE.Direct wire — they travel over CAN bus and require a dedicated CAN controller and transceiver that are absent from this hardware stack. Implementing cell-level telemetry is a distinct hardware and firmware problem that belongs in a companion design rather than an extension of this project (see §9 for the full rationale and the companion-design specification).
-
-### Quickstart
-
-To get a working monitor up and running in ~2 hours:
-
-1. **Assemble** the Notecarrier CX with Notecard (Cell+WiFi or Skylo), DC-DC converter, and resistor dividers per §4.
-2. **Wire** the SmartShunt and MPPT to the two VE.Direct ports on the Notecarrier CX header (§4).
-3. **Install dependencies:**
-   ```bash
-   arduino-cli core install "STMicroelectronics:stm32"
-   arduino-cli lib install "Blues Wireless Notecard@1.8.5"
-   ```
-4. **Set ProductUID** in `firmware/solar_battery_controller/solar_battery_controller.ino` line 62.
-5. **Flash:**
-   ```bash
-   arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/solar_battery_controller/
-   arduino-cli upload -b STMicroelectronics:stm32:GenL4:pnum=CYGNET -p /dev/cu.usbmodem* firmware/solar_battery_controller/
-   ```
-6. **Claim and configure in Notehub:**
-   - Power on; the device claims itself to your project within ~1 minute (watch **Devices** tab).
-   - Create a Fleet; set **Fleet → Environment** variables (see table in §5) — defaults are reasonable for initial testing.
-   - Add routes for `solar_alert.qo` (real-time) and `solar_summary.qo` (storage/analytics).
-7. **Validate** — you should see `_session.qo` and `solar_summary.qo` Notes appearing in Notehub within 5–10 minutes (see "What you should see in Notehub" in §5).
-
 **The problem.** Remote sites that run on solar and battery — cell towers at the edge of coverage, environmental monitoring stations in the backcountry, off-grid cabins — share a common failure mode: a problem that started small, days ago, accumulates unnoticed until the site goes dark. A slowly degrading PV array, a load that crept up after a firmware update to on-site equipment, or a battery bank whose capacity has quietly faded with age: none of these are catastrophic on their own, but any one of them can drain a bank that the solar array is no longer sized to replenish. This design detects that condition directly: if the charge controller fails to reach a full-charge state (Float, Absorption, Equalize, or Auto Equalize) for a configurable number of consecutive days, a `harvest_deficit` alert fires before the bank is depleted — giving the operations team time to respond before the site goes dark. And because the site is, by definition, remote, a days-long recharge deficit is invisible without continuous telemetry.
 
 **Why Notecard.** These sites are by definition off-grid *and* off-network. There is no building WiFi to connect to, no Ethernet jack in the enclosure, and no cellular router whose monthly bill someone else is paying. The Blues Notecard self-manages its radio session, draws microamp-range idle current between transmissions, and requires no site IT involvement to set up. Two SKUs seat in the same M.2 slot on the Notecarrier CX and run the same firmware without modification:
@@ -57,6 +33,29 @@ To get a working monitor up and running in ~2 hours:
 **Notehub responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to [Notehub](https://notehub.io) over the Internet; Notehub ingests events, stores them, and applies project-level routes. Alert Notes (`solar_alert.qo`) and summary Notes (`solar_summary.qo`) land in separate [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile), so they can be fanned out to different destinations at different urgencies without any filter logic in the route — alerts to an on-call or NOC system, summaries to a long-term analytics store.
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other targets; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
+
+## 2.5 Quickstart
+
+To get a working monitor up and running in ~2 hours:
+
+1. **Assemble** the Notecarrier CX with Notecard (Cell+WiFi or Skylo), DC-DC converter, and resistor dividers per §4.
+2. **Wire** the SmartShunt and MPPT to the two VE.Direct ports on the Notecarrier CX header (§4).
+3. **Install dependencies:**
+   ```bash
+   arduino-cli core install "STMicroelectronics:stm32"
+   arduino-cli lib install "Blues Wireless Notecard"
+   ```
+4. **Set ProductUID** in `firmware/solar_battery_controller/solar_battery_controller.ino` line 62.
+5. **Flash:**
+   ```bash
+   arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/solar_battery_controller/
+   arduino-cli upload -b STMicroelectronics:stm32:GenL4:pnum=CYGNET -p /dev/cu.usbmodem* firmware/solar_battery_controller/
+   ```
+6. **Claim and configure in Notehub:**
+   - Power on; the device claims itself to your project within ~1 minute (watch **Devices** tab).
+   - Create a Fleet; set **Fleet → Environment** variables (see table in §5) — defaults are reasonable for initial testing.
+   - Add routes for `solar_alert.qo` (real-time) and `solar_summary.qo` (storage/analytics).
+7. **Validate** — you should see `_session.qo` and `solar_summary.qo` Notes appearing in Notehub within 5–10 minutes (see "What you should see in Notehub" in §5).
 
 ## 3. Hardware Requirements
 
@@ -243,7 +242,7 @@ Five files:
 **Dependencies:**
 
 - **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Install via Arduino Boards Manager (search "STM32 MCU based boards") or add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**. Select **Generic STM32L4 series → Cygnet** as the board target.
-- **`Blues Wireless Notecard`** library — [`note-arduino`](https://github.com/blues/note-arduino), v1.8.5. Install via the Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard@1.8.5"`). Check the [note-arduino releases](https://github.com/blues/note-arduino/releases) for the latest stable version before starting a new project.
+- **`Blues Wireless Notecard`** library — [`note-arduino`](https://github.com/blues/note-arduino). Install via the Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard"`). Check the [note-arduino releases](https://github.com/blues/note-arduino/releases) for the latest stable version before starting a new project.
 
 **Flashing — Arduino IDE:** open `solar_battery_controller.ino`, select **STMicroelectronics → Generic STM32L4 series → Cygnet** as the board, and click **Upload**. The Notecarrier CX's onboard ST-Link debug interface enumerates as a virtual COM port on the same USB cable — no external programmer needed.
 

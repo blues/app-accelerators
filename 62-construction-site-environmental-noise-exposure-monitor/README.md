@@ -8,19 +8,6 @@ This reference application is intended to provide inspiration and help you get s
 
 A [safety assurance](https://blues.com/safety-assurance/) reference design that turns a construction site into a continuously monitored, GPS-stamped area monitoring point — tracking PM2.5, PM10, and dB(A) sound levels in real time without any site WiFi, power outlets, or IT coordination.
 
-## Quickstart
-
-1. **Clone and configure**: Download this repo and open `firmware/construction_env_monitor.ino`. Replace `PRODUCT_UID` constant with your Notehub project UID (see §5 step 1).
-2. **Build and flash**: Use Arduino IDE or `arduino-cli`:
-   ```bash
-   arduino-cli compile --fqbn STMicroelectronics:stm32:GenL0 firmware/
-   arduino-cli upload -p /dev/ttyUSB0 --fqbn STMicroelectronics:stm32:GenL0 firmware/
-   ```
-3. **Power and observe**: Connect LiPo (or USB for bench testing). The device samples every 5 minutes, queues summaries, and transmits to Notehub every 30 minutes. Watch `env_summary.qo` notes arrive in Notehub within 30 minutes of first power-on.
-4. **Set thresholds**: In Notehub, navigate to your Fleet → Environment Variables and set `pm25_alert_ug_m3`, `pm10_alert_ug_m3`, and `db_a_alert` (see §5). Alerts fire immediately when thresholds are breached.
-
-**What you'll have:** A solar-powered cellular area monitor that streams PM2.5, PM10, and sound levels as templated notes to Notehub, with real-time alerts on threshold breach.
-
 ## 1. Project Overview
 
 **The problem.** OSHA regulations governing construction sites require documented monitoring of worker exposure to silica dust, general particulate matter, and noise. OSHA 29 CFR 1926.1153 mandates air monitoring when workers may be exposed to respirable crystalline silica above the action level (25 µg/m³). Similarly, OSHA's noise standard (29 CFR 1926.52) requires monitoring and protection when **TWA** (time-weighted average) noise levels reach 85 dB(A) over an 8-hour shift. Compliant silica exposure documentation requires filter-based personal samplers analyzed by X-ray diffraction (NIOSH Method 7500); compliant noise documentation requires a dosimeter worn by each worker for a full shift. Both paradigms share the same problem: data arrives too late to act on — the shift is over before anyone reviews it, and the opportunity to intervene in real time has passed.
@@ -42,6 +29,19 @@ This project is a solar-powered cellular **area monitor** — a fixed, perimeter
 **Notehub responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to Notehub over the Internet; [Notehub](https://notehub.io) ingests events, stores them, and applies project-level routes. Exposure summaries (`env_summary.qo`) and threshold alerts (`env_alert.qo`) land in separate [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile), which means downstream routes can treat them differently — alerts to an on-call system or safety officer inbox, summaries to a long-term compliance archive. Notehub also automatically appends `where_lat`, `where_lon`, and other location metadata to every event based on the Notecard's last-known GNSS fix.
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS IoT Core, Azure IoT Hub, GCP Pub/Sub, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing documentation](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for details — this project does not ship any specific downstream endpoint.
+
+## 2.5 Quickstart
+
+1. **Clone and configure**: Download this repo and open `firmware/construction_env_monitor.ino`. Replace `PRODUCT_UID` constant with your Notehub project UID (see §5 step 1).
+2. **Build and flash**: Use Arduino IDE or `arduino-cli`:
+   ```bash
+   arduino-cli compile --fqbn STMicroelectronics:stm32:GenL0 firmware/
+   arduino-cli upload -p /dev/ttyUSB0 --fqbn STMicroelectronics:stm32:GenL0 firmware/
+   ```
+3. **Power and observe**: Connect LiPo (or USB for bench testing). The device samples every 5 minutes, queues summaries, and transmits to Notehub every 30 minutes. Watch `env_summary.qo` notes arrive in Notehub within 30 minutes of first power-on.
+4. **Set thresholds**: In Notehub, navigate to your Fleet → Environment Variables and set `pm25_alert_ug_m3`, `pm10_alert_ug_m3`, and `db_a_alert` (see §5). Alerts fire immediately when thresholds are breached.
+
+**What you'll have:** A solar-powered cellular area monitor that streams PM2.5, PM10, and sound levels as templated notes to Notehub, with real-time alerts on threshold breach.
 
 ## 3. Hardware Requirements
 
@@ -132,7 +132,7 @@ The Hammond 1554CGY enclosure is ABS plastic, which is RF-transparent — cellul
 **Prerequisites:**
 - Arduino IDE 2.0+ with [Arduino core for STM32](https://github.com/stm32duino/Arduino_Core_STM32) installed, or `arduino-cli` v0.21+.
 - Required libraries:
-  - `Blues Wireless Notecard` (v1.8.5+): `arduino-cli lib install "Blues Wireless Notecard"`
+  - `Blues Wireless Notecard`: `arduino-cli lib install "Blues Wireless Notecard"`
   - `Adafruit PM25 AQI Sensor`: `arduino-cli lib install "Adafruit PM25 AQI Sensor"`
 
 **Using Arduino IDE:** Open `firmware/construction_env_monitor.ino`, select board `STMicroelectronics → STM32L → Notecarrier CX`, update `PRODUCT_UID`, and click Upload.

@@ -12,7 +12,52 @@ A pack-level sentinel — a Blues [battery management systems](https://blues.com
 
 **What you'll have when you're done:** a compact sentinel installed inside a cabinet that samples the backup battery every two minutes, ships an hourly health summary (including a state-of-charge estimate) over cellular, and pages your operations team within one sample interval plus cellular session-establishment time (typically two to three minutes at default settings) of a power outage, an overvoltage charger fault, an elevated float current that signals a VRLA battery is quietly failing months before the next scheduled inspection, or a low-SoC threshold trip.
 
-### Quickstart at a glance
+The rest of this README expands on the system architecture, hardware requirements, and firmware design. For a practical quick start, see [§2.5 Quickstart](#25-quickstart). If you are doing a real cabinet install rather than a bench bring-up, also read [§9 Limitations](#9-limitations-and-next-steps) before committing to a shunt and power topology.
+
+## Table of Contents
+- [1. Project Overview](#1-project-overview)
+- [2. System Architecture](#2-system-architecture)
+- [2.5 Quickstart](#25-quickstart)
+- [3. Hardware Requirements](#3-hardware-requirements)
+- [4. Wiring and Assembly](#4-wiring-and-assembly)
+- [5. Notehub Setup](#5-notehub-setup)
+- [6. Firmware Design](#6-firmware-design)
+- [7. Data Flow](#7-data-flow)
+- [8. Validation and Testing](#8-validation-and-testing)
+- [9. Limitations and Next Steps](#9-limitations-and-next-steps)
+- [9.1 Troubleshooting](#91-troubleshooting)
+- [9.2 Environment Variables — Quick Reference](#92-environment-variables--quick-reference)
+- [10. Summary](#10-summary)
+
+## 1. Project Overview
+
+**The problem.** VRLA (valve-regulated lead-acid) and LFP (lithium iron phosphate) backup batteries in roadside cabinets and remote equipment enclosures are the last line of defense against site downtime — and they're almost universally untested until they fail. A healthy-looking battery can have lost 60% of its usable capacity to sulfation while still holding nominal open-circuit voltage. A single shorted cell in a 12 V six-cell VRLA string depresses the pack voltage, but the charger compensates by pushing more current, masking the fault entirely from any simple voltage-only check.
+
+The failure signal that *does* show up early is float current. A healthy VRLA battery at full charge draws only a few milliamps per 100 Ah from the charger — just enough to overcome self-discharge and electrochemical leakage. When internal resistance climbs due to sulfation or plate damage, the charger must push more current continuously just to hold voltage. Elevated float current is a reliable weeks-in-advance indicator that a battery is headed toward failure. It is a **pack-level aggregate** — it reveals that the string as a whole is degrading, which is often caused by one or more weakened cells, but it does not identify the specific cell or quantify per-cell imbalance. Distinguishing individual failed cells requires per-cell voltage monitoring hardware not included in this design (see §9). Nobody is watching pack float current, because nobody has instrumented it.
+
+This project instruments it. A precision bidirectional current monitor sits in series with the battery's positive terminal, measuring float current with milliamp resolution. When the charger current reverses and the battery starts discharging — because mains power failed — the Notecard fires an immediate alert. When float current climbs steadily over weeks, the hourly summary captures the trend for a downstream analytics system to act on.
+
+**Chemistry scope.** The float-current capacity-degradation signal is a VRLA mechanism. LFP batteries do not sulfate, and elevated float current on an LFP pack indicates a charger or BMS configuration fault rather than cell-level degradation. LFP installations still benefit fully from four of the six battery-condition alert modes this design provides — power-outage detection (current reversal), pack voltage bounds checking, surface temperature alerting, and low-SoC threshold tripping — but float-current trending as a capacity-health proxy does not apply to LFP without chemistry-specific calibration. See §7 for per-alert chemistry guidance and §9 for LFP threshold commissioning notes.
+
+**Why Notecard.** The Notecard's independence from site infrastructure is the fundamental feature here. A traffic-cabinet controller, a roadside LoRaWAN gateway, or a roadside remote terminal unit all have their own modems and radios — but those are exactly the devices the backup battery is supposed to keep running during a mains failure. You cannot use the site's LTE modem to report that the site's LTE modem just went down because the backup battery was dead.
+
+The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM, on a power path independent of the site equipment. When mains fails, the sentinel continues running from the cabinet battery bus through the DC-DC converter — which is precisely what allows it to observe the discharge in real time: voltage sag under actual site load, current draw, duration, and eventual recovery. The Notecarrier CX's onboard LiPo charger adds a reporting tail for the end-of-discharge case: once the cabinet battery is deeply depleted, the bus falls below the DC-DC converter's minimum input voltage, or the battery is disconnected entirely, the 2000 mAh LiPo takes over and extends cellular reporting beyond the battery's own capacity. If the sentinel needs to be fully independent of the monitored battery from the moment of mains failure — not riding on it at all — a separate, isolated power source is required. That discharge curve — only available because the sentinel kept running while everything else went dark — is the most valuable diagnostic data you can collect about backup battery health.
+
+**Deployment scenario.** A compact enclosure mounted inside a traffic-signal controller housing, roadside IoT gateway enclosure, industrial RTU cabinet, or telecom equipment shelter — installations running on a 12 V or 24 V positive-referenced DC bus. The Adafruit INA228 shunt monitor wires in series with the battery's positive terminal; the NTC thermistor is affixed to the battery case surface with thermal adhesive. A DC-DC step-down module converts the cabinet bus voltage to regulated 5 V for the Notecarrier CX; a 2000 mAh LiPo on the JST connector is charged from that 5 V supply; during a mains outage the sentinel continues running from the cabinet battery via the DC-DC converter, with the LiPo taking over only when the monitored battery is deeply depleted or the bus drops below the converter's input range. The Notecard's cellular antenna routes out of the enclosure via u.FL pigtail to a patch or magnetic-mount antenna on the cabinet exterior.
+
+## 2. System Architecture
+
+![System architecture: battery sensors → Notecarrier CX edge enclosure → cellular/WiFi → Notehub → routes](diagrams/01-system-architecture.svg)
+
+**Device-side responsibilities.** The onboard Cygnet STM32L433 host on the Notecarrier CX wakes every two minutes, reads pack voltage and bidirectional current from the INA228 over Qwiic, reads surface temperature from the NTC thermistor on A0, then evaluates six battery-condition rules plus one sensor-health alert locally. Any rule that trips emits an alert [Note](https://dev.blues.io/api-reference/glossary/#note) with `sync:true` for immediate delivery. All per-window statistics accumulate in a state struct serialised into Notecard flash by `NotePayloadSaveAndSleep` before the host powers off; [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) handles the host power-gating so the MCU is off entirely between samples. Window-average power (`voltAvg × currAvg`) is derived at summary time, not sampled per-read from the INA228 power register.
+
+**Notecard responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM, stores Notes in its on-device queue, establishes sessions on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 minutes), and flushes `sync:true` alert Notes immediately. It also distributes [environment variable](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) updates from Notehub to the host on its inbound schedule — operators can retune every threshold and both cadence values without reflashing.
+
+**Notehub responsibilities.** [Notehub](https://notehub.io) ingests events over the Internet, stores every event, and applies project-level routes. The two Notefiles — `battery_summary.qo` for periodic telemetry and `battery_alert.qo` for threshold trips — are kept deliberately separate so you can fan them to different downstream destinations at different urgencies.
+
+**Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
+
+## 2.5 Quickstart
 
 1. **Notehub** — create a [Notehub project](https://notehub.io) and copy the ProductUID.
 2. **Wire the bench rig** — Notecarrier CX + Notecard MBGLW + INA228 on Qwiic + NTC divider on A0 + LiPo on JST. Full pinout in [§4](#4-wiring-and-assembly).
@@ -55,50 +100,6 @@ A pack-level sentinel — a Blues [battery management systems](https://blues.com
      "temp_c": 25.5
    }
    ```
-
-The rest of this README expands each step and explains why the firmware is shaped the way it is. If you are doing a real cabinet install rather than a bench bring-up, also read [§9 Limitations](#9-limitations-and-next-steps) before committing to a shunt and power topology.
-
-## Table of Contents
-- [1. Project Overview](#1-project-overview)
-- [2. System Architecture](#2-system-architecture)
-- [3. Hardware Requirements](#3-hardware-requirements)
-- [4. Wiring and Assembly](#4-wiring-and-assembly)
-- [5. Notehub Setup](#5-notehub-setup)
-- [6. Firmware Design](#6-firmware-design)
-- [7. Data Flow](#7-data-flow)
-- [8. Validation and Testing](#8-validation-and-testing)
-- [9. Limitations and Next Steps](#9-limitations-and-next-steps)
-- [9.1 Troubleshooting](#91-troubleshooting)
-- [9.2 Environment Variables — Quick Reference](#92-environment-variables--quick-reference)
-- [10. Summary](#10-summary)
-
-## 1. Project Overview
-
-**The problem.** VRLA (valve-regulated lead-acid) and LFP (lithium iron phosphate) backup batteries in roadside cabinets and remote equipment enclosures are the last line of defense against site downtime — and they're almost universally untested until they fail. A healthy-looking battery can have lost 60% of its usable capacity to sulfation while still holding nominal open-circuit voltage. A single shorted cell in a 12 V six-cell VRLA string depresses the pack voltage, but the charger compensates by pushing more current, masking the fault entirely from any simple voltage-only check.
-
-The failure signal that *does* show up early is float current. A healthy VRLA battery at full charge draws only a few milliamps per 100 Ah from the charger — just enough to overcome self-discharge and electrochemical leakage. When internal resistance climbs due to sulfation or plate damage, the charger must push more current continuously just to hold voltage. Elevated float current is a reliable weeks-in-advance indicator that a battery is headed toward failure. It is a **pack-level aggregate** — it reveals that the string as a whole is degrading, which is often caused by one or more weakened cells, but it does not identify the specific cell or quantify per-cell imbalance. Distinguishing individual failed cells requires per-cell voltage monitoring hardware not included in this design (see §9). Nobody is watching pack float current, because nobody has instrumented it.
-
-This project instruments it. A precision bidirectional current monitor sits in series with the battery's positive terminal, measuring float current with milliamp resolution. When the charger current reverses and the battery starts discharging — because mains power failed — the Notecard fires an immediate alert. When float current climbs steadily over weeks, the hourly summary captures the trend for a downstream analytics system to act on.
-
-**Chemistry scope.** The float-current capacity-degradation signal is a VRLA mechanism. LFP batteries do not sulfate, and elevated float current on an LFP pack indicates a charger or BMS configuration fault rather than cell-level degradation. LFP installations still benefit fully from four of the six battery-condition alert modes this design provides — power-outage detection (current reversal), pack voltage bounds checking, surface temperature alerting, and low-SoC threshold tripping — but float-current trending as a capacity-health proxy does not apply to LFP without chemistry-specific calibration. See §7 for per-alert chemistry guidance and §9 for LFP threshold commissioning notes.
-
-**Why Notecard.** The Notecard's independence from site infrastructure is the fundamental feature here. A traffic-cabinet controller, a roadside LoRaWAN gateway, or a roadside remote terminal unit all have their own modems and radios — but those are exactly the devices the backup battery is supposed to keep running during a mains failure. You cannot use the site's LTE modem to report that the site's LTE modem just went down because the backup battery was dead.
-
-The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM, on a power path independent of the site equipment. When mains fails, the sentinel continues running from the cabinet battery bus through the DC-DC converter — which is precisely what allows it to observe the discharge in real time: voltage sag under actual site load, current draw, duration, and eventual recovery. The Notecarrier CX's onboard LiPo charger adds a reporting tail for the end-of-discharge case: once the cabinet battery is deeply depleted, the bus falls below the DC-DC converter's minimum input voltage, or the battery is disconnected entirely, the 2000 mAh LiPo takes over and extends cellular reporting beyond the battery's own capacity. If the sentinel needs to be fully independent of the monitored battery from the moment of mains failure — not riding on it at all — a separate, isolated power source is required. That discharge curve — only available because the sentinel kept running while everything else went dark — is the most valuable diagnostic data you can collect about backup battery health.
-
-**Deployment scenario.** A compact enclosure mounted inside a traffic-signal controller housing, roadside IoT gateway enclosure, industrial RTU cabinet, or telecom equipment shelter — installations running on a 12 V or 24 V positive-referenced DC bus. The Adafruit INA228 shunt monitor wires in series with the battery's positive terminal; the NTC thermistor is affixed to the battery case surface with thermal adhesive. A DC-DC step-down module converts the cabinet bus voltage to regulated 5 V for the Notecarrier CX; a 2000 mAh LiPo on the JST connector is charged from that 5 V supply; during a mains outage the sentinel continues running from the cabinet battery via the DC-DC converter, with the LiPo taking over only when the monitored battery is deeply depleted or the bus drops below the converter's input range. The Notecard's cellular antenna routes out of the enclosure via u.FL pigtail to a patch or magnetic-mount antenna on the cabinet exterior.
-
-## 2. System Architecture
-
-![System architecture: battery sensors → Notecarrier CX edge enclosure → cellular/WiFi → Notehub → routes](diagrams/01-system-architecture.svg)
-
-**Device-side responsibilities.** The onboard Cygnet STM32L433 host on the Notecarrier CX wakes every two minutes, reads pack voltage and bidirectional current from the INA228 over Qwiic, reads surface temperature from the NTC thermistor on A0, then evaluates six battery-condition rules plus one sensor-health alert locally. Any rule that trips emits an alert [Note](https://dev.blues.io/api-reference/glossary/#note) with `sync:true` for immediate delivery. All per-window statistics accumulate in a state struct serialised into Notecard flash by `NotePayloadSaveAndSleep` before the host powers off; [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) handles the host power-gating so the MCU is off entirely between samples. Window-average power (`voltAvg × currAvg`) is derived at summary time, not sampled per-read from the INA228 power register.
-
-**Notecard responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM, stores Notes in its on-device queue, establishes sessions on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 minutes), and flushes `sync:true` alert Notes immediately. It also distributes [environment variable](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) updates from Notehub to the host on its inbound schedule — operators can retune every threshold and both cadence values without reflashing.
-
-**Notehub responsibilities.** [Notehub](https://notehub.io) ingests events over the Internet, stores every event, and applies project-level routes. The two Notefiles — `battery_summary.qo` for periodic telemetry and `battery_alert.qo` for threshold trips — are kept deliberately separate so you can fan them to different downstream destinations at different urgencies.
-
-**Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
 
 ## 3. Hardware Requirements
 
@@ -248,7 +249,7 @@ The firmware is split across three files in `firmware/cabinet_battery_sentinel/`
 **Dependencies:**
 
 - **Arduino core for STM32** — install via the Arduino Boards Manager (add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**). Select **Generic STM32L4 series → Cygnet** as the board.
-- **`Blues Wireless Notecard`** (note-arduino) v1.8.5 — install via the Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard@1.8.5"`). v1.8.5 is the recommended stable release at time of writing; check [note-arduino releases](https://github.com/blues/note-arduino/releases) and use the latest stable version if a newer release is available.
+- **`Blues Wireless Notecard`** (note-arduino) — install via the Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard"`). Check [note-arduino releases](https://github.com/blues/note-arduino/releases) and use the latest stable version.
 - **`Adafruit INA228`** — install via the Arduino Library Manager (`arduino-cli lib install "Adafruit INA228"`).
 - **`Adafruit BusIO`** — required dependency of the INA228 library; install via Library Manager.
 

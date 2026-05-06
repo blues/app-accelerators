@@ -14,31 +14,6 @@ A connected-APU reference platform for [asset performance optimization](https://
 
 ---
 
-## Quickstart: First Data in 15 Minutes
-
-1. **Assemble the hardware** (§3, §4): Notecarrier CX, Notecard for Skylo, RS-485 BOB-10124, two DS18B20 probes, and ignition-sense voltage divider. For bench testing, use a USB 5V supply instead of the vehicle DC/DC converter.
-
-2. **Set up Notehub** (§5): Sign up at [notehub.io](https://notehub.io), create a project, copy the **ProductUID**, and set it in the firmware.
-
-3. **Flash the firmware** (§6.1):
-   ```bash
-   # Install dependencies once
-   arduino-cli lib install "Blues Wireless Notecard" "OneWire" "DallasTemperature"
-   
-   # Compile
-   arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/apu_oem_telemetry/apu_oem_telemetry.ino
-   
-   # Find your device port (shows as /dev/cu.usbmodem* on macOS, /dev/ttyACM0 on Linux)
-   ls /dev/cu.usbmodem* 2>/dev/null || ls /dev/ttyACM*
-   
-   # Upload (replace with your actual port)
-   arduino-cli upload -b STMicroelectronics:stm32:GenL4:pnum=CYGNET -p /dev/cu.usbmodem14102 firmware/apu_oem_telemetry/apu_oem_telemetry.ino
-   ```
-
-4. **Watch first events** — Power the Notecarrier. On the first cellular sync, the device registers with your Notehub project. In the **Devices** tab, click the device and select **Events** to see incoming `_session.qo`, `apu_telemetry.qo`, and test alerts (see §5, "Triggering test events").
-
-For a simulation without the real APU controller, see §8 "Modbus first-light" for USB-to-RS-485 and software Modbus simulator steps.
-
 ## 1. Project Overview
 
 **The problem.** Long-haul trucking has a massive and largely invisible fuel waste problem: engine idling. A Class 8 tractor sitting in a truck stop burns roughly 0.8–1.2 gallons per hour just to run its HVAC and electronics overnight. At that rate, a single truck running continental routes can waste 1,500–2,000 gallons a year in idle fuel alone — somewhere between $4,000 and $6,000 at typical diesel prices, and many fleets run hundreds of units. Regulators have noticed; anti-idling legislation covers major portions of the US and Canada, with fines for extended stops in many jurisdictions.
@@ -66,6 +41,33 @@ Beyond connectivity resilience, the Notecard's pre-certified global cellular rem
 **Smart Fleets.** A manufacturer with thousands of units in the field can use [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) to group devices by APU model, chassis OEM, or geographic territory and push model-specific fuel-consumption defaults to each group via fleet-level environment variables — without reflashing anything.
 
 ![System architecture: APU controller → RS-485 Modbus → Notecarrier CX with Cygnet STM32L433 + Notecard for Skylo → cellular / Skylo satellite NTN → Notehub → warranty and analytics routes](diagrams/01-system-architecture.svg)
+
+---
+
+## 2.5 Quickstart
+
+1. **Assemble the hardware** (§3, §4): Notecarrier CX, Notecard for Skylo, RS-485 BOB-10124, two DS18B20 probes, and ignition-sense voltage divider. For bench testing, use a USB 5V supply instead of the vehicle DC/DC converter.
+
+2. **Set up Notehub** (§5): Sign up at [notehub.io](https://notehub.io), create a project, copy the **ProductUID**, and set it in the firmware.
+
+3. **Flash the firmware** (§6.1):
+   ```bash
+   # Install dependencies once
+   arduino-cli lib install "Blues Wireless Notecard" "OneWire" "DallasTemperature"
+   
+   # Compile
+   arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/apu_oem_telemetry/apu_oem_telemetry.ino
+   
+   # Find your device port (shows as /dev/cu.usbmodem* on macOS, /dev/ttyACM0 on Linux)
+   ls /dev/cu.usbmodem* 2>/dev/null || ls /dev/ttyACM*
+   
+   # Upload (replace with your actual port)
+   arduino-cli upload -b STMicroelectronics:stm32:GenL4:pnum=CYGNET -p /dev/cu.usbmodem14102 firmware/apu_oem_telemetry/apu_oem_telemetry.ino
+   ```
+
+4. **Watch first events** — Power the Notecarrier. On the first cellular sync, the device registers with your Notehub project. In the **Devices** tab, click the device and select **Events** to see incoming `_session.qo`, `apu_telemetry.qo`, and test alerts (see §5, "Triggering test events").
+
+For a simulation without the real APU controller, see §8 "Modbus first-light" for USB-to-RS-485 and software Modbus simulator steps.
 
 ---
 
@@ -186,7 +188,7 @@ The firmware is split across three files:
 
 **Dependencies:**
 - **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` to **File → Preferences → Additional Boards Manager URLs**, then install "STM32 MCU based boards." Select **Generic STM32L4 series → Cygnet** as the board.
-- **`Blues Wireless Notecard`** (`note-arduino`) — Install via Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard"`). Current stable release at time of writing: **v1.8.5**. See [note-arduino releases](https://github.com/blues/note-arduino/releases) for the latest.
+- **`Blues Wireless Notecard`** (`note-arduino`) — Install via Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard"`). See [note-arduino releases](https://github.com/blues/note-arduino/releases) for available versions.
 - **`OneWire`** — Install via Library Manager (`arduino-cli lib install "OneWire"`). Used for DS18B20 communication.
 - **`DallasTemperature`** — Install via Library Manager (`arduino-cli lib install "DallasTemperature"`). Abstracts the DS18B20 one-wire protocol.
 

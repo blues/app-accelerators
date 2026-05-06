@@ -12,25 +12,6 @@ A [loss prevention](https://blues.com/loss-prevention/) reference design that ke
 
 **Energy footprint:** steady-state draw from a 12 V trailer supply is roughly 30–60 mAh per 24 h (dominated by one hourly cellular session of ~15–45 s at ~250 mA average). NTN satellite sessions consume more per event due to longer link establishment, but alert-only delivery over satellite keeps the 10 KB data budget intact. Commissioning validates actual consumption with [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) — see [§8](#8-validation-and-testing).
 
-### Quickstart at a glance
-
-1. **Notehub** — create a [Notehub project](https://notehub.io) and copy its ProductUID.
-2. **Wire the bench rig** — Notecarrier CX + Notecard for Skylo + two DS18B20 probes (VDD to +3V3, GND to GND, data to A0 with 4.7 kΩ pull-up to +3V3) + reed switch on A1. Full pinout in [§4](#4-wiring-and-assembly).
-3. **Edit one line** of [`firmware/reefer_cold_chain_monitor/reefer_cold_chain_monitor_helpers.h`](firmware/reefer_cold_chain_monitor/reefer_cold_chain_monitor_helpers.h) — set `PRODUCT_UID` to your project's value.
-4. **Flash with arduino-cli**:
-   ```bash
-   # Install libraries: Notecard, OneWire, DallasTemperature (via Arduino Library Manager)
-   # Find your Cygnet FQBN
-   arduino-cli board listall | grep -i cygnet
-   # Output will resemble: Cygnet    STMicroelectronics:stm32:Blues:pnum=CYGNET
-   
-   # Compile and upload (substitute your FQBN and port)
-   arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/reefer_cold_chain_monitor/
-   arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbmodem* firmware/reefer_cold_chain_monitor/
-   ```
-   See [§6.1](#61-installing-and-flashing) for full dependency list and IDE steps.
-5. **Watch** — open Notehub → your project → **Events**. You should see `_session.qo` within 1 min, then on the next outbound window (default ~60 min): batch of `trailer_log_cell.qo` notes (one per 60 s sample), `trailer_summary_cell.qo` (hourly), and any alerts as `trailer_alert.qo` (immediate sync).
-
 ---
 
 ## 1. Project Overview
@@ -63,6 +44,27 @@ The [Notecard for Skylo (NOTE-NBGLWX)](https://shop.blues.com/products/notecard?
 **Notehub responsibilities.** The Notecard manages its own cellular and satellite sessions. [Notehub](https://notehub.io) ingests events over the Internet, stores every event, and applies project-level [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub). Alerts, per-sample logs, and summaries land in separate [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile) so they can be fanned out to different downstream destinations at different urgencies — immediate dispatch alerts to a TMS or on-call channel, per-sample logs and hourly summaries to a long-term cold-chain compliance store. Alert events always appear in `trailer_alert.qo` regardless of which radio carried them; the compact+port encoding is compatible with both cellular and NTN transports, and Notehub session metadata attached to each received event identifies the transport used. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) let you group trailers by lane, customer, or cargo type and push fleet-specific threshold overrides without touching individual device configs.
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
+
+---
+
+## 2.5 Quickstart
+
+1. **Notehub** — create a [Notehub project](https://notehub.io) and copy its ProductUID.
+2. **Wire the bench rig** — Notecarrier CX + Notecard for Skylo + two DS18B20 probes (VDD to +3V3, GND to GND, data to A0 with 4.7 kΩ pull-up to +3V3) + reed switch on A1. Full pinout in [§4](#4-wiring-and-assembly).
+3. **Edit one line** of [`firmware/reefer_cold_chain_monitor/reefer_cold_chain_monitor_helpers.h`](firmware/reefer_cold_chain_monitor/reefer_cold_chain_monitor_helpers.h) — set `PRODUCT_UID` to your project's value.
+4. **Flash with arduino-cli**:
+   ```bash
+   # Install libraries: Notecard, OneWire, DallasTemperature (via Arduino Library Manager)
+   # Find your Cygnet FQBN
+   arduino-cli board listall | grep -i cygnet
+   # Output will resemble: Cygnet    STMicroelectronics:stm32:Blues:pnum=CYGNET
+   
+   # Compile and upload (substitute your FQBN and port)
+   arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/reefer_cold_chain_monitor/
+   arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbmodem* firmware/reefer_cold_chain_monitor/
+   ```
+   See [§6.1](#61-installing-and-flashing) for full dependency list and IDE steps.
+5. **Watch** — open Notehub → your project → **Events**. You should see `_session.qo` within 1 min, then on the next outbound window (default ~60 min): batch of `trailer_log_cell.qo` notes (one per 60 s sample), `trailer_summary_cell.qo` (hourly), and any alerts as `trailer_alert.qo` (immediate sync).
 
 ---
 
@@ -206,7 +208,7 @@ The firmware spans three files: [`reefer_cold_chain_monitor.ino`](firmware/reefe
 **Dependencies:**
 
 - **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**, then install via Boards Manager (search "STM32 MCU based boards"). Select the **Cygnet** board (search for "Cygnet" in the board selector; it appears under the Blues board family in the current stm32duino core).
-- **`Blues Wireless Notecard`** library — [`note-arduino`](https://github.com/blues/note-arduino), v1.8.5 (current stable at time of writing). Install via Arduino Library Manager: `arduino-cli lib install "Blues Wireless Notecard"@1.8.5`, or search for `Blues Wireless Notecard` in the IDE Library Manager and confirm the version is v1.8.5 before installing. Check the [note-arduino releases](https://github.com/blues/note-arduino/releases) page if you need a newer stable release.
+- **`Blues Wireless Notecard`** library — [`note-arduino`](https://github.com/blues/note-arduino). Install via Arduino Library Manager: `arduino-cli lib install "Blues Wireless Notecard"`, or search for `Blues Wireless Notecard` in the IDE Library Manager and install the latest stable version. Check the [note-arduino releases](https://github.com/blues/note-arduino/releases) page for the current stable release.
 - **`OneWire`** — [`PaulStoffregen/OneWire`](https://github.com/PaulStoffregen/OneWire). Install via Library Manager.
 - **`DallasTemperature`** — [`milesburton/Arduino-Temperature-Control-Library`](https://github.com/milesburton/Arduino-Temperature-Control-Library). Install via Library Manager.
 

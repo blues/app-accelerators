@@ -9,7 +9,7 @@
 // Wireless for OPTA quickstart: https://dev.blues.io/quickstart/wireless-for-opta-quickstart/
 //
 // Dependencies (Arduino Library Manager):
-//   Blues Wireless Notecard (note-arduino) v1.8.5, ArduinoModbus, ArduinoRS485
+//   Blues Wireless Notecard (note-arduino), ArduinoModbus, ArduinoRS485
 //   Arduino Mbed OS Opta Boards (board package — includes Ethernet.h)
 
 #include "cnc_spindle_tracker_helpers.h"

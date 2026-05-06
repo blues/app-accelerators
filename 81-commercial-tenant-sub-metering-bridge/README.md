@@ -167,7 +167,7 @@ Before powering on for the first time:
 
 - [ ] **PRODUCT_UID set** — edited `tenant_sub_meter_helpers.h` line 17 with your Notehub ProductUID (e.g., `com.your-company:your-app`).
 - [ ] **Core installed** — Arduino core for STM32 added via Boards Manager. Search "STM32 MCU based boards".
-- [ ] **Blues Notecard library installed** — installed via Library Manager. Version 1.8.5 or later.
+- [ ] **Blues Notecard library installed** — installed via Library Manager.
 - [ ] **DIP switch set to HST** — on the Notecarrier CX, before connecting USB.
 - [ ] **Compiled and uploaded** — `arduino-cli compile` succeeds with no errors. `arduino-cli upload` completes successfully.
 - [ ] **Serial monitor at 115200 baud** — after upload, watch for `[init]` and `[sample]` lines (host is running).
@@ -247,7 +247,7 @@ Three-file implementation — all three must be present in the same sketch direc
 **Dependencies:**
 
 - **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Install via the Arduino Boards Manager (search "STM32 MCU based boards") or add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**. Select **Generic STM32L4 series → Cygnet** as the board target.
-- **`Blues Wireless Notecard`** library — [`note-arduino`](https://github.com/blues/note-arduino). Install via the Arduino Library Manager, or `arduino-cli lib install "Blues Wireless Notecard"`. Current stable release: **v1.8.5**; verify against the [note-arduino releases page](https://github.com/blues/note-arduino/releases) at install time.
+- **`Blues Wireless Notecard`** library — [`note-arduino`](https://github.com/blues/note-arduino). Install via the Arduino Library Manager, or `arduino-cli lib install "Blues Wireless Notecard"`. Verify the latest release against the [note-arduino releases page](https://github.com/blues/note-arduino/releases) at install time.
 
 **Flashing — Arduino IDE:** Open `tenant_sub_meter.ino`, select the Cygnet board, and click **Upload**. The Notecarrier CX exposes the ST-Link interface on the same USB cable — no external programmer needed. Set the DIP switch to `HST` before flashing to route USB serial to the host MCU.
 

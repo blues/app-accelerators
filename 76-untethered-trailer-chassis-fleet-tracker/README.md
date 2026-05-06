@@ -12,18 +12,6 @@ The unit mounts on the trailer roof or chassis frame, runs a parked/moving state
 
 **What you'll have when you're done:** a weatherproofed unit that wakes every five minutes to check for motion, reports GPS position every fifteen minutes while rolling, fires a departure note within one `parked_check_mins` interval of hookup detection and an arrival note within one `moving_ping_mins` interval of drop detection, and sends a six-hour heartbeat note when parked. Transition events are stamped at detection time — the wake cycle on which the state change is first observed — with the Notecard's current cached GPS fix and epoch; those values are stored in the pending-event queue and preserved across any subsequent retry attempts so a note retried on a later wake always carries the original detection-time location rather than the post-transition GPS state. All three event types are delivered over cellular when available and fall back to Iridium satellite when not — keeping the trailer or chassis visible across ocean segments, polar corridors, remote stretches, and cross-border transits where terrestrial coverage disappears.
 
-### Quickstart at a glance
-
-**What you'll have when you're done:** A solar-powered trailer or chassis tracker that reports motion-triggered departure/arrival events and position updates to Notehub over LTE-M (primary) or Iridium LEO satellite (automatic fallback). No tractor hookup, no site IT, global pole-to-pole coverage.
-
-1. **Notehub** — create a [Notehub project](https://notehub.io) and copy its ProductUID.
-2. **Wire the bench rig** — Notecarrier XI + Swan + cellular Notecard + Starnote for Iridium + solar chain; full pinout in [§4.1](#41-notecarrier-xi--swan).
-3. **Edit one line** of [`firmware/trailer_fleet_tracker_starnote/trailer_fleet_tracker_starnote_helpers.h`](firmware/trailer_fleet_tracker_starnote/trailer_fleet_tracker_starnote_helpers.h) — set `PRODUCT_UID` to your Notehub project's ProductUID (in Notehub: **Project Settings → ProductUID**).
-4. **Flash** via Arduino IDE or `arduino-cli` (see [§6.1](#61-dependencies-and-flashing)).
-5. **Watch** — open Notehub → **Events** tab. You should see a `_session.qo` within a few minutes of power-on — this confirms the first cellular session and clock sync. The firmware then queues a `trailer_heartbeat.qo` locally on the next parked-check wake (~5 min in). Because heartbeat notes are **not** marked `sync:true`, they wait for the next scheduled outbound sync window rather than transmitting immediately: **~60 minutes** at a full battery (`voutbound high:60`) or **~120 minutes** at nominal charge (`voutbound normal:120`). Budget **1–2 hours from first power-on** before the first heartbeat appears in Notehub.
-
----
-
 ## 1. Project Overview
 
 **The problem.** Long-haul trucking fleets have wrestled with a persistent visibility gap for decades: the tractor has an ELD (electronic logging device), a telematics unit, and a driver. The 53-foot box it drags around has none of those things. An intermodal chassis is even worse — the same steel frame might be owned by a chassis pool, leased to a carrier, loaded by a shipper, and dragged by three different tractors in a single week. At any given moment, a fleet operator's dispatch system knows where the power unit is. The trailer? It's wherever the last driver left it.
@@ -61,6 +49,18 @@ The cellular Notecard (e.g., NOTE-WBEX) stores queued Notes in its onboard flash
 The Notecard manages its own cellular and satellite sessions against the supported carrier networks worldwide via its embedded global SIM and delivers data to [Notehub](https://notehub.io) over the Internet; [Notehub](https://dev.blues.io/notehub/notehub-walkthrough/) ingests events, stores all events, and routes them downstream. [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) let operators group trailers by carrier, lane, or equipment type and apply shared threshold configurations. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) can automatically assign trailers to the right fleet by region or device attribute.
 
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and other destinations. Route setup is project-specific; see the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub). This project ships no specific downstream endpoint.
+
+---
+
+## 2.5 Quickstart
+
+**What you'll have when you're done:** A solar-powered trailer or chassis tracker that reports motion-triggered departure/arrival events and position updates to Notehub over LTE-M (primary) or Iridium LEO satellite (automatic fallback). No tractor hookup, no site IT, global pole-to-pole coverage.
+
+1. **Notehub** — create a [Notehub project](https://notehub.io) and copy its ProductUID.
+2. **Wire the bench rig** — Notecarrier XI + Swan + cellular Notecard + Starnote for Iridium + solar chain; full pinout in [§4.1](#41-notecarrier-xi--swan).
+3. **Edit one line** of [`firmware/trailer_fleet_tracker_starnote/trailer_fleet_tracker_starnote_helpers.h`](firmware/trailer_fleet_tracker_starnote/trailer_fleet_tracker_starnote_helpers.h) — set `PRODUCT_UID` to your Notehub project's ProductUID (in Notehub: **Project Settings → ProductUID**).
+4. **Flash** via Arduino IDE or `arduino-cli` (see [§6.1](#61-dependencies-and-flashing)).
+5. **Watch** — open Notehub → **Events** tab. You should see a `_session.qo` within a few minutes of power-on — this confirms the first cellular session and clock sync. The firmware then queues a `trailer_heartbeat.qo` locally on the next parked-check wake (~5 min in). Because heartbeat notes are **not** marked `sync:true`, they wait for the next scheduled outbound sync window rather than transmitting immediately: **~60 minutes** at a full battery (`voutbound high:60`) or **~120 minutes** at nominal charge (`voutbound normal:120`). Budget **1–2 hours from first power-on** before the first heartbeat appears in Notehub.
 
 ---
 
@@ -231,7 +231,7 @@ The firmware lives in [`firmware/trailer_fleet_tracker_starnote/`](firmware/trai
 
 **Install the `Blues Wireless Notecard` library:**
 
-Install [`note-arduino`](https://github.com/blues/note-arduino) **v1.8.5** (stable at time of writing) via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard@1.8.5"`. See the [note-arduino releases page](https://github.com/blues/note-arduino/releases) for newer versions — update the pinned version intentionally when revising this project.
+Install [`note-arduino`](https://github.com/blues/note-arduino) via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`. See the [note-arduino releases page](https://github.com/blues/note-arduino/releases) for available versions.
 
 **Add the STM32 boards index:**
 

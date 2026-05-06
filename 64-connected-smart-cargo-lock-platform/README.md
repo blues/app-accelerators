@@ -8,24 +8,6 @@ This reference application is intended to provide inspiration and help you get s
 
 A [loss prevention](https://blues.com/loss-prevention/) reference platform for a connected smart lock built on the Blues Notecard for Skylo — combining global cellular with satellite failover in a single M.2 module — paired with a reed shackle sensor, a hall-effect bolt detector, and the Notecard's onboard accelerometer for tamper scoring. The Cygnet host on the Notecarrier CX runs the lock state machine and aggressive duty cycling that makes year-long battery life achievable.
 
-## Quick Start
-
-**Get your first lock online in 20 minutes:**
-
-1. **Assemble.** Wire the reed switch to D5 and SS461A hall sensor to D6 per [§4](#4-wiring-and-assembly). Seat the Notecard for Skylo in the M.2 slot. Connect the 5000 mAh LiPo.
-2. **Claim the ProductUID.** Go to [notehub.io](https://notehub.io), create a project, and copy the ProductUID. Paste it into `firmware/cargo_lock/cargo_lock.ino` line 46 as `PRODUCT_UID`.
-3. **Flash.** In Arduino IDE: File → Open → `firmware/cargo_lock/` → select Notecarrier CX board (STM32 generic with Cygnet variant) → Upload. Or via `arduino-cli`:
-   ```bash
-   arduino-cli compile --fqbn STM32:stm32:Cygnet -u -p /dev/ttyACM0 firmware/cargo_lock/
-   ```
-4. **Verify.** Open Serial Monitor (115200 baud). On each 60-second wake you'll see:
-   ```
-   [cargo_lock] shackle=1 bolt=1 motion=N phys=LOCKED rept=LOCKED new=LOCKED
-   ```
-   Manually open the shackle or retract the bolt — the next wake should show the new state. Within 15–60 seconds (cellular) or 2–5 minutes (satellite), a `lock_event.qo` note appears in your Notehub project's event log.
-
-**What you'll have when you're done:** A lock that wakes every 60 seconds, reads its sensors, emits an immediate alert if opened or tampered with, and sends a 6-hourly status heartbeat. One Notehub project with two Notefiles (`lock_event.qo` for immediate alerts, `lock_status.qo` for audit logs). Year-long battery life on a 5000 mAh cell under cellular-dominant operation.
-
 ## 1. Project Overview
 
 **The problem.** Cargo theft is escalating. North America saw 3,625 reported incidents in 2024 — a 27% jump year-over-year — with losses approaching $455 million. The targets are trailers parked at drop lots, intermodal containers sitting at port for a week, and high-value rolling stock left overnight at a truck stop. In the majority of these thefts, the event isn't detected until the driver opens the door at the destination and finds the container empty.
@@ -55,6 +37,24 @@ The underlying challenge isn't mechanical; modern locks are strong. The challeng
 **Notehub responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to [Notehub](https://dev.blues.io/notehub/notehub-walkthrough/) over the Internet; Notehub ingests events, stores them, and applies project-level [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub). Immediate lock events (`lock_event.qo`) and periodic status summaries (`lock_status.qo`) land in separate Notefiles so they can be fanned out to different downstream systems — real-time dispatch or on-call alerting for events, analytics or audit-log storage for summaries. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) let a shipper manage thresholds differently for high-value pharmaceutical cargo versus standard dry goods, without separate firmware builds.
 
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
+
+## 2.5 Quickstart
+
+**Get your first lock online in 20 minutes:**
+
+1. **Assemble.** Wire the reed switch to D5 and SS461A hall sensor to D6 per [§4](#4-wiring-and-assembly). Seat the Notecard for Skylo in the M.2 slot. Connect the 5000 mAh LiPo.
+2. **Claim the ProductUID.** Go to [notehub.io](https://notehub.io), create a project, and copy the ProductUID. Paste it into `firmware/cargo_lock/cargo_lock.ino` line 46 as `PRODUCT_UID`.
+3. **Flash.** In Arduino IDE: File → Open → `firmware/cargo_lock/` → select Notecarrier CX board (STM32 generic with Cygnet variant) → Upload. Or via `arduino-cli`:
+   ```bash
+   arduino-cli compile --fqbn STM32:stm32:Cygnet -u -p /dev/ttyACM0 firmware/cargo_lock/
+   ```
+4. **Verify.** Open Serial Monitor (115200 baud). On each 60-second wake you'll see:
+   ```
+   [cargo_lock] shackle=1 bolt=1 motion=N phys=LOCKED rept=LOCKED new=LOCKED
+   ```
+   Manually open the shackle or retract the bolt — the next wake should show the new state. Within 15–60 seconds (cellular) or 2–5 minutes (satellite), a `lock_event.qo` note appears in your Notehub project's event log.
+
+**What you'll have when you're done:** A lock that wakes every 60 seconds, reads its sensors, emits an immediate alert if opened or tampered with, and sends a 6-hourly status heartbeat. One Notehub project with two Notefiles (`lock_event.qo` for immediate alerts, `lock_status.qo` for audit logs). Year-long battery life on a 5000 mAh cell under cellular-dominant operation.
 
 ## 3. Hardware Requirements
 
@@ -177,7 +177,7 @@ The sketch lives in [`firmware/cargo_lock/`](firmware/cargo_lock/), split across
 
 **Dependencies:**
 - Arduino core for STM32 ([`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32)) — install via the Arduino IDE Boards Manager.
-- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (the `note-arduino` library, current stable **v1.8.5** at time of writing) — install via the Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard"`).
+- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (the `note-arduino` library) — install via the Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard"`).
 
 ### Modules
 

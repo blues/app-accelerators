@@ -10,18 +10,6 @@ A [remote patient monitoring](https://blues.com/remote-patient-monitoring/) hub 
 
 **What you'll have when you're done:** a discreet, wall-powered hub that counts every PIR motion event and every door-open edge via volatile ISR counters that increment during Stop mode sleep, samples all four sensors every five minutes, evaluates three wellness-pattern rules locally, and surfaces exceptions to whatever downstream endpoint the care team already uses — over cellular, with no dependency on the patient's WiFi router, their network password, or anyone in the household doing anything at all.
 
-## Quickstart: From Assembly to First Event
-
-1. **Assemble hardware** (§3–4): Notecarrier CX + Notecard Cell+WiFi, four sensors, hookup wire. Route cables as shown in the wiring diagram.
-2. **Create Notehub project**: sign up at [notehub.io](https://notehub.io), create a new project, copy the **ProductUID** (looks like `com.your-company.your-name:activity-hub`).
-3. **Set ProductUID in firmware**: open `firmware/activity_hub/app_state.h`, replace the empty `PRODUCT_UID` string with your value.
-4. **Flash the hub**: plug Notecarrier CX into USB-C. In Arduino IDE, select **Tools → Board → Generic STM32L4 series → Cygnet**, open `firmware/activity_hub/activity_hub.ino`, hit **Upload**. (Or use `arduino-cli`: `arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/activity_hub/ && arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbmodem* firmware/activity_hub/`.)
-5. **Plug into wall power** (5 V USB-C adapter, ≥ 1 A).
-6. **Verify in Notehub**: within 1–2 minutes your device will appear under **Devices**. The **Events** tab will show `_session.qo` notes (radio is reaching Notehub). Within one hour you'll see your first `activity_summary.qo` note.
-7. **Configure alerts** (§5): add two routes — one for `activity_alert.qo` (real-time notifications) and one for `activity_summary.qo` (hourly analytics).
-
-See §6 for detailed firmware structure and §8 for power validation with the Mojo coulomb counter.
-
 ## 1. Project Overview
 
 **The problem.** For patients who are aging in place or who have recently been discharged from a hospital or rehabilitation facility, the most useful early-warning signal for a clinician or family caregiver isn't a continuous stream of vitals — it's a confirmation that normal daily patterns are still intact. Did the patient get up this morning? Did they sleep through the night without repeated bathroom trips that might indicate a urinary tract infection or medication side effect? Is there any detected bed vibration during expected sleep hours, or has the sensor been quiet long enough that a check-in is warranted?
@@ -58,6 +46,18 @@ Nothing the patient interacts with. Nothing that needs charging.
 **Notehub responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to [Notehub](https://notehub.io) over the Internet; Notehub ingests events, stores every event, and applies project-level routes. The two Notefiles have deliberately different urgency profiles — `activity_summary.qo` is a low-urgency hourly record suitable for a long-term analytics store, while `activity_alert.qo` is an immediate notification worth routing to a care coordination platform or on-call paging service. Separating them at the source means the routing configuration stays simple.
 
 **Routing to the cloud (high level only).** Notehub supports HTTP/HTTPS webhooks, MQTT, AWS, Azure, GCP, and several other destinations. The specific downstream endpoint is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific cloud endpoint. Consider using [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) to group devices by care team or geographic region and apply routing rules at the fleet level.
+
+## 2.5 Quickstart
+
+1. **Assemble hardware** (§3–4): Notecarrier CX + Notecard Cell+WiFi, four sensors, hookup wire. Route cables as shown in the wiring diagram.
+2. **Create Notehub project**: sign up at [notehub.io](https://notehub.io), create a new project, copy the **ProductUID** (looks like `com.your-company.your-name:activity-hub`).
+3. **Set ProductUID in firmware**: open `firmware/activity_hub/app_state.h`, replace the empty `PRODUCT_UID` string with your value.
+4. **Flash the hub**: plug Notecarrier CX into USB-C. In Arduino IDE, select **Tools → Board → Generic STM32L4 series → Cygnet**, open `firmware/activity_hub/activity_hub.ino`, hit **Upload**. (Or use `arduino-cli`: `arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/activity_hub/ && arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbmodem* firmware/activity_hub/`.)
+5. **Plug into wall power** (5 V USB-C adapter, ≥ 1 A).
+6. **Verify in Notehub**: within 1–2 minutes your device will appear under **Devices**. The **Events** tab will show `_session.qo` notes (radio is reaching Notehub). Within one hour you'll see your first `activity_summary.qo` note.
+7. **Configure alerts** (§5): add two routes — one for `activity_alert.qo` (real-time notifications) and one for `activity_summary.qo` (hourly analytics).
+
+See §6 for detailed firmware structure and §8 for power validation with the Mojo coulomb counter.
 
 ## 3. Hardware Requirements
 
@@ -251,7 +251,7 @@ Sketch folder: [`firmware/activity_hub/`](firmware/activity_hub/). The main entr
 **Dependencies:**
 
 - **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Install via the Arduino Boards Manager (search "STM32 MCU based boards") or add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**. Select **Generic STM32L4 series → Cygnet** as the target board.
-- **`Blues Wireless Notecard`** library (`note-arduino`) — install via the Arduino Library Manager (search "Blues Wireless Notecard") or `arduino-cli lib install "Blues Wireless Notecard"`. Current stable release: **v1.8.5** at time of writing. Pin this version and check [note-arduino releases](https://github.com/blues/note-arduino/releases) for updates before deploying.
+- **`Blues Wireless Notecard`** library (`note-arduino`) — install via the Arduino Library Manager (search "Blues Wireless Notecard") or `arduino-cli lib install "Blues Wireless Notecard"`. Check [note-arduino releases](https://github.com/blues/note-arduino/releases) for updates before deploying.
 - **`Adafruit SHT31 Library`** — install via the Arduino Library Manager (search "Adafruit SHT31"). Requires `Adafruit BusIO` as a dependency (Library Manager installs it automatically).
 - **`STM32duino Low Power`** library — install via the Arduino Library Manager (search "STM32duino Low Power") or `arduino-cli lib install "STM32duino Low Power"`. Required for Stop mode sleep (`LowPower.deepSleep()`) and GPIO wakeup configuration (`LowPower.attachInterruptWakeup()`). This library is maintained by STMicroelectronics as part of the stm32duino ecosystem and is separate from any generic Arduino LowPower library.
 

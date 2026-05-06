@@ -11,18 +11,6 @@ A tamper-evident electronic security seal for [supply chain tracking](https://bl
 **What you'll have when you're done:** a battery-powered security-seal assembly you can mount on a container door that wakes every 30 seconds to check two independent sensors: a door-state reed switch and a break-wire seal-continuity loop. It signs every `seal_event.qo` and `seal_heartbeat.qo` payload with a hardware-rooted ATECC608A ECDSA key; the full 64-byte signature travels as a companion `seal_sig_full.qo` note for forensic chain-of-custody audit. It logs breach, seal-break, and re-seal events with immediate sync. It emits GPS waypoints every six hours. In port it syncs over cellular. At sea it queues events and transmits them via Iridium satellite on a configurable outbound schedule — all without any intervention from the container operator.
 
 
-## Quickstart (5 minutes)
-
-**Before you start:** You'll need a Notehub account (free at [notehub.io](https://notehub.io)), the hardware from §3, Arduino IDE or `arduino-cli`, and two libraries: Blues Wireless Notecard (v1.8.5) and SparkFun ATECCX08a Arduino Library. Install via Arduino Library Manager or: `arduino-cli lib install "Blues Wireless Notecard" && arduino-cli lib install "SparkFun ATECCX08a Arduino Library"`.
-
-1. **Create a Notehub project** at [notehub.io](https://notehub.io). Copy its ProductUID and paste into `firmware/container_seal.ino` at the `PRODUCT_UID` define (line 23).
-2. **Provision the ATECC608A** (one-time, before first flash): Flash and run `firmware/provision_atecc608a/provision_atecc608a.ino` per [§6.2](#62-provisioning-the-atecc608a); record the public key.
-3. **Flash the main firmware**: `arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=SWAN firmware/container_seal.ino` then upload (full command in §6.1).
-4. **Power up and check Notehub Events** for a `_session.qo` event within 60 seconds. **Do not seal and deploy until you see this event** — it delivers the Unix epoch required for correct operation (see §5 step 2).
-5. **Test the sensors**: hold the reed-switch magnet against the sensor, then pull away. A `seal_event.qo` should appear within 60 seconds with non-zero `sig` if ATECC608A is provisioned. Disconnect the break-wire loop — another `seal_event.qo` with `seal_broken:true` should appear on the next wake (≤30 seconds).
-
-For a complete walkthrough, see [§4 Wiring and Assembly](#4-wiring-and-assembly), [§5 Notehub Setup](#5-notehub-setup), and [§6 Firmware](#6-firmware).
-
 ## 1. Project Overview
 
 **The problem.** An international container shipment touches dozens of parties: the shipper, the freight forwarder, the inland trucker, the port terminal, the ocean carrier, the customs broker, the destination trucker, and the consignee — and that's a short list. At each handoff, the container's physical integrity changes hands along with the paperwork, but the *proof* of that integrity does not. Seals are broken, reapplied, and sometimes falsified. Disputes over who opened a container, and when, are common and expensive. Regulators and industry standards bodies — CBP, EU customs, C-TPAT, ISO 17712 — are driving increasing audit and compliance pressure, and operators increasingly want electronic, time-stamped records that can demonstrate container integrity across every handoff. Paper logbooks and passive bolt seals cannot produce that record on demand.
@@ -54,6 +42,19 @@ When neither satellite nor cellular is reachable — below-deck stowage, contain
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific and out of scope for this reference design. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for configuration guidance.
 
 ---
+
+
+## 2.5 Quickstart
+
+**Before you start:** You'll need a Notehub account (free at [notehub.io](https://notehub.io)), the hardware from §3, Arduino IDE or `arduino-cli`, and two libraries: Blues Wireless Notecard and SparkFun ATECCX08a Arduino Library. Install via Arduino Library Manager or: `arduino-cli lib install "Blues Wireless Notecard" && arduino-cli lib install "SparkFun ATECCX08a Arduino Library"`.
+
+1. **Create a Notehub project** at [notehub.io](https://notehub.io). Copy its ProductUID and paste into `firmware/container_seal.ino` at the `PRODUCT_UID` define (line 23).
+2. **Provision the ATECC608A** (one-time, before first flash): Flash and run `firmware/provision_atecc608a/provision_atecc608a.ino` per [§6.2](#62-provisioning-the-atecc608a); record the public key.
+3. **Flash the main firmware**: `arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=SWAN firmware/container_seal.ino` then upload (full command in §6.1).
+4. **Power up and check Notehub Events** for a `_session.qo` event within 60 seconds. **Do not seal and deploy until you see this event** — it delivers the Unix epoch required for correct operation (see §5 step 2).
+5. **Test the sensors**: hold the reed-switch magnet against the sensor, then pull away. A `seal_event.qo` should appear within 60 seconds with non-zero `sig` if ATECC608A is provisioned. Disconnect the break-wire loop — another `seal_event.qo` with `seal_broken:true` should appear on the next wake (≤30 seconds).
+
+For a complete walkthrough, see [§4 Wiring and Assembly](#4-wiring-and-assembly), [§5 Notehub Setup](#5-notehub-setup), and [§6 Firmware](#6-firmware).
 
 ## 3. Hardware Requirements
 
@@ -213,7 +214,7 @@ Five source files:
 **Dependencies:**
 
 - **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Install via the Arduino Boards Manager (search "STM32 MCU based boards") or by adding the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**. Select **Generic STM32L4 series → Swan** as the target board.
-- **`Blues Wireless Notecard`** library (`note-arduino`) — install via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`. Install version **v1.8.5** (the version this project targets); see [note-arduino releases](https://github.com/blues/note-arduino/releases) for the release history.
+- **`Blues Wireless Notecard`** library (`note-arduino`) — install via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`. See [note-arduino releases](https://github.com/blues/note-arduino/releases) for the release history.
 - **`SparkFun_ATECCX08a_Arduino_Library`** — install via the Arduino Library Manager (search "SparkFun ATECCX08a") or `arduino-cli lib install "SparkFun ATECCX08a Arduino Library"`. Provides the ATECC608A driver used by `container_seal_sign.cpp` and the provisioning sketch, including the on-chip SHA-256 helper used to hash the canonical event payload before signing.
 
 **Flashing — Arduino IDE:** open `firmware/container_seal.ino`, select the Swan board, hit **Upload**. The Notecarrier XI exposes ST-Link over the same USB cable — no external programmer needed.
