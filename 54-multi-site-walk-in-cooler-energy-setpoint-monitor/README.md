@@ -10,9 +10,9 @@ A cellular [energy savings](https://blues.com/energy-savings/) reference design 
 
 ## Quickstart: First Event in 30 Minutes
 
-1. **Assemble the hardware** (Section 3–4): Notecarrier CX + Notecard Cell+WiFi, DS18B20 temperature probe, SCT-013-030 current transformer, reed switch door sensor, and 5V/2A power supply in a NEMA 4X enclosure.
+1. **Assemble the hardware** (Section 3–4): [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) + [Notecard Cell+WiFi](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), DS18B20 temperature probe, SCT-013-030 current transformer, reed switch door sensor, and 5V/2A power supply in a NEMA 4X enclosure.
 
-2. **Create a Notehub project** at [notehub.io](https://notehub.io) and copy your ProductUID.
+2. **Create a [Notehub](https://notehub.io) project** and copy your ProductUID.
 
 3. **Flash the firmware:**
    ```bash
@@ -82,7 +82,7 @@ This project is the device that gets past that barrier. One SKU, cellular-connec
 
 **Notecard responsibilities.** The Notecard stores Notes locally in its on-device queue, establishes a cellular (or WiFi) session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 min), and flushes queued summary notes in that session. Alert notes set `sync:true` and jump the queue — the radio wakes within a session-establishment window regardless of the outbound cadence. The Notecard also distributes [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) from Notehub to the host, so operators can retune setpoint thresholds, door-alert timers, and cadences without reflashing firmware.
 
-**Notehub responsibilities.** [Notehub](https://dev.blues.io/notehub/notehub-walkthrough/) terminates the cellular session, stores every event, and applies project-level routes. Summaries and alerts land in separate [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile) — `cooler_summary.qo` for periodic window-based telemetry and `cooler_alert.qo` for threshold events — so they can be fanned out to different destinations (long-term analytics store vs. real-time alerting channel) at different urgencies without any filter logic in the route. [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) and [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) allow environment variables to be set at the fleet level (e.g., all units in a given region or banner share the same temperature setpoint target) and overridden per device.
+**Notehub responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to [Notehub](https://notehub.io) over the Internet; Notehub ingests events, stores every event, and applies project-level routes. Summaries and alerts land in separate [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile) — `cooler_summary.qo` for periodic window-based telemetry and `cooler_alert.qo` for threshold events — so they can be fanned out to different destinations (long-term analytics store vs. real-time alerting channel) at different urgencies without any filter logic in the route. [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) and [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) allow environment variables to be set at the fleet level (e.g., all units in a given region or banner share the same temperature setpoint target) and overridden per device.
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and other destinations. Route configuration is project-specific — this project ships no downstream endpoint. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for setup details.
 
@@ -91,7 +91,7 @@ This project is the device that gets past that barrier. One SKU, cellular-connec
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an embedded Cygnet STM32 host — no separate MCU needed for this three-sensor combination. |
-| [Notecard Cell+WiFi (MBGLW)](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) | 1 | Cellular-first connectivity that bypasses site WiFi entirely; WiFi fallback for the occasional co-operative site. |
+| [Notecard Cell+WiFi (MBGLW)](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/)) | 1 | Cellular-first connectivity that bypasses site WiFi entirely; WiFi fallback for the occasional co-operative site. |
 | [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Inline coulomb counter for bench validation of sleep/wake current profiles before field deployment. |
 | [Adafruit Waterproof DS18B20 Temperature Sensor (product 381)](https://www.adafruit.com/product/381) | 1 | Calibrated digital 1-Wire temperature probe (±0.5 °C accuracy) in a stainless steel enclosure; purpose-built for wet, food-service environments where a bare thermistor would corrode. |
 | 4.7 kΩ resistor, ¼W | 1 | Required pull-up for the DS18B20 1-Wire data line; without it the bus hangs. |

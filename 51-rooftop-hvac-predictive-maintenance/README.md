@@ -6,7 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-A retrofit [downtime prevention](https://blues.com/downtime-prevention/) pack for commercial rooftop HVAC units. A handful of inexpensive sensors and a Blues Notecard Cell+WiFi turn an ordinary rooftop unit into a remotely-monitored, predictively-maintained asset — catching refrigerant loss, short-cycling, and clogged filters *before* the unit fails and a tenant loses cooling.
+A retrofit [downtime prevention](https://blues.com/downtime-prevention/) pack for commercial rooftop HVAC units. A handful of inexpensive sensors and a Blues [Notecard Cell+WiFi](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) turn an ordinary rooftop unit into a remotely-monitored, predictively-maintained asset — catching refrigerant loss, short-cycling, and clogged filters *before* the unit fails and a tenant loses cooling.
 
 **What you'll have when you're done:** a weatherproof, line-powered sidecar bolted to a rooftop RTU that samples four sensors every minute, runs three failure-mode checks locally, and pages your on-call queue within ~60 s of a threshold trip — over cellular, with no site IT involvement and no RTU modification. Hourly summaries land in a separate Notefile for trending and analytics. Operators can re-tune thresholds in the field via Notehub environment variables without re-flashing firmware.
 
@@ -15,7 +15,7 @@ A retrofit [downtime prevention](https://blues.com/downtime-prevention/) pack fo
 If you want the fastest path from "parts on the bench" to "first event in Notehub":
 
 1. **Notehub** — create a [Notehub project](https://notehub.io), copy its ProductUID.
-2. **Wire the bench rig** — Notecarrier CX + Notecard MBGLW + two thermistor dividers on A0/A1 + CT bias network on A2 + SDP810 on I²C. Full pinout is in [§4](#4-wiring-and-assembly).
+2. **Wire the bench rig** — [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) + [Notecard MBGLW](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) + two thermistor dividers on A0/A1 + CT bias network on A2 + SDP810 on I²C. Full pinout is in [§4](#4-wiring-and-assembly).
 3. **Edit one line** of [`firmware/rtu_predictive_maintenance/rtu_predictive_maintenance.ino`](firmware/rtu_predictive_maintenance/rtu_predictive_maintenance.ino) — set `PRODUCT_UID` to your project's value (line 24).
 4. **Flash** — `arduino-cli compile -b STMicroelectronics:stm32:Cygnet` then `arduino-cli upload`. Full instructions in [§6.1](#61-installing-and-flashing).
 5. **Watch** — open Notehub → your project → **Events** tab. You should see a `_session.qo` immediately, an `rtu_summary.qo` within an hour, and any threshold trips as `rtu_alert.qo` in real time.
@@ -42,7 +42,7 @@ This project is that watcher. It's a retrofit sidecar that gets strapped to the 
 
 **Notecard responsibilities.** The Notecard stores [Notes](https://dev.blues.io/api-reference/glossary/#note) locally, establishes the cellular (or WiFi) session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 min), and flushes any `sync:true` alert notes immediately. The Notecard also owns GNSS for one-time site geolocation (handled autonomously — no firmware code required on the host) and [environment-variable](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) distribution. Operators can retune thresholds without re-flashing firmware.
 
-**Notehub responsibilities.** [Notehub](https://dev.blues.io/notehub/notehub-walkthrough/) terminates the cellular session, stores every event, and applies project-level routes. Alerts and summaries land in separate [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile) so routes can be configured to fan them out differently — alerts to an on-call or CMMS (computerized maintenance management system) endpoint, summaries to a long-term analytics store.
+**Notehub responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to [Notehub](https://notehub.io) over the Internet; Notehub ingests events, stores every event, and applies project-level routes. Alerts and summaries land in separate [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile) so routes can be configured to fan them out differently — alerts to an on-call or CMMS (computerized maintenance management system) endpoint, summaries to a long-term analytics store.
 
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project doesn't ship any specific downstream endpoint.
 
@@ -51,7 +51,7 @@ This project is that watcher. It's a retrofit sidecar that gets strapped to the 
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an embedded Cygnet STM32 host — no separate MCU needed for this sensor mix. |
-| [Notecard Cell+WiFi (MBGLW)](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) | 1 | Cellular removes per-site IT involvement; WiFi fallback is available for sites that happen to have it. |
+| [Notecard Cell+WiFi (MBGLW)](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) / [datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) | 1 | Cellular removes per-site IT involvement; WiFi fallback is available for sites that happen to have it. |
 | [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) *(optional, bench-only)* | 0–1 | Coulomb counter on the power rail for ground-truth energy validation during bench bring-up. **Not required for production deployment** — see [§8](#8-validation-and-testing) and [§9](#9-limitations-and-next-steps). |
 | 10 kΩ NTC thermistor, β=3950, waterproof duct probe | 2 | Duct-mount supply and return air temperature for cooling delta-T. |
 | 10 kΩ 1% resistor (divider series leg) | 2 | Pull-up for each thermistor divider. |

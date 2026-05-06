@@ -6,7 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-A [truck roll reduction](https://blues.com/truck-roll-reduction/) project for fleets of portable sanitation units — porta-potties — that are currently serviced on fixed schedules whether they need it or not. A sealed level sensor and a Blues Notecard Cell+WiFi turn each unit into a self-reporting asset: the holding tank reports its own fill level so the service provider can route a pump truck only when and where it is actually needed.
+A [truck roll reduction](https://blues.com/truck-roll-reduction/) project for fleets of portable sanitation units — porta-potties — that are currently serviced on fixed schedules whether they need it or not. A sealed level sensor and a [Blues Notecard Cell+WiFi](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) turn each unit into a self-reporting asset: the holding tank reports its own fill level so the service provider can route a pump truck only when and where it is actually needed.
 
 ## 1. Project Overview
 
@@ -22,7 +22,7 @@ Blues has already demonstrated this works at scale: Satellite Industries, one of
 
 ## 2. Quick Start
 
-**What you'll have when done:** A live Notecard sending fill-level readings and alerts to Notehub every hour, routing to your backends via HTTP, MQTT, AWS, or other integrations of your choice.
+**What you'll have when done:** A live Notecard sending fill-level readings and alerts to [Notehub](https://notehub.io) every hour, routing to your backends via HTTP, MQTT, AWS, or other integrations of your choice.
 
 **Fastest path to first event (bench eval, ~30 min):**
 
@@ -30,7 +30,7 @@ Blues has already demonstrated this works at scale: Satellite Industries, one of
 2. [Create a Notehub project](https://notehub.io), copy its ProductUID, paste it into the sketch as `PRODUCT_UID`.
 3. Install dependencies: in the IDE, use Board Manager to add [Arduino Core for STM32](https://github.com/stm32duino/Arduino_Core_STM32); use Library Manager to install [`Blues Wireless Notecard@1.8.5`](https://github.com/blues/note-arduino/releases).
 4. Select board **STM32L433CC (Nucleo)** and port, then **Sketch → Upload** (or use `arduino-cli compile -b STMicroelectronics:stm32:Nucleo_L433CC -u -p /dev/ttyACM0 firmware/sanitation_unit_monitor`).
-5. Power the Notecarrier CX via LiPo or USB. Within ~60 s the Notecard claims itself to your Notehub project. Point the MB7389 probe at a flat surface ≥35 cm away. The first hourly summary appears in Notehub within one hour (sooner if you lower `inbound_interval_min` temporarily — see §6).
+5. Power the [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) via LiPo or USB. Within ~60 s the Notecard claims itself to your Notehub project. Point the MB7389 probe at a flat surface ≥35 cm away. The first hourly summary appears in Notehub within one hour (sooner if you lower `inbound_interval_min` temporarily — see §6).
 6. To route data: in Notehub, create one route each for `sanitation_alert.qo` (real-time, dispatch) and `sanitation_summary.qo` (analytics). See §6 and the [Notehub routing guide](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub).
 
 **Board & Library specifics:**
@@ -46,7 +46,7 @@ Blues has already demonstrated this works at scale: Satellite Industries, one of
 
 **Notecard responsibilities.** The Notecard holds [Notes](https://dev.blues.io/api-reference/glossary/#note) locally in its on-device queue, establishes a cellular (or WiFi) session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default every 60 minutes), and flushes any `sync:true` alert Notes immediately regardless of the outbound schedule. The Notecard also manages [environment variable](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) distribution from Notehub — tank calibration values and service thresholds propagate to the device without a firmware update.
 
-**Notehub responsibilities.** [Notehub](https://dev.blues.io/notehub/notehub-walkthrough/) terminates the cellular session, stores every event, and applies project-level [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub). Summaries and alerts land in separate [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile), so they can be routed to different downstream systems at different urgencies without any filtering logic in the route itself. [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) and [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) group units by region, client, or tank size, making it straightforward to push different calibration values to different populations of units without touching any individual device.
+**Notehub responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to [Notehub](https://notehub.io) over the Internet. Notehub ingests events, stores every event, and applies project-level [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub). Summaries and alerts land in separate [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile), so they can be routed to different downstream systems at different urgencies without any filtering logic in the route itself. [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) and [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) group units by region, client, or tank size, making it straightforward to push different calibration values to different populations of units without touching any individual device.
 
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route configuration is project-specific. See the [Notehub routing documentation](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
 
@@ -360,7 +360,7 @@ If the cumulative mAh grows continuously at a high rate between expected cellula
 - Implement a graduated fill alert (two thresholds, two alert types: `fill_warning` and `fill_critical`) with different downstream routing rules for each. Update the alert template's example literal in `defineTemplates()` to `"fill_critical"` (13 bytes) so the string slot is sized for the longest name.
 - Wire [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) to the STM32's BOOT/RESET pins for over-the-air firmware updates — critical for a large deployed fleet where a calibration bug or new feature shouldn't require physically opening every enclosure.
 - Add a temperature reading via the Notecard's internal sensor (`card.temp`) to include ambient temperature in summaries — useful for operators in cold climates where biological activity and freeze-thaw cycles affect tank behavior.
-- Evaluate Blues Scoop as a solar charge controller if units will be deployed in long-duration, high-sun environments (outdoor festivals, remote construction) where a fixed-cycle LiPo recharge is impractical.
+- Evaluate [Blues Scoop](https://shop.blues.com/products/scoop?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) as a solar charge controller if units will be deployed in long-duration, high-sun environments (outdoor festivals, remote construction) where a fixed-cycle LiPo recharge is impractical.
 - **Battery service as a truck-roll driver.** The deployment model assumes the LiPo is recharged during routine pump-out visits. If the validated whole-system battery life (measured with Mojo — see §9) is shorter than the target pump-out interval, battery maintenance requires its own truck roll — the opposite of what this system is designed to provide. Mitigations: use a larger cell (6 000 mAh or higher) sized to outlast the longest expected pump-out interval; add a Blues Scoop solar charger for units in high-sun outdoor deployments; or ensure a USB-C charge port on the enclosure is accessible during every pump-out so recharge and service happen in the same visit.
 
 ## 11. Troubleshooting
