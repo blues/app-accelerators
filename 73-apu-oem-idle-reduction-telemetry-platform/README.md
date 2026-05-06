@@ -8,9 +8,7 @@ This reference application is intended to provide inspiration and help you get s
 
 A connected-APU reference platform for [asset performance optimization](https://blues.com/solutions-asset-performance-optimization/) that bridges the gap between the mechanical systems APU OEMs build and the cloud connectivity they need. An **APU** (auxiliary power unit) replaces truck-engine idling — instead of leaving a 400-hp diesel running all night to power a sleeper cab's HVAC and electronics, a diesel or battery APU handles the job on a fraction of the fuel. This design puts a [Blues Notecard for Skylo](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) between the APU controller's RS-485 port and [Notehub](https://notehub.io), reporting fault codes, runtime, software-estimated fuel savings, and cab temperature back to the manufacturer in near-real time — even in the Wyoming high desert at 2 AM.
 
-> **Scope — software fuel-estimation variant.** This reference design is scoped as a software fuel-estimation variant of the APU OEM telemetry platform: it does not include a hardware fuel-flow sensor, and all fuel figures are computed from APU runtime × operator-supplied `apu_fuel_rate_gph` and `idle_fuel_rate_gph` environment variables. Pulse-output positive-displacement flow meters (the usual hardware path for measured fuel accounting) require either always-on host power or an external pulse-counting circuit to accumulate counts while the MCU is sleeping, which materially changes the power architecture, the wiring, and the hardware BOM. Software estimation is sufficient for fleet-level reporting, warranty analytics, and ROI demonstration — the typical early-deployment use case for APU OEMs entering connected products. For measured, revenue-grade fuel metering, see §9 Production next steps.
-
-**What you'll have when you're done:** a sleeper-cab-mounted telemetry node that reads five APU controller registers over Modbus RTU every 60 seconds, monitors two DS18B20 temperature probes, runs an ignition-based idle-inference state machine, posts hourly summaries to Notehub — each with a per-window fuel-saved estimate computed on-device from APU runtime × configurable consumption rates — emits a daily fuel-saved rollup note (`apu_daily.qo`) at each calendar-day boundary using `card.time`, and fires an immediate alert on any APU fault code, cab temperature excursion, or state transition — over cellular, with automatic satellite fallback for the many miles of the interstate where no tower is visible.
+> **Scope.** This is the *software fuel-estimation* variant: fuel figures are computed from APU runtime × configurable consumption-rate env vars, with no hardware flow meter required. For revenue-grade hardware metering, see §9 Production next steps.
 
 ---
 
@@ -56,13 +54,13 @@ Beyond connectivity resilience, the Notecard's pre-certified global cellular rem
    arduino-cli lib install "Blues Wireless Notecard" "OneWire" "DallasTemperature"
    
    # Compile
-   arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/apu_oem_telemetry/apu_oem_telemetry.ino
+   arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/apu_oem_telemetry/apu_oem_telemetry.ino
    
    # Find your device port (shows as /dev/cu.usbmodem* on macOS, /dev/ttyACM0 on Linux)
    ls /dev/cu.usbmodem* 2>/dev/null || ls /dev/ttyACM*
    
    # Upload (replace with your actual port)
-   arduino-cli upload -b STMicroelectronics:stm32:GenL4:pnum=CYGNET -p /dev/cu.usbmodem14102 firmware/apu_oem_telemetry/apu_oem_telemetry.ino
+   arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbmodem14102 firmware/apu_oem_telemetry/apu_oem_telemetry.ino
    ```
 
 4. **Watch first events** — Power the Notecarrier. On the first cellular sync, the device registers with your Notehub project. In the **Devices** tab, click the device and select **Events** to see incoming `_session.qo`, `apu_telemetry.qo`, and test alerts (see §5, "Triggering test events").
@@ -187,7 +185,7 @@ The firmware is split across three files:
 ### 6.1 Installing and flashing
 
 **Dependencies:**
-- **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` to **File → Preferences → Additional Boards Manager URLs**, then install "STM32 MCU based boards." Select **Generic STM32L4 series → Cygnet** as the board.
+- **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` to **File → Preferences → Additional Boards Manager URLs**, then install "STM32 MCU based boards." Select **Blues Cygnet** as the board (the Notecarrier CX's embedded host is the Blues Cygnet — STM32L433-based; the canonical FQBN is `STMicroelectronics:stm32:Blues:pnum=CYGNET`).
 - **`Blues Wireless Notecard`** (`note-arduino`) — Install via Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard"`). See [note-arduino releases](https://github.com/blues/note-arduino/releases) for available versions.
 - **`OneWire`** — Install via Library Manager (`arduino-cli lib install "OneWire"`). Used for DS18B20 communication.
 - **`DallasTemperature`** — Install via Library Manager (`arduino-cli lib install "DallasTemperature"`). Abstracts the DS18B20 one-wire protocol.
@@ -203,7 +201,7 @@ arduino-cli board listall | grep -i cygnet
 cd firmware/apu_oem_telemetry
 
 # Compile
-arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET apu_oem_telemetry.ino
+arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET apu_oem_telemetry.ino
 
 # Identify the USB device port (Notecarrier CX USB STLink interface)
 # On macOS: /dev/cu.usbmodem14202 (or similar)
@@ -212,7 +210,7 @@ arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET apu_oem_teleme
 ls /dev/cu.usbmodem* 2>/dev/null || ls /dev/ttyACM* 2>/dev/null
 
 # Upload (replace the port with your actual device port from the step above)
-arduino-cli upload -b STMicroelectronics:stm32:GenL4:pnum=CYGNET -p /dev/cu.usbmodem14202 apu_oem_telemetry.ino
+arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbmodem14202 apu_oem_telemetry.ino
 ```
 **USB serial is always active; `DEBUG` controls verbose output.** `Serial.begin(115200)` runs unconditionally in `setup()`, so error and warning messages — `[boot] WARN`, `[alert] WARN`, `[modbus fail]`, and all `ERR` lines — are available over USB whenever a service technician connects a terminal to a deployed unit. Before flashing for bench bring-up, uncomment the `#define DEBUG` line near the top of `apu_oem_telemetry.ino`. With `DEBUG` defined, open a serial monitor at **115200 baud** — on the first boot you'll see verbose initialization messages and a first `[sample]` line before the Cygnet goes dark until the next interval. Remove or re-comment `#define DEBUG` before deploying to production. With `DEBUG` undefined: (1) the 3-second USB host-detection wait is skipped, saving meaningful awake time on every wake; (2) the Notecard debug stream (verbose per-request I²C traffic) is disabled; and (3) diagnostic `[sample]`, `[modbus ok]`, `[event]`, `[alert]`, and `[summary]` log lines are compiled out. WARN and ERR messages remain active in all builds and are always reachable over USB at 115200 baud.
 

@@ -8,8 +8,6 @@ This reference application is intended to provide inspiration and help you get s
 
 An [energy monitoring](https://blues.com/solutions-energy-monitoring/) solution that gives utilities real-time load visibility at the pole — where transformer failures actually happen. A [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) with three split-core current transformers on the secondary terminals and an I²C temperature sensor tracks per-phase loading, detects dangerous current imbalances, and correlates load with enclosure temperature as a thermal-stress proxy — all over cellular, with no site infrastructure required.
 
-**What you'll have when you're done:** a weatherproof enclosure that bolts to the pole, clamps three non-invasive CTs on the secondary leads, and sends an hourly load summary to [Notehub](https://notehub.io) every hour plus an immediate alert within one sample interval (default 5 minutes) plus cellular session-establishment time after an overload or imbalance event is detected. Threshold tuning requires no firmware re-flash — a fleet engineer adjusts the transformer's rated amps or imbalance tolerance in Notehub, and the device picks it up on its next inbound sync.
-
 > **Implementation scope: conventional split-core CTs and enclosure-internal temperature.** This reference design uses **conventional current-output split-core CTs** (YHDC SCT-013-000, 100 A / 50 mA) rather than flexible Rogowski-type coils, and an **enclosure-internal I²C temperature sensor** (MCP9808) as a thermal-stress proxy rather than a true outdoor ambient probe or a winding-contact sensor. Both choices reduce hardware complexity for the standard residential and commercial distribution transformer installation scenario. See [§9 Limitations](#9-limitations-and-next-steps) for rationale and the production path to both alternatives.
 
 ---
@@ -236,7 +234,7 @@ The Arduino IDE and `arduino-cli` automatically compile every `.ino`, `.h`, and 
 
 **Dependencies:**
 
-- **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Add the board index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**, then install "STM32 MCU based boards." Select **Generic STM32L4 series → Cygnet** as the board.
+- **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Add the board index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**, then install "STM32 MCU based boards." Select **Blues Cygnet** as the board (canonical FQBN: `STMicroelectronics:stm32:Blues:pnum=CYGNET`).
 - **`Blues Wireless Notecard`** library ([`note-arduino`](https://github.com/blues/note-arduino)) — Install via the Arduino Library Manager (search "Blues Wireless Notecard") or `arduino-cli lib install "Blues Wireless Notecard"`.
 - **`Adafruit MCP9808 Library`** — install via the Arduino Library Manager (search "MCP9808"). Requires the Adafruit BusIO dependency, which the Library Manager installs automatically.
 
@@ -253,8 +251,8 @@ arduino-cli board listall | grep -i cygnet
 
 # Compile and upload — target the sketch folder so all three source files
 # are included (substitute the FQBN reported above; /dev/cu.usbmodem* for Mac, /dev/ttyACM* for Linux)
-arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/transformer_load_monitor
-arduino-cli upload  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET -p /dev/cu.usbmodem* firmware/transformer_load_monitor
+arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/transformer_load_monitor
+arduino-cli upload  -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbmodem* firmware/transformer_load_monitor
 ```
 
 After flashing, open the serial monitor at **115200 baud**. On first boot you should see `[sample] i_a=...` lines every `sample_interval_sec` seconds (default 5 minutes). After `summary_interval_min` minutes (default 60) you will see `[summary] queued (0 loaded / 12 total wakes)` if no CT is connected — the summary Note is queued to the Notecard's local on-device store at that point; it reaches Notehub on the next outbound cellular sync (default 60 minutes later). The summary is always emitted as a liveness heartbeat even with no load. When CTs are clamped on live conductors the sample lines show non-zero current values and the summary line reports the number of loaded intervals versus total wakes in that window.

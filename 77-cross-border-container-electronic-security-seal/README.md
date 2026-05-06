@@ -6,9 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-A tamper-evident electronic security seal for [supply chain tracking](https://blues.com/solutions-supply-chain-tracking/) of international containerized cargo. A [Blues Swan](https://shop.blues.com/products/swan?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) host, a [Notecard Cell+WiFi](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) (NOTE-NBGLW), a [Starnote for Iridium](https://shop.blues.com/products/starnote?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), a magnetic reed switch, a break-wire seal-continuity loop, and an ATECC608A hardware secure element log every seal-wire break, door breach, re-seal event, and periodic GPS waypoint — with each `seal_event.qo` and `seal_heartbeat.qo` note hardware-signed by a key that never leaves the device — anywhere on the globe including polar routes, via Iridium's LEO constellation when out of cellular reach.
-
-**What you'll have when you're done:** a battery-powered security-seal assembly you can mount on a container door that wakes every 30 seconds to check two independent sensors: a door-state reed switch and a break-wire seal-continuity loop. It signs every `seal_event.qo` and `seal_heartbeat.qo` payload with a hardware-rooted ATECC608A ECDSA key; the full 64-byte signature travels as a companion `seal_sig_full.qo` note for forensic chain-of-custody audit. It logs breach, seal-break, and re-seal events with immediate sync. It emits GPS waypoints every six hours. In port it syncs over cellular. At sea it queues events and transmits them via Iridium satellite on a configurable outbound schedule — all without any intervention from the container operator.
+A tamper-evident electronic security seal for [supply chain tracking](https://blues.com/solutions-supply-chain-tracking/) of international containerized cargo. The device watches the container door and a separate break-wire seal-continuity loop, logs every breach, re-seal, and seal-cut event with a hardware-signed cryptographic record, and reports back to the cloud over cellular in port and Iridium LEO satellite at sea — including the trans-oceanic and polar routes where geostationary networks have no coverage. Every event payload is signed by a hardware secure element whose private key never leaves the device, giving forensic chain-of-custody auditors a record that cannot be forged in transit. The hardware is a Notecarrier XI with a Blues Swan host, a Notecard Cell+WiFi, a Starnote for Iridium, and an ATECC608A secure element on Qwiic I²C (see §3 for the BOM).
 
 
 ## 1. Project Overview
@@ -50,7 +48,7 @@ When neither satellite nor cellular is reachable — below-deck stowage, contain
 
 1. **Create a Notehub project** at [notehub.io](https://notehub.io). Copy its ProductUID and paste into `firmware/container_seal/container_seal.ino` at the `PRODUCT_UID` define (line 23).
 2. **Provision the ATECC608A** (one-time, before first flash): Flash and run `firmware/provision_atecc608a/provision_atecc608a.ino` per [§6.2](#62-provisioning-the-atecc608a); record the public key.
-3. **Flash the main firmware**: `arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=SWAN firmware/container_seal/container_seal.ino` then upload (full command in §6.1).
+3. **Flash the main firmware**: `arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=SWAN firmware/container_seal/container_seal.ino` then upload (full command in §6.1).
 4. **Power up and check Notehub Events** for a `_session.qo` event within 60 seconds. **Do not seal and deploy until you see this event** — it delivers the Unix epoch required for correct operation (see §5 step 2).
 5. **Test the sensors**: hold the reed-switch magnet against the sensor, then pull away. A `seal_event.qo` should appear within 60 seconds with non-zero `sig` if ATECC608A is provisioned. Disconnect the break-wire loop — another `seal_event.qo` with `seal_broken:true` should appear on the next wake (≤30 seconds).
 
@@ -213,7 +211,7 @@ Five source files:
 
 **Dependencies:**
 
-- **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Install via the Arduino Boards Manager (search "STM32 MCU based boards") or by adding the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**. Select **Generic STM32L4 series → Swan** as the target board.
+- **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Install via the Arduino Boards Manager (search "STM32 MCU based boards") or by adding the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**. Select **Blues Swan** as the target board (canonical FQBN: `STMicroelectronics:stm32:Blues:pnum=SWAN`).
 - **`Blues Wireless Notecard`** library (`note-arduino`) — install via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`. See [note-arduino releases](https://github.com/blues/note-arduino/releases) for the release history.
 - **`SparkFun_ATECCX08a_Arduino_Library`** — install via the Arduino Library Manager (search "SparkFun ATECCX08a") or `arduino-cli lib install "SparkFun ATECCX08a Arduino Library"`. Provides the ATECC608A driver used by `container_seal_sign.cpp` and the provisioning sketch, including the on-chip SHA-256 helper used to hash the canonical event payload before signing.
 
@@ -226,8 +224,8 @@ Five source files:
 arduino-cli board listall | grep -i swan
 
 # Compile and upload (replace FQBN and port with your values)
-arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=SWAN firmware/container_seal/container_seal.ino
-arduino-cli upload  -b STMicroelectronics:stm32:GenL4:pnum=SWAN \
+arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=SWAN firmware/container_seal/container_seal.ino
+arduino-cli upload  -b STMicroelectronics:stm32:Blues:pnum=SWAN \
                     -p /dev/cu.usbmodem* firmware/container_seal/container_seal.ino
 ```
 

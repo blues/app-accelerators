@@ -7,8 +7,6 @@ This reference application is intended to provide inspiration and help you get s
 </Note>
 
 A [battery management systems](https://blues.com/battery-management-systems/) reference design that turns the electric battery pack on a rental scissor lift, boom lift, or telehandler into a continuously-monitored asset — surfacing state of charge, depth of discharge, rolling state of health, and thermal status to the rental company's fleet management platform, over cellular with satellite fallback, wherever the lift happens to be sitting.
-
-**What you'll have when you're done:** a weatherproof, pack-powered sidecar that samples the battery pack every five minutes, transmits an hourly summary to Notehub, and fires an immediate alert over cellular or Skylo satellite whenever a threshold trips — without requiring site WiFi, a local gateway, or any customer IT coordination. Fleet operators can retune alert thresholds for any machine from Notehub without a truck roll or firmware re-flash.
 ## 1. Project Overview
 
 **The problem.** Electric scissor lifts, boom lifts, and telehandlers are increasingly displacing diesel units on job sites. The electric machines are quieter, cleaner, and cheaper to run — but they introduce a failure mode that diesel never had: a machine that looks fine in the yard shows up at a job site with a dead or nearly dead pack, and the rental company loses a day of revenue before anyone knows there's a problem.
@@ -17,9 +15,7 @@ Rental fleets compound this. A machine might sit on a customer's site for three 
 
 This project is the watcher. A small monitoring device clipped to the pack reads the pack bus voltage through a precision I²C power monitor (INA228) and, in field builds, pack current through either an external precision shunt wired to the INA228's differential inputs (the default, `ENABLE_ACS758 0`) or an ACS758 Hall-effect sensor on the traction conductor (the alternative, `ENABLE_ACS758 1`); records the pack temperature through a probe mounted to the battery housing; and — when the machine's **BMS** (battery management system) exposes individual cell-group voltages over **CAN** (Controller Area Network) bus — pulls those in too (see the CAN note below). From these four data streams, it continuously estimates **SoC** (state of charge), accumulates a **cycle Ah throughput** total via a sampled Ah estimator, and maintains a rolling **SoH** (state of health) estimate updated whenever a heuristic charge-cycle threshold is crossed. Three of those numbers, plus temperature, show up on the rental company's fleet dashboard within seconds of a threshold trip — and in a single hourly telemetry note the rest of the time.
 
-> **Current-sensing design note.** The default production build (`ENABLE_ACS758 0`, `BENCH_ONLY 0`) measures pack current through an externally mounted precision shunt wired to the INA228's `VIN+`/`VIN–` differential inputs. Select a manganin or nichrome alloy shunt rated for the pack's full discharge current at 50–75 mV full-scale (see §3 BOM and §4 wiring), then update `DEFAULT_SHUNT_MOHM` and `DEFAULT_SHUNT_MAX_A` in the firmware to match. This is the shunt-based architecture the project was originally scoped for: the INA228 already on the board handles both bus-voltage sensing and current measurement; no extra component or power supply is required. **The INA228's onboard 15 mΩ shunt is not used in the field path** — it is rated to ~10 A continuous and must not carry real traction currents (50–200 A). An alternative production build (`ENABLE_ACS758 1`) substitutes an ACS758LCB-200B-PFF-T Hall-effect sensor on A1; use this path if breaking and re-terminating the traction conductor for an inline shunt is impractical, or if galvanic isolation from the traction bus is required. The bench/prototype build (`ENABLE_ACS758 0`, `BENCH_ONLY 1`) uses the onboard INA228 shunt for low-current (≤10 A) development testing only.
-
-> **CAN BMS note.** The CAN cell-group monitoring feature ships as a functional placeholder. The firmware demonstrates the CAN polling and imbalance-check architecture, but the CAN ID (`BMS_CELL_GROUP_ID`) and frame parser (`parseCellGroupFrame()`) are hardcoded to a single example value and a simple two-byte-per-cell layout that will not match any real BMS without vendor-specific updates. **CAN support requires vendor-specific parser work before use in the field.** See §6.3 and §9 for the specifics of what must be customized per machine.
+> **Scope.** Pack current can be measured three ways: an external precision shunt wired to the INA228 (the default field path, recommended), an ACS758 Hall-effect sensor (galvanic-isolation alternative), or the INA228's onboard 15 mΩ shunt (bench/POC only, ≤10 A — never wire to real traction currents). Optional CAN BMS cell-group monitoring ships as a placeholder; the CAN ID and frame parser require vendor-specific updates before use in the field. See §3 BOM, §6 firmware build flags, and §9 for the full details.
 
 **Why Notecard.** The lift is on a construction site that is unlikely to have public WiFi, and even if it does, the rental company's fleet app has to work identically at every job site — a residential project in rural Montana and a high-rise downtown. Cellular removes that dependency entirely: no network form, no AP to pair with, no IT ticket. But construction sites can also be in coverage gaps — in-building below grade, in mountain foothills, in rural areas where the crew has gone to break ground. That's where the Skylo satellite fallback earns its place: the same JSON note that normally travels over LTE-M can, transparently to the firmware, use the Notecard for Skylo's NTN (Non-Terrestrial Network) radio when cellular isn't reachable. The satellite link isn't the primary path — it's the insurance policy that makes the system work the same way at every job. The Notecard for Skylo integrates cellular, WiFi, and Skylo satellite on a single M.2 SoM, so there's no companion board to wire up and no secondary UART to manage.
 
@@ -43,8 +39,8 @@ This project is the watcher. A small monitoring device clipped to the pack reads
 
 1. **Flash firmware.** Clone the repo, edit `firmware/lift_battery_monitor/lift_battery_monitor.ino` to set your `PRODUCT_UID` (from your [notehub.io](https://notehub.io) project), then compile and upload:
    ```bash
-   arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/lift_battery_monitor/
-   arduino-cli upload  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET \
+   arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/lift_battery_monitor/
+   arduino-cli upload  -b STMicroelectronics:stm32:Blues:pnum=CYGNET \
      -p /dev/cu.usbmodem* firmware/lift_battery_monitor/
    ```
    (Replace `/dev/cu.usbmodem*` with your platform's serial port; `COM*` on Windows.)
@@ -261,7 +257,7 @@ Four files in [`firmware/lift_battery_monitor/`](firmware/lift_battery_monitor/)
 
 **Dependencies:**
 
-- **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Install via Arduino IDE Boards Manager (search "STM32 MCU based boards") or add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**. Select **Generic STM32L4 series → Cygnet** as the board target.
+- **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Install via Arduino IDE Boards Manager (search "STM32 MCU based boards") or add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**. Select **Blues Cygnet** as the board target (canonical FQBN: `STMicroelectronics:stm32:Blues:pnum=CYGNET`).
 - **`Blues Wireless Notecard`** — install via Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`. See [note-arduino releases](https://github.com/blues/note-arduino/releases) for the latest.
 - **`Adafruit INA228`** — install via Library Manager or `arduino-cli lib install "Adafruit INA228"`. Pulls in `Adafruit BusIO` as a dependency. The firmware calls `readBusVoltage()` and `readCurrent()` — the modern API defined on the `Adafruit_INA2xx` base class; these names were verified against the current library source (`Adafruit_INA2xx.h`).
 - **`mcp2515`** by autowp *(only if `ENABLE_CAN_BMS` is set to `1` in `lift_battery_monitor_config.h`)* — install via Library Manager or `arduino-cli lib install "mcp2515"`.
@@ -275,13 +271,13 @@ First, confirm your STM32 core version and FQBN:
 arduino-cli board listall | grep -i cygnet
 ```
 
-If output shows `GenL4` as the board name (most common), use this compile and upload sequence:
+The canonical FQBN is `STMicroelectronics:stm32:Blues:pnum=CYGNET`; substitute whatever `listall` reports if your installed core differs. Use this compile and upload sequence:
 ```bash
 # Compile
-arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/lift_battery_monitor/
+arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/lift_battery_monitor/
 
 # Upload (replace /dev/cu.usbmodem* with your serial port)
-arduino-cli upload  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET \
+arduino-cli upload  -b STMicroelectronics:stm32:Blues:pnum=CYGNET \
   -p /dev/cu.usbmodem* firmware/lift_battery_monitor/
 ```
 

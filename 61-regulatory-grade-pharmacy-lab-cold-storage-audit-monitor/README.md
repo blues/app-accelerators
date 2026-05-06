@@ -6,6 +6,8 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
+A [safety assurance](https://blues.com/safety-assurance/) reference design that gives pharmacies, clinical laboratories, and vaccine depots a continuous, automatically-timestamped temperature record for every refrigerator and freezer in their compliance scope — delivered over a cellular data path that bypasses the facility's regulated network entirely, with immediate alerts when the temperature strays outside its configured range or a door is left open too long.
+
 ## 1. Project Overview
 
 **The problem.** Pharmacies, clinical laboratories, and vaccine depots are subject to a patchwork of overlapping regulations — USP Chapter 659 (Packaging and Storage Requirements), FDA 21 CFR Part 211.68, state board-of-pharmacy rules, and for federally funded programs, CDC Vaccine Storage and Handling guidelines. Every one of those frameworks requires automated temperature records with defined excursion thresholds: 2°C–8°C for most refrigerated vaccines and biologics, with documentation of any deviation, its duration, and the corrective action taken.
@@ -42,7 +44,7 @@ WiFi fallback on the MBGLW is available as a secondary path, but only for sites 
 1. Obtain a Notecarrier CX + MBGLW, VEML7700 sensor, and magnetic door switch
 2. Wire the three sensors (I²C, GPIO, and Qwiic as shown in [§4](#4-wiring-and-assembly))
 3. Clone this repo; paste your Notehub ProductUID into `firmware/cold_storage_audit_monitor/cold_storage_audit_monitor.ino` (line 51)
-4. Flash with `arduino-cli compile -b blues:stm32:Notecarrier_CX firmware/ && arduino-cli upload -b blues:stm32:Notecarrier_CX -p /dev/ttyACM0 firmware/` (adjust port for your OS)
+4. Flash with `arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/ && arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/ttyACM0 firmware/` (adjust port for your OS — this FQBN matches `firmware/cold_storage_audit_monitor/sketch.yaml`, so omitting `-b` also works when invoked from the sketch directory)
 5. Power up; verify readings appear in Notehub within 60 seconds (may take 1–5 minutes on first power for cellular registration)
 6. Override thresholds in Notehub **Fleet → Environment** (e.g., `temp_high_alert_c: 8.0`, `temp_low_alert_c: 2.0` for refrigerated storage)
 

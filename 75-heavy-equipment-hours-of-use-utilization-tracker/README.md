@@ -6,9 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-A retrofit [asset location tracking](https://blues.com/solutions-location-tracking/) solution for mobile heavy equipment — excavators, generators, compactors, light towers, and any machine a rental company or OEM needs to bill by the hour and maintain on schedule. A magnetically mounted, solar-trickle-charged enclosure combines a Blues Notecard for Skylo with a 3-axis accelerometer to detect engine-on/off transitions via vibration signature, accumulate a persistent software hour meter, and report location and utilization back to [Notehub](https://notehub.io) over cellular or satellite — with no wiring harness, no equipment modification, and no dependency on a job-site network.
-
-**What you'll have when you're done:** a weatherproof, battery-backed sidecar that clips magnetically onto any steel chassis, wakes every 30 seconds to sample the accelerometer, classifies the vibration as "engine running," "being transported," or "idle," and transmits a utilization summary on a rolling window (24 hours by default) plus an immediate cellular or satellite event every time the state changes — from anywhere, including remote pipeline corridors, open-pit mines, and wind-farm construction zones where the nearest cell tower is more of a suggestion than a certainty.
+A retrofit [asset location tracking](https://blues.com/solutions-location-tracking/) solution for mobile heavy equipment — excavators, generators, compactors, light towers, and any machine a rental company or OEM needs to bill by the hour and maintain on schedule. A magnetically mounted, solar-trickle-charged enclosure uses a 3-axis accelerometer to detect engine-on/off transitions via vibration signature, accumulates a persistent software hour meter, and reports location and utilization back to [Notehub](https://notehub.io) over cellular or satellite — with no wiring harness, no equipment modification, and no dependency on a job-site network. Cellular-with-Skylo-NTN-satellite fallback keeps the device reporting from remote pipeline corridors, open-pit mines, and wind-farm construction zones where terrestrial coverage runs thin. The hardware is a Notecarrier CX with a Notecard for Skylo and an external IMU (see §3 for the BOM).
 
 ## 1. Project Overview
 
@@ -191,11 +189,11 @@ Arduino build tooling automatically compiles every `.ino`, `.h`, and `.cpp` file
 
 **Dependencies:**
 
-- **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Install via the Arduino Boards Manager (search "STM32 MCU based boards") and select **Generic STM32L4 series → Cygnet** as the board target.
+- **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Install via the Arduino Boards Manager (search "STM32 MCU based boards") and select **Blues Cygnet** as the board target.
 - **`Blues Wireless Notecard`** — [`note-arduino`](https://github.com/blues/note-arduino). Install via the Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard"`), or select the latest stable version in the IDE Library Manager. See [note-arduino releases](https://github.com/blues/note-arduino/releases) for available versions.
 - **`Adafruit LSM6DS`** — install via Library Manager (`arduino-cli lib install "Adafruit LSM6DS"`). Also installs the `Adafruit Unified Sensor` dependency if not already present.
 
-**Flashing via Arduino IDE:** open `equipment_hours_tracker.ino`, select the Cygnet board (Generic STM32L4 → Cygnet), and click **Upload**. The Notecarrier CX presents the ST-Link interface on the same USB cable — no external programmer required.
+**Flashing via Arduino IDE:** open `equipment_hours_tracker.ino`, select the **Blues Cygnet** board (canonical FQBN: `STMicroelectronics:stm32:Blues:pnum=CYGNET`), and click **Upload**. The Notecarrier CX presents the ST-Link interface on the same USB cable — no external programmer required.
 
 **Flashing via `arduino-cli`:**
 ```bash
@@ -210,9 +208,9 @@ arduino-cli board listall | grep -i cygnet
 arduino-cli board list
 
 # Compile and upload (replace port with your value from 'board list' above)
-arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET \
+arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET \
     firmware/equipment_hours_tracker/
-arduino-cli upload  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET \
+arduino-cli upload  -b STMicroelectronics:stm32:Blues:pnum=CYGNET \
     -p /dev/cu.usbmodem* \
     firmware/equipment_hours_tracker/
 ```

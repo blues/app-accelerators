@@ -41,15 +41,15 @@ Blues has already demonstrated this works at scale: Satellite Industries, one of
 1. Clone this repo; open `firmware/sanitation_unit_monitor/sanitation_unit_monitor.ino` in the Arduino IDE.
 2. [Create a Notehub project](https://notehub.io), copy its ProductUID, paste it into the sketch as `PRODUCT_UID`.
 3. Install dependencies: in the IDE, use Board Manager to add [Arduino Core for STM32](https://github.com/stm32duino/Arduino_Core_STM32); use Library Manager to install [`Blues Wireless Notecard`](https://github.com/blues/note-arduino/releases).
-4. Select board **STM32L433CC (Nucleo)** and port, then **Sketch → Upload** (or use `arduino-cli compile -b STMicroelectronics:stm32:Nucleo_L433CC -u -p /dev/ttyACM0 firmware/sanitation_unit_monitor`).
+4. Select board **Blues → Cygnet (Notecarrier CX)** under **Tools → Board → STMicroelectronics STM32 boards**, pick the port, then **Sketch → Upload** (or use `arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET -u -p /dev/ttyACM0 firmware/sanitation_unit_monitor`). This FQBN matches `firmware/sanitation_unit_monitor/sketch.yaml`, which the IDE picks up automatically.
 5. Power the [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) via LiPo or USB. Within ~60 s the Notecard claims itself to your Notehub project. Point the MB7389 probe at a flat surface ≥35 cm away. The first hourly summary appears in Notehub within one hour (sooner if you lower `inbound_interval_min` temporarily — see §5).
 6. To route data: in Notehub, create one route each for `sanitation_alert.qo` (real-time, dispatch) and `sanitation_summary.qo` (analytics). See §5 and the [Notehub routing guide](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub).
 
 ### Board & Library specifics
 
 - Notecarrier CX has the STM32L433 Cygnet onboard, so no separate MCU is needed.
-- The firmware requires note-arduino with support for the Notecarrier CX platform.
-- If flashing via `arduino-cli`, the `STMicroelectronics:stm32:Nucleo_L433CC` board definition is the correct match for the Cygnet core.
+- The firmware requires `note-arduino` with support for the Notecarrier CX platform.
+- The canonical FQBN for the Cygnet host on the Notecarrier CX is `STMicroelectronics:stm32:Blues:pnum=CYGNET`. That value is already pinned in `firmware/sanitation_unit_monitor/sketch.yaml`, so `arduino-cli` and the Arduino IDE both pick it up automatically when invoked from the sketch directory. Older `Nucleo_L433RC_P` (or similar `Nucleo_L4*`) board variants may build but they do not match the Cygnet's package, peripheral set, or pin map and should not be substituted for production builds.
 
 ## 3. Hardware Requirements
 
@@ -134,13 +134,13 @@ Single sketch: [`firmware/sanitation_unit_monitor/sanitation_unit_monitor.ino`](
 ```bash
 arduino-cli core install STMicroelectronics:stm32
 arduino-cli lib install "Blues Wireless Notecard"
-arduino-cli compile -b STMicroelectronics:stm32:Nucleo_L433CC firmware/sanitation_unit_monitor
-arduino-cli upload -b STMicroelectronics:stm32:Nucleo_L433CC -p /dev/ttyACM0 firmware/sanitation_unit_monitor
+arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/sanitation_unit_monitor
+arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/ttyACM0 firmware/sanitation_unit_monitor
 ```
 
-(Adjust `/dev/ttyACM0` to your serial port: `COM3` on Windows, `/dev/cu.usbserial-*` on macOS.)
+(Adjust `/dev/ttyACM0` to your serial port: `COM3` on Windows, `/dev/cu.usbserial-*` on macOS. The FQBN above matches `firmware/sanitation_unit_monitor/sketch.yaml`, so omitting the `-b` flag also works when invoked from the sketch directory.)
 
-Alternatively, open `firmware/sanitation_unit_monitor/sanitation_unit_monitor.ino` in the Arduino IDE: select **Board → STMicroelectronics STM32 → Nucleo L433CC**, confirm your port, then **Sketch → Upload**.
+Alternatively, open `firmware/sanitation_unit_monitor/sanitation_unit_monitor.ino` in the Arduino IDE: select **Board → STMicroelectronics STM32 → Blues → Cygnet (Notecarrier CX)**, confirm your port, then **Sketch → Upload**.
 
 **Dependencies:**
 - Arduino core for STM32 ([`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32)) — install via the Arduino IDE Boards Manager.

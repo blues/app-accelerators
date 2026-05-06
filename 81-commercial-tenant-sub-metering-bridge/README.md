@@ -8,8 +8,6 @@ This reference application is intended to provide inspiration and help you get s
 
 A cellular [energy monitoring](https://blues.com/solutions-energy-monitoring/) retrofit for multi-tenant commercial buildings. Four Rogowski coil sensors with per-channel active integrator circuits on a panel, a Blues Notecard Cell+WiFi, and a Notecarrier CX with its onboard Cygnet host — and a landlord gains per-tenant estimated interval energy (Wh), 15-minute blocked-average demand (W), and a per-channel fault bitmask every hour, on a data channel the tenants can neither see nor interfere with, without running a single network cable through the building.
 
-**What you'll have when you're done:** A compact, line-powered assembly that clamps Rogowski coil sensors onto the branch-circuit feeds of up to four commercial tenants. A voltage reference sensor samples the building line voltage on a fifth ADC channel. Every five minutes the Cygnet takes sequential interleaved voltage and current ADC samples — voltage is read first in each pair, with a fixed ~50 µs channel-to-channel latency — computes active power via the V×I cross-product, and accumulates estimated interval energy (Wh, derived from periodic power snapshots) and 15-minute blocked-average demand (W) per tenant. Once per hour a structured summary note is delivered to Notehub. Monthly per-tenant totals are derived from the hourly event stream via the Notehub Event Query API — no device-side monthly rollup is generated. Operators can re-tune sensor sensitivity and volt scaling from Notehub environment variables without a physical visit or firmware re-flash.
-
 ## 1. Project Overview
 
 **The problem.** A landlord of a multi-tenant commercial building — a flex-industrial park, a shared professional building, an office strip — wants to allocate electricity costs to each tenant based on their actual consumption rather than splitting the utility bill by square footage or some other proxy. The fair approach is sub-metering: install a watt-hour meter on each tenant's branch circuit and read it monthly.
@@ -161,7 +159,7 @@ Each Rogowski coil wraps around **one conductor only** of the tenant's single-ph
 
 > **Electrical safety.** Panel interiors operate at hazardous voltages. Installation must be performed by a licensed electrician following applicable electrical code, site lockout/tagout procedures, and the panel manufacturer's instructions. The Rogowski coils and voltage transducer are galvanically isolated from the mains; the hazard is the bus bars and termination points nearby during installation.
 
-## 5. Firmware Flash Checklist
+## 4.5 Firmware Flash Checklist
 
 Before powering on for the first time:
 
@@ -183,8 +181,8 @@ If compilation fails with "PRODUCT_UID is not defined", you missed step 1. If up
 3. **Edit one line** in [`firmware/tenant_sub_meter/tenant_sub_meter_helpers.h`](firmware/tenant_sub_meter/tenant_sub_meter_helpers.h) — replace `#define PRODUCT_UID ""` with your project's value.
 4. **Flash** — 
    ```bash
-   arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/tenant_sub_meter/
-   arduino-cli upload -b STMicroelectronics:stm32:GenL4:pnum=CYGNET -p /dev/cu.usbmodem* firmware/tenant_sub_meter/
+   arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/tenant_sub_meter/
+   arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbmodem* firmware/tenant_sub_meter/
    ```
    Full troubleshooting in [§6.1](#61-installing-and-flashing). Connect the Notecarrier CX with USB and set the DIP switch to `HST`.
 5. **Watch serial** — open the serial monitor at 115200 baud. You will see Notecard configuration, then channel sample lines. After the first sleep cycle, serial goes quiet (host is powered off) for 5 minutes — that silence is expected and healthy.
@@ -246,7 +244,7 @@ Three-file implementation — all three must be present in the same sketch direc
 
 **Dependencies:**
 
-- **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Install via the Arduino Boards Manager (search "STM32 MCU based boards") or add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**. Select **Generic STM32L4 series → Cygnet** as the board target.
+- **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Install via the Arduino Boards Manager (search "STM32 MCU based boards") or add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**. Select **Blues Cygnet** as the board target (canonical FQBN: `STMicroelectronics:stm32:Blues:pnum=CYGNET`).
 - **`Blues Wireless Notecard`** library — [`note-arduino`](https://github.com/blues/note-arduino). Install via the Arduino Library Manager, or `arduino-cli lib install "Blues Wireless Notecard"`. Verify the latest release against the [note-arduino releases page](https://github.com/blues/note-arduino/releases) at install time.
 
 **Flashing — Arduino IDE:** Open `tenant_sub_meter.ino`, select the Cygnet board, and click **Upload**. The Notecarrier CX exposes the ST-Link interface on the same USB cable — no external programmer needed. Set the DIP switch to `HST` before flashing to route USB serial to the host MCU.
@@ -258,7 +256,7 @@ First, confirm the board and port:
 ```bash
 # List all recognized boards
 arduino-cli board listall | grep -i cygnet
-# Expected output: STMicroelectronics:stm32:GenL4:pnum=CYGNET
+# Expected output: STMicroelectronics:stm32:Blues:pnum=CYGNET
 ```
 
 Then set the DIP switch on the Notecarrier CX to `HST` and compile/upload:
@@ -266,7 +264,7 @@ Then set the DIP switch on the Notecarrier CX to `HST` and compile/upload:
 ```bash
 # Compile only (no upload yet)
 arduino-cli compile \
-  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET \
+  -b STMicroelectronics:stm32:Blues:pnum=CYGNET \
   firmware/tenant_sub_meter/
 
 # List USB ports connected to see your device
@@ -274,7 +272,7 @@ arduino-cli board list
 
 # Upload (replace /dev/cu.usbmodem* with your actual port from board list)
 arduino-cli upload \
-  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET \
+  -b STMicroelectronics:stm32:Blues:pnum=CYGNET \
   -p /dev/cu.usbmodem* \
   firmware/tenant_sub_meter/
 

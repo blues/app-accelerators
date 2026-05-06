@@ -63,16 +63,16 @@ arduino-cli lib install "Blues Wireless Notecard" \
 
 1. Open `firmware/lone_worker_beacon/lone_worker_beacon.ino` in the Arduino IDE or a text editor.
 2. In `lone_worker_beacon_helpers.h`, find the line `#define PRODUCT_UID` and replace the placeholder with your Notehub project's ProductUID (from [notehub.io](https://notehub.io) under project settings).
-3. Compile:
+3. Compile (the FQBN below matches `firmware/lone_worker_beacon/sketch.yaml`, which the Arduino IDE picks up automatically when invoked from the sketch directory):
 
 ```bash
-arduino-cli compile -b STMicroelectronics:stm32:Nucleo_L433RC firmware/
+arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/
 ```
 
 **Step 3: Flash to Notecarrier CX**
 
 ```bash
-arduino-cli upload -b STMicroelectronics:stm32:Nucleo_L433RC \
+arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET \
                    -p /dev/ttyUSB0 firmware/
 ```
 
@@ -85,7 +85,7 @@ arduino-cli upload -b STMicroelectronics:stm32:Nucleo_L433RC \
 - Check Notehub: navigate to your project's Devices tab, select your device, and view the Events log. A `beacon_alert.qo` event with `"type":"panic"` should appear within 30–90 seconds.
 - Drop the beacon 50–80 cm onto a padded surface. You should feel a double buzz (fall detected) and see a `beacon_alert.qo` with `"type":"fall"` in the Events log.
 
-If no event appears, check [Section 11 (Troubleshooting)](#11-troubleshooting-common-issues).
+If no event appears, check [Section 10 (Troubleshooting)](#10-troubleshooting-common-issues).
 
 ## 3. Hardware Requirements
 
@@ -584,7 +584,7 @@ A productive bench exercise: run the device for 2 hours on a known-capacity LiPo
 **Multiple alerts fire from a single fall.**
 - The 60-second alert cooldown (`DEFAULT_ALERT_COOLDOWN_SEC`) prevents alert storms. A second fall detected within 60 seconds of the previous alert is suppressed — the button feels one buzz (acknowledgment of the press) instead of three (alert accepted). This is intentional. If you need multiple alerts for a tumbling device, increase the cooldown in the firmware or set it via an environment variable (when supported in a future revision).
 
-## 10. Summary
+## 11. Summary
 
 A Notecarrier CX + Notecard Cell+WiFi + Starnote for Skylo, paired with a LIS3DH accelerometer, a DRV2605L haptic driver, and a panic button, produces a wearable safety beacon that does what no check-in procedure or supervisor can: *it monitors the worker automatically — without requiring any worker action — and in the regions and conditions where Skylo satellite coverage is available, it can reach a dispatcher even when cellular is dark.* On an alert, the firmware immediately queues a compact note with the Notecard's cached location, an `event_id` correlation key, and `sync:true`, while a non-blocking background GPS search runs concurrently without pausing fall detection or button monitoring. If a fresh fix arrives, a follow-up `beacon_location.qo` note delivers event-time coordinates with the same `event_id`; downstream systems join the two notes using `(device, event_id)` as the key. The two-stage fall-detection algorithm (free-fall + impact) reduces nuisance alerts from isolated bumps and vibration impacts; the firmware samples the LIS3DH at ~100 Hz via a 10-sample inner loop, reliably catching free-fall phases as short as 80 ms — a production implementation should offload Stage 1 to the LIS3DH hardware interrupt to eliminate the polling loop and enable STM32L433 STOP2 sleep between events.
 

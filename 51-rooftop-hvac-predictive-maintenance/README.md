@@ -8,7 +8,7 @@ This reference application is intended to provide inspiration and help you get s
 
 A retrofit [downtime prevention](https://blues.com/downtime-prevention/) pack for commercial rooftop HVAC units. A handful of inexpensive sensors and a Blues [Notecard Cell+WiFi](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) turn an ordinary rooftop unit into a remotely-monitored, predictively-maintained asset — catching refrigerant loss, short-cycling, and clogged filters *before* the unit fails and a tenant loses cooling.
 
-**What you'll have when you're done:** a weatherproof, line-powered sidecar bolted to a rooftop RTU that samples four sensors every minute, runs three failure-mode checks locally, and pages your on-call queue within ~60 s of a threshold trip — over cellular, with no site IT involvement and no RTU modification. Hourly summaries land in a separate Notefile for trending and analytics. Operators can re-tune thresholds in the field via Notehub environment variables without re-flashing firmware.
+**What you'll have when you're done:** a weatherproof, line-powered sidecar bolted to a commercial rooftop air-conditioning unit that samples four sensors every minute, runs three failure-mode checks locally, and pages your on-call queue within ~60 s of a threshold trip — over cellular, with no site IT involvement and no modification to the unit itself. Hourly summaries are emitted on a separate event stream for trending and analytics. Operators can re-tune thresholds in the field from the cloud, with no firmware changes required.
 
 ## 1. Project Overview
 
@@ -74,11 +74,11 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
 
 Pin-by-pin:
 
-- **+3V3** → top of each thermistor's 10 kΩ series resistor, SDP810 `VIO`, CT bias-circuit divider high leg.
-- **GND** → bottom of each thermistor NTC, SDP810 `GND`, CT bias-circuit divider low leg, bias capacitor.
+- **+3V3** → top of each thermistor's 10 kΩ series resistor, SDP810 `VIO`, top leg of the CT bias divider (10 kΩ from +3V3 to bias node).
+- **GND** → bottom of each thermistor NTC, SDP810 `GND`, bottom leg of the CT bias divider (10 kΩ from bias node to GND), bottom of the 10 µF bias-decoupling capacitor.
 - **A0** → wiper (mid-point) of the supply-air thermistor divider.
 - **A1** → wiper of the return-air thermistor divider.
-- **A2** → output of the CT bias circuit (CT TRRS sleeve/tip → 10 kΩ → bias node → 10 µF to GND → A2).
+- **A2** → CT signal node. The two 10 kΩ resistors form a divider from +3V3 to GND with the midpoint (the **bias node**) sitting at Vref/2 ≈ 1.65 V. The 10 µF capacitor connects from the bias node to GND — it decouples the bias rail to AC ground, **not** in series with the signal. The CT's TRRS plug bridges A2 and the bias node: tip → A2, sleeve → bias node (or vice versa; the AC signal is symmetric). A2 then sees 1.65 V DC with the CT's AC swing superimposed, keeping the signal inside the 0–3.3 V ADC window.
 - **SDA / SCL** → SDP810 `SDA` / `SCL` (the Notecarrier has pull-ups on-board).
 - **+VBAT / +5V** pad → Mojo `LOAD` output; `BAT` input of Mojo ← 5V DC from the AC/DC supply.
 

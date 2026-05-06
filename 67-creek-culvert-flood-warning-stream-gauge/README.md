@@ -42,14 +42,14 @@ This project is a self-contained, edge-intelligent stream gauge that measures th
    arduino-cli core install STMicroelectronics:stm32
    arduino-cli lib install "Blues Wireless Notecard"
    ```
-4. **Compile and flash.** Connect the Notecarrier CX to your computer via USB; then:
+4. **Compile and flash.** Connect the Notecarrier CX to your computer via USB; then (the FQBN below matches `firmware/creek_flood_gauge/sketch.yaml`, so omitting `--fqbn` also works when invoked from the sketch directory):
    ```bash
-   arduino-cli compile --fqbn STMicroelectronics:stm32:Nucleo_L152RE:usb=CDC \
+   arduino-cli compile --fqbn STMicroelectronics:stm32:Blues:pnum=CYGNET \
      --output-dir build firmware/creek_flood_gauge
-   arduino-cli upload --fqbn STMicroelectronics:stm32:Nucleo_L152RE:usb=CDC \
+   arduino-cli upload --fqbn STMicroelectronics:stm32:Blues:pnum=CYGNET \
      --port /dev/ttyACM0 --input-dir build
    ```
-   (Adjust `--port` to match your system: `/dev/ttyUSB0` on Linux, `COM3` on Windows.)
+   (Adjust `--port` to match your system: `/dev/ttyUSB0` on Linux, `COM3` on Windows. The canonical FQBN above is the Cygnet host on the Notecarrier CX — older `Nucleo_L433RC` or `Nucleo_L152RE` variants do not match the Cygnet's chip family or peripheral mapping and should not be substituted.)
 5. **Power the enclosure.** Within a few minutes, the device appears in Notehub. You now have a live gauge sampling every 5 minutes and ready to receive threshold tuning via environment variables.
 
 **Expected outcome:** One `gauge_reading.qo` note per hour in Notehub, zero `gauge_alert.qo` notes in dry conditions. See Section 8 for how to simulate water-level and rain events to validate alert firing.

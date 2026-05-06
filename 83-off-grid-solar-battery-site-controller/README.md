@@ -8,8 +8,6 @@ This reference application is intended to provide inspiration and help you get s
 
 A bank-level solar and battery monitoring solution — a Blues [battery management systems](https://blues.com/battery-management-systems/) reference design — for remote off-grid sites powered by solar arrays and battery banks. A Blues Notecarrier CX reads two Victron VE.Direct devices — a SmartShunt for battery-bank metrics and a SmartSolar MPPT charge controller for solar-side metrics — and reports battery-bank-level state of charge (SoC), daily solar harvest, load draw, battery temperature, and charge state to Notehub every four hours, with immediate alerts before the site goes dark. Connectivity is provided by a [Notecard](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) seated in the carrier's M.2 slot; two SKUs are supported with no firmware changes between them — [Notecard Cell+WiFi (NOTE-MBGLW)](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) for sites within terrestrial cellular range, and [Notecard for Skylo (NOTE-NBGLWX)](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) for sites where coverage is marginal or absent.
 
-**What you'll have when you're done:** a compact, weatherproof monitor bolted inside a site enclosure or electrical panel that wakes every 15 minutes, reads both VE.Direct devices over UART, accumulates averages across the window, and pushes a summary to Notehub every four hours. If SoC drops below 20%, battery temperature spikes above 45 °C, load draw exceeds the configured ceiling, or the MPPT controller fails to reach a full-charge state (Float, Absorption, Equalize, or Auto Equalize) for a configurable number of consecutive days, an alert Note goes out immediately — without waiting for the next summary window — so operators can act before a remote cell tower or environmental station loses power and goes silent.
-
 ## 1. Project Overview
 
 > **Interface note.** This project reads the [Victron VE.Direct text protocol](https://www.victronenergy.com/upload/documents/VE.Direct-Protocol-3.34.pdf) — a one-wire broadcast interface that exposes battery-bank aggregates (SoC, voltage, current, temperature, and charge state) and solar-side metrics (panel voltage, power, and daily yield). These are exactly the signals needed to detect the site-uptime failure modes this design targets: persistent recharge deficit, low SoC, thermal overtemperature, and excessive load draw. Bank-level aggregates are the correct scope for a bank-level site-uptime monitor. **Cell-imbalance monitoring was explicitly evaluated during design and scoped out**: per-cell voltages and imbalance data are not broadcast on the VE.Direct wire — they travel over CAN bus and require a dedicated CAN controller and transceiver that are absent from this hardware stack. Implementing cell-level telemetry is a distinct hardware and firmware problem that belongs in a companion design rather than an extension of this project (see §9 for the full rationale and the companion-design specification).
@@ -48,8 +46,8 @@ To get a working monitor up and running in ~2 hours:
 4. **Set ProductUID** in `firmware/solar_battery_controller/solar_battery_controller.ino` line 62.
 5. **Flash:**
    ```bash
-   arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/solar_battery_controller/
-   arduino-cli upload -b STMicroelectronics:stm32:GenL4:pnum=CYGNET -p /dev/cu.usbmodem* firmware/solar_battery_controller/
+   arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/solar_battery_controller/
+   arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbmodem* firmware/solar_battery_controller/
    ```
 6. **Claim and configure in Notehub:**
    - Power on; the device claims itself to your project within ~1 minute (watch **Devices** tab).
@@ -241,10 +239,10 @@ Five files:
 
 **Dependencies:**
 
-- **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Install via Arduino Boards Manager (search "STM32 MCU based boards") or add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**. Select **Generic STM32L4 series → Cygnet** as the board target.
+- **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Install via Arduino Boards Manager (search "STM32 MCU based boards") or add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**. Select **Blues Cygnet** as the board target (canonical FQBN: `STMicroelectronics:stm32:Blues:pnum=CYGNET`).
 - **`Blues Wireless Notecard`** library — [`note-arduino`](https://github.com/blues/note-arduino). Install via the Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard"`). Check the [note-arduino releases](https://github.com/blues/note-arduino/releases) for the latest stable version before starting a new project.
 
-**Flashing — Arduino IDE:** open `solar_battery_controller.ino`, select **STMicroelectronics → Generic STM32L4 series → Cygnet** as the board, and click **Upload**. The Notecarrier CX's onboard ST-Link debug interface enumerates as a virtual COM port on the same USB cable — no external programmer needed.
+**Flashing — Arduino IDE:** open `solar_battery_controller.ino`, select **STMicroelectronics → Blues Cygnet** as the board, and click **Upload**. The Notecarrier CX's onboard ST-Link debug interface enumerates as a virtual COM port on the same USB cable — no external programmer needed.
 
 **Flashing — `arduino-cli`:**
 ```bash
@@ -252,15 +250,15 @@ Five files:
 arduino-cli board listall | grep -i cygnet
 
 # Compile and upload (replace the FQBN and port to match your system)
-arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/solar_battery_controller/
-arduino-cli upload  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET -p /dev/cu.usbmodem* firmware/solar_battery_controller/
+arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/solar_battery_controller/
+arduino-cli upload  -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbmodem* firmware/solar_battery_controller/
 ```
 
 **NOTE-NBGLWX Skylo build flag:** To compile with a satellite-safe default cadence (1440-minute daily summary from the very first wake), add `-DSKYLO_BUILD` to the compiler flags. In the Arduino IDE this goes in **File → Preferences → Additional build options**; with `arduino-cli` pass `--build-property "compiler.cpp.extra_flags=-DSKYLO_BUILD"`. See §5 Skylo deployment guidance for context.
 
 ```bash
 # Example: Skylo build
-arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET \
+arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET \
   --build-property "compiler.cpp.extra_flags=-DSKYLO_BUILD" \
   firmware/solar_battery_controller/
 ```

@@ -6,9 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-## What you'll have when you're done
-
-A cellular [energy monitoring](https://blues.com/solutions-energy-monitoring/) retrofit for Level 2 EV chargers — mount a DIN-rail energy meter on the charger's AC feed, bolt a Blues Notecard inside the electrical panel, and within minutes you'll see three types of data arriving in Notehub: per-session metered kWh and peak power (`charger_session.qo`, one per charged vehicle), hourly utilization and availability summaries (`charger_summary.qo`, one per hour), and mains-offline alerts (`charger_alert.qo` when the charger circuit loses power). Energy is measured by a hardware-metered instrument; charger availability is tracked from the meter's V_rms register — when mains voltage is absent the circuit is definitively offline. No modification to the charger hardware, no OCPP enrollment, no site IT involvement required. See [§9](#9-limitations-and-next-steps) for design boundaries and production expansion paths.
+A cellular [energy monitoring](https://blues.com/solutions-energy-monitoring/) retrofit for Level 2 EV chargers — for fleet managers, facilities teams, and charging-network operators who need to know how their installed chargers are actually being used. The design clamps a DIN-rail energy meter onto each charger's AC feed and reports three streams to Notehub over cellular: per-session metered kWh and peak power, hourly utilization and availability, and mains-offline alerts. Energy is measured by a hardware-metered instrument; charger availability is tracked from the meter's V_rms register — when mains voltage is absent the circuit is definitively offline. No modification to the charger hardware, no OCPP enrollment, no site IT involvement required. The hardware is a Notecarrier CX with a Notecard Cell+WiFi and an EASTRON SDM120-Modbus energy meter (see §3 for the BOM); see [§9](#9-limitations-and-next-steps) for design boundaries and production expansion paths.
 
 ## 1. Project Overview
 
@@ -46,7 +44,7 @@ Before diving into the full documentation, here's the fastest path from parts to
 1. **Create a Notehub project** at [notehub.io](https://notehub.io) and copy its ProductUID (looks like `com.your-company:ev-charger-monitor`).
 2. **Wire the bench rig** — Notecarrier CX + Notecard MBGLW + SDM120-Modbus energy meter + SparkFun BOB-10124 RS-485 transceiver (D0/D1/D2 pins). Full wiring details in [§4](#4-wiring-and-assembly).
 3. **Edit firmware/ev_charger_session_monitor/ev_charger_session_monitor.ino** — replace the empty string on line 53 (`#define PRODUCT_UID ""`) with your ProductUID.
-4. **Flash with Arduino IDE** — open the sketch, select **Generic STM32L4 series → Cygnet** as the board, hit **Upload**. Or use `arduino-cli` (see [§6.1](#61-installing-and-flashing) for commands).
+4. **Flash with Arduino IDE** — open the sketch, select **Blues Cygnet** as the board (canonical FQBN: `STMicroelectronics:stm32:Blues:pnum=CYGNET`), hit **Upload**. Or use `arduino-cli` (see [§6.1](#61-installing-and-flashing) for commands).
 5. **Watch Notehub** — open your project's **Events** tab. You'll see `_session.qo` within seconds (proves radio works), a `charger_summary.qo` within the hour, and a `charger_session.qo` after you run a test load (see [§8](#8-validation-and-testing)).
 
 For detailed component selection, wiring, Notehub configuration, and validation, read on.
@@ -177,7 +175,7 @@ The firmware lives in three files inside `firmware/ev_charger_session_monitor/`:
 
 **Dependencies:**
 
-- **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Add the board manager URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**. Select **Generic STM32L4 series → Cygnet** as the board.
+- **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Add the board manager URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**. Select **Blues Cygnet** as the board (canonical FQBN: `STMicroelectronics:stm32:Blues:pnum=CYGNET`).
 - **`Blues Wireless Notecard`** library — [`note-arduino`](https://github.com/blues/note-arduino). Install via the Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard"`) or search "Blues Wireless Notecard" in the IDE Library Manager. See the [note-arduino releases page](https://github.com/blues/note-arduino/releases) for any newer stable version.
 - **`ModbusMaster`** library — by Doc Walker, available in the Arduino Library Manager. Install with `arduino-cli lib install "ModbusMaster"` or search "ModbusMaster" in the IDE. Version ≥ 2.0.1. Provides the Modbus RTU master implementation used to communicate with the SDM120 over Serial1.
 
@@ -188,8 +186,8 @@ The firmware lives in three files inside `firmware/ev_charger_session_monitor/`:
 ```bash
 # Typical modern stm32duino core
 cd firmware/ev_charger_session_monitor
-arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET ev_charger_session_monitor.ino
-arduino-cli upload  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET -p /dev/cu.usbmodem* ev_charger_session_monitor.ino
+arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET ev_charger_session_monitor.ino
+arduino-cli upload  -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbmodem* ev_charger_session_monitor.ino
 ```
 
 If the upload fails with "Unknown board," first list available FQBN variants:
@@ -198,7 +196,7 @@ If the upload fails with "Unknown board," first list available FQBN variants:
 arduino-cli board listall | grep -i cygnet
 ```
 
-and replace `STMicroelectronics:stm32:GenL4:pnum=CYGNET` above with whatever `listall` reported. Replace `/dev/cu.usbmodem*` with the port the Notecarrier enumerates on your machine — typically `COMx` on Windows, `/dev/ttyACM*` on Linux, or `/dev/cu.usbmodem*` on macOS.
+and replace `STMicroelectronics:stm32:Blues:pnum=CYGNET` above with whatever `listall` reported. Replace `/dev/cu.usbmodem*` with the port the Notecarrier enumerates on your machine — typically `COMx` on Windows, `/dev/ttyACM*` on Linux, or `/dev/cu.usbmodem*` on macOS.
 
 Open the serial monitor at **115200 baud** after flashing. On cold boot you'll see `[app] cold boot — will configure Notecard`. Once the meter is connected, subsequent wakes print `[app] V=240.1 V  P=0 W  kWh=12.345` and then go quiet for 30 seconds as the host powers down. If the meter is absent, unpowered, or wired incorrectly you'll see `[app] WARN: Modbus voltage read error 0xE2` (response timeout) each wake. A `0x02` error indicates the slave responded but rejected the register address (typical of a slave-ID or register-map mismatch); other ModbusMaster error codes are documented in the library header.
 

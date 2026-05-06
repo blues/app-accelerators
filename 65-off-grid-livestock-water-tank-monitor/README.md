@@ -6,7 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-A solar-powered [remote monitoring](https://blues.com/solutions-remote-monitoring/) system for off-grid livestock water tanks. An ultrasonic level sensor watches the water surface, a clamp-on current transformer measures pump current draw as contextual telemetry, and a battery-voltage divider tracks the solar system's health — all reported to Notehub via a Blues Notecard for Skylo that uses cellular where coverage exists and falls back to satellite via the Skylo NTN network where it doesn't, with the radio transmitting only on the 4-hour summary cadence or when an immediate alert fires.
+A solar-powered [remote monitoring](https://blues.com/solutions-remote-monitoring/) system for off-grid livestock water tanks. The system tells a rancher when a stock tank is going dry without driving the pasture roads — measuring the water level, the pump's current draw, and the solar system's own battery voltage, then reporting all three to a phone or dispatch system over cellular wherever a tower is reachable and over satellite via Skylo's non-terrestrial network (NTN) where it isn't. The radio stays off between an immediate alert and a 4-hour summary, so the device runs indefinitely on a modest solar panel and a single battery.
 
 ## What You'll Build
 
@@ -45,11 +45,11 @@ The failure modes are simple and repeatable. Tanks go dry because a float valve 
 ## 2.5 Quickstart
 
 1. **Assemble hardware.** Order the BOM from §3, build the circuit per §4, and mount the enclosure on the tank post.
-2. **Flash firmware.** Clone this repo, set your Notehub ProductUID in the sketch, and flash via Arduino IDE:
+2. **Flash firmware.** Clone this repo, set your Notehub ProductUID in the sketch, and flash via Arduino IDE. The FQBN below matches `firmware/livestock_water_tank_monitor/sketch.yaml`, so omitting `--fqbn` also works when invoked from the sketch directory:
    ```bash
-   arduino-cli compile --fqbn STMicroelectronics:stm32:Nucleo_L433RC \
+   arduino-cli compile --fqbn STMicroelectronics:stm32:Blues:pnum=CYGNET \
      firmware/livestock_water_tank_monitor/livestock_water_tank_monitor.ino
-   arduino-cli upload -p /dev/ttyACM0 --fqbn STMicroelectronics:stm32:Nucleo_L433RC \
+   arduino-cli upload -p /dev/ttyACM0 --fqbn STMicroelectronics:stm32:Blues:pnum=CYGNET \
      firmware/livestock_water_tank_monitor
    ```
 3. **Set calibration.** Power on and wait for the device to sync to Notehub (first cellular connection within minutes if coverage exists, or satellite within ~10 minutes if cellular is unavailable). Once a `tank_status.qo` Note appears in Notehub, measure your actual tank geometry and set `tank_depth_mm` and `sensor_min_mm` as environment variables in Notehub (see §5 step 4 for the path). After the next sync, `level_pct` will report accurate percentages.

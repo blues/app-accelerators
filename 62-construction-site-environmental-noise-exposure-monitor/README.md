@@ -33,10 +33,10 @@ This project is a solar-powered cellular **area monitor** — a fixed, perimeter
 ## 2.5 Quickstart
 
 1. **Clone and configure**: Download this repo and open `firmware/construction_env_monitor/construction_env_monitor.ino`. Replace `PRODUCT_UID` constant with your Notehub project UID (see §5 step 1).
-2. **Build and flash**: Use Arduino IDE or `arduino-cli`:
+2. **Build and flash**: Use Arduino IDE or `arduino-cli`. The FQBN below matches `firmware/construction_env_monitor/sketch.yaml`, so omitting `--fqbn` also works when invoked from the sketch directory:
    ```bash
-   arduino-cli compile --fqbn STMicroelectronics:stm32:GenL0 firmware/
-   arduino-cli upload -p /dev/ttyUSB0 --fqbn STMicroelectronics:stm32:GenL0 firmware/
+   arduino-cli compile --fqbn STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/
+   arduino-cli upload -p /dev/ttyUSB0 --fqbn STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/
    ```
 3. **Power and observe**: Connect LiPo (or USB for bench testing). The device samples every 5 minutes, queues summaries, and transmits to Notehub every 30 minutes. Watch `env_summary.qo` notes arrive in Notehub within 30 minutes of first power-on.
 4. **Set thresholds**: In Notehub, navigate to your Fleet → Environment Variables and set `pm25_alert_ug_m3`, `pm10_alert_ug_m3`, and `db_a_alert` (see §5). Alerts fire immediately when thresholds are breached.
@@ -135,14 +135,14 @@ The Hammond 1554CGY enclosure is ABS plastic, which is RF-transparent — cellul
   - `Blues Wireless Notecard`: `arduino-cli lib install "Blues Wireless Notecard"`
   - `Adafruit PM25 AQI Sensor`: `arduino-cli lib install "Adafruit PM25 AQI Sensor"`
 
-**Using Arduino IDE:** Open `firmware/construction_env_monitor/construction_env_monitor.ino`, select board `STMicroelectronics → STM32L → Notecarrier CX`, update `PRODUCT_UID`, and click Upload.
+**Using Arduino IDE:** Open `firmware/construction_env_monitor/construction_env_monitor.ino`, select board **STMicroelectronics STM32 → Blues → Cygnet (Notecarrier CX)** under **Tools → Board**, update `PRODUCT_UID`, and click Upload. The IDE picks up `sketch.yaml` automatically when the sketch directory is opened, so the board selection is pre-pinned to the correct variant.
 
 **Using `arduino-cli`:**
 ```bash
-arduino-cli compile --fqbn STMicroelectronics:stm32:GenL0 firmware/
-arduino-cli upload -p /dev/ttyUSB0 --fqbn STMicroelectronics:stm32:GenL0 firmware/
+arduino-cli compile --fqbn STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/
+arduino-cli upload -p /dev/ttyUSB0 --fqbn STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/
 ```
-(Adjust `-p` to your serial port; on Windows use `COM3`, on macOS use `/dev/tty.usbserial-*`.)
+(Adjust `-p` to your serial port; on Windows use `COM3`, on macOS use `/dev/tty.usbserial-*`. The FQBN above is the canonical match for the Cygnet host on the Notecarrier CX — older `Nucleo_L433RC_P` or generic `GenL0` board variants do not match the Cygnet's chip family or peripheral mapping and should not be substituted.)
 
 ### Source Files
 

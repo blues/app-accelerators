@@ -6,7 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-A [downtime prevention](https://blues.com/downtime-prevention/) retrofit for municipal wastewater lift stations that catches pump failures, discharge obstructions, and high-water conditions before they become a sanitary overflow. Three sensor types, a cellular or satellite [Notecard](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), and a Cygnet host MCU transform a sealed concrete vault into a remotely-monitored station that delivers alerts to the on-call crew within minutes via cellular — or on the next available satellite pass for Option B remote stations — not hours after a manual site visit.
+A [downtime prevention](https://blues.com/downtime-prevention/) retrofit for municipal wastewater lift stations that catches pump failures, discharge obstructions, and high-water conditions before they become a sanitary overflow. A handful of sensors and a cellular (or, for stations beyond reliable carrier coverage, satellite) [Notecard](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) transform a sealed concrete vault into a remotely-monitored station that delivers alerts to the on-call crew within minutes — not hours after a manual site visit.
 
 ## 1. Project Overview
 
@@ -107,7 +107,7 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
 
 **Level sensor (4–20 mA current loop)**
 
-The WIKA S-10 is a submersible hydrostatic transmitter with a 4–20 mA two-wire loop-powered output.
+The WIKA LH-10 is a submersible hydrostatic transmitter purpose-built for wet-well immersion, with a 4–20 mA two-wire loop-powered output and 316L stainless wetted parts. (The S-10 referenced in some WIKA literature is the family's general-purpose / sanitary variant — do not substitute it for permanent submersion in raw sewage.)
 
 **Physical installation.** Lower the sensor into the wet well to a stable depth above the lowest feasible pumped level. The vented cable is the support tether — secure it with a stainless cable grip or strain-relief clamp at the wet-well cover plate so the sensor's weight is carried mechanically, not by the conductors. The vent tube inside the cable must be kept clear and open to atmosphere at the enclosure end; do not seal or submerge the vent opening. Thread the two conductors through a liquid-tight conduit fitting into the enclosure.
 
@@ -289,7 +289,7 @@ Sampling cadence (60 s) and transmission cadence (default 60 min, set by `summar
 - **Alert deduplication.** Per-alert cycle-based cooldown counters (30 cycles × 60 s = 30 minutes) prevent a sustained fault condition from paging the on-call engineer repeatedly. Each alert type re-arms independently; a pump fail-to-start and a float-switch alarm can page simultaneously.
 - **State recovery.** If `NotePayloadRetrieveAfterSleep` fails (first power-up, Notecard flash corruption), the firmware zero-initializes all state and re-runs `hub.set` and `note.template`, both of which are idempotent at the Notecard. Summary-window accumulators reset to zero; at most one summary window of data is lost.
 - **`note.add` retry and accumulator preservation.** `sendAlert` uses `notecard.sendRequestWithRetry(req, 5)` so a transient I²C hiccup gets a second chance before the call is declared failed; alert cooldowns are armed only on a confirmed success, meaning a failed send leaves the cooldown at zero and the alert is retried on the next 60-second cycle. `sendSummary` checks the return value of `notecard.sendRequest()` and the caller clears summary accumulators **only on success** — if the Notecard is temporarily unreachable the accumulated window data is preserved and the send is retried on the next cycle. `note.template` registration is retried on every wake until both templates succeed (see `g_state.templates_registered`). The remaining narrower gap: neither `sendAlert` nor `sendSummary` inspects the Notecard response's `err` field, so a Notecard-side error that does not produce a NULL response is not surfaced to the host log. Production deployments that need end-to-end confirmation should add `notecard.responseError(rsp)` checks around the `sendRequest` return path.
-- **Sensor open/short detection (not implemented — known limitation).** The level sensor ADC path has no open-circuit or short-circuit detection. A disconnected WIKA S-10 (loop open) will read at or near LEVEL_ADC_MIN (0%), causing a clamped 0% reading rather than a fault indication. A shorted loop will read at or above LEVEL_ADC_MAX (100%), potentially triggering spurious alerts until the cooldown expires. The CT channels similarly have no rail-detection: a disconnected CT reads near zero amps (≈ pump off), and a shorted CT reads a DC bias that may not exceed `pump_on_amps`. Both conditions are indistinguishable from normal operation by the current firmware. Operators should verify sensor connectivity during commissioning and after any maintenance event.
+- **Sensor open/short detection — partial coverage.** The level sensor path is fault-checked at the ADC: an averaged count below `LEVEL_ADC_FAULT_LO` (≈ 645) flags an open loop (sensor unplugged, broken vented cable, lost loop power), and a count above `LEVEL_ADC_FAULT_HI` (≈ 3823) flags a shorted loop or severe overpressure. Both conditions emit `LEVEL_INVALID_SENTINEL` (-9999) instead of a clamped 0 % / 100 % reading and increment `level_faults` in the hourly summary. The CT channels are similarly guarded: a bias point outside `[CT_BIAS_MIN, CT_BIAS_MAX]` (1024–3072 counts) flags a broken bias-divider resistor or a CT terminal shorted to a rail, and any sample inside `CT_RAIL_MARGIN` of 0 or 4095 during the RMS window flags rail saturation (shorted secondary, severely over-ranged input). Faulted CT samples emit `CT_INVALID_SENTINEL` and increment `ct1_faults` / `ct2_faults`. **The remaining gap** is an open CT secondary winding combined with an intact bias divider: that condition reads ≈ Vref/2 with near-zero variance, indistinguishable in software from a legitimately idle pump. Operators should treat a sustained `ct*_faults` count or an unexplained high-water alarm with reported zero pump current as a prompt for a physical inspection.
 
 ### Key code snippet 1: CT RMS current measurement
 
@@ -408,14 +408,14 @@ bool ok = notecard.sendRequestWithRetry(req, 5);
 | Satellite session only, host asleep (batched summary) | up to 350 mA sustained on VMODEM_P | ~0 µA | ~350 mA |
 | Host active + immediate satellite session (alert `sync:true`) | up to 350 mA sustained | ~20–30 mA | ~370 mA |
 
-**24-hour energy budget (Option A — cellular, powered continuously from 120 VAC supply):**
+**24-hour energy budget (Option A — cellular, powered continuously from 120 VAC supply, illustrative numbers; cellular session length dominates and varies with signal conditions):**
 
-- Idle: ~20 µA × 3584 s (59.7 min/hr) = ~72 mC/hr = ~1.7 mAh/day
-- Host wakes: ~25 mA × 0.3 s × 60 wakes/hr × 24 hr = ~108 mC/day = ~30 mAh/day
-- Outbound session: ~250 mA avg × 3 s × 24 sessions/day = ~180 mC/day = ~50 mAh/day
-- Occasional alert (assume 2/day): ~250 mA × 2 s × 2 ≈ negligible
+- Idle: ~20 µA × ~24 h ≈ **~0.5 mAh/day** (the Notecard idle plus carrier-board quiescent draw, accumulated for the ~99.5% of the day the host is gated off).
+- Host wakes: ~25 mA × 0.3 s × 60 wakes/hr × 24 hr ≈ 10,800 mA·s ≈ **~3 mAh/day** (10,800 mA·s ÷ 3600 s/hr).
+- Hourly outbound session: ~250 mA avg × ~10 s × 24 sessions/day ≈ 60,000 mA·s ≈ **~17 mAh/day** (assumes a typical LTE-M session including network registration; a clean network and queued-template summary commonly lands in the 5–15 s range, while marginal coverage stretches it well past 30 s).
+- Occasional alerts (assume 2/day): ~250 mA × ~10 s × 2 ≈ **~1.4 mAh/day**.
 
-**Total: ~80 mAh/day**. The MeanWell HDR-15-5 (85–264 VAC input, 5 VDC 3 A output) provides continuous power from the station's 120 VAC control supply, so energy budgeting is not the deployment constraint — but validating these current draws with Mojo confirms the sleep/wake architecture is working.
+**Total: roughly ~22 mAh/day in steady state, with hourly cellular sessions dominating the budget.** Weak-signal sites where the modem camps in registration can easily push this 2–3× higher. The MeanWell HDR-15-5 (85–264 VAC input, 5 VDC 3 A output) provides continuous power from the station's 120 VAC control supply, so energy budgeting is not the deployment constraint — but validating these current draws with Mojo confirms the sleep/wake architecture is working and surfaces signal-quality issues early.
 
 **Expected Mojo trace over 24 hours:**
 - Dominant pattern: 60-second intervals of near-zero current (~20 µA, host and Notecard idle).

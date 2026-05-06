@@ -6,7 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-A shot-level process monitor for plastic [injection molding](https://blues.com/industrial-equipment-monitoring/) machines. A hydraulic injection pressure transducer and a mold thermocouple sample a coarse shot profile at the edge; the Cygnet host extracts the features that matter — peak pressure, fill time, pack pressure, mold temperature, shot sequence — and a Blues [Notecard Cell+WiFi](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) carries them off the shop floor without touching the plant's OT network.
+A shot-level process monitor for plastic [injection molding](https://blues.com/industrial-equipment-monitoring/) machines. The device captures the two signals that drive part quality on every shot — hydraulic injection pressure and mold temperature — and reduces each shot to a handful of summary metrics a process engineer would want to see (peak pressure, fill time, pack pressure, average mold temperature, shot sequence number), then pushes them to the cloud over cellular. Because the connectivity sits outside the plant's OT network, no IT or network ticket is required at the customer site. The hardware is a Blues Notecarrier CX paired with a [Notecard Cell+WiFi](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) (see §3 for the full BOM).
 
 ## Expected Outcome
 
@@ -58,8 +58,8 @@ After completing this project, you will have:
    arduino-cli lib install "Blues Wireless Notecard"
    # Edit firmware/injection_molding_shot_monitor/injection_molding_shot_monitor.ino
    # Replace PRODUCT_UID "" with your actual ProductUID
-   arduino-cli compile -b STMicroelectronics:stm32:Nucleo_L433RC firmware/injection_molding_shot_monitor/
-   arduino-cli upload -b STMicroelectronics:stm32:Nucleo_L433RC -p /dev/ttyACM0 firmware/injection_molding_shot_monitor/
+   arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/injection_molding_shot_monitor/
+   arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/ttyACM0 firmware/injection_molding_shot_monitor/
    ```
 
 4. **Monitor the serial output:**

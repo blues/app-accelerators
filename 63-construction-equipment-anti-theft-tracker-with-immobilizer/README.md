@@ -6,7 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-A [loss prevention](https://blues.com/loss-prevention/) reference design for construction equipment fleets. A Blues [Notecard for Skylo](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), LiPo battery, and small solar panel turn any skid steer, light tower, portable compressor, or generator into a hardened asset with continuous location monitoring, geofence breach detection, after-hours motion alerts, and a remotely-staged ignition immobilizer proof of concept — all on a self-contained cellular-plus-satellite link that requires zero job-site WiFi or IT involvement.
+A [loss prevention](https://blues.com/loss-prevention/) reference design for construction equipment fleets. The system turns any skid steer, light tower, portable compressor, or generator into a hardened asset that reports its own location continuously, fires alerts on geofence breach and after-hours motion, and accepts a remotely-staged ignition immobilizer command — all on a self-contained cellular-plus-satellite link with a small solar-trickled battery for power, no job-site WiFi or IT coordination required. Specific Blues hardware, sensors, and the wiring path into the ignition circuit are in §3 and §4.
 
 ## 1. Project Overview
 
@@ -54,11 +54,11 @@ This project is that device. It monitors GPS location against a configurable job
    - Paste your ProductUID into the `PRODUCT_UID` string at the top of the sketch.
    - Flash to the Notecarrier CX.
    
-   **Via arduino-cli:**
+   **Via arduino-cli:** The FQBN below matches `firmware/construction_equipment_anti_theft/sketch.yaml`, which the Arduino IDE picks up automatically when invoked from the sketch directory:
    ```bash
-   arduino-cli compile --fqbn "STMicroelectronics:stm32:Cygnet" \
+   arduino-cli compile --fqbn "STMicroelectronics:stm32:Blues:pnum=CYGNET" \
      firmware/construction_equipment_anti_theft
-   arduino-cli upload --port /dev/ttyACM0 --fqbn "STMicroelectronics:stm32:Cygnet" \
+   arduino-cli upload --port /dev/ttyACM0 --fqbn "STMicroelectronics:stm32:Blues:pnum=CYGNET" \
      firmware/construction_equipment_anti_theft
    ```
 

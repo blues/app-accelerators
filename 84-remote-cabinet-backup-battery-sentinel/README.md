@@ -10,10 +10,6 @@ A pack-level sentinel — a Blues [battery management systems](https://blues.com
 
 > **Hardware scope — pack-level sentinel only.** This design measures four signals at the pack level: terminal voltage, bidirectional current, surface temperature, and state-of-charge via coulomb counting. **Per-cell voltage monitoring and cell-imbalance detection are intentionally outside the scope of this design**; they require a dedicated cell-monitor IC (e.g. TI BQ76940) wired to individual cell taps — a substantially different hardware design that is noted as a future extension in §9. SoC is tracked by integrating pack current against a commissioned `usable_capacity_ah` baseline — see §5 for commissioning and §9 for accuracy caveats. The onboard 15 mΩ INA228 shunt is rated for approximately 8 A continuous — appropriate for installations where peak discharge current stays within that range. For installations where peak discharge current exceeds 8 A, use the breakout's external-shunt footprint with a lower-value busbar shunt; see §3 and §9 for details.
 
-**What you'll have when you're done:** a compact sentinel installed inside a cabinet that samples the backup battery every two minutes, ships an hourly health summary (including a state-of-charge estimate) over cellular, and pages your operations team within one sample interval plus cellular session-establishment time (typically two to three minutes at default settings) of a power outage, an overvoltage charger fault, an elevated float current that signals a VRLA battery is quietly failing months before the next scheduled inspection, or a low-SoC threshold trip.
-
-The rest of this README expands on the system architecture, hardware requirements, and firmware design. For a practical quick start, see [§2.5 Quickstart](#25-quickstart). If you are doing a real cabinet install rather than a bench bring-up, also read [§9 Limitations](#9-limitations-and-next-steps) before committing to a shunt and power topology.
-
 ## Table of Contents
 - [1. Project Overview](#1-project-overview)
 - [2. System Architecture](#2-system-architecture)
@@ -64,8 +60,8 @@ The Notecard manages its own cellular session against the supported carrier netw
 3. **Edit one line** — set `PRODUCT_UID` in [`firmware/cabinet_battery_sentinel/cabinet_battery_sentinel_helpers.h`](firmware/cabinet_battery_sentinel/cabinet_battery_sentinel_helpers.h).
 4. **Flash via CLI:**
    ```bash
-   arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/cabinet_battery_sentinel/
-   arduino-cli upload -b STMicroelectronics:stm32:GenL4:pnum=CYGNET -p /dev/cu.usbmodem* firmware/cabinet_battery_sentinel/
+   arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/cabinet_battery_sentinel/
+   arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbmodem* firmware/cabinet_battery_sentinel/
    ```
    Or use Arduino IDE (Tools → Board → Cygnet; Upload).
 5. **Watch for success** — open Notehub → **Events** tab. You know it's working when:
@@ -248,7 +244,7 @@ The firmware is split across three files in `firmware/cabinet_battery_sentinel/`
 
 **Dependencies:**
 
-- **Arduino core for STM32** — install via the Arduino Boards Manager (add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**). Select **Generic STM32L4 series → Cygnet** as the board.
+- **Arduino core for STM32** — install via the Arduino Boards Manager (add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**). Select **Blues Cygnet** as the board (canonical FQBN: `STMicroelectronics:stm32:Blues:pnum=CYGNET`).
 - **`Blues Wireless Notecard`** (note-arduino) — install via the Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard"`). Check [note-arduino releases](https://github.com/blues/note-arduino/releases) and use the latest stable version.
 - **`Adafruit INA228`** — install via the Arduino Library Manager (`arduino-cli lib install "Adafruit INA228"`).
 - **`Adafruit BusIO`** — required dependency of the INA228 library; install via Library Manager.
@@ -262,8 +258,8 @@ The firmware is split across three files in `firmware/cabinet_battery_sentinel/`
 arduino-cli board listall | grep -i cygnet
 
 # Compile and upload (replace FQBN and port with what the command above reports)
-arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/cabinet_battery_sentinel/
-arduino-cli upload  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET \
+arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/cabinet_battery_sentinel/
+arduino-cli upload  -b STMicroelectronics:stm32:Blues:pnum=CYGNET \
                     -p /dev/cu.usbmodem* \
                     firmware/cabinet_battery_sentinel/
 ```

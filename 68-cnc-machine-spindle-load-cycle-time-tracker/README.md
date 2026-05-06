@@ -6,7 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-A [industrial equipment monitoring](https://blues.com/industrial-equipment-monitoring/) reference design that gives machine-tool OEMs **hourly summarized telemetry** from their installed base — spindle load, feed-rate override, run/idle minutes, cycle counts, average cycle time, operator ID, and observed active-alarm-transition counts — with **immediate cellular alarm delivery** for fault and overload events that carries the full alarm code in each alarm note. CNC controllers that expose telemetry over **Modbus TCP** supply the data; a direct point-to-point Ethernet link captures it without touching the machine shop's OT network. Normal telemetry (spindle statistics, run/idle minutes, cycle data) batches into hourly `cnc_summary.qo` notes; alarms bypass that cadence and arrive in Notehub within the Notecard's session-establishment window; operator-ID transitions emit immediate `cnc_operator.qo` notes as they occur.
+An [industrial equipment monitoring](https://blues.com/industrial-equipment-monitoring/) reference design for machine-tool OEMs who want continuous visibility into how their installed base is actually being used. The device sits on the customer's CNC machine and reports the operational signals an OEM cares about — how hard the spindle is working, how many cycles ran each hour, how often the machine sits idle, which operator is logged in, and what alarm codes the controller raises — back to the OEM's cloud over cellular, without ever touching the customer's plant network. Routine telemetry batches into hourly summaries; alarms and operator-ID changes arrive immediately. The hardware is an Arduino OPTA RS485 with a Blues Wireless for OPTA cellular expansion (see §3 for the BOM); the data source is any CNC controller that exposes telemetry over **Modbus TCP**.
 
 ## 1. Project Overview
 
@@ -140,7 +140,7 @@ arduino-cli monitor -p /dev/cu.usbmodem1234567 -c baudrate=115200
 
 **Alternatively, using the Arduino IDE:** Open `firmware/cnc_spindle_tracker/cnc_spindle_tracker.ino`, configure your ProductUID and IPs, select Tools > Board > Arduino OPTA, and click Upload.
 
-## Firmware Architecture
+## 6.5 Firmware Architecture
 
 Three files in the `firmware/` directory:
 
@@ -366,7 +366,7 @@ Confirm: (a) idle current between syncs is in the µA range (ensures the device 
 | No `cnc_summary.qo` notes appear in Notehub | Device claimed, but no summaries visible | Check the Notecard's outbound sync interval has elapsed (default 60 min). Verify `valid_samples > 0` in any alarm notes — if `valid_samples = 0`, all Modbus polls in that window failed; check network. Use `arduino-cli monitor` to watch Serial output for poll successes/failures. |
 | `valid_samples = 0` in all summaries | All Modbus polls failed | Serial console should show Modbus errors. Verify CNC is powered and Modbus TCP enabled. Use a Modbus client tool (QModBus, ModRSsim2) on your laptop to confirm you can reach the CNC at the configured IP and port. If you can, but the OPTA cannot, there may be a routing or firewall issue on the Ethernet segment. |
 | Notecard not syncing; no notes leaving the device | I²C communication between OPTA and Notecard failed; or Notecard not powered | Verify the AUX connector is fully seated. Check 24 VDC is applied to both OPTA and Wireless for OPTA. The Notecard has a small blue LED near the SMA connectors — it should blink during a cellular session. If no blink, the Notecard may not be powered or may have failed. |
-| `spindle_overload` alarms fire too frequently | Threshold too low; or noisy spindle-load sensor data | Increase `spindle_overload_pct` in Fleet environment (e.g., from 90 to 95). If the issue persists, the CNC sensor may be noisy; add averaging on the CNC side (most controllers have digital-filter registers) or increase the cooldown in the firmware (line 56 in cnc_spindle_tracker.ino). |
+| `spindle_overload` alarms fire too frequently | Threshold too low; or noisy spindle-load sensor data | Increase `spindle_overload_pct` in Fleet environment (e.g., from 90 to 95). If the issue persists, the CNC sensor may be noisy; add averaging on the CNC side (most controllers have digital-filter registers) or increase `SPINDLE_ALERT_COOLDOWN_MS` in `cnc_spindle_tracker_helpers.h`. |
 | `avg_cycle_sec` is wildly wrong | Cycle time shorter than sample interval; or `cycleState` semantics differ from expected | `avg_cycle_sec` is a heuristic limited by the sample period (1 min default) — cycles faster than that are invisible. Increase `sample_minutes` (e.g., to 0.25 for 15-second samples) if your cycles are fast, but understand this increases Modbus polling overhead. Verify the target CNC model maps `cycleState == 1` to "program running" (vendor-specific). |
 | Operator-ID transitions not appearing | `operator_id` register not exposed or always zero | Confirm the CNC controller supports operator-ID over Modbus TCP (many do not). Verify the sixth register in the contiguous block (starting at `reg_spindle_load`) is mapped to operator ID in the controller's Modbus documentation. Check the operator ID is actually changing on the machine (some controllers require login/logout). |
 

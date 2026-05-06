@@ -193,10 +193,11 @@ Sampling and summary cadence are deliberately decoupled: the sensor fires every 
 
 ### Note template format codes (abbreviated syntax)
 
-Notehub templates use numeric codes to denote field types in compact form:
+Notehub templates use numeric codes to denote field types. The two codes used by this firmware:
 - `TFLOAT32` (`14.1`) — 4-byte IEEE 754 single-precision float
-- `TUINT32` (`13`) — 4-byte unsigned integer  
-- Full list: [Notehub template field types](https://dev.blues.io/api-reference/notecard-api/note-requests/#note-template)
+- `TUINT32` (`24`) — 4-byte unsigned integer  
+
+The numeric code conveys both byte width and signedness — for example `14` is a 4-byte *signed* integer (TINT32) while `24` is a 4-byte *unsigned* integer (TUINT32). The named macros (`TFLOAT32`, `TUINT32`, etc.) are defined by the `note-c` library that ships with the Blues Wireless Notecard library, so the firmware uses the names and the wire-format numbers stay an internal detail. Full reference: [Notehub template field types](https://dev.blues.io/api-reference/notecard-api/note-requests/#note-template).
 
 ### Key code snippet 1: note template definition
 

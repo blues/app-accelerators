@@ -6,7 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-A connected-trailer platform for trailer OEM integration, targeting manufacturers who want to own the cellular and satellite connectivity layer on refrigerated trailers from day one. The platform runs on the Blues [Notecard for Skylo](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) and [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), delivering an [industrial equipment monitoring](https://blues.com/industrial-equipment-monitoring/) data path with LTE-M/NB-IoT cellular-to-Skylo NTN satellite fallback, templated binary notes, [Notehub](https://notehub.io) environment-variable configuration, and a dwell-capable host power strategy. Three sensor paths are fully implemented and operational: two cargo-air NTC thermistors, a rear-door reed switch, and GPS via the Notecard's built-in GNSS. Two additional sensor paths — J2497 reefer telemetry and TPMS tire pressure — are architecturally integrated as stubs: the firmware wires them into the data pipeline and the note template carries their fields, but each parses a simplified POC frame format pending the vendor engineering described in §9. The implementation status of all five paths is summarised in the callout below.
+A connected-trailer platform for trailer OEM integration, targeting manufacturers who want to own the cellular and satellite connectivity layer on refrigerated trailers from day one. The platform reports the operational signals a fleet operator actually checks — cargo-air temperature at two points inside the trailer, rear-door open/close events, GPS position, and (with vendor-specific decode work) reefer setpoint and tire pressure — back to the OEM's cloud continuously, including across the cellular dead zones common on long rural hauls and at intermodal rail yards. When cellular coverage is unavailable, the device falls back automatically to the [Skylo](https://blues.com/industrial-equipment-monitoring/) non-terrestrial satellite network so the cold-chain record stays continuous through coverage gaps. The hardware is a Blues [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) paired with a [Notecard for Skylo](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) (see §3 for the BOM); the firmware ships three sensor paths fully implemented today (cargo temperature, door, GPS) and two as integration-point stubs awaiting vendor engineering — J2497 reefer telemetry and TPMS tire pressure. The implementation-status callout below summarises all five paths.
 
 > **Platform sensor paths — implementation status**
 >
@@ -62,8 +62,8 @@ A trailer OEM that wants to own the connectivity layer — rather than ceding it
 
 3. **Flash the sketch to Notecarrier CX.**
    - Plug the Notecarrier CX (with Notecard for Skylo seated in the M.2 slot) into your computer via USB.
-   - Select **Board: Nucleo-L433RC-P** in the Arduino IDE (the Notecarrier CX runs the same STM32L433).
-   - Click **Upload** (or via CLI: `arduino-cli compile -b STMicroelectronics:stm32:Nucleo_L433RC_P --upload firmware/connected_trailer_platform/`).
+   - Select **Board: Blues Cygnet** in the Arduino IDE (the Notecarrier CX's embedded host is the Blues Cygnet — STM32L433-based).
+   - Click **Upload** (or via CLI: `arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET --upload firmware/connected_trailer_platform/`).
 
 4. **Apply power and watch Notehub for data.**
    - Plug a 5 V USB power supply into the Notecarrier's micro-USB port (for bench testing; field units draw power from the 12 V trailer supply via the DC-DC converter).

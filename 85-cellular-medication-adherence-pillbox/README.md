@@ -8,8 +8,6 @@ This reference application is intended to provide inspiration and help you get s
 
 A [remote patient monitoring](https://blues.com/remote-patient-monitoring/) device that catches missed doses before they become clinical events. A Blues Notecard Cell+WiFi riding on a Notecarrier CX wakes every 30 seconds, reads seven snap-action micro-switches inside a standard weekly pillbox, and uploads a cellular event to Notehub **each time a compartment lid is detected open during a scheduled 30-second poll** — no WiFi configuration, no smartphone, and nothing for the patient to set up.
 
-**What you'll have when you're done:** a battery-powered, cellular-connected 7-day pillbox monitor that reports compartment lid-open events — detected via 30-second polling — in near-real time to Notehub for clinician or caregiver review, and queues a daily adherence summary at the configured summary hour showing exactly which compartments were opened. Expected runtime: 5–15 months on a single 2500 mAh LiPo charge (depending on open event frequency).
-
 ---
 
 ## 1. Project Overview
@@ -186,7 +184,7 @@ The firmware is split across a main sketch and two helper files — all three li
 
 **Dependencies:**
 
-- **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Install via the Arduino Boards Manager by adding the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**, then search for "STM32 MCU based boards" and install. Select **Generic STM32L4 series → Cygnet** as the board target.
+- **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Install via the Arduino Boards Manager by adding the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**, then search for "STM32 MCU based boards" and install. Select **Blues Cygnet** as the board target (canonical FQBN: `STMicroelectronics:stm32:Blues:pnum=CYGNET`).
 - **`Blues Wireless Notecard`** library (`note-arduino`). Install via the Arduino Library Manager (search "Blues Wireless Notecard") or run `arduino-cli lib install "Blues Wireless Notecard"`. See [note-arduino releases](https://github.com/blues/note-arduino/releases) for changelog and any newer stable versions.
 
 **Flashing — Arduino IDE:** open `cellular_medication_adherence_pillbox.ino`, select the Cygnet board, hit **Upload**. The Notecarrier CX exposes the ST-Link interface on the USB cable — no external programmer needed.

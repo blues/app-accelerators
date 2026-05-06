@@ -6,7 +6,9 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-A [energy savings](https://blues.com/energy-savings/) reference design that gives a commercial solar + battery installation an independent cellular control channel — reading live inverter and battery state over **Modbus RTU** and toggling four dry-contact relay outputs that assert or de-assert the inverter's and BMS's digital enable inputs, driven by utility rate signals or **demand-response** (**DR**) events routed through Notehub. This is a relay-based mode enable/curtail controller: closing a relay asserts a digital control input on the field device, and the actual charge, discharge, and export behavior is determined by the inverter and BMS firmware and their pre-commissioning configuration. The controller does not command power setpoints, verify that a requested dispatch profile was executed, or close any control loop around site load.
+An [energy savings](https://blues.com/energy-savings/) reference design that gives a commercial solar + battery installation an independent cellular control channel — so the asset owner can dispatch the battery to discharge during expensive peak-rate hours, charge during cheap overnight hours, and curtail grid export when the utility calls a **demand-response** (**DR**) event, without depending on the building's IT network or a vendor's proprietary cloud portal. The device reads live operating state from the inverter and the battery's management system over the industrial bus they already share, and signals each one to enter the right mode at the right time — driven by a schedule or by live commands routed through Notehub.
+
+**Scope.** This is a *mode enable / curtail* controller, not a power dispatcher. It closes and opens four dry-contact relays wired to digital control inputs the inverter and battery already expose; the field devices' own firmware then decides the actual charge, discharge, and export behavior — ramp rates, power limits, setpoints — based on their pre-commissioning configuration. The controller does not command power setpoints, verify that a requested dispatch profile was executed, or close any control loop around site load.
 
 ## 1. Project Overview
 
@@ -98,7 +100,7 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ### Bench power validation
 
-6. **Mojo placement.** During commissioning, splice the [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) inline between the 24 VDC supply and the Wireless-for-OPTA power input to measure the expansion + Notecard subsystem energy per cellular session. See [Section 8](#8-validation-and-testing) for the expected figures.
+6. **Mojo placement.** During commissioning, splice the [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) inline between the 24 VDC supply and the Wireless-for-OPTA power input to measure the expansion + Notecard subsystem energy per cellular session. See [Section 9](#9-validation-and-testing) for the expected figures.
 
 ## 5. Notehub Setup
 
@@ -223,7 +225,7 @@ Dependencies:
 
 ### Sensor reading strategy
 
-The inverter and BMS are each polled with a four-register `requestFrom` block — one Modbus transaction per device. The inverter block (at `reg_inv_base`) yields PV generation, AC output to load, grid exchange power (negative = importing, positive = exporting), and inverter state. The BMS block (at `reg_bms_base`) yields SOC percentage, battery voltage, battery current (negative = discharging), and BMS state. The demo register map is contiguous and uses simple integer scaling (see the firmware comments for exact scaling); real inverters and BMS units have vendor-specific maps — see [Limitations](#9-limitations-and-next-steps).
+The inverter and BMS are each polled with a four-register `requestFrom` block — one Modbus transaction per device. The inverter block (at `reg_inv_base`) yields PV generation, AC output to load, grid exchange power (negative = importing, positive = exporting), and inverter state. The BMS block (at `reg_bms_base`) yields SOC percentage, battery voltage, battery current (negative = discharging), and BMS state. The demo register map is contiguous and uses simple integer scaling (see the firmware comments for exact scaling); real inverters and BMS units have vendor-specific maps — see [Limitations](#11-limitations-and-next-steps).
 
 Each device allows up to three retries per poll cycle. If all three fail, `valid` is left `false` for that device. The telemetry note reflects the most recent sample at the time of reporting: if the poll that immediately preceded the report boundary failed (leaving the sample invalid), the `-9999` sentinel is emitted for all fields of that device so downstream analytics can distinguish "no reading" from a real zero or negative value; a transient failure that resolves before the next reporting boundary will not appear as `-9999` in that report. Mode decisions during a Modbus outage fall back to the last dispatched command or the TOU schedule — the device doesn't stall waiting for bus recovery.
 
@@ -446,7 +448,7 @@ void applyRelays(DispatchMode mode, float soc_pct, bool bms_valid) {
 - **Dispatch expiry** — a `dispatch.qi` note with an `expires_epoch` reverts to the TOU schedule (which may be `peak_discharge`, `overnight_charge`, or `normal` depending on the current UTC hour) when the epoch arrives. This provides a built-in recovery if the cloud system goes silent without sending an explicit release.
 - **SOC guard** — when SOC drops below `soc_min_pct`, or when the BMS becomes unreachable while `peak_discharge` is active, the device transitions to `low_soc_protect` mode: the discharge relay opens and a `dr_event.qo` mode-change event is emitted so operators can see why discharge was halted. The lower-guard latch engages at `soc_min_pct` and releases only after SOC recovers to `soc_min_pct + soc_hyst_pct` (default: 25 % with a 20 % minimum and 5 % band), preventing relay chatter when SOC readings oscillate near the threshold. BMS communication loss also latches the lower protect state; it clears only when comms are restored **and** SOC clears the hysteresis band on the same poll cycle. Additionally, BMS comm loss forces the upper-SOC **charge-inhibit** latch active in `applyRelays()` regardless of the current mode — charging is blocked until the BMS is reachable again and a live SOC reading confirms the battery has dropped below the `soc_max_pct − soc_max_hyst_pct` threshold. Both ends of the SOC operating range therefore fail safe symmetrically on BMS comm loss: discharge is blocked by the lower guard and charging is blocked by the upper guard.
 
-## 8. Validation and Testing
+## 9. Validation and Testing
 
 > **Pre-wiring check.** The shipped firmware has both TOU windows disabled by default (`peak_start_utc` and `peak_end_utc` both default to `0`; equal values = window off). The discharge relay will not assert autonomously until an operator explicitly sets a non-equal peak window via Notehub fleet environment variables. Verify the fleet environment variables are at their defaults (or intentionally set) before connecting relay outputs to live inverter or BMS control inputs. Enable and tune the peak window only after wiring, Modbus addressing, and SOC threshold validation are complete.
 
@@ -478,7 +480,7 @@ The useful bench exercise is confirming that: (a) the 5-minute inbound cadence p
 
 Note that the OPTA itself is an always-on 24 VDC device whose steady-state draw will substantially exceed the Wireless for OPTA expansion's and will dominate the Mojo trace at the system level. For this bench measurement, read the Mojo trace in terms of the **periodic pulse pattern** rather than absolute current figures: look for the regular ~5-minute inbound pulses, the larger ~15-minute outbound pulses, and any out-of-cadence `sync:true` pulses, all riding on top of the OPTA's constant baseline. The Notecard low-power design guide's supply-rail figures (table above) are not directly visible on the 24 V rail; they are useful for understanding what fraction of each pulse is attributable to the Notecard versus the OPTA's own logic.
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 **No cellular connection or "Offline" in Notehub.**
 - Verify the external antenna is properly connected via SMA lead (rubber-duck antenna inside a metal cabinet will not work).
@@ -503,7 +505,7 @@ Note that the OPTA itself is an always-on 24 VDC device whose steady-state draw 
 - Check that TOU window hours (`peak_start_utc`, `peak_end_utc`, etc.) are in UTC. The firmware does not perform local-time conversion.
 - Verify the corresponding environment variables are set to non-equal values (equal values disable the window).
 
-## 10. Limitations and Next Steps
+## 11. Limitations and Next Steps
 
 **Simplified for this reference design:**
 
@@ -529,7 +531,7 @@ Note that the OPTA itself is an always-on 24 VDC device whose steady-state draw 
 - Fleet-level SOC and energy telemetry aggregated in Notehub → historian for PPA performance reporting: total kWh discharged per DR event, aggregate daily export, battery cycle count, etc.
 - Over-the-air host firmware updates: [Notecard Outboard Firmware Update](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) is supported on the STM32H7 MCU family (the OPTA's processor) but requires AUX wiring that Blues Wireless for OPTA does not currently break out. Host firmware updates remain local-only via USB-C until that hardware path changes. When it does, Outboard DFU enables pushing a new vendor register map or TOU algorithm to the entire fleet without a truck roll.
 
-## 11. Summary
+## 12. Summary
 
 This project pairs an Arduino OPTA RS485 with a Blues Wireless for OPTA expansion to do something deceptively simple: close a relay when the utility calls for it, and open it again when the window closes. The elegance is in the architecture. The inverter and BMS already speak Modbus and already have the data and control inputs needed to participate in a demand-response program. What's been missing is an independent, cellular uplink that lets the asset owner — not the building's IT team, not a proprietary cloud portal — receive and act on utility signals on their own terms. The Wireless for OPTA adds that channel in a form factor that slots onto the same DIN rail as the rest of the equipment, runs on the 24 VDC already in the cabinet, and requires no building network involvement.
 

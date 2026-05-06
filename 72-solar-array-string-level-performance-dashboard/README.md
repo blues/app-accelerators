@@ -57,16 +57,16 @@ This project adds that missing network path. It reads per-string DC voltage and 
 Using the Arduino IDE:
 - Install the [Arduino core for STM32](https://github.com/stm32duino/Arduino_Core_STM32) via Board Manager.
 - Sketch → Include Library → Manage Libraries, then install: **Notecard**, **ModbusMaster**, **OneWire**, **DallasTemperature**.
-- Select Board: *STM32L4 series* > *Notecarrier CX*, and Port (your debugger/programmer).
+- Select Board: **Blues Cygnet** (the Notecarrier CX's embedded host is the Blues Cygnet — STM32L433-based), and Port (your debugger/programmer).
 - Paste your ProductUID into the `PRODUCT_UID` define.
 - Upload.
 
 Using Arduino CLI:
 ```bash
-arduino-cli core install stm32duino:stm32l4
+arduino-cli core install STMicroelectronics:stm32
 arduino-cli lib install "Blues Wireless Notecard" ModbusMaster OneWire DallasTemperature
-arduino-cli compile --fqbn stm32duino:stm32l4:Notecarrier_CX firmware/solar_string_monitor/solar_string_monitor.ino
-arduino-cli upload -p /dev/ttyACM0 --fqbn stm32duino:stm32l4:Notecarrier_CX firmware/solar_string_monitor/solar_string_monitor.ino
+arduino-cli compile --fqbn STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/solar_string_monitor/solar_string_monitor.ino
+arduino-cli upload -p /dev/ttyACM0 --fqbn STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/solar_string_monitor/solar_string_monitor.ino
 ```
 
 ## 3. Hardware Requirements

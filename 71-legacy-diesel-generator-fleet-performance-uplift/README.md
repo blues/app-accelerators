@@ -1,4 +1,4 @@
-# Legacy Diesel Generator Fleet Performance Uplift — Active-Alarm Monitoring, Firmware-Observed Alarm Chronology, and Run-Data Telemetry
+# Legacy Diesel Generator Fleet Performance Uplift
 
 <Note>
 
@@ -6,7 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-An [asset performance optimization](https://blues.com/solutions-asset-performance-optimization/) retrofit that adds **active-alarm monitoring, a firmware-observed alarm chronology, and run-data telemetry** to decade-old standby generator controllers over cellular. **Delivered scope: the firmware reads the controller's active alarm register on every poll and maintains a firmware-observed alarm-history log** (up to 8 assertions and clearances per report window, flushed as `gen_alarm_log.qo`). It does not read the controller's own internal latched alarm log — that requires a vendor-specific multi-register sequence and is listed as a production extension in [Limitations](#9-limitations-and-next-steps). Read-only RS-485 wiring only — no writes to start/stop or safety circuits, no dependency on a facility network that goes dark exactly when the generator needs to start.
+An [asset performance optimization](https://blues.com/solutions-asset-performance-optimization/) retrofit for operators of standby diesel generators at hospitals, data centers, and industrial sites. The device sits on the DIN rail inside the generator panel, reads the controller's existing Modbus port, and reports run hours, fault codes, fuel level, coolant temperature, oil pressure, and load to the cloud over cellular — with immediate alerts on faults, coolant overtemp, low oil pressure, low fuel, and lost communication. Crucially, it draws from the panel's battery-backed DC control bus and uses an external antenna routed outside the metal enclosure, so the monitoring path stays alive when mains and facility WiFi go dark — which is exactly when a standby generator either starts successfully or doesn't. The hardware is an Arduino OPTA RS485 with a Blues Wireless for OPTA cellular expansion (see §3 for the BOM); the wiring is strictly read-only — no writes to start/stop or safety circuits.
 
 ## 1. Project Overview
 

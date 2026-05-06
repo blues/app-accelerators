@@ -34,7 +34,7 @@ This project is the remote set of eyes and ears that a beekeeper wants but canno
 
 ## 2.5 Quickstart
 
-1. **Flash the firmware.** Open `firmware/apiary_hive_monitor/apiary_hive_monitor.ino` in Arduino IDE. Install dependencies: Blues Wireless Notecard, HX711 Arduino Library, Adafruit SHT31 (all via Library Manager). Replace `PRODUCT_UID` with your [Notehub](https://notehub.io) ProjectUID. Build with `arduino-cli compile --fqbn arduino:stm32:Notecarrier_CX_STM32 firmware/apiary_hive_monitor/apiary_hive_monitor.ino` and upload.
+1. **Flash the firmware.** Open `firmware/apiary_hive_monitor/apiary_hive_monitor.ino` in Arduino IDE. Install dependencies: Blues Wireless Notecard, HX711 Arduino Library, Adafruit SHT31 (all via Library Manager). Replace `PRODUCT_UID` with your [Notehub](https://notehub.io) ProjectUID. Build with `arduino-cli compile --fqbn STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/apiary_hive_monitor/apiary_hive_monitor.ino` and upload (the FQBN matches `firmware/apiary_hive_monitor/sketch.yaml`, so omitting `--fqbn` also works when invoked from the sketch directory).
 
 2. **Wire sensors.** Connect HX711 (D5, D6), SHT31-D (SDA, SCL), and MAX9814 (A0) to Notecarrier CX per §4. Assemble Starnote in separate IP65 enclosure with clear lid.
 
