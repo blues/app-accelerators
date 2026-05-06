@@ -1,6 +1,10 @@
 # Portable Sanitation Unit Service Monitor
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 A [truck roll reduction](https://blues.com/truck-roll-reduction/) project for fleets of portable sanitation units — porta-potties — that are currently serviced on fixed schedules whether they need it or not. A sealed level sensor and a Blues Notecard Cell+WiFi turn each unit into a self-reporting asset: the holding tank reports its own fill level so the service provider can route a pump truck only when and where it is actually needed.
 

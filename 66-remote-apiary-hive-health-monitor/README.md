@@ -1,8 +1,12 @@
 # Remote Apiary Hive Health Monitor
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
 
-A solar-powered, cellular-connected hive monitor that tracks hive weight and brood-box climate every 15 minutes, captures a brief acoustic snapshot of the colony once per day, and reports it all without grid power and without a truck roll every time the data looks wrong.
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
+
+A solar-powered, cellular-connected hive monitor that turns each hive into a [remotely-monitored asset](https://blues.com/solutions-remote-monitoring/) — tracking hive weight and brood-box climate every 15 minutes, capturing a brief acoustic snapshot of the colony once per day, and reporting it all without grid power and without a truck roll every time the data looks wrong.
 
 ## Quick Start
 

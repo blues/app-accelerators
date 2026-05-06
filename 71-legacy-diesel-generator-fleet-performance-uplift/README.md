@@ -1,6 +1,10 @@
 # Legacy Diesel Generator Fleet Performance Uplift — Active-Alarm Monitoring, Firmware-Observed Alarm Chronology, and Run-Data Telemetry
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 An [asset performance optimization](https://blues.com/solutions-asset-performance-optimization/) retrofit that adds **active-alarm monitoring, a firmware-observed alarm chronology, and run-data telemetry** to decade-old standby generator controllers over cellular. **Delivered scope: the firmware reads the controller's active alarm register on every poll and maintains a firmware-observed alarm-history log** (up to 8 assertions and clearances per report window, flushed as `gen_alarm_log.qo`). It does not read the controller's own internal latched alarm log — that requires a vendor-specific multi-register sequence and is listed as a production extension in [Limitations](#9-limitations-and-next-steps). Read-only RS-485 wiring only — no writes to start/stop or safety circuits, no dependency on a facility network that goes dark exactly when the generator needs to start.
 

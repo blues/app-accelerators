@@ -1,6 +1,10 @@
 # Returnable Container / Tote Pool Tracker
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 An [asset location tracking](https://blues.com/solutions-location-tracking/) solution for reusable container pools — plastic totes, pressurized kegs, and gas cylinders — that reports location on motion events and daily heartbeats using cellular connectivity and the Notecard's built-in accelerometer. Containers emit a motion event when they start or stop moving, and a daily confirmation when idle, all over LTE-M. **This documented build is a bench/POC using a rechargeable 2 Ah LiPo battery; realistic LiPo service life is 12–24 months between battery swaps. For multi-year field deployments without scheduled swaps, see the Li-SOCl₂ primary-cell production path in [§9](#9-limitations-and-next-steps).**
 

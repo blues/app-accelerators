@@ -1,6 +1,10 @@
 # Aerial Lift / Rental Equipment Battery Health Monitor
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 A [battery management systems](https://blues.com/battery-management-systems/) reference design that turns the electric battery pack on a rental scissor lift, boom lift, or telehandler into a continuously-monitored asset — surfacing state of charge, depth of discharge, rolling state of health, and thermal status to the rental company's fleet management platform, over cellular with satellite fallback, wherever the lift happens to be sitting.
 

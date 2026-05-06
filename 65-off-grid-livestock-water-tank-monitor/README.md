@@ -1,6 +1,10 @@
 # Off-Grid Livestock Water Tank Monitor
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 A solar-powered [remote monitoring](https://blues.com/solutions-remote-monitoring/) system for off-grid livestock water tanks. An ultrasonic level sensor watches the water surface, a clamp-on current transformer measures pump current draw as contextual telemetry, and a battery-voltage divider tracks the solar system's health — all reported to Notehub via a Blues Notecard for Skylo that uses cellular where coverage exists and falls back to satellite via the Skylo NTN network where it doesn't, with the radio transmitting only on the 4-hour summary cadence or when an immediate alert fires.
 

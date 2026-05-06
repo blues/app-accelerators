@@ -1,6 +1,10 @@
 # Hydromechanical (HGI) and Batch-Collection Grease Interceptor Level Monitor
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 A [truck-roll reduction](https://blues.com/truck-roll-reduction/) device for pumping providers who service **commercial grease interceptors**. A waterproof ultrasonic distance sensor installed in the access cover reports fill level over cellular every 15 minutes; when the level reaches a threshold, an alert dispatches immediately to Notehub. Trucks are routed on actual condition, not a fixed calendar.
 

@@ -1,6 +1,10 @@
 # Demand-Response Solar + Battery Dispatcher
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 A [energy savings](https://blues.com/energy-savings/) reference design that gives a commercial solar + battery installation an independent cellular control channel — reading live inverter and battery state over **Modbus RTU** and toggling four dry-contact relay outputs that assert or de-assert the inverter's and BMS's digital enable inputs, driven by utility rate signals or **demand-response** (**DR**) events routed through Notehub. This is a relay-based mode enable/curtail controller: closing a relay asserts a digital control input on the field device, and the actual charge, discharge, and export behavior is determined by the inverter and BMS firmware and their pre-commissioning configuration. The controller does not command power setpoints, verify that a requested dispatch profile was executed, or close any control loop around site load.
 

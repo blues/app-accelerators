@@ -1,8 +1,12 @@
 # Cross-Border Container Electronic Security Seal
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
 
-A tamper-evident electronic security seal for international containerized cargo. A Blues Swan host, a Notecard Cell+WiFi (NOTE-NBGLW), a Starnote for Iridium, a magnetic reed switch, a break-wire seal-continuity loop, and an ATECC608A hardware secure element log every seal-wire break, door breach, re-seal event, and periodic GPS waypoint — with each `seal_event.qo` and `seal_heartbeat.qo` note hardware-signed by a key that never leaves the device — anywhere on the globe including polar routes, via Iridium's LEO constellation when out of cellular reach.
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
+
+A tamper-evident electronic security seal for [supply chain tracking](https://blues.com/solutions-supply-chain-tracking/) of international containerized cargo. A Blues Swan host, a Notecard Cell+WiFi (NOTE-NBGLW), a Starnote for Iridium, a magnetic reed switch, a break-wire seal-continuity loop, and an ATECC608A hardware secure element log every seal-wire break, door breach, re-seal event, and periodic GPS waypoint — with each `seal_event.qo` and `seal_heartbeat.qo` note hardware-signed by a key that never leaves the device — anywhere on the globe including polar routes, via Iridium's LEO constellation when out of cellular reach.
 
 **What you'll have when you're done:** a battery-powered security-seal assembly you can mount on a container door that wakes every 30 seconds to check two independent sensors: a door-state reed switch and a break-wire seal-continuity loop. It signs every `seal_event.qo` and `seal_heartbeat.qo` payload with a hardware-rooted ATECC608A ECDSA key; the full 64-byte signature travels as a companion `seal_sig_full.qo` note for forensic chain-of-custody audit. It logs breach, seal-break, and re-seal events with immediate sync. It emits GPS waypoints every six hours. In port it syncs over cellular. At sea it queues events and transmits them via Iridium satellite on a configurable outbound schedule — all without any intervention from the container operator.
 

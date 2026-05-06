@@ -1,6 +1,10 @@
 # Creek / Culvert Flood-Warning Stream Gauge
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 A solar-powered [remote monitoring](https://blues.com/solutions-remote-monitoring/) system for bridges, culverts, and low-water crossings. The onboard Cygnet STM32 host samples an ultrasonic water-level sensor and a tipping-bucket rain gauge; a Notecard for Skylo handles connectivity, storage, and sync — firing flood alerts based on rising-water *trend* — not just a single instantaneous reading — so emergency crews get a warning before the culvert is already overwhelmed.
 

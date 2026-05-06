@@ -1,6 +1,10 @@
 # Pharmacy/Lab Cold-Storage Audit Monitor
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 ## Quick Start
 
@@ -18,7 +22,7 @@
 
 ---
 
-A pharmacy/lab cold-storage monitoring reference application using an independent cellular uplink to deliver individually timestamped per-sample readings and immediate excursion alerts — reaching Notehub even through facility WiFi outages. A Blues Notecard Cell+WiFi, a PT1000 RTD probe (Adafruit 3984) connected via a MAX31865 SPI amplifier (Adafruit 3648) and routed into the storage compartment, a magnetic door switch, and an ambient-light sensor produce a gap-resistant audit-evidence record designed to support monitoring requirements aligned with USP Chapter 659, FDA 21 CFR Part 211.68, and CDC Vaccine Storage and Handling guidelines — when deployed with appropriate calibrated hardware, SOPs, and site validation. Compile-time thresholds default to room-temperature bench values for development convenience; see [§5 Notehub Setup](#5-notehub-setup) for the production refrigerated-storage threshold overrides.
+A pharmacy/lab cold-storage [safety-assurance](https://blues.com/safety-assurance/) monitoring reference application using an independent cellular uplink to deliver individually timestamped per-sample readings and immediate excursion alerts — reaching Notehub even through facility WiFi outages. A Blues Notecard Cell+WiFi, a PT1000 RTD probe (Adafruit 3984) connected via a MAX31865 SPI amplifier (Adafruit 3648) and routed into the storage compartment, a magnetic door switch, and an ambient-light sensor produce a gap-resistant audit-evidence record designed to support monitoring requirements aligned with USP Chapter 659, FDA 21 CFR Part 211.68, and CDC Vaccine Storage and Handling guidelines — when deployed with appropriate calibrated hardware, SOPs, and site validation. Compile-time thresholds default to room-temperature bench values for development convenience; see [§5 Notehub Setup](#5-notehub-setup) for the production refrigerated-storage threshold overrides.
 
 > **Production temperature path.** The firmware reads temperature from an Adafruit Platinum RTD Sensor PT1000 3-Wire 1 m ([Product 3984](https://www.adafruit.com/product/3984)) via an Adafruit MAX31865 PT1000 Amplifier ([Product 3648](https://www.adafruit.com/product/3648)) over SPI. The stainless-steel probe capsule (4 mm × ~30 mm, 316L SS) routes into the refrigerated compartment through the cabinet's probe port or door-gasket pass-through while the MAX31865 board mounts inside the weatherproof electronics enclosure. Before regulatory deployment the specific probe assembly must be submitted to an accredited calibration laboratory to receive a NIST-traceable calibration certificate against that individual unit — this is an operator responsibility, not a firmware feature (see [§9 Limitations and Next Steps](#9-limitations-and-next-steps)). For bench firmware evaluation without the probe, the SparkFun TMP117 breakout (SEN-15805) can be substituted via Qwiic (requires replacing the Adafruit MAX31865 library and the `readTemperatureC()` implementation in `firmware/cold_storage_audit_monitor_helpers.cpp`); the TMP117 bench build measures exterior ambient air, not compartment interior temperature, and is **not a deployable compliance instrument**.
 

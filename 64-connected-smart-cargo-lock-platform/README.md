@@ -1,6 +1,10 @@
 # Connected Smart Cargo Lock Platform
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 A [loss prevention](https://blues.com/loss-prevention/) reference platform for a connected smart lock built on the Blues Notecard for Skylo — combining global cellular with satellite failover in a single M.2 module — paired with a reed shackle sensor, a hall-effect bolt detector, and the Notecard's onboard accelerometer for tamper scoring. The Cygnet host on the Notecarrier CX runs the lock state machine and aggressive duty cycling that makes year-long battery life achievable.
 

@@ -1,6 +1,10 @@
 # Multi-Site Walk-In Cooler Energy & Setpoint Monitor
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 A cellular [energy savings](https://blues.com/energy-savings/) reference design that gives corporate operations teams a live view into the temperature, compressor runtime, and door behavior of every walk-in cooler in their fleet — without touching a single franchisee or operator's WiFi network.
 

@@ -1,6 +1,10 @@
 # Connected Trailer Platform — Cargo Temperature, Door, and GPS Monitoring
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 A connected-trailer platform for trailer OEM integration, targeting manufacturers who want to own the cellular and satellite connectivity layer on refrigerated trailers from day one. The platform runs on the Blues Notecard for Skylo and Notecarrier CX, delivering an [industrial equipment monitoring](https://blues.com/industrial-equipment-monitoring/) data path with LTE-M/NB-IoT cellular-to-Skylo NTN satellite fallback, templated binary notes, Notehub environment-variable configuration, and a dwell-capable host power strategy. Three sensor paths are fully implemented and operational: two cargo-air NTC thermistors, a rear-door reed switch, and GPS via the Notecard's built-in GNSS. Two additional sensor paths — J2497 reefer telemetry and TPMS tire pressure — are architecturally integrated as stubs: the firmware wires them into the data pipeline and the note template carries their fields, but each parses a simplified POC frame format pending the vendor engineering described in §9. The implementation status of all five paths is summarised in the callout below.
 

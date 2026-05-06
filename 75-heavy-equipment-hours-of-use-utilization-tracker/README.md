@@ -1,6 +1,10 @@
 # Heavy Equipment Hours-of-Use & Utilization Tracker
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 A retrofit [asset location tracking](https://blues.com/solutions-location-tracking/) solution for mobile heavy equipment — excavators, generators, compactors, light towers, and any machine a rental company or OEM needs to bill by the hour and maintain on schedule. A magnetically mounted, solar-trickle-charged enclosure combines a Blues Notecard for Skylo with a 3-axis accelerometer to detect engine-on/off transitions via vibration signature, accumulate a persistent software hour meter, and report location and utilization back to Notehub over cellular or satellite — with no wiring harness, no equipment modification, and no dependency on a job-site network.
 

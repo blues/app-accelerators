@@ -1,8 +1,12 @@
 # Shipper-Owned Cargo-Level Cold Chain Monitor
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
 
-A pallet-attached cold chain logger for pharma and food shippers who cannot afford to trust the reefer unit's built-in telematics. A handful of sensors, a Blues Notecard for Skylo, and a Notecarrier CX give you an independent, shipper-controlled condition record that travels with the cargo — through loading docks, over-the-road transit, port staging, and customs DCs — and dispatches an alert note when a temperature, humidity, shock, tilt, or cargo-bay-opening threshold is crossed.
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
+
+A pallet-attached cold chain logger — a [supply chain tracking](https://blues.com/solutions-supply-chain-tracking/) reference design — for pharma and food shippers who cannot afford to trust the reefer unit's built-in telematics. A handful of sensors, a Blues Notecard for Skylo, and a Notecarrier CX give you an independent, shipper-controlled condition record that travels with the cargo — through loading docks, over-the-road transit, port staging, and customs DCs — and dispatches an alert note when a temperature, humidity, shock, tilt, or cargo-bay-opening threshold is crossed.
 
 **What you'll have when you're done:** a battery-powered logger that samples a NIST-traceable PT100 temperature probe, relative humidity, interior cargo-bay light level, and vibration every five minutes; writes a tamper-evident per-sample log entry with a monotonic sequence number and integrity chain hash; detects shipment state (dwell, in-transit, handling) from motion and light and emits an immediate note on every state change; generates adaptive summary notes and dynamically extends the Notecard outbound sync cadence during confirmed warehouse dwell — reducing both summary volume and satellite session frequency to conserve NTN data budget; and dispatches an alert note on any threshold trip — synced immediately over cellular, WiFi, or satellite, with no site IT coordination required at any point in the journey.
 

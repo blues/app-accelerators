@@ -1,6 +1,10 @@
 # Municipal Wastewater Lift Station Monitor
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 A [downtime prevention](https://blues.com/downtime-prevention/) retrofit for municipal wastewater lift stations that catches pump failures, discharge obstructions, and high-water conditions before they become a sanitary overflow. Three sensor types, a cellular or satellite Notecard, and a Cygnet host MCU transform a sealed concrete vault into a remotely-monitored station that delivers alerts to the on-call crew within minutes via cellular — or on the next available satellite pass for Option B remote stations — not hours after a manual site visit.
 

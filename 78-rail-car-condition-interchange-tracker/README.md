@@ -1,6 +1,10 @@
 # Rail Car Condition & Interchange Tracker
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 A [supply chain tracking](https://blues.com/solutions-supply-chain-tracking/) reference design for leased freight and tank rail cars. A solar-powered Notecard for Skylo — Blues' all-in-one cellular and satellite module — pairs with an embedded Cygnet STM32 host to monitor **car-level** conditions — location, shock/impact events, and coupler state — plus, on TANK_CAR builds, low-pressure vent-port fitting pressure via the Adafruit MPRLS (0–25 PSI absolute) and lading temperature via a waterproof DS18B20 probe. This is a **car-health and interchange-tracking** design; full tank-car pressure sensing is not implemented in this reference and is described as a production next step in [§9](#9-limitations-and-next-steps).
 

@@ -1,6 +1,10 @@
 # Propane / LPG Tank Fill Telemetry — 4–20 mA Float-Transmitter Variant
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 A [truck roll reduction](https://blues.com/truck-roll-reduction/) reference design that gives propane dealers per-tank fill telemetry across their entire delivery territory — replacing fixed-schedule routes with demand-driven dispatch and projecting days-until-empty for every tank in the fleet. The design pairs a **4–20 mA LP gauge-port float-type level transmitter** (Rochester Sensors M6300-LP Magnetel® gauge + R6315-12 transmitter, or equivalent — connects at the tank's existing 1¼″ NPT dip-tube gauge port, no additional tank penetrations) and a **DS18B20 temperature probe** (for daily summary analytics and seasonal demand correlation) with a **Blues Notecard Cell+WiFi** for cellular-first connectivity and an optional **Starnote for Skylo** satellite module for sites with no cellular coverage.
 

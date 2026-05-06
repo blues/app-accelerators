@@ -1,6 +1,10 @@
 # Lone Worker Panic & Fall Detection Safety Beacon
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 A wearable [safety assurance](https://blues.com/safety-assurance/) device for utility linemen, oilfield pumpers, field service technicians, and solo contractors. A Blues Notecard Cell+WiFi paired with a Starnote for Skylo satellite module turns a belt-clip enclosure into a cellular-first, satellite-backed distress beacon — detecting falls and accepting an explicit panic-button press — that can reach a dispatcher from the middle of nowhere, exactly where lone-worker incidents happen.
 

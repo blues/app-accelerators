@@ -1,6 +1,10 @@
 # Ambient Home Well-Being & Activity Hub
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 A [remote patient monitoring](https://blues.com/remote-patient-monitoring/) hub that gives clinicians and family caregivers a low-obtrusion signal that life is unfolding normally — without asking an elderly patient to wear anything or interact with any device. Four inexpensive sensors feed a Blues Notecard Cell+WiFi, which reports hourly activity summaries and immediately flags the anomalies that matter: no sign of life by mid-morning, a pattern of repeated nighttime bathroom trips, or no detectable bed vibration during expected sleep hours.
 

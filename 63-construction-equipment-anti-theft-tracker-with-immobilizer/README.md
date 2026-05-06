@@ -1,6 +1,10 @@
 # Construction Equipment Anti-Theft Tracker with Immobilizer
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 A [loss prevention](https://blues.com/loss-prevention/) reference design for construction equipment fleets. A Blues Notecard for Skylo, Notecarrier CX, LiPo battery, and small solar panel turn any skid steer, light tower, portable compressor, or generator into a hardened asset with continuous location monitoring, geofence breach detection, after-hours motion alerts, and a remotely-staged ignition immobilizer proof of concept — all on a self-contained cellular-plus-satellite link that requires zero job-site WiFi or IT involvement.
 ## Quick Start — From Bench to Notehub in 15 Minutes

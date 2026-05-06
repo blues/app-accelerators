@@ -1,8 +1,12 @@
 # Untethered Trailer & Chassis Fleet Tracker
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
 
-A solar-trickle-charged, tractor-independent GPS and motion tracker for freight trailers and intermodal chassis. This design pairs a cellular Notecard with a [Starnote for Iridium](https://dev.blues.io/datasheets/starnote-datasheet/starnote-for-iridium/) on a [Notecarrier XI](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-xi/) and a [Swan](https://dev.blues.io/datasheets/swan-datasheet/) host, delivering cellular-first telemetry with truly global Iridium LEO satellite fallback — including trans-oceanic container chassis routes and polar corridors where geostationary satellite networks have no coverage.
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
+
+A solar-trickle-charged, tractor-independent GPS and motion tracker for [asset location tracking](https://blues.com/solutions-location-tracking/) on freight trailers and intermodal chassis. This design pairs a cellular Notecard with a [Starnote for Iridium](https://dev.blues.io/datasheets/starnote-datasheet/starnote-for-iridium/) on a [Notecarrier XI](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-xi/) and a [Swan](https://dev.blues.io/datasheets/swan-datasheet/) host, delivering cellular-first telemetry with truly global Iridium LEO satellite fallback — including trans-oceanic container chassis routes and polar corridors where geostationary satellite networks have no coverage.
 
 The unit mounts on the trailer roof or chassis frame, runs a parked/moving state machine entirely on-device, and delivers departure, arrival, and position notes to [Notehub](https://notehub.io) over cellular with automatic Iridium satellite fallback — no tractor hookup, no site IT, and no dependence on terrestrial coverage.
 

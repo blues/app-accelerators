@@ -1,6 +1,10 @@
 # CNC Machine Spindle Load & Cycle Time Tracker
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 A [industrial equipment monitoring](https://blues.com/industrial-equipment-monitoring/) reference design that gives machine-tool OEMs **hourly summarized telemetry** from their installed base — spindle load, feed-rate override, run/idle minutes, cycle counts, average cycle time, operator ID, and observed active-alarm-transition counts — with **immediate cellular alarm delivery** for fault and overload events that carries the full alarm code in each alarm note. CNC controllers that expose telemetry over **Modbus TCP** supply the data; a direct point-to-point Ethernet link captures it without touching the machine shop's OT network. Normal telemetry (spindle statistics, run/idle minutes, cycle data) batches into hourly `cnc_summary.qo` notes; alarms bypass that cadence and arrive in Notehub within the Notecard's session-establishment window; operator-ID transitions emit immediate `cnc_operator.qo` notes as they occur.
 

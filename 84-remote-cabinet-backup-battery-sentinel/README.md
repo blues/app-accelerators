@@ -1,6 +1,10 @@
 # Remote Cabinet Backup Battery Sentinel — Pack-Level 12 V / 24 V Battery Monitor
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 A pack-level sentinel for the backup battery inside a **traffic-signal controller, roadside IoT gateway, industrial RTU, or equipment cabinet** — installations running on a **12 V or 24 V positive-referenced DC bus**. A Blues Notecard Cell+WiFi and Notecarrier CX, paired with a precision current/voltage monitor and a surface-mounted thermistor, continuously measure pack voltage, bidirectional current, surface temperature, and state-of-charge — with proactive alerts on charger faults, elevated float current (a reliable early indicator of **VRLA** capacity degradation weeks before failure — see §7 for chemistry-specific caveats), mains power loss detected within one sample interval, and a low-SoC threshold trip. Over cellular, independent of every piece of equipment the battery is supposed to protect.
 

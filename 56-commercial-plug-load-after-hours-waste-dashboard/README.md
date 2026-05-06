@@ -1,6 +1,10 @@
 # Commercial Plug-Load & After-Hours Waste Dashboard
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 A cellular-connected [energy savings](https://blues.com/energy-savings/) monitor that clips non-invasive **CT** (current transformer) clamps onto branch circuits in a commercial sub-panel, samples RMS current once a minute, and transmits hourly per-circuit profiles to Notehub — giving energy consultants a view into which circuits are burning money at 2 AM, without ever touching the building's corporate network.
 

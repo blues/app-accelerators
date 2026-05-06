@@ -1,6 +1,10 @@
 # Injection Molding Hydraulic Injection Pressure Monitor
 
-> This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+<Note>
+
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+
+</Note>
 
 A shot-level process monitor for plastic [injection molding](https://blues.com/industrial-equipment-monitoring/) machines. A hydraulic injection pressure transducer and a mold thermocouple sample a coarse shot profile at the edge; the Cygnet host extracts the features that matter — peak pressure, fill time, pack pressure, mold temperature, shot sequence — and a Blues Notecard Cell+WiFi carries them off the shop floor without touching the plant's OT network.
 
