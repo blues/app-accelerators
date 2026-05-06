@@ -174,7 +174,7 @@ Source files (all three live directly under `firmware/`):
 
 **Dependencies:**
 - Arduino core for STM32 ([`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32)) — installed via Arduino IDE Boards Manager.
-- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (the `note-arduino` library, stable v1.8.5). Install via Arduino Library Manager: `arduino-cli lib install "Blues Wireless Notecard"`.
+- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (the `note-arduino` library). Install via Arduino Library Manager: `arduino-cli lib install "Blues Wireless Notecard"`.
 - [`SparkFun LIS3DH Arduino Library`](https://github.com/sparkfun/SparkFun_LIS3DH_Arduino_Library). Install via Library Manager: `arduino-cli lib install "SparkFun LIS3DH Arduino Library"`.
 - [`Adafruit DRV2605 Library`](https://github.com/adafruit/Adafruit_DRV2605_Library) and its `Adafruit BusIO` dependency. Install via Library Manager.
 

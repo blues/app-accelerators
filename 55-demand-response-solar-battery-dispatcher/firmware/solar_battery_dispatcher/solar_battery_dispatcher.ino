@@ -10,7 +10,7 @@
 // telemetry and immediate mode-change events to Notehub.
 //
 // Dependencies:
-//   - Blues Wireless Notecard (note-arduino) v1.8.5 -- install via Library Manager
+//   - Blues Wireless Notecard (note-arduino) -- install via Library Manager
 //   - ArduinoModbus, ArduinoRS485              -- install via Library Manager
 //   - Arduino Mbed OS Opta Boards (core)       -- install via Boards Manager
 //

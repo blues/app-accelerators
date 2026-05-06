@@ -8,17 +8,6 @@ This reference application is intended to provide inspiration and help you get s
 
 A [downtime prevention](https://blues.com/downtime-prevention/) reference design that turns an industrial centrifugal pump into a predictively-maintained, remotely-monitored asset by reading what the pump's existing **VFD** (variable frequency drive) already knows about itself — over **Modbus RTU**, on a real industrial **PLC** (programmable logic controller), with a cellular [Notecard](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) for the uplink.
 
-## Quick Start: Path to First Event
-
-**What you'll have when done:** An OPTA + Notecard assembly mounted in a pump panel, reading six telemetry registers from the VFD once per minute, reporting hourly summaries to [Notehub](https://notehub.io), and emitting immediate alerts when four anomaly rules trigger.
-
-**Minimum steps** (60–90 minutes, assuming site access and a calibrated VFD):
-1. Install Arduino core + libraries (`Arduino Mbed OS Opta Boards`, `note-arduino`, `ArduinoModbus`, `ArduinoRS485`) via Library Manager.
-2. Set `PRODUCT_UID` in the firmware; compile and flash via `arduino-cli` (see [Build and Flash](#build-and-flash) below).
-3. On Notehub: create project, claim Notecard, create one fleet, set `modbus_slave_id` and `modbus_baud` to match your VFD's configuration.
-4. Wire OPTA RS-485 to VFD Modbus port; confirm 120 Ω termination at each end of the bus.
-5. Power up and monitor Notehub's in-browser terminal: `card.status` should report healthy; first `vfd_summary.qo` Note appears within ~60 s.
-
 ## 1. Project Overview
 
 **The problem.** Industrial centrifugal pumps almost universally run behind a VFD. Modern drives from ABB, Yaskawa, Danfoss, and Schneider all expose the pump's operating telemetry through Modbus holding registers — motor current, output frequency, output torque, drive temperature, runtime hours, active fault code — and almost nobody reads them. The VFD is sitting in the cabinet doing the work; the data is right there. What's missing is the network path off the plant floor.
@@ -42,6 +31,17 @@ A failing pump rarely just stops. It signals first: motor current can shift at c
 **Notehub responsibilities.** [Notehub](https://notehub.io) ingests events over the Internet, stores every event, and applies project-level [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub). Per-fleet [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) are how a single firmware image services multiple plants whose VFDs are from different vendors and live at different register addresses — see [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) for how to organize them.
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
+
+## 2.5 Quickstart
+
+**What you'll have when done:** An OPTA + Notecard assembly mounted in a pump panel, reading six telemetry registers from the VFD once per minute, reporting hourly summaries to [Notehub](https://notehub.io), and emitting immediate alerts when four anomaly rules trigger.
+
+**Minimum steps** (60–90 minutes, assuming site access and a calibrated VFD):
+1. Install Arduino core + libraries (`Arduino Mbed OS Opta Boards`, `note-arduino`, `ArduinoModbus`, `ArduinoRS485`) via Library Manager.
+2. Set `PRODUCT_UID` in the firmware; compile and flash via `arduino-cli` (see [Build and Flash](#build-and-flash) below).
+3. On Notehub: create project, claim Notecard, create one fleet, set `modbus_slave_id` and `modbus_baud` to match your VFD's configuration.
+4. Wire OPTA RS-485 to VFD Modbus port; confirm 120 Ω termination at each end of the bus.
+5. Power up and monitor Notehub's in-browser terminal: `card.status` should report healthy; first `vfd_summary.qo` Note appears within ~60 s.
 
 ## 3. Build and Flash
 
@@ -141,7 +141,7 @@ Single sketch: [`firmware/vfd_pump_monitor/vfd_pump_monitor.ino`](firmware/vfd_p
 
 Dependencies:
 - **Arduino Mbed OS Opta Boards** core (install via the Arduino IDE Boards Manager).
-- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (the `note-arduino` library, current stable v1.8.5 at time of writing). Install via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`.
+- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (the `note-arduino` library). Install via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`.
 - [`ArduinoModbus`](https://github.com/arduino-libraries/ArduinoModbus) and [`ArduinoRS485`](https://github.com/arduino-libraries/ArduinoRS485) (official Arduino libraries, install via Library Manager).
 
 ### Modules

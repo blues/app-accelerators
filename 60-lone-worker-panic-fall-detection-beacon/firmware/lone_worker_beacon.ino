@@ -51,7 +51,7 @@
  *   Panic button (momentary NO, active-low)
  *
  * Dependencies:
- *   Blues Wireless Notecard (note-arduino) v1.8.5
+ *   Blues Wireless Notecard (note-arduino)
  *   SparkFun LIS3DH Arduino Library        v1.0.3+
  *   Adafruit DRV2605 Library               v1.2.3+
  *   Adafruit BusIO (DRV2605 dependency)    v1.15+

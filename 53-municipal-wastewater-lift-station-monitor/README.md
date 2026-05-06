@@ -8,29 +8,6 @@ This reference application is intended to provide inspiration and help you get s
 
 A [downtime prevention](https://blues.com/downtime-prevention/) retrofit for municipal wastewater lift stations that catches pump failures, discharge obstructions, and high-water conditions before they become a sanitary overflow. Three sensor types, a cellular or satellite [Notecard](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), and a Cygnet host MCU transform a sealed concrete vault into a remotely-monitored station that delivers alerts to the on-call crew within minutes via cellular — or on the next available satellite pass for Option B remote stations — not hours after a manual site visit.
 
-## Quickstart: Get Your First Alert in 15 Minutes (Bench)
-
-**What you'll have:** A [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) + Notecard sending sample lift_alert and lift_summary events to your Notehub project every 60 seconds without needing sensors in the field.
-
-1. **Create a Notehub project** at [notehub.io](https://notehub.io) and copy its ProductUID.
-2. **Flash the firmware:**
-   ```bash
-   arduino-cli board install stm32duino:STM32:1.11.0
-   arduino-cli lib install "Blues Wireless Notecard@1.8.5"
-   cd firmware/lift_station_monitor
-   arduino-cli compile --fqbn stm32duino:STM32:Notecarrier_CX \
-     --build-property "compiler.cpp.extra_flags=-DPRODUCT_UID=\"com.example:demo\"" \
-     -u -p /dev/ttyACM0
-   ```
-   (Replace `/dev/ttyACM0` with your Notecarrier serial port; on macOS use `/dev/tty.usbmodem*`; on Windows use `COM*`.)
-3. **Open serial monitor** at 115200 baud; verify logs show "Notecard configured," `hub.set` requests, and `note.add` calls.
-4. **Check Notehub Devices** — your Notecard appears within 60 seconds. Click it to see `lift_alert.qo` and `lift_summary.qo` events in the Events panel.
-5. **Tune thresholds** — in the Fleet panel, set environment variables (e.g., `high_level_pct: 50.0`) and watch the serial log show the updated values on the next wake.
-
-For bench-only testing, use compile-time flags to inject synthetic sensor values (see [Bench fault simulation](#bench-fault-simulation) in Section 8).
-
-Two connectivity SKUs cover the full deployment spectrum. Stations within LTE coverage use a **Notecard Cell+WiFi (MBGLW)**. Truly rural stations beyond reliable cellular reach use a **[Starnote](https://shop.blues.com/products/starnote?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)** ([datasheet](https://dev.blues.io/datasheets/starnote/starnote-for-skylo/)), which routes telemetry over the Skylo satellite network. The firmware is identical for both variants; Notehub configuration is shared, though satellite deployments benefit from wider inbound sync intervals to conserve bundled satellite data — see [Satellite-specific considerations](#satellite-specific-considerations-option-b--starnote) in Section 2.
-
 ## 1. Project Overview
 
 **The problem.** A **lift station** (also called a pump station) is a below-grade concrete vault or roadside cabinet that collects raw sewage from the surrounding gravity sewer system and pumps it uphill toward the treatment plant. Every municipality has dozens of them, often scattered across low-lying neighborhoods, industrial zones, and rural road shoulders — most with no onsite staff and no way to know what's happening inside until a citizen calls to report a smell or, worse, a spill.
@@ -70,6 +47,29 @@ The Starnote uses the same Notecard API as the MBGLW, but the satellite link has
 **Power envelope.** The Starnote idles at typically less than 4 µA @ 5 V — lower than the MBGLW's ~18 µA. During a satellite session, VMODEM_P requires a sustained 350 mA supply capability, similar in magnitude to an LTE session. The HDR-15-5 (3 A rated) handles both variants with margin. See the [Validation section](#8-validation-and-testing) for a per-state current breakdown.
 
 **Mandatory initial cellular sync.** Before any satellite (NTN) operation is possible, the Starnote must complete at least one non-NTN sync with Notehub over cellular or WiFi to associate with a project. Ensure the unit has cellular coverage during initial commissioning, even if the deployment site relies on satellite for routine operation.
+
+## 2.5 Quickstart
+
+**What you'll have:** A [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) + Notecard sending sample lift_alert and lift_summary events to your Notehub project every 60 seconds without needing sensors in the field.
+
+1. **Create a Notehub project** at [notehub.io](https://notehub.io) and copy its ProductUID.
+2. **Flash the firmware:**
+   ```bash
+   arduino-cli board install stm32duino:STM32:1.11.0
+   arduino-cli lib install "Blues Wireless Notecard"
+   cd firmware/lift_station_monitor
+   arduino-cli compile --fqbn stm32duino:STM32:Notecarrier_CX \
+     --build-property "compiler.cpp.extra_flags=-DPRODUCT_UID=\"com.example:demo\"" \
+     -u -p /dev/ttyACM0
+   ```
+   (Replace `/dev/ttyACM0` with your Notecarrier serial port; on macOS use `/dev/tty.usbmodem*`; on Windows use `COM*`.)
+3. **Open serial monitor** at 115200 baud; verify logs show "Notecard configured," `hub.set` requests, and `note.add` calls.
+4. **Check Notehub Devices** — your Notecard appears within 60 seconds. Click it to see `lift_alert.qo` and `lift_summary.qo` events in the Events panel.
+5. **Tune thresholds** — in the Fleet panel, set environment variables (e.g., `high_level_pct: 50.0`) and watch the serial log show the updated values on the next wake.
+
+For bench-only testing, use compile-time flags to inject synthetic sensor values (see [Bench fault simulation](#bench-fault-simulation) in Section 8).
+
+Two connectivity SKUs cover the full deployment spectrum. Stations within LTE coverage use a **Notecard Cell+WiFi (MBGLW)**. Truly rural stations beyond reliable cellular reach use a **[Starnote](https://shop.blues.com/products/starnote?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)** ([datasheet](https://dev.blues.io/datasheets/starnote/starnote-for-skylo/)), which routes telemetry over the Skylo satellite network. The firmware is identical for both variants; Notehub configuration is shared, though satellite deployments benefit from wider inbound sync intervals to conserve bundled satellite data — see [Satellite-specific considerations](#satellite-specific-considerations-option-b--starnote) in Section 2.
 
 ## 3. Hardware Requirements
 
@@ -192,7 +192,7 @@ The `.ino` file is self-contained for the Arduino IDE (which compiles `.ino` + `
 
 **Dependencies:**
 - Arduino core for STM32 ([`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32)).
-- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (`note-arduino` library), **v1.8.5** (stable at time of writing). Install via Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard@1.8.5"`. Pin this version to ensure the build is reproducible.
+- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (`note-arduino` library). Install via Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`.
 
 ### Modules
 
@@ -430,7 +430,7 @@ bool ok = notecard.sendRequestWithRetry(req, 5);
 **Firmware won't compile.** Ensure you have the correct board package and library versions:
 ```bash
 arduino-cli board install stm32duino:STM32:1.11.0
-arduino-cli lib install "Blues Wireless Notecard@1.8.5"
+arduino-cli lib install "Blues Wireless Notecard"
 ```
 
 **Notecard not appearing in Notehub.** Check the firmware serial log:

@@ -8,7 +8,33 @@ This reference application is intended to provide inspiration and help you get s
 
 A cellular [energy savings](https://blues.com/energy-savings/) reference design that gives corporate operations teams a live view into the temperature, compressor runtime, and door behavior of every walk-in cooler in their fleet — without touching a single franchisee or operator's WiFi network.
 
-## Quickstart: First Event in 30 Minutes
+## 1. Project Overview
+
+**The problem.** For a chain QSR (quick-service restaurant), c-store (convenience store), or grocery operator, the walk-in cooler is one of the most expensive assets in a store — and one of the least visible. Energy cost per location is second only to labor, and a significant fraction of that energy budget runs through the compressor of one or more walk-in boxes. Operators who get visibility into compressor runtime, door discipline, and temperature trends across their fleet can cut energy spend materially: a door held open five minutes longer than necessary during a busy lunch rush costs real money in wasted refrigeration, and a compressor running six hours a day instead of four because box air temperature has quietly drifted 2 °F above the corporate temperature target costs even more at scale.
+
+The harder problem is that an operator running 800 locations has 800 different network environments — franchisees on consumer ISPs, independent operators with POS (point-of-sale) systems that their IT vendors won't let anyone touch, c-stores with back-office networks that preclude any new guest devices. Getting corporate visibility through all of that friction is the barrier that keeps most energy-monitoring pilots from becoming fleet-wide programs. The pilot sites get instrumented; the rollout stalls at 50.
+
+This project is the device that gets past that barrier. One SKU, cellular-connected, no IT ticket required. Stick a temperature probe inside the box, clamp a split-core current transformer on the compressor hot leg, mount a magnetic reed switch on the door, and you get a per-unit compressor energy proxy — compressor apparent kWh per summary window (per-day totals derived downstream by summing `kwh_window` records), door-open events, and temperature-to-target deviation — delivered to Notehub and routed wherever corporate needs it.
+
+**Why Notecard.** The project description says it plainly: corporate energy management can't touch 800 independent-operator or franchisee WiFi networks — each would be its own ticket. A cellular Notecard is one SKU the field can plug in without asking anyone for a WiFi password. That's not a convenience; it's the difference between a program that deploys at fleet scale and one that stays perpetually in pilot. Deploying on cellular also keeps the energy-monitoring data stream entirely off the POS network, which matters both for network security and for the operational reality that POS downtime is the one thing nobody is willing to accept as a side effect of an energy program. The [Notecard Cell+WiFi](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) variant keeps WiFi as an opportunistic fallback for the occasional site that can offer it, without compromising the cellular-first deployment model.
+
+**Deployment scenario.** A small weatherproof enclosure mounted in or near the cooler's refrigeration cabinet or mechanical room, powered from the cooler's dedicated circuit (typically 120VAC for single-phase residential-style units; many commercial condensing units run on 208/240VAC — see Limitations). Three sensor leads run into the box: a waterproof DS18B20 temperature probe positioned in open box air at mid-box height or along the return-air path (reading representative box air temperature away from the evaporator and door), a split-core CT clamped on one hot leg of the compressor's dedicated circuit, and a two-wire reed switch mounted on the door frame with a magnet on the door itself. No OEM cooperation, no cooler modification, no network integration required.
+
+## 2. System Architecture
+
+![System architecture: walk-in cooler sensors (box temp, compressor CT, door reed) → Notecarrier CX with Cygnet host and Notecard MBGLW → cellular/WiFi → Notehub → energy ops / BI / alerts](diagrams/01-system-architecture.svg)
+
+**Device-side responsibilities.** The onboard Cygnet STM32 host on the Notecarrier CX wakes every `sample_interval_sec` seconds (default 60 s), reads all three sensors, updates per-window accumulators (kWh, compressor runtime, door open time and event count), evaluates two alert rules, and either queues a summary [Note](https://dev.blues.io/api-reference/glossary/#note) or goes back to sleep. Between wakes, the host is fully powered down via [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) — the Notecard holds the sleep state and restores it on wake.
+
+**Notecard responsibilities.** The Notecard stores Notes locally in its on-device queue, establishes a cellular (or WiFi) session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 min), and flushes queued summary notes in that session. Alert notes set `sync:true` and jump the queue — the radio wakes within a session-establishment window regardless of the outbound cadence. The Notecard also distributes [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) from Notehub to the host, so operators can retune setpoint thresholds, door-alert timers, and cadences without reflashing firmware.
+
+**Notehub responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to [Notehub](https://notehub.io) over the Internet; Notehub ingests events, stores every event, and applies project-level routes. Summaries and alerts land in separate [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile) — `cooler_summary.qo` for periodic window-based telemetry and `cooler_alert.qo` for threshold events — so they can be fanned out to different destinations (long-term analytics store vs. real-time alerting channel) at different urgencies without any filter logic in the route. [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) and [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) allow environment variables to be set at the fleet level (e.g., all units in a given region or banner share the same temperature setpoint target) and overridden per device.
+
+**Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and other destinations. Route configuration is project-specific — this project ships no downstream endpoint. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for setup details.
+
+## 2.5 Quickstart
+
+### First Event in 30 Minutes
 
 1. **Assemble the hardware** (Section 3–4): [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) + [Notecard Cell+WiFi](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), DS18B20 temperature probe, SCT-013-030 current transformer, reed switch door sensor, and 5V/2A power supply in a NEMA 4X enclosure.
 
@@ -46,7 +72,7 @@ A cellular [energy savings](https://blues.com/energy-savings/) reference design 
 
 6. **Trigger a test alert**: Open the cooler door and leave it open for >5 min, then wait for the next sample cycle. A `door_open_long` alert will appear in `cooler_alert.qo` with `sync:true` (immediate delivery, not queued).
 
-## What You'll Have When You're Done
+### What You'll Have When You're Done
 
 After completing this project, you will deploy a complete cellular-connected walk-in cooler monitoring system consisting of:
 
@@ -61,30 +87,6 @@ After completing this project, you will deploy a complete cellular-connected wal
 4. **No WiFi required** — cellular connectivity eliminates the IT ticket bottleneck that has stopped energy programs at hundreds of multi-location operators. Works on franchisee sites, POS-restricted networks, and anywhere a cell signal exists.
 
 5. **Configuration without reflashing** — threshold temperatures, alert timers, and sample/summary cadences are all tunable via Notehub environment variables; changes take effect on the device's next inbound sync.
-
-## 1. Project Overview
-
-**The problem.** For a chain QSR (quick-service restaurant), c-store (convenience store), or grocery operator, the walk-in cooler is one of the most expensive assets in a store — and one of the least visible. Energy cost per location is second only to labor, and a significant fraction of that energy budget runs through the compressor of one or more walk-in boxes. Operators who get visibility into compressor runtime, door discipline, and temperature trends across their fleet can cut energy spend materially: a door held open five minutes longer than necessary during a busy lunch rush costs real money in wasted refrigeration, and a compressor running six hours a day instead of four because box air temperature has quietly drifted 2 °F above the corporate temperature target costs even more at scale.
-
-The harder problem is that an operator running 800 locations has 800 different network environments — franchisees on consumer ISPs, independent operators with POS (point-of-sale) systems that their IT vendors won't let anyone touch, c-stores with back-office networks that preclude any new guest devices. Getting corporate visibility through all of that friction is the barrier that keeps most energy-monitoring pilots from becoming fleet-wide programs. The pilot sites get instrumented; the rollout stalls at 50.
-
-This project is the device that gets past that barrier. One SKU, cellular-connected, no IT ticket required. Stick a temperature probe inside the box, clamp a split-core current transformer on the compressor hot leg, mount a magnetic reed switch on the door, and you get a per-unit compressor energy proxy — compressor apparent kWh per summary window (per-day totals derived downstream by summing `kwh_window` records), door-open events, and temperature-to-target deviation — delivered to Notehub and routed wherever corporate needs it.
-
-**Why Notecard.** The project description says it plainly: corporate energy management can't touch 800 independent-operator or franchisee WiFi networks — each would be its own ticket. A cellular Notecard is one SKU the field can plug in without asking anyone for a WiFi password. That's not a convenience; it's the difference between a program that deploys at fleet scale and one that stays perpetually in pilot. Deploying on cellular also keeps the energy-monitoring data stream entirely off the POS network, which matters both for network security and for the operational reality that POS downtime is the one thing nobody is willing to accept as a side effect of an energy program. The [Notecard Cell+WiFi](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) variant keeps WiFi as an opportunistic fallback for the occasional site that can offer it, without compromising the cellular-first deployment model.
-
-**Deployment scenario.** A small weatherproof enclosure mounted in or near the cooler's refrigeration cabinet or mechanical room, powered from the cooler's dedicated circuit (typically 120VAC for single-phase residential-style units; many commercial condensing units run on 208/240VAC — see Limitations). Three sensor leads run into the box: a waterproof DS18B20 temperature probe positioned in open box air at mid-box height or along the return-air path (reading representative box air temperature away from the evaporator and door), a split-core CT clamped on one hot leg of the compressor's dedicated circuit, and a two-wire reed switch mounted on the door frame with a magnet on the door itself. No OEM cooperation, no cooler modification, no network integration required.
-
-## 2. System Architecture
-
-![System architecture: walk-in cooler sensors (box temp, compressor CT, door reed) → Notecarrier CX with Cygnet host and Notecard MBGLW → cellular/WiFi → Notehub → energy ops / BI / alerts](diagrams/01-system-architecture.svg)
-
-**Device-side responsibilities.** The onboard Cygnet STM32 host on the Notecarrier CX wakes every `sample_interval_sec` seconds (default 60 s), reads all three sensors, updates per-window accumulators (kWh, compressor runtime, door open time and event count), evaluates two alert rules, and either queues a summary [Note](https://dev.blues.io/api-reference/glossary/#note) or goes back to sleep. Between wakes, the host is fully powered down via [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) — the Notecard holds the sleep state and restores it on wake.
-
-**Notecard responsibilities.** The Notecard stores Notes locally in its on-device queue, establishes a cellular (or WiFi) session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 min), and flushes queued summary notes in that session. Alert notes set `sync:true` and jump the queue — the radio wakes within a session-establishment window regardless of the outbound cadence. The Notecard also distributes [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) from Notehub to the host, so operators can retune setpoint thresholds, door-alert timers, and cadences without reflashing firmware.
-
-**Notehub responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to [Notehub](https://notehub.io) over the Internet; Notehub ingests events, stores every event, and applies project-level routes. Summaries and alerts land in separate [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile) — `cooler_summary.qo` for periodic window-based telemetry and `cooler_alert.qo` for threshold events — so they can be fanned out to different destinations (long-term analytics store vs. real-time alerting channel) at different urgencies without any filter logic in the route. [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) and [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) allow environment variables to be set at the fleet level (e.g., all units in a given region or banner share the same temperature setpoint target) and overridden per device.
-
-**Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and other destinations. Route configuration is project-specific — this project ships no downstream endpoint. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for setup details.
 
 ## 3. Hardware Requirements
 
@@ -157,7 +159,7 @@ Main sketch plus helper files: [`firmware/cooler_monitor/cooler_monitor.ino`](fi
 
 **Dependencies:**
 - Arduino core for STM32 ([`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32)).
-- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (`note-arduino` library, v1.8.5 at time of writing). Install via Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`.
+- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (`note-arduino` library). Install via Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`.
 - [`OneWire`](https://github.com/PaulStoffregen/OneWire) library. Install via Arduino Library Manager.
 - [`DallasTemperature`](https://github.com/milesburton/Arduino-Temperature-Control-Library) library. Install via Arduino Library Manager.
 

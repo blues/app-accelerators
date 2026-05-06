@@ -38,6 +38,18 @@ A fill-level sensor changes the economics entirely. With a real-time reading, th
 
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
 
+## 2.5 Quickstart
+
+### First Event in Minutes
+
+1. **Flash the firmware** (§6) with your ProductUID.
+2. **Set DIP switch to HST** and connect USB-C to a laptop. Open the serial monitor at 115200 baud.
+3. **Take a tape measurement** from the sensor face to the liquid surface.
+4. **Override `sample_interval_sec`** to `60` via Notehub fleet environment variables (Fleet → Environment) so you get a reading every minute instead of every 15.
+5. **Watch the serial output** for `[DBG] median distance mm: XXX` on each wake. Compare against your tape measurement — should match within 1–2 cm.
+6. **Check Notehub events:** Within a few minutes you should see a `grease_summary.qo` arrive (or `grease_alert.qo` if you also lowered `alert_threshold_pct` to 5 to test the alert path).
+7. **Restore `sample_interval_sec` to 900** before leaving the site.
+
 ## 3. Hardware Requirements
 
 | Part | Qty | Rationale |
@@ -138,7 +150,7 @@ Firmware files:
 
 Dependencies:
 - Arduino core for STM32 ([`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32)).
-- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (`note-arduino`, current stable v1.8.5). Install via the Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard"`) or download from [the releases page](https://github.com/blues/note-arduino/releases).
+- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (`note-arduino`). Install via the Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard"`) or download from [the releases page](https://github.com/blues/note-arduino/releases).
 
 ### Modules
 
@@ -278,16 +290,6 @@ Every 15 minutes the Cygnet host wakes, fires the sensor five times, takes the m
 These Notefiles are separate so you can route them to different endpoints: summaries to a long-term analytics database, alerts to a real-time dispatch webhook or SMS gateway.
 
 ## 8. Validation and Testing
-
-### Quickstart: First Event in Minutes
-
-1. **Flash the firmware** (§6) with your ProductUID.
-2. **Set DIP switch to HST** and connect USB-C to a laptop. Open the serial monitor at 115200 baud.
-3. **Take a tape measurement** from the sensor face to the liquid surface.
-4. **Override `sample_interval_sec`** to `60` via Notehub fleet environment variables (Fleet → Environment) so you get a reading every minute instead of every 15.
-5. **Watch the serial output** for `[DBG] median distance mm: XXX` on each wake. Compare against your tape measurement — should match within 1–2 cm.
-6. **Check Notehub events:** Within a few minutes you should see a `grease_summary.qo` arrive (or `grease_alert.qo` if you also lowered `alert_threshold_pct` to 5 to test the alert path).
-7. **Restore `sample_interval_sec` to 900** before leaving the site.
 
 ### Expected Steady-State Behavior
 

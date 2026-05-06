@@ -10,18 +10,6 @@ A retrofit [downtime prevention](https://blues.com/downtime-prevention/) pack fo
 
 **What you'll have when you're done:** a weatherproof, line-powered sidecar bolted to a rooftop RTU that samples four sensors every minute, runs three failure-mode checks locally, and pages your on-call queue within ~60 s of a threshold trip — over cellular, with no site IT involvement and no RTU modification. Hourly summaries land in a separate Notefile for trending and analytics. Operators can re-tune thresholds in the field via Notehub environment variables without re-flashing firmware.
 
-### Quickstart at a glance
-
-If you want the fastest path from "parts on the bench" to "first event in Notehub":
-
-1. **Notehub** — create a [Notehub project](https://notehub.io), copy its ProductUID.
-2. **Wire the bench rig** — [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) + [Notecard MBGLW](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) + two thermistor dividers on A0/A1 + CT bias network on A2 + SDP810 on I²C. Full pinout is in [§4](#4-wiring-and-assembly).
-3. **Edit one line** of [`firmware/rtu_predictive_maintenance/rtu_predictive_maintenance.ino`](firmware/rtu_predictive_maintenance/rtu_predictive_maintenance.ino) — set `PRODUCT_UID` to your project's value (line 24).
-4. **Flash** — `arduino-cli compile -b STMicroelectronics:stm32:Cygnet` then `arduino-cli upload`. Full instructions in [§6.1](#61-installing-and-flashing).
-5. **Watch** — open Notehub → your project → **Events** tab. You should see a `_session.qo` immediately, an `rtu_summary.qo` within an hour, and any threshold trips as `rtu_alert.qo` in real time.
-
-The rest of this README expands each step and explains why the firmware is shaped the way it is. If you're doing a real rooftop install rather than a bench bring-up, also read [§9 Limitations](#9-limitations-and-next-steps) before you commit to a power topology.
-
 ## 1. Project Overview
 
 **The problem.** In HVAC, an **RTU** (rooftop unit) is a self-contained packaged HVAC system — compressor, condenser, evaporator, blower, and controls all in one box — mounted on the roof of a commercial building. It's the workhorse of light commercial cooling: the vast majority of grocery stores, restaurants, strip-mall tenants, and small warehouses are conditioned by one or more RTUs sitting above the suspended ceiling.
@@ -45,6 +33,18 @@ This project is that watcher. It's a retrofit sidecar that gets strapped to the 
 **Notehub responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to [Notehub](https://notehub.io) over the Internet; Notehub ingests events, stores every event, and applies project-level routes. Alerts and summaries land in separate [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile) so routes can be configured to fan them out differently — alerts to an on-call or CMMS (computerized maintenance management system) endpoint, summaries to a long-term analytics store.
 
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project doesn't ship any specific downstream endpoint.
+
+## 2.5 Quickstart
+
+If you want the fastest path from "parts on the bench" to "first event in Notehub":
+
+1. **Notehub** — create a [Notehub project](https://notehub.io), copy its ProductUID.
+2. **Wire the bench rig** — [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) + [Notecard MBGLW](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) + two thermistor dividers on A0/A1 + CT bias network on A2 + SDP810 on I²C. Full pinout is in [§4](#4-wiring-and-assembly).
+3. **Edit one line** of [`firmware/rtu_predictive_maintenance/rtu_predictive_maintenance.ino`](firmware/rtu_predictive_maintenance/rtu_predictive_maintenance.ino) — set `PRODUCT_UID` to your project's value (line 24).
+4. **Flash** — `arduino-cli compile -b STMicroelectronics:stm32:Cygnet` then `arduino-cli upload`. Full instructions in [§6.1](#61-installing-and-flashing).
+5. **Watch** — open Notehub → your project → **Events** tab. You should see a `_session.qo` immediately, an `rtu_summary.qo` within an hour, and any threshold trips as `rtu_alert.qo` in real time.
+
+The rest of this README expands each step and explains why the firmware is shaped the way it is. If you're doing a real rooftop install rather than a bench bring-up, also read [§9 Limitations](#9-limitations-and-next-steps) before you commit to a power topology.
 
 ## 3. Hardware Requirements
 

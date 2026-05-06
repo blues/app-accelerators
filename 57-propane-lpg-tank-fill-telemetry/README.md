@@ -8,32 +8,6 @@ This reference application is intended to provide inspiration and help you get s
 
 A [truck roll reduction](https://blues.com/truck-roll-reduction/) reference design that gives propane dealers per-tank fill telemetry across their entire delivery territory — replacing fixed-schedule routes with demand-driven dispatch and projecting days-until-empty for every tank in the fleet. The design pairs a **4–20 mA LP gauge-port float-type level transmitter** (Rochester Sensors M6300-LP Magnetel® gauge + R6315-12 transmitter, or equivalent — connects at the tank's existing 1¼″ NPT dip-tube gauge port, no additional tank penetrations) and a **DS18B20 temperature probe** (for daily summary analytics and seasonal demand correlation) with a **[Notecard Cell+WiFi](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)** for cellular-first connectivity and an optional **[Starnote for Skylo](https://shop.blues.com/products/starnote?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)** satellite module for sites with no cellular coverage.
 
-## Quick Start
-
-Clone this repository, build the firmware, and deploy:
-
-1. **Get the firmware onto your Notecarrier CX:**
-   ```
-   arduino-cli core install STM32:stm32
-   arduino-cli lib install "Blues Wireless Notecard@1.8.5" OneWire DallasTemperature
-   arduino-cli compile -b STM32:stm32:Nucleo_L476RG firmware/propane_tank_telemetry/
-   arduino-cli upload -b STM32:stm32:Nucleo_L476RG -p /dev/ttyACM0 firmware/propane_tank_telemetry/
-   ```
-   Adjust the port (`/dev/ttyACM0` on Linux/Mac, `COM*` on Windows) and board as needed.
-
-2. **Claim your Notecard to Notehub:**
-   Sign up at [notehub.io](https://notehub.io) and create a project. Copy the ProductUID and paste it into the firmware as `PRODUCT_UID`.
-
-3. **Configure fleet variables in Notehub** — Set these in **Projects → Environment (tab)** at the Fleet level:
-   - `tank_capacity_gal`: your tank's usable capacity (e.g., 500)
-   - `fill_alert_pct`: alert threshold (default 20)
-   - All others have sensible defaults; see [§5](#5-notehub-setup) for the full list.
-
-4. **See your first event:**
-   After a few minutes of network registration, check **Notehub → Devices → [Your device] → Events**. You should see a `tank_status.qo` daily summary note (or a `tank_alert.qo` if your tank is below the alert threshold). The note body carries `fill_pct`, `fill_gal`, `temp_c`, `gal_per_day`, and `days_until_empty`.
-
-Full assembly and commissioning instructions follow in §3–§8.
-
 ## 1. Project Overview
 
 **The problem.** Most propane dealers still run their delivery routes on a fixed calendar: every six weeks, every tank gets a truck. That schedule exists not because it matches demand, but because dealers have no way to know which tanks actually need filling. The result is trucks rolling to tanks that are at 60 % (wasted capacity, wasted diesel) and tanks at remote farm properties that run dry between scheduled visits (angry customer, weekend emergency call). Neither failure is exotic — they're structural consequences of not having fill-level data.
@@ -59,6 +33,32 @@ This project solves all three. A weatherproof electronics enclosure mounted on a
 **Notehub responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to [Notehub](https://dev.blues.io/notehub/notehub-walkthrough/) over the Internet; Notehub ingests events, stores them, and applies project-level routes. Per-fleet [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) are how a single firmware image serves a fleet of tanks with varying capacities — tank size and sensor calibration live in Notehub, not in compiled constants. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) can automatically group tanks by territory, capacity class, or customer type and push the right calibration values to each group.
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this reference design does not ship any specific downstream endpoint. The natural downstream targets for a propane dealer are a route-optimization or ERP system (routed via HTTP webhook) and a time-series database for trend analysis (routed to a cloud data store of the dealer's choosing).
+
+## 2.5 Quickstart
+
+Clone this repository, build the firmware, and deploy:
+
+1. **Get the firmware onto your Notecarrier CX:**
+   ```
+   arduino-cli core install STM32:stm32
+   arduino-cli lib install "Blues Wireless Notecard" OneWire DallasTemperature
+   arduino-cli compile -b STM32:stm32:Nucleo_L476RG firmware/propane_tank_telemetry/
+   arduino-cli upload -b STM32:stm32:Nucleo_L476RG -p /dev/ttyACM0 firmware/propane_tank_telemetry/
+   ```
+   Adjust the port (`/dev/ttyACM0` on Linux/Mac, `COM*` on Windows) and board as needed.
+
+2. **Claim your Notecard to Notehub:**
+   Sign up at [notehub.io](https://notehub.io) and create a project. Copy the ProductUID and paste it into the firmware as `PRODUCT_UID`.
+
+3. **Configure fleet variables in Notehub** — Set these in **Projects → Environment (tab)** at the Fleet level:
+   - `tank_capacity_gal`: your tank's usable capacity (e.g., 500)
+   - `fill_alert_pct`: alert threshold (default 20)
+   - All others have sensible defaults; see [§5](#5-notehub-setup) for the full list.
+
+4. **See your first event:**
+   After a few minutes of network registration, check **Notehub → Devices → [Your device] → Events**. You should see a `tank_status.qo` daily summary note (or a `tank_alert.qo` if your tank is below the alert threshold). The note body carries `fill_pct`, `fill_gal`, `temp_c`, `gal_per_day`, and `days_until_empty`.
+
+Full assembly and commissioning instructions follow in §3–§8.
 
 ## 3. Hardware Requirements
 
@@ -257,7 +257,7 @@ Main sketch: [`firmware/propane_tank_telemetry/propane_tank_telemetry.ino`](firm
 
 Dependencies:
 - **Arduino core for STM32** ([`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32)) — install via Boards Manager.
-- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (the `note-arduino` library, current stable **v1.8.5** at time of writing). Install via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard@1.8.5"`. Update the pinned version intentionally when revising this project — see the [note-arduino releases](https://github.com/blues/note-arduino/releases) for newer versions.
+- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (the `note-arduino` library). Install via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`. See the [note-arduino releases](https://github.com/blues/note-arduino/releases) for available versions.
 - [`OneWire`](https://github.com/PaulStoffregen/OneWire) — install via Library Manager.
 - [`DallasTemperature`](https://github.com/milesburton/Arduino-Temperature-Control-Library) — install via Library Manager.
 

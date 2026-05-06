@@ -202,7 +202,7 @@ Five files in [`firmware/solar_battery_dispatcher/`](firmware/solar_battery_disp
 
 Dependencies:
 - **Arduino Mbed OS Opta Boards** core (install via the Arduino IDE Boards Manager, search "opta").
-- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (`note-arduino` library, stable v1.8.5 at time of writing). Install via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`. See [note-arduino releases](https://github.com/blues/note-arduino/releases) for the latest.
+- [`Blues Wireless Notecard`](https://github.com/blues/note-arduino) (`note-arduino` library). Install via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`. See [note-arduino releases](https://github.com/blues/note-arduino/releases) for the latest.
 - [`ArduinoModbus`](https://github.com/arduino-libraries/ArduinoModbus) and [`ArduinoRS485`](https://github.com/arduino-libraries/ArduinoRS485) — official Arduino libraries, install via Library Manager.
 
 ### Modules
