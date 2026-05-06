@@ -31,11 +31,19 @@
 // Project identity — uncomment the line below and replace the placeholder
 // with your Notehub ProductUID before building.  The build intentionally
 // fails when PRODUCT_UID is left unset so that a reused Notecard cannot
-// silently keep routing data to a previous project.
+// silently keep routing data to a previous project. For local development
+// without a Notehub project yet, add -DALLOW_EMPTY_PRODUCT_UID to the build
+// flags as an explicit override — that flag must not appear in a shipping
+// build.
 // ---------------------------------------------------------------------------
 // #define PRODUCT_UID "com.your-company.your-name:creek_gauge"
 #ifndef PRODUCT_UID
-#error "PRODUCT_UID is not defined. Uncomment and fill in the #define above, or supply it as a build flag."
+#  ifndef ALLOW_EMPTY_PRODUCT_UID
+#    error "PRODUCT_UID is not set. Define it as your Notehub ProductUID before flashing (e.g. -DPRODUCT_UID='\"com.your-company.your-name:creek_gauge\"'). For local development without a project, add -DALLOW_EMPTY_PRODUCT_UID to suppress this error — that flag must not appear in a shipping build."
+#  else
+#    define PRODUCT_UID ""
+#    pragma message "PRODUCT_UID empty (ALLOW_EMPTY_PRODUCT_UID override active) — device will not associate with any Notehub project"
+#  endif
 #endif
 
 // ---------------------------------------------------------------------------

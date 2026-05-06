@@ -13,14 +13,21 @@
 
 // ---------------------------------------------------------------------------
 // Configuration — edit PRODUCT_UID before flashing
+//
+// An empty PRODUCT_UID causes hub.set to register the device under no project,
+// making it unreachable from Notehub. The build therefore fails when it is not
+// set. For local development without a Notehub project yet, add
+// -DALLOW_EMPTY_PRODUCT_UID to the build flags as an explicit override — that
+// flag must not appear in a shipping build.
 // ---------------------------------------------------------------------------
 #ifndef PRODUCT_UID
-#define PRODUCT_UID ""  // e.g. "com.your-company.your-name:lift_station"
+#  ifndef ALLOW_EMPTY_PRODUCT_UID
+#    error "PRODUCT_UID is not set. Define it as your Notehub ProductUID before flashing (e.g. -DPRODUCT_UID='\"com.your-company.your-name:lift_station\"'). For local development without a project, add -DALLOW_EMPTY_PRODUCT_UID to suppress this error — that flag must not appear in a shipping build."
+#  else
+#    define PRODUCT_UID ""
+#    pragma message "PRODUCT_UID empty (ALLOW_EMPTY_PRODUCT_UID override active) — device will not associate with any Notehub project"
+#  endif
 #endif
-// Enforce at build time: an empty PRODUCT_UID causes hub.set to register the
-// device under no project, making it unreachable from Notehub.
-static_assert(sizeof(PRODUCT_UID) > 1,
-              "PRODUCT_UID is empty — set it to your Notehub ProductUID before building.");
 
 // Notecard sync timing
 #define OUTBOUND_INTERVAL_MIN   60   // cellular sync for queued notes

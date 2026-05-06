@@ -23,11 +23,19 @@
 // Hardware: Blues Notecarrier CX + Notecard Cell+WiFi (MBGLW) + LiPo battery (POC build).
 
 // ---------------------------------------------------------------------------
-// Product UID — replace with your Notehub project's ProductUID before flashing
+// Product UID — replace with your Notehub project's ProductUID before flashing.
+// Leaving this empty produces a hard compile error so a misconfigured binary
+// cannot be accidentally deployed. For local development without a Notehub
+// project yet, add -DALLOW_EMPTY_PRODUCT_UID to the build flags as an explicit
+// override — that flag must not appear in a shipping build.
 // ---------------------------------------------------------------------------
 #ifndef PRODUCT_UID
-#define PRODUCT_UID "" // e.g. "com.your-company.your-name:tote-tracker"
-#pragma message "PRODUCT_UID is not defined. Set it before deploying."
+#  ifndef ALLOW_EMPTY_PRODUCT_UID
+#    error "PRODUCT_UID is not set. Define it as your Notehub ProductUID before flashing (e.g. -DPRODUCT_UID='\"com.your-company.your-name:tote-tracker\"'). For local development without a project, add -DALLOW_EMPTY_PRODUCT_UID to suppress this error — that flag must not appear in a shipping build."
+#  else
+#    define PRODUCT_UID ""
+#    pragma message "PRODUCT_UID empty (ALLOW_EMPTY_PRODUCT_UID override active) — device will not associate with any Notehub project"
+#  endif
 #endif
 
 // Debug output is controlled by #define DEBUG in tote_pool_tracker_helpers.h.
@@ -35,18 +43,6 @@
 // in both this sketch and the helper .cpp translation unit.
 
 #include "tote_pool_tracker_helpers.h"
-
-// ---------------------------------------------------------------------------
-// Compile-time guard: catch a placeholder PRODUCT_UID before a field build.
-// Skipped for DEBUG builds so bench testing compiles without a real UID.
-// The include above must precede this check so the DEBUG flag defined in the
-// shared header is visible to the #ifndef guard.
-// ---------------------------------------------------------------------------
-#ifndef DEBUG
-static_assert(sizeof(PRODUCT_UID) > 1,
-    "Set PRODUCT_UID to your Notehub ProductUID before flashing "
-    "(see README section 3).");
-#endif
 
 // ---------------------------------------------------------------------------
 // Globals — definitions; extern declarations live in tote_pool_tracker_helpers.h

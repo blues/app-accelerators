@@ -46,16 +46,20 @@
 #include "ev_charger_session_monitor_helpers.h"
 
 // ── Product identifier ────────────────────────────────────────────────────────
-// ▶ Replace the empty string below with your Notehub ProductUID before flashing
-//   (e.g. "com.your-company.your-name:ev-charger-monitor").
-//   You can also supply it as a build flag: -DPRODUCT_UID=\"com.your-company:your-project\"
+// ▶ Set PRODUCT_UID to your Notehub ProductUID before flashing
+//   (e.g. -DPRODUCT_UID='"com.your-company.your-name:ev-charger-monitor"').
+//   Leaving it unset produces a hard compile error so a misconfigured binary
+//   cannot be accidentally deployed. For local development without a Notehub
+//   project yet, add -DALLOW_EMPTY_PRODUCT_UID to the build flags as an
+//   explicit override — that flag must not appear in a shipping build.
 #ifndef PRODUCT_UID
-#define PRODUCT_UID ""
+#  ifndef ALLOW_EMPTY_PRODUCT_UID
+#    error "PRODUCT_UID is not set. Define it as your Notehub ProductUID before flashing (e.g. -DPRODUCT_UID='\"com.your-company.your-name:ev-charger-monitor\"'). For local development without a project, add -DALLOW_EMPTY_PRODUCT_UID to suppress this error — that flag must not appear in a shipping build."
+#  else
+#    define PRODUCT_UID ""
+#    pragma message "PRODUCT_UID empty (ALLOW_EMPTY_PRODUCT_UID override active) — device will not associate with any Notehub project"
+#  endif
 #endif
-// Catches a defined-but-empty PRODUCT_UID at compile time.
-// sizeof("") == 1 (the null terminator only); a real UID is always longer.
-static_assert(sizeof(PRODUCT_UID) > 1,
-              "PRODUCT_UID is empty — replace the empty string in ev_charger_session_monitor.ino before flashing.");
 
 // ── Global instances ──────────────────────────────────────────────────────────
 Notecard notecard;

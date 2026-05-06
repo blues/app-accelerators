@@ -47,7 +47,7 @@ When neither satellite nor cellular is reachable — below-deck stowage, contain
 **Before you start:** You'll need a Notehub account (free at [notehub.io](https://notehub.io)), the hardware from §3, Arduino IDE or `arduino-cli`, and two libraries: Blues Wireless Notecard and SparkFun ATECCX08a Arduino Library. Install via Arduino Library Manager or: `arduino-cli lib install "Blues Wireless Notecard" && arduino-cli lib install "SparkFun ATECCX08a Arduino Library"`.
 
 1. **Create a Notehub project** at [notehub.io](https://notehub.io). Copy its ProductUID and paste into `firmware/container_seal/container_seal.ino` at the `PRODUCT_UID` define (line 23).
-2. **Provision the ATECC608A** (one-time, before first flash): Flash and run `firmware/provision_atecc608a/provision_atecc608a.ino` per [§6.2](#62-provisioning-the-atecc608a); record the public key.
+2. **Provision the ATECC608A** (one-time, before first flash): Flash and run `tools/provision_atecc608a/provision_atecc608a.ino` per [§6.2](#62-provisioning-the-atecc608a); record the public key.
 3. **Flash the main firmware**: `arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=SWAN firmware/container_seal/container_seal.ino` then upload (full command in §6.1).
 4. **Power up and check Notehub Events** for a `_session.qo` event within 60 seconds. **Do not seal and deploy until you see this event** — it delivers the Unix epoch required for correct operation (see §5 step 2).
 5. **Test the sensors**: hold the reed-switch magnet against the sensor, then pull away. A `seal_event.qo` should appear within 60 seconds with non-zero `sig` if ATECC608A is provisioned. Disconnect the break-wire loop — another `seal_event.qo` with `seal_broken:true` should appear on the next wake (≤30 seconds).
@@ -104,7 +104,7 @@ Pin-by-pin:
 4. Thread all four cables through their cable glands before tightening: the cellular antenna lead through gland #1, the Iridium+GPS antenna cable through gland #2, the reed-switch leads through gland #3, and the break-wire loop ends through gland #4. It is very difficult to retrofit cables through glands after termination — thread them first, then terminate.
 5. Solder or terminate the reed switch leads; connect Terminal A to A0, Terminal B to GND.
 6. Terminate the break-wire loop ends; connect Wire End 1 to A1, Wire End 2 to GND. Route the loop through the physical seal body before completing the connection.
-7. **Provision the ATECC608A** (see [§6.2](#62-modules)): flash and run `firmware/provision_atecc608a/provision_atecc608a.ino` to generate the ECC key pair, lock the chip, and extract the public key for your provisioning database. Do this before enclosure sealing — once the enclosure is sealed and deployed, physical access to reprovision is no longer possible.
+7. **Provision the ATECC608A** (see [§6.2](#62-modules)): flash and run `tools/provision_atecc608a/provision_atecc608a.ino` to generate the ECC key pair, lock the chip, and extract the public key for your provisioning database. Do this before enclosure sealing — once the enclosure is sealed and deployed, physical access to reprovision is no longer possible.
 8. Connect the LiPo battery (or Mojo for bench testing).
 9. Tighten all four cable glands; close and latch the enclosure.
 
@@ -251,7 +251,7 @@ After flashing, open the serial monitor at **115200 baud**. On first boot you wi
 
 **ATECC608A provisioning (one-time per device before deployment):**
 
-The ATECC608A requires a one-time provisioning step to generate and lock the ECC P-256 key pair. This must be done before the enclosure is sealed. A dedicated provisioning sketch is provided at [`firmware/provision_atecc608a/provision_atecc608a.ino`](firmware/provision_atecc608a/provision_atecc608a.ino).
+The ATECC608A requires a one-time provisioning step to generate and lock the ECC P-256 key pair. This must be done before the enclosure is sealed. A dedicated provisioning sketch is provided at [`tools/provision_atecc608a/provision_atecc608a.ino`](tools/provision_atecc608a/provision_atecc608a.ino).
 
 Flash and run the provisioning sketch on the Swan **before** flashing the main `container_seal.ino` firmware. The sketch walks through the six steps interactively over the serial monitor (115200 baud), pausing before each irreversible operation and requiring you to type `YES` to confirm:
 

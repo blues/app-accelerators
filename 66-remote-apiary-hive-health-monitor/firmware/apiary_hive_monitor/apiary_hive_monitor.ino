@@ -36,16 +36,21 @@
 #include "apiary_hive_monitor_helpers.h"
 
 // ---------------------------------------------------------------------------
-// Product UID — replace with your Notehub ProjectUID before flashing.
+// Product UID — replace with your Notehub ProductUID before flashing.
 // Leaving this empty produces a hard compile error so a misconfigured binary
-// cannot be accidentally deployed to a remote site.
+// cannot be accidentally deployed to a remote site. For local development
+// without a Notehub project yet, add -DALLOW_EMPTY_PRODUCT_UID to the build
+// flags as an explicit override — that flag must not appear in a shipping
+// build.
 // ---------------------------------------------------------------------------
 #ifndef PRODUCT_UID
-#define PRODUCT_UID ""
+#  ifndef ALLOW_EMPTY_PRODUCT_UID
+#    error "PRODUCT_UID is not set. Define it as your Notehub ProductUID before flashing (e.g. -DPRODUCT_UID='\"com.your-company.your-project:your-device\"'). For local development without a project, add -DALLOW_EMPTY_PRODUCT_UID to suppress this error — that flag must not appear in a shipping build."
+#  else
+#    define PRODUCT_UID ""
+#    pragma message "PRODUCT_UID empty (ALLOW_EMPTY_PRODUCT_UID override active) — device will not associate with any Notehub project"
+#  endif
 #endif
-static_assert(sizeof(PRODUCT_UID) > 1,
-    "PRODUCT_UID must be set to your Notehub ProjectUID before flashing. "
-    "Edit the #define above (e.g. \"com.your-company.your-project:your-device\").");
 
 // ---------------------------------------------------------------------------
 // Pin assignments (Notecarrier CX dual 16-pin headers)

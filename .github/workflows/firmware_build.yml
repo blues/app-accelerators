@@ -58,13 +58,18 @@ jobs:
             "SparkFun ATECC508/ATECC608 ArduinoShield"
 
       - name: Compile every sketch
+        # ALLOW_EMPTY_PRODUCT_UID lets sketches that gate compilation on a
+        # set PRODUCT_UID build with an empty UID for CI validation only.
+        # Production flashes must NOT use this flag.
         run: |
           set -u
           failed=()
           while IFS= read -r ino; do
             sketch_dir=$(dirname "$ino")
             echo "::group::$sketch_dir"
-            if ! arduino-cli compile --warnings none "$sketch_dir"; then
+            if ! arduino-cli compile --warnings none \
+                 --build-property "compiler.cpp.extra_flags=-DALLOW_EMPTY_PRODUCT_UID" \
+                 "$sketch_dir"; then
               failed+=("$sketch_dir")
             fi
             echo "::endgroup::"
