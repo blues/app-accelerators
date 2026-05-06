@@ -48,9 +48,9 @@ When neither satellite nor cellular is reachable — below-deck stowage, contain
 
 **Before you start:** You'll need a Notehub account (free at [notehub.io](https://notehub.io)), the hardware from §3, Arduino IDE or `arduino-cli`, and two libraries: Blues Wireless Notecard and SparkFun ATECCX08a Arduino Library. Install via Arduino Library Manager or: `arduino-cli lib install "Blues Wireless Notecard" && arduino-cli lib install "SparkFun ATECCX08a Arduino Library"`.
 
-1. **Create a Notehub project** at [notehub.io](https://notehub.io). Copy its ProductUID and paste into `firmware/container_seal.ino` at the `PRODUCT_UID` define (line 23).
+1. **Create a Notehub project** at [notehub.io](https://notehub.io). Copy its ProductUID and paste into `firmware/container_seal/container_seal.ino` at the `PRODUCT_UID` define (line 23).
 2. **Provision the ATECC608A** (one-time, before first flash): Flash and run `firmware/provision_atecc608a/provision_atecc608a.ino` per [§6.2](#62-provisioning-the-atecc608a); record the public key.
-3. **Flash the main firmware**: `arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=SWAN firmware/container_seal.ino` then upload (full command in §6.1).
+3. **Flash the main firmware**: `arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=SWAN firmware/container_seal/container_seal.ino` then upload (full command in §6.1).
 4. **Power up and check Notehub Events** for a `_session.qo` event within 60 seconds. **Do not seal and deploy until you see this event** — it delivers the Unix epoch required for correct operation (see §5 step 2).
 5. **Test the sensors**: hold the reed-switch magnet against the sensor, then pull away. A `seal_event.qo` should appear within 60 seconds with non-zero `sig` if ATECC608A is provisioned. Disconnect the break-wire loop — another `seal_event.qo` with `seal_broken:true` should appear on the next wake (≤30 seconds).
 
@@ -118,7 +118,7 @@ Mount the enclosure on the container door latch side, approximately 150 mm from 
 
 ## 5. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) (e.g. `com.your-company.your-name:container-seal`) and paste it into the `PRODUCT_UID` define in `firmware/container_seal.ino`.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) (e.g. `com.your-company.your-name:container-seal`) and paste it into the `PRODUCT_UID` define in `firmware/container_seal/container_seal.ino`.
 
 2. **Provision in port — required before deployment.** Flash and power the device **before** the container is loaded, while it still has cellular coverage. The Notecard will establish its first session and associate itself with your Notehub project automatically — no manual claim step. The device will appear in your project's **Devices** tab. **Do not seal and ship the device until you have confirmed at least one `_session.qo` event in Notehub.** This initial cellular session is a hard deployment requirement — not an optional step — because the host's heartbeat and env-var scheduling logic depends on a real Unix epoch delivered by Notehub time sync. Before that epoch arrives, schedule-based heartbeats are unreliable (see §6.6 for the technical detail). Attempting first-time sync over satellite is slower, costs more data, and should not be relied on as the provisioning path.
 
@@ -203,11 +203,11 @@ Four Notefiles matter for this project:
 ## 6. Firmware Design
 
 Five source files:
-- [`firmware/container_seal.ino`](firmware/container_seal.ino) — main sketch: state management, sleep/wake cycle, GPIO reads, signing calls, scheduling logic.
-- [`firmware/container_seal_notecard.h`](firmware/container_seal_notecard.h) — Notecard helper declarations.
-- [`firmware/container_seal_notecard.cpp`](firmware/container_seal_notecard.cpp) — all Notecard API calls.
-- [`firmware/container_seal_sign.h`](firmware/container_seal_sign.h) — ATECC608A signing declarations, provisioning guide, verification specification.
-- [`firmware/container_seal_sign.cpp`](firmware/container_seal_sign.cpp) — ATECC608A ECDSA signing implementation.
+- [`firmware/container_seal/container_seal.ino`](firmware/container_seal/container_seal.ino) — main sketch: state management, sleep/wake cycle, GPIO reads, signing calls, scheduling logic.
+- [`firmware/container_seal/container_seal_notecard.h`](firmware/container_seal/container_seal_notecard.h) — Notecard helper declarations.
+- [`firmware/container_seal/container_seal_notecard.cpp`](firmware/container_seal/container_seal_notecard.cpp) — all Notecard API calls.
+- [`firmware/container_seal/container_seal_sign.h`](firmware/container_seal/container_seal_sign.h) — ATECC608A signing declarations, provisioning guide, verification specification.
+- [`firmware/container_seal/container_seal_sign.cpp`](firmware/container_seal/container_seal_sign.cpp) — ATECC608A ECDSA signing implementation.
 
 ### 6.1 Installing and flashing
 
@@ -217,7 +217,7 @@ Five source files:
 - **`Blues Wireless Notecard`** library (`note-arduino`) — install via the Arduino Library Manager or `arduino-cli lib install "Blues Wireless Notecard"`. See [note-arduino releases](https://github.com/blues/note-arduino/releases) for the release history.
 - **`SparkFun_ATECCX08a_Arduino_Library`** — install via the Arduino Library Manager (search "SparkFun ATECCX08a") or `arduino-cli lib install "SparkFun ATECCX08a Arduino Library"`. Provides the ATECC608A driver used by `container_seal_sign.cpp` and the provisioning sketch, including the on-chip SHA-256 helper used to hash the canonical event payload before signing.
 
-**Flashing — Arduino IDE:** open `firmware/container_seal.ino`, select the Swan board, hit **Upload**. The Notecarrier XI exposes ST-Link over the same USB cable — no external programmer needed.
+**Flashing — Arduino IDE:** open `firmware/container_seal/container_seal.ino`, select the Swan board, hit **Upload**. The Notecarrier XI exposes ST-Link over the same USB cable — no external programmer needed.
 
 **Flashing — `arduino-cli`:** from the repo root,
 
@@ -226,9 +226,9 @@ Five source files:
 arduino-cli board listall | grep -i swan
 
 # Compile and upload (replace FQBN and port with your values)
-arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=SWAN firmware/container_seal.ino
+arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=SWAN firmware/container_seal/container_seal.ino
 arduino-cli upload  -b STMicroelectronics:stm32:GenL4:pnum=SWAN \
-                    -p /dev/cu.usbmodem* firmware/container_seal.ino
+                    -p /dev/cu.usbmodem* firmware/container_seal/container_seal.ino
 ```
 
 After flashing, open the serial monitor at **115200 baud**. On first boot you will see configuration messages; on subsequent wakes you will see the `[seal]` lines for door checks, heartbeats, and env-var refreshes.
@@ -609,8 +609,8 @@ For supply-chain compliance teams and freight insurers, that log is the differen
 
 ## Appendix: Quickstart
 
-1. **Provision in port — required before deployment.** Create a [Notehub project](https://notehub.io), copy its ProductUID, and paste it into `firmware/container_seal.ino` at the `PRODUCT_UID` define (around line 23). Flash the firmware before the container is loaded. **Do not seal and deploy until you see a `_session.qo` event in Notehub** — this initial Notehub session delivers the Unix time sync the firmware requires for correct heartbeat and env-var scheduling (see §5 step 2 and §6.6).
+1. **Provision in port — required before deployment.** Create a [Notehub project](https://notehub.io), copy its ProductUID, and paste it into `firmware/container_seal/container_seal.ino` at the `PRODUCT_UID` define (around line 23). Flash the firmware before the container is loaded. **Do not seal and deploy until you see a `_session.qo` event in Notehub** — this initial Notehub session delivers the Unix time sync the firmware requires for correct heartbeat and env-var scheduling (see §5 step 2 and §6.6).
 2. **Wire the bench rig.** Notecarrier XI + Blues Swan (seated in Feather socket) + Notecard Cell+WiFi (NOTE-NBGLW, in M.2 slot; included cellular antenna connected) + Starnote for Iridium (included Iridium+GPS antenna connected) + reed switch on A0 + break-wire continuity loop on A1 + ATECC608A Qwiic breakout on I²C + LiPo battery. Full pinout and assembly steps in [§4](#4-wiring-and-assembly). Provision the ATECC608A key slot before first flash — see §6.2 for the six-step provisioning procedure.
-3. **Flash.** `arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=SWAN firmware/container_seal.ino` then upload. Full instructions in [§6.1](#61-installing-and-flashing).
+3. **Flash.** `arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=SWAN firmware/container_seal/container_seal.ino` then upload. Full instructions in [§6.1](#61-installing-and-flashing).
 4. **Verify.** Watch Notehub → **Events** tab. A `_session.qo` should appear within a couple of minutes. A `seal_heartbeat.qo` is created within the first 6 hours and delivered at the next outbound sync (up to 12 hours at default settings — set `outbound_min=60` in the Fleet environment to see it sooner during commissioning). Hold the reed switch magnet against the sensor, then pull it away — a `seal_event.qo` should appear almost immediately with a non-zero `sig` field if the ATECC608A is provisioned. Disconnect the break-wire loop — a second `seal_event.qo` with `seal_broken:true` should appear on the next wake cycle.
 5. **Deploy.** Mount the enclosure on the container door, route both antennas outside the steel, and seal the cargo. All further seal-wire, door-event, and GPS waypoint data flows to Notehub automatically.

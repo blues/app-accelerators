@@ -81,7 +81,7 @@ The `reason` field is `0` (boot), `1` (heartbeat), or `2` (low battery). The `wh
 
 ## 2.5 Quickstart
 
-1. Clone this repo and open `/firmware/tote_pool_tracker.ino` in Arduino IDE.
+1. Clone this repo and open `/firmware/tote_pool_tracker/tote_pool_tracker.ino` in Arduino IDE.
 2. Replace the empty `#define PRODUCT_UID ""` with your Notehub project's ProductUID.
 3. Install the **Arduino Core for STM32** and **Blues Wireless Notecard** library (see [§6.1](#61-installing-and-flashing)).
 4. Select board **Generic STM32L4 series → Cygnet** under **Tools → Board**.
@@ -140,7 +140,7 @@ No external sensors are required for this project — the Notecard's built-in ac
 
 **1. Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:tote-tracker`.
 
-**2. Set the ProductUID in firmware.** Open [`tote_pool_tracker.ino`](firmware/tote_pool_tracker.ino) and replace the empty string on the `#define PRODUCT_UID ""` line (near the top) with your value. Alternatively, pass it as a build flag: `-DPRODUCT_UID=\"com.your-company.your-name:tote-tracker\"`.
+**2. Set the ProductUID in firmware.** Open [`tote_pool_tracker.ino`](firmware/tote_pool_tracker/tote_pool_tracker.ino) and replace the empty string on the `#define PRODUCT_UID ""` line (near the top) with your value. Alternatively, pass it as a build flag: `-DPRODUCT_UID=\"com.your-company.your-name:tote-tracker\"`.
 
 **3. Claim the device.** Power the assembly. On first cellular connect the Notecard associates with your Notehub project automatically — no manual claim step required. The device appears in the **Devices** tab within a minute or two.
 
@@ -171,9 +171,9 @@ The firmware spans three files in the `firmware/` directory — keep all three t
 
 | File | Role |
 |------|------|
-| [`tote_pool_tracker.ino`](firmware/tote_pool_tracker.ino) | Main sketch — `setup()`, `loop()`, global definitions |
-| [`tote_pool_tracker_helpers.h`](firmware/tote_pool_tracker_helpers.h) | Shared types, constants, and `extern` declarations |
-| [`tote_pool_tracker_helpers.cpp`](firmware/tote_pool_tracker_helpers.cpp) | All helper-function implementations |
+| [`tote_pool_tracker.ino`](firmware/tote_pool_tracker/tote_pool_tracker.ino) | Main sketch — `setup()`, `loop()`, global definitions |
+| [`tote_pool_tracker_helpers.h`](firmware/tote_pool_tracker/tote_pool_tracker_helpers.h) | Shared types, constants, and `extern` declarations |
+| [`tote_pool_tracker_helpers.cpp`](firmware/tote_pool_tracker/tote_pool_tracker_helpers.cpp) | All helper-function implementations |
 
 The Arduino toolchain automatically compiles the `.h` and `.cpp` alongside the `.ino` when you open or build the sketch directory.
 
@@ -184,7 +184,7 @@ The Arduino toolchain automatically compiles the `.h` and `.cpp` alongside the `
 - **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**. Select **Generic STM32L4 series → Cygnet** as the board target.
 - **`Blues Wireless Notecard`** library — [`note-arduino`](https://github.com/blues/note-arduino). Install via the Arduino Library Manager (search "Blues Wireless Notecard") or `arduino-cli lib install "Blues Wireless Notecard"`. See the [note-arduino releases page](https://github.com/blues/note-arduino/releases) for the version available when you install.
 
-**Flashing — Arduino IDE:** Open `firmware/tote_pool_tracker.ino`, select the Cygnet board under Tools → Board, and click Upload. The Notecarrier CX presents the ST-Link interface over USB — no external programmer needed.
+**Flashing — Arduino IDE:** Open `firmware/tote_pool_tracker/tote_pool_tracker.ino`, select the Cygnet board under Tools → Board, and click Upload. The Notecarrier CX presents the ST-Link interface over USB — no external programmer needed.
 
 **Flashing — `arduino-cli`:**
 
@@ -201,7 +201,7 @@ arduino-cli upload  -b STMicroelectronics:stm32:GenL4:pnum=CYGNET -p /dev/cu.usb
 
 Replace `/dev/cu.usbmodem*` with the actual port — `COMx` on Windows, `/dev/ttyACM*` on Linux.
 
-After upload, serial output is **disabled by default** — release builds intentionally omit Serial calls to avoid the ~1 mA UART wake-time penalty on a battery-powered device. To enable logging, uncomment `#define DEBUG` in `firmware/tote_pool_tracker_helpers.h` and reflash; then open the serial monitor at **115200 baud** to watch each wake cycle. The host prints a few lines of output on first boot and on each subsequent wake, then goes quiet during sleep — a few seconds of activity per cycle is normal.
+After upload, serial output is **disabled by default** — release builds intentionally omit Serial calls to avoid the ~1 mA UART wake-time penalty on a battery-powered device. To enable logging, uncomment `#define DEBUG` in `firmware/tote_pool_tracker/tote_pool_tracker_helpers.h` and reflash; then open the serial monitor at **115200 baud** to watch each wake cycle. The host prints a few lines of output on first boot and on each subsequent wake, then goes quiet during sleep — a few seconds of activity per cycle is normal.
 
 ### 6.2 Modules
 

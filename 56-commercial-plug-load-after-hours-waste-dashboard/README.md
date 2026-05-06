@@ -123,13 +123,13 @@ Set the Notecarrier CX DIP switch to `HST` to route USB Serial to the onboard Cy
    arduino-cli lib install "Blues Wireless Notecard"
    ```
 
-2. **Set your Notehub ProductUID.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/plug_load_monitor_helpers.h` as `PRODUCT_UID`. (The define lives in the shared header so it is visible to both `.ino` and `.cpp` translation units.)
+2. **Set your Notehub ProductUID.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/plug_load_monitor/plug_load_monitor_helpers.h` as `PRODUCT_UID`. (The define lives in the shared header so it is visible to both `.ino` and `.cpp` translation units.)
 
 3. **Compile and flash.** Connect the Notecarrier CX via USB and set the DIP switch to `HST` (routes USB serial to the host MCU). Flash with:
    ```bash
    arduino-cli compile -b STMicroelectronics:stm32:Nucleo_L433RC_P \
      --build-properties build.extra_flags="-DNOTECARD_USE_SERIAL" \
-     firmware/plug_load_monitor.ino
+     firmware/plug_load_monitor/plug_load_monitor.ino
    ```
    Follow the [stm32duino](https://github.com/stm32duino/Arduino_Core_STM32) upload instructions for your operating system (may require manual bootloader entry; consult the Notecarrier CX datasheet pin-out). Alternatively, use the Arduino IDE: open the sketch, select board `STMicroelectronics → STM32L4 Series → Nucleo L433RC (P)`, compile, and upload.
 
@@ -151,7 +151,7 @@ Set the Notecarrier CX DIP switch to `HST` to route USB Serial to the onboard Cy
    | `idle_threshold_amps` | `0.50` | RMS amps below which a circuit is treated as "off" for active-minute counting. Adjust upward if the leakage floor of a specific circuit generates false activity counts. |
    | `ct_full_scale_amps` | `30.0` | Full-scale primary current of the installed CT model. Override if using a different CT (e.g. `20.0` for a 20 A model). |
 
-   The following variables are only read by the firmware when `PLUG_LOAD_ALERTS` is defined in `firmware/plug_load_monitor_helpers.h` (see §7). They have no effect in the default build.
+   The following variables are only read by the firmware when `PLUG_LOAD_ALERTS` is defined in `firmware/plug_load_monitor/plug_load_monitor_helpers.h` (see §7). They have no effect in the default build.
 
    | Variable | Default | Purpose (`PLUG_LOAD_ALERTS` builds only) |
    |---|---|---|
@@ -169,9 +169,9 @@ Three files in `firmware/`:
 
 | File | Role |
 |---|---|
-| [`plug_load_monitor.ino`](firmware/plug_load_monitor.ino) | Arduino sketch — `setup()` and `loop()`, global variable definitions, sleep/wake orchestration |
-| [`plug_load_monitor_helpers.h`](firmware/plug_load_monitor_helpers.h) | Shared constants, types, `extern` declarations, function prototypes, and feature flags (`PLUG_LOAD_DEBUG`, `PLUG_LOAD_ALERTS`) |
-| [`plug_load_monitor_helpers.cpp`](firmware/plug_load_monitor_helpers.cpp) | All helper implementations — hub config, template registration, env-var fetch, CT measurement, note emission |
+| [`plug_load_monitor.ino`](firmware/plug_load_monitor/plug_load_monitor.ino) | Arduino sketch — `setup()` and `loop()`, global variable definitions, sleep/wake orchestration |
+| [`plug_load_monitor_helpers.h`](firmware/plug_load_monitor/plug_load_monitor_helpers.h) | Shared constants, types, `extern` declarations, function prototypes, and feature flags (`PLUG_LOAD_DEBUG`, `PLUG_LOAD_ALERTS`) |
+| [`plug_load_monitor_helpers.cpp`](firmware/plug_load_monitor/plug_load_monitor_helpers.cpp) | All helper implementations — hub config, template registration, env-var fetch, CT measurement, note emission |
 
 **Dependencies:**
 - Arduino core for STM32 ([`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32)).
@@ -376,7 +376,7 @@ Splice the [Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_
 - The device defaults to a 60-minute reporting window. If powered mid-window, the first note arrives on the next hourly boundary (up to 60 min after power-up). To validate faster, set `report_interval_min=5` in Notehub *before* first power-up, then look for a summary note within 5 minutes of the device appearing in Notehub.
 
 **Summary notes appear with expected values, but alerts (if using `PLUG_LOAD_ALERTS`) never fire.**
-- Confirm `PLUG_LOAD_ALERTS` is uncommented in `firmware/plug_load_monitor_helpers.h` before building.
+- Confirm `PLUG_LOAD_ALERTS` is uncommented in `firmware/plug_load_monitor/plug_load_monitor_helpers.h` before building.
 - Verify the device has successfully claimed in Notehub (proves at least one cellular session). Business-hours evaluation requires valid network time from `card.time`, which only returns a meaningful epoch after the first successful cellular (or WiFi) sync.
 - Confirm `biz_hours_start`, `biz_hours_end`, and `tz_offset_hours` are set correctly in the Fleet environment variables. By default, business hours are 8 AM–6 PM UTC (which is only meaningful if the building is in the UTC timezone).
 

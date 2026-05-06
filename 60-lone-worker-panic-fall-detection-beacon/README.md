@@ -61,7 +61,7 @@ arduino-cli lib install "Blues Wireless Notecard" \
 
 **Step 2: Configure and compile**
 
-1. Open `firmware/lone_worker_beacon.ino` in the Arduino IDE or a text editor.
+1. Open `firmware/lone_worker_beacon/lone_worker_beacon.ino` in the Arduino IDE or a text editor.
 2. In `lone_worker_beacon_helpers.h`, find the line `#define PRODUCT_UID` and replace the placeholder with your Notehub project's ProductUID (from [notehub.io](https://notehub.io) under project settings).
 3. Compile:
 
@@ -144,7 +144,7 @@ The LIS3DH's SDO/SA0 pin sets the I²C address. Leave it unconnected or pulled t
 
 **Detailed walkthrough for first-time users:**
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io). Click **Create a Project** → name it (e.g., "Lone Worker Beacons") → select your region → confirm. Copy the **ProductUID** displayed on the project details card. Paste this into `firmware/lone_worker_beacon_helpers.h` as the `PRODUCT_UID` macro value before flashing.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io). Click **Create a Project** → name it (e.g., "Lone Worker Beacons") → select your region → confirm. Copy the **ProductUID** displayed on the project details card. Paste this into `firmware/lone_worker_beacon/lone_worker_beacon_helpers.h` as the `PRODUCT_UID` macro value before flashing.
 
 2. **Claim the Notecard.** Power the beacon with a Notecard inserted and provisioned SIM. On first cellular or satellite session the Notecard associates with your project automatically. Verify in Notehub: navigate to **Devices** → click on your device's UID — it should appear within 30–90 seconds.
 
@@ -168,9 +168,9 @@ The LIS3DH's SDO/SA0 pin sets the I²C address. Leave it unconnected or pulled t
 ## 6. Firmware Design
 
 Source files (all three live directly under `firmware/`):
-- [`firmware/lone_worker_beacon.ino`](firmware/lone_worker_beacon.ino) — constants, globals, `setup()`, `loop()`.
-- [`firmware/lone_worker_beacon_helpers.h`](firmware/lone_worker_beacon_helpers.h) — shared `#define` constants, `extern` declarations, env-var clamp ranges, function prototypes.
-- [`firmware/lone_worker_beacon_helpers.cpp`](firmware/lone_worker_beacon_helpers.cpp) — all helper function implementations.
+- [`firmware/lone_worker_beacon/lone_worker_beacon.ino`](firmware/lone_worker_beacon/lone_worker_beacon.ino) — constants, globals, `setup()`, `loop()`.
+- [`firmware/lone_worker_beacon/lone_worker_beacon_helpers.h`](firmware/lone_worker_beacon/lone_worker_beacon_helpers.h) — shared `#define` constants, `extern` declarations, env-var clamp ranges, function prototypes.
+- [`firmware/lone_worker_beacon/lone_worker_beacon_helpers.cpp`](firmware/lone_worker_beacon/lone_worker_beacon_helpers.cpp) — all helper function implementations.
 
 **Dependencies:**
 - Arduino core for STM32 ([`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32)) — installed via Arduino IDE Boards Manager.

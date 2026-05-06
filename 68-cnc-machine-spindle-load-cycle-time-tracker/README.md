@@ -36,7 +36,7 @@ Cellular is the answer. A [Blues Wireless for OPTA](https://shop.blues.com/produ
 
 ## 2.5 Quickstart
 
-1. **Flash the Arduino OPTA** with `firmware/cnc_spindle_tracker.ino` (requires Arduino IDE + Mbed OS Opta Boards core).
+1. **Flash the Arduino OPTA** with `firmware/cnc_spindle_tracker/cnc_spindle_tracker.ino` (requires Arduino IDE + Mbed OS Opta Boards core).
 2. **Get ProductUID** from [notehub.io](https://notehub.io), paste it into the sketch, reflash.
 3. **Wire**: Cat6 from OPTA RJ45 → CNC Modbus TCP port (default `192.168.250.1:502`). Cellular antenna through panel door.
 4. **Power**: 24 VDC to OPTA. Notecard auto-claims to your Notehub project on first cellular session (≈5 min).
@@ -76,7 +76,7 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ## 5. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/cnc_spindle_tracker.ino` (line 18, uncomment the `#define PRODUCT_UID` and insert your UID).
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/cnc_spindle_tracker/cnc_spindle_tracker.ino` (line 18, uncomment the `#define PRODUCT_UID` and insert your UID).
 
 2. **Claim the device.** Flash the OPTA and power the panel. On first cellular session the Notecard associates with your project automatically. Check Notehub **Fleet > Devices** within 5–10 minutes to confirm the device appears.
 
@@ -124,9 +124,9 @@ arduino-cli core install arduino:mbed_opta
 # Install dependencies
 arduino-cli lib install "Blues Wireless Notecard" "ArduinoModbus" "ArduinoRS485"
 
-# Edit firmware/cnc_spindle_tracker.ino — uncomment line 18 and paste your ProductUID
-# Edit firmware/cnc_spindle_tracker.ino line 40 — set LOCAL_IP to match your Modbus subnet
-# Edit firmware/cnc_spindle_tracker_helpers.cpp line ~30 — set _DEFAULT_CNC_IP to your CNC controller IP
+# Edit firmware/cnc_spindle_tracker/cnc_spindle_tracker.ino — uncomment line 18 and paste your ProductUID
+# Edit firmware/cnc_spindle_tracker/cnc_spindle_tracker.ino line 40 — set LOCAL_IP to match your Modbus subnet
+# Edit firmware/cnc_spindle_tracker/cnc_spindle_tracker_helpers.cpp line ~30 — set _DEFAULT_CNC_IP to your CNC controller IP
 
 # Compile
 arduino-cli compile -b arduino:mbed_opta:opta firmware/
@@ -138,7 +138,7 @@ arduino-cli upload -b arduino:mbed_opta:opta -p /dev/cu.usbmodem1234567 firmware
 arduino-cli monitor -p /dev/cu.usbmodem1234567 -c baudrate=115200
 ```
 
-**Alternatively, using the Arduino IDE:** Open `firmware/cnc_spindle_tracker.ino`, configure your ProductUID and IPs, select Tools > Board > Arduino OPTA, and click Upload.
+**Alternatively, using the Arduino IDE:** Open `firmware/cnc_spindle_tracker/cnc_spindle_tracker.ino`, configure your ProductUID and IPs, select Tools > Board > Arduino OPTA, and click Upload.
 
 ## Firmware Architecture
 
@@ -146,9 +146,9 @@ Three files in the `firmware/` directory:
 
 | File | Role |
 |---|---|
-| [`cnc_spindle_tracker.ino`](firmware/cnc_spindle_tracker.ino) | Main sketch: `setup()`, `loop()`, sample accumulation, alert evaluation, and all global state definitions. |
-| [`cnc_spindle_tracker_helpers.h`](firmware/cnc_spindle_tracker_helpers.h) | Shared types (`Config`, `Sample`, `WindowStats`), compile-time defaults, `extern` declarations for globals, and helper-function prototypes. |
-| [`cnc_spindle_tracker_helpers.cpp`](firmware/cnc_spindle_tracker_helpers.cpp) | Notecard and Modbus helper implementations: `notecardConfigure()`, `defineTemplates()`, `fetchEnvOverrides()`, `modbusConnect()`, `pollCnc()`, `sendSummary()`, `sendAlarm()`, `sendOperatorChange()`, `resetWindow()`. |
+| [`cnc_spindle_tracker.ino`](firmware/cnc_spindle_tracker/cnc_spindle_tracker.ino) | Main sketch: `setup()`, `loop()`, sample accumulation, alert evaluation, and all global state definitions. |
+| [`cnc_spindle_tracker_helpers.h`](firmware/cnc_spindle_tracker/cnc_spindle_tracker_helpers.h) | Shared types (`Config`, `Sample`, `WindowStats`), compile-time defaults, `extern` declarations for globals, and helper-function prototypes. |
+| [`cnc_spindle_tracker_helpers.cpp`](firmware/cnc_spindle_tracker/cnc_spindle_tracker_helpers.cpp) | Notecard and Modbus helper implementations: `notecardConfigure()`, `defineTemplates()`, `fetchEnvOverrides()`, `modbusConnect()`, `pollCnc()`, `sendSummary()`, `sendAlarm()`, `sendOperatorChange()`, `resetWindow()`. |
 
 ### Modules
 

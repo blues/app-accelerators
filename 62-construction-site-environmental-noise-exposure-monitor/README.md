@@ -32,7 +32,7 @@ This project is a solar-powered cellular **area monitor** — a fixed, perimeter
 
 ## 2.5 Quickstart
 
-1. **Clone and configure**: Download this repo and open `firmware/construction_env_monitor.ino`. Replace `PRODUCT_UID` constant with your Notehub project UID (see §5 step 1).
+1. **Clone and configure**: Download this repo and open `firmware/construction_env_monitor/construction_env_monitor.ino`. Replace `PRODUCT_UID` constant with your Notehub project UID (see §5 step 1).
 2. **Build and flash**: Use Arduino IDE or `arduino-cli`:
    ```bash
    arduino-cli compile --fqbn STMicroelectronics:stm32:GenL0 firmware/
@@ -135,7 +135,7 @@ The Hammond 1554CGY enclosure is ABS plastic, which is RF-transparent — cellul
   - `Blues Wireless Notecard`: `arduino-cli lib install "Blues Wireless Notecard"`
   - `Adafruit PM25 AQI Sensor`: `arduino-cli lib install "Adafruit PM25 AQI Sensor"`
 
-**Using Arduino IDE:** Open `firmware/construction_env_monitor.ino`, select board `STMicroelectronics → STM32L → Notecarrier CX`, update `PRODUCT_UID`, and click Upload.
+**Using Arduino IDE:** Open `firmware/construction_env_monitor/construction_env_monitor.ino`, select board `STMicroelectronics → STM32L → Notecarrier CX`, update `PRODUCT_UID`, and click Upload.
 
 **Using `arduino-cli`:**
 ```bash
@@ -146,9 +146,9 @@ arduino-cli upload -p /dev/ttyUSB0 --fqbn STMicroelectronics:stm32:GenL0 firmwar
 
 ### Source Files
 
-- [`construction_env_monitor.ino`](firmware/construction_env_monitor.ino) — global state definitions, `setup()`, `loop()`
-- [`construction_env_monitor_helpers.h`](firmware/construction_env_monitor_helpers.h) — shared constants, `AppState` struct, extern declarations, function prototypes
-- [`construction_env_monitor_helpers.cpp`](firmware/construction_env_monitor_helpers.cpp) — sensor helpers, Notecard config helpers, note-send helpers
+- [`construction_env_monitor.ino`](firmware/construction_env_monitor/construction_env_monitor.ino) — global state definitions, `setup()`, `loop()`
+- [`construction_env_monitor_helpers.h`](firmware/construction_env_monitor/construction_env_monitor_helpers.h) — shared constants, `AppState` struct, extern declarations, function prototypes
+- [`construction_env_monitor_helpers.cpp`](firmware/construction_env_monitor/construction_env_monitor_helpers.cpp) — sensor helpers, Notecard config helpers, note-send helpers
 
 ### Modules
 

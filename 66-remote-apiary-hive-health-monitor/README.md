@@ -34,7 +34,7 @@ This project is the remote set of eyes and ears that a beekeeper wants but canno
 
 ## 2.5 Quickstart
 
-1. **Flash the firmware.** Open `firmware/apiary_hive_monitor.ino` in Arduino IDE. Install dependencies: Blues Wireless Notecard, HX711 Arduino Library, Adafruit SHT31 (all via Library Manager). Replace `PRODUCT_UID` with your [Notehub](https://notehub.io) ProjectUID. Build with `arduino-cli compile --fqbn arduino:stm32:Notecarrier_CX_STM32 firmware/apiary_hive_monitor.ino` and upload.
+1. **Flash the firmware.** Open `firmware/apiary_hive_monitor/apiary_hive_monitor.ino` in Arduino IDE. Install dependencies: Blues Wireless Notecard, HX711 Arduino Library, Adafruit SHT31 (all via Library Manager). Replace `PRODUCT_UID` with your [Notehub](https://notehub.io) ProjectUID. Build with `arduino-cli compile --fqbn arduino:stm32:Notecarrier_CX_STM32 firmware/apiary_hive_monitor/apiary_hive_monitor.ino` and upload.
 
 2. **Wire sensors.** Connect HX711 (D5, D6), SHT31-D (SDA, SCL), and MAX9814 (A0) to Notecarrier CX per §4. Assemble Starnote in separate IP65 enclosure with clear lid.
 
@@ -163,7 +163,7 @@ The SHT31-D address defaults to 0x44; it coexists on the I2C bus with the Noteca
 
 ## 5. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/apiary_hive_monitor.ino` as `PRODUCT_UID`.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/apiary_hive_monitor/apiary_hive_monitor.ino` as `PRODUCT_UID`.
 
 2. **Claim the Notecard.** Power up the unit at a location with cellular coverage. The Notecard associates with your project on its first cellular sync. This initial sync is also essential for Starnote: it registers the device, downloads the current satellite ephemeris, and sets device time — all required before NTN transmissions will succeed. See the [satellite best practices guide](https://dev.blues.io/starnote/satellite-best-practices/).
 
@@ -193,11 +193,11 @@ The SHT31-D address defaults to 0x44; it coexists on the I2C bus with the Noteca
 
 The firmware is split across three source files — all three are required to build and must live in the same directory:
 
-- [`firmware/apiary_hive_monitor.ino`](firmware/apiary_hive_monitor.ino) — main sketch; wakeup sequencing, accumulation, alert evaluation, and sleep.
-- [`firmware/apiary_hive_monitor_helpers.h`](firmware/apiary_hive_monitor_helpers.h) — shared `HiveState` struct, extern declarations, and function prototypes.
-- [`firmware/apiary_hive_monitor_helpers.cpp`](firmware/apiary_hive_monitor_helpers.cpp) — sensor drivers, Notecard helper functions, and summary/alert emission.
+- [`firmware/apiary_hive_monitor/apiary_hive_monitor.ino`](firmware/apiary_hive_monitor/apiary_hive_monitor.ino) — main sketch; wakeup sequencing, accumulation, alert evaluation, and sleep.
+- [`firmware/apiary_hive_monitor/apiary_hive_monitor_helpers.h`](firmware/apiary_hive_monitor/apiary_hive_monitor_helpers.h) — shared `HiveState` struct, extern declarations, and function prototypes.
+- [`firmware/apiary_hive_monitor/apiary_hive_monitor_helpers.cpp`](firmware/apiary_hive_monitor/apiary_hive_monitor_helpers.cpp) — sensor drivers, Notecard helper functions, and summary/alert emission.
 
-To open in Arduino IDE: **File → Open** and navigate to `firmware/apiary_hive_monitor.ino`. The IDE will pick up the helper files automatically because they share the same directory.
+To open in Arduino IDE: **File → Open** and navigate to `firmware/apiary_hive_monitor/apiary_hive_monitor.ino`. The IDE will pick up the helper files automatically because they share the same directory.
 
 **Dependencies:**
 

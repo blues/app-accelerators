@@ -103,7 +103,7 @@ Route the cable from the cover to the enclosure box on the adjacent wall and ent
 
 ## 5. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/grease_interceptor_monitor.ino` as `PRODUCT_UID`.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/grease_interceptor_monitor/grease_interceptor_monitor.ino` as `PRODUCT_UID`.
 2. **Claim the Notecard.** Power the unit; on first cellular connection the Notecard auto-associates with your project.
 3. **Create a Fleet per pumping route.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) are how Notehub groups devices for shared configuration and routing. A natural fit here is one fleet per service route — all interceptors on the same truck route likely share similar sizes and fill cadences, so fleet-level [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) can encode route-wide defaults and you override on a per-device basis for unusual installations. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) can be used to auto-assign devices based on FSE metadata tags.
 4. **Set environment variables.** All variables below are optional; firmware defaults are shown. Any value set in Notehub overrides the compile-time default on the device's next inbound sync — no re-flashing required.
@@ -144,9 +144,9 @@ Firmware files:
 
 | File | Purpose |
 |---|---|
-| [`grease_interceptor_monitor.ino`](firmware/grease_interceptor_monitor.ino) | Main sketch: `setup()` / `loop()`, Notecard configuration, env-var fetch, alert/summary scheduling, sleep |
-| [`grease_interceptor_monitor_helpers.h`](firmware/grease_interceptor_monitor_helpers.h) | Shared constants (`SENSOR_BAUD`, `NUM_READINGS`, …), `State` struct definition, utility-function declarations |
-| [`grease_interceptor_monitor_helpers.cpp`](firmware/grease_interceptor_monitor_helpers.cpp) | Utility-function implementations: sensor read, median filter, distance-to-fill, Notecard response helpers, note emission |
+| [`grease_interceptor_monitor.ino`](firmware/grease_interceptor_monitor/grease_interceptor_monitor.ino) | Main sketch: `setup()` / `loop()`, Notecard configuration, env-var fetch, alert/summary scheduling, sleep |
+| [`grease_interceptor_monitor_helpers.h`](firmware/grease_interceptor_monitor/grease_interceptor_monitor_helpers.h) | Shared constants (`SENSOR_BAUD`, `NUM_READINGS`, …), `State` struct definition, utility-function declarations |
+| [`grease_interceptor_monitor_helpers.cpp`](firmware/grease_interceptor_monitor/grease_interceptor_monitor_helpers.cpp) | Utility-function implementations: sensor read, median filter, distance-to-fill, Notecard response helpers, note emission |
 
 Dependencies:
 - Arduino core for STM32 ([`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32)).
