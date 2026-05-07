@@ -2,7 +2,7 @@
 
 <Note>
 
-This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Propane%20%2F%20LPG%20Tank%20Fill%20Telemetry%20%E2%80%94%204%E2%80%9320%20mA%20Float-Transmitter%20Variant).
 
 </Note>
 

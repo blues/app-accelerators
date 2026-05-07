@@ -2,7 +2,7 @@
 
 <Note>
 
-This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/contact-sales/).
+This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Remote%20Cabinet%20Backup%20Battery%20Sentinel%20%E2%80%94%20Pack-Level%2012%20V%20%2F%2024%20V%20Battery%20Monitor).
 
 </Note>
 
