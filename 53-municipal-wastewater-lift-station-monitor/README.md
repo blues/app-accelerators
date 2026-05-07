@@ -70,9 +70,9 @@ The Starnote uses the same Notecard API as the MBGLW, but the satellite link has
 4. **Check Notehub Devices** — your Notecard appears within 60 seconds. Click it to see `lift_alert.qo` and `lift_summary.qo` events in the Events panel.
 5. **Tune thresholds** — in the Fleet panel, set environment variables (e.g., `high_level_pct: 50.0`) and watch the serial log show the updated values on the next wake.
 
-For bench-only testing, use compile-time flags to inject synthetic sensor values (see [Bench fault simulation](#bench-fault-simulation) in Section 8).
+For bench-only testing, use compile-time flags to inject synthetic sensor values (see "Bench fault simulation" below in Section 8).
 
-Two connectivity SKUs cover the full deployment spectrum. Stations within LTE coverage use a **Notecard Cell+WiFi (MBGLW)**. Truly rural stations beyond reliable cellular reach use a **[Starnote](https://shop.blues.com/products/starnote?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)** ([datasheet](https://dev.blues.io/datasheets/starnote/starnote-for-skylo/)), which routes telemetry over the Skylo satellite network. The firmware is identical for both variants; Notehub configuration is shared, though satellite deployments benefit from wider inbound sync intervals to conserve bundled satellite data — see [Satellite-specific considerations](#satellite-specific-considerations-option-b--starnote) in Section 2.
+Two connectivity SKUs cover the full deployment spectrum. Stations within LTE coverage use a **Notecard Cell+WiFi (MBGLW)**. Truly rural stations beyond reliable cellular reach use a **[Starnote](https://shop.blues.com/products/starnote?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)** ([datasheet](https://dev.blues.io/datasheets/starnote/starnote-for-skylo/)), which routes telemetry over the Skylo satellite network. The firmware is identical for both variants; Notehub configuration is shared, though satellite deployments benefit from wider inbound sync intervals to conserve bundled satellite data — see [Satellite-specific considerations](#satellite-specific-considerations-option-b-starnote) in Section 2.
 
 Here is a sample Note this device emits:
 
@@ -115,7 +115,7 @@ Here is a sample Note this device emits:
 
 **Option A (MBGLW):** Ships with an active global SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
-**Option B (Starnote):** Ships with 10 KB of bundled Skylo satellite data; no satellite provider subscription, monthly minimums, or activation fees apply. Additional data is billed per byte (see the [Starnote for Skylo datasheet](https://dev.blues.io/datasheets/starnote/starnote-for-skylo/) for current pricing). Minimizing inbound sync frequency conserves the bundled allocation — see [Section 2](#satellite-specific-considerations-option-b--starnote) for guidance.
+**Option B (Starnote):** Ships with 10 KB of bundled Skylo satellite data; no satellite provider subscription, monthly minimums, or activation fees apply. Additional data is billed per byte (see the [Starnote for Skylo datasheet](https://dev.blues.io/datasheets/starnote/starnote-for-skylo/) for current pricing). Minimizing inbound sync frequency conserves the bundled allocation — see [Section 2](#satellite-specific-considerations-option-b-starnote) for guidance.
 
 ## 5. Wiring and Assembly
 

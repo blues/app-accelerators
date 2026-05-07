@@ -40,10 +40,10 @@ Vibration-based hour detection solves the retrofit problem entirely. A small enc
 
 
 1. Create a [Notehub project](https://notehub.io) and copy your ProductUID.
-2. Wire the bench: Notecarrier CX + NOTE-NBGLWX + LSM6DSOX on I2C (see [§6](#5-wiring-and-assembly) for pinout).
+2. Wire the bench: Notecarrier CX + NOTE-NBGLWX + LSM6DSOX on I2C (see [§5](#5-wiring-and-assembly) for pinout).
 3. Edit `firmware/equipment_hours_tracker/equipment_hours_tracker_helpers.h` — replace the empty `#define PRODUCT_UID ""` with your project value (format: `com.your-company.your-name:tracker`).
 4. Install board core: `arduino-cli core install STMicroelectronics:stm32 --additional-urls https://raw.githubusercontent.com/stm32duino/BoardManagerFiles/main/STM32/package_stm_index.json`
-5. Compile and upload (see [§8.1](#71-installing-and-flashing) for full `arduino-cli` commands with your port).
+5. Compile and upload (see [§7.1](#71-installing-and-flashing) for full `arduino-cli` commands with your port).
 6. Open serial monitor at **115200 baud**. You should see `[BOOT] Cold boot` or `[VIB]` log lines every 30 seconds.
 7. Power the device. Open Notehub → your project → **Events** tab. You should see `_session.qo` within ~1 minute on cellular (longer on satellite depending on sky view). Tap the enclosure to trigger vibration; state-change events appear in `equip_event.qo`.
 
@@ -477,14 +477,14 @@ If the baseline is continuously 10+ mA, the Cygnet is not sleeping — confirm t
 | Symptom | Likely Cause | Solution |
 |---------|--------------|----------|
 | Serial monitor shows no output after upload | Board not selected correctly, or USB driver missing | Verify **Generic STM32L4 → Cygnet** is selected in Arduino IDE; on Windows, install [ST-Link drivers](https://www.st.com/en/development-tools/stsw-link009.html). |
-| `[IMU] Not found` message | Accelerometer not powered or miswired | Check I2C connections (SDA, SCL, +3V3, GND) and verify LSM6DSOX is recognized by `Wire.scan()`. See [§6](#5-wiring-and-assembly). |
+| `[IMU] Not found` message | Accelerometer not powered or miswired | Check I2C connections (SDA, SCL, +3V3, GND) and verify LSM6DSOX is recognized by `Wire.scan()`. See [§5](#5-wiring-and-assembly). |
 | No `_session.qo` appearing in Notehub after several minutes | PRODUCT_UID mismatch, missing antenna, or no cellular/NTN coverage | Verify `PRODUCT_UID` matches the value you created in Notehub (copy-paste from Notehub → your project settings). Confirm MAIN antenna is mounted outside with unobstructed sky view; check the Notecard LED activity — it should flash briefly during sync attempts. If satellite, allow 5+ minutes for Skylo session establishment depending on sky visibility. |
 | Classifier always outputs `IDLE` even when tapping | Thresholds too high | Lower `vib_run_mg` to 10.0 (via Notehub Fleet → Environment); wait for next inbound sync (~8 hours) or manually trigger a device fetch. |
 | Classifier falsely triggers `RUNNING` during idle periods | Thresholds too low | Raise `vib_run_mg` to 20.0 and lower `vib_cv_max` to 0.30. |
-| `ATTN → EN` jumper error or baseline current 5–10 mA (not sleeping) | Jumper not installed or miswired | Verify the jumper physically connects `ATTN` and `EN` pins on the Notecarrier CX header (see [§6](#5-wiring-and-assembly), "ATTN → EN jumper" line). Measure with a multimeter to confirm continuity. Without it, the host runs continuously and the power budget collapses. |
+| `ATTN → EN` jumper error or baseline current 5–10 mA (not sleeping) | Jumper not installed or miswired | Verify the jumper physically connects `ATTN` and `EN` pins on the Notecarrier CX header (see [§5](#5-wiring-and-assembly), "ATTN → EN jumper" line). Measure with a multimeter to confirm continuity. Without it, the host runs continuously and the power budget collapses. |
 | Battery voltage in `equip_summary.qo` declining over days | Solar input inadequate | Check that the 6V solar panel is receiving adequate direct sunlight (≥3 effective sun-hours per day in temperate climates). If deployment is shaded or at high latitude in winter, upgrade to a 2–5 W panel. Use a DC meter inline on the solar cable to confirm actual harvest. |
 | Duplicate `equip_event.qo` notes in Notehub | I2C acknowledgement lost after Notecard accepted note | This is an edge case by design (at-least-once delivery). Downstream routes should dedup by `epoch` + `event` pair (the note's timestamp and event type are unique per transition). |
-| Arduino-cli reports "board not found" or FQBN error | Core not installed or board name wrong | Run `arduino-cli core list` to confirm STMicroelectronics:stm32 is installed. If not, run the full `core install` command from [§8.1](#71-installing-and-flashing). Verify the FQBN is `STMicroelectronics:stm32:GenL4:pnum=CYGNET` (case-sensitive). |
+| Arduino-cli reports "board not found" or FQBN error | Core not installed or board name wrong | Run `arduino-cli core list` to confirm STMicroelectronics:stm32 is installed. If not, run the full `core install` command from [§7.1](#71-installing-and-flashing). Verify the FQBN is `STMicroelectronics:stm32:GenL4:pnum=CYGNET` (case-sensitive). |
 
 ---
 
@@ -535,12 +535,12 @@ For rental companies the data pipeline is clear: any `equip_event.qo` with `sess
 
 ## Appendix: Quickstart at a Glance
 
-For a complete step-by-step walkthrough, start at the top of this README under [Quickstart (under 10 minutes)](#quickstart-under-10-minutes). Below is a summary checklist:
+For a complete step-by-step walkthrough, start at the top of this README under [Quickstart (under 10 minutes)](#3-technical-summary). Below is a summary checklist:
 
 1. **Notehub** — create a [Notehub project](https://notehub.io) and copy the ProductUID.
-2. **Wire the bench rig** — Notecarrier CX + Notecard for Skylo + Adafruit LSM6DSOX on I2C + Blues Mojo inline on the power rail (optional for first-light; useful for the power-validation workflow in [§12](#9-validation-and-testing)). Full pinout in [§6](#5-wiring-and-assembly).
+2. **Wire the bench rig** — Notecarrier CX + Notecard for Skylo + Adafruit LSM6DSOX on I2C + Blues Mojo inline on the power rail (optional for first-light; useful for the power-validation workflow in [§9](#9-validation-and-testing)). Full pinout in [§5](#5-wiring-and-assembly).
 3. **Edit one line** in [`firmware/equipment_hours_tracker/equipment_hours_tracker_helpers.h`](firmware/equipment_hours_tracker/equipment_hours_tracker_helpers.h) — set `PRODUCT_UID` to your project value.
 4. **Install core** (one-time) — `arduino-cli core install STMicroelectronics:stm32 --additional-urls https://raw.githubusercontent.com/stm32duino/BoardManagerFiles/main/STM32/package_stm_index.json`
-5. **Flash** — `arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/equipment_hours_tracker/` then upload. Details in [§8.1](#71-installing-and-flashing).
+5. **Flash** — `arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/equipment_hours_tracker/` then upload. Details in [§7.1](#71-installing-and-flashing).
 6. **Watch serial** — open at 115200 baud; you should see `[BOOT]` or `[VIB]` output every 30 seconds.
 7. **Watch Notehub** — open Notehub → your project → **Events**. You should see `_session.qo` within about a minute on cellular, or when NTN service is available and the MAIN antenna has adequate sky view when operating off-cellular — Skylo NTN session establishment is not pass-timed; latency varies with sky visibility and signal conditions. Tap the enclosure to trigger a vibration reading; state-change events appear in `equip_event.qo`.

@@ -44,7 +44,7 @@ If you want the fastest path from "parts on the bench" to "first event in Notehu
 4. **Flash** — `arduino-cli compile -b STMicroelectronics:stm32:Cygnet` then `arduino-cli upload`. Full instructions in [§7.1](#71-installing-and-flashing).
 5. **Watch** — open Notehub → your project → **Events** tab. You should see a `_session.qo` immediately, an `rtu_summary.qo` within an hour, and any threshold trips as `rtu_alert.qo` in real time.
 
-The rest of this README expands each step and explains why the firmware is shaped the way it is. If you're doing a real rooftop install rather than a bench bring-up, also read [§12 Limitations](#12-limitations-and-next-steps) before you commit to a power topology.
+The rest of this README expands each step and explains why the firmware is shaped the way it is. If you're doing a real rooftop install rather than a bench bring-up, also read [§11 Limitations](#11-limitations-and-next-steps) before you commit to a power topology.
 
 Here is a sample Note this device emits:
 
@@ -66,7 +66,7 @@ Here is a sample Note this device emits:
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an embedded Cygnet STM32 host — no separate MCU needed for this sensor mix. |
 | [Notecard Cell+WiFi (MBGLW)](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) / [datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) | 1 | Cellular removes per-site IT involvement; WiFi fallback is available for sites that happen to have it. |
-| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) *(optional, bench-only)* | 0–1 | Coulomb counter on the power rail for ground-truth energy validation during bench bring-up. **Not required for production deployment** — see [§9](#9-validation-and-testing) and [§12](#12-limitations-and-next-steps). |
+| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) *(optional, bench-only)* | 0–1 | Coulomb counter on the power rail for ground-truth energy validation during bench bring-up. **Not required for production deployment** — see [§9](#9-validation-and-testing) and [§11](#11-limitations-and-next-steps). |
 | 10 kΩ NTC thermistor, β=3950, waterproof duct probe | 2 | Duct-mount supply and return air temperature for cooling delta-T. |
 | 10 kΩ 1% resistor (divider series leg) | 2 | Pull-up for each thermistor divider. |
 | SCT-013-030 split-core CT, 30A / 1V AC (e.g. [SparkFun SEN-11005](https://www.sparkfun.com/products/11005)) | 1 | Non-invasive compressor current sensing; 30A matches single-phase light-commercial RTU compressors. |
@@ -75,7 +75,7 @@ Here is a sample Note this device emits:
 | 10 µF electrolytic capacitor | 1 | Bias-circuit decoupling. |
 | [Sensirion SDP810-125Pa](https://sensirion.com/products/catalog/SDP810-125Pa) differential-pressure sensor | 1 | I²C DP sensor across the filter; a continuous reading trends *toward* clogging, unlike a binary DP switch that only tells you once you're already there. |
 | ¼″ silicone tubing, ~2 ft | 1 | Taps the SDP810 across the filter frame. |
-| AC/DC supply, 5V/2A output (e.g. [MeanWell IRM-03-5](https://www.meanwell.com/Upload/PDF/IRM-03/IRM-03-SPEC.PDF)) | 1 | Derives 5V DC from 120VAC line power at the RTU service disconnect for permanent grid-tied power. See [Limitations](#9-limitations-and-next-steps) for the 24VAC-input alternative. |
+| AC/DC supply, 5V/2A output (e.g. [MeanWell IRM-03-5](https://www.meanwell.com/Upload/PDF/IRM-03/IRM-03-SPEC.PDF)) | 1 | Derives 5V DC from 120VAC line power at the RTU service disconnect for permanent grid-tied power. See [Limitations](#11-limitations-and-next-steps) for the 24VAC-input alternative. |
 | NEMA 4X enclosure, ~6×4×2″ | 1 | Rooftop-rated housing. |
 
 All Blues parts ship with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.

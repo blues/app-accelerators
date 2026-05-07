@@ -42,7 +42,7 @@ The Notecard manages its own cellular session against the supported carrier netw
 ## 3. Technical Summary
 
 1. **Notehub** — create a [Notehub project](https://notehub.io) and copy the ProductUID.
-2. **Wire the bench rig** — Notecarrier CX + Notecard MBGLW + INA228 on Qwiic + NTC divider on A0 + LiPo on JST. Full pinout in [§5](#4-wiring-and-assembly).
+2. **Wire the bench rig** — Notecarrier CX + Notecard MBGLW + INA228 on Qwiic + NTC divider on A0 + LiPo on JST. Full pinout in [§5](#5-wiring-and-assembly).
 3. **Edit one line** — set `PRODUCT_UID` in [`firmware/cabinet_battery_sentinel/cabinet_battery_sentinel_helpers.h`](firmware/cabinet_battery_sentinel/cabinet_battery_sentinel_helpers.h).
 4. **Flash via CLI:**
    ```bash

@@ -58,9 +58,9 @@ The Notecard manages its own cellular and satellite sessions against the support
 **What you'll have when you're done:** A solar-powered trailer or chassis tracker that reports motion-triggered departure/arrival events and position updates to Notehub over LTE-M (primary) or Iridium LEO satellite (automatic fallback). No tractor hookup, no site IT, global pole-to-pole coverage.
 
 1. **Notehub** — create a [Notehub project](https://notehub.io) and copy its ProductUID.
-2. **Wire the bench rig** — Notecarrier XI + Swan + cellular Notecard + Starnote for Iridium + solar chain; full pinout in [§6.1](#51-notecarrier-xi--swan).
+2. **Wire the bench rig** — Notecarrier XI + Swan + cellular Notecard + Starnote for Iridium + solar chain; full pinout in [§5.1](#51-notecarrier-xi-swan).
 3. **Edit one line** of [`firmware/trailer_fleet_tracker_starnote/trailer_fleet_tracker_starnote_helpers.h`](firmware/trailer_fleet_tracker_starnote/trailer_fleet_tracker_starnote_helpers.h) — set `PRODUCT_UID` to your Notehub project's ProductUID (in Notehub: **Project Settings → ProductUID**).
-4. **Flash** via Arduino IDE or `arduino-cli` (see [§8.1](#71-dependencies-and-flashing)).
+4. **Flash** via Arduino IDE or `arduino-cli` (see [§7.1](#71-dependencies-and-flashing)).
 5. **Watch** — open Notehub → **Events** tab. You should see a `_session.qo` within a few minutes of power-on — this confirms the first cellular session and clock sync. The firmware then queues a `trailer_heartbeat.qo` locally on the next parked-check wake (~5 min in). Because heartbeat notes are **not** marked `sync:true`, they wait for the next scheduled outbound sync window rather than transmitting immediately: **~60 minutes** at a full battery (`voutbound high:60`) or **~120 minutes** at nominal charge (`voutbound normal:120`). Budget **1–2 hours from first power-on** before the first heartbeat appears in Notehub.
 
 ---
@@ -142,7 +142,7 @@ The Mojo sits inline between the LiPo and the Notecarrier XI +VBAT screw termina
 
 **Power chain — field deployment (Mojo removed):**
 
-After bench bring-up is complete (see [§12](#9-validation-and-testing)), remove the Mojo before sealing the enclosure:
+After bench bring-up is complete (see [§9](#9-validation-and-testing)), remove the Mojo before sealing the enclosure:
 
 1. Solar panel → **Sunny Buddy** SOLAR IN (unchanged).
 2. **LiPo battery** → **Sunny Buddy** LIPO terminal (unchanged).
@@ -297,7 +297,7 @@ Motion detection is handled by the Notecard's built-in accelerometer, configured
 
 GPS mode is managed explicitly by the state machine rather than relying on the Notecard's implicit periodic-mode motion-gating — which is documented only for the Notecard's own GPS module and not guaranteed for the Starnote for Iridium's combined GPS hardware path. On first boot, `notecardConfigure()` issues [`card.location.mode {"mode":"off"}`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-location-mode) because the unit always enters parked state. On each PARKED→MOVING departure the firmware issues `card.location.mode {"mode":"periodic", "seconds":<moving_ping_secs>}` to start GPS acquisition; on each MOVING→PARKED arrival it issues `card.location.mode {"mode":"off"}` to shut the GPS module down for the parked dwell. This explicit toggling guarantees the GPS module never runs while the trailer sits parked, regardless of how the Starnote for Iridium's combined GPS hardware interacts with the Notecard on this path. On this hardware GPS is provided by the Starnote for Iridium's combined Iridium+GPS antenna; the standard `card.location` API returns the fix transparently.
 
-If the `moving_ping_mins` environment variable is later changed in Notehub, `fetchEnvOverrides()` stores the new `moving_ping_secs` value immediately. If the trailer is currently MOVING it also re-issues `card.location.mode {"mode":"periodic"}` with the updated `seconds` field right away; if parked, the new period is applied automatically on the next PARKED→MOVING departure. The most recent fix is embedded into location and heartbeat Notes via the compact template's `_lat` / `_lon` keywords; transition event Notes use explicit `lat`/`lon`/`evt_time` fields captured at transition detection time (see [§8.4](#74-event-payload-design)).
+If the `moving_ping_mins` environment variable is later changed in Notehub, `fetchEnvOverrides()` stores the new `moving_ping_secs` value immediately. If the trailer is currently MOVING it also re-issues `card.location.mode {"mode":"periodic"}` with the updated `seconds` field right away; if parked, the new period is applied automatically on the next PARKED→MOVING departure. The most recent fix is embedded into location and heartbeat Notes via the compact template's `_lat` / `_lon` keywords; transition event Notes use explicit `lat`/`lon`/`evt_time` fields captured at transition detection time (see [§7.4](#74-event-payload-design)).
 
 **GPS fix validity gating.** Before queuing any note that embeds location data, the firmware calls `hasValidGnssFix()`, which issues `card.location` and checks whether the Notecard reports a non-zero lat/lon with no error. `card.location` returns the last cached fix regardless of the current GPS mode (periodic or off) — no additional GPS-on time is incurred by this check. This prevents freshly installed units — where GPS has never acquired a fix — from emitting notes with silently-zeroed coordinates.
 
@@ -421,7 +421,7 @@ NotePayloadSaveAndSleep(&out, sleep_secs, NULL);
 
 ### 7.10 Key code snippet 4: motion-triggered state transition
 
-Every departure starts with a `card.motion` query. The dwell time is calculated from the stored `parked_since` epoch and attached to the Note so fleet managers can measure detention without any external tracking. `captureGnssState()` is called once on the wake where the transition is detected — its result is stored in the `PendingEvent` FIFO and passed through to every `note.add` attempt so retried events always carry the original detection-time location and timestamp. See [§8.3](#73-motion-and-gps-strategy) for the discussion of GPS freshness on departures after long parked dwells.
+Every departure starts with a `card.motion` query. The dwell time is calculated from the stored `parked_since` epoch and attached to the Note so fleet managers can measure detention without any external tracking. `captureGnssState()` is called once on the wake where the transition is detected — its result is stored in the `PendingEvent` FIFO and passed through to every `note.add` attempt so retried events always carry the original detection-time location and timestamp. See [§7.3](#73-motion-and-gps-strategy) for the discussion of GPS freshness on departures after long parked dwells.
 
 ```cpp
 J *rsp = notecard.requestAndResponse(notecard.newRequest("card.motion"));
@@ -491,7 +491,7 @@ A trailer that has already been running and is sitting on the yard with a charge
 
 After a hookup, departure, run, and drop, you should see two `trailer_event.qo` events (one departed, one arrived) plus a series of `trailer_location.qo` events spaced 15 minutes apart for the duration of the trip.
 
-**Bench validation with Mojo.** The Blues [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) is a precision coulomb counter that sits inline between the LiPo and the Notecarrier XI +VBAT pad. It reports cumulative mAh to the Notecard over Qwiic at 1% accuracy. See [§6.1](#51-notecarrier-xi--swan) for the inline placement instructions.
+**Bench validation with Mojo.** The Blues [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) is a precision coulomb counter that sits inline between the LiPo and the Notecarrier XI +VBAT pad. It reports cumulative mAh to the Notecard over Qwiic at 1% accuracy. See [§5.1](#51-notecarrier-xi-swan) for the inline placement instructions.
 
 **Expected current draw** (from [Notecard low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/), the NOTE-WBEX datasheet, and the Iridium 9603N module datasheet):
 
