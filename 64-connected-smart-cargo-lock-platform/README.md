@@ -20,11 +20,11 @@ The underlying challenge isn't mechanical; modern locks are strong. The challeng
 
 - **Pre-certified global cellular** (LTE-M, NB-IoT, GPRS) with a bundled SIM and 500 MB of data — no per-country carrier contracts, no activation fees, works identically in North America, Europe, and beyond.
 - **Skylo satellite failover** — when the lock drops off cellular coverage entirely (mid-ocean crossing, remote intermodal depot, rural cross-border corridor with no cellular infrastructure), the Notecard automatically routes through the Skylo **NTN** (non-terrestrial network) satellite constellation, provided the MAIN antenna has a usable view of the sky. Satellite cannot help inside steel containers or under heavy structural obstructions — those are GNSS-denied environments, not just cellular-denied ones. From firmware, the failover is completely transparent: the same `note.add` calls land in Notehub regardless of which radio carried them.
-- **Low-power discipline** — the Notecard's idle current is measured in microamps, and its `card.attn` sleep mechanism cuts host power entirely between wakes — including the SS461A hall sensor and pull-up resistors on the host-gated +3V3 rail. A lock that wakes every `SAMPLE_INTERVAL_SEC` (default 60 s), checks sensors, and syncs once every six hours draws substantially less energy under cellular-dominant operation than under satellite-dominant operation — the four scheduled outbound sessions per day (default 6-hour cadence) cost very different amounts depending on which radio carries them. See the [power budget discussion in §6](#low-power-strategy) for documented current envelopes and an example calculation. Multi-month battery life on a 5,000 mAh pack (on the order of ~5 months under the assumptions in §6) is achievable in cellular-dominant operation; satellite-heavy deployments significantly reduce projected endurance. Use [Mojo](#8-validation-and-testing) measurements in your target deployment environment to establish a ground-truth figure before committing to a cell size.
+- **Low-power discipline** — the Notecard's idle current is measured in microamps, and its `card.attn` sleep mechanism cuts host power entirely between wakes — including the SS461A hall sensor and pull-up resistors on the host-gated +3V3 rail. A lock that wakes every `SAMPLE_INTERVAL_SEC` (default 60 s), checks sensors, and syncs once every six hours draws substantially less energy under cellular-dominant operation than under satellite-dominant operation — the four scheduled outbound sessions per day (default 6-hour cadence) cost very different amounts depending on which radio carries them. See the [power budget discussion in §6](#low-power-strategy) for documented current envelopes and an example calculation. Multi-month battery life on a 5,000 mAh pack (on the order of ~5 months under the assumptions in §6) is achievable in cellular-dominant operation; satellite-heavy deployments significantly reduce projected endurance. Use [Mojo](#9-validation-and-testing) measurements in your target deployment environment to establish a ground-truth figure before committing to a cell size.
 
 **Deployment scenario.** A weatherproof polycarbonate enclosure integrated into the lock body, powered from a rechargeable Li-Po cell. The included Skylo-certified MAIN antenna mounts inside the RF-transparent polycarbonate enclosure lid, facing skyward — no external pigtail or cable gland required for the antenna. The enclosure is oriented so the lid faces skyward when the lock is deployed. No wired power, no SIM provisioning, no site-specific configuration. A fleet manager assigns locks to loads in Notehub before dispatch; thresholds and check-in cadence are adjusted per-fleet via environment variables without touching the firmware.
 
-**What this POC does not include.** Optional BLE short-range key authentication — letting a driver's phone cryptographically authorize a legitimate unlock — is intentionally out of scope for this reference platform. It requires an external UART BLE module, a challenge/response crypto library, and a provisioning workflow that go beyond the firmware size target for this example. It is deferred as a production extension; see [Limitations](#9-limitations-and-next-steps).
+**What this POC does not include.** Optional BLE short-range key authentication — letting a driver's phone cryptographically authorize a legitimate unlock — is intentionally out of scope for this reference platform. It requires an external UART BLE module, a challenge/response crypto library, and a provisioning workflow that go beyond the firmware size target for this example. It is deferred as a production extension; see [Limitations](#11-limitations-and-next-steps).
 
 ## 2. System Architecture
 
@@ -38,11 +38,11 @@ The underlying challenge isn't mechanical; modern locks are strong. The challeng
 
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
 
-## 2.5 Quickstart
+## 3. Technical Summary
 
 **Get your first lock online in 20 minutes:**
 
-1. **Assemble.** Wire the reed switch to D5 and SS461A hall sensor to D6 per [§4](#4-wiring-and-assembly). Seat the Notecard for Skylo in the M.2 slot. Connect the 5000 mAh LiPo.
+1. **Assemble.** Wire the reed switch to D5 and SS461A hall sensor to D6 per [§5](#5-wiring-and-assembly). Seat the Notecard for Skylo in the M.2 slot. Connect the 5000 mAh LiPo.
 2. **Claim the ProductUID.** Go to [notehub.io](https://notehub.io), create a project, and copy the ProductUID. Paste it into `firmware/cargo_lock/cargo_lock.ino` line 46 as `PRODUCT_UID`.
 3. **Flash.** In Arduino IDE: File → Open → `firmware/cargo_lock/` → under **Tools → Board → STMicroelectronics STM32 → Blues**, select **Cygnet (Notecarrier CX)** → Upload. Or via `arduino-cli` (the FQBN below matches `firmware/cargo_lock/sketch.yaml`, so omitting `--fqbn` also works when invoked from the sketch directory):
    ```bash
@@ -54,11 +54,28 @@ The underlying challenge isn't mechanical; modern locks are strong. The challeng
    ```
    Manually open the shackle or retract the bolt — the next wake should show the new state. Within 15–60 seconds (cellular) or 2–5 minutes (satellite), a `lock_event.qo` note appears in your Notehub project's event log.
 
-**What you'll have when you're done:** A lock that wakes every 60 seconds, reads its sensors, emits an immediate alert if opened or tampered with, and sends a 6-hourly status heartbeat. One Notehub project with two Notefiles (`lock_event.qo` for immediate alerts, `lock_status.qo` for audit logs). Multi-month (~5 months at the assumptions in [§6](#low-power-strategy)) battery life on a 5,000 mAh cell under cellular-dominant operation — validate with Mojo before sizing for production.
+**What you'll have when you're done:** A lock that wakes every 60 seconds, reads its sensors, emits an immediate alert if opened or tampered with, and sends a 6-hourly status heartbeat. One Notehub project with two Notefiles (`lock_event.qo` for immediate alerts, `lock_status.qo` for audit logs). Multi-month (~5 months at the assumptions in [§7](#7-low-power-strategy)) battery life on a 5,000 mAh cell under cellular-dominant operation — validate with Mojo before sizing for production.
 
-## 3. Hardware Requirements
+Here is a sample Note this device emits:
 
-> **BLE not included.** This BOM covers cellular+satellite lock monitoring only. A BLE radio for driver-phone key authentication is intentionally omitted from this POC; see [Limitations](#9-limitations-and-next-steps) for the production path.
+```json
+{
+  "file": "lock_event.qo",
+  "body": {
+    "event": "tamper",
+    "shackle": 1,
+    "bolt": 1,
+    "locked": 1,
+    "motion": 14,
+    "locked_for": 86400
+  },
+  "sync": true
+}
+```
+
+## 4. Hardware Requirements
+
+> **BLE not included.** This BOM covers cellular+satellite lock monitoring only. A BLE radio for driver-phone key authentication is intentionally omitted from this POC; see [Limitations](#11-limitations-and-next-steps) for the production path.
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
@@ -76,7 +93,7 @@ The underlying challenge isn't mechanical; modern locks are strong. The challeng
 
 All Blues hardware ships with an active SIM, 500 MB of cellular data, and 10 years of service — no activation fees, no monthly commitment.
 
-## 4. Wiring and Assembly
+## 5. Wiring and Assembly
 
 ![Wiring: reed switch to D5 and SS461A hall to D6 (both INPUT_PULLUP on host-gated +3V3); MAIN antenna to u.FL for cellular + satellite; Notecard accelerometer is internal; LiPo 5000 mAh → Mojo (bench) → +VBAT](diagrams/02-wiring-assembly.svg)
 
@@ -84,7 +101,7 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
 
 **Pin-by-pin:**
 
-- **+3V3** → top of each 10 kΩ pull-up resistor (for D5 and D6), and SS461A VCC with 100 nF bypass cap to GND. **This is the ATTN-gated host rail.** The Notecarrier CX routes the Notecard's ATTN signal to the Cygnet power enable; when `NotePayloadSaveAndSleep` issues its sleep request, this rail is removed entirely for the sleep period — the SS461A (~4–8 mA quiescent at 3.3 V) and pull-up resistors draw zero standby current between wakes. Verify the rail is being cut as expected with Mojo as described in [§8](#8-validation-and-testing).
+- **+3V3** → top of each 10 kΩ pull-up resistor (for D5 and D6), and SS461A VCC with 100 nF bypass cap to GND. **This is the ATTN-gated host rail.** The Notecarrier CX routes the Notecard's ATTN signal to the Cygnet power enable; when `NotePayloadSaveAndSleep` issues its sleep request, this rail is removed entirely for the sleep period — the SS461A (~4–8 mA quiescent at 3.3 V) and pull-up resistors draw zero standby current between wakes. Verify the rail is being cut as expected with Mojo as described in [§8](#9-validation-and-testing).
 - **GND** → reed switch return terminal, SS461A GND pin, bypass capacitor ground.
 - **D5** → junction of the 10 kΩ pull-up and one terminal of the reed switch. Other terminal of the reed switch to GND. Active-LOW: LOW = shackle magnet present = shackle seated.
 - **D6** → junction of the 10 kΩ pull-up and the SS461A output pin. Active-LOW: LOW = south-pole bolt magnet detected = bolt engaged.
@@ -110,9 +127,9 @@ The NOTE-NBGLWX exposes a `MAIN` u.FL connector for cellular and Skylo satellite
 
 For lock-body integration, mount the included antenna flush against the inside face of the polycarbonate (Hammond 1554C2GY) enclosure lid. Polycarbonate is RF-transparent, so the antenna operates effectively through the enclosure wall with no cable gland, external pigtail, or weatherproof feed-through required for the antenna itself. When deploying the lock, orient the enclosure lid to face skyward (for example, mounting the lock body so the lid faces up along a container rail or door hasp). The MAIN antenna **must have a clear view of the sky** for Skylo satellite operation — the Skylo GEO satellites sit above the equator, so in the northern hemisphere, a south-skyward orientation maximizes link margin. Satellite signals cannot penetrate steel, concrete, or dense structural materials; an antenna inside a steel lock body or a sealed metal container will not reach the Skylo constellation.
 
-The NOTE-NBGLWX also has a `GPS` u.FL port; GNSS location tracking is a recommended production extension — see [Limitations](#9-limitations-and-next-steps).
+The NOTE-NBGLWX also has a `GPS` u.FL port; GNSS location tracking is a recommended production extension — see [Limitations](#11-limitations-and-next-steps).
 
-## 5. Notehub Setup
+## 6. Notehub Setup
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/cargo_lock/cargo_lock.ino` line 46 as `PRODUCT_UID`.
 
@@ -171,7 +188,7 @@ Every 6 hours, a `lock_status.qo` summary arrives with the audit heartbeat:
 }
 ```
 
-## 6. Firmware Design
+## 7. Firmware Design
 
 The sketch lives in [`firmware/cargo_lock/`](firmware/cargo_lock/), split across three files: [`cargo_lock.ino`](firmware/cargo_lock/cargo_lock.ino) (entry point — `setup()`, `loop()`, user-facing constants), [`cargo_lock_helpers.h`](firmware/cargo_lock/cargo_lock_helpers.h) (enums, `PersistState` struct, function prototypes), and [`cargo_lock_helpers.cpp`](firmware/cargo_lock/cargo_lock_helpers.cpp) (Notecard config, env-var handling, sensor reads, state machine). Open the `firmware/cargo_lock/` folder in the Arduino IDE or point `arduino-cli` at it.
 
@@ -197,7 +214,7 @@ The sketch lives in [`firmware/cargo_lock/`](firmware/cargo_lock/), split across
 
 - **Reed switch.** Single `digitalRead` with `INPUT_PULLUP` — no averaging needed; the switch is either open or closed. The normally-closed configuration means any break (shackle removal, wire cut, magnet degaussed) reads as an open, which is the fail-safe direction.
 - **Hall-effect.** Single `digitalRead` with `INPUT_PULLUP`. The SS461A's built-in switching hysteresis prevents chatter at the engagement threshold. A 100 nF bypass cap on VCC suppresses the switching transient.
-- **Tamper accelerometer.** `card.motion` with `minutes:1` returns the aggregate motion event count from the Notecard's built-in accelerometer over the last ~1-minute bucket. The firmware enables motion detection via `card.motion.mode` with `start:true`; the Notecard accumulates motion events internally while the host sleeps — the host reads the bucket total on each wake, with no real-time interrupt wiring required. At the default 60-second wake interval, every wake reads a fresh 1-minute bucket — tamper coverage is continuous and there is no unobserved gap. Increasing `sample_interval_sec` above 60 via a Notehub environment variable extends battery life but reintroduces a proportional blind window: a 120 s interval leaves ~50% of each wake period unobserved, and a 300 s interval leaves ~80% unobserved. See [Limitations](#9-limitations-and-next-steps) for further discussion.
+- **Tamper accelerometer.** `card.motion` with `minutes:1` returns the aggregate motion event count from the Notecard's built-in accelerometer over the last ~1-minute bucket. The firmware enables motion detection via `card.motion.mode` with `start:true`; the Notecard accumulates motion events internally while the host sleeps — the host reads the bucket total on each wake, with no real-time interrupt wiring required. At the default 60-second wake interval, every wake reads a fresh 1-minute bucket — tamper coverage is continuous and there is no unobserved gap. Increasing `sample_interval_sec` above 60 via a Notehub environment variable extends battery life but reintroduces a proportional blind window: a 120 s interval leaves ~50% of each wake period unobserved, and a 300 s interval leaves ~80% unobserved. See [Limitations](#11-limitations-and-next-steps) for further discussion.
 
 ### Event payload design
 
@@ -264,9 +281,9 @@ With a 5,000 mAh cell, this projects to roughly **~150 days (~5 months)** of bat
 
 Radio sessions dominate the daily energy budget and vary sharply by path. Cellular and satellite sessions are not energy-equivalent; a deployment that depends heavily on the satellite path will have proportionally shorter battery life than one that stays predominantly on cellular.
 
-Operators needing extended battery life can increase `sample_interval_sec` to 300 (5 min) via the Notehub environment variable — this reduces host-wake energy by ~5× at the cost of a ~4-minute tamper blind window per interval (see [Limitations](#9-limitations-and-next-steps)). For extended satellite-only legs (weeks at sea), increase `report_interval_min` to `1440` (once-daily outbound) to reduce the scheduled session count from four to one per day, improving endurance significantly.
+Operators needing extended battery life can increase `sample_interval_sec` to 300 (5 min) via the Notehub environment variable — this reduces host-wake energy by ~5× at the cost of a ~4-minute tamper blind window per interval (see [Limitations](#11-limitations-and-next-steps)). For extended satellite-only legs (weeks at sea), increase `report_interval_min` to `1440` (once-daily outbound) to reduce the scheduled session count from four to one per day, improving endurance significantly.
 
-**Use Mojo bench measurements** in your specific deployment environment to establish a ground-truth figure before committing to a cell size. The standby current between wakes should reflect only the Notecard's idle current (~8 µA) — not the SS461A's ~4–8 mA quiescent draw. If you see continuous milliamp-level drain between sensor wakes, the +3V3 rail may not be gated by ATTN as expected — confirm that the SS461A VCC and pull-up top rails are wired to the ATTN-gated +3V3 pin rather than an always-on supply, and see [§8](#8-validation-and-testing) for the full Mojo validation procedure.
+**Use Mojo bench measurements** in your specific deployment environment to establish a ground-truth figure before committing to a cell size. The standby current between wakes should reflect only the Notecard's idle current (~8 µA) — not the SS461A's ~4–8 mA quiescent draw. If you see continuous milliamp-level drain between sensor wakes, the +3V3 rail may not be gated by ATTN as expected — confirm that the SS461A VCC and pull-up top rails are wired to the ATTN-gated +3V3 pin rather than an always-on supply, and see [§8](#9-validation-and-testing) for the full Mojo validation procedure.
 
 ### Retry and error handling
 
@@ -274,7 +291,7 @@ Operators needing extended battery life can increase `sample_interval_sec` to 30
 - `fetchEnvOverrides` checks `notecard.responseError(rsp)` before trusting the response body. A failed env fetch silently keeps the in-memory defaults rather than crashing.
 - If `notecardEpoch()` returns 0 (Notecard hasn't synced time yet), `runSampleCycle()` sets `epoch_valid = false` and continues evaluating sensor transitions and tamper detection normally — so a shackle removal or high-motion event at first power-up in poor-coverage conditions is never silently dropped. Epoch-dependent math is skipped: `locked_for` is reported as 0, cooldown comparisons are bypassed (accepting that tamper may fire on every qualifying wake until epoch is known), and `locked_since_epoch` is not set until a valid timestamp is available. The `uint32_t` underflow risk from subtracting a nonzero persisted epoch from a zero `now_epoch` is eliminated because no subtraction runs when `epoch_valid` is false. The summary window is initialized on the first wake with a valid epoch rather than in `setup()`.
 - Alert deduplication via `ALERT_COOLDOWN_SEC` prevents the same event type from firing more than once per window — one `tamper` alert per 30 minutes per lock is enough for a dispatch operator to act on.
-- A capacity-1 **pending event record** in `PersistState` captures any state-transition note (`"opened"` or `"locked"`) that fails to queue. On the next wake, `runSampleCycle()` flushes the pending record *before* processing new transitions — so a failed `"opened"` note is not silently lost even if the lock physically relocks before the retry succeeds. On successful retry, `reported_lock_state` is advanced to the state implied by the pending event, allowing the delivery-gap detector to correctly identify any subsequent transition that also needs to be delivered. Tamper events are excluded from the pending record: because `last_alert_tamper_epoch` is only advanced on a successful send, a failed tamper note is naturally re-evaluated on the next qualifying wake through the normal cooldown path. See [Limitations](#9-limitations-and-next-steps) for the capacity-1 edge case.
+- A capacity-1 **pending event record** in `PersistState` captures any state-transition note (`"opened"` or `"locked"`) that fails to queue. On the next wake, `runSampleCycle()` flushes the pending record *before* processing new transitions — so a failed `"opened"` note is not silently lost even if the lock physically relocks before the retry succeeds. On successful retry, `reported_lock_state` is advanced to the state implied by the pending event, allowing the delivery-gap detector to correctly identify any subsequent transition that also needs to be delivered. Tamper events are excluded from the pending record: because `last_alert_tamper_epoch` is only advanced on a successful send, a failed tamper note is naturally re-evaluated on the next qualifying wake through the normal cooldown path. See [Limitations](#11-limitations-and-next-steps) for the capacity-1 edge case.
 
 ### Key code snippet 1 — template definition (both Notefiles)
 
@@ -327,7 +344,7 @@ NotePayloadAddSegment(&payload, STATE_SEG_ID, &state, sizeof(state));
 NotePayloadSaveAndSleep(&payload, SAMPLE_INTERVAL_SEC, NULL);
 ```
 
-## 7. Data Flow
+## 8. Data Flow
 
 ![Data flow: 60-s sample of reed/hall/motion → state machine evaluates two transitions plus tamper rule → lock_event.qo (sync:true) and lock_status.qo (every 6 h audit beat) → Notehub routes](diagrams/03-data-flow.svg)
 
@@ -346,7 +363,7 @@ Every `SAMPLE_INTERVAL_SEC` (default 60 s), the firmware reads three sensors, ev
 
 **Routed.** Notehub fans `lock_event.qo` to a real-time channel (TMS, dispatch platform, on-call system) and `lock_status.qo` to a long-term store or audit database. On the satellite path, the Notecard automatically uses Skylo NTN when cellular is unavailable — from Notehub's perspective, a satellite-delivered note arrives in the same event stream as a cellular one.
 
-## 8. Validation and Testing
+## 9. Validation and Testing
 
 **Expected steady-state cadence.** A correctly secured lock in transit generates one `lock_status.qo` note every 6 hours and zero `lock_event.qo` notes. If you see no notes at all for 12+ hours, check Notehub's device page for last-connect time — the Notecard logs its last session and the result. A satellite session takes 2–5 minutes to establish from cold; if the device just powered up in a no-cellular environment, the first note may be delayed.
 
@@ -371,7 +388,7 @@ The [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) connects inline betw
 
 Once you have a confirmed Mojo average for your specific deployment (cellular vs. satellite mix, event rate), divide the measured cell capacity by the confirmed daily draw to project endurance; factor in ~20–30% capacity reduction at -20°C for cold-chain or northern-winter deployments.
 
-## 8a. Troubleshooting
+## 10. Troubleshooting
 
 | Symptom | Cause | Solution |
 |---------|-------|----------|
@@ -383,7 +400,7 @@ Once you have a confirmed Mojo average for your specific deployment (cellular vs
 | Mojo shows 4–8 mA baseline between wakes instead of ~8 µA | +3V3 rail (SS461A, pull-ups) not gated by ATTN | Verify the SS461A VCC and pull-up top rails are wired to the ATTN-gated +3V3 pin (see [§4](#4-wiring-and-assembly)) and not to an always-on rail. |
 | Device repeatedly logs the same state without changing | State machine stuck or sensor is chattering | Check that the reed switch and hall-effect sensor are not being triggered by extraneous fields or vibration. Mount them away from the Notecard (which has a strong internal antenna). Use a 100 nF bypass cap on the SS461A VCC (required by datasheet) to suppress switching noise. |
 
-## 9. Limitations and Next Steps
+## 11. Limitations and Next Steps
 
 **Simplified for the POC:**
 
@@ -406,7 +423,7 @@ Once you have a confirmed Mojo average for your specific deployment (cellular vs
 - Field-upgradeable firmware via [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) — essential for a lock fleet where physical access for firmware updates is impractical once locks are deployed.
 - Per-satellite-path suppression of status summaries via an env var, to preserve the 10 KB satellite data bundle for event-only reporting on ocean-crossing legs.
 
-## 10. Summary
+## 12. Summary
 
 Cargo theft is a detection problem masquerading as a security problem. A modern lock is strong enough — what it lacks is the ability to raise an alarm when someone has been grinding on it for two hours, or to confirm that the container that left Rotterdam is still sealed when it arrives in Newark. This reference platform closes that gap with two digital sensors, the Notecard's onboard accelerometer, a 60-second duty cycle, and a single module that provides global cellular plus satellite failover without a carrier contract.
 

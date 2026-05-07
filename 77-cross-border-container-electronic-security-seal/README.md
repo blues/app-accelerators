@@ -6,10 +6,10 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-A tamper-evident electronic security seal for [supply chain tracking](https://blues.com/solutions-supply-chain-tracking/) of international containerized cargo. The device watches the container door and a separate break-wire seal-continuity loop, logs every breach, re-seal, and seal-cut event with a hardware-signed cryptographic record, and reports back to the cloud over cellular in port and Iridium LEO satellite at sea — including the trans-oceanic and polar routes where geostationary networks have no coverage. Every event payload is signed by a hardware secure element whose private key never leaves the device, giving forensic chain-of-custody auditors a record that cannot be forged in transit. The hardware is a Notecarrier XI with a Blues Swan host, a Notecard Cell+WiFi, a Starnote for Iridium, and an ATECC608A secure element on Qwiic I²C (see §3 for the BOM).
-
+A tamper-evident electronic security seal for [supply chain tracking](https://blues.com/solutions-supply-chain-tracking/) of international containerized cargo. The device watches the container door and a separate break-wire seal-continuity loop, logs every breach, re-seal, and seal-cut event with a hardware-signed cryptographic record, and reports back to the cloud over cellular in port and Iridium LEO satellite at sea — including the trans-oceanic and polar routes where geostationary networks have no coverage. Every event payload is signed by a hardware secure element whose private key never leaves the device, giving forensic chain-of-custody auditors a record that cannot be forged in transit. The hardware is a Notecarrier XI with a Blues Swan host, a Notecard Cell+WiFi, a Starnote for Iridium, and an ATECC608A secure element on Qwiic I²C (see §4 for the BOM).
 
 ## 1. Project Overview
+
 
 **The problem.** An international container shipment touches dozens of parties: the shipper, the freight forwarder, the inland trucker, the port terminal, the ocean carrier, the customs broker, the destination trucker, and the consignee — and that's a short list. At each handoff, the container's physical integrity changes hands along with the paperwork, but the *proof* of that integrity does not. Seals are broken, reapplied, and sometimes falsified. Disputes over who opened a container, and when, are common and expensive. Regulators and industry standards bodies — CBP, EU customs, C-TPAT, ISO 17712 — are driving increasing audit and compliance pressure, and operators increasingly want electronic, time-stamped records that can demonstrate container integrity across every handoff. Paper logbooks and passive bolt seals cannot produce that record on demand.
 
@@ -27,6 +27,7 @@ To be concrete about the two capabilities that make this possible: **planetary c
 
 ## 2. System Architecture
 
+
 ![System architecture: reed switch (A0) and break-wire loop (A1) → Notecarrier XI (Swan host) + Notecard Cell+WiFi + Starnote for Iridium + ATECC608A on Qwiic I²C → cellular / Iridium LEO → Notehub → routes](diagrams/01-system-architecture.svg)
 
 **Device-side responsibilities.** The Blues Swan STM32 host on the Notecarrier XI is the application MCU. It wakes every 30 seconds (configurable via environment variable) and reads two sensors: the door-state reed switch on GPIO A0 and the break-wire seal-continuity loop on GPIO A1. If either sensor has changed state since the last wake, the host signs the event payload using the ATECC608A (a hardware secure element on the shared I²C bus) and builds a `seal_event.qo` [Note](https://dev.blues.io/api-reference/glossary/#note) with `sync:true` and the ECDSA `sig` field; a companion `seal_sig_full.qo` note carrying the full 64-byte signature is also queued for cellular delivery. A seal-wire break fires independently of door state, so a cut-and-replaced seal before door opening produces its own timestamped, signed record. Periodically — every six hours by default — the host signs and builds a `seal_heartbeat.qo` Note with the current door state, seal-wire state, battery voltage, and `sig`; the Notecard's GPS fix populates the location fields automatically via the compact template's `_lat`/`_lon` reserved fields. Audit-gap indicator notes (chain-of-custody gap markers) are unsigned — they carry no verifiable event payload. Between wakes the host is fully powered off via [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn), drawing essentially zero current from the battery rail.
@@ -42,19 +43,42 @@ When neither satellite nor cellular is reachable — below-deck stowage, contain
 ---
 
 
-## 2.5 Quickstart
+## 3. Technical Summary
 
-**Before you start:** You'll need a Notehub account (free at [notehub.io](https://notehub.io)), the hardware from §3, Arduino IDE or `arduino-cli`, and two libraries: Blues Wireless Notecard and SparkFun ATECCX08a Arduino Library. Install via Arduino Library Manager or: `arduino-cli lib install "Blues Wireless Notecard" && arduino-cli lib install "SparkFun ATECCX08a Arduino Library"`.
+
+**Before you start:** You'll need a Notehub account (free at [notehub.io](https://notehub.io)), the hardware from §4, Arduino IDE or `arduino-cli`, and two libraries: Blues Wireless Notecard and SparkFun ATECCX08a Arduino Library. Install via Arduino Library Manager or: `arduino-cli lib install "Blues Wireless Notecard" && arduino-cli lib install "SparkFun ATECCX08a Arduino Library"`.
 
 1. **Create a Notehub project** at [notehub.io](https://notehub.io). Copy its ProductUID and paste into `firmware/container_seal/container_seal.ino` at the `PRODUCT_UID` define (line 23).
-2. **Provision the ATECC608A** (one-time, before first flash): Flash and run `tools/provision_atecc608a/provision_atecc608a.ino` per [§6.2](#62-provisioning-the-atecc608a); record the public key.
-3. **Flash the main firmware**: `arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=SWAN firmware/container_seal/container_seal.ino` then upload (full command in §6.1).
-4. **Power up and check Notehub Events** for a `_session.qo` event within 60 seconds. **Do not seal and deploy until you see this event** — it delivers the Unix epoch required for correct operation (see §5 step 2).
+2. **Provision the ATECC608A** (one-time, before first flash): Flash and run `tools/provision_atecc608a/provision_atecc608a.ino` per [§8.2](#72-provisioning-the-atecc608a); record the public key.
+3. **Flash the main firmware**: `arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=SWAN firmware/container_seal/container_seal.ino` then upload (full command in §7.1).
+4. **Power up and check Notehub Events** for a `_session.qo` event within 60 seconds. **Do not seal and deploy until you see this event** — it delivers the Unix epoch required for correct operation (see §6 step 2).
 5. **Test the sensors**: hold the reed-switch magnet against the sensor, then pull away. A `seal_event.qo` should appear within 60 seconds with non-zero `sig` if ATECC608A is provisioned. Disconnect the break-wire loop — another `seal_event.qo` with `seal_broken:true` should appear on the next wake (≤30 seconds).
 
-For a complete walkthrough, see [§4 Wiring and Assembly](#4-wiring-and-assembly), [§5 Notehub Setup](#5-notehub-setup), and [§6 Firmware](#6-firmware).
+For a complete walkthrough, see [§5 Wiring and Assembly](#5-wiring-and-assembly), [§6 Notehub Setup](#6-notehub-setup), and [§7 Firmware](#6-firmware).
 
-## 3. Hardware Requirements
+Here is a sample Note this device emits:
+
+```json
+{
+  "event": "abc123...",
+  "when": 1718789100,
+  "best_lat": 1.3521,
+  "best_lon": 103.8198,
+  "file": "seal_event.qo",
+  "body": {
+    "open": true,
+    "breaches": 3,
+    "batt_v": 3.91,
+    "event_time": 1718789073,
+    "event_lat": 1.3518,
+    "event_lon": 103.8198,
+    "sig": 3054832791
+  }
+}
+```
+
+## 4. Hardware Requirements
+
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
@@ -62,11 +86,11 @@ For a complete walkthrough, see [§4 Wiring and Assembly](#4-wiring-and-assembly
 | [Notecarrier XI](https://shop.blues.com/products/notecarrier-xi?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-xi/)) | 1 | Carrier board designed for the Notecard + Starnote for Iridium combination. Provides Feather socket for Swan, M.2 slot for the Notecard, mounting for the Starnote, JST-PH LiPo battery connector, Qwiic I²C connector, and ATTN pin wiring for host power-gating during deep sleep. |
 | [Notecard Cell+WiFi (NOTE-NBGLW)](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglw/)) | 1 | Global narrowband cellular (LTE-M, NB-IoT, GPRS) plus WiFi and onboard GPS/GNSS in a single M.2 module. Planetary roaming SIM included — no per-country SIM management. Includes a cellular antenna. When the Starnote for Iridium is paired on the same carrier board, the Notecard automatically falls back to Iridium when cellular is unavailable. |
 | [Starnote for Iridium](https://shop.blues.com/products/starnote?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/starnote-datasheet/starnote-for-iridium/)) | 1 | Adds Iridium LEO satellite connectivity to the Notecard. Provides pole-to-pole coverage — the Arctic Northern Sea Route, trans-Pacific, Asia-Europe, trans-Atlantic, and Antarctic routes are all reachable. Includes a single Iridium-certified u.FL antenna that handles both satellite communication and GPS/GNSS (no separate GPS antenna required). Mounts on the Notecarrier XI alongside the Notecard. **Starnote for Iridium is certified exclusively with the included antenna; substituting a different antenna results in an uncertified device that Iridium may block.** |
-| SparkFun Qwiic ATECCX08A Breakout ([DEV-18077](https://www.sparkfun.com/products/18077)) | 1 | ATECC608A hardware secure element on a Qwiic (I²C) breakout. Holds the ECC P-256 private key used to sign every breach and seal-break event; the key is locked in the chip at provisioning and can never be read back. Connect to the Notecarrier XI Qwiic port for shared I²C at address 0x60. Requires the SparkFun_ATECCX08a_Arduino_Library and a one-time key-generation provisioning step before deployment (see [§6.2](#62-modules)). |
-| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/mojo-datasheet/)) | 1 | Bench-only power monitor used during commissioning to measure per-session current draw and validate the power budget. Not part of the deployed assembly — see [§8](#8-validation-and-testing). |
+| SparkFun Qwiic ATECCX08A Breakout ([DEV-18077](https://www.sparkfun.com/products/18077)) | 1 | ATECC608A hardware secure element on a Qwiic (I²C) breakout. Holds the ECC P-256 private key used to sign every breach and seal-break event; the key is locked in the chip at provisioning and can never be read back. Connect to the Notecarrier XI Qwiic port for shared I²C at address 0x60. Requires the SparkFun_ATECCX08a_Arduino_Library and a one-time key-generation provisioning step before deployment (see [§8.2](#72-modules)). |
+| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/mojo-datasheet/)) | 1 | Bench-only power monitor used during commissioning to measure per-session current draw and validate the power budget. Not part of the deployed assembly — see [§10](#9-validation-and-testing). |
 | Magnetic contact switch (NC reed switch) — **field deployment:** [Sentrol 2507AH-L](https://cdn11.bigcommerce.com/s-ca10qrhzok/content/documents/sentrol-2500-series-datasheet.pdf) (IP67, −40 °C to +65.5 °C, anodized aluminum, surface-mount, SPDT — use NC contacts); **bench/POC:** [Adafruit 375](https://www.adafruit.com/product/375) | 1 | Two-wire normally-closed door/window sensor; includes companion magnet. Wired NC so a cut wire or missing magnet reads as a breach — intentionally fail-safe. **The Adafruit 375 is a low-cost residential alarm-panel component rated for indoor use only; it is not suitable for the salt-spray, vibration, and wide temperature swings of a container-door deployment.** For field use specify the Sentrol 2507AH-L: it is IP67-sealed, operates to −40 °C, and uses an industrial-grade housing designed for outdoor harsh-environment mounting. |
 | Break-wire seal-continuity loop — 24 AWG tinned-copper wire, ~1 m, rated ≥ 105 °C insulation | 1 | Two-conductor loop routed through the physical seal body or locking bar. Both ends terminate inside the enclosure and connect to GPIO A1 (one end) and GND (other end) via INPUT_PULLUP; intact loop = LOW, cut loop = HIGH. The NC fail-safe means a cut wire immediately reads as broken, independent of door state. Substitute a commercial break-wire seal or conductive adhesive trace for higher-security production deployments; for bench testing, a short jumper wire simulates the loop. |
-| 3.7 V LiPo battery, ≥ 3000 mAh, JST-PH 2-pin | 1 | Plugs into the Notecarrier XI's battery port. A 3 Ah cell covers roughly 165–170 days at the projected ideal daily rate; for production deployments a 6–8 Ah pack is recommended to maintain a ≥2× safety margin against cold-temperature LiPo derating, self-discharge, and satellite session variability — see the battery-life estimate in [§8](#8-validation-and-testing). |
+| 3.7 V LiPo battery, ≥ 3000 mAh, JST-PH 2-pin | 1 | Plugs into the Notecarrier XI's battery port. A 3 Ah cell covers roughly 165–170 days at the projected ideal daily rate; for production deployments a 6–8 Ah pack is recommended to maintain a ≥2× safety margin against cold-temperature LiPo derating, self-discharge, and satellite session variability — see the battery-life estimate in [§10](#9-validation-and-testing). |
 | IP65 ABS enclosure, ~100 × 70 × 45 mm | 1 | Weather-rated enclosure for door mounting; needs at least four cable gland holes: two for antenna leads (cellular and Iridium+GPS), one for the reed-switch cable, and one for the break-wire loop. |
 | Cable glands, PG9 or M16 | 4 | Weatherproof feedthroughs. One each for the cellular antenna lead, the Iridium+GPS antenna cable, reed-switch wiring, and break-wire loop. All four must be sealed to maintain the IP65 rating across the full assembly. |
 
@@ -74,7 +98,8 @@ For a complete walkthrough, see [§4 Wiring and Assembly](#4-wiring-and-assembly
 
 ---
 
-## 4. Wiring and Assembly
+## 5. Wiring and Assembly
+
 
 ![Wiring: reed switch (NC) on A0, break-wire loop on A1 → Notecarrier XI (Swan host); ATECC608A Qwiic breakout on I²C; cellular antenna on u.FL; Iridium+GPS combo antenna on Starnote u.FL; LiPo battery (Mojo inline for bench) on +VBAT](diagrams/02-wiring-assembly.svg)
 
@@ -92,7 +117,7 @@ Pin-by-pin:
 - **Companion magnet:** mounts on the door *frame*; the reed switch body mounts on the *door leaf*. When the door is closed the magnet aligns with the switch and closes the contact (A0 reads LOW = sealed). When the door opens, the magnet separates and the pull-up floats A0 HIGH (= breach detected on next 30-second wake).
 - **Break-wire continuity loop — Wire End 1 → A1:** one end of the break-wire loop connects to A1; the Swan's `INPUT_PULLUP` provides the pull-up to 3.3 V. Route both wire ends into the enclosure through cable gland #4. The loop itself routes through the physical seal body (locking bar hole, seal tongue, or adhesive strip) so that cutting or removing the seal opens the circuit. A1 reads LOW when the loop is intact; A1 reads HIGH when the loop is cut or disconnected.
 - **Break-wire continuity loop — Wire End 2 → GND:** any GND pin on the Notecarrier XI headers. The pull-up/GND convention matches the reed switch: intentionally fail-safe, so a disconnected or cut wire immediately reads as broken.
-- **ATECC608A (SparkFun DEV-18077) → Qwiic port:** connect the ATECC608A breakout's Qwiic cable to the Notecarrier XI's Qwiic connector. Power and I²C (SDA/SCL) are provided by the Qwiic bus. The ATECC608A default I²C address is 0x60. **Provision the ATECC608A before sealing the enclosure** — see [§6.2](#62-modules) for the one-time key-generation procedure. Once provisioned and locked, the private key cannot be extracted from the chip; record the public key in your provisioning database before locking.
+- **ATECC608A (SparkFun DEV-18077) → Qwiic port:** connect the ATECC608A breakout's Qwiic cable to the Notecarrier XI's Qwiic connector. Power and I²C (SDA/SCL) are provided by the Qwiic bus. The ATECC608A default I²C address is 0x60. **Provision the ATECC608A before sealing the enclosure** — see [§8.2](#72-modules) for the one-time key-generation procedure. Once provisioned and locked, the private key cannot be extracted from the chip; record the public key in your provisioning database before locking.
 - **LiPo battery → JST-PH battery port** on the Notecarrier XI (observe polarity — the Notecarrier silkscreen marks `BAT +` and `BAT -`).
 - **Bench only — Mojo:** `BAT` input terminal → LiPo positive lead; `LOAD` output terminal → Notecarrier XI `+VBAT` pin. Also connect the Mojo's Qwiic cable to the Notecarrier XI's Qwiic port. **Note:** the Mojo and ATECC608A both use the Qwiic bus but have different I²C addresses (Mojo: auto-detected by the Notecard; ATECC608A: 0x60 used by the host firmware directly). Both can coexist on the bus. **Mojo has no display or USB serial interface of its own**; energy data is read via the Notecard. The firmware in this project does not consume Mojo telemetry. Disconnect the Mojo before final enclosure assembly.
 
@@ -104,7 +129,7 @@ Pin-by-pin:
 4. Thread all four cables through their cable glands before tightening: the cellular antenna lead through gland #1, the Iridium+GPS antenna cable through gland #2, the reed-switch leads through gland #3, and the break-wire loop ends through gland #4. It is very difficult to retrofit cables through glands after termination — thread them first, then terminate.
 5. Solder or terminate the reed switch leads; connect Terminal A to A0, Terminal B to GND.
 6. Terminate the break-wire loop ends; connect Wire End 1 to A1, Wire End 2 to GND. Route the loop through the physical seal body before completing the connection.
-7. **Provision the ATECC608A** (see [§6.2](#62-modules)): flash and run `tools/provision_atecc608a/provision_atecc608a.ino` to generate the ECC key pair, lock the chip, and extract the public key for your provisioning database. Do this before enclosure sealing — once the enclosure is sealed and deployed, physical access to reprovision is no longer possible.
+7. **Provision the ATECC608A** (see [§8.2](#72-modules)): flash and run `tools/provision_atecc608a/provision_atecc608a.ino` to generate the ECC key pair, lock the chip, and extract the public key for your provisioning database. Do this before enclosure sealing — once the enclosure is sealed and deployed, physical access to reprovision is no longer possible.
 8. Connect the LiPo battery (or Mojo for bench testing).
 9. Tighten all four cable glands; close and latch the enclosure.
 
@@ -114,11 +139,12 @@ Mount the enclosure on the container door latch side, approximately 150 mm from 
 
 ---
 
-## 5. Notehub Setup
+## 6. Notehub Setup
+
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) (e.g. `com.your-company.your-name:container-seal`) and paste it into the `PRODUCT_UID` define in `firmware/container_seal/container_seal.ino`.
 
-2. **Provision in port — required before deployment.** Flash and power the device **before** the container is loaded, while it still has cellular coverage. The Notecard will establish its first session and associate itself with your Notehub project automatically — no manual claim step. The device will appear in your project's **Devices** tab. **Do not seal and ship the device until you have confirmed at least one `_session.qo` event in Notehub.** This initial cellular session is a hard deployment requirement — not an optional step — because the host's heartbeat and env-var scheduling logic depends on a real Unix epoch delivered by Notehub time sync. Before that epoch arrives, schedule-based heartbeats are unreliable (see §6.6 for the technical detail). Attempting first-time sync over satellite is slower, costs more data, and should not be relied on as the provisioning path.
+2. **Provision in port — required before deployment.** Flash and power the device **before** the container is loaded, while it still has cellular coverage. The Notecard will establish its first session and associate itself with your Notehub project automatically — no manual claim step. The device will appear in your project's **Devices** tab. **Do not seal and ship the device until you have confirmed at least one `_session.qo` event in Notehub.** This initial cellular session is a hard deployment requirement — not an optional step — because the host's heartbeat and env-var scheduling logic depends on a real Unix epoch delivered by Notehub time sync. Before that epoch arrives, schedule-based heartbeats are unreliable (see §7.6 for the technical detail). Attempting first-time sync over satellite is slower, costs more data, and should not be relied on as the provisioning path.
 
 3. **Create a Fleet.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) (and [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules)) group devices for shared configuration. For a container fleet, one fleet per trade lane (e.g., `trans-pacific`, `asia-europe`) lets you set the heartbeat cadence appropriate to each route's typical voyage duration and signal environment.
 
@@ -164,7 +190,7 @@ Four Notefiles matter for this project:
     "sig": 3054832791
   }
   ```
-  `event_time` is the Unix epoch at the moment the MCU detected the door transition. `sig` is the first 4 bytes of the ATECC608A ECDSA P-256 signature over the 19-byte canonical payload `{event_time, event_type, seal_broken, door_open, breaches, lroundf(event_lat × 10⁶), lroundf(event_lon × 10⁶)}` (see [§6.4](#64-event-payload-design)); `0` indicates the ATECC608A was absent or not provisioned. The full 64-byte signature is in the companion `seal_sig_full.qo` note (see below), correlated by `event_time`. `event_lat`/`event_lon` are the GPS fix snapshotted at detection time; absent (0.0 in the compact binary) when no fix was cached. Notehub also populates `when`, `best_lat`, and `best_lon` in the top-level event metadata — these reflect the **note-add time**, which can be seconds to hours later than `event_time` for retried notes. **For chain-of-custody reconstruction, always prefer `event_time` and `event_lat`/`event_lon` over `when`/`best_lat`/`best_lon`.** A re-seal event is identical with `open: false`.
+  `event_time` is the Unix epoch at the moment the MCU detected the door transition. `sig` is the first 4 bytes of the ATECC608A ECDSA P-256 signature over the 19-byte canonical payload `{event_time, event_type, seal_broken, door_open, breaches, lroundf(event_lat × 10⁶), lroundf(event_lon × 10⁶)}` (see [§8.4](#74-event-payload-design)); `0` indicates the ATECC608A was absent or not provisioned. The full 64-byte signature is in the companion `seal_sig_full.qo` note (see below), correlated by `event_time`. `event_lat`/`event_lon` are the GPS fix snapshotted at detection time; absent (0.0 in the compact binary) when no fix was cached. Notehub also populates `when`, `best_lat`, and `best_lon` in the top-level event metadata — these reflect the **note-add time**, which can be seconds to hours later than `event_time` for retried notes. **For chain-of-custody reconstruction, always prefer `event_time` and `event_lat`/`event_lon` over `when`/`best_lat`/`best_lon`.** A re-seal event is identical with `open: false`.
 - **`seal_event.qo` (seal-wire-break event)** — emitted with `sync:true` when the break-wire continuity loop transitions from intact to broken, independent of door state. Sample body:
   ```json
   {
@@ -194,11 +220,12 @@ Four Notefiles matter for this project:
     "sig_s": "4af39812c0b6d721..."
   }
   ```
-  `event_type` values: `1` = door-open, `2` = door-close, `3` = seal-wire break, `4` = heartbeat. `sig_r` and `sig_s` are 64-character lowercase hex strings encoding the R and S components of the ECDSA P-256 signature. To verify: reconstruct the canonical payload from the matching `seal_event.qo` or `seal_heartbeat.qo` body fields (see [§6.4](#64-event-payload-design)), compute SHA-256, and verify `(sig_r ‖ sig_s)` against the device's recorded public key. **No `seal_sig_full.qo` companion note is created when the ATECC608A was unavailable at detection time** — `sig == 0` in the main event note is the only indicator in that case. The companion note uses the same retry policy as primary event notes (up to three `note.add` attempts); if all retries fail the companion is silently lost. Route consumers should alert if a `seal_event.qo` or `seal_heartbeat.qo` note with non-zero `sig` has no matching `seal_sig_full.qo` entry after the device returns to cellular coverage.
+  `event_type` values: `1` = door-open, `2` = door-close, `3` = seal-wire break, `4` = heartbeat. `sig_r` and `sig_s` are 64-character lowercase hex strings encoding the R and S components of the ECDSA P-256 signature. To verify: reconstruct the canonical payload from the matching `seal_event.qo` or `seal_heartbeat.qo` body fields (see [§8.4](#74-event-payload-design)), compute SHA-256, and verify `(sig_r ‖ sig_s)` against the device's recorded public key. **No `seal_sig_full.qo` companion note is created when the ATECC608A was unavailable at detection time** — `sig == 0` in the main event note is the only indicator in that case. The companion note uses the same retry policy as primary event notes (up to three `note.add` attempts); if all retries fail the companion is silently lost. Route consumers should alert if a `seal_event.qo` or `seal_heartbeat.qo` note with non-zero `sig` has no matching `seal_sig_full.qo` entry after the device returns to cellular coverage.
 
 ---
 
-## 6. Firmware Design
+## 7. Firmware Design
+
 
 Five source files:
 - [`firmware/container_seal/container_seal.ino`](firmware/container_seal/container_seal.ino) — main sketch: state management, sleep/wake cycle, GPIO reads, signing calls, scheduling logic.
@@ -207,7 +234,7 @@ Five source files:
 - [`firmware/container_seal/container_seal_sign.h`](firmware/container_seal/container_seal_sign.h) — ATECC608A signing declarations, provisioning guide, verification specification.
 - [`firmware/container_seal/container_seal_sign.cpp`](firmware/container_seal/container_seal_sign.cpp) — ATECC608A ECDSA signing implementation.
 
-### 6.1 Installing and flashing
+### 7.1 Installing and flashing
 
 **Dependencies:**
 
@@ -231,7 +258,7 @@ arduino-cli upload  -b STMicroelectronics:stm32:Blues:pnum=SWAN \
 
 After flashing, open the serial monitor at **115200 baud**. On first boot you will see configuration messages; on subsequent wakes you will see the `[seal]` lines for door checks, heartbeats, and env-var refreshes.
 
-### 6.2 Modules
+### 7.2 Modules
 
 | Responsibility | Where |
 |---|---|
@@ -264,7 +291,7 @@ Flash and run the provisioning sketch on the Swan **before** flashing the main `
 
 After provisioning, flash the main `container_seal.ino` firmware. `sealSignBegin()` in the firmware calls `begin()` on each wake and `sealSignEvent()` calls `createSignature()` to produce the per-event ECDSA signature.
 
-### 6.3 Sensor reading strategy
+### 7.3 Sensor reading strategy
 
 Two sensors are read on every 30-second wake:
 
@@ -274,7 +301,7 @@ Two sensors are read on every 30-second wake:
 
 Both sensors are checked on every wake; both can fire in the same wake cycle if both states changed simultaneously. The seal-wire check runs first, before the door-state check. No hardware debounce is needed beyond the 30-second sleep cadence — a brief flutter lasts far less than 30 seconds and appears as a single transition across wake boundaries.
 
-### 6.4 Event payload design
+### 7.4 Event payload design
 
 Both Notefiles use `format: compact` templates with `port` numbers assigned (1 and 2 respectively). Compact format is **required** for satellite transmission (Iridium SBD via Starnote), and it reduces the on-wire payload versus free-form JSON by roughly 3–5×, which matters on a satellite link billing by the byte.
 
@@ -334,7 +361,7 @@ In this example `when` (1718789100) is 27 seconds later than `event_time` (17187
 
 **To verify the signature:** retrieve the `seal_sig_full.qo` note whose `event_time` matches this event's `event_time`. Reconstruct the 19-byte canonical payload: `[event_time as BE uint32][event_type byte: 1=door-open, 2=door-close, 3=wire-break][seal_broken byte][door_open byte: 0x01 if open, 0x00 if closed][breaches as BE uint32][lroundf(event_lat × 10⁶) as BE int32, or 0x00000000 if absent][lroundf(event_lon × 10⁶) as BE int32, or 0x00000000 if absent]`. Compute SHA-256 of those 19 bytes. Verify the ECDSA P-256 signature (`sig_r ‖ sig_s`, 64 bytes from `seal_sig_full.qo`) against the digest using the device's recorded public key. The compact `sig` field carries only the first 4 bytes of the R-component and is a satellite-efficient tamper prefix — it is **not sufficient for ECDSA verification**. Use the full 64-byte signature from `seal_sig_full.qo` for forensic chain-of-custody.
 
-### 6.5 Low-power strategy
+### 7.5 Low-power strategy
 
 Battery life is the central design constraint for a three-month ocean crossing. Two mechanisms combine to achieve it:
 
@@ -346,12 +373,12 @@ Battery life is the central design constraint for a three-month ocean crossing. 
 
 **Heartbeat vs. breach cadence.** Heartbeats (`seal_heartbeat.qo`) ride the configured outbound cadence — they queue on the Notecard and flush at the `outbound_min` interval (default 720 minutes). Each heartbeat carries the most recent GPS fix the Notecard has cached; GPS acquisition itself runs on a **fixed 6-hour (21 600 s) periodic schedule** set at first boot via `card.location.mode` and is independent of `heartbeat_interval_min`. Changing `heartbeat_interval_min` changes how often health notes are queued; it does not change how often the Notecard acquires a new GPS fix. Breach events (`seal_event.qo`) use `sync:true`, which wakes the modem immediately; over the course of a normal voyage (no breaches) this costs nothing extra. If a breach occurs in international waters, the Notecard will attempt satellite acquisition via the Starnote for Iridium; because Iridium is a LEO constellation with pole-to-pole coverage, session establishment depends on sky visibility (not orbital geometry) and typically takes a few minutes with a clear sky view.
 
-### 6.6 Retry and error handling
+### 7.6 Retry and error handling
 
 - `sealConfigureNotecard` uses `sendRequestWithRetry(req, 5)` for the first I²C transaction on every boot, guarding against the cold-boot race condition where the Swan comes up before the Notecard's I²C bus is ready.
 - All three first-boot configuration helpers (`sealConfigureNotecard`, `sealDefineTemplates`, `sealConfigureGPS`) return a `bool` indicating whether the Notecard accepted the request. `g_state.initialized` is set to `1` only after all three succeed — a transient I²C failure on the first wake leaves `initialized` at `0` so the device retries full configuration on the next wake instead of permanently skipping it.
 - `sealFetchEnvVars` uses range clamping (`clampU32`) on all values — an out-of-range env var silently preserves the firmware default rather than crashing or silently accepting a nonsensical value. The function returns a `SealEnvResult` enum (`SEAL_ENV_OK`, `SEAL_ENV_NO_CHANGE`, `SEAL_ENV_FAIL`) so the caller can log success, silence, and error conditions distinctly.
-- `sealGetEpoch` falls back to `millis()/1000` if the Notecard has not yet received a time sync. **Important limitation:** because `NotePayloadSaveAndSleep` fully power-gates the host, `millis()` resets to zero on every wake cycle. Before the first successful Notehub session, `sealGetEpoch` returns a small value (~1–2 s per wake) each time the host boots. This means `nextHeartbeatEpoch` — set to roughly 21 600 on first boot — is never reached across power-gated wakes: heartbeat scheduling is effectively dormant until the first real epoch arrives from a cellular session. Once that epoch lands (e.g., `1718640000`), it trivially exceeds the stored fallback value and a heartbeat fires immediately; the schedule then resets correctly from real time. The practical implication is that **schedule-based heartbeats are unreliable before the device has completed at least one successful Notehub session**, which is why first-boot provisioning in port (§5 step 2) is a hard requirement for correct operation, not merely a recommendation.
+- `sealGetEpoch` falls back to `millis()/1000` if the Notecard has not yet received a time sync. **Important limitation:** because `NotePayloadSaveAndSleep` fully power-gates the host, `millis()` resets to zero on every wake cycle. Before the first successful Notehub session, `sealGetEpoch` returns a small value (~1–2 s per wake) each time the host boots. This means `nextHeartbeatEpoch` — set to roughly 21 600 on first boot — is never reached across power-gated wakes: heartbeat scheduling is effectively dormant until the first real epoch arrives from a cellular session. Once that epoch lands (e.g., `1718640000`), it trivially exceeds the stored fallback value and a heartbeat fires immediately; the schedule then resets correctly from real time. The practical implication is that **schedule-based heartbeats are unreliable before the device has completed at least one successful Notehub session**, which is why first-boot provisioning in port (§6 step 2) is a hard requirement for correct operation, not merely a recommendation.
 - `sealSendDoorEvent`, `sealSendHeartbeat`, and `sealSendAuditGap` each make up to three `note.add` attempts (one initial try plus two retries at 25 ms apart). A non-empty `err` field in the Notecard's response — most commonly a compact-template field-type mismatch — is logged and treated as a permanent failure (`NOTE_ADD_PERMANENT`); a `NULL` response (I²C bus fault) is treated as transient (`NOTE_ADD_TRANSIENT`). On the first permanent rejection, all three functions call `sealDefineTemplates()` to re-register both compact templates and retry once; this recovers from a Notecard reset or firmware-update template mismatch without operator intervention. If template recovery also fails, the function returns `NOTE_ADD_PERMANENT` immediately.
   - **`totalBreaches` is incremented at detection time, immediately when a door-open transition is detected, _before_ any `note.add` attempt is made.** This ensures it is the true lifetime count regardless of whether the per-event note ever reaches Notehub: heartbeats and re-seal notes always carry an accurate running total even after queue overflows or permanent note.add rejections. Seal-wire-break events do not increment `totalBreaches`; they are distinguished by `seal_broken: true`.
   - `lastDoorOpen` and `lastSealIntact` are committed only after each transition has a durable record: `NOTE_ADD_OK` (Notecard accepted), a successful local enqueue in MCU RAM (`NOTE_ADD_TRANSIENT` with queue space available), an unavoidable queue-full discard, or a `NOTE_ADD_PERMANENT` discard after template recovery. They are never advanced before the outcome is known, so a power loss between event detection and the end-of-cycle `NotePayloadSaveAndSleep` call cannot silently hide a real transition.
@@ -363,7 +390,7 @@ Battery life is the central design constraint for a three-month ocean crossing. 
 - `sealGetBattVoltage` returns `-1.0f` on a `card.voltage` failure. A healthy LiPo always reads above 3.0 V, so `-1.0` is an unambiguous sentinel. Downstream Notehub route logic and alerting rules should treat `batt_v < 0` as a transient reading fault rather than a critically discharged pack.
 - Breach events use `full:true` in addition to `sync:true` so that the `open: false` field is explicitly present in re-seal events and not dropped by `omitempty`. Downstream processors can therefore distinguish "sealed" from "missing field / sensor error" without ambiguity.
 
-### 6.7 Key code snippet 1: compact template registration
+### 7.7 Key code snippet 1: compact template registration
 
 Templates use `format: compact` for satellite efficiency and include `_lat`, `_lon`, `_time` as compact reserved fields — the Notecard populates them automatically.
 
@@ -390,7 +417,7 @@ nc.sendRequest(req);
 
 `event_time`/`event_lat`/`event_lon` carry the detection-time snapshot so retried notes preserve the original breach moment. `seal_broken` is absent from all normal door events and set only in wire-break events. `sig` is always present; `0` signals that the ATECC608A was unavailable and no companion `seal_sig_full.qo` note was created. `audit_gap` is unsigned — it is a chain-of-custody gap marker, not a verifiable event. The auto-populated `_time`/`_lat`/`_lon` reflect the `note.add` call time and appear in Notehub as `when`/`best_lat`/`best_lon`.
 
-### 6.8 Key code snippet 2: immediate-sync breach alert
+### 7.8 Key code snippet 2: immediate-sync breach alert
 
 `sync:true` requests an immediate connection attempt. `full:true` prevents `omitempty` from dropping the `open: false` field on re-seal events. `totalBreaches` is incremented **before** the send attempt so the lifetime count is durable in `g_state` regardless of note delivery outcome. `lastDoorOpen` is committed only after the transition has a durable record — never before the outcome of `sealSendDoorEvent` is known. Events enqueued into `pendingQueue` are held in MCU RAM and are persisted to Notecard flash only when `NotePayloadSaveAndSleep()` runs at the end of the wake cycle.
 
@@ -466,7 +493,7 @@ JAddNumberToObject(body, "sig",        (double)sig);         // ATECC608A sig pr
 // _lat, _lon, _time auto-populated by Notecard from GPS + RTC
 ```
 
-### 6.9 Key code snippet 3: NotePayloadSaveAndSleep
+### 7.9 Key code snippet 3: NotePayloadSaveAndSleep
 
 The entire application state survives host power-off in Notecard flash. One call does all of it.
 
@@ -485,7 +512,8 @@ for (;;) {
 
 ---
 
-## 7. Data Flow
+## 8. Data Flow
+
 
 ![Data flow: reed switch (A0) and break-wire (A1) sampled every 30 s → evaluate → ATECC608A signs event/heartbeat → seal_event.qo breach/reseal/seal-break (sync:true), seal_sig_full.qo full sig (cellular), seal_heartbeat.qo (batched), audit-gap (sync:true, unsigned) → Notehub → routes](diagrams/03-data-flow.svg)
 
@@ -503,7 +531,8 @@ for (;;) {
 
 ---
 
-## 8. Validation and Testing
+## 9. Validation and Testing
+
 
 **Expected cadence after deployment.** On a healthy, sealed container: one `seal_heartbeat.qo` created every 6 hours (queued locally), delivered in a batch at each 12-hour outbound sync session; zero `seal_event.qo` events; and `_session.qo` events at the outbound sync interval (cellular or satellite). The first `seal_heartbeat.qo` is created within 6 hours of first power-on but is not visible in Notehub until the next outbound sync — up to 12 hours after power-on at the default `outbound_min=720` setting. For commissioning, set `heartbeat_interval_min=15`, `outbound_min=60`, **and** `inbound_min=60` in the Fleet environment (or trigger a manual sync from the Notehub in-browser terminal with `hub.sync`). **A power cycle alone does not cause the device to fetch fresh env vars** — the Notecard reads whatever env vars it already has cached; the updated values only arrive on the next inbound sync. The full worst-case path for a heartbeat to appear in Notehub after changing env vars is: (1) wait up to `inbound_min` for the device to complete an inbound sync and pull the new values (or trigger one manually with `hub.sync`); (2) wait up to `heartbeat_interval_min` for the next heartbeat to be created and queued on the Notecard; (3) wait up to `outbound_min` for the next outbound session to deliver it to Notehub. With `inbound_min=60`, `heartbeat_interval_min=15`, and `outbound_min=60`, worst-case visibility is up to 135 minutes — not a few minutes. Triggering a manual `hub.sync` from the Notehub in-browser terminal skips step (1) and delivers the new env vars immediately, reducing worst-case to about 75 minutes.
 
@@ -547,9 +576,9 @@ What a healthy Mojo trace looks like for this firmware at default settings:
 - Satellite sessions (2/day × 250 mA × 90 s average): ≈ 12.5 mAh/day
 - **Total: ~18 mAh/day**
 
-A 3000 mAh LiPo lasts roughly 165–170 days at this rate. This projection assumes ideal conditions: no door events (no additional sync traffic), optimal sky visibility, ambient temperature, and new cells at full rated capacity. Real-world factors — cold-temperature LiPo derating (~20–30% capacity reduction below 0 °C), satellite session variability (sky-view obstructions extending session time), and cell self-discharge — justify the 6–8 Ah recommendation in §3 for unattended three-month production deployments. Validate your bench measurements against these targets with Mojo before committing to a battery size; a Mojo result within ~2× of the estimate confirms healthy sleep behavior.
+A 3000 mAh LiPo lasts roughly 165–170 days at this rate. This projection assumes ideal conditions: no door events (no additional sync traffic), optimal sky visibility, ambient temperature, and new cells at full rated capacity. Real-world factors — cold-temperature LiPo derating (~20–30% capacity reduction below 0 °C), satellite session variability (sky-view obstructions extending session time), and cell self-discharge — justify the 6–8 Ah recommendation in §4 for unattended three-month production deployments. Validate your bench measurements against these targets with Mojo before committing to a battery size; a Mojo result within ~2× of the estimate confirms healthy sleep behavior.
 
-### 8.1 Troubleshooting
+### 9.1 Troubleshooting
 
 | Symptom | Likely cause | What to check |
 |---|---|---|
@@ -561,7 +590,7 @@ A 3000 mAh LiPo lasts roughly 165–170 days at this rate. This projection assum
 | `sig` field is always `0` in Notehub events. | ATECC608A not found at 0x60, or not provisioned (data zone not locked). | Check the Qwiic cable connection. Open the serial monitor — `[seal] WARN: ATECC608A not found at 0x60` confirms the chip is absent or not responding. If the chip responds but returns signing failures, re-run the provisioning sketch to confirm `lockDataAndOTP()` was completed. |
 | `seal_event.qo` appears in Notehub but `best_lat`/`best_lon` are missing. | No GPS fix available when the note was added. | `_lat`/`_lon` are absent when no fix is cached. Move the GPS antenna outdoors. Fields will appear on the next note after the Notecard acquires a fix. |
 | No `seal_event.qo` within 60 seconds of manually triggering a breach. | In port (cellular) — should arrive quickly. At sea (satellite) — delivery depends on sky visibility; Iridium LEO sessions typically establish within a few minutes with a clear sky view; obstruction can delay them. | In a bench test over cellular, a `seal_event.qo` should appear within ~60 s. If longer, check signal with `card.status` in the Notehub in-browser terminal. |
-| A breach or seal-break event that was logged on the serial console never appeared in Notehub, and the device lost power shortly after. | Event was enqueued in MCU RAM but not yet persisted to Notecard flash before power loss (`NotePayloadSaveAndSleep` had not yet run). | This is the mid-wake power-loss window described in §9. Events that reached `NOTE_ADD_OK` before the loss are already in Notecard flash and survive. Events that were only in `pendingQueue` (RAM) at the time of loss are **silently lost** — the state restored on the next wake reflects the last successful save, so `pendingCount` comes back unchanged from before the interrupted wake with no `audit_gap` note generated automatically. The only evidence is a gap in the event timeline. (The `pendingCount > PENDING_QUEUE_SIZE` guard fires on a firmware-upgrade binary shift, not on a normal power loss.) During bench commissioning, avoid disconnecting the LiPo while the host is active. |
+| A breach or seal-break event that was logged on the serial console never appeared in Notehub, and the device lost power shortly after. | Event was enqueued in MCU RAM but not yet persisted to Notecard flash before power loss (`NotePayloadSaveAndSleep` had not yet run). | This is the mid-wake power-loss window described in §10. Events that reached `NOTE_ADD_OK` before the loss are already in Notecard flash and survive. Events that were only in `pendingQueue` (RAM) at the time of loss are **silently lost** — the state restored on the next wake reflects the last successful save, so `pendingCount` comes back unchanged from before the interrupted wake with no `audit_gap` note generated automatically. The only evidence is a gap in the event timeline. (The `pendingCount > PENDING_QUEUE_SIZE` guard fires on a firmware-upgrade binary shift, not on a normal power loss.) During bench commissioning, avoid disconnecting the LiPo while the host is active. |
 | Mojo trace shows continuous 5–10 mA, no blip pattern. | Host never sleeping — `card.attn` / `NotePayloadSaveAndSleep` is not cutting host power. | Confirm the Notecarrier XI ATTN jumper is populated and in the power-gating position. Verify `NotePayloadSaveAndSleep` is reached (add a serial print before it). |
 | Battery drains in days rather than months. | GPS or satellite modem is continuously on, or host is not sleeping. | See Mojo trace checks above. A continuous high-current baseline (>20 mA) usually means the modem isn't being powered down between syncs — verify `hub.set` is in `periodic` mode, not `continuous`. |
 
@@ -569,7 +598,8 @@ If a problem isn't on this list, the [Blues community forum](https://discuss.blu
 
 ---
 
-## 9. Limitations and Next Steps
+## 10. Limitations and Next Steps
+
 
 **Simplified for this reference design:**
 
@@ -595,7 +625,8 @@ If a problem isn't on this list, the [Blues community forum](https://discuss.blu
 
 ---
 
-## 10. Summary
+## 11. Summary
+
 
 A Notecarrier XI, a Notecard Cell+WiFi, a Starnote for Iridium, a magnetic reed switch, a break-wire seal-continuity loop, and an ATECC608A hardware secure element are the components that close the tamper-evidence gap in international containerized cargo. The Blues Swan MCU wakes every 30 seconds, reads two independent sensors, signs the event payload with a hardware-rooted ECC P-256 key held inside the ATECC608A secure element that never leaves the chip, and goes back to sleep — drawing a fraction of a milliamp between samples. The Notecard sits quietly in 18 µA idle until it's time to flush notes to Notehub, then fires up its cellular radio or hands off to the Starnote for an Iridium session, transmits, and powers back down. Breach and seal-wire events bypass the outbound schedule via `sync:true`, reaching Notehub within seconds in port or within minutes over Iridium anywhere on the globe.
 
@@ -607,8 +638,8 @@ For supply-chain compliance teams and freight insurers, that log is the differen
 
 ## Appendix: Quickstart
 
-1. **Provision in port — required before deployment.** Create a [Notehub project](https://notehub.io), copy its ProductUID, and paste it into `firmware/container_seal/container_seal.ino` at the `PRODUCT_UID` define (around line 23). Flash the firmware before the container is loaded. **Do not seal and deploy until you see a `_session.qo` event in Notehub** — this initial Notehub session delivers the Unix time sync the firmware requires for correct heartbeat and env-var scheduling (see §5 step 2 and §6.6).
-2. **Wire the bench rig.** Notecarrier XI + Blues Swan (seated in Feather socket) + Notecard Cell+WiFi (NOTE-NBGLW, in M.2 slot; included cellular antenna connected) + Starnote for Iridium (included Iridium+GPS antenna connected) + reed switch on A0 + break-wire continuity loop on A1 + ATECC608A Qwiic breakout on I²C + LiPo battery. Full pinout and assembly steps in [§4](#4-wiring-and-assembly). Provision the ATECC608A key slot before first flash — see §6.2 for the six-step provisioning procedure.
-3. **Flash.** `arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=SWAN firmware/container_seal/container_seal.ino` then upload. Full instructions in [§6.1](#61-installing-and-flashing).
+1. **Provision in port — required before deployment.** Create a [Notehub project](https://notehub.io), copy its ProductUID, and paste it into `firmware/container_seal/container_seal.ino` at the `PRODUCT_UID` define (around line 23). Flash the firmware before the container is loaded. **Do not seal and deploy until you see a `_session.qo` event in Notehub** — this initial Notehub session delivers the Unix time sync the firmware requires for correct heartbeat and env-var scheduling (see §6 step 2 and §7.6).
+2. **Wire the bench rig.** Notecarrier XI + Blues Swan (seated in Feather socket) + Notecard Cell+WiFi (NOTE-NBGLW, in M.2 slot; included cellular antenna connected) + Starnote for Iridium (included Iridium+GPS antenna connected) + reed switch on A0 + break-wire continuity loop on A1 + ATECC608A Qwiic breakout on I²C + LiPo battery. Full pinout and assembly steps in [§6](#5-wiring-and-assembly). Provision the ATECC608A key slot before first flash — see §7.2 for the six-step provisioning procedure.
+3. **Flash.** `arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=SWAN firmware/container_seal/container_seal.ino` then upload. Full instructions in [§8.1](#71-installing-and-flashing).
 4. **Verify.** Watch Notehub → **Events** tab. A `_session.qo` should appear within a couple of minutes. A `seal_heartbeat.qo` is created within the first 6 hours and delivered at the next outbound sync (up to 12 hours at default settings — set `outbound_min=60` in the Fleet environment to see it sooner during commissioning). Hold the reed switch magnet against the sensor, then pull it away — a `seal_event.qo` should appear almost immediately with a non-zero `sig` field if the ATECC608A is provisioned. Disconnect the break-wire loop — a second `seal_event.qo` with `seal_broken:true` should appear on the next wake cycle.
 5. **Deploy.** Mount the enclosure on the container door, route both antennas outside the steel, and seal the cargo. All further seal-wire, door-event, and GPS waypoint data flows to Notehub automatically.

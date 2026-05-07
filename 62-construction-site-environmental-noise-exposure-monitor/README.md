@@ -24,15 +24,15 @@ This project is a solar-powered cellular **area monitor** — a fixed, perimeter
 
 **Device-side responsibilities.** The onboard Cygnet STM32 host on the Notecarrier CX wakes every 5 minutes (configurable), immediately samples sound for 15 seconds via the ADC (before the PM warm-up phase begins), then initialises the PM sensor over I²C, waits for the laser and fan to stabilise, and averages 10 readings over 10 seconds. All samples are accumulated in a rolling window stored in Notecard flash between sleep cycles. The host is cut from power by [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) between samples, dropping Cygnet current draw to essentially zero. Queued notes travel from the Cygnet to the Notecard over I²C using the `note-arduino` library's `JAdd*` helpers — no JSON hand-marshaling, no modem AT commands.
 
-**Notecard responsibilities.** The Notecard stores [Notes](https://dev.blues.io/api-reference/glossary/#note) locally, manages the cellular session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 30 min), and flushes `sync:true` alert notes immediately when a threshold is breached. The Notecard owns GNSS — its built-in GPS/GNSS receiver attempts to acquire a site fix on first boot and re-acquires periodically (default every 4 hours); the last-known fix is returned by `card.location` and embedded in every outbound note. The Notecard's GNSS hardware retains a cached fix across power cycles, so after the device is redeployed from one construction site to another, the first `card.location` response after a fresh power-on may return the coordinates of the **previous** site rather than the current one. The firmware detects freshness by comparing the GPS fix timestamp (`time` field) across successive `card.location` calls: the first non-zero response after boot is recorded as a baseline; once a subsequent response returns a newer timestamp the device is confirmed at its current site. Every outbound note includes a `location_valid` boolean that is `false` until this confirmation occurs — see [Limitations](#9-limitations-and-next-steps). The Notecard also distributes [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) from Notehub — operators can retune alert thresholds in the field without re-flashing firmware.
+**Notecard responsibilities.** The Notecard stores [Notes](https://dev.blues.io/api-reference/glossary/#note) locally, manages the cellular session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 30 min), and flushes `sync:true` alert notes immediately when a threshold is breached. The Notecard owns GNSS — its built-in GPS/GNSS receiver attempts to acquire a site fix on first boot and re-acquires periodically (default every 4 hours); the last-known fix is returned by `card.location` and embedded in every outbound note. The Notecard's GNSS hardware retains a cached fix across power cycles, so after the device is redeployed from one construction site to another, the first `card.location` response after a fresh power-on may return the coordinates of the **previous** site rather than the current one. The firmware detects freshness by comparing the GPS fix timestamp (`time` field) across successive `card.location` calls: the first non-zero response after boot is recorded as a baseline; once a subsequent response returns a newer timestamp the device is confirmed at its current site. Every outbound note includes a `location_valid` boolean that is `false` until this confirmation occurs — see [Limitations](#10-limitations-and-next-steps). The Notecard also distributes [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) from Notehub — operators can retune alert thresholds in the field without re-flashing firmware.
 
 **Notehub responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to Notehub over the Internet; [Notehub](https://notehub.io) ingests events, stores them, and applies project-level routes. Exposure summaries (`env_summary.qo`) and threshold alerts (`env_alert.qo`) land in separate [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile), which means downstream routes can treat them differently — alerts to an on-call system or safety officer inbox, summaries to a long-term compliance archive. Notehub also automatically appends `where_lat`, `where_lon`, and other location metadata to every event based on the Notecard's last-known GNSS fix.
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS IoT Core, Azure IoT Hub, GCP Pub/Sub, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing documentation](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for details — this project does not ship any specific downstream endpoint.
 
-## 2.5 Quickstart
+## 3. Technical Summary
 
-1. **Clone and configure**: Download this repo and open `firmware/construction_env_monitor/construction_env_monitor.ino`. Replace `PRODUCT_UID` constant with your Notehub project UID (see §5 step 1).
+1. **Clone and configure**: Download this repo and open `firmware/construction_env_monitor/construction_env_monitor.ino`. Replace `PRODUCT_UID` constant with your Notehub project UID (see §6 step 1).
 2. **Build and flash**: Use Arduino IDE or `arduino-cli`. The FQBN below matches `firmware/construction_env_monitor/sketch.yaml`, so omitting `--fqbn` also works when invoked from the sketch directory:
    ```bash
    arduino-cli compile --fqbn STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/
@@ -43,7 +43,29 @@ This project is a solar-powered cellular **area monitor** — a fixed, perimeter
 
 **What you'll have:** A solar-powered cellular area monitor that streams PM2.5, PM10, and sound levels as templated notes to Notehub, with real-time alerts on threshold breach.
 
-## 3. Hardware Requirements
+Here is a sample Note this device emits:
+
+```json
+{
+  "file": "env_summary.qo",
+  "body": {
+    "pm25_avg": 18.3,
+    "pm25_peak": 42.7,
+    "pm10_avg": 31.1,
+    "pm10_peak": 89.4,
+    "pm_samples": 6,
+    "db_a_avg": 71.2,
+    "db_a_peak": 83.6,
+    "samples": 6,
+    "voltage": 3.91,
+    "lat": 37.774,
+    "lon": -122.419,
+    "location_valid": true
+  }
+}
+```
+
+## 4. Hardware Requirements
 
 | Part | Qty | Type | Rationale |
 |------|-----|------|-----------|
@@ -64,7 +86,7 @@ This project is a solar-powered cellular **area monitor** — a fixed, perimeter
 
 All Blues parts ship with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
-## 4. Wiring and Assembly
+## 5. Wiring and Assembly
 
 ![Wiring diagram: PMSA003I on Qwiic, SEN0232 on A0 and V+, power path from solar panel to Sunny Buddy MPPT with LiPo at BAT port, Sunny Buddy LOAD through Mojo to Notecarrier CX LiPo JST system input](diagrams/02-wiring-assembly.svg)
 
@@ -106,7 +128,7 @@ The Hammond 1554CGY enclosure is ABS plastic, which is RF-transparent — cellul
 
 > **Metal enclosure substitution.** If you replace the ABS enclosure with a steel or aluminium alternative, the antennas must exit the box — route u.FL pigtails through IP-rated cable glands to externally mounted antennas, as metal fully blocks both cellular and GPS signals inside.
 
-## 5. Notehub Setup
+## 6. Notehub Setup
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into the `PRODUCT_UID` constant in the firmware (line ~15 of `construction_env_monitor.ino`).
 2. **Claim the Notecard.** Power the enclosure. On first cellular session the Notecard automatically associates with your project using the ProductUID. You will see the device appear on the Notehub dashboard within 1–2 minutes.
@@ -125,7 +147,7 @@ The Hammond 1554CGY enclosure is ABS plastic, which is RF-transparent — cellul
 
 5. **Configure routes.** Add a [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `env_alert.qo` to a real-time safety notification channel — email, Slack, SMS gateway, or a CMMS ticketing endpoint. Add a second route for `env_summary.qo` to a long-term analytics store or compliance archive. Keeping the two Notefiles separate at the source means you never need filter logic in the route; just point each Notefile at its appropriate destination.
 
-## 6. Firmware Design
+## 7. Firmware Design
 
 ### Build and Flash
 
@@ -167,9 +189,9 @@ arduino-cli upload -p /dev/ttyUSB0 --fqbn STMicroelectronics:stm32:Blues:pnum=CY
 
 ### Sensor reading strategy
 
-**Sound level — sampled first.** `analogReadResolution(12)` is called once in `setup()` to enable the Cygnet's 12-bit ADC. The SEN0232 output voltage maps linearly to dB(A). The firmware samples at 4 Hz for 15 seconds (60 samples) at the very start of the measurement phase — before `begin_I2C()` is called on the PMSA003I. By taking the dB(A) window before the PM sensor's 30-second warm-up phase begins, the fan's acoustic contribution is bounded to at most the host boot + `setup()` time (~5–15 s) in the case where the Qwiic rail is gated during ATTN sleep. Whether that rail is actually gated is carrier-implementation-specific — if it is not, the fan runs continuously and contaminates the measurement regardless of sampling order. For complete, guaranteed acoustic isolation, add a GPIO-controlled load switch to the PMSA003I power line so the fan is definitively off during the sound window — see [Limitations](#9-limitations-and-next-steps). For each of the 60 ADC samples, the firmware maps the output voltage to dB(A) via the SEN0232's linear Vout-to-dB transfer function, applies the `db_cal_offset` calibration bias, then converts to acoustic energy (`10^(dB/10)`) and accumulates the result in a running sum. At the end of the 15-second window the mean energy is converted back to dB(A) via `10·log10(meanEnergy)`, yielding the acoustically correct mean sound pressure level. Averaging in the energy domain matters: a brief 100 dB event carries 100× more intensity than 80 dB background; a simple arithmetic mean of the two dB values gives 90 dB, while the energy-domain mean correctly gives ~97 dB. The 15-second window also acts as a natural noise floor smoother, attenuating single-spike artefacts from vehicles or tools passing the sensor.
+**Sound level — sampled first.** `analogReadResolution(12)` is called once in `setup()` to enable the Cygnet's 12-bit ADC. The SEN0232 output voltage maps linearly to dB(A). The firmware samples at 4 Hz for 15 seconds (60 samples) at the very start of the measurement phase — before `begin_I2C()` is called on the PMSA003I. By taking the dB(A) window before the PM sensor's 30-second warm-up phase begins, the fan's acoustic contribution is bounded to at most the host boot + `setup()` time (~5–15 s) in the case where the Qwiic rail is gated during ATTN sleep. Whether that rail is actually gated is carrier-implementation-specific — if it is not, the fan runs continuously and contaminates the measurement regardless of sampling order. For complete, guaranteed acoustic isolation, add a GPIO-controlled load switch to the PMSA003I power line so the fan is definitively off during the sound window — see [Limitations](#10-limitations-and-next-steps). For each of the 60 ADC samples, the firmware maps the output voltage to dB(A) via the SEN0232's linear Vout-to-dB transfer function, applies the `db_cal_offset` calibration bias, then converts to acoustic energy (`10^(dB/10)`) and accumulates the result in a running sum. At the end of the 15-second window the mean energy is converted back to dB(A) via `10·log10(meanEnergy)`, yielding the acoustically correct mean sound pressure level. Averaging in the energy domain matters: a brief 100 dB event carries 100× more intensity than 80 dB background; a simple arithmetic mean of the two dB values gives 90 dB, while the energy-domain mean correctly gives ~97 dB. The 15-second window also acts as a natural noise floor smoother, attenuating single-spike artefacts from vehicles or tools passing the sensor.
 
-**PM sensor — sampled after the sound window.** The PMSA003I requires a 30-second warm-up delay (`PM_WARMUP_MS`) for its fan and laser to stabilise before readings are valid. Whether the Notecarrier CX ATTN sleep path cuts the Qwiic/3.3V rail between wakes is carrier-implementation-specific and not guaranteed — do not rely on implicit rail-gating to power-cycle the PMSA003I between samples. The firmware always applies the full `PM_WARMUP_MS` delay after every successful `begin_I2C()` call, ensuring valid readings regardless of whether the sensor cold-started or was already running. After warm-up, 10 consecutive readings are taken at 1 Hz and averaged. `data.pm25_standard` and `data.pm10_standard` (standard-atmosphere-corrected values) provide a stable, comparable PM metric for trend monitoring — they are more consistent than the `_env` variants, which apply an additional humidity-based environmental correction. Neither output is suited for silica-compliance reporting; see [Limitations](#9-limitations-and-next-steps). Use the Mojo to measure the actual idle current floor during ATTN sleep (§8): if the floor is elevated above the always-on SEN0232 quiescent draw, the PMSA003I is being supplied during sleep and drawing continuous fan current.
+**PM sensor — sampled after the sound window.** The PMSA003I requires a 30-second warm-up delay (`PM_WARMUP_MS`) for its fan and laser to stabilise before readings are valid. Whether the Notecarrier CX ATTN sleep path cuts the Qwiic/3.3V rail between wakes is carrier-implementation-specific and not guaranteed — do not rely on implicit rail-gating to power-cycle the PMSA003I between samples. The firmware always applies the full `PM_WARMUP_MS` delay after every successful `begin_I2C()` call, ensuring valid readings regardless of whether the sensor cold-started or was already running. After warm-up, 10 consecutive readings are taken at 1 Hz and averaged. `data.pm25_standard` and `data.pm10_standard` (standard-atmosphere-corrected values) provide a stable, comparable PM metric for trend monitoring — they are more consistent than the `_env` variants, which apply an additional humidity-based environmental correction. Neither output is suited for silica-compliance reporting; see [Limitations](#10-limitations-and-next-steps). Use the Mojo to measure the actual idle current floor during ATTN sleep (§8): if the floor is elevated above the always-on SEN0232 quiescent draw, the PMSA003I is being supplied during sleep and drawing continuous fan current.
 
 ### Event payload design
 
@@ -285,7 +307,7 @@ NotePayloadSaveAndSleep(&payload, sleepSec, NULL);
 // Returns here only if card.attn is absent (bench mode).
 ```
 
-## 7. Data Flow
+## 8. Data Flow
 
 ![Data flow: 5-minute sample cycle (sound first, then PM) → rolling window accumulation → three alert rules (env_alert.qo sync:true) and 30-minute summary (env_summary.qo templated) → Notehub routes](diagrams/03-data-flow.svg)
 
@@ -304,7 +326,7 @@ Every 5 minutes (default), the Cygnet wakes, reads both sensors (sound first, th
 - `pm10_high` — PM10 reading at or above `pm10_alert_ug_m3` (default 150 µg/m³). The 150 µg/m³ default is a heuristic starting point for flagging elevated coarse-particulate conditions — it is **not** equivalent to a regulatory limit or violation. The EPA 24-hour NAAQS for PM10 applies to a 24-hour average; a single 5-minute sample above that numerical value is not an exceedance. Adjust the threshold to match the dust-generation characteristics of the specific tasks on your site.
 - `db_a_high` — mean dB(A) over the 15-second window at or above `db_a_alert` (default 85 dB(A)). The 85 dB(A) default is a heuristic starting point, **not** an OSHA compliance determination. OSHA's noise action level applies to an 8-hour TWA integrated over a full shift; this device measures a 15-second mean, and the two are not directly comparable. Use the alert as an early-warning prompt to investigate, not as documentation of a regulatory exceedance.
 
-## 8. Validation and Testing
+## 9. Validation and Testing
 
 **Expected steady-state cadence.** A freshly deployed unit on a quiet morning should generate two `env_summary.qo` events per hour (one every 30 minutes at default settings) and zero `env_alert.qo` events. In practice, a working construction site will generate occasional `db_a_high` alerts when heavy equipment operates near the sensor and occasional `pm25_high` alerts during active cutting, grinding, or sweeping operations.
 
@@ -335,7 +357,7 @@ A useful bench exercise: leave the unit running on a fully charged 1200 mAh LiPo
 
 The *shape* of the Mojo trace depends on whether the Notecarrier CX's Qwiic/3.3V rail is gated during ATTN sleep — this is carrier-implementation-specific. If the Qwiic rail **is** gated during sleep: the floor is dominated by the always-on SEN0232 quiescent draw, then a brief step for the 15-second dB(A) sample window, then a larger ~40-second step for PMSA003I warm-up and reads, and a ~30-second cellular-sync pulse every 30 minutes. If the Qwiic rail **is not** gated: the PMSA003I fan draws current continuously and raises the sleep floor — use the Mojo to distinguish these two cases, because the measured floor directly reveals whether the PM sensor is sleeping or running and determines whether the power budget and acoustic isolation story hold. Confirm the trace across at least one full 4-hour GNSS re-acquisition cycle before sizing the battery for deployment.
 
-## 9. Limitations and Next Steps
+## 10. Limitations and Next Steps
 
 **Simplified for the POC:**
 
@@ -377,6 +399,6 @@ The *shape* of the Mojo trace depends on whether the Notecarrier CX's Qwiic/3.3V
 
 - **Extended battery for winter/cloudy deployments.** After the Mojo bench exercise (§8) establishes the actual weighted-average system draw for your build, size the battery accordingly. In northern latitudes in December, available solar may be only 2–3 peak-sun hours per day. Moving to a 3000–5000 mAh LiPo pack and a higher-wattage panel (10W) provides several cloudy days of autonomy and recovers faster when the sun returns; confirm against at least one full 4-hour GNSS re-acquisition cycle in the Mojo trace before finalising battery sizing.
 
-## 10. Summary
+## 11. Summary
 
 Construction sites are legally required to monitor dust and noise exposure, but the current dosimeter paradigm produces data too late to act on — the shift is over before anyone reviews it. A Notecarrier CX with an onboard Cygnet, a cellular Notecard, a PM2.5/PM10 particle counter, and an analog sound level meter, all running on solar power, continuously streams geo-stamped area monitoring data in real time. The GC doesn't need to negotiate WiFi access from a subcontractor, run cable to a power outlet, or wait until morning to see what PM2.5 and dB(A) levels were during yesterday's concrete cutting. The Notecard Cell+WiFi's prepaid global cellular means this same enclosure deploys identically on every site the GC operates — one firmware image, one Notehub project, one fleet-per-site for threshold tuning — and when the site moves, the enclosure moves with it. The summary stream archives continuous area monitoring data; the alert stream puts a message in front of the safety officer immediately after a threshold breach is sampled — worst-case detection latency is one sample interval plus measurement time, compared with hours for an end-of-shift download. That real-time visibility is what enables the safety officer to act: redirect workers, deploy PPE, and dispatch personal monitoring before the shift ends rather than after. That's the gap this device closes.

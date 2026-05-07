@@ -10,6 +10,7 @@ A [safety assurance](https://blues.com/safety-assurance/) reference design that 
 
 ## 1. Project Overview
 
+
 **The problem.** Pharmacies, clinical laboratories, and vaccine depots are subject to a patchwork of overlapping regulations — USP Chapter 659 (Packaging and Storage Requirements), FDA 21 CFR Part 211.68, state board-of-pharmacy rules, and for federally funded programs, CDC Vaccine Storage and Handling guidelines. Every one of those frameworks requires automated temperature records with defined excursion thresholds: 2°C–8°C for most refrigerated vaccines and biologics, with documentation of any deviation, its duration, and the corrective action taken.
 
 The problem is not that facilities lack refrigerators — it's that most of them lack automated monitoring. A datalogger that must be manually downloaded, a wall thermometer read once per shift, or a WiFi-connected sensor that goes dark whenever the facility's network hiccups are all insufficient under a regulatory audit. Automated monitoring with individually timestamped readings and immediate excursion alerts is far more defensible than manual spot checks — and it produces a record that is complete even when nobody was watching.
@@ -18,13 +19,14 @@ This reference design demonstrates how to close that gap. The Notecarrier CX, wi
 
 **Why Notecard.** Pharmacies and clinical labs operate tightly managed network environments. PCI-compliant retail pharmacy networks, HIPAA-covered clinical networks, and federally regulated vaccine storage programs all share one thing: strict rules against unknown IoT-class devices on the primary LAN. A temperature sensor attached to the pharmacy WiFi is either going to fail a network security review or be quietly firewalled off from the internet. An independent cellular data path sidesteps that entire conversation — the Notecard registers on the carrier's network directly, never touches the facility's LAN, and the IT team never has to issue a network access request or sign a BAA for a refrigerator.
 
-That independence also matters for continuity. Facility WiFi goes down for maintenance, for storms, for power events — sometimes for hours. A WiFi-dependent compliance monitor is exactly the kind of device that silently stops logging at the worst possible moment. The Notecard's store-and-forward queue buffers Notes locally through any connectivity gap and syncs them when the cellular session resumes, with timestamps intact. The audit-evidence record this design produces consists of two streams: **per-sample reading Notes** (one timestamped Note per 5-minute wake, individually queued in the Notecard's flash-backed store) and **immediate alert Notes** (emitted the moment a threshold is tripped, regardless of the scheduled sync cadence). Every individual reading is persisted as a separate Note in the Notecard's on-device flash queue — no aggregation — preserving sample lineage across cellular connectivity gaps so an auditor can reconstruct the exact temperature history and door-event timeline for any window. For an auditor reviewing a weekend excursion event, that buffered record — every individual sample plus any alert Notes that fired — is not a nice-to-have. It is the record. (This store-and-forward guarantee covers cellular and WiFi outages; a separate, shallower host-side retry ring handles the distinct case where the host cannot reach the Notecard over I²C — see [§6 Retry and error handling](#retry-and-error-handling) and [Limitations](#9-limitations-and-next-steps).)
+That independence also matters for continuity. Facility WiFi goes down for maintenance, for storms, for power events — sometimes for hours. A WiFi-dependent compliance monitor is exactly the kind of device that silently stops logging at the worst possible moment. The Notecard's store-and-forward queue buffers Notes locally through any connectivity gap and syncs them when the cellular session resumes, with timestamps intact. The audit-evidence record this design produces consists of two streams: **per-sample reading Notes** (one timestamped Note per 5-minute wake, individually queued in the Notecard's flash-backed store) and **immediate alert Notes** (emitted the moment a threshold is tripped, regardless of the scheduled sync cadence). Every individual reading is persisted as a separate Note in the Notecard's on-device flash queue — no aggregation — preserving sample lineage across cellular connectivity gaps so an auditor can reconstruct the exact temperature history and door-event timeline for any window. For an auditor reviewing a weekend excursion event, that buffered record — every individual sample plus any alert Notes that fired — is not a nice-to-have. It is the record. (This store-and-forward guarantee covers cellular and WiFi outages; a separate, shallower host-side retry ring handles the distinct case where the host cannot reach the Notecard over I²C — see [§7 Retry and error handling](#retry-and-error-handling) and [Limitations](#9-limitations-and-next-steps).)
 
 WiFi fallback on the MBGLW is available as a secondary path, but only for sites that provide an explicitly approved, segregated IoT network for the device. Using the facility's primary pharmacy or clinical LAN defeats the network-independence rationale of this design, and a compliance monitor sitting behind a firewall exception is one network policy change away from silent failure.
 
-**Deployment scenario.** A small weatherproof enclosure mounts on the **exterior** of the cold storage unit — never inside the refrigerated compartment (sustained cold and condensation will damage unprotected electronics, and a metal refrigerator body will block cellular signal). The Adafruit MAX31865 amplifier board mounts inside the enclosure; the Adafruit PT1000 probe cable exits through a cable gland and routes into the compartment through the cabinet's manufacturer-provided probe port or door-gasket pass-through (see [§4 Wiring and Assembly](#4-wiring-and-assembly)), placing the stainless-steel probe capsule at the geometric center of the storage volume. The VEML7700 light sensor mounts at the exterior of the door frame — not inside the cold zone — where it detects light spillage when the door is ajar; see [Limitations](#9-limitations-and-next-steps) for condensation-tolerant production placement options. Door switch halves mount on the door and frame. The Notecarrier CX sits in the enclosure, USB-C powered from a wall adapter. The cellular antenna mounts on the exterior of the enclosure where it has line of sight to the network. No network configuration, no IT ticket, no manual download. **For bench development** without a probe routed into a cabinet, a TMP117 breakout (bench library-swap required) mounted inside the enclosure measures exterior ambient air and lets you validate the firmware architecture and cellular data path.
+**Deployment scenario.** A small weatherproof enclosure mounts on the **exterior** of the cold storage unit — never inside the refrigerated compartment (sustained cold and condensation will damage unprotected electronics, and a metal refrigerator body will block cellular signal). The Adafruit MAX31865 amplifier board mounts inside the enclosure; the Adafruit PT1000 probe cable exits through a cable gland and routes into the compartment through the cabinet's manufacturer-provided probe port or door-gasket pass-through (see [§5 Wiring and Assembly](#5-wiring-and-assembly)), placing the stainless-steel probe capsule at the geometric center of the storage volume. The VEML7700 light sensor mounts at the exterior of the door frame — not inside the cold zone — where it detects light spillage when the door is ajar; see [Limitations](#9-limitations-and-next-steps) for condensation-tolerant production placement options. Door switch halves mount on the door and frame. The Notecarrier CX sits in the enclosure, USB-C powered from a wall adapter. The cellular antenna mounts on the exterior of the enclosure where it has line of sight to the network. No network configuration, no IT ticket, no manual download. **For bench development** without a probe routed into a cabinet, a TMP117 breakout (bench library-swap required) mounted inside the enclosure measures exterior ambient air and lets you validate the firmware architecture and cellular data path.
 
 ## 2. System Architecture
+
 
 ![System architecture: PT1000 RTD + VEML7700 + door reed → Notecarrier CX with Cygnet host and Notecard MBGLW → cellular/WiFi → Notehub → compliance archive / LIMS / paging](diagrams/01-system-architecture.svg)
 
@@ -36,21 +38,41 @@ WiFi fallback on the MBGLW is available as a secondary path, but only for sites 
 
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
 
-## 2.5 Quickstart
+## 3. Technical Summary
+
 
 **What you'll have when done:** A Notecarrier CX with a calibrated PT1000 temperature probe, door switch, and light sensor that sends timestamped readings to Notehub every 5 minutes, with immediate alerts on temperature excursions or prolonged door-open events. Readings accumulate in the Notecard's flash-backed queue and sync on a 60-minute cellular schedule — completely independent of facility WiFi.
 
 **Fastest path to first event (no probe):** 
 1. Obtain a Notecarrier CX + MBGLW, VEML7700 sensor, and magnetic door switch
-2. Wire the three sensors (I²C, GPIO, and Qwiic as shown in [§4](#4-wiring-and-assembly))
+2. Wire the three sensors (I²C, GPIO, and Qwiic as shown in [§6](#5-wiring-and-assembly))
 3. Clone this repo; paste your Notehub ProductUID into `firmware/cold_storage_audit_monitor/cold_storage_audit_monitor.ino` (line 51)
 4. Flash with `arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/ && arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/ttyACM0 firmware/` (adjust port for your OS — this FQBN matches `firmware/cold_storage_audit_monitor/sketch.yaml`, so omitting `-b` also works when invoked from the sketch directory)
 5. Power up; verify readings appear in Notehub within 60 seconds (may take 1–5 minutes on first power for cellular registration)
 6. Override thresholds in Notehub **Fleet → Environment** (e.g., `temp_high_alert_c: 8.0`, `temp_low_alert_c: 2.0` for refrigerated storage)
 
-**For production:** Follow §9 and obtain a NIST-calibrated PT1000 probe assembly before regulatory deployment.
+**For production:** Follow §10 and obtain a NIST-calibrated PT1000 probe assembly before regulatory deployment.
 
-## 3. Hardware Requirements
+Here is a sample Note this device emits:
+
+```json
+{
+  "file": "storage_reading.qo",
+  "body": {
+    "temp_c": 4.62,
+    "lux": 0.18,
+    "door_open": false,
+    "door_open_sec": 0,
+    "sample_epoch": 1714435200,
+    "time_valid": true,
+    "dropped_readings": 0,
+    "dropped_alerts": 0
+  }
+}
+```
+
+## 4. Hardware Requirements
+
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
@@ -73,7 +95,8 @@ WiFi fallback on the MBGLW is available as a secondary path, but only for sites 
 
 All Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
-## 4. Wiring and Assembly
+## 5. Wiring and Assembly
+
 
 ![Wiring: PT1000 + MAX31865 on SPI with CS=D10; VEML7700 on Qwiic I²C; door reed to D5 INPUT_PULLUP; external SMA antenna via u.FL; USB-C 5.1 V → Mojo → +VBAT](diagrams/02-wiring-assembly.svg)
 
@@ -132,7 +155,7 @@ Position the probe tip at the geometric center of the compartment, away from air
 
 > ⚠️ **Do not drill or punch through the cabinet wall or door.** Cold-storage cabinets contain refrigerant lines and sealed foam insulation whose locations are not visible from the exterior. Unauthorized penetrations can sever a refrigerant line, compromise the insulation envelope, create a condensation path into the electronics, and void the equipment's safety approvals.
 
-**Bench substitute.** For firmware development and testing, the SparkFun TMP117 breakout (SEN-15805) can be connected via a 100 mm Qwiic cable to the Notecarrier CX. Using the TMP117 requires replacing `#include <Adafruit_MAX31865.h>` with `#include <SparkFun_TMP117.h>`, changing the `rtdAmp` global to a `TMP117 tempSensor` object, and replacing `readTemperatureC()` in `firmware/cold_storage_audit_monitor/cold_storage_audit_monitor_helpers.cpp` with the TMP117 `dataReady()` / `readTempC()` poll-based implementation. The TMP117 breakout mounts inside the enclosure and measures exterior ambient air only — it is not a cable-mounted probe and does not measure compartment interior temperature. Appropriate only for development and the functional validation described in [Validation and Testing](#8-validation-and-testing).
+**Bench substitute.** For firmware development and testing, the SparkFun TMP117 breakout (SEN-15805) can be connected via a 100 mm Qwiic cable to the Notecarrier CX. Using the TMP117 requires replacing `#include <Adafruit_MAX31865.h>` with `#include <SparkFun_TMP117.h>`, changing the `rtdAmp` global to a `TMP117 tempSensor` object, and replacing `readTemperatureC()` in `firmware/cold_storage_audit_monitor/cold_storage_audit_monitor_helpers.cpp` with the TMP117 `dataReady()` / `readTempC()` poll-based implementation. The TMP117 breakout mounts inside the enclosure and measures exterior ambient air only — it is not a cable-mounted probe and does not measure compartment interior temperature. Appropriate only for development and the functional validation described in [Validation and Testing](#9-validation-and-testing).
 
 ### Light sensor placement
 
@@ -142,9 +165,10 @@ Position the probe tip at the geometric center of the compartment, away from air
 **Power:**
 
 - USB-C wall adapter → Notecarrier CX USB-C port (normal bench and deployment use).
-- For Mojo bench validation: use a bench power supply (3.7–4.2 V, LiPo-range) as the source. **Do not connect the USB-C cable during this measurement** — with VUSB absent the Notecard enters its deepest idle state and the µA-level idle figures become visible on the VBAT rail. Connect the supply positive to Mojo **BAT+** and run Mojo **LOAD+** to the Notecarrier CX **+VBAT** pad on the dual 16-pin header; return the negative rail from Notecarrier CX **GND** back to the supply. Connect Mojo's Qwiic port to the VEML7700 Qwiic OUT connector using the 100 mm bench Qwiic cable listed in [§3 Hardware Requirements](#3-hardware-requirements) for this purpose, daisy-chaining Mojo onto the end of the I²C bus. This arrangement measures the total VBAT rail current (Notecard plus Cygnet when active) and reveals the classic sleep-wake-cellular current profile described in Validation.
+- For Mojo bench validation: use a bench power supply (3.7–4.2 V, LiPo-range) as the source. **Do not connect the USB-C cable during this measurement** — with VUSB absent the Notecard enters its deepest idle state and the µA-level idle figures become visible on the VBAT rail. Connect the supply positive to Mojo **BAT+** and run Mojo **LOAD+** to the Notecarrier CX **+VBAT** pad on the dual 16-pin header; return the negative rail from Notecarrier CX **GND** back to the supply. Connect Mojo's Qwiic port to the VEML7700 Qwiic OUT connector using the 100 mm bench Qwiic cable listed in [§4 Hardware Requirements](#4-hardware-requirements) for this purpose, daisy-chaining Mojo onto the end of the I²C bus. This arrangement measures the total VBAT rail current (Notecard plus Cygnet when active) and reveals the classic sleep-wake-cellular current profile described in Validation.
 
-## 5. Notehub Setup
+## 6. Notehub Setup
+
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/cold_storage_audit_monitor/cold_storage_audit_monitor.ino` line 51 as `PRODUCT_UID`.
 
@@ -212,7 +236,8 @@ Position the probe tip at the geometric center of the compartment, away from air
    }
    ```
 
-## 6. Firmware Design
+## 7. Firmware Design
+
 
 The sketch is split across three files, all directly under `firmware/`:
 
@@ -302,7 +327,7 @@ Sampling every 5 minutes on a line-powered device does not strictly require aggr
 
 After each sample cycle, `goToSleep()` calls `NotePayloadSaveAndSleep`, which serializes the `AppState` struct into the Notecard's flash and issues `card.attn` with `mode:sleep` and the configured sleep duration. The Notecard's ATTN pin then drives the Notecarrier CX enable gate LOW, cutting power to the Cygnet entirely between wakes. Sampling and transmitting are deliberately decoupled: the firmware samples every 5 minutes and enqueues one reading Note per wake, then flushes the accumulated queue in a single cellular session on the 60-minute outbound cadence — alerts are the only thing that break that batch.
 
-**Power path and current expectations.** On the **deployed USB-C wall-power path** (VUSB present), the Notecard's idle draw is higher than the µA-level figures published for VBAT-only operation — the USB interface and monitoring circuits remain active while VUSB is asserted. The benefit the ATTN-based sleep still delivers on USB-C is **host MCU power-down**: the Cygnet is fully unpowered between wakes, eliminating its contribution and any self-heating from the host during the 5-minute idle. The Notecard's own USB-C idle current is documented in the [MBGLW DC characteristics table](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/); the quantitative idle table in [§8](#8-validation-and-testing) applies only to the **+VBAT bench configuration with VUSB absent**. The Cygnet-active phase is estimated at **3–10 mA** — no Blues factory specification exists for this combined phase, and this figure has not been validated against production hardware. Treat it as a commissioning target only; measure the actual draw on your bench with a Mojo or current probe before finalising any power budget.
+**Power path and current expectations.** On the **deployed USB-C wall-power path** (VUSB present), the Notecard's idle draw is higher than the µA-level figures published for VBAT-only operation — the USB interface and monitoring circuits remain active while VUSB is asserted. The benefit the ATTN-based sleep still delivers on USB-C is **host MCU power-down**: the Cygnet is fully unpowered between wakes, eliminating its contribution and any self-heating from the host during the 5-minute idle. The Notecard's own USB-C idle current is documented in the [MBGLW DC characteristics table](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/); the quantitative idle table in [§10](#9-validation-and-testing) applies only to the **+VBAT bench configuration with VUSB absent**. The Cygnet-active phase is estimated at **3–10 mA** — no Blues factory specification exists for this combined phase, and this figure has not been validated against production hardware. Treat it as a commissioning target only; measure the actual draw on your bench with a Mojo or current probe before finalising any power budget.
 
 ### Retry and error handling
 
@@ -377,7 +402,8 @@ if (light_on && !door_open && cooldown_ok) {
 }
 ```
 
-## 7. Data Flow
+## 8. Data Flow
+
 
 ![Data flow: 5-min sample of RTD °C, lux, and door state → four rules (temp_excursion_high/low, door_open_timeout, sensor_disagreement) → storage_alert.qo (sync:true) and storage_reading.qo (per-sample audit grade) → Notehub routes](diagrams/03-data-flow.svg)
 
@@ -396,7 +422,8 @@ Every `sample_interval_sec` (default 5 minutes) the Cygnet reads temperature, lu
 
 **Routed.** Both Notefiles land in Notehub. From there, routes can deliver `storage_alert.qo` to a paging or ticketing system in near-real time, and `storage_reading.qo` to a long-term compliance archive or LIMS system. Because the Notefiles are distinct at the source, no filtering logic is needed in the route configuration — each destination subscribes to exactly the volume it needs.
 
-## 8. Validation and Testing
+## 9. Validation and Testing
+
 
 **Startup time-acquisition window.** All alert logic (temperature excursion, door timeout, sensor disagreement) and door-duration tracking are gated on the Notecard returning a valid UTC epoch from `card.time` (firmware guard: `now > 0`). On first power-on, the Notecard must register on the cellular network and sync time with Notehub before `card.time` returns a non-zero value; this typically takes one to several minutes but can be longer in marginal-signal environments. During this initial window the device reads sensors and enqueues reading Notes with **unverified timestamps**, but **no alerts fire**. The Notecard's onboard RTC is not synchronized until the first Notehub session completes, so the `when` field on those early Notes may be inaccurate; treat Notes emitted during this window as commissioning-only data rather than audit-grade records. Door timing specifically requires a valid epoch: if the door is open before `card.time` returns non-zero, `door_open_since` is not set and `door_open_sec` in the reading Note will read zero; duration tracking begins only on the first sample where both the door is seen open and the epoch is valid. Plan for a commissioning warm-up period of at least 5 minutes before relying on alert delivery, door-duration accuracy, or audit-grade UTC timestamps in reading Notes.
 
@@ -408,7 +435,7 @@ Every `sample_interval_sec` (default 5 minutes) the Cygnet reads temperature, lu
 
 **Sensor-disagreement test.** The rule fires only when `lux > door_lux_threshold` AND the door switch reads CLOSED (`door_open = false`, D5 LOW). Disconnecting the switch or removing the magnet drives D5 HIGH (`door_open = true`), which does **not** meet the alert condition — do not use those as the test stimulus. To trigger the alert on a door-actuated-lamp unit: hold the door magnet directly against the reed switch body while opening the door, so the switch stays CLOSED (D5 LOW) while the interior lamp comes on. Alternatively, force D5 LOW externally (short D5 to GND on the header to simulate a stuck-closed switch) while shining a flashlight at the VEML7700. The firmware should emit a `sensor_disagreement` alert on the next sample cycle.
 
-**Power validation with Mojo.** The [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) is a coulomb counter that reports cumulative mAh over its Qwiic connection. During bench validation, wire it inline on the Notecarrier CX +VBAT rail with a bench LiPo-range supply and **no USB-C cable connected** (see [Wiring and Assembly](#4-wiring-and-assembly) for the complete bench setup). The figures below apply to this **+VBAT bench configuration with VUSB absent only** — they do not represent USB-C deployed operation. Notecard idle and cellular-session figures are drawn from the [MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) and the Blues [low-power firmware design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/); the Cygnet-active range is a bench-measured commissioning target, not a factory specification. Actual draw varies with signal quality, network registration time, and Note payload size:
+**Power validation with Mojo.** The [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) is a coulomb counter that reports cumulative mAh over its Qwiic connection. During bench validation, wire it inline on the Notecarrier CX +VBAT rail with a bench LiPo-range supply and **no USB-C cable connected** (see [Wiring and Assembly](#5-wiring-and-assembly) for the complete bench setup). The figures below apply to this **+VBAT bench configuration with VUSB absent only** — they do not represent USB-C deployed operation. Notecard idle and cellular-session figures are drawn from the [MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) and the Blues [low-power firmware design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/); the Cygnet-active range is a bench-measured commissioning target, not a factory specification. Actual draw varies with signal quality, network registration time, and Note payload size:
 
 | Phase | Expected current — +VBAT bench, VUSB absent |
 |---|---|
@@ -422,7 +449,8 @@ On the **deployed USB-C wall-power path** (VUSB present), the Notecard's main su
 
 See the [MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) and the [Notecard low-power firmware design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) for complete, authoritative power figures.
 
-## 9. Troubleshooting
+## 10. Troubleshooting
+
 
 **Device does not appear in Notehub.**
 - Confirm PRODUCT_UID is correctly pasted into `firmware/cold_storage_audit_monitor/cold_storage_audit_monitor.ino` line 51 and that you have flashed the firmware.
@@ -431,8 +459,8 @@ See the [MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/not
 - Open the Notehub **Project → Devices** tab and look for the device serial number; if it appears in the device list but shows no Events, check the cellular signal at that location (weak signal can delay first registration).
 
 **Temperature readings are −9999 or missing.**
-- The MAX31865 amplifier or PT1000 probe has a fault. Verify SPI wiring: CLK, SDI (MISO label on CX), SDO (MOSI label on CX), CS (D10), +3.3V, GND. Note the [Notecarrier CX v1.3 label swap](#rtd-temperature-amplifier-max31865) — the silkscreen labels MOSI and MISO are reversed; use the pin table in §4, not the labels.
-- If using a bench TMP117 instead, confirm the Qwiic cable is connected and that you have swapped the library from MAX31865 to SparkFun_TMP117 (see [§3](#3-hardware-requirements)).
+- The MAX31865 amplifier or PT1000 probe has a fault. Verify SPI wiring: CLK, SDI (MISO label on CX), SDO (MOSI label on CX), CS (D10), +3.3V, GND. Note the [Notecarrier CX v1.3 label swap](#rtd-temperature-amplifier-max31865) — the silkscreen labels MOSI and MISO are reversed; use the pin table in §5, not the labels.
+- If using a bench TMP117 instead, confirm the Qwiic cable is connected and that you have swapped the library from MAX31865 to SparkFun_TMP117 (see [§5](#4-hardware-requirements)).
 - Open the Notehub **Project → Terminal** tab, select your device, and run `card.status` to check if the Notecard is reporting a fault condition.
 
 **Lux readings are −1.0.**
@@ -446,17 +474,18 @@ See the [MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/not
 
 **The device is consuming too much power.**
 - Verify the Notecard is entering sleep mode. On a +VBAT bench setup (no USB-C), the baseline current should be single-digit µA between samples. If the baseline is persistently > 1 mA, the ATTN pin wiring may be incorrect, or the `NotePayloadSaveAndSleep` call may not be executing. Check the ATTN pin connection from the Notecard to the Notecarrier CX enable gate.
-- On a USB-C powered deployment, the Notecard's idle current is higher than the µA bench figures (see [§8 Power validation](#power-validation-with-mojo)). This is expected.
+- On a USB-C powered deployment, the Notecard's idle current is higher than the µA bench figures (see [§9 Power validation](#power-validation-with-mojo)). This is expected.
 
 ---
 
-## 10. Limitations and Next Steps
+## 11. Limitations and Next Steps
+
 
 **Deployment considerations:**
 
 - **Regulatory and compliance scope.** This reference design produces an audit-evidence record of temperature readings, door events, and excursion alerts, and transmits that record to Notehub via an independent cellular data path. It does not implement, and does not substitute for, site validation, SOP authorship, calibration program management, record-retention policy, electronic-record controls (e.g., 21 CFR Part 11 audit trails, access controls, and change management), or the broader quality-management framework required by any specific regulatory body. Deploying this design as part of a monitored, compliant storage program requires an exact calibrated probe assembly with a current NIST-traceable certificate, written commissioning and operating procedures, and validation documentation. Those are operator responsibilities, not firmware features.
 
-- **The production probe assembly is specified; obtain its NIST-traceable calibration certificate before deploying.** The firmware implements the Adafruit Platinum RTD Sensor PT1000 3-Wire 1 m (Product 3984) via the Adafruit MAX31865 PT1000 Amplifier (Product 3648). The PT1000 probe's 316L stainless-steel capsule routes into the refrigerated compartment; the MAX31865 amplifier board mounts inside the enclosure. This path provides the required cable-mounted, compartment-internal temperature measurement. **The probe does not ship with a NIST-traceable calibration certificate.** Before regulatory deployment, submit the specific probe assembly to an accredited calibration laboratory (e.g., Transcat, Tektronix Calibration, or a lab accredited under ILAC to ISO/IEC 17025) to receive a calibration certificate traceable to NIST for that individual unit. Keep the certificate on file with the unit's commissioning and IQ/OQ documentation, and enter the unit into a recertification schedule matching your calibration management program. The SparkFun TMP117 breakout (SEN-15805) is a bench substitute only — see [§3 Hardware Requirements](#3-hardware-requirements) for the library swap required to use it.
+- **The production probe assembly is specified; obtain its NIST-traceable calibration certificate before deploying.** The firmware implements the Adafruit Platinum RTD Sensor PT1000 3-Wire 1 m (Product 3984) via the Adafruit MAX31865 PT1000 Amplifier (Product 3648). The PT1000 probe's 316L stainless-steel capsule routes into the refrigerated compartment; the MAX31865 amplifier board mounts inside the enclosure. This path provides the required cable-mounted, compartment-internal temperature measurement. **The probe does not ship with a NIST-traceable calibration certificate.** Before regulatory deployment, submit the specific probe assembly to an accredited calibration laboratory (e.g., Transcat, Tektronix Calibration, or a lab accredited under ILAC to ISO/IEC 17025) to receive a calibration certificate traceable to NIST for that individual unit. Keep the certificate on file with the unit's commissioning and IQ/OQ documentation, and enter the unit into a recertification schedule matching your calibration management program. The SparkFun TMP117 breakout (SEN-15805) is a bench substitute only — see [§4 Hardware Requirements](#4-hardware-requirements) for the library swap required to use it.
 
 - **Single-point temperature measurement.** One PT1000 probe measures a single location in the compartment. USP Chapter 659 and CDC guidelines recommend sensor placement at the geometric center of the unit, away from vents and walls. Units with high thermal gradients (e.g., large reach-in freezers) may need multiple probes. Adding a second MAX31865 on a different SPI chip-select pin (e.g., D9) with a second calibrated PT1000 probe, and a second `temp_c_2` template field, is a straightforward extension.
 
@@ -488,7 +517,8 @@ See the [MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/not
 - Integrate Notehub-side webhook routing to a LIMS or compliance database. The per-sample reading Note body maps directly to a time-series schema; the alert Note maps to an excursion event record.
 - **Ultra-cold storage (−80°C freezers) is not supported by this hardware.** The Adafruit PT1000 probe (Product 3984) is rated to −50°C; using it below that limit is outside the manufacturer's specification and is not appropriate for a regulatory-grade deployment. Ultra-cold monitoring requires a dedicated RTD probe and amplifier chain rated to −80°C or below (e.g., a PT100 probe specified for cryogenic service), a calibration certificate covering that lower temperature range, and validation of the full measurement chain at operating temperature. The firmware architecture (per-sample reading Notes, immediate-sync alert Notes, environment-variable thresholds) is compatible with that extension, but the sensor hardware must be replaced.
 
-## 11. Summary
+## 12. Summary
+
 
 Most pharmacy cold-chain incidents don't start with a failed sensor — they start with an undocumented excursion that nobody noticed, or a brief door-open event that happened over the weekend when nobody was watching. This design puts a continuously-monitoring, network-independent measurement device beside every cold storage unit that matters: a PT1000 RTD probe (Adafruit 3984 + MAX31865 amplifier 3648) routed into the compartment through the cabinet's probe port or door gasket — submitted to a calibration laboratory for a NIST-traceable certificate before deployment — a door switch that detects prolonged-open events (sampled once per `sample_interval_sec` — open/close cycles shorter than the interval are not captured; see [Limitations](#9-limitations-and-next-steps)), and a light sensor that provides an independent second opinion on door state (exterior door-frame placement recommended — see [Limitations](#9-limitations-and-next-steps) for production condensation-tolerant options). Reading Notes accumulate on the Notecard's local queue through any facility network disruption and sync to Notehub the moment cellular returns — so the monitoring record is complete even when the WiFi is not.
 

@@ -10,13 +10,14 @@ A wearable [safety assurance](https://blues.com/safety-assurance/) device for ut
 
 ## 1. Project Overview
 
+
 > **Not a certified life-safety device.** This is a proof-of-concept reference design intended to demonstrate Blues hardware and firmware patterns. It is not a certified personal emergency response system (PERS), not a classified man-down or lone-worker protection device under any regulatory scheme, and has not been evaluated for fail-safe or safety-critical operation. It must **supplement — not replace** — established lone-worker safety procedures, mandatory check-in protocols, required PPE, and any regulatory or contractual safety obligations that apply to your operation. Never deploy this design as a sole means of worker protection.
 
 **The problem.** A utility lineman working an isolated substation, an oilfield pumper checking a remote wellhead at night, a field-service tech in a basement boiler room at 2 AM — each of these workers shares a common vulnerability: if something goes wrong, nobody will know for hours. Lone-worker incidents don't always announce themselves. Falls from elevation are silent. Heart events are silent. The worker simply stops moving, and no one notices until a shift check-in is missed or a buddy does a welfare call.
 
 The gap isn't awareness — most safety-conscious operations already require check-in procedures. The gap is *automatic, continuous* monitoring that doesn't depend on the worker remembering to push a button every 30 minutes. What these workers need is a device that monitors for the physical signatures of an incident — sudden free-fall, violent deceleration on impact, prolonged motionlessness after a fall — and raises an alarm without any action on the part of the worker. The panic button is a secondary escape valve: an explicit human override for situations where the physics don't look like a fall but the worker knows something is very wrong.
 
-This project is that device — a wearable safety beacon built on two core detection modes: automatic fall detection and explicit panic-button input. The onboard Cygnet STM32L433 host runs a two-stage fall-detection algorithm on the LIS3DH accelerometer sampled at ~100 Hz (a 10-sample inner loop runs at 10 ms intervals so free-fall phases as short as 80 ms are always observed; Notecard I/O and state checks run at the outer ~10 Hz cadence; see [Section 6](#6-firmware-design) for the sampling design), monitors a held-down panic button with debounce logic, and drives a haptic motor to acknowledge every confirmed event. On fall or panic, the firmware immediately queues a compact emergency note carrying the Notecard's cached location and transmits it with `sync:true` — no GPS wait before the alert goes out. A non-blocking background GPS search then runs without suspending fall or button monitoring; if a fresh fix arrives within the timeout window, a follow-up `beacon_location.qo` note is queued with the event-time coordinates. See [Section 6](#6-firmware-design) for the full two-note flow.
+This project is that device — a wearable safety beacon built on two core detection modes: automatic fall detection and explicit panic-button input. The onboard Cygnet STM32L433 host runs a two-stage fall-detection algorithm on the LIS3DH accelerometer sampled at ~100 Hz (a 10-sample inner loop runs at 10 ms intervals so free-fall phases as short as 80 ms are always observed; Notecard I/O and state checks run at the outer ~10 Hz cadence; see [Section 6](#7-firmware-design) for the sampling design), monitors a held-down panic button with debounce logic, and drives a haptic motor to acknowledge every confirmed event. On fall or panic, the firmware immediately queues a compact emergency note carrying the Notecard's cached location and transmits it with `sync:true` — no GPS wait before the alert goes out. A non-blocking background GPS search then runs without suspending fall or button monitoring; if a fresh fix arrives within the timeout window, a follow-up `beacon_location.qo` note is queued with the event-time coordinates. See [Section 6](#7-firmware-design) for the full two-note flow.
 
 **Why Notecard.** Cellular coverage is not a given for the environments where lone-worker incidents happen. A substation at the edge of a service area, a gas compressor station in a rural county, a mine portal — these are precisely the places where a worker is most isolated *and* where cellular signal is most likely to be marginal or absent. Relying on cellular alone creates the dangerous assumption that signal is available when it's needed most.
 
@@ -27,6 +28,7 @@ The WiFi path in the Notecard Cell+WiFi variant is an opportunistic bonus: a fie
 **Deployment scenario.** The beacon ships as a self-contained unit in a rugged belt-clip enclosure, powered by a 3.7V LiPo battery. Workers clip it onto their belt or hard-hat band like a pager. Worker IDs are pre-provisioned per device in Notehub before deployment; changes to `worker_id` propagate to the device on the next inbound sync, which defaults to every 2 hours — not immediately at shift start. Falls and panics generate immediate alerts. No app, no phone pairing, no worker attention required — just clip it on and go.
 
 ## 2. System Architecture
+
 
 ![System architecture: wearable I/O (LIS3DH accel, panic button, haptic motor) → Notecarrier CX with Cygnet host, Notecard MBGLW, and Starnote → cellular or Skylo satellite → Notehub → dispatch / paging / compliance](diagrams/01-system-architecture.svg)
 
@@ -40,11 +42,12 @@ When Starnote for Skylo is attached and a cellular session cannot be established
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint. A typical deployment routes both `beacon_alert.qo` and `beacon_location.qo` to the same real-time dispatch endpoint, joined by device UID and `event_id`.
 
-## 2.5. Quickstart: First Build and Test
+## 3. Technical Summary
+
 
 **What you'll have when you're done:** a wearable beacon that detects falls and panic-button presses, transmits alerts to Notehub over cellular or satellite, and provides haptic feedback on every event.
 
-**Prerequisites:** Arduino IDE or `arduino-cli`, a Notehub account, and a Notecarrier CX fully assembled per the wiring in [Section 4](#4-wiring-and-assembly).
+**Prerequisites:** Arduino IDE or `arduino-cli`, a Notehub account, and a Notecarrier CX fully assembled per the wiring in [Section 4](#5-wiring-and-assembly).
 
 **Step 1: Install dependencies**
 
@@ -85,9 +88,31 @@ arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET \
 - Check Notehub: navigate to your project's Devices tab, select your device, and view the Events log. A `beacon_alert.qo` event with `"type":"panic"` should appear within 30–90 seconds.
 - Drop the beacon 50–80 cm onto a padded surface. You should feel a double buzz (fall detected) and see a `beacon_alert.qo` with `"type":"fall"` in the Events log.
 
-If no event appears, check [Section 10 (Troubleshooting)](#10-troubleshooting-common-issues).
+If no event appears, check [Section 10 (Troubleshooting)](#10-troubleshooting).
 
-## 3. Hardware Requirements
+Here is a sample Note this device emits:
+
+```json
+{
+  "uid": "d84e3a...",
+  "device": "dev:000000000000000",
+  "file": "beacon_alert.qo",
+  "received": 1714582020,
+  "best_lat": 40.71280,
+  "best_lon": -74.00601,
+  "best_location": "New York NY",
+  "body": {
+    "type": "fall",
+    "worker_id": "lineman-042",
+    "event_id": 7,
+    "voltage": 3.71,
+    "loc_age_s": 142
+  }
+}
+```
+
+## 4. Hardware Requirements
+
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
@@ -102,15 +127,16 @@ If no event appears, check [Section 10 (Troubleshooting)](#10-troubleshooting-co
 | [SparkFun Momentary Push Button Switch — 12mm Square (PRT-09190)](https://www.sparkfun.com/products/9190) | 1 | Panic input, wired to D9 with firmware INPUT_PULLUP. Choose a cap that can be operated with a gloved hand for field deployability. |
 | 3.7V LiPo battery, 1200 mAh, JST-PH 2-pin (e.g. [Adafruit #2011](https://www.adafruit.com/product/2011)) | 1 | Powers the device. Runtime depends on alert frequency and transport conditions — validate with Mojo before sizing for deployment. Use a cell with built-in protection circuitry. |
 | [Adafruit JST PH 2-Pin Cable — Female Connector 100mm (#261)](https://www.adafruit.com/product/261) | 1 | Adapts the LiPo cell's JST-PH male plug to bare wire leads for connection to the Mojo `BAT+` and `GND` solder pads. Required to complete the LiPo→Mojo power path without cutting or modifying the LiPo cell's factory connector. |
-| Polycarbonate project enclosure, ≥120 × 80 × 40 mm interior, IP54+ (e.g., Hammond 1553JGYBK) | 1 | Protects the board stack, battery, and connectors in a field-deployable package. The Notecarrier CX (83 × 63 mm) sets the minimum floor area. **Must be polycarbonate (non-metal)** — metal enclosures block LTE-M, GNSS, and satellite signals. Requires cutouts for the panic button and the LiPo JST connector for battery access; the flexible dual antenna adheres to the interior enclosure walls without external routing. IP54 or better is recommended for outdoor field use. Verify interior dimensions against your specific board-and-battery stack before ordering. **No charging circuit is included in this BOM** — see [Section 9](#9-limitations-and-next-steps) for rationale; plan enclosure cutouts for any charging connector you add downstream. |
+| Polycarbonate project enclosure, ≥120 × 80 × 40 mm interior, IP54+ (e.g., Hammond 1553JGYBK) | 1 | Protects the board stack, battery, and connectors in a field-deployable package. The Notecarrier CX (83 × 63 mm) sets the minimum floor area. **Must be polycarbonate (non-metal)** — metal enclosures block LTE-M, GNSS, and satellite signals. Requires cutouts for the panic button and the LiPo JST connector for battery access; the flexible dual antenna adheres to the interior enclosure walls without external routing. IP54 or better is recommended for outdoor field use. Verify interior dimensions against your specific board-and-battery stack before ordering. **No charging circuit is included in this BOM** — see [Section 9](#11-limitations-and-next-steps) for rationale; plan enclosure cutouts for any charging connector you add downstream. |
 
 All Blues hardware ships with an active SIM including 500 MB of cellular data and 10 years of service — no activation fees, no monthly commitment.
 
 > **Installer-supplied, deployment-specific item.** Belt clip or wearable mounting hardware — attaches the beacon to a worker's belt, hard-hat band, or safety vest. Select a clip rated for the enclosure weight (~300 g fully loaded). Some enclosure families include an optional clip-arm accessory; a spring-steel belt clip can be mounted to the enclosure exterior with M3 screws.
 
-> **Charging and power access.** No LiPo charging circuit, dock, or power-switch hardware is included in this BOM or wiring. The project runs on a bare LiPo cell until depleted. A production wearable needs a USB-C LiPo charging circuit integrated into the enclosure, plus overcharge and short-circuit protection if not already provided by the cell's built-in circuitry. See [Section 9](#9-limitations-and-next-steps) for details; adding a charging path is the expected next step for anyone moving from bench validation toward a field-deployed unit.
+> **Charging and power access.** No LiPo charging circuit, dock, or power-switch hardware is included in this BOM or wiring. The project runs on a bare LiPo cell until depleted. A production wearable needs a USB-C LiPo charging circuit integrated into the enclosure, plus overcharge and short-circuit protection if not already provided by the cell's built-in circuitry. See [Section 9](#11-limitations-and-next-steps) for details; adding a charging path is the expected next step for anyone moving from bench validation toward a field-deployed unit.
 
-## 4. Wiring and Assembly
+## 5. Wiring and Assembly
+
 
 ![Wiring: LIS3DH + DRV2605L on shared I²C; panic button to D9 INPUT_PULLUP; dual flex antenna on Notecard CELL + GPS u.FL; Starnote satellite via JST; LiPo 3.7 V → Mojo → +VBAT](diagrams/02-wiring-assembly.svg)
 
@@ -140,7 +166,8 @@ Pin-by-pin:
 
 The LIS3DH's SDO/SA0 pin sets the I²C address. Leave it unconnected or pulled to GND for address 0x18 (the firmware default). The DRV2605L address (0x5A) is fixed; no conflict.
 
-## 5. Notehub Setup and Configuration
+## 6. Notehub Setup
+
 
 **Detailed walkthrough for first-time users:**
 
@@ -165,7 +192,8 @@ The LIS3DH's SDO/SA0 pin sets the I²C address. Leave it unconnected or pulled t
 
 6. **Configure routes** (optional for now; use for live dispatch). Go to **Routes** → **Create Route** → Name it (e.g., "Dispatch Alerts") → select **Event** → filter by file `beacon_alert.qo` → select a destination (HTTP, SMTP, Slack, etc.). **Important:** Add a **second route** for `beacon_location.qo` to the **same** destination. When a fresh GPS fix arrives during the 90-second background search, `beacon_location.qo` carries event-time coordinates that supersede the cached location in the paired `beacon_alert.qo`. Downstream systems must pair the two notes by `(device, event_id)` — `event_id` resets to 0 on each power cycle and is not globally unique on its own. The `(device, event_id)` join key is unambiguous across repeated alerts, retries, and network reordering.
 
-## 6. Firmware Design
+## 7. Firmware Design
+
 
 Source files (all three live directly under `firmware/`):
 - [`firmware/lone_worker_beacon/lone_worker_beacon.ino`](firmware/lone_worker_beacon/lone_worker_beacon.ino) — constants, globals, `setup()`, `loop()`.
@@ -253,11 +281,11 @@ The `type` field in `beacon_alert.qo` carries one of two values: `fall` (two-sta
 
 ### Low-Power Strategy
 
-**This POC keeps the host MCU awake continuously — this is a deliberate design choice, not an oversight.** The device must detect a fall or button press at any moment, so `card.attn` sleep mode (which cuts host power entirely) is incompatible with the monitoring requirement. Instead, the host MCU remains awake continuously, running a dual-cadence loop: the LIS3DH is sampled at ~100 Hz via a 10-sample inner loop (10 ms between reads), and Notecard/GPS/haptic state advances at the outer ~10 Hz cadence. The inner-loop delays pace the outer cadence without a separate top-level `delay()` call. The battery-life penalty is real and significant: the STM32L433 at its default clock draws approximately 10–15 mA active, making host idle the dominant draw at steady state. See the [power validation table](#8-validation-and-testing) for per-state figures and validate total runtime with Mojo before sizing a battery for deployment.
+**This POC keeps the host MCU awake continuously — this is a deliberate design choice, not an oversight.** The device must detect a fall or button press at any moment, so `card.attn` sleep mode (which cuts host power entirely) is incompatible with the monitoring requirement. Instead, the host MCU remains awake continuously, running a dual-cadence loop: the LIS3DH is sampled at ~100 Hz via a 10-sample inner loop (10 ms between reads), and Notecard/GPS/haptic state advances at the outer ~10 Hz cadence. The inner-loop delays pace the outer cadence without a separate top-level `delay()` call. The battery-life penalty is real and significant: the STM32L433 at its default clock draws approximately 10–15 mA active, making host idle the dominant draw at steady state. See the [power validation table](#9-validation-and-testing) for per-state figures and validate total runtime with Mojo before sizing a battery for deployment.
 
 The Notecard runs in `periodic` mode with `outbound: 1440` (daily flush) and `inbound: 120` (2-hour environment-variable refresh). All emergency notes carry `sync:true`, which bypasses the outbound interval and triggers an immediate cellular or satellite session — the daily flush is a backstop for any queued data that sync:true did not deliver. Between sync events the Notecard sits in its own low-power STOP2 idle state at ~8–18 µA. GPS is off by default and turned on only during alert events (fall, panic) — continuous GPS would consume an additional 30+ mA and is unnecessary given the design's event-driven location update cadence.
 
-A production implementation should use STM32L433 low-power STOP2 mode with GPIO wakeup on the LIS3DH hardware interrupt (INT1) and button pin — dropping host idle to ~2–3 µA while still catching every fall event in real time. See [Limitations](#9-limitations-and-next-steps).
+A production implementation should use STM32L433 low-power STOP2 mode with GPIO wakeup on the LIS3DH hardware interrupt (INT1) and button pin — dropping host idle to ~2–3 µA while still catching every fall event in real time. See [Limitations](#11-limitations-and-next-steps).
 
 ### Retry and Error Handling
 
@@ -397,7 +425,8 @@ void pollGpsSearch() {
 
 If GPS times out, only the initial `beacon_alert.qo` note is sent; the cached location (which may be GNSS-derived, cell-derived, stale, or empty) stands. The `loc_age_s` field in the initial alert records how old the cached fix was at alert time, letting dispatch judge location freshness independently.
 
-## 7. Data Flow
+## 8. Data Flow
+
 
 ![Data flow: 100 Hz LIS3DH inner loop / 10 Hz outer → fall and panic detection → beacon_alert.qo (sync:true with cached location) and beacon_location.qo (GPS follow-up) → Notehub, paired by event_id](diagrams/03-data-flow.svg)
 
@@ -415,54 +444,8 @@ If GPS times out, only the initial `beacon_alert.qo` note is sent; the cached lo
 - `fall` — two-stage algorithm: free-fall phase followed by impact within the detection window. Suppressed if within 60 s of the previous alert.
 - `panic` — panic button held for `panic_hold_ms` (default 2 seconds). Suppressed if within 60 s of the previous alert.
 
-## 7.5. Event Payload Reference (All Fields)
+## 9. Validation and Testing
 
-When a `beacon_alert.qo` or `beacon_location.qo` event arrives at Notehub, it includes both metadata (auto-added by Notehub) and the compact-template body. Downstream integrators should reference these fields:
-
-**`beacon_alert.qo` body fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `type` | string | `"fall"` (two-stage algorithm confirmed) or `"panic"` (button held). |
-| `worker_id` | string | Human-readable worker or device identifier (max 24 chars; longer values truncated). |
-| `event_id` | int32 | Monotonic counter incremented once per new alert dispatch (not per retry). Same value in paired `beacon_location.qo`. Use `(device, event_id)` as join key downstream. Resets to 0 on power cycle. |
-| `voltage` | float | Battery voltage in volts at alert time. Useful for fleet health monitoring. |
-| `loc_age_s` | float | Age of the Notecard's cached GPS fix in seconds at the moment the alert was queued. -1.0 if no cached fix is available. When `beacon_location.qo` is present (same `event_id`), its coordinates supersede this cached location. |
-| `_lat` | float | Cached GPS latitude, embedded automatically by the compact template. May be stale or cell-derived if no GNSS fix is available. |
-| `_lon` | float | Cached GPS longitude, embedded automatically by the compact template. May be stale or cell-derived if no GNSS fix is available. |
-
-**`beacon_location.qo` body fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `type` | string | Echoes the triggering alert type (`"fall"` or `"panic"`). |
-| `worker_id` | string | Echoes the worker ID from the paired alert. |
-| `event_id` | int32 | Matches the `event_id` in the paired `beacon_alert.qo`. Downstream systems use `(device, event_id)` as the join key to correlate the two notes. |
-| `_lat` | float | Fresh event-time GPS latitude, acquired during the background search window (within 90 seconds of the initial alert). Supersedes the cached location in `beacon_alert.qo`. |
-| `_lon` | float | Fresh event-time GPS longitude, acquired during the background search window. Supersedes the cached location in `beacon_alert.qo`. |
-
-**Notehub envelope metadata (auto-added):**
-
-| Field | Description |
-|-------|-------------|
-| `uid` | Unique event identifier (Notehub-issued). |
-| `device` | Device UID within your project (format: `dev:XXXX...`). |
-| `file` | Notefile name (`beacon_alert.qo` or `beacon_location.qo`). |
-| `received` | Unix timestamp when Notehub received the event. |
-| `best_lat`, `best_lon`, `best_location` | Notehub-computed best-available location (reverse-geocoded). |
-
-**Join logic example (pseudo-SQL):**
-
-```sql
-SELECT alert.*, location.best_lat, location.best_lon
-FROM beacon_alert alert
-LEFT JOIN beacon_location location
-  ON alert.device = location.device
-  AND alert.event_id = location.event_id
-WHERE alert.received >= UNIX_TIMESTAMP() - 3600;  -- Last hour
-```
-
-## 8. Validation and Testing
 
 **Expected steady-state behavior.** In normal operation, a healthy beacon produces zero `beacon_alert.qo` events and zero `beacon_location.qo` events. To verify that Notecard provisioning, template registration, and connectivity are all working after assembly, trigger a test fall or panic (see below) and confirm the event appears in Notehub within session-establishment time (typically 30–90 seconds on cellular). If no event appears, check the Notecard's sync status via Notehub's in-browser terminal (`{"req":"hub.status"}`) to see the last sync time, pending note count, and transport-layer error.
 
@@ -510,7 +493,45 @@ Alert overhead (per event):
 
 A productive bench exercise: run the device for 2 hours on a known-capacity LiPo and note the Mojo's mAh reading. Trigger several test falls and panics and compare the per-sync energy spikes against the alert count. Steady-state draw between alerts should stay close to the host-idle estimate (~10–20 mA). If steady-state draw is well above 20 mA, the host MCU is likely running at full clock — consider disabling debug serial output, which forces the STM32 to maintain its USB clock. Use Mojo-measured average current — not the steady-state estimate — to project battery runtime for your specific alert frequency and transport conditions.
 
-## 9. Limitations and Next Steps
+## 10. Troubleshooting
+
+
+**Device does not appear in Notehub.**
+- Verify the `PRODUCT_UID` in `lone_worker_beacon_helpers.h` matches your Notehub project's ProductUID exactly.
+- Check that the Notecard has a provisioned SIM (should ship with one; confirm at [Blues shop](https://shop.blues.com)).
+- Ensure cellular or WiFi coverage is available. If indoors and no WiFi is provisioned, power cycle and move to a window or open area.
+- From Notehub's in-browser terminal (click the terminal icon in project settings), issue `{"req":"hub.status"}`. If `last_sync` is very recent, the Notecard is communicating. If `last_sync` is old or `status` is `error`, the Notecard cannot reach cellular or Notehub.
+
+**Panic button or fall detection does not trigger.**
+- Check the haptic motor for signs of life: power on the beacon, wait 5 seconds for boot to complete, then hold the panic button for 3+ seconds. You should feel a vibration within 1–2 seconds of pressing. If no vibration, check the motor's wiring to the DRV2605L and that the DRV2605L is seated on I²C (address 0x5A).
+- Verify the LIS3DH is responding: after boot, if you see no double-buzz (fault pattern), the accelerometer initialized. Try triggering a fall: drop the beacon 50–80 cm onto a pillow or padded surface. If still no double-buzz on alert, check the LIS3DH's I²C wiring (SDA, SCL, 0x18 address) and that the SDO pin is grounded or left floating.
+- Check the startup fault pattern: a slow double-buzz (buzz, pause, buzz) repeating every 5 seconds indicates a boot-time configuration error (missing `PRODUCT_UID`, failed `hub.set`, or template registration failure). Verify the `PRODUCT_UID` and power-cycle the beacon.
+
+**Alerts appear in Notehub but coordinates are missing or stale.**
+- `loc_age_s: -1.0` means the Notecard had no cached GPS fix when the alert fired. This is normal indoors. If outdoors with a clear sky view and `loc_age_s` is still -1 after multiple alerts, the Notecard may not have acquired a GPS fix since power-on. Run `{"req":"card.location"}` from the Notehub terminal to force a fix attempt and check the response.
+- No `beacon_location.qo` follow-up note means GPS did not acquire a fresh fix within the 90-second background search window. This is normal indoors or under heavy tree cover. If GPS should be working, trigger a test alert and check the Notecard's `card.location` response for lock time and signal quality.
+
+**Battery drains too quickly.**
+- Verify the host MCU is not stuck in a high-clock state. From the Arduino IDE Serial Monitor (115200 baud, after uncommenting `#define DEBUG_SERIAL` in the .ino file), you should see periodic log messages (one per outer loop pass, ~10 per second) with healthy current draws. If the Serial Monitor is active and you see frequent output, the debug serial is forcing the STM32 to maintain its USB clock — disable `DEBUG_SERIAL` to reduce MCU idle from ~10–15 mA to ~5–10 mA.
+- Confirm the Notecard is in low-power periodic mode: issue `{"req":"hub.get"}` from the Notehub terminal. If `outbound` is greater than 1440 (24 hours) or `inbound` is less than 120 (2 hours), sync cadence may be excessive. See [Section 5, step 5](#6-notehub-setup) for recommended settings.
+- Use Mojo (see [Section 8](#9-validation-and-testing)) to measure actual current in different states (idle, fall/panic event, GPS search, sync). Compare against the estimated figures in the power validation table. If measured idle is >25 mA, a peripheral may be drawing unexpectedly — check I²C for clock-stretching issues or peripheral misconfigurations.
+
+**Starnote satellite transmission fails or never completes.**
+- The Starnote link is only active after the device has completed at least one successful cellular or WiFi sync to deliver the compact template definitions to Notehub. If the beacon launches in a no-cellular area, it cannot use satellite until it has found cellular coverage at least once. This is called the "first-light sequence." Move the device to cellular coverage, power it on, wait for a sync (check Notehub device status), then move back to the satellite-only zone.
+- Verify the Starnote antenna orientation: the module's top face should point toward the sky (polycarbonate enclosure top is sufficient); in the northern hemisphere, southward orientation improves link margin. If the Starnote is mounted sideways or inverted, Skylo acquisition may fail.
+- Check Starnote coverage: the Skylo network covers specific regions (see [Starnote datasheet](https://dev.blues.io/datasheets/starnote-datasheet/)). If you're outside the coverage footprint, NTN transmission will fail silently.
+- From Notehub's in-browser terminal, issue `{"req":"card.transport","method":"ntn"}` to force satellite-only operation (cellular disabled). Trigger a test panic from a location with sky view. Check the event metadata: if `"transport":"ntn"` is present, the satellite path is working. Re-enable hybrid transport: `{"req":"card.transport","method":"-"}`.
+
+**Fall detection generates false positives during normal work.**
+- Adjust the `freefall_g` and `impact_g` thresholds via environment variables (see [Section 5, step 5](#6-notehub-setup)). Increase `freefall_g` (e.g., 0.65 or 0.75) to require a deeper free-fall phase before the impact window opens. Increase `impact_g` (e.g., 3.0 or 3.5) to require a larger acceleration spike to confirm impact. Both changes reduce sensitivity and may suppress legitimate falls — validate with your specific worker activity profile.
+- Shorten the `fall_window_ms` (e.g., 300 ms instead of 500 ms) to close the impact window sooner, requiring impact to occur more tightly coupled to the free-fall phase. This rejects impact spikes that occur seconds after a bump.
+- Run a 24-hour learning period with each worker activity profile and log the Notecard's accelerometer telemetry (see README Section 6). Identify the baseline g-profile of normal work (walking, climbing, tool swings) and set thresholds to sit just above the highest "false positive" peak observed during normal use.
+
+**Multiple alerts fire from a single fall.**
+- The 60-second alert cooldown (`DEFAULT_ALERT_COOLDOWN_SEC`) prevents alert storms. A second fall detected within 60 seconds of the previous alert is suppressed — the button feels one buzz (acknowledgment of the press) instead of three (alert accepted). This is intentional. If you need multiple alerts for a tumbling device, increase the cooldown in the firmware or set it via an environment variable (when supported in a future revision).
+
+## 11. Limitations and Next Steps
+
 
 **Simplified for the POC:**
 
@@ -548,43 +569,8 @@ A productive bench exercise: run the device for 2 hours on a known-capacity LiPo
 - `.qos` encrypted Notefile for worker location data in privacy-sensitive jurisdictions.
 - Per-worker baseline calibration: record each worker's typical activity vibration profile via a 24-hour learning period, then tune `impact_g` and `freefall_g` individually.
 
-## 10. Troubleshooting Common Issues
+## 12. Summary
 
-**Device does not appear in Notehub.**
-- Verify the `PRODUCT_UID` in `lone_worker_beacon_helpers.h` matches your Notehub project's ProductUID exactly.
-- Check that the Notecard has a provisioned SIM (should ship with one; confirm at [Blues shop](https://shop.blues.com)).
-- Ensure cellular or WiFi coverage is available. If indoors and no WiFi is provisioned, power cycle and move to a window or open area.
-- From Notehub's in-browser terminal (click the terminal icon in project settings), issue `{"req":"hub.status"}`. If `last_sync` is very recent, the Notecard is communicating. If `last_sync` is old or `status` is `error`, the Notecard cannot reach cellular or Notehub.
-
-**Panic button or fall detection does not trigger.**
-- Check the haptic motor for signs of life: power on the beacon, wait 5 seconds for boot to complete, then hold the panic button for 3+ seconds. You should feel a vibration within 1–2 seconds of pressing. If no vibration, check the motor's wiring to the DRV2605L and that the DRV2605L is seated on I²C (address 0x5A).
-- Verify the LIS3DH is responding: after boot, if you see no double-buzz (fault pattern), the accelerometer initialized. Try triggering a fall: drop the beacon 50–80 cm onto a pillow or padded surface. If still no double-buzz on alert, check the LIS3DH's I²C wiring (SDA, SCL, 0x18 address) and that the SDO pin is grounded or left floating.
-- Check the startup fault pattern: a slow double-buzz (buzz, pause, buzz) repeating every 5 seconds indicates a boot-time configuration error (missing `PRODUCT_UID`, failed `hub.set`, or template registration failure). Verify the `PRODUCT_UID` and power-cycle the beacon.
-
-**Alerts appear in Notehub but coordinates are missing or stale.**
-- `loc_age_s: -1.0` means the Notecard had no cached GPS fix when the alert fired. This is normal indoors. If outdoors with a clear sky view and `loc_age_s` is still -1 after multiple alerts, the Notecard may not have acquired a GPS fix since power-on. Run `{"req":"card.location"}` from the Notehub terminal to force a fix attempt and check the response.
-- No `beacon_location.qo` follow-up note means GPS did not acquire a fresh fix within the 90-second background search window. This is normal indoors or under heavy tree cover. If GPS should be working, trigger a test alert and check the Notecard's `card.location` response for lock time and signal quality.
-
-**Battery drains too quickly.**
-- Verify the host MCU is not stuck in a high-clock state. From the Arduino IDE Serial Monitor (115200 baud, after uncommenting `#define DEBUG_SERIAL` in the .ino file), you should see periodic log messages (one per outer loop pass, ~10 per second) with healthy current draws. If the Serial Monitor is active and you see frequent output, the debug serial is forcing the STM32 to maintain its USB clock — disable `DEBUG_SERIAL` to reduce MCU idle from ~10–15 mA to ~5–10 mA.
-- Confirm the Notecard is in low-power periodic mode: issue `{"req":"hub.get"}` from the Notehub terminal. If `outbound` is greater than 1440 (24 hours) or `inbound` is less than 120 (2 hours), sync cadence may be excessive. See [Section 5, step 5](#5-notehub-setup-and-configuration) for recommended settings.
-- Use Mojo (see [Section 8](#8-validation-and-testing)) to measure actual current in different states (idle, fall/panic event, GPS search, sync). Compare against the estimated figures in the power validation table. If measured idle is >25 mA, a peripheral may be drawing unexpectedly — check I²C for clock-stretching issues or peripheral misconfigurations.
-
-**Starnote satellite transmission fails or never completes.**
-- The Starnote link is only active after the device has completed at least one successful cellular or WiFi sync to deliver the compact template definitions to Notehub. If the beacon launches in a no-cellular area, it cannot use satellite until it has found cellular coverage at least once. This is called the "first-light sequence." Move the device to cellular coverage, power it on, wait for a sync (check Notehub device status), then move back to the satellite-only zone.
-- Verify the Starnote antenna orientation: the module's top face should point toward the sky (polycarbonate enclosure top is sufficient); in the northern hemisphere, southward orientation improves link margin. If the Starnote is mounted sideways or inverted, Skylo acquisition may fail.
-- Check Starnote coverage: the Skylo network covers specific regions (see [Starnote datasheet](https://dev.blues.io/datasheets/starnote-datasheet/)). If you're outside the coverage footprint, NTN transmission will fail silently.
-- From Notehub's in-browser terminal, issue `{"req":"card.transport","method":"ntn"}` to force satellite-only operation (cellular disabled). Trigger a test panic from a location with sky view. Check the event metadata: if `"transport":"ntn"` is present, the satellite path is working. Re-enable hybrid transport: `{"req":"card.transport","method":"-"}`.
-
-**Fall detection generates false positives during normal work.**
-- Adjust the `freefall_g` and `impact_g` thresholds via environment variables (see [Section 5, step 5](#5-notehub-setup-and-configuration)). Increase `freefall_g` (e.g., 0.65 or 0.75) to require a deeper free-fall phase before the impact window opens. Increase `impact_g` (e.g., 3.0 or 3.5) to require a larger acceleration spike to confirm impact. Both changes reduce sensitivity and may suppress legitimate falls — validate with your specific worker activity profile.
-- Shorten the `fall_window_ms` (e.g., 300 ms instead of 500 ms) to close the impact window sooner, requiring impact to occur more tightly coupled to the free-fall phase. This rejects impact spikes that occur seconds after a bump.
-- Run a 24-hour learning period with each worker activity profile and log the Notecard's accelerometer telemetry (see README Section 6). Identify the baseline g-profile of normal work (walking, climbing, tool swings) and set thresholds to sit just above the highest "false positive" peak observed during normal use.
-
-**Multiple alerts fire from a single fall.**
-- The 60-second alert cooldown (`DEFAULT_ALERT_COOLDOWN_SEC`) prevents alert storms. A second fall detected within 60 seconds of the previous alert is suppressed — the button feels one buzz (acknowledgment of the press) instead of three (alert accepted). This is intentional. If you need multiple alerts for a tumbling device, increase the cooldown in the firmware or set it via an environment variable (when supported in a future revision).
-
-## 11. Summary
 
 A Notecarrier CX + Notecard Cell+WiFi + Starnote for Skylo, paired with a LIS3DH accelerometer, a DRV2605L haptic driver, and a panic button, produces a wearable safety beacon that does what no check-in procedure or supervisor can: *it monitors the worker automatically — without requiring any worker action — and in the regions and conditions where Skylo satellite coverage is available, it can reach a dispatcher even when cellular is dark.* On an alert, the firmware immediately queues a compact note with the Notecard's cached location, an `event_id` correlation key, and `sync:true`, while a non-blocking background GPS search runs concurrently without pausing fall detection or button monitoring. If a fresh fix arrives, a follow-up `beacon_location.qo` note delivers event-time coordinates with the same `event_id`; downstream systems join the two notes using `(device, event_id)` as the key. The two-stage fall-detection algorithm (free-fall + impact) reduces nuisance alerts from isolated bumps and vibration impacts; the firmware samples the LIS3DH at ~100 Hz via a 10-sample inner loop, reliably catching free-fall phases as short as 80 ms — a production implementation should offload Stage 1 to the LIS3DH hardware interrupt to eliminate the polling loop and enable STM32L433 STOP2 sleep between events.
 

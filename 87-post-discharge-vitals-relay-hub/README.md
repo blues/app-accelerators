@@ -39,7 +39,7 @@ This is the definition of a device that needs to work for everyone, including an
 
 ---
 
-## 2.5 Quickstart
+## 3. Technical Summary
 
 **Before you start — prerequisites:**
 
@@ -57,9 +57,17 @@ To go from parts on the bench to first event in Notehub as quickly as possible:
 5. **Commission** — bring each patient BLE device within range and initiate a measurement. The hub connects, subscribes, and initiates BLE pairing; bond keys are stored in flash. Once all devices are bonded, open Notehub → `commissioning.db` and inspect the `bond_established` notes: each note shows the device's `ble_addr` and `addr_type`. For any device whose `addr_type` is `0x00` (public) or `0x01` (random static), add its address to `ENROLLED_DEVICES` in `vitals_config.h` — those devices advertise with a fixed address that the hub cannot identify through IRK resolution alone. Devices with `addr_type` `0x02` (random private resolvable / RPA) are recognized automatically via the stored IRK and need no `ENROLLED_DEVICES` entry. Devices with `addr_type` `0x03` (random private **non**-resolvable) are **not** supported in the fail-closed production flow — non-resolvable addresses rotate without any IRK linkage so the hub cannot re-identify them across address changes; a patient device that reports `addr_type` `0x03` requires a different identity mechanism before it can be used in a production deployment. Once all entries are added, remove **both** `-DALLOW_UNENROLLED_DEVICES_FOR_DEV=1` **and** `-DALLOW_COMMISSIONING_BUILD` from your build flags and reflash. The hub is now fail-closed: only bonded and enrolled devices are accepted.
 6. **Watch** — open Notehub → Events. A `_session.qo` appears within a minute; a normal reading note appears in the appropriate Notefile within the next 15-minute outbound window. If the reading trips a threshold, `sync:true` is set on **both** the measurement note and `vitals_alert.qo` — both typically appear in Notehub within the same immediate cellular session (~15–60 s), or in back-to-back immediate sessions.
 
+
+Here is a sample Note this device emits:
+```json
+{
+  "weight_kg": 84.35,
+  "prev_kg": 82.10
+}
+```
 ---
 
-## 3. Hardware Requirements
+## 4. Hardware Requirements
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
@@ -79,9 +87,9 @@ To go from parts on the bench to first event in Notehub as quickly as possible:
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Withings Body (WBS06)](https://www.withings.com/us/en/body) | 1 | Bench-validation weight scale. Implements Weight Scale Service (0x181D) / Weight Measurement (0x2A9D) in SI mode. Used to validate `parseWeightKg`. |
-| [Omron M4 Intelli IT (HEM-7155T)](https://www.omron-healthcare.com/en/blood-pressure-monitors/upper-arm/m4-intelli-it/) | 1 | Bench-validation blood pressure cuff. Implements Blood Pressure Service (0x1810) with the timestamp optional field set. Used to validate `parseBpMmhg`. The parser walks the optional-field flags to compute the pulse-rate offset correctly for both timestamp-present and timestamp-absent layouts — see §6.4. |
+| [Omron M4 Intelli IT (HEM-7155T)](https://www.omron-healthcare.com/en/blood-pressure-monitors/upper-arm/m4-intelli-it/) | 1 | Bench-validation blood pressure cuff. Implements Blood Pressure Service (0x1810) with the timestamp optional field set. Used to validate `parseBpMmhg`. The parser walks the optional-field flags to compute the pulse-rate offset correctly for both timestamp-present and timestamp-absent layouts — see §9.4. |
 | [Nonin 3230](https://www.nonin.com/products/3230/) | 1 | Bench-validation pulse oximeter. Implements Pulse Oximeter Service (0x1822) / PLX Spot-Check Measurement (0x2A5E). Used to validate `parseSpO2`. |
-| [Polar H10](https://www.polar.com/us-en/sensors/h10-heart-rate-sensor/) | 1 | Bench-validation heart-rate chest strap. Implements Heart Rate Service (0x180D) / Heart Rate Measurement (0x2A37) in 8-bit HR value format. Used to validate `parseHeartRate`. The Polar H10 streams notifications continuously while worn; the firmware disconnects after the first sample and suppresses reconnection for `HR_SAMPLE_INTERVAL_MS` (15 minutes) — see §6.3. |
+| [Polar H10](https://www.polar.com/us-en/sensors/h10-heart-rate-sensor/) | 1 | Bench-validation heart-rate chest strap. Implements Heart Rate Service (0x180D) / Heart Rate Measurement (0x2A37) in 8-bit HR value format. Used to validate `parseHeartRate`. The Polar H10 streams notifications continuously while worn; the firmware disconnects after the first sample and suppresses reconnection for `HR_SAMPLE_INTERVAL_MS` (15 minutes) — see §9.3. |
 
 The Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no per-device activation fees and no monthly cellular subscription requirement.
 
@@ -89,7 +97,7 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ---
 
-## 4. Wiring and Assembly
+## 5. Wiring and Assembly
 
 ![Wiring: Feather nRF52840 seated via 2×16 Feather header on Notecarrier F (SDA/SCL/3V3/GND through header); Notecard MBGLW in M.2 Key-E slot; cellular antenna u.FL to adhesive flex patch; USB-C wall adapter → Notecarrier F USB-C → M.2 modem power + LDO → 3V3 rail to Feather MCU and Notecard VIO; Mojo on Qwiic port (bench only)](diagrams/02-wiring-assembly.svg)
 
@@ -127,7 +135,7 @@ All connections from Feather to Notecard travel through the stacked Feather head
 
 ---
 
-## 5. Notehub Setup
+## 6. Notehub Setup
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:vitals-hub`.
 
@@ -165,7 +173,7 @@ In the Notehub web console, navigate to **Devices** (your newly claimed hub), th
 
 ---
 
-## 6. Firmware Design
+## 7. Firmware Design
 
 | File | Role |
 |------|------|
@@ -367,7 +375,7 @@ if (g_bpSvc.discover(connHandle)) {
 
 ### 6.11 Key code snippet 4: SFLOAT decode in ble_parsers.h
 
-The IEEE 11073 SFLOAT type is a 16-bit packed float used for blood pressure and SpO2 fields. `parseSfloat()` sign-extends both the 4-bit exponent and the 12-bit mantissa, which is the step most BLE tutorial snippets handle correctly. The less obvious part is sentinel rejection: reserved SFLOAT values are specific **full 16-bit encodings** and must be compared against the raw value before any decoding. Checking only the masked 12-bit mantissa field would incorrectly reject valid numbers whose lower 12 bits match a sentinel pattern but whose exponent is nonzero — for example, `0x17FF` has mantissa bits `0x7FF` that match the NaN sentinel `0x07FF`, but its exponent `0x1` makes it a valid number (mantissa=2047, exponent=1, value=20470). Weight and heart rate do not use this decoder — see §6.4 for their respective encoding formats.
+The IEEE 11073 SFLOAT type is a 16-bit packed float used for blood pressure and SpO2 fields. `parseSfloat()` sign-extends both the 4-bit exponent and the 12-bit mantissa, which is the step most BLE tutorial snippets handle correctly. The less obvious part is sentinel rejection: reserved SFLOAT values are specific **full 16-bit encodings** and must be compared against the raw value before any decoding. Checking only the masked 12-bit mantissa field would incorrectly reject valid numbers whose lower 12 bits match a sentinel pattern but whose exponent is nonzero — for example, `0x17FF` has mantissa bits `0x7FF` that match the NaN sentinel `0x07FF`, but its exponent `0x1` makes it a valid number (mantissa=2047, exponent=1, value=20470). Weight and heart rate do not use this decoder — see §9.4 for their respective encoding formats.
 
 ```cpp
 static inline float parseSfloat(uint16_t raw) {
@@ -397,7 +405,7 @@ static inline float parseSfloat(uint16_t raw) {
 
 ---
 
-## 7. Data Flow
+## 8. Data Flow
 
 ![Data flow: patient BLE event → GATT parse (SFLOAT for BP/SpO2, uint16 for weight, uint8/16 for HR) + plausibility guard → threshold check against env-var rules → threshold-tripping path: measurement note + vitals_alert.qo both with sync:true → immediate cellular session (~15–60 s); normal path: reading Notefile queued → 15-min outbound sync → Notehub → care-coordinator alert route and analytics/EHR route; env vars flow back from Notehub on inbound 60-min cadence](diagrams/03-data-flow.svg)
 
@@ -420,7 +428,7 @@ static inline float parseSfloat(uint16_t raw) {
 
 ---
 
-## 8. Validation and Testing
+## 9. Validation and Testing
 
 **Expected steady-state.** In a normal day a post-discharge patient takes weight once in the morning, BP twice (morning and evening), SpO2 once or twice, and wears the activity band intermittently. Activity band heart rate samples are capped at one per `HR_SAMPLE_INTERVAL_MS` (15 minutes) — a patient who wears the band for two hours yields at most 8 HR notes during that period. Overall the hub produces roughly 5–15 reading notes per day across the four Notefiles and zero alert notes in a recovering patient. The first set of notes should appear in Notehub within 15 minutes of the first measurement after the hub comes online.
 
@@ -446,8 +454,8 @@ A short field guide for the issues that actually arise during first bring-up and
 | Symptom | Likely cause | What to check |
 |---|---|---|
 | Device never appears in Notehub's **Devices** tab. | `PRODUCT_UID` is empty or wrong, or the cellular antenna is not routed. | Verify `PRODUCT_UID` exactly matches the Notehub project. Confirm the u.FL antenna pigtail is attached to the Notecard. Check for `_session.qo` events — if none appear, there is no cellular connection. |
-| `_session.qo` events arrive but no reading notes ever appear. | No BLE health device within range, or device is not advertising its standard service UUID. | Open the serial monitor at 115200 baud and watch for `[BLE] Scanner started` (**debug build only** — see §6.1 build flags). Bring a BLE health device within a few meters and initiate a measurement — most devices only advertise during an active measurement, not continuously. Confirm the device uses the standard Bluetooth SIG service UUID (not a proprietary profile). |
-| BLE device connects but the reading struct is never populated. | Device sends a measurement-unsuccessful sentinel (0xFFFF for weight; NaN or reserved SFLOAT for blood pressure or SpO2), or the characteristic byte layout differs from the SIG specification. | Check `[BLE]` log lines (**debug build only** — see §6.1 build flags) for the service discovery step. If discovery succeeds but the data callback never sets `valid`, add `Serial.printf` in the callback to print the raw bytes and compare against the device's BLE specification or use a BLE sniffer app (nRF Connect for Mobile works well). |
+| `_session.qo` events arrive but no reading notes ever appear. | No BLE health device within range, or device is not advertising its standard service UUID. | Open the serial monitor at 115200 baud and watch for `[BLE] Scanner started` (**debug build only** — see §9.1 build flags). Bring a BLE health device within a few meters and initiate a measurement — most devices only advertise during an active measurement, not continuously. Confirm the device uses the standard Bluetooth SIG service UUID (not a proprietary profile). |
+| BLE device connects but the reading struct is never populated. | Device sends a measurement-unsuccessful sentinel (0xFFFF for weight; NaN or reserved SFLOAT for blood pressure or SpO2), or the characteristic byte layout differs from the SIG specification. | Check `[BLE]` log lines (**debug build only** — see §9.1 build flags) for the service discovery step. If discovery succeeds but the data callback never sets `valid`, add `Serial.printf` in the callback to print the raw bytes and compare against the device's BLE specification or use a BLE sniffer app (nRF Connect for Mobile works well). |
 | Alerts fire on every reading even though values look normal. | A clinically too-tight threshold value, stale cached env values, or a scope-override shadowing the intended value. | In Notehub, verify each threshold env var holds a sensible value for the patient population. Out-of-range and non-numeric values (including `"0"` and blank strings) are rejected in firmware by `validateEnvFloat` — each var has explicit bounds (e.g. `bp_systolic_high` ∈ [60, 260], `hr_low` ∈ [20, 100], `weight_delta_kg` ∈ [0.5, 20]); a rejected value falls back to the previously accepted threshold rather than being applied. Notehub applies env vars hierarchically: project scope is the baseline, fleet scope overrides it, and device scope overrides both. A device-level value silently shadows a fleet or project default, so check all three scopes when a threshold behaves unexpectedly. |
 | Weight readings are off by a factor of ~2.2. | Device is transmitting in Imperial (lbs) but the flags byte isn't being parsed correctly. | The Flags byte (byte 0) bit 0 determines SI vs. Imperial. Log `data[0]` in `weightDataCallback` and verify. If the device always sends Imperial, the `parseWeightKg` helper already converts lbs → kg when the flag is set. |
 | No cellular sync for more than 15 minutes. | Notecard in coverage gap, or firmware stuck before calling `submitWeight / submitBp / etc.` | Run `hub.status` from the Notehub in-browser terminal — it returns current signal strength and sync state. If coverage is good but syncs are absent, confirm the main `loop()` is running (add a serial heartbeat print every 30 s). |
@@ -457,7 +465,7 @@ If a problem is not on this list, the [Blues community forum](https://discuss.bl
 
 ---
 
-## 9. Limitations and Next Steps
+## 10. Limitations and Next Steps
 
 > **Reminder:** this is a proof-of-concept reference design, not a cleared medical device. It is not intended for diagnostic, emergency, or life-sustaining use. Any production deployment must address PHI/HIPAA compliance, secure data routing and storage, auditability, data retention policies, and applicable regulatory review before handling real patient data.
 
@@ -482,7 +490,7 @@ If a problem is not on this list, the [Blues community forum](https://discuss.bl
 
 ---
 
-## 10. Summary
+## 11. Summary
 
 A Feather nRF52840 seated on a Notecarrier F combines two capabilities that would otherwise require two separate subsystems: a BLE 5.0 Central radio that speaks the Bluetooth SIG health device protocol stack, and an I²C path to a cellular Notecard that gets readings off the device without the patient's WiFi password. The hub scans continuously, connects to each of the four standard BLE health profiles, parses each GATT characteristic field (fixed-point uint16 for weight, IEEE 11073 SFLOAT for blood pressure and SpO2 values, plain integer for heart rate from the activity band), and queues the result in Notehub — all transparently, all without patient interaction. Readings upload every 15 minutes; threshold trips upload immediately. Care coordinators can tighten alert thresholds for a specific high-risk patient via Notehub environment variables, with no firmware change and no truck roll.
 

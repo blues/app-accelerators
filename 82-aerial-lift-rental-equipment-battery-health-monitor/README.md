@@ -25,7 +25,7 @@ This project is the watcher. A small monitoring device clipped to the pack reads
 
 ![System architecture: INA228 power monitor + NTC pack temperature (plus optional ACS758 hall and CAN BMS) → Notecarrier CX with Cygnet host and NOTE-NBGLWX → cellular or Skylo NTN satellite → Notehub → rental ERP / analytics / on-call](diagrams/01-system-architecture.svg)
 
-**Device-side responsibilities.** The onboard Cygnet STM32 host on the Notecarrier CX wakes every `sample_interval_s` seconds (default 300 s / 5 min), reads pack voltage from the INA228 over I²C (and pack current via INA228 `readCurrent()` through an external precision shunt in the default field build (`ENABLE_ACS758 0`), or from an ACS758 Hall-effect sensor on A1 in the alternative field build (`ENABLE_ACS758 1`), or from the onboard INA228 shunt in bench builds (`BENCH_ONLY 1`)), reads the pack temperature from the NTC thermistor, and optionally polls cell-group voltages from the machine's BMS over the SPI CAN interface. (**CAN BMS integration requires vendor-specific CAN ID and frame parser configuration before the feature will function with any real BMS** — the shipped firmware is a placeholder for this path; see §6.3 and §9.) From this data, it updates SoC via a voltage-based OCV (open-circuit voltage) lookup table, accumulates absolute current above a 0.5 A noise floor into a running cycle Ah throughput total (one sampled Ah estimate per wake), and updates a rolling SoH estimate when a heuristic pseudo-cycle completes — SoC dips below 30% then recovers above 90%. Threshold checks run after every sample; any trip fires an immediate note. Between wakes, [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) cuts host power; the Notecard idles, but the assembled device also draws quiescent current from the buck regulator, INA228, thermistor divider, and any optional CAN hardware — materially above the Notecard's own idle figure. See [§8](#8-validation-and-testing) for Mojo-measured whole-device figures.
+**Device-side responsibilities.** The onboard Cygnet STM32 host on the Notecarrier CX wakes every `sample_interval_s` seconds (default 300 s / 5 min), reads pack voltage from the INA228 over I²C (and pack current via INA228 `readCurrent()` through an external precision shunt in the default field build (`ENABLE_ACS758 0`), or from an ACS758 Hall-effect sensor on A1 in the alternative field build (`ENABLE_ACS758 1`), or from the onboard INA228 shunt in bench builds (`BENCH_ONLY 1`)), reads the pack temperature from the NTC thermistor, and optionally polls cell-group voltages from the machine's BMS over the SPI CAN interface. (**CAN BMS integration requires vendor-specific CAN ID and frame parser configuration before the feature will function with any real BMS** — the shipped firmware is a placeholder for this path; see §7.3 and §9.) From this data, it updates SoC via a voltage-based OCV (open-circuit voltage) lookup table, accumulates absolute current above a 0.5 A noise floor into a running cycle Ah throughput total (one sampled Ah estimate per wake), and updates a rolling SoH estimate when a heuristic pseudo-cycle completes — SoC dips below 30% then recovers above 90%. Threshold checks run after every sample; any trip fires an immediate note. Between wakes, [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) cuts host power; the Notecard idles, but the assembled device also draws quiescent current from the buck regulator, INA228, thermistor divider, and any optional CAN hardware — materially above the Notecard's own idle figure. See [§9](#8-validation-and-testing) for Mojo-measured whole-device figures.
 
 **Notecard responsibilities.** The Notecard for Skylo stores [Notes](https://dev.blues.io/api-reference/glossary/#note) in its onboard queue, manages the cellular or satellite session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence, and flushes any `sync:true` alert notes immediately when a threshold trips. The Notecard also handles [environment variable](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) distribution from Notehub, so fleet-level threshold adjustments reach devices without a reflash. The Notecard for Skylo's built-in Skylo NTN radio activates automatically whenever terrestrial cellular is unavailable — no firmware logic required to manage the handoff.
 
@@ -35,7 +35,7 @@ This project is the watcher. A small monitoring device clipped to the pack reads
 
 **Satellite data budget.** The Notecard for Skylo includes 10 KB of satellite data. Hourly summaries are suppressed over satellite (the `battery_status.qo` template sets `delete:true`, so any queued summaries are cleared when the Notecard establishes an NTN session rather than being routed over the expensive satellite link). Critical alerts — low SoC, thermal excursion, SoH degradation — carry no `delete` flag and travel over whatever link is available, including satellite. This ensures fleet operators are notified of dangerous pack conditions even on job sites with no cellular coverage.
 
-## 2.5 Quickstart
+## 3. Technical Summary
 
 1. **Flash firmware.** Clone the repo, edit `firmware/lift_battery_monitor/lift_battery_monitor.ino` to set your `PRODUCT_UID` (from your [notehub.io](https://notehub.io) project), then compile and upload:
    ```bash
@@ -51,30 +51,47 @@ This project is the watcher. A small monitoring device clipped to the pack reads
 
 That's it. The device is now sampling every 5 minutes, reporting hourly, and firing immediate alerts on pack fault conditions.
 
-## 3. Hardware Requirements
+---
+
+Here is a sample Note this device emits:
+
+```json
+{
+  "pack_v":         48.2,
+  "cur_a":          12.4,
+  "temp_c":         28.5,
+  "soc_pct":        74,
+  "soh_pct":        88,
+  "throughput_ah":  42.1,
+  "can_ok":         true
+}
+```
+
+
+## 4. Hardware Requirements
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an embedded Cygnet STM32 host — no separate MCU needed. Exposes I²C (Qwiic), SPI, and six ADC pins on the dual 16-pin header. |
 | [Notecard for Skylo (NOTE-NBGLWX)](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) — [Datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) | 1 | Integrates LTE-M, NB-IoT, WiFi, and Skylo satellite NTN on one M.2 SoM. Cellular is the primary path; Skylo activates automatically on coverage loss. Includes 500 MB cellular + 10 KB satellite data and 10 years of service. |
 | Antenna kit (included with NOTE-NBGLWX) | 1 set | Two antennas ship with every Notecard for Skylo order: (1) a Skylo-certified LTE/S-Band/L-Band antenna for the `MAIN` u.FL port; (2) a passive GPS/GNSS antenna for the `GPS` u.FL port. Both must be mounted outdoors with an unobstructed view of the sky — route leads through dedicated cable glands in the IP67 enclosure. **Do not substitute either antenna**: the NOTE-NBGLWX is certified on Skylo's network exclusively with the supplied antennas; any replacement requires a new EIRP delta test and may cause Skylo to block the device. See the [NOTE-NBGLWX datasheet — Antenna Requirements](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) and the [antenna placement guide](https://dev.blues.io/datasheets/application-notes/antenna-guide/). |
-| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Coulomb counter on the 5V power rail for ground-truth energy validation during bring-up. Bench use only — not deployed to the field unit; see [§8](#8-validation-and-testing). |
+| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Coulomb counter on the 5V power rail for ground-truth energy validation during bring-up. Bench use only — not deployed to the field unit; see [§9](#8-validation-and-testing). |
 | [Adafruit INA228 — I²C 85V, 20-bit Power Monitor (product 5832)](https://www.adafruit.com/product/5832) | 1 | **All builds — bus-voltage sensing; default field build (`ENABLE_ACS758 0`) — also current sensing via external shunt.** Provides pack bus voltage (up to 85 V common-mode) over I²C in all configurations. In the default field build the INA228 also measures pack current through an external precision shunt wired to `VIN+`/`VIN–` (see below). In the ACS758 alternative field build (`ENABLE_ACS758 1`) the INA228 is retained for bus-voltage sensing only. In bench builds (`BENCH_ONLY 1`) it measures current through the onboard 15 mΩ shunt (≤10 A). Includes STEMMA QT connector for tool-free I²C wiring. |
 | External precision current shunt, rated for full pack discharge current at 50–75 mV full-scale *(default field build, `ENABLE_ACS758 0`, `BENCH_ONLY 0`)* | 1 | **Primary field current-sensing component.** Select a manganin or nichrome alloy shunt rated for the pack's peak discharge current (typically 50–200 A) at a full-scale voltage drop of 50–75 mV (example: 0.5 mΩ for 100 A at 50 mV; 0.375 mΩ for 200 A at 75 mV). Wire the shunt inline on the main traction conductor; connect INA228 `VIN+` to the shunt high side and `VIN–` to the shunt low side. After selecting a shunt, update `DEFAULT_SHUNT_MOHM` and `DEFAULT_SHUNT_MAX_A` in `lift_battery_monitor.ino` to match before building. Precision shunts in this spec range are stocked at Mouser and Digi-Key (search "current sense resistor manganin 200A"). |
-| [Allegro ACS758LCB-200B-PFF-T](https://www.allegromicro.com/~/media/Files/Datasheets/ACS758-Datasheet.ashx) Hall-effect current sensor *(alternative field build — set `ENABLE_ACS758 1`)* | 0–1 | **Optional alternative to the external shunt for field current sensing.** Bidirectional ±200 A **inline** Hall-effect sensor. Use this path if breaking and re-terminating the traction conductor for an inline shunt is impractical, or if galvanic isolation from the traction bus is desired. Installation requires the main traction conductor to be broken and re-terminated through the sensor's primary conductor terminals (`IP+` → `IP–`); this is not a clamp-on or non-invasive part. The conductor work must be performed by qualified personnel following machine-specific lockout/tagout procedures. **Requires 5 V supply** (power from the Pololu 5 V rail, not Notecarrier CX +3V3; the ACS758 VCC minimum is 4.5 V). At VCC = 5 V the output is ratiometric: 2.5 V at 0 A, ±10 mV/A sensitivity. At +200 A the output reaches 4.5 V, which exceeds the Cygnet's 3.3 V ADC rail — a 10 kΩ / 20 kΩ voltage divider on `VOUT` is required (see §4). Set `ENABLE_ACS758` to `1` in `lift_battery_monitor_config.h` before building. Stocked at Digi-Key and Mouser by full part number **ACS758LCB-200B-PFF-T**. |
+| [Allegro ACS758LCB-200B-PFF-T](https://www.allegromicro.com/~/media/Files/Datasheets/ACS758-Datasheet.ashx) Hall-effect current sensor *(alternative field build — set `ENABLE_ACS758 1`)* | 0–1 | **Optional alternative to the external shunt for field current sensing.** Bidirectional ±200 A **inline** Hall-effect sensor. Use this path if breaking and re-terminating the traction conductor for an inline shunt is impractical, or if galvanic isolation from the traction bus is desired. Installation requires the main traction conductor to be broken and re-terminated through the sensor's primary conductor terminals (`IP+` → `IP–`); this is not a clamp-on or non-invasive part. The conductor work must be performed by qualified personnel following machine-specific lockout/tagout procedures. **Requires 5 V supply** (power from the Pololu 5 V rail, not Notecarrier CX +3V3; the ACS758 VCC minimum is 4.5 V). At VCC = 5 V the output is ratiometric: 2.5 V at 0 A, ±10 mV/A sensitivity. At +200 A the output reaches 4.5 V, which exceeds the Cygnet's 3.3 V ADC rail — a 10 kΩ / 20 kΩ voltage divider on `VOUT` is required (see §5). Set `ENABLE_ACS758` to `1` in `lift_battery_monitor_config.h` before building. Stocked at Digi-Key and Mouser by full part number **ACS758LCB-200B-PFF-T**. |
 | 10 kΩ resistor, 1% or 5%, 1/4 W *(ACS758 alternative build only, `ENABLE_ACS758 1`)* | 0–1 | High-side leg of the ACS758 `VOUT` voltage divider. Together with the 20 kΩ low-side resistor, scales the 0–4.5 V ACS758 output to the Cygnet's 3.3 V ADC rail (×2/3 ratio). See §4 ACS758 wiring. Not required for the external-shunt default path. |
 | 20 kΩ resistor, 1% or 5%, 1/4 W *(ACS758 alternative build only, `ENABLE_ACS758 1`)* | 0–1 | Low-side leg of the ACS758 `VOUT` voltage divider (from the `A1`/divider mid-point to GND). Not required for the external-shunt default path. |
 | 100 nF ceramic capacitor, 10 V or higher *(ACS758 alternative build only, `ENABLE_ACS758 1`)* | 0–1 | Local bypass capacitor on the ACS758 `VCC` supply pin, placed as close to the sensor pins as possible. Suppresses high-frequency noise on the 5 V rail that would otherwise couple into the ratiometric `VOUT` output and add current-measurement error. Not required for the external-shunt default path. |
 | 10 kΩ NTC thermistor, β=3950, waterproof probe | 1 | Pack housing temperature. Waterproof probe survives the enclosure penetration and battery-bay humidity. |
 | 10 kΩ 1% resistor (thermistor divider) | 1 | Pull-up for the thermistor voltage divider. 1% tolerance keeps temperature error below ±1°C across the range of interest. |
-| [Waveshare MCP2515 CAN Bus Module](https://www.waveshare.com/mcp2515-can-bus-module.htm) (MCP2515 controller + TJA1050 transceiver, ~23 × 33 mm, 5V logic) *(optional)* | 0–1 | Reads cell-group voltages from the machine's BMS CAN bus. This specific module provides the compact footprint needed for a sealed enclosure; do not substitute an Arduino-shield-form CAN board. Requires the level shifter described in [§4](#4-wiring-and-assembly). **The machine-side CAN connector and cable are machine-specific** — the OBD/service-port connector type, pinout, and cable gauge depend on the machine manufacturer and model and are not part of this BOM. Consult the machine's service manual for the CAN bus access port details before ordering a mating connector or cable. |
+| [Waveshare MCP2515 CAN Bus Module](https://www.waveshare.com/mcp2515-can-bus-module.htm) (MCP2515 controller + TJA1050 transceiver, ~23 × 33 mm, 5V logic) *(optional)* | 0–1 | Reads cell-group voltages from the machine's BMS CAN bus. This specific module provides the compact footprint needed for a sealed enclosure; do not substitute an Arduino-shield-form CAN board. Requires the level shifter described in [§5](#4-wiring-and-assembly). **The machine-side CAN connector and cable are machine-specific** — the OBD/service-port connector type, pinout, and cable gauge depend on the machine manufacturer and model and are not part of this BOM. Consult the machine's service manual for the CAN bus access port details before ordering a mating connector or cable. |
 | [Adafruit TXB0104 Quad Bi-Directional Level Shifter (product 1875)](https://www.adafruit.com/product/1875) *(optional, required with CAN module)* | 0–1 | Translates the 3.3V Cygnet SPI signals (MOSI, MISO, SCK, CS) to the 5V logic level required by the Waveshare MCP2515 module. The TXB0104 uses a push-pull output stage rated for SPI — **do not substitute a MOSFET-based open-drain level converter** (such as the SparkFun BOB-12009), which is designed for I²C and is unreliable on push-pull SPI lines. |
 | [Pololu 5V, 2.5A Step-Down Voltage Regulator D24V22F5](https://www.pololu.com/product/2858) | 1 | Powers the Notecarrier CX (VBAT+ accepts 2.5–5.5V) and the optional CAN module from the machine's 12V auxiliary circuit. Accepts up to 36V in; 2.5A continuous output is ample headroom. |
 | IP67 waterproof enclosure, ~6×4×2″ | 1 | Protects electronics from battery-bay splash, dust, and occasional hosing during machine wash-down. |
 
 All Blues hardware ships with an active SIM and no activation fees or monthly commitment.
 
-## 4. Wiring and Assembly
+## 5. Wiring and Assembly
 
 ![Wiring: INA228 on I²C, NTC thermistor on ADC, optional ACS758 on A1 or CAN BMS on SPI; MAIN antenna for cellular + Skylo NTN; 12 V pack aux → buck regulator → Mojo (bench) → +VBAT](diagrams/02-wiring-assembly.svg)
 
@@ -189,11 +206,11 @@ The Waveshare MCP2515 CAN Bus Module runs at 5V logic; all SPI lines must pass t
 - Machine chassis **GND** → DC/DC converter GND → Notecarrier CX **GND**
 
 **Antenna (Notecard for Skylo):**
-- Use the two antennas included in the NOTE-NBGLWX kit (see §3 BOM). Connect the Skylo-certified LTE/S-Band/L-Band antenna to the `MAIN` u.FL port and the passive GPS/GNSS antenna to the `GPS` u.FL port.
+- Use the two antennas included in the NOTE-NBGLWX kit (see §4 BOM). Connect the Skylo-certified LTE/S-Band/L-Band antenna to the `MAIN` u.FL port and the passive GPS/GNSS antenna to the `GPS` u.FL port.
 - Route both antenna leads through dedicated cable glands to the exterior of the IP67 enclosure. Both antennas must be placed outdoors with a clear view of the sky; no metallic obstruction between the antenna and the sky for the `MAIN` antenna is required for Skylo satellite acquisition.
 - Do not substitute either antenna — see the §3 BOM row for the certification implications. See the [antenna placement guide](https://dev.blues.io/datasheets/application-notes/antenna-guide/) for routing and clearance best practices.
 
-## 5. Notehub Setup
+## 6. Notehub Setup
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) (it looks like `com.your-company.your-name:lift-battery`) and paste it into the `#define PRODUCT_UID ""` line in the firmware sketch.
 
@@ -244,7 +261,7 @@ Within a minute of first power-on, the **Events** tab should start populating. T
 
 - **`battery_alert.qo`** (appears only on threshold trip) — emitted immediately (within 15–60 seconds) with `sync:true` for all alert types except `can_error`. All five fields always present: `alert` (string), `pack_v` (V), `soc_pct` (%), `temp_c` (°C), `extra_v` (alert-specific value). See §7 for the per-alert payload shapes. `can_error` is the explicit exception: it queues for normal outbound delivery (not `sync:true`) and is suppressed once per hour after each emission to avoid flooding the Notefile if the BMS is powered off.
 
-## 6. Firmware Design
+## 7. Firmware Design
 
 Four files in [`firmware/lift_battery_monitor/`](firmware/lift_battery_monitor/):
 
@@ -341,13 +358,13 @@ Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-ban
 }
 ```
 
-All five fields are always present on every alert note. `extra_v` is `0.0` for alert types that carry no auxiliary value (`soc_low`, `can_error`); for other types it carries alert-specific context (see §7).
+All five fields are always present on every alert note. `extra_v` is `0.0` for alert types that carry no auxiliary value (`soc_low`, `can_error`); for other types it carries alert-specific context (see §8).
 
 ### 6.5 Low-power strategy
 
 The sidecar draws power from the machine. Even so, keeping the host genuinely asleep minimizes heat dissipation in the battery bay and ensures the monitoring device itself doesn't materially drain the pack it's monitoring. After each sample cycle, the host calls `NotePayloadSaveAndSleep`, which serializes the `PersistState` struct into Notecard flash and issues a [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) `sleep` request to cut host power for `sample_interval_s` seconds. On the next wake the MCU re-enters `setup()` from cold, and `NotePayloadRetrieveAfterSleep` rehydrates the state — SoC, SoH accumulators, alert cooldowns, and the running summary window all survive the sleep cycle.
 
-The Notecard itself idles at ~8–18 µA between cellular sessions — this is the Notecard SoM's own draw from the datasheet. The assembled device additionally draws quiescent current from the buck regulator, INA228 breakout (always-on I²C), thermistor divider, and any optional CAN hardware, so the whole-device idle figure at the 5V rail is materially higher. Use Mojo during bench validation to measure the actual assembled current rather than relying on the Notecard datasheet figure alone; see [§8](#8-validation-and-testing). Sampling runs at 5-minute intervals; transmission runs at 60-minute intervals. When `report_interval_m` is changed via Notehub, the firmware re-applies `hub.set` on the next wake so the Notecard outbound cadence stays in sync without requiring a reboot. All alerts except `can_error` bypass the transmit timer entirely via `sync: true`. `can_error` is the explicit exception — it fires on the first failed CAN poll (once the Notecard clock is set), then is suppressed for one hour after each emission; it queues for normal outbound delivery rather than triggering an immediate cellular session.
+The Notecard itself idles at ~8–18 µA between cellular sessions — this is the Notecard SoM's own draw from the datasheet. The assembled device additionally draws quiescent current from the buck regulator, INA228 breakout (always-on I²C), thermistor divider, and any optional CAN hardware, so the whole-device idle figure at the 5V rail is materially higher. Use Mojo during bench validation to measure the actual assembled current rather than relying on the Notecard datasheet figure alone; see [§9](#8-validation-and-testing). Sampling runs at 5-minute intervals; transmission runs at 60-minute intervals. When `report_interval_m` is changed via Notehub, the firmware re-applies `hub.set` on the next wake so the Notecard outbound cadence stays in sync without requiring a reboot. All alerts except `can_error` bypass the transmit timer entirely via `sync: true`. `can_error` is the explicit exception — it fires on the first failed CAN poll (once the Notecard clock is set), then is suppressed for one hour after each emission; it queues for normal outbound delivery rather than triggering an immediate cellular session.
 
 ### 6.6 Retry and error handling
 
@@ -433,7 +450,7 @@ float voltageToSoC(float voltage, bool isLithium) {
 }
 ```
 
-## 7. Data Flow
+## 8. Data Flow
 
 ![Data flow: 5-min sample of pack V/I/temp → SoC and Ah-throughput accumulation → battery_alert.qo (sync:true on threshold trip) and battery_status.qo (hourly templated, suppressed on NTN to conserve satellite budget) → Notehub](diagrams/03-data-flow.svg)
 
@@ -446,8 +463,8 @@ Every `sample_interval_s` seconds the firmware wakes, reads up to four data sour
 - Cell-group voltages in mV (up to 4 per frame from the placeholder parser) — optional CAN BMS
 
 **Computed** (per wake, from collected + persisted state):
-- SoC (%) — voltage-based OCV lookup, linearly interpolated; no temperature compensation (see [§9](#9-limitations-and-next-steps))
-- Cycle Ah throughput — sampled bidirectional Ah accumulator (`|current| × Δt` once per wake, 0.5 A noise floor); counts both charge and discharge current; resets when the pseudo-cycle SoH threshold triggers. **Note:** this is not depth of discharge — it does not track the net discharged deficit below full; see §9 for the production Coulomb-counting extension.
+- SoC (%) — voltage-based OCV lookup, linearly interpolated; no temperature compensation (see [§10](#9-limitations-and-next-steps))
+- Cycle Ah throughput — sampled bidirectional Ah accumulator (`|current| × Δt` once per wake, 0.5 A noise floor); counts both charge and discharge current; resets when the pseudo-cycle SoH threshold triggers. **Note:** this is not depth of discharge — it does not track the net discharged deficit below full; see §10 for the production Coulomb-counting extension.
 - SoH (%) — EWMA of discharge-only Ah accumulated per pseudo-cycle divided by `rated_cap_ah`; updated when SoC crosses the 30% → 90% heuristic threshold
 
 **Transmitted:**
@@ -473,7 +490,7 @@ All alert notes share a fixed compact schema with five fields always present: `a
 
 **Routing:** Notehub fans `battery_alert.qo` to a real-time notification channel and `battery_status.qo` to a long-term analytics store for cycle trending and fleet-level SoH dashboards. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for setup details — this project ships no specific downstream endpoint.
 
-## 8. Validation and Testing
+## 9. Validation and Testing
 
 **Expected cadence.** In steady state on a healthy machine, expect one `battery_status.qo` per hour and zero `battery_alert.qo` events. SoH will start at `100%` and update toward the true measured value after the first full discharge/charge cycle — budget a few days of normal operation before the SoH number stabilizes. Alert threshold trips during the first week are likely the result of default thresholds not matching the specific pack; tune via environment variables rather than reflashing.
 
@@ -483,7 +500,7 @@ All alert notes share a fixed compact schema with five fields always present: `a
 3. Check the serial output at 115200 baud: look for `[meas]` lines reporting reasonable `pack_v` and `cur_a` values, then verify the first `battery_status.qo` in Notehub within the first `report_interval_m` minutes.
 4. Drop `soc_alert_pct` to a high value (e.g., `95`) via the Fleet environment to force an immediate alert — confirm `battery_alert.qo` appears in Notehub with `sync: true` latency (typically 15–60 s from cellular session establishment).
 
-**Validating power behavior with Mojo.** The Blues Mojo contains an LTC2959 coulomb counter accurate to 1% over its measurement range. For a whole-device measurement, use the bench wiring in [§4](#4-wiring-and-assembly): splice Mojo so it intercepts all 5V loads — the Notecarrier CX VBAT+ pad and, when the CAN subsystem is installed, the CAN module VCC and TXB0104 VCCB supply lines. With all loads downstream of Mojo the deep-sleep current shown in the trace includes the INA228, thermistor divider, buck regulator, and optional CAN hardware in addition to the Notecard itself. The assembled idle figure will therefore be materially higher than the Notecard's published 8–18 µA alone — use Mojo to determine the actual number for your specific build rather than relying on the datasheet figure. Per-state current figures (Notecard rows from the [NOTE-NBGLWX datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/); host-awake and CAN rows estimated from component specs — verify with Mojo):
+**Validating power behavior with Mojo.** The Blues Mojo contains an LTC2959 coulomb counter accurate to 1% over its measurement range. For a whole-device measurement, use the bench wiring in [§5](#4-wiring-and-assembly): splice Mojo so it intercepts all 5V loads — the Notecarrier CX VBAT+ pad and, when the CAN subsystem is installed, the CAN module VCC and TXB0104 VCCB supply lines. With all loads downstream of Mojo the deep-sleep current shown in the trace includes the INA228, thermistor divider, buck regulator, and optional CAN hardware in addition to the Notecard itself. The assembled idle figure will therefore be materially higher than the Notecard's published 8–18 µA alone — use Mojo to determine the actual number for your specific build rather than relying on the datasheet figure. Per-state current figures (Notecard rows from the [NOTE-NBGLWX datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/); host-awake and CAN rows estimated from component specs — verify with Mojo):
 
 | Firmware state | Current @ 5V |
 |---|---|
@@ -507,17 +524,17 @@ Mojo is not deployed to the field unit; its role ends when a firmware revision p
 | Device never appears in Notehub **Devices** tab. | `PRODUCT_UID` wrong or empty; antenna not outdoors. | Re-verify `PRODUCT_UID`. Move the unit outdoors with antenna pointed up. Confirm `_session.qo` events — none means no radio connection. |
 | `_session.qo` appears but no `battery_status.qo`. | First `report_interval_m` has not elapsed, or `summ_count` stayed zero because all sensor reads were rejected. | Check serial at 115200 baud for `[meas]` lines. Confirm INA228 is powered and `pack_v` is non-zero. |
 | `pack_v` reads ~0 V or firmware reports INA228 not found. | INA228 not found at address 0x40, or SDA/SCL not connected. | Verify Qwiic continuity. Issue `{"req":"card.status"}` in the [Notehub in-browser terminal](https://dev.blues.io/notehub/notehub-walkthrough/#using-the-in-browser-terminal) to confirm the Notecard is alive, then check INA228 I²C wiring. |
-| `pack_v` reads out of plausible range (>85 V or <10 V). | INA228 `VIN+` not connected to the pack positive terminal, or wiring reversed; or pack voltage exceeds the INA228's 85 V common-mode limit. | Confirm the `VIN+` wire reaches the pack positive with a DMM. Verify `GND` is at pack negative. For packs whose full-charge voltage may exceed 85 V, substitute a voltage-sensing front end with a higher common-mode rating (see §9). |
+| `pack_v` reads out of plausible range (>85 V or <10 V). | INA228 `VIN+` not connected to the pack positive terminal, or wiring reversed; or pack voltage exceeds the INA228's 85 V common-mode limit. | Confirm the `VIN+` wire reaches the pack positive with a DMM. Verify `GND` is at pack negative. For packs whose full-charge voltage may exceed 85 V, substitute a voltage-sensing front end with a higher common-mode rating (see §10). |
 | `temp_c` is `-9999.0` with otherwise valid readings. | NTC thermistor unplugged or series resistor missing. | Check continuity at A0 to the NTC junction. With a 10 kΩ NTC at room temperature, A0 should read ~1.65 V. |
 | `soc_pct` shows 0% with a full pack. | Wrong `chemistry` env var for this pack type. | Check the `chemistry` variable in Notehub. A lithium OCV table applied to a lead-acid pack reads incorrectly because the voltage ranges differ by several volts. |
 | CAN data always absent (`can_ok: false`). | `ENABLE_CAN_BMS` is 0 (default), or `BMS_CELL_GROUP_ID` doesn't match the machine. | Set `ENABLE_CAN_BMS` to `1` in `lift_battery_monitor_config.h` and recompile. Use a CAN analyzer to confirm the BMS is actually transmitting and capture the correct CAN ID. |
 | Alerts fire every sample with no cooldown. | Alert cooldown state not persisted — `PersistState` seg ID conflict or struct too large. | Verify `STATE_SEG_ID` is unique (currently `"LIFT"`). Confirm the `PersistState` struct has not grown past the Notecard flash payload limit. |
 
-## 9. Limitations and Next Steps
+## 10. Limitations and Next Steps
 
 **Simplified for this proof-of-concept:**
 
-- **INA228 onboard shunt is bench-only; the default production path uses an external precision shunt.** Electric aerial lifts commonly draw 50–200 A during lift operation; the INA228's onboard 15 mΩ shunt is rated to ~10 A continuous and must not be placed inline on a traction-pack conductor at those currents. The firmware ships with `ENABLE_ACS758 0` as the default: `readPackVI()` reads pack current via INA228 `readCurrent()` through an external precision shunt wired to `VIN+`/`VIN–` (see §3 and §4). Update `DEFAULT_SHUNT_MOHM` and `DEFAULT_SHUNT_MAX_A` to match the installed shunt before building. The alternative field path (`ENABLE_ACS758 1`) uses an ACS758 Hall-effect sensor on A1 instead; use this path when galvanic isolation or inline shunt installation is impractical. For bench testing only, set `ENABLE_ACS758 0` and `BENCH_ONLY 1` to use the onboard 15 mΩ shunt at ≤10 A. The INA228's bus-voltage path (up to 85 V common-mode) is unaffected by shunt configuration in all cases.
+- **INA228 onboard shunt is bench-only; the default production path uses an external precision shunt.** Electric aerial lifts commonly draw 50–200 A during lift operation; the INA228's onboard 15 mΩ shunt is rated to ~10 A continuous and must not be placed inline on a traction-pack conductor at those currents. The firmware ships with `ENABLE_ACS758 0` as the default: `readPackVI()` reads pack current via INA228 `readCurrent()` through an external precision shunt wired to `VIN+`/`VIN–` (see §4 and §4). Update `DEFAULT_SHUNT_MOHM` and `DEFAULT_SHUNT_MAX_A` to match the installed shunt before building. The alternative field path (`ENABLE_ACS758 1`) uses an ACS758 Hall-effect sensor on A1 instead; use this path when galvanic isolation or inline shunt installation is impractical. For bench testing only, set `ENABLE_ACS758 0` and `BENCH_ONLY 1` to use the onboard 15 mΩ shunt at ≤10 A. The INA228's bus-voltage path (up to 85 V common-mode) is unaffected by shunt configuration in all cases.
 
 - **OCV-based SoC is inaccurate under load.** Open-circuit voltage corresponds to SoC only when the pack is at rest (no load or charge current) for at least several minutes. During operation the terminal voltage is depressed by the internal resistance drop; the firmware's SoC estimate will read lower than actual SoC while the lift is in motion. For production, blend the OCV lookup with a Coulomb-counting depth-of-discharge estimate — Coulomb counting is accurate during dynamic operation, OCV is accurate at rest. The `throughput_ah` field is a bidirectional accumulator, not a true DoD value; a production Coulomb counter must separately track the net discharged deficit below full charge.
 
@@ -547,7 +564,7 @@ Mojo is not deployed to the field unit; its role ends when a firmware revision p
 - Deploy [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) so the rental company can push OCV table updates, threshold recipes, and new BMS parsers across the fleet without a service visit.
 - Store a rolling history of the last N cycle SoH measurements in the summary note to give the fleet dashboard a degradation trend rather than a single current value.
 
-## 10. Summary
+## 11. Summary
 
 A Notecarrier CX and a Notecard for Skylo pair with a precision I²C power monitor, a thermistor, and an optional CAN BMS interface to turn an electric aerial lift's battery pack from an opaque black box into a continuously-monitored asset. Sampling runs locally every five minutes; transmission runs hourly over LTE-M with Skylo satellite as the automatic fallback when the lift is on a site with no cell coverage. Threshold trips — low SoC before a job-site delivery, thermal excursion in storage, SoH degradation approaching end-of-life — reach the rental company's fleet desk within seconds, over whatever radio path the machine can reach. Dead-on-arrival deliveries become a diagnosable, preventable event rather than a $2,000 emergency swap and an angry customer.
 

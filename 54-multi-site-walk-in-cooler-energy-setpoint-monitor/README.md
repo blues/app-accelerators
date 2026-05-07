@@ -10,6 +10,7 @@ A cellular [energy savings](https://blues.com/energy-savings/) reference design 
 
 ## 1. Project Overview
 
+
 **The problem.** For a chain QSR (quick-service restaurant), c-store (convenience store), or grocery operator, the walk-in cooler is one of the most expensive assets in a store — and one of the least visible. Energy cost per location is second only to labor, and a significant fraction of that energy budget runs through the compressor of one or more walk-in boxes. Operators who get visibility into compressor runtime, door discipline, and temperature trends across their fleet can cut energy spend materially: a door held open five minutes longer than necessary during a busy lunch rush costs real money in wasted refrigeration, and a compressor running six hours a day instead of four because box air temperature has quietly drifted 2 °F above the corporate temperature target costs even more at scale.
 
 The harder problem is that an operator running 800 locations has 800 different network environments — franchisees on consumer ISPs, independent operators with POS (point-of-sale) systems that their IT vendors won't let anyone touch, c-stores with back-office networks that preclude any new guest devices. Getting corporate visibility through all of that friction is the barrier that keeps most energy-monitoring pilots from becoming fleet-wide programs. The pilot sites get instrumented; the rollout stalls at 50.
@@ -22,6 +23,7 @@ This project is the device that gets past that barrier. One SKU, cellular-connec
 
 ## 2. System Architecture
 
+
 ![System architecture: walk-in cooler sensors (box temp, compressor CT, door reed) → Notecarrier CX with Cygnet host and Notecard MBGLW → cellular/WiFi → Notehub → energy ops / BI / alerts](diagrams/01-system-architecture.svg)
 
 **Device-side responsibilities.** The onboard Cygnet STM32 host on the Notecarrier CX wakes every `sample_interval_sec` seconds (default 60 s), reads all three sensors, updates per-window accumulators (kWh, compressor runtime, door open time and event count), evaluates two alert rules, and either queues a summary [Note](https://dev.blues.io/api-reference/glossary/#note) or goes back to sleep. Between wakes, the host is fully powered down via [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) — the Notecard holds the sleep state and restores it on wake.
@@ -32,7 +34,8 @@ This project is the device that gets past that barrier. One SKU, cellular-connec
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and other destinations. Route configuration is project-specific — this project ships no downstream endpoint. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for setup details.
 
-## 2.5 Quickstart
+## 3. Technical Summary
+
 
 ### First Event in 30 Minutes
 
@@ -88,7 +91,26 @@ After completing this project, you will deploy a complete cellular-connected wal
 
 5. **Configuration without reflashing** — threshold temperatures, alert timers, and sample/summary cadences are all tunable via Notehub environment variables; changes take effect on the device's next inbound sync.
 
-## 3. Hardware Requirements
+Here is a sample Note this device emits:
+
+```json
+{
+  "file": "cooler_summary.qo",
+  "body": {
+    "temp_f": 35.4,
+    "setpoint_f": 35.0,
+    "compressor_amps": 9.2,
+    "compressor_run_min": 38.0,
+    "door_opens": 12,
+    "door_open_sec": 187,
+    "kwh_window": 0.418,
+    "window_sec": 3612
+  }
+}
+```
+
+## 4. Hardware Requirements
+
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
@@ -110,7 +132,8 @@ After completing this project, you will deploy a complete cellular-connected wal
 
 All Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees and no monthly commitment.
 
-## 4. Wiring and Assembly
+## 5. Wiring and Assembly
+
 
 ![Wiring: DS18B20 1-Wire to D5; SCT-013 CT with V/2 bias to A0; door reed switch to D6 (PULLUP); external SMA antenna via u.FL pigtail; 120/240 VAC → IRM-10-5 → Mojo → +VBAT](diagrams/02-wiring-assembly.svg)
 
@@ -134,7 +157,8 @@ Pin-by-pin connections:
 
 **Reed switch installation.** Mount the ABS switch body on the door frame and the magnet on the door, aligned so the two components are within 10 mm when the door is fully closed. Test continuity before closing the enclosure: pin D6 should read LOW with door closed and HIGH with door open in the Arduino serial terminal.
 
-## 5. Notehub Setup
+## 6. Notehub Setup
+
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/cooler_monitor/cooler_monitor.ino` as the `PRODUCT_UID` constant before flashing.
 2. **Claim the Notecard.** Power the unit; on first cellular connection the Notecard associates with your project automatically.
@@ -153,7 +177,8 @@ Pin-by-pin connections:
 
 5. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `cooler_alert.qo` (real-time delivery to a store-ops or facilities channel) and a second for `cooler_summary.qo` (to a long-term analytics store or BI tool). Keeping the two Notefiles separate at the source means they can fan out to entirely different destinations without any filter logic inside the route.
 
-## 6. Firmware Design
+## 7. Firmware Design
+
 
 Main sketch plus helper files: [`firmware/cooler_monitor/cooler_monitor.ino`](firmware/cooler_monitor/cooler_monitor.ino) (entry point, sample cycle), [`firmware/cooler_monitor/cooler_monitor_helpers.cpp`](firmware/cooler_monitor/cooler_monitor_helpers.cpp) (Notecard config, sensor reads, note emission), and [`firmware/cooler_monitor/cooler_monitor_helpers.h`](firmware/cooler_monitor/cooler_monitor_helpers.h) (shared constants, types, and declarations).
 
@@ -284,7 +309,8 @@ NotePayloadAddSegment(&outPayload, SEG_STATE, &state, sizeof(state));
 NotePayloadSaveAndSleep(&outPayload, cfgSampleSec, NULL);
 ```
 
-## 7. Data Flow
+## 8. Data Flow
+
 
 ![Data flow: 60s sample of box temp/compressor amps/door state → two rules (door_open_long, temp_high) with 30-min cooldowns → cooler_alert.qo (sync:true) and cooler_summary.qo (hourly templated) → Notehub routes](diagrams/03-data-flow.svg)
 
@@ -302,29 +328,8 @@ NotePayloadSaveAndSleep(&outPayload, cfgSampleSec, NULL);
 - `door_open_long` — door has been continuously open for at least `door_open_alert_sec` seconds (default 5 min). Fires repeatedly at most once per 30-minute cooldown window while the door remains open — one page-out per half hour is enough for store ops to investigate.
 - `temp_high` — box temperature exceeds `temp_alert_f` (default 40 °F). The alert carries the current amps reading, so the responder can immediately see whether the compressor is running (equipment issue) or is off (power outage, breaker trip).
 
-## 8. Troubleshooting
-
-**Device claims to Notehub but no events appear after 2+ hours.**
-- Check Notecard firmware is up to date: Notehub → Devices → click your device → Device Info → Notecard version. If outdated, trigger a [Notecard firmware update](https://dev.blues.io/notecard/notecard-walkthrough/updating-notecard-firmware/).
-- Confirm ProductUID in firmware matches your Notehub project. Notecard will not transmit to the wrong project.
-- In Notehub's in-browser terminal (top-right button), run `hub.status` to check cellular signal (`"signal": -100 to -50` dBm is typical). If `"status": "disconnected"`, wait 2–3 min and retry; initial connection can take multiple cycles.
-- Check that templates are registered: Events tab should show `cooler_summary.qo` and `cooler_alert.qo` Notefiles (even if empty). If missing, the `defineTemplates()` function failed—check firmware logs via USB serial with DEBUG_SERIAL enabled.
-
-**Events appear but temp_f or compressor_amps show NaN or -9999.**
-- `temp_f = -9999`: DS18B20 probe is disconnected, shorted, or the 4.7 kΩ pull-up is missing or open. Check D5 connectivity and probe 1-Wire bus.
-- `compressor_amps = 0.0`: CT is reading zero. Check that the CT clamp is around only one hot leg of the compressor circuit (not both, which cancels the field). Verify TRRS connector is fully seated at the SCT-013 input. Check A0 bias-circuit voltage is ~1.65 V (measure with a multimeter between A0 and GND).
-
-**Door-open alerts fire every sample even when door is closed.**
-- Door reed switch is stuck closed or the door-frame magnet is permanently magnetized. Confirm the switch reads LOW on D6 when door is physically closed and HIGH when open (check with a pin voltage meter or Notehub terminal `card.attn` disabled, then upload a sketch that prints `digitalRead(D6)` to serial).
-- If magnet is stuck, replace the magnet.
-
-**Cellular sessions happen more frequently than expected (not just every `summary_interval_min`).**
-- Alerts are firing and triggering `sync:true` sessions outside the normal cadence. Check Events tab for `cooler_alert.qo` — if present, one of the two alert rules is active. Verify `temp_alert_f` and `door_open_alert_sec` thresholds are not too tight for your operating environment.
-
-**Device wakes and samples but the Mojo coulomb meter shows no change between sleep cycles.**
-- The host is not fully sleeping; `card.attn` may not be working. Verify I²C connectivity between Notecarrier and Notecard. Check firmware has no blocking delays or `delay()` calls outside of timeout-polled sensor reads (e.g., in `loop()` before `NotePayloadSaveAndSleep`).
-
 ## 9. Validation and Testing
+
 
 **Expected steady-state cadence.** A correctly-running cooler generates one `cooler_summary.qo` event approximately every `summary_interval_min` (default 60 min) and zero `cooler_alert.qo` events unless thresholds are breached. As a rough illustrative reference, a mid-size commercial walk-in cooler (800–1200 cu ft) at a typical QSR may show:
 - **Compressor runtime:** 35–55% duty cycle (21–33 minutes per 60-minute window)
@@ -359,7 +364,31 @@ These are order-of-magnitude benchmarks; actual figures vary significantly with 
 
 The *shape* of the trace is as informative as the absolute level. What you want to see: a stable sub-milliamp floor between wakes, a ~15–30 mA spike every 60 seconds lasting 1–2 s (one sample cycle), and a ~250–300 mA plateau once per summary window lasting tens of seconds (the LTE Cat-1 bis cellular session). A persistent multi-mA floor between wakes — above the ~0.5–1 mA sleep baseline — means the host is not fully sleeping, typically a `card.attn` wiring or firmware issue. Cellular plateaus more frequent than the configured summary cadence mean an alert is firing and triggering `sync:true` sessions outside the normal schedule. Both contributions are a negligible fraction of the 5V/2A supply's capacity; the bench measurement pays off most by catching firmware regressions that accidentally leave the host awake continuously.
 
-## 10. Limitations and Next Steps
+## 10. Troubleshooting
+
+
+**Device claims to Notehub but no events appear after 2+ hours.**
+- Check Notecard firmware is up to date: Notehub → Devices → click your device → Device Info → Notecard version. If outdated, trigger a [Notecard firmware update](https://dev.blues.io/notecard/notecard-walkthrough/updating-notecard-firmware/).
+- Confirm ProductUID in firmware matches your Notehub project. Notecard will not transmit to the wrong project.
+- In Notehub's in-browser terminal (top-right button), run `hub.status` to check cellular signal (`"signal": -100 to -50` dBm is typical). If `"status": "disconnected"`, wait 2–3 min and retry; initial connection can take multiple cycles.
+- Check that templates are registered: Events tab should show `cooler_summary.qo` and `cooler_alert.qo` Notefiles (even if empty). If missing, the `defineTemplates()` function failed—check firmware logs via USB serial with DEBUG_SERIAL enabled.
+
+**Events appear but temp_f or compressor_amps show NaN or -9999.**
+- `temp_f = -9999`: DS18B20 probe is disconnected, shorted, or the 4.7 kΩ pull-up is missing or open. Check D5 connectivity and probe 1-Wire bus.
+- `compressor_amps = 0.0`: CT is reading zero. Check that the CT clamp is around only one hot leg of the compressor circuit (not both, which cancels the field). Verify TRRS connector is fully seated at the SCT-013 input. Check A0 bias-circuit voltage is ~1.65 V (measure with a multimeter between A0 and GND).
+
+**Door-open alerts fire every sample even when door is closed.**
+- Door reed switch is stuck closed or the door-frame magnet is permanently magnetized. Confirm the switch reads LOW on D6 when door is physically closed and HIGH when open (check with a pin voltage meter or Notehub terminal `card.attn` disabled, then upload a sketch that prints `digitalRead(D6)` to serial).
+- If magnet is stuck, replace the magnet.
+
+**Cellular sessions happen more frequently than expected (not just every `summary_interval_min`).**
+- Alerts are firing and triggering `sync:true` sessions outside the normal cadence. Check Events tab for `cooler_alert.qo` — if present, one of the two alert rules is active. Verify `temp_alert_f` and `door_open_alert_sec` thresholds are not too tight for your operating environment.
+
+**Device wakes and samples but the Mojo coulomb meter shows no change between sleep cycles.**
+- The host is not fully sleeping; `card.attn` may not be working. Verify I²C connectivity between Notecarrier and Notecard. Check firmware has no blocking delays or `delay()` calls outside of timeout-polled sensor reads (e.g., in `loop()` before `NotePayloadSaveAndSleep`).
+
+## 11. Limitations and Next Steps
+
 
 **Simplified for this POC:**
 
@@ -381,6 +410,7 @@ The *shape* of the trace is as informative as the absolute level. What you want 
 - [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) for over-the-air firmware updates, so threshold algorithm improvements can roll out fleet-wide without truck rolls.
 - A `cooler_config.qi` inbound Notefile for ops-team-initiated diagnostic dumps (full state snapshot on demand without waiting for the next summary).
 
-## 11. Summary
+## 12. Summary
+
 
 A Notecarrier CX + Notecard Cell+WiFi + three inexpensive sensors close a gap that's stopped energy programs at hundreds of chains and operators: corporate visibility across sites you cannot touch IT-wise. The cellular uplink is one SKU; the field tech plugs it in without a WiFi ticket; the data stream stays off the POS network. What lands in Notehub — compressor apparent kWh per summary window (with per-day totals derived downstream by summing `kwh_window` records), compressor runtime, door events, and temperature-to-target deviation — gives a corporate energy team the fleet-level signal needed to surface outlier boxes running significantly more compressor-hours than their peers, locations where cumulative door-open time is an order of magnitude above the fleet median, and units where box air temperature has quietly drifted above the configured corporate target — all without asking anyone for a network password.

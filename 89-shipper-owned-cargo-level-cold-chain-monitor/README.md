@@ -51,10 +51,10 @@ When the state changes, a `cargo_state.qo` note is dispatched immediately via `s
 
 ---
 
-## 2.5 Quickstart
+## 3. Technical Summary
 
 1. **Notehub** — create a [Notehub project](https://notehub.io), copy its ProductUID.
-2. **Wire the bench rig** — Notecarrier CX + Notecard for Skylo + MAX31865 on SPI + PT100 probe + SHT41 on I²C + VEML7700 on I²C. Full pinout in [§4](#4-wiring-and-assembly).
+2. **Wire the bench rig** — Notecarrier CX + Notecard for Skylo + MAX31865 on SPI + PT100 probe + SHT41 on I²C + VEML7700 on I²C. Full pinout in [§5](#4-wiring-and-assembly).
 3. **Edit one line** in [`firmware/cargo_cold_chain_monitor/cargo_cold_chain_monitor_helpers.h`](firmware/cargo_cold_chain_monitor/cargo_cold_chain_monitor_helpers.h) — set `PRODUCT_UID` to your project's value.
 4. **Flash** — run `arduino-cli board listall | grep -i cygnet` to confirm the FQBN for your installed STM32 core, then compile and upload. Full instructions in [§6.1](#61-installing-and-flashing).
 5. **Watch** — Notehub → your project → **Events** tab. You should see `_session.qo` on first contact, `cargo_data.qo` after the first summary interval, `cargo_log.qo` entries batching with each outbound sync, `cargo_state.qo` on the first confirmed dwell or motion event, and any threshold trips as `cargo_alert.qo` within one sample interval of the triggering event.
@@ -63,18 +63,37 @@ When the state changes, a `cargo_state.qo` note is dispatched immediately via `s
 
 ---
 
-## 3. Hardware Requirements
+Here is a sample Note this device emits:
+
+```json
+{
+  "_time": 1748000000,
+  "temp_mean_c": 4.3,
+  "temp_min_c": 3.8,
+  "temp_max_c": 4.9,
+  "rh_mean_pct": 62.1,
+  "rh_min_pct": 60.4,
+  "rh_max_pct": 63.7,
+  "lux_max": 0.3,
+  "motion_total": 2,
+  "motion_valid": 1,
+  "samples": 12
+}
+```
+
+
+## 4. Hardware Requirements
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with embedded Cygnet STM32L4 host — no separate MCU needed. The ATTN pin controls host power for deep-sleep between samples. |
 | [Notecard for Skylo (NOTE-NBGLWX)](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Single M.2 module with cellular (LTE-M / 2G / 3G), WiFi, and Skylo NTN satellite. Global pre-certification sidesteps per-country approval cycles. Datasheet: [dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) |
-| [Omega PR-21C-3-100-A-1/8-0600-M12-2](https://www.omega.com/en-us/temperature-measurement/temperature-probes/rtd-probes/pr-21/) PT100 Class A probe + Omega **CAL-3** NIST-traceable calibration certificate | 1 | IEC 60751 Class A PT100 (±0.15 °C at 0 °C), 4-wire, 3.2 mm (1/8″) × 150 mm (6″) 316L stainless-steel sheath with 3/8″ NPT process fitting and 4-pin M12 A-coded output connector, −50 °C to 250 °C range. **Order the probe together with Omega's CAL-3 option** — NIST-traceable calibration certificate documenting temperature deviation at standard points, performed per ISO 10012-1 / ANSI/NCSL Z540-1. The CAL-3 certificate is what makes the hardware measurement NIST-traceable; a probe shipped without it does not satisfy the calibration-documentation requirement regardless of accuracy class. The 3/8″ NPT fitting on the probe body threads into a separately drilled and tapped 3/8-18 NPT hole in the pallet-facing side wall — this is a distinct hole from the M12 PTFE vent hole (see §4). The 4-wire M12 output mates to a field-wireable M12 A-coded female connector or a pre-made M12 patch cable for clean in-enclosure routing to the MAX31865 breakout RTD terminals. Firmware uses `MAX31865_4WIRE`; the Adafruit #3328 breakout jumper must be set to the 4-wire position (desolder the default 2/3-wire bridge and close the 4-wire pads per the Adafruit product guide). |
+| [Omega PR-21C-3-100-A-1/8-0600-M12-2](https://www.omega.com/en-us/temperature-measurement/temperature-probes/rtd-probes/pr-21/) PT100 Class A probe + Omega **CAL-3** NIST-traceable calibration certificate | 1 | IEC 60751 Class A PT100 (±0.15 °C at 0 °C), 4-wire, 3.2 mm (1/8″) × 150 mm (6″) 316L stainless-steel sheath with 3/8″ NPT process fitting and 4-pin M12 A-coded output connector, −50 °C to 250 °C range. **Order the probe together with Omega's CAL-3 option** — NIST-traceable calibration certificate documenting temperature deviation at standard points, performed per ISO 10012-1 / ANSI/NCSL Z540-1. The CAL-3 certificate is what makes the hardware measurement NIST-traceable; a probe shipped without it does not satisfy the calibration-documentation requirement regardless of accuracy class. The 3/8″ NPT fitting on the probe body threads into a separately drilled and tapped 3/8-18 NPT hole in the pallet-facing side wall — this is a distinct hole from the M12 PTFE vent hole (see §5). The 4-wire M12 output mates to a field-wireable M12 A-coded female connector or a pre-made M12 patch cable for clean in-enclosure routing to the MAX31865 breakout RTD terminals. Firmware uses `MAX31865_4WIRE`; the Adafruit #3328 breakout jumper must be set to the 4-wire position (desolder the default 2/3-wire bridge and close the 4-wire pads per the Adafruit product guide). |
 | [Adafruit MAX31865 RTD Amplifier Breakout (#3328)](https://www.adafruit.com/product/3328) | 1 | SPI-interface 15-bit ADC designed for PT100/PT1000 RTDs. Provides hardware fault detection (open-circuit, short-circuit, over/under-voltage) and accepts both 2-wire and 4-wire probe configurations. Connects to the Cygnet's hardware SPI bus (CS=D10, CLK=D13, SDO=D12, SDI=D11). The Adafruit #3328 includes a 430 Ω reference resistor matched to PT100 use. |
 | [Adafruit SHT41 breakout (#5776)](https://www.adafruit.com/product/5776) | 1 | Sensirion SHT41: ±1.8% RH, factory-calibrated. Used for **relative humidity only** — the MAX31865/PT100 is the primary temperature source. The SHT41's integrated heater prevents condensation-induced RH drift in cold, humid refrigerated environments. I²C, 3.3 V. |
 | [Adafruit VEML7700 Lux Sensor (#4162)](https://www.adafruit.com/product/4162) | 1 | 16-bit I²C ambient light sensor for interior cargo-bay light / door-opened detection. Mounted behind a polycarbonate lens on the **cargo-bay-facing wall** of the enclosure so it reads near-zero lux when the container or reefer is sealed and reports a significant lux reading when the cargo door is opened and light enters the compartment. A missing sensor returns `-9999` in `cargo_data.qo` and `cargo_log.qo`; the `lux` field is omitted from `cargo_alert.qo` when unavailable. |
-| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) *(bench bring-up only)* | 0–1 | Coulomb counter inline on the VBAT rail for ground-truth energy validation. Not deployed to the field — see [§8](#8-validation-and-testing). |
-| 3.7 V Li-Po battery, 2000 mAh (e.g., [Adafruit #2011](https://www.adafruit.com/product/2011)) | 1 | Portable power for multi-week shipments. JST-PH 2-pin connector mates directly to the Notecarrier CX. See [§8](#8-validation-and-testing) for runtime estimates and [§9](#9-limitations-and-next-steps) for UN 38.3 / IATA transport compliance notes. |
+| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) *(bench bring-up only)* | 0–1 | Coulomb counter inline on the VBAT rail for ground-truth energy validation. Not deployed to the field — see [§9](#8-validation-and-testing). |
+| 3.7 V Li-Po battery, 2000 mAh (e.g., [Adafruit #2011](https://www.adafruit.com/product/2011)) | 1 | Portable power for multi-week shipments. JST-PH 2-pin connector mates directly to the Notecarrier CX. See [§9](#8-validation-and-testing) for runtime estimates and [§10](#9-limitations-and-next-steps) for UN 38.3 / IATA transport compliance notes. |
 | ABS IP67 enclosure with mounting flanges, ~115 mm × 65 mm × 40 mm ([Bud Industries PN-1322-CMB](https://www.budind.com/view/ABS+Plastic+Boxes/PN-1322-CMB), available at DigiKey / Mouser) | 1 | IP67-rated pallet-logger housing. Requires three enclosure openings: one M12 hole on the pallet-facing side wall for the PTFE vent plug (SHT41 air exchange only); one separately drilled and tapped 3/8-18 NPT hole on the same pallet-facing side wall for the PT100 probe entry; one 20 mm hole on the **cargo-bay-facing wall** for the VEML7700 polycarbonate lens window. ABS is easily machinable — the M12 hole accepts standard step or hole saws; the 3/8-18 NPT hole is drilled to the tap-drill size (approx. 9.5 mm / 3/8″) then threaded with a 3/8-18 NPT tap. |
 | Skylo NTN + cellular/WiFi antenna (**included with NOTE-NBGLWX**) | 1 | The NOTE-NBGLWX ships with its Skylo-certified multi-band flexible antenna, which attaches to the Notecard's `MAIN` u.FL port and covers both cellular (LTE-M) and Skylo NTN (S-Band / L-Band). **Use only the included antenna on the MAIN port.** Skylo certifies the NOTE-NBGLWX exclusively with the antenna provided in the kit. Mount inside the ABS enclosure with its face toward the sky. |
 | PTFE breathable membrane vent plug, M12, IP67 ([Amphenol LTW WVPL-G2](https://www.amphenol-ltw.com/product/stainless-steel-vent-plugs-series/), available at DigiKey / Mouser) | 1 | Allows the SHT41 to sample the surrounding cargo-bay air while maintaining IP67. Installs in the dedicated M12 vent hole on the pallet-facing side wall (hand-tight + one half-turn). The PT100 probe enters through its own separate 3/8-18 NPT tapped hole on the same wall. |
@@ -86,7 +105,7 @@ All Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ---
 
-## 4. Wiring and Assembly
+## 5. Wiring and Assembly
 
 ![Wiring and assembly](diagrams/02-wiring-assembly.svg)
 
@@ -133,7 +152,7 @@ Drill an M12 through-hole in the pallet-facing side panel for the PTFE vent plug
 
 ---
 
-## 5. Notehub Setup
+## 6. Notehub Setup
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:cold-chain`.
 
@@ -233,7 +252,7 @@ Within a short time of first power-on the **Events** tab begins populating. Timi
 
 ---
 
-## 6. Firmware Design
+## 7. Firmware Design
 
 Single sketch: [`firmware/cargo_cold_chain_monitor/cargo_cold_chain_monitor.ino`](firmware/cargo_cold_chain_monitor/cargo_cold_chain_monitor.ino).
 
@@ -396,7 +415,7 @@ NotePayloadSaveAndSleep(&save, gSampleSec, NULL);
 
 ---
 
-## 7. Data Flow
+## 8. Data Flow
 
 ![Data flow](diagrams/03-data-flow.svg)
 
@@ -429,7 +448,7 @@ Each alert type has its own 30-minute cooldown (`ALERT_COOLDOWN_SEC`). A sustain
 
 ---
 
-## 8. Validation and Testing
+## 9. Validation and Testing
 
 **Expected steady-state cadence.** In normal refrigerated transit (IN_TRANSIT state), a correctly-behaving unit generates one `cargo_data.qo` summary per hour, one `cargo_log.qo` entry per 5-minute sample cycle (batched into hourly outbound syncs), and zero `cargo_alert.qo` events. During confirmed DWELL the summary cadence coarsens to one per 4 hours (default). The first summary appears approximately `summary_interval_min` minutes after the unit first obtains a valid epoch from `card.time`.
 
@@ -482,7 +501,7 @@ For satellite-reliant lanes, the primary lever is `dwell_batch_factor` — it dy
 
 ---
 
-## 8.1 Troubleshooting
+## 10. Troubleshooting
 
 | Symptom | Likely Cause | Resolution |
 |---------|--------------|-----------|
@@ -497,7 +516,7 @@ For satellite-reliant lanes, the primary lever is `dwell_batch_factor` — it dy
 
 ---
 
-## 9. Limitations and Next Steps
+## 11. Limitations and Next Steps
 
 **Remaining design boundaries:**
 
@@ -525,7 +544,7 @@ For satellite-reliant lanes, the primary lever is `dwell_batch_factor` — it dy
 
 ---
 
-## 10. Summary
+## 12. Summary
 
 Carrier-owned reefer telematics have a structural blind spot: they report the air temperature near the refrigeration unit, not where the cargo actually sits. For shippers responsible for pharmaceutical and food cold chains — where a single temperature excursion can destroy a six-figure load and trigger a regulatory recall — "the reefer said it was fine" has never been an acceptable answer. This project closes that gap with a pallet-level logger that produces an independent, shipper-controlled condition record that travels with the cargo.
 

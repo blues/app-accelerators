@@ -8,11 +8,12 @@ This reference application is intended to provide inspiration and help you get s
 
 An [energy monitoring](https://blues.com/solutions-energy-monitoring/) solution that gives utilities real-time load visibility at the pole — where transformer failures actually happen. A [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) with three split-core current transformers on the secondary terminals and an I²C temperature sensor tracks per-phase loading, detects dangerous current imbalances, and correlates load with enclosure temperature as a thermal-stress proxy — all over cellular, with no site infrastructure required.
 
-> **Implementation scope: conventional split-core CTs and enclosure-internal temperature.** This reference design uses **conventional current-output split-core CTs** (YHDC SCT-013-000, 100 A / 50 mA) rather than flexible Rogowski-type coils, and an **enclosure-internal I²C temperature sensor** (MCP9808) as a thermal-stress proxy rather than a true outdoor ambient probe or a winding-contact sensor. Both choices reduce hardware complexity for the standard residential and commercial distribution transformer installation scenario. See [§9 Limitations](#9-limitations-and-next-steps) for rationale and the production path to both alternatives.
+> **Implementation scope: conventional split-core CTs and enclosure-internal temperature.** This reference design uses **conventional current-output split-core CTs** (YHDC SCT-013-000, 100 A / 50 mA) rather than flexible Rogowski-type coils, and an **enclosure-internal I²C temperature sensor** (MCP9808) as a thermal-stress proxy rather than a true outdoor ambient probe or a winding-contact sensor. Both choices reduce hardware complexity for the standard residential and commercial distribution transformer installation scenario. See [§11 Limitations](#11-limitations-and-next-steps) for rationale and the production path to both alternatives.
 
 ---
 
 ## 1. Project Overview
+
 
 **The problem.** A distribution transformer is the last powered device between the high-voltage grid and a customer's service entrance. Utilities typically instrument their substations carefully — real-time SCADA, demand data, fault recorders — but the transformer hanging on the pole outside a neighborhood has none of that. The utility knows what's flowing into the substation; it doesn't know what's flowing through any individual transformer until something fails.
 
@@ -26,13 +27,14 @@ The power picture tells the same story. Cellular removes the site infrastructure
 
 **Deployment scenario.** A NEMA 4X weatherproof enclosure zip-tied or U-bolted to the transformer pole, powered from a small AC/DC supply connected to the 120VAC secondary, with three split-core CT leads exiting through weatherproof cable glands and clamped directly onto the secondary conductors.
 
-CT installation is **non-invasive**: the split-core sensors clamp directly onto energized secondary conductors without breaking the circuit. The power supply connection is a separate matter — tapping the 120VAC secondary is live utility electrical work; depending on utility policy and local jurisdiction, this step may require a scheduled outage, a qualified hot-work procedure, or written utility approval before the tap is energized (see [§9 Limitations](#9-limitations-and-next-steps)). No invasive tap into the transformer case and no on-site network provisioning are required. A two-person crew — including an electrician qualified for live secondary work — can install and commission one unit in under an hour once all necessary work authorizations are in hand.
+CT installation is **non-invasive**: the split-core sensors clamp directly onto energized secondary conductors without breaking the circuit. The power supply connection is a separate matter — tapping the 120VAC secondary is live utility electrical work; depending on utility policy and local jurisdiction, this step may require a scheduled outage, a qualified hot-work procedure, or written utility approval before the tap is energized (see [§11 Limitations](#11-limitations-and-next-steps)). No invasive tap into the transformer case and no on-site network provisioning are required. A two-person crew — including an electrician qualified for live secondary work — can install and commission one unit in under an hour once all necessary work authorizations are in hand.
 
-> **Power supply scope.** This reference design assumes an accessible 120VAC secondary tap — the standard case for North American single-phase distribution transformers installed by a qualified crew. Three-phase padmount transformers, sealed primary-side enclosures, or installations where utility rules prohibit tapping the secondary require an alternate power arrangement. See [§9 Limitations](#9-limitations-and-next-steps) for the inductive harvesting alternative.
+> **Power supply scope.** This reference design assumes an accessible 120VAC secondary tap — the standard case for North American single-phase distribution transformers installed by a qualified crew. Three-phase padmount transformers, sealed primary-side enclosures, or installations where utility rules prohibit tapping the secondary require an alternate power arrangement. See [§11 Limitations](#11-limitations-and-next-steps) for the inductive harvesting alternative.
 
 ---
 
 ## 2. System Architecture
+
 
 ![System architecture: three split-core CTs and MCP9808 → Notecarrier CX with Cygnet host → Notecard MBGLW → cellular/WiFi → Notehub → routes to OMS/paging and historian](diagrams/01-system-architecture.svg)
 
@@ -46,18 +48,19 @@ CT installation is **non-invasive**: the split-core sensors clamp directly onto 
 
 ---
 
-## 2.5 Quickstart: Get to First Event in 30 Minutes
+## 3. Technical Summary
+
 
 **What you need:**
 - Notecarrier CX + Notecard Cell+WiFi (MBGLW)
 - 3× YHDC SCT-013-000 CTs + 3.5 mm jack breakouts
-- Per-CT burden circuit: 22 Ω, 2× 10 kΩ, 10 µF cap (see §4)
+- Per-CT burden circuit: 22 Ω, 2× 10 kΩ, 10 µF cap (see §5)
 - MCP9808 I²C temperature sensor
 - 5V/2A AC/DC supply (e.g., MeanWell IRM-10-5)
 - Computer with Arduino IDE or `arduino-cli`
 
 **Bench validation (no live transformer needed):**
-1. Assemble the three CT bias circuits on A0, A1, A2 (see §4 wiring diagram).
+1. Assemble the three CT bias circuits on A0, A1, A2 (see §5 wiring diagram).
 2. Connect MCP9808 to I²C (SDA/SCL).
 3. Flash firmware: set `PRODUCT_UID` in `transformer_load_monitor.ino` to your Notehub project ID, then upload via USB.
 4. Open serial monitor at 115200 baud. You should see `[sample] i_a=...` lines every 5 minutes.
@@ -67,13 +70,31 @@ CT installation is **non-invasive**: the split-core sensors clamp directly onto 
 
 ---
 
-## 3. Hardware Requirements
+Here is a sample Note this device emits:
+
+```json
+{
+  "file": "xfmr_alert.qo",
+  "body": {
+    "alert":    "phase_imbalance",
+    "i_a_rms":  91.4,
+    "i_b_rms":  34.2,
+    "i_c_rms":  88.7,
+    "temp_c":   44.1,
+    "extra":    62.6
+  },
+  "sync": true
+}
+```
+
+## 4. Hardware Requirements
+
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with onboard Cygnet STM32L4 host — three ADC-capable analog pins for the CT channels, I²C for the temperature sensor, and ATTN-based host power control for deep sleep. No separate MCU needed. |
 | [Notecard Cell+WiFi (MBGLW)](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/)) | 1 | Cellular removes per-pole IT dependency; one SKU with a prepaid global SIM spans urban and rural feeders without carrier contracts or per-site activation. |
-| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) *(bench / commissioning only, optional)* | 1 | Coulomb counter for bench power-budget validation. Not shipped with the pole-mount unit — stays on the bench during commissioning. Optional; use to verify the device achieves expected current draw before field deployment. See [§8](#8-validation-and-testing) for the expected current trace to look for. |
+| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) *(bench / commissioning only, optional)* | 1 | Coulomb counter for bench power-budget validation. Not shipped with the pole-mount unit — stays on the bench during commissioning. Optional; use to verify the device achieves expected current draw before field deployment. See [§11](#9-validation-and-testing) for the expected current trace to look for. |
 | YHDC SCT-013-000 split-core CT, 100A / 50mA ([manufacturer product page](https://www.yhdc.com/en/product/SCT013-000/)) | 3 | Non-invasive, clip-on **current-output** CT. The 100A / 50mA variant covers residential distribution transformers up to approximately 20 kVA at 240V secondary (~83A full-load). For transformers at or above 25 kVA at 240V (~104A at full load), use a higher-range current-output CT; see the note below. Interfaces directly with the resistor bias circuit; no integrator stage required. Widely available from Mouser and Amazon. |
 | 22 Ω 1% resistor (burden, 1 per CT) | 3 | Converts the 50mA CT output to ~1.1V RMS at 100A — squarely within the Cygnet ADC's 0–3.3V input range after biasing. |
 | 10 kΩ 1% resistor (bias divider, 2 per CT) | 6 | Creates the Vcc/2 (~1.65V) DC bias point that centers the AC CT signal within the ADC input range. |
@@ -84,19 +105,20 @@ CT installation is **non-invasive**: the split-core sensors clamp directly onto 
 | 2A 250V slow-blow fuse, 5×20 mm (e.g. Littelfuse 218002) | 1 | Protects the 120VAC tap to the IRM-10-5 supply. Required on the Line leg; install in a panel-mount or PCB fuse holder rated for 250VAC. |
 | 5×20 mm fuse holder, 250VAC rated | 1 | Mounts the slow-blow fuse on the Line conductor inside the enclosure. |
 | Cellular stub antenna *(bench / commissioning only — included with Notecarrier CX dev kit)* | 1 | Adequate for bench bring-up and indoor testing. Not suitable for permanent outdoor pole-mount deployment. |
-| Outdoor cellular antenna, 700–2700 MHz, SMA *(deployment)* — e.g. [SparkFun WRL-14987](https://www.sparkfun.com/products/14987) | 1 | Replaces the bench stub for installed units; choose a part rated for outdoor temperature range and UV exposure. See [§4](#4-wiring-and-assembly) for enclosure-dependent placement guidance. |
+| Outdoor cellular antenna, 700–2700 MHz, SMA *(deployment)* — e.g. [SparkFun WRL-14987](https://www.sparkfun.com/products/14987) | 1 | Replaces the bench stub for installed units; choose a part rated for outdoor temperature range and UV exposure. See [§6](#5-wiring-and-assembly) for enclosure-dependent placement guidance. |
 | u.FL-to-SMA bulkhead pigtail, ≈100 mm — e.g. Taoglas CA-05250003 or equivalent | 1 | Routes the Notecard's u.FL antenna port to the externally-mounted SMA antenna. Required for all pole-mount deployments using the outdoor SMA antenna; also serves as the bulkhead lead through the enclosure wall for metal enclosures. |
 | NEMA 4X enclosure, ~6×4×2″ | 1 | Weatherproof housing for outdoor pole-mount. Fiberglass or polycarbonate variants are lighter than steel and don't attenuate the cellular antenna. |
 
 All Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
-> **CT current range note.** The SCT-013-000 rated at 100A suits transformers up to approximately 20 kVA at 240V secondary (~83A full-load, with ~17% headroom to the CT's 100A rated output). A common 25 kVA unit draws ~104A at full load — 4% above the CT's rating; use a higher-range current-output CT for transformers at or above 25 kVA. Larger transformers (50–167 kVA) draw 200–400A and require a higher-range **current-output** CT such as the YHDC SCT-036-200 (200A/50mA); update `CT_TURNS_RATIO` and `CT_BURDEN_OHMS` in firmware accordingly. Voltage-output CTs (such as the YHDC SCT-019-200, which produces 0.333V full-scale from an internal burden) are **not** drop-in replacements — they do not interface with the external bias circuit above and require a different analog front end. See [§9 Limitations](#9-limitations-and-next-steps) for the production path.
+> **CT current range note.** The SCT-013-000 rated at 100A suits transformers up to approximately 20 kVA at 240V secondary (~83A full-load, with ~17% headroom to the CT's 100A rated output). A common 25 kVA unit draws ~104A at full load — 4% above the CT's rating; use a higher-range current-output CT for transformers at or above 25 kVA. Larger transformers (50–167 kVA) draw 200–400A and require a higher-range **current-output** CT such as the YHDC SCT-036-200 (200A/50mA); update `CT_TURNS_RATIO` and `CT_BURDEN_OHMS` in firmware accordingly. Voltage-output CTs (such as the YHDC SCT-019-200, which produces 0.333V full-scale from an internal burden) are **not** drop-in replacements — they do not interface with the external bias circuit above and require a different analog front end. See [§11 Limitations](#11-limitations-and-next-steps) for the production path.
 
-> **POC protection scope.** The BOM above provides primary overcurrent protection (the slow-blow fuse) and nothing else on the 120VAC mains entry. For a bench prototype or controlled field trial this is adequate starting hardware, but it is **not a complete protection story for a permanent outdoor pole-mount installation.** A production design must add: a surge protective device (SPD) rated for the installation's overvoltage category (Category C / lightning-level, per IEC 61643-11 or UL 1449) on the Line/Neutral entry; enclosure grounding and bonding to the pole ground system per applicable NEC sections and utility rules; verified creepage and clearance in all mains-voltage wiring and connectors; UV and temperature qualification of all external cabling and the enclosure; and written utility approval before the secondary tap is permanently energized. Component selection for all of the above is installation-specific and outside this POC's scope. See [§4](#4-wiring-and-assembly) and [§9](#9-limitations-and-next-steps) for further discussion.
+> **POC protection scope.** The BOM above provides primary overcurrent protection (the slow-blow fuse) and nothing else on the 120VAC mains entry. For a bench prototype or controlled field trial this is adequate starting hardware, but it is **not a complete protection story for a permanent outdoor pole-mount installation.** A production design must add: a surge protective device (SPD) rated for the installation's overvoltage category (Category C / lightning-level, per IEC 61643-11 or UL 1449) on the Line/Neutral entry; enclosure grounding and bonding to the pole ground system per applicable NEC sections and utility rules; verified creepage and clearance in all mains-voltage wiring and connectors; UV and temperature qualification of all external cabling and the enclosure; and written utility approval before the secondary tap is permanently energized. Component selection for all of the above is installation-specific and outside this POC's scope. See [§6](#5-wiring-and-assembly) and [§11](#11-limitations-and-next-steps) for further discussion.
 
 ---
 
-## 4. Wiring and Assembly
+## 5. Wiring and Assembly
+
 
 ![Wiring diagram: CT bias circuits (22 Ω burden + 10 kΩ divider + 10 µF cap) on A0/A1/A2; MCP9808 on I²C; 120 VAC → slow-blow fuse → IRM-10-5 → Mojo (bench) → +VBAT; outdoor SMA antenna via u.FL pigtail](diagrams/02-wiring-assembly.svg)
 
@@ -136,7 +158,7 @@ Each CT channel requires a small passive network that converts the CT's AC curre
 - **GND** → R2 bottom leg of each bias circuit; CT– (TRRS sleeve) of each jack; MCP9808 `GND`.
 - **A0** → bias-divider mid-point (junction of R1 and R2) and positive plate of C for the Phase-A channel. The negative plate of C connects to CT+ (TRRS tip). CT+ also connects to one leg of Rb (22 Ω); the other leg of Rb connects to GND / CT–.
 - **A1** → same circuit, Phase-B CT.
-- **A2** → same circuit, Phase-C CT. For split-phase installations (L1/L2 on A0/A1), leave A2 unconnected — the firmware defaults to `phase_count=2`, so no env var change is needed and the unconnected channel is never sampled. For three-phase installations, wire this bias circuit and set `phase_count=3` in Notehub before first power-on (see [§5](#5-notehub-setup)); without that setting, A2 is never read and imbalance calculations are incomplete.
+- **A2** → same circuit, Phase-C CT. For split-phase installations (L1/L2 on A0/A1), leave A2 unconnected — the firmware defaults to `phase_count=2`, so no env var change is needed and the unconnected channel is never sampled. For three-phase installations, wire this bias circuit and set `phase_count=3` in Notehub before first power-on (see [§10](#6-notehub-setup)); without that setting, A2 is never read and imbalance calculations are incomplete.
 - **SDA** → MCP9808 `SDA` (Notecarrier CX has on-board 4.7 kΩ pull-ups on the I²C bus).
 - **SCL** → MCP9808 `SCL`.
 - **+VBAT** → Mojo `LOAD` output (bench only); Mojo `BAT` input → 5V from the IRM-10-5 supply.
@@ -166,11 +188,12 @@ Clamp each CT around a single secondary conductor — never around two conductor
 >
 > **Safety.** Distribution transformer secondary conductors carry lethal voltages. Installation must be performed by qualified electrical workers with appropriate PPE, following utility safety procedures and applicable codes. This firmware is read-only — it never commands any switching of the transformer or its connected loads. The CTs are non-invasive and clamp without breaking the circuit, but proximity to energized conductors remains hazardous.
 
-> ⚠️ **Surge and transient protection (POC omission).** The 2A slow-blow fuse protects the IRM-10-5 supply against a sustained short but does not suppress lightning-induced transients or switching surges, which are routinely present on distribution transformer secondaries. For bench bring-up this is acceptable; for any unit intended for permanent pole-mount deployment, install a surge protective device (SPD) rated for the site's overvoltage category (Category C / lightning-level, per IEC 61643-11 or UL 1449) across Line/Neutral ahead of the fuse holder. Bond the enclosure to the pole grounding system and verify conductor routing, creepage/clearance distances, and any utility-specific installation approval requirements before energizing the tap. See [§9](#9-limitations-and-next-steps) for the full list.
+> ⚠️ **Surge and transient protection (POC omission).** The 2A slow-blow fuse protects the IRM-10-5 supply against a sustained short but does not suppress lightning-induced transients or switching surges, which are routinely present on distribution transformer secondaries. For bench bring-up this is acceptable; for any unit intended for permanent pole-mount deployment, install a surge protective device (SPD) rated for the site's overvoltage category (Category C / lightning-level, per IEC 61643-11 or UL 1449) across Line/Neutral ahead of the fuse holder. Bond the enclosure to the pole grounding system and verify conductor routing, creepage/clearance distances, and any utility-specific installation approval requirements before energizing the tap. See [§11](#11-limitations-and-next-steps) for the full list.
 
 ---
 
-## 5. Notehub Setup
+## 6. Notehub Setup
+
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) (format: `com.your-company.your-name:xfmr-monitor`) and set it as `PRODUCT_UID` in the firmware before flashing.
 
@@ -201,7 +224,7 @@ Clamp each CT around a single secondary conductor — never around two conductor
 - **`xfmr_summary.qo`** — one per `summary_interval_min`. Annotated example payload (field comments are explanatory — actual JSON contains no comments):
   ```
   {
-    "i_a_rms":       47.3,   // phase-A mean RMS over loaded sample intervals only (A) — see §9
+    "i_a_rms":       47.3,   // phase-A mean RMS over loaded sample intervals only (A) — see §11
     "i_b_rms":       44.8,   // phase-B mean RMS over loaded sample intervals (A)
     "i_c_rms":       49.1,   // phase-C mean RMS over loaded sample intervals (A)
     "i_total":      141.2,   // sum of per-phase loaded-interval means (A)
@@ -213,12 +236,13 @@ Clamp each CT around a single secondary conductor — never around two conductor
     "total_wakes":   12      // all host wakes in the window (loaded + idle)
   }
   ```
-  `overloads` counts **sample intervals** during which any phase exceeded the overload threshold — not distinct overload events. A single sustained overload lasting the full summary window at the default 5-minute sample rate would report `overloads: 12`. `samples` counts only intervals in which at least one phase was above the 0.5 A noise floor; `total_wakes` counts every host wake regardless of load. For time-weighted utilization analytics, multiply `loading_pct` by `samples / total_wakes` to account for idle intervals (see [§9](#9-limitations-and-next-steps)).
+  `overloads` counts **sample intervals** during which any phase exceeded the overload threshold — not distinct overload events. A single sustained overload lasting the full summary window at the default 5-minute sample rate would report `overloads: 12`. `samples` counts only intervals in which at least one phase was above the 0.5 A noise floor; `total_wakes` counts every host wake regardless of load. For time-weighted utilization analytics, multiply `loading_pct` by `samples / total_wakes` to account for idle intervals (see [§11](#11-limitations-and-next-steps)).
 - **`xfmr_alert.qo`** — emitted only on a threshold trip, transmitted immediately. The `alert` field is one of `overload`, `phase_imbalance`, or `high_temp`.
 
 ---
 
-## 6. Firmware Design
+## 7. Firmware Design
+
 
 The firmware lives in the sketch directory [`firmware/transformer_load_monitor/`](firmware/transformer_load_monitor/) and is split across three files that must be compiled together:
 
@@ -230,7 +254,7 @@ The firmware lives in the sketch directory [`firmware/transformer_load_monitor/`
 
 The Arduino IDE and `arduino-cli` automatically compile every `.ino`, `.h`, and `.cpp` file in the same sketch folder together — always open or target the **folder** (`firmware/transformer_load_monitor/`), not an individual source file.
 
-### 6.1 Installing and flashing
+### 10.1 Installing and flashing
 
 **Dependencies:**
 
@@ -257,7 +281,7 @@ arduino-cli upload  -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usb
 
 After flashing, open the serial monitor at **115200 baud**. On first boot you should see `[sample] i_a=...` lines every `sample_interval_sec` seconds (default 5 minutes). After `summary_interval_min` minutes (default 60) you will see `[summary] queued (0 loaded / 12 total wakes)` if no CT is connected — the summary Note is queued to the Notecard's local on-device store at that point; it reaches Notehub on the next outbound cellular sync (default 60 minutes later). The summary is always emitted as a liveness heartbeat even with no load. When CTs are clamped on live conductors the sample lines show non-zero current values and the summary line reports the number of loaded intervals versus total wakes in that window.
 
-### 6.2 Firmware constants and environment variables
+### 10.2 Firmware constants and environment variables
 
 The firmware defines several key tuning constants in `transformer_load_monitor_helpers.h`:
 
@@ -267,9 +291,9 @@ The firmware defines several key tuning constants in `transformer_load_monitor_h
 | `CT_TURNS_RATIO` | `1.0` | Nameplate ratio (primary amps / secondary amps). For SCT-013-000 = 1.0. Higher-range CTs change this; e.g., SCT-036-200 has ratio ~4.0. |
 | `CT_BURDEN_OHMS` | `22` | Burden resistor value. Change this only if you substitute a different burden; also update `CT_SCALE` if changed. |
 | `CT_NOISE_FLOOR_A` | `0.5` | Current values below this (in amps) are zeroed to suppress noise floor pickup. Increase to 1.0 if you see non-zero readings with no load. |
-| `CT_SAMPLE_PERIOD_US` | `225` | Pacing interval (microseconds) between ADC samples. 225 µs = ~4.44 kHz sampling; ~333 ms window for RMS = ~20 mains cycles at 60 Hz. Do not change unless you understand the mains-cycle alignment issue described in §6.3. |
+| `CT_SAMPLE_PERIOD_US` | `225` | Pacing interval (microseconds) between ADC samples. 225 µs = ~4.44 kHz sampling; ~333 ms window for RMS = ~20 mains cycles at 60 Hz. Do not change unless you understand the mains-cycle alignment issue described in §10.3. |
 
-### 6.3 Modules
+### 10.3 Modules
 
 | Responsibility | Function |
 |---|---|
@@ -284,13 +308,13 @@ The firmware defines several key tuning constants in `transformer_load_monitor_h
 | Persistent state save + host sleep | `NotePayloadSaveAndSleep` (library helper) |
 | State restore on wake | `NotePayloadRetrieveAfterSleep` (library helper) |
 
-### 6.4 Sensor reading strategy
+### 10.4 Sensor reading strategy
 
 **CTs.** Each SCT-013-000 produces an AC current signal proportional to the line current flowing through its core. The external 22Ω burden resistor converts this to an AC voltage of approximately 1.1 V RMS (≈1.56 V peak) at 100 A RMS primary current, centered on the ADC's DC bias point (~1.65V = Vcc/2). The firmware uses a two-pass algorithm: 256 samples establish the actual DC offset (which may drift slightly from Vcc/2 due to component tolerance), then 1480 samples compute the RMS of the centred signal. Both passes pace samples to a fixed 225 µs period (≈4.44 kHz) using `micros()` and `delayMicroseconds()`, so the 1480-sample RMS window spans a deterministic ~333 ms — approximately 20 mains cycles at 60 Hz, or ~16.7 cycles at 50 Hz. Without that pacing, the Cygnet ADC's native single-digit-µs throughput would finish the burst in well under one full mains cycle and produce RMS values that drift with whichever waveform fragment was captured. Three channels are read sequentially; total active measurement time is approximately 1 second. The scale factor `CT_SCALE = (3.3/4096) × (2000/22)` converts ADC RMS counts directly to primary amps. Readings below 0.5 A are zeroed to suppress noise-floor pickup.
 
 **Temperature.** The Adafruit MCP9808 is initialized on every wake (since host power is fully cycled by `card.attn`), configured to 0.0625°C resolution, read once, and put to shutdown mode before the host sleeps. An absent or unresponsive sensor returns –999.0°C. The firmware tracks a separate `valid_temp_samples` counter that increments only when the reading passes the –40°C to +125°C sanity range; the summary average divides `sum_temp_c` by that counter rather than by total wake cycles. A window with zero valid temperature readings emits –999.0°C in the summary rather than a biased-low average. The Notecarrier CX's on-board I²C pull-ups are shared by the MCP9808 and the Notecard on the same bus — no external resistors are needed.
 
-### 6.5 Event payload design
+### 10.5 Event payload design
 
 One [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefile for summaries (`xfmr_summary.qo`), one untemplated Notefile for alerts (`xfmr_alert.qo`). Templates trade flexibility for efficiency: the Notecard stores fixed-length binary records internally and the wire payload is ~3–5× smaller than free-form JSON, which matters across a fleet that may transmit daily summaries for a decade.
 
@@ -311,7 +335,7 @@ Sample alert body (phase imbalance event):
 ```
 The `extra` field carries alert-type-specific context: for `overload` it is the loading percentage of the worst phase; for `phase_imbalance` it is the computed imbalance percentage (max−min)/max; for `high_temp` it is the total current across all phases at the time of the alert.
 
-### 6.6 Low-power strategy
+### 10.6 Low-power strategy
 
 The device is grid-tied (120VAC tap on the transformer secondary), so energy budget is not life-critical — but the sleep pattern matters anyway. Keeping the host off between samples eliminates a continuous 50–80mA baseline, reduces enclosure heat buildup, and makes the power profile immediately legible on a Mojo trace during bench validation.
 
@@ -319,15 +343,15 @@ After each sample cycle the host calls `NotePayloadSaveAndSleep`, which serializ
 
 The Notecard Cell+WiFi itself idles at [~18 µA @ 5V](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) between cellular sessions. Alert notes with `sync:true` bypass the outbound queue and wake the radio immediately; summary notes accumulate in the on-device queue and are flushed together once per hour.
 
-### 6.7 Retry and error handling
+### 10.7 Retry and error handling
 
 - The first Notecard transaction (`hub.set` on cold boot) uses `sendRequestWithRetry(req, 5)` to handle the cold-boot I²C race the `note-arduino` library documents.
 - Individual `env.get` calls return the default value if the Notecard returns NULL or an empty `text` field. Config values are then clamped to sane ranges (e.g., `sample_interval_sec` floored at 30 s) to guard against a misconfigured env var causing erratic behavior.
-- CT readings below the 0.5 A noise floor are zeroed; sample intervals where no phase exceeds the noise floor are excluded from current accumulation via the `valid_samples` counter, making the per-phase RMS averages *loaded-interval averages* rather than true time-weighted window averages. The `total_wakes` field in the summary payload records all host wakes (loaded + idle), so dividing `samples` by `total_wakes` gives the fraction of the window that carried detectable load — useful for utilization weighting (see [§9](#9-limitations-and-next-steps)). A summary window with zero valid CT samples still emits a `xfmr_summary.qo` note with zero current fields and `samples: 0`, confirming the device is alive even when no load is detectable on the CTs.
+- CT readings below the 0.5 A noise floor are zeroed; sample intervals where no phase exceeds the noise floor are excluded from current accumulation via the `valid_samples` counter, making the per-phase RMS averages *loaded-interval averages* rather than true time-weighted window averages. The `total_wakes` field in the summary payload records all host wakes (loaded + idle), so dividing `samples` by `total_wakes` gives the fraction of the window that carried detectable load — useful for utilization weighting (see [§11](#11-limitations-and-next-steps)). A summary window with zero valid CT samples still emits a `xfmr_summary.qo` note with zero current fields and `samples: 0`, confirming the device is alive even when no load is detectable on the CTs.
 - Alert cooldown counters per alert type (default 6 cycles = 30 min at 5-min sample rate) prevent a sustained overload condition from paging the operations center every 5 minutes. Each alert type arms and disarms independently.
 - `fetchEnvOverrides` updates the `hub.set` outbound period if `summary_interval_min` has changed since the last successful fetch, keeping the Notecard's transmit timer synchronized with the firmware's summary window.
 
-### 6.8 Key code snippet 1: note template definition
+### 10.8 Key code snippet 1: note template definition
 
 Template fields use [numeric type hints](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates): `14.1` means 4-byte IEEE-754 float; `12` means 2-byte signed integer.
 
@@ -349,13 +373,13 @@ JAddNumberToObject(body, "total_wakes",   12);  // all wakes (loaded + idle)
 notecard.sendRequest(req);
 ```
 
-### 6.9 Key code snippet 2: CT RMS two-pass algorithm
+### 10.9 Key code snippet 2: CT RMS two-pass algorithm
 
-Pass 1 determines the actual DC bias offset (should be ~2048 counts for a well-built circuit; the measured value accounts for component tolerance). Pass 2 computes RMS of the centered AC signal using float accumulation to avoid 32-bit integer overflow at full-scale input. Both passes pace samples to a fixed 225 µs period so the RMS burst spans a deterministic ~333 ms (≈20 mains cycles at 60 Hz) regardless of the host ADC's native throughput — see [§6.3](#63-sensor-reading-strategy) for why this matters.
+Pass 1 determines the actual DC bias offset (should be ~2048 counts for a well-built circuit; the measured value accounts for component tolerance). Pass 2 computes RMS of the centered AC signal using float accumulation to avoid 32-bit integer overflow at full-scale input. Both passes pace samples to a fixed 225 µs period so the RMS burst spans a deterministic ~333 ms (≈20 mains cycles at 60 Hz) regardless of the host ADC's native throughput — see [§12.3](#103-sensor-reading-strategy) for why this matters.
 
 ```cpp
 float readCtRms(uint8_t pin) {
-    // Pass 1: establish DC offset (paced sampling — see §6.3).
+    // Pass 1: establish DC offset (paced sampling — see §10.3).
     long sum = 0;
     uint32_t next_us = micros();
     for (int i = 0; i < CT_DC_SAMPLES; i++) {
@@ -385,7 +409,7 @@ float readCtRms(uint8_t pin) {
 }
 ```
 
-### 6.10 Key code snippet 3: immediate-sync alert
+### 10.10 Key code snippet 3: immediate-sync alert
 
 `sync:true` tells the Notecard to skip the outbound queue timer and open a cellular session immediately. On cellular the alert typically reaches Notehub within 15–60 seconds of the threshold trip.
 
@@ -403,7 +427,7 @@ JAddNumberToObject(body, "extra",    imbalance_pct);
 notecard.sendRequest(req);
 ```
 
-### 6.11 Key code snippet 4: sleep and state persistence
+### 10.11 Key code snippet 4: sleep and state persistence
 
 After sending any queued notes, the host serializes its runtime state to the Notecard and cuts its own power for the next sample interval. On the next ATTN wake, `NotePayloadRetrieveAfterSleep` restores the struct; execution re-enters `setup()` from the top.
 
@@ -416,20 +440,8 @@ NotePayloadSaveAndSleep(&out, cfg.sample_interval_sec, NULL);
 
 ---
 
-## 6.12 Troubleshooting
+## 8. Data Flow
 
-| Symptom | Cause | Solution |
-|---|---|---|
-| Serial console shows `[sample]` lines but no `[summary]` lines after 60+ minutes | Summary not being queued | Check that `summary_interval_min` env var is set (default 60). If you see `[summary] queued` but no Notehub events, the Notecard is not syncing; see "No events in Notehub" row below. |
-| No events appearing in Notehub **Events** tab after 2+ hours | Device not syncing to Notehub | Verify the Notecard has a valid SIM (Blues prepaid or user-provided). Check Notecard's cellular signal with `card.signal` request in Notehub **Devices → Terminal**. If signal is poor, relocate the antenna away from the transformer core or switch to an outdoor SMA antenna (see §4). |
-| Mojo trace shows sustained elevated baseline (not just brief ~1 s spikes every 5 min) | Host not sleeping between samples | Verify `card.attn` wiring is correct on the Notecarrier CX (see §4). If `NotePayloadSaveAndSleep()` is not working, check for exceptions in the serial log. Most common cause: `PRODUCT_UID` is not set, causing the firmware to return early before calling sleep. |
-| Current readings are non-zero even with no load on CTs | Bias circuit error or ADC offset drift | Verify all three bias circuits are correctly wired (see §4 diagram). Check that the capacitor's positive plate points toward the ADC pin. If wiring is correct, the AD offset may be outside the 0.5 A noise floor; reduce the noise floor temporarily by modifying `CT_NOISE_FLOOR_A` in the firmware for debugging. |
-| CT readings are consistently wrong (e.g., reading 50 A when the load is 100 A) | Incorrect `CT_SCALE` constant or ADC resolution mismatch | Verify `analogReadResolution(12)` is called before any analogRead (it is, in setup()). If a different ADC resolution was selected before flashing, the scale factor is off by a factor of (new_bits / 12). Recalculate `CT_SCALE = (3.3 / 4096) × (2000 / 22)` for 12-bit resolution; see §6.3 for the formula. |
-| Mojo shows correct steady state but summary payload has temp_c = -999.0 | MCP9808 not responding | Verify I²C wiring (SDA/SCL). Check I²C address is 0x18 (default). Try the Adafruit_MCP9808 example sketch to confirm the sensor responds. |
-
----
-
-## 7. Data Flow
 
 ![Data flow: three CT channels sampled via two-pass ADC RMS → accumulate into rolling window → three threshold rules → xfmr_alert.qo (sync:true, immediate) and xfmr_summary.qo (hourly template-encoded) → Notehub routes to OMS/paging and historian; state persisted via NotePayloadSaveAndSleep between wakes](diagrams/03-data-flow.svg)
 
@@ -438,7 +450,7 @@ Every 5 minutes (`sample_interval_sec`), the host wakes, reads the configured CT
 **Collected.** Per-phase RMS current (A) on phases A, B, and C; enclosure temperature (°C); total CT current (sum of phases); derived loading percentage; derived phase-imbalance percentage; count of overloaded sample intervals in the current summary window.
 
 **Transmitted:**
-- `xfmr_summary.qo` — one record per `summary_interval_min` (default 24 records/day), containing per-phase means over *loaded* sample intervals (intervals in which at least one phase exceeded the 0.5 A noise floor), mean enclosure temperature, count of overloaded sample intervals, number of loaded samples (`samples`), and total host wakes in the window (`total_wakes`). Template-encoded; queued and flushed by the Notecard's hourly outbound sync. Multiply `loading_pct` by `samples / total_wakes` to recover the true time-weighted window average (see [§9](#9-limitations-and-next-steps)).
+- `xfmr_summary.qo` — one record per `summary_interval_min` (default 24 records/day), containing per-phase means over *loaded* sample intervals (intervals in which at least one phase exceeded the 0.5 A noise floor), mean enclosure temperature, count of overloaded sample intervals, number of loaded samples (`samples`), and total host wakes in the window (`total_wakes`). Template-encoded; queued and flushed by the Notecard's hourly outbound sync. Multiply `loading_pct` by `samples / total_wakes` to recover the true time-weighted window average (see [§11](#11-limitations-and-next-steps)).
 - `xfmr_alert.qo` — emitted immediately on threshold trip, with `sync:true` to bypass the outbound interval. Each alert type has a 30-minute cooldown to prevent alert storms.
 
 **Triggers.** Three independent rules:
@@ -450,13 +462,14 @@ Every 5 minutes (`sample_interval_sec`), the host wakes, reads the configured CT
 
 ---
 
-## 8. Validation and Testing
+## 9. Validation and Testing
+
 
 **Expected steady-state behavior.** On a healthy, lightly-loaded transformer with well-balanced phases, the **Events** tab in Notehub should show one `xfmr_summary.qo` per hour and zero `xfmr_alert.qo` events. The serial monitor should print `[sample]` lines every 5 minutes and `[summary] queued` once per hour (the Note reaches Notehub on the next outbound sync).
 
 **Bench bring-up without a live transformer.** Connect the CTs to a known-current AC circuit (a 120VAC lamp load on one phase works well) and verify the `i_a_rms` field in the summary matches the expected current (within ~5%). With no load on a CT channel, the reading should be 0.0A — if it's non-zero, the bias network has a wiring error or the ADC offset is drifting outside the noise floor.
 
-**Triggering alerts for validation.** Drop `overload_pct` to `50.0` in the Fleet environment (the minimum the firmware permits — see §6.6 for the full clamp range). The next inbound sync (≤2 hours by default) will pull the new value, and the next sample will fire an `overload` alert on any load above half of `rated_amps`. Reset `overload_pct` to your intended value afterward.
+**Triggering alerts for validation.** Drop `overload_pct` to `50.0` in the Fleet environment (the minimum the firmware permits — see §10.6 for the full clamp range). The next inbound sync (≤2 hours by default) will pull the new value, and the next sample will fire an `overload` alert on any load above half of `rated_amps`. Reset `overload_pct` to your intended value afterward.
 
 **Power validation with Mojo.** The [Notecard Cell+WiFi (MBGLW) idle current is ~18 µA @ 5V](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/). Cellular transmit sessions draw ~250 mA average with brief peaks up to ~2 A. The host MCU, fully gated off by `card.attn`, contributes essentially nothing between samples.
 
@@ -478,11 +491,26 @@ Mojo is a bench-validation and regression tool — it is not required in product
 
 ---
 
-## 9. Limitations and Next Steps
+## 10. Troubleshooting
+
+
+| Symptom | Cause | Solution |
+|---|---|---|
+| Serial console shows `[sample]` lines but no `[summary]` lines after 60+ minutes | Summary not being queued | Check that `summary_interval_min` env var is set (default 60). If you see `[summary] queued` but no Notehub events, the Notecard is not syncing; see "No events in Notehub" row below. |
+| No events appearing in Notehub **Events** tab after 2+ hours | Device not syncing to Notehub | Verify the Notecard has a valid SIM (Blues prepaid or user-provided). Check Notecard's cellular signal with `card.signal` request in Notehub **Devices → Terminal**. If signal is poor, relocate the antenna away from the transformer core or switch to an outdoor SMA antenna (see §5). |
+| Mojo trace shows sustained elevated baseline (not just brief ~1 s spikes every 5 min) | Host not sleeping between samples | Verify `card.attn` wiring is correct on the Notecarrier CX (see §5). If `NotePayloadSaveAndSleep()` is not working, check for exceptions in the serial log. Most common cause: `PRODUCT_UID` is not set, causing the firmware to return early before calling sleep. |
+| Current readings are non-zero even with no load on CTs | Bias circuit error or ADC offset drift | Verify all three bias circuits are correctly wired (see §5 diagram). Check that the capacitor's positive plate points toward the ADC pin. If wiring is correct, the AD offset may be outside the 0.5 A noise floor; reduce the noise floor temporarily by modifying `CT_NOISE_FLOOR_A` in the firmware for debugging. |
+| CT readings are consistently wrong (e.g., reading 50 A when the load is 100 A) | Incorrect `CT_SCALE` constant or ADC resolution mismatch | Verify `analogReadResolution(12)` is called before any analogRead (it is, in setup()). If a different ADC resolution was selected before flashing, the scale factor is off by a factor of (new_bits / 12). Recalculate `CT_SCALE = (3.3 / 4096) × (2000 / 22)` for 12-bit resolution; see §10.3 for the formula. |
+| Mojo shows correct steady state but summary payload has temp_c = -999.0 | MCP9808 not responding | Verify I²C wiring (SDA/SCL). Check I²C address is 0x18 (default). Try the Adafruit_MCP9808 example sketch to confirm the sensor responds. |
+
+---
+
+## 11. Limitations and Next Steps
+
 
 **Simplified for this POC:**
 
-- **CT current range.** The SCT-013-000 (100A) suits transformers up to approximately 20 kVA at 240V (~83A full-load). Transformers at or above 25 kVA at 240V draw ~104A — beyond this CT's rating — and require a higher-range **current-output** CT (200A or 400A). Voltage-output CTs are not drop-in replacements; see §3. The firmware `CT_TURNS_RATIO` and `CT_BURDEN_OHMS` constants need to be updated to match the chosen CT; all downstream calculations scale automatically.
+- **CT current range.** The SCT-013-000 (100A) suits transformers up to approximately 20 kVA at 240V (~83A full-load). Transformers at or above 25 kVA at 240V draw ~104A — beyond this CT's rating — and require a higher-range **current-output** CT (200A or 400A). Voltage-output CTs are not drop-in replacements; see §4. The firmware `CT_TURNS_RATIO` and `CT_BURDEN_OHMS` constants need to be updated to match the chosen CT; all downstream calculations scale automatically.
 - **RMS accuracy.** The two-pass ADC algorithm covers approximately 20 mains cycles per channel (~330 ms per channel, ~1 second total for three channels) at the Cygnet ADC's throughput rate. This gives adequate accuracy (~5–10%) for a load-threshold monitor, but is not suitable for billing-grade energy metering. Extending the sample count to cover ~200 mains cycles per channel would improve RMS accuracy at the cost of proportionally longer host-active time.
 - **Summary averages reflect loaded intervals only.** `i_a_rms`, `i_b_rms`, `i_c_rms`, `i_total`, `loading_pct`, and `imbalance_pct` in `xfmr_summary.qo` are computed only over the sample intervals (`samples`) where at least one phase exceeded the 0.5 A noise floor. Sample intervals where no load is detectable are excluded from the denominator. This means a lightly-loaded or intermittently-loaded window reports average current *during the intervals when load was present*, not the true time-weighted average across the full window. For fault detection and threshold alerting this is the appropriate behavior — alert thresholds should be evaluated against actual load conditions, not diluted by idle time. For utilization reporting or transformer-life analytics, multiply `loading_pct` by `samples / total_wakes` (both fields are in the summary payload) to recover the time-weighted window average.
 - **Power factor not measured.** The firmware reports apparent current (A RMS), not real power (watts) or reactive power (VAR). A transformer nameplate rating is in kVA (apparent power), so loading percentage is correct as stated. Measuring true power would require voltage sensing in addition to current sensing — a meaningful production enhancement for a billing or power-quality application.
@@ -506,7 +534,8 @@ Mojo is a bench-validation and regression tool — it is not required in product
 
 ---
 
-## 10. Summary
+## 12. Summary
+
 
 Utilities have had substation instrumentation for decades and transformer instrumentation for almost none of that time. The gap between where the data ends and where the equipment is has been filled, historically, by scheduled inspection cycles and reactive repair. This project bridges that gap with hardware that fits in a belt pouch and a firmware package compact enough for a single sketch directory.
 

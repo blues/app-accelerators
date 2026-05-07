@@ -6,15 +6,16 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-A cellular [energy monitoring](https://blues.com/solutions-energy-monitoring/) retrofit for Level 2 EV chargers — for fleet managers, facilities teams, and charging-network operators who need to know how their installed chargers are actually being used. The design clamps a DIN-rail energy meter onto each charger's AC feed and reports three streams to Notehub over cellular: per-session metered kWh and peak power, hourly utilization and availability, and mains-offline alerts. Energy is measured by a hardware-metered instrument; charger availability is tracked from the meter's V_rms register — when mains voltage is absent the circuit is definitively offline. No modification to the charger hardware, no OCPP enrollment, no site IT involvement required. The hardware is a Notecarrier CX with a Notecard Cell+WiFi and an EASTRON SDM120-Modbus energy meter (see §3 for the BOM); see [§9](#9-limitations-and-next-steps) for design boundaries and production expansion paths.
+A cellular [energy monitoring](https://blues.com/solutions-energy-monitoring/) retrofit for Level 2 EV chargers — for fleet managers, facilities teams, and charging-network operators who need to know how their installed chargers are actually being used. The design clamps a DIN-rail energy meter onto each charger's AC feed and reports three streams to Notehub over cellular: per-session metered kWh and peak power, hourly utilization and availability, and mains-offline alerts. Energy is measured by a hardware-metered instrument; charger availability is tracked from the meter's V_rms register — when mains voltage is absent the circuit is definitively offline. No modification to the charger hardware, no OCPP enrollment, no site IT involvement required. The hardware is a Notecarrier CX with a Notecard Cell+WiFi and an EASTRON SDM120-Modbus energy meter (see §4 for the BOM); see [§11](#10-limitations-and-next-steps) for design boundaries and production expansion paths.
 
 ## 1. Project Overview
+
 
 **The problem.** Fleet managers, facilities teams, and third-party charging network operators are installing Level 2 **EVSE** (electric vehicle supply equipment) at workplace parking lots, fleet depots, and retail locations — and almost universally, they have no idea how those chargers are actually used. Is the 48-amp circuit in Bay 3 running at 90% utilization while Bay 4 sits idle all day? Are sessions clustering in the morning rush so that employees arriving at 9 a.m. find every port occupied? Without instrumentation, all of these questions get answered by anecdote or not at all.
 
 This project addresses the instrumentation gap directly: insert a series-wired DIN-rail energy meter (EASTRON SDM120-Modbus) on the EVSE circuit feed, poll it over Modbus RTU, and report session-level energy delivery and port utilization directly — independent of who built the charger, what network it's connected to, and whether the site team has any standing with the charging network operator. OCPP-based integrations provide richer per-driver and per-RFID records where a charger exposes that interface, but they depend on network-operator cooperation and vary across Blink, ChargePoint, EV Connect, and in-house fleet stacks. The hardware-meter approach requires none of that: it reads the physics of the circuit, and that works on any Level 2 EVSE ever installed.
 
-**What this design delivers.** A **metered session and utilization monitor** built around a DIN-rail single-phase energy meter (EASTRON SDM120-Modbus or compatible) on the EVSE feed. The meter is polled every 30 seconds over Modbus RTU; per-session energy is the difference in the meter's cumulative import-kWh register between session open and close — hardware-computed, not estimated from current alone. Peak power (W) is the highest active-power reading seen during the session. Charger availability is derived from the meter's V_rms register: the firmware tracks how many minutes per reporting window the supply voltage was above the configurable `voltage_present_v` threshold (`available_min`) and divides that by the full wall-clock duration of the window (`elapsed_min`) to produce `availability_pct`. Wakes where the meter is unreachable — because mains is absent, wiring is faulted, or all Modbus retries fail — count against availability in the denominator, so the metric correctly falls below 100 % whenever the charger was offline for any reason. A companion `sample_coverage_pct` field flags the fraction of window time that had valid meter readings, giving a data-quality signal separate from the availability signal. A separate `mains_absent` alert fires when no mains-present reading has been seen for longer than the configurable `alert_offline_min` threshold — a definitive signal for a tripped breaker, power loss, or sustained meter fault. Sites that additionally need per-driver or per-RFID records should implement an OCPP back-end integration alongside this meter-based monitor — see [§9](#9-limitations-and-next-steps) for boundaries and expansion paths.
+**What this design delivers.** A **metered session and utilization monitor** built around a DIN-rail single-phase energy meter (EASTRON SDM120-Modbus or compatible) on the EVSE feed. The meter is polled every 30 seconds over Modbus RTU; per-session energy is the difference in the meter's cumulative import-kWh register between session open and close — hardware-computed, not estimated from current alone. Peak power (W) is the highest active-power reading seen during the session. Charger availability is derived from the meter's V_rms register: the firmware tracks how many minutes per reporting window the supply voltage was above the configurable `voltage_present_v` threshold (`available_min`) and divides that by the full wall-clock duration of the window (`elapsed_min`) to produce `availability_pct`. Wakes where the meter is unreachable — because mains is absent, wiring is faulted, or all Modbus retries fail — count against availability in the denominator, so the metric correctly falls below 100 % whenever the charger was offline for any reason. A companion `sample_coverage_pct` field flags the fraction of window time that had valid meter readings, giving a data-quality signal separate from the availability signal. A separate `mains_absent` alert fires when no mains-present reading has been seen for longer than the configurable `alert_offline_min` threshold — a definitive signal for a tripped breaker, power loss, or sustained meter fault. Sites that additionally need per-driver or per-RFID records should implement an OCPP back-end integration alongside this meter-based monitor — see [§11](#10-limitations-and-next-steps) for boundaries and expansion paths.
 
 **Why Notecard.** The single biggest deployment friction for EV charger instrumentation is the network question. Chargers installed in a corporate parking structure are almost always on a circuit run by a third-party operator — a fleet management company, a charging network, or a facilities contractor — whose people have zero standing with the site's IT department. The parking lot is treated as a hostile network zone: no WiFi credentials are available, no VLAN is provisioned, and no IT ticket is going to get approved by Friday. Even for in-house fleet teams, the "just connect it to the corporate network" path involves months of security review for every new device class.
 
@@ -25,6 +26,7 @@ Cellular sidesteps all of that. A Notecard Cell+WiFi (MBGLW) with its included p
 **Panel placement note.** Whether the DIN-rail assembly can be mounted inside the main EVSE panel depends on the enclosure's listing and local electrical code — not all listed enclosures permit third-party low-voltage auxiliary equipment in the mains compartment. Where the panel interior is not available, mount the assembly in a separately listed auxiliary enclosure bolted adjacent to the main panel and route the RS-485 signal cable and AC supply conductors between the two enclosures through a listed conduit entry or knockout. The auxiliary-enclosure approach is the safe default for any installation where the main panel's suitability cannot be confirmed.
 
 ## 2. System Architecture
+
 
 ![System architecture: SDM120 energy meter via Modbus RTU → Notecarrier CX with Cygnet host and Notecard MBGLW → cellular → Notehub → utilization / analytics / on-call](diagrams/01-system-architecture.svg)
 
@@ -37,24 +39,45 @@ Cellular sidesteps all of that. A Notecard Cell+WiFi (MBGLW) with its included p
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and other destinations. Route setup is project-specific and outside the scope of this reference — see the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for detailed configuration.
 
 
-## 2.5 Quickstart
+## 3. Technical Summary
+
 
 Before diving into the full documentation, here's the fastest path from parts to first event in Notehub:
 
 1. **Create a Notehub project** at [notehub.io](https://notehub.io) and copy its ProductUID (looks like `com.your-company:ev-charger-monitor`).
-2. **Wire the bench rig** — Notecarrier CX + Notecard MBGLW + SDM120-Modbus energy meter + SparkFun BOB-10124 RS-485 transceiver (D0/D1/D2 pins). Full wiring details in [§4](#4-wiring-and-assembly).
+2. **Wire the bench rig** — Notecarrier CX + Notecard MBGLW + SDM120-Modbus energy meter + SparkFun BOB-10124 RS-485 transceiver (D0/D1/D2 pins). Full wiring details in [§6](#5-wiring-and-assembly).
 3. **Edit firmware/ev_charger_session_monitor/ev_charger_session_monitor.ino** — replace the empty string on line 53 (`#define PRODUCT_UID ""`) with your ProductUID.
-4. **Flash with Arduino IDE** — open the sketch, select **Blues Cygnet** as the board (canonical FQBN: `STMicroelectronics:stm32:Blues:pnum=CYGNET`), hit **Upload**. Or use `arduino-cli` (see [§6.1](#61-installing-and-flashing) for commands).
-5. **Watch Notehub** — open your project's **Events** tab. You'll see `_session.qo` within seconds (proves radio works), a `charger_summary.qo` within the hour, and a `charger_session.qo` after you run a test load (see [§8](#8-validation-and-testing)).
+4. **Flash with Arduino IDE** — open the sketch, select **Blues Cygnet** as the board (canonical FQBN: `STMicroelectronics:stm32:Blues:pnum=CYGNET`), hit **Upload**. Or use `arduino-cli` (see [§8.1](#71-installing-and-flashing) for commands).
+5. **Watch Notehub** — open your project's **Events** tab. You'll see `_session.qo` within seconds (proves radio works), a `charger_summary.qo` within the hour, and a `charger_session.qo` after you run a test load (see [§10](#9-validation-and-testing)).
 
 For detailed component selection, wiring, Notehub configuration, and validation, read on.
-## 3. Hardware Requirements
+
+Here is a sample Note this device emits:
+
+```json
+{
+  "sessions": 1,
+  "total_kwh": 5.9,
+  "avg_session_kwh": 5.9,
+  "peak_w": 10320.0,
+  "charging_min": 38,
+  "idle_min": 22,
+  "utilization_pct": 63.3,
+  "available_min": 60,
+  "availability_pct": 100.0,
+  "sample_coverage_pct": 100.0
+}
+```
+
+
+## 4. Hardware Requirements
+
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an onboard Cygnet STM32L4 host — no separate MCU needed. The ATTN pin wiring enables the Notecard to cut host power between samples for minimum idle draw. |
 | [Notecard Cell+WiFi (MBGLW)](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | LTE Cat-1 bis with global coverage and a WiFi fallback. Cellular is the primary path; see §1 for why site WiFi is rarely a viable option in EV charger deployments. Includes 500 MB data and 10 years of service on the included SIM. For technical details, see the [MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/). |
-| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) *(bench validation only)* | 1 | Coulomb counter for measuring per-wake energy and validating the sleep/transmit power profile during bring-up. Not deployed to the field — see [§8](#8-validation-and-testing). |
+| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) *(bench validation only)* | 1 | Coulomb counter for measuring per-wake energy and validating the sleep/transmit power profile during bring-up. Not deployed to the field — see [§10](#9-validation-and-testing). |
 | [SparkFun CEL-16432 LTE Hinged External Antenna](https://www.sparkfun.com/lte-hinged-external-antenna-698mhz-2-7ghz-sma-male.html), 698–2700 MHz, SMA Male | 1 | Required for reliable signal inside a metal enclosure. The SMA connector screws onto the SMA female pigtail at the panel wall, placing the radiating element outside the metal cabinet. A rubber-duck antenna left inside a steel panel will degrade signal significantly. |
 | [SparkFun WRL-18568 SMA to U.FL Cable, 150 mm](https://www.sparkfun.com/products/18568) | 1 | Routes the Notecard's U.FL cellular port to the SMA female bulkhead connector in the panel wall. For panel layouts where the Notecarrier mounts farther from the wall, a longer SMA-to-U.FL pigtail from Mouser or DigiKey can substitute. |
 | [EASTRON SDM120-Modbus 45 A direct-connect single-phase DIN-rail energy meter](https://www.eastroneurope.com/products/view/sdm120modbus) | 1 | Wired in series on the EVSE circuit (live conductor through the current input terminals). Measures V_rms, active power (W), and cumulative import kWh with Class 1 accuracy. RS-485 Modbus RTU interface connects to the Cygnet UART. Rated 45 A direct-connect, covering 32 A and 40 A Level 2 EVSE; for 48 A or 60 A EVSE circuits use the SDM120CT variant with an appropriate 5 A secondary split-core CT, or the SDM230-Modbus (100 A direct). The SDM120 requires both a live conductor and a neutral terminal for voltage sensing — confirm both are accessible at the panel before specifying this meter. The Modbus protocol document (register map, baud-rate defaults, function codes) is available as a PDF download after free registration on the [Eastron Europe website](https://www.eastroneurope.com/products/view/sdm120modbus). |
@@ -64,7 +87,8 @@ For detailed component selection, wiring, Notehub configuration, and validation,
 
 All Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
-## 4. Wiring and Assembly
+## 5. Wiring and Assembly
+
 
 ![Wiring: SDM120 energy meter via BOB-10124 RS-485 transceiver; cellular antenna via u.FL; bench Mojo on Qwiic; 120/240 VAC → HDR-15-5 → Mojo → +VBAT](diagrams/02-wiring-assembly.svg)
 
@@ -74,7 +98,7 @@ All Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 **SDM120 meter installation.** The SDM120-Modbus is a series element: the EVSE circuit live conductor must pass through the meter's current input terminal. Break the live conductor feeding the EVSE and route it through the meter's current input terminals — line-in on the input terminal and line-out on the output terminal. **Follow the terminal labels printed on the SDM120 faceplate exactly**; designations vary by variant and firmware revision, so do not rely on a generic reference for this wiring. Connect the neutral conductor to the meter's neutral terminal — the SDM120 requires a neutral connection for its internal voltage measurement. Do **not** route the neutral through the current input. The SDM120 derives its own supply from the same line and neutral conductors feeding the EVSE; consult the datasheet for the exact supply terminal connections on your variant. This installation interrupts the EVSE circuit during wiring; follow lockout/tagout procedures and have a qualified electrician perform this work.
 
-> **Circuit ampacity.** The SDM120-Modbus is rated 45 A continuous. It is suitable for 32 A EVSE circuits (40 A breaker) and 40 A EVSE circuits (50 A breaker). For 48 A EVSE (60 A breaker) or higher, substitute the SDM120CT variant with an appropriately rated split-core CT, or the SDM230-Modbus (100 A rated). See [§9](#9-limitations-and-next-steps) for substitution guidance.
+> **Circuit ampacity.** The SDM120-Modbus is rated 45 A continuous. It is suitable for 32 A EVSE circuits (40 A breaker) and 40 A EVSE circuits (50 A breaker). For 48 A EVSE (60 A breaker) or higher, substitute the SDM120CT variant with an appropriately rated split-core CT, or the SDM230-Modbus (100 A rated). See [§11](#10-limitations-and-next-steps) for substitution guidance.
 
 **RS-485 wiring.** Connect the SDM120's RS-485 terminals (**A+** and **B−**) to the corresponding **A** and **B** terminals on the SparkFun BOB-10124 breakout (via the 3.5 mm screw terminal or 0.1" header) using a twisted-pair cable (120 Ω characteristic impedance recommended). Wire the breakout to the Notecarrier CX header:
 
@@ -88,7 +112,7 @@ The firmware drives D2 HIGH before transmitting a Modbus request frame and LOW i
 
 **Notecard and antenna.** Seat the Notecard Cell+WiFi (MBGLW) into the Notecarrier CX's M.2 slot. Connect the u.FL to SMA pigtail to the Notecard's cellular u.FL port; thread the SMA end through a cable gland in the panel enclosure wall and attach the external antenna outside the panel. A rubber-duck antenna left inside a metal panel will degrade signal significantly. The Notecard communicates with the Cygnet host over I²C on the internal Notecarrier bus; no additional wiring is needed for that path.
 
-**Power.** Wire mains power to the MeanWell HDR-15-5 input terminals — 120 VAC line-to-neutral where a neutral conductor is accessible at the panel, or 208/240 VAC line-to-line where only two line conductors are available; the HDR-15-5 accepts 85–264 VAC and handles both configurations. Consult local electrical code for the permitted supply tap. Connect the HDR-15-5's 5V and GND output terminals to the Notecarrier CX's `+VBAT` and `GND` pads. For bench bring-up, insert the **Mojo** in series between the HDR-15-5's 5V output and the `+VBAT` pad, and connect the Mojo's Qwiic port to the Notecarrier CX's Qwiic connector — see [§8](#8-validation-and-testing) for what to look for on the trace.
+**Power.** Wire mains power to the MeanWell HDR-15-5 input terminals — 120 VAC line-to-neutral where a neutral conductor is accessible at the panel, or 208/240 VAC line-to-line where only two line conductors are available; the HDR-15-5 accepts 85–264 VAC and handles both configurations. Consult local electrical code for the permitted supply tap. Connect the HDR-15-5's 5V and GND output terminals to the Notecarrier CX's `+VBAT` and `GND` pads. For bench bring-up, insert the **Mojo** in series between the HDR-15-5's 5V output and the `+VBAT` pad, and connect the Mojo's Qwiic port to the Notecarrier CX's Qwiic connector — see [§10](#9-validation-and-testing) for what to look for on the trace.
 
 Pin summary:
 - **D0** (Serial1 RX) → BOB-10124 RO
@@ -100,7 +124,8 @@ Pin summary:
 - **+VBAT** → 5V from HDR-15-5 (via Mojo on bench)
 - **Cellular u.FL** → pigtail to external SMA antenna outside the panel
 
-## 5. Notehub Setup
+## 6. Notehub Setup
+
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:ev-charger-monitor`. Paste it into `firmware/ev_charger_session_monitor/ev_charger_session_monitor.ino` as the value of `PRODUCT_UID`, or pass it via a build flag (`-DPRODUCT_UID=\"com.your-company:your-project\"`).
 
@@ -163,7 +188,8 @@ Three event types matter:
   }
   ```
 
-## 6. Firmware Design
+## 7. Firmware Design
+
 
 The firmware lives in three files inside `firmware/ev_charger_session_monitor/`:
 
@@ -171,7 +197,7 @@ The firmware lives in three files inside `firmware/ev_charger_session_monitor/`:
 - [`ev_charger_session_monitor_helpers.h`](firmware/ev_charger_session_monitor/ev_charger_session_monitor_helpers.h) — shared constants, the `State` struct, extern declarations, and function prototypes.
 - [`ev_charger_session_monitor_helpers.cpp`](firmware/ev_charger_session_monitor/ev_charger_session_monitor_helpers.cpp) — all helper implementations (Modbus polling, session state machine, Note emission, env-var handling, state persistence).
 
-### 6.1 Installing and flashing
+### 7.1 Installing and flashing
 
 **Dependencies:**
 
@@ -200,7 +226,7 @@ and replace `STMicroelectronics:stm32:Blues:pnum=CYGNET` above with whatever `li
 
 Open the serial monitor at **115200 baud** after flashing. On cold boot you'll see `[app] cold boot — will configure Notecard`. Once the meter is connected, subsequent wakes print `[app] V=240.1 V  P=0 W  kWh=12.345` and then go quiet for 30 seconds as the host powers down. If the meter is absent, unpowered, or wired incorrectly you'll see `[app] WARN: Modbus voltage read error 0xE2` (response timeout) each wake. A `0x02` error indicates the slave responded but rejected the register address (typical of a slave-ID or register-map mismatch); other ModbusMaster error codes are documented in the library header.
 
-### 6.2 Modules
+### 7.2 Modules
 
 | Responsibility | Function |
 |---|---|
@@ -215,13 +241,13 @@ Open the serial monitor at **115200 baud** after flashing. On cold boot you'll s
 | Mains-absent alert emission | `emitOfflineAlert` |
 | State persistence and host sleep | `sleepHost` |
 
-### 6.3 Sensor reading strategy
+### 7.3 Sensor reading strategy
 
 `pollMeter` issues three sequential Modbus RTU read transactions (Function Code 0x04 — input registers) to the SDM120, one for each required parameter: V_rms (register 0x0000), active power in Watts (register 0x000C), and cumulative import energy in kWh (register 0x0048). Each parameter is a big-endian IEEE-754 float stored across two consecutive 16-bit registers. A 20 ms pause between transactions is sufficient for the SDM120 to respond at 9600 baud (a full 9-byte response frame takes under 10 ms). If any read returns a non-zero Modbus error code, `pollMeter` retries the complete three-register sequence up to three times (50 ms inter-attempt pause). This absorbs the single-frame bus collisions and turnaround-timing faults that most commonly occur at power-on or after a brief conductor disturbance. If all three attempts fail — indicating the meter is unpowered, wiring is faulty, or the slave ID is misconfigured — `pollMeter` returns `valid = false`. When that happens, `runSessionStateMachine` suppresses all session-state transitions and all window accumulation (`charging_sec`, `idle_sec`) for that wake: a session in progress is neither extended nor closed (its `below_threshold_count` is not incremented), and no idle time is attributed to the failed sample. However, `window_elapsed_sec` still advances unconditionally, so the failed poll counts against `availability_pct` (as an unavailable interval) and reduces `sample_coverage_pct`. The mains-absent offline timer continues to advance independently (via `last_mains_epoch` in `setup()`), so sustained meter faults still trigger the `mains_absent` alert after `alert_offline_min` minutes.
 
 The SDM120 performs all V and I measurement and computation internally; the Cygnet reads the already-computed result registers. No ADC sampling, no voltage or power-factor assumptions, and no analog front-end components are required on the Notecarrier side.
 
-### 6.4 Event payload design
+### 7.4 Event payload design
 
 `charger_summary.qo` uses a [template](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) that encodes each record as ~40 bytes on the wire (versus ~200 bytes as free-form JSON). At one record per hour per charger across a 50-unit fleet, this is meaningful over the lifetime of a 500 MB SIM. The template is registered once at cold boot and survives Notecard reboots.
 
@@ -249,13 +275,13 @@ notecard.sendRequest(req);
 
 **Template notation explained:** `12` means a 2-byte signed integer (range -32,768 to 32,767); `14.1` means a 4-byte IEEE-754 float with 1 decimal place in transmission. The template compresses each full summary record from roughly 200 bytes of free-form JSON to about 40 bytes on the wire, meaningful over a 500 MB SIM lifetime at one record per hour per device.
 
-### 6.5 Low-power strategy
+### 7.5 Low-power strategy
 
 The device is grid-tied, so absolute energy budget is not critical — but a well-disciplined sleep pattern still matters: it keeps the enclosure cooler, reduces component stress, and creates a firmware pattern that can be ported directly to a battery- or solar-backed variant without a rewrite. After each 30-second wake, the host serialises its `State` struct into Notecard flash and issues `NotePayloadSaveAndSleep`, which triggers `card.attn` to cut host power for the next interval. The Notecard sits in its 8–18 µA idle between cellular sessions. The Modbus poll adds roughly 100–200 ms to each wake (three transactions at 9600 baud with 20 ms pauses) but the host MCU is still only active for about one to two seconds every 30 seconds, and the radio runs roughly once an hour plus any session-end sync events.
 
 `hub.set` is configured for `periodic` mode with `outbound` matching `report_interval_min` (default 60 min) and `inbound` at 120 min. Session end Notes set `sync:true`, which causes the Notecard to open a cellular session immediately rather than waiting for the outbound timer. With the default `session_end_count=3` and a 30-second sample interval, the state machine requires 3 consecutive below-threshold wakes — a 90-second grace period — before formally closing the session and queuing the Note. Cellular sync then adds roughly 15–60 seconds. End-to-end, operators should expect a completed session to appear in Notehub **roughly 2–3 minutes after the car unplugs** with default settings. Reducing `session_end_count` (e.g., to `1`) shortens the grace period at the cost of increased false-close risk during EV charge-phase transitions.
 
-### 6.6 Retry and error handling
+### 7.6 Retry and error handling
 
 - `pollMeter` retries the complete three-register Modbus sequence up to three times per wake before declaring a poll failure. When all retries fail, `runSessionStateMachine` suppresses all session-state transitions and all window accumulation (`charging_sec`, `idle_sec`) for that wake — a session already in progress is held open (its `below_threshold_count` is not incremented), and no idle time is attributed to the failed sample. `window_elapsed_sec` still advances (as it does every wake), so the failed poll counts against `availability_pct` in the denominator and also reduces `sample_coverage_pct`. The mains-absent offline timer continues to advance regardless, so a sustained meter fault still triggers the `mains_absent` alert after `alert_offline_min` minutes.
 - The first `sendRequestWithRetry(req, 5)` in `initNotecard` papers over the cold-boot I²C race documented in the note-arduino library.
@@ -263,10 +289,10 @@ The device is grid-tied, so absolute energy budget is not critical — but a wel
 - `getEpoch` returns 0 if the Notecard hasn't yet synced and obtained time. The summary Note is guarded by `now > 0` and `window_start_epoch > 0`, so it does not fire before a cellular session establishes. The mains-absent alert is guarded by `offline_ref > 0`, where `offline_ref` is the last mains-present epoch, or `window_start_epoch` when mains has never been confirmed — so the alert is suppressed until the device has a valid clock and the configured absence duration has genuinely elapsed.
 - `emitSessionNote` sets `timing_valid = false` when the `start_epoch` parameter is 0 — which happens when a session was opened before the Notecard completed its first cellular time sync. In that case `duration_min` and `start_epoch` would be wildly incorrect, so both are emitted as 0 and `timing_valid: false` is included in the Note body to signal suppression to downstream consumers. `session_kwh` and `peak_w` are unaffected and always emitted normally.
 - Env var changes to `report_interval_min` re-apply `hub.set` via `applyHubCadence()`. The `hub_cadence_dirty` flag is set before the attempt and cleared only on confirmed success, so a single transient I²C failure cannot leave the Notecard permanently on the old outbound cadence; `setup()` retries on every subsequent wake until the cadence is confirmed updated — mirroring the `notecard_configured` retry pattern.
-- When `emitSessionNote()` fails at session end, the completed payload is stored in a dedicated pending-note struct (`pending_session_*`) and `session_active` is cleared immediately. The pending note is retried at the top of `runSessionStateMachine()` on each subsequent wake, but the function always falls through to normal state-machine processing regardless of whether the retry succeeded — so a back-to-back charging session during a transient Notecard fault is detected and opened correctly rather than being silently blocked by a retry loop. **Retry-path window attribution:** if the hourly summary fires and resets the window accumulators between the session-end failure and a subsequent successful retry, the session's count and completed-session kWh are attributed to the newer window rather than the window in which the session actually ended. This edge case is documented further in §9.
+- When `emitSessionNote()` fails at session end, the completed payload is stored in a dedicated pending-note struct (`pending_session_*`) and `session_active` is cleared immediately. The pending note is retried at the top of `runSessionStateMachine()` on each subsequent wake, but the function always falls through to normal state-machine processing regardless of whether the retry succeeded — so a back-to-back charging session during a transient Notecard fault is detected and opened correctly rather than being silently blocked by a retry loop. **Retry-path window attribution:** if the hourly summary fires and resets the window accumulators between the session-end failure and a subsequent successful retry, the session's count and completed-session kWh are attributed to the newer window rather than the window in which the session actually ended. This edge case is documented further in §10.
 - `alert_offline_min` accepts `0` (set the env var to `0` to disable mains-absent alerting), or any positive integer to adjust the threshold. The firmware checks for key presence before applying the value, so an absent env var leaves the current setting unchanged.
 
-### 6.7 Key code snippet: session-end Note with immediate sync
+### 7.7 Key code snippet: session-end Note with immediate sync
 
 When the session state machine closes a session, it computes `session_kwh` from the meter's import-kWh register delta, stores the payload in a pending-note struct (`pending_session_*`), and clears `session_active` immediately before calling `emitSessionNote`. All payload values are passed as explicit parameters so the function works identically at first-close time and during pending-note retries — after session state has been cleared and possibly overwritten by a new session. A `timing_valid` guard protects against sessions opened before the Notecard had a valid epoch: if `start_epoch` is 0, `duration_min` and `start_epoch` would be wildly incorrect, so they are emitted as 0 and `timing_valid` is set to `false`. `session_kwh` and `peak_w` are always valid regardless.
 
@@ -289,7 +315,7 @@ bool emitSessionNote(float kwh, float peak_w,
 }
 ```
 
-### 6.8 Key code snippet: state persistence across sleep
+### 7.8 Key code snippet: state persistence across sleep
 
 `NotePayloadSaveAndSleep` serialises the entire `State` struct into Notecard flash, then issues the `card.attn` sleep request. On the next wake, the host enters `setup()` from cold and `NotePayloadRetrieveAfterSleep` rehydrates it — so the session start kWh baseline, peak power, and hourly window state survive the host being fully powered down.
 
@@ -299,7 +325,7 @@ NotePayloadAddSegment(&payload, STATE_SEG_ID, &state, sizeof(state));
 NotePayloadSaveAndSleep(&payload, state.sample_interval_sec, NULL);
 ```
 
-### 6.9 Key code snippet: Modbus meter poll
+### 7.9 Key code snippet: Modbus meter poll
 
 `pollMeter` reads three SDM120 input-register pairs in sequence. Each pair is a big-endian IEEE-754 float; `regsToFloat` reassembles the two 16-bit halves via a union.
 
@@ -322,7 +348,8 @@ static float regsToFloat(uint16_t hi, uint16_t lo) {
 }
 ```
 
-## 7. Data Flow
+## 8. Data Flow
+
 
 ![Data flow: 30-s Modbus polls of V_rms/W/kWh → session state machine + offline detection → charger_alert.qo (sync:true on mains_absent) and charger_summary.qo (hourly templated) → Notehub](diagrams/03-data-flow.svg)
 
@@ -355,7 +382,8 @@ window_total_kwh = import_kwh_now − import_kwh_at_window_open
 - Hourly summary: wall-clock window of `report_interval_min` elapsed
 - Mains-absent alert: `alert_offline_min` > 0 and `alert_offline_min` minutes elapsed since the last confirmed mains-present reading (or device commissioning if mains has never been confirmed); fires once; resets when mains returns; disabled when `alert_offline_min = 0`
 
-## 8. Validation and Testing
+## 9. Validation and Testing
+
 
 **Expected steady-state cadence.** In normal use, a charger with two or three sessions per day generates: one `charger_summary.qo` per hour (24/day), one `charger_session.qo` per session (2–8/day), and zero `charger_alert.qo` events. In a healthy window, `sample_coverage_pct` should be 100.0 (every Modbus poll succeeded). If the summary Note shows `utilization_pct` consistently above 80%, the charger is effectively saturated; if `availability_pct` is below 95%, the charger circuit has been losing power frequently and maintenance is warranted.
 
@@ -379,7 +407,8 @@ Two failure patterns are immediately visible on the Mojo:
 
 Mojo is bench-validation tooling — deployed units running from a panel supply don't need it.
 
-## 9. Limitations and Next Steps
+## 10. Limitations and Next Steps
+
 
 **Design boundaries:**
 
@@ -407,7 +436,8 @@ Mojo is bench-validation tooling — deployed units running from a panel supply 
 - Wire Notecard Outboard DFU to the Cygnet's boot/reset pins for over-the-air host firmware updates across the deployed fleet.
 - Replace the single-slot pending-session store with a small ring buffer (4–8 slots) in the `State` struct to guarantee per-session delivery even during extended Notecard faults — see the extension notes in `ev_charger_session_monitor_helpers.h`.
 
-## 10. Summary
+## 11. Summary
+
 
 This project demonstrates that actionable EV charger visibility — per-session metered kWh, peak demand, session duration, port utilization, and charger availability — is achievable with a DIN-rail energy meter, a Notecarrier CX, and a cellular Notecard. No charger modification. No OCPP negotiation. No IT involvement. No per-site network setup. The SDM120 measures actual energy delivery and mains voltage; the Notecard dials home over LTE Cat-1 bis; and Notehub starts receiving session records and hourly availability summaries within minutes of commissioning.
 

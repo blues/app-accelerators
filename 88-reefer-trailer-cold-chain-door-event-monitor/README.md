@@ -10,7 +10,7 @@ A [loss prevention](https://blues.com/loss-prevention/) reference design that ke
 
 **What you'll have when you're done:** a weatherproof, trailer-powered monitor that samples cargo temperature every minute, queues each sample locally for Notehub delivery on the next outbound session (`trailer_log_cell.qo`, arriving in Notehub in batches — default once per hour), fires an alert on the next sample cycle (up to ~60 s after the event, plus network-establishment time) when a door opens or a temperature threshold is breached, and ships hourly compliance summaries to Notehub over cellular or WiFi. Per-sample logs and hourly summaries use non-NTN-compatible Notefiles (no compact format or port, `delete:true`); the Notecard discards their queued notes when connecting via NTN, so they never consume the bundled satellite data budget. On periodic hub sessions over NTN — which occur when terrestrial coverage is unavailable — only pending alert notes carry payload data over the satellite link.
 
-**Energy footprint:** steady-state draw from a 12 V trailer supply is roughly 30–60 mAh per 24 h (dominated by one hourly cellular session of ~15–45 s at ~250 mA average). NTN satellite sessions consume more per event due to longer link establishment, but alert-only delivery over satellite keeps the 10 KB data budget intact. Commissioning validates actual consumption with [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) — see [§8](#8-validation-and-testing).
+**Energy footprint:** steady-state draw from a 12 V trailer supply is roughly 30–60 mAh per 24 h (dominated by one hourly cellular session of ~15–45 s at ~250 mA average). NTN satellite sessions consume more per event due to longer link establishment, but alert-only delivery over satellite keeps the 10 KB data budget intact. Commissioning validates actual consumption with [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) — see [§9](#8-validation-and-testing).
 
 ---
 
@@ -47,10 +47,10 @@ The [Notecard for Skylo (NOTE-NBGLWX)](https://shop.blues.com/products/notecard?
 
 ---
 
-## 2.5 Quickstart
+## 3. Technical Summary
 
 1. **Notehub** — create a [Notehub project](https://notehub.io) and copy its ProductUID.
-2. **Wire the bench rig** — Notecarrier CX + Notecard for Skylo + two DS18B20 probes (VDD to +3V3, GND to GND, data to A0 with 4.7 kΩ pull-up to +3V3) + reed switch on A1. Full pinout in [§4](#4-wiring-and-assembly).
+2. **Wire the bench rig** — Notecarrier CX + Notecard for Skylo + two DS18B20 probes (VDD to +3V3, GND to GND, data to A0 with 4.7 kΩ pull-up to +3V3) + reed switch on A1. Full pinout in [§5](#4-wiring-and-assembly).
 3. **Edit one line** of [`firmware/reefer_cold_chain_monitor/reefer_cold_chain_monitor_helpers.h`](firmware/reefer_cold_chain_monitor/reefer_cold_chain_monitor_helpers.h) — set `PRODUCT_UID` to your project's value.
 4. **Flash with arduino-cli**:
    ```bash
@@ -66,15 +66,20 @@ The [Notecard for Skylo (NOTE-NBGLWX)](https://shop.blues.com/products/notecard?
    See [§6.1](#61-installing-and-flashing) for full dependency list and IDE steps.
 5. **Watch** — open Notehub → your project → **Events**. You should see `_session.qo` within 1 min, then on the next outbound window (default ~60 min): batch of `trailer_log_cell.qo` notes (one per 60 s sample), `trailer_summary_cell.qo` (hourly), and any alerts as `trailer_alert.qo` (immediate sync).
 
+
+Here is a sample Note this device emits:
+```json
+{ "t1_c": -1.4, "t2_c": -0.8, "door_open": false }
+```
 ---
 
-## 3. Hardware Requirements
+## 4. Hardware Requirements
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an embedded Cygnet STM32 host — no separate MCU board needed. Supports `card.attn` power gating for deep-sleep between samples. See the [datasheet](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/). |
 | [Notecard for Skylo (NOTE-NBGLWX)](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Cellular (LTE-M / NB-IoT / GPRS) + Skylo NTN satellite module with built-in GNSS and onboard WiFi antenna (Quectel BG95-S5 cellular/satellite modem + Silicon Labs WFM200S WiFi). Automatic network selection requires no firmware changes. Bundles 500 MB cellular data + 10 KB satellite data over 10 years with no activation fees. See the [datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/). |
-| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Coulomb counter on the power rail. Required during commissioning and validation for ground-truth energy measurement (see [§8](#8-validation-and-testing)). Remove Mojo and the Qwiic cable before production deployment — the inline current draw and quiescent load are not needed in the field. See the [datasheet](https://dev.blues.io/datasheets/mojo-datasheet/). |
+| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Coulomb counter on the power rail. Required during commissioning and validation for ground-truth energy measurement (see [§9](#8-validation-and-testing)). Remove Mojo and the Qwiic cable before production deployment — the inline current draw and quiescent load are not needed in the field. See the [datasheet](https://dev.blues.io/datasheets/mojo-datasheet/). |
 | [Adafruit DS18B20 Waterproof Temperature Sensor](https://www.adafruit.com/product/381) (#381) | 2 | 1-Wire stainless-steel probe; −55 °C to +125 °C range; ±0.5 °C from −10 °C to +85 °C; includes a 4.7 kΩ pull-up resistor. One probe near the front evaporator; one near the rear return-air panel. |
 | [Adafruit Magnetic Contact Switch](https://www.adafruit.com/product/375) (#375) | 1 | Normally-open reed switch in a plastic housing. Activates within 15 mm of its matching magnet. Mounts on the door frame; magnet on the door leaf. |
 | [Pololu D24V22F5 5 V Step-Down Regulator](https://www.pololu.com/product/2858) (#2858) | 1 | 5.3–36 V input, 5 V / 2.5 A output. Converts trailer 12 V DC (or nose-box 12 V) to 5 V for the Notecarrier CX. Compact and efficient (85–95%). |
@@ -83,14 +88,14 @@ The [Notecard for Skylo (NOTE-NBGLWX)](https://shop.blues.com/products/notecard?
 | Passive GPS/GNSS flexible antenna — **included with NOTE-NBGLWX** | 1 | Ships in the NOTE-NBGLWX kit; connects to the Notecard `GPS` u.FL port. Covers GPS/GNSS L1 (1559–1610 MHz). Route the cable through a sealed cable gland to the exterior of the NEMA 4X enclosure with a clear, unobstructed sky view — mount the antenna on the trailer roof or exterior wall, away from the refrigeration unit. A replacement u.FL passive GNSS antenna (e.g., the [Blues accessories Quectel YCA001BA](https://shop.blues.com/collections/accessories), covering 1560–1620 MHz, u.FL) is compatible if the included antenna is damaged. |
 | Sealed IP68 cable gland, M16, for the antenna cables | 2 | One per antenna cable (MAIN and GPS), routed through the NEMA 4X enclosure wall. Maintains the IP/NEMA rating after the antenna cables are passed through. Use a gland sized for the cable diameter of the included antenna pigtails (typically ~3–4 mm). |
 | 2-conductor stranded wire, 22 AWG, ~3 m | 1 | Extends the door sensor cable from the door frame to the enclosure. Standard alarm wire. |
-| Inline ATO/ATC blade fuse holder, 12–16 AWG leads | 1 | Installs inline on the trailer 12 V positive feed between the trailer source and the Pololu D24V22F5 `VIN`. Keeps overcurrent protection as close to the source as practical, per the field installation caution in [§4](#4-wiring-and-assembly). Any automotive-grade in-line ATO/ATC holder with lead wire gauge matched to the supply run is acceptable. |
+| Inline ATO/ATC blade fuse holder, 12–16 AWG leads | 1 | Installs inline on the trailer 12 V positive feed between the trailer source and the Pololu D24V22F5 `VIN`. Keeps overcurrent protection as close to the source as practical, per the field installation caution in [§5](#4-wiring-and-assembly). Any automotive-grade in-line ATO/ATC holder with lead wire gauge matched to the supply run is acceptable. |
 | 3 A ATO/ATC automotive blade fuse | 1 | Fits the inline fuse holder above. Sized for the Pololu D24V22F5's 2.5 A rated output with wiring headroom. Use only 3 A — do not substitute a higher-rated fuse; a blown fuse indicates a wiring fault that must be corrected before replacing it. |
 
 All Blues hardware ships with an active SIM; no separate SIM purchase or activation is required.
 
 ---
 
-## 4. Wiring and Assembly
+## 5. Wiring and Assembly
 
 ![Wiring and Assembly](diagrams/02-wiring-assembly.svg)
 
@@ -139,7 +144,7 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
 
 ---
 
-## 5. Notehub Setup
+## 6. Notehub Setup
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:reefer-monitor`.
 
@@ -162,7 +167,7 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
 
 6. **Configure routes.** Add [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for the following Notefiles:
    - `trailer_alert.qo` — alert event (door state change, temperature excursion). Delivered over the first available transport; the Notecard automatically selects cellular when in range and NTN satellite as a fallback. Route to your TMS, dispatch system, or on-call channel for real-time delivery. Transport information (cellular vs. satellite) is available in Notehub session metadata for each event.
-   - `trailer_log_cell.qo` — per-sample record written every `sample_interval_sec` (default 60 s): both probe temperatures and door state. Cellular/WiFi only; never transmitted over NTN. Route to a cold-chain compliance archive or long-term data store. Gaps in this file during NTN-only coverage are expected — see §9.
+   - `trailer_log_cell.qo` — per-sample record written every `sample_interval_sec` (default 60 s): both probe temperatures and door state. Cellular/WiFi only; never transmitted over NTN. Route to a cold-chain compliance archive or long-term data store. Gaps in this file during NTN-only coverage are expected — see §10.
    - `trailer_summary_cell.qo` — hourly compliance summary (mean/min/max per probe, door event count, current door state). Cellular/WiFi only. Route to the same cold-chain compliance destination as `trailer_log_cell.qo`.
 
    Separating alerts from log and summary data means routes can be configured at different urgency levels without filter logic on either end.
@@ -199,7 +204,7 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
 
 ---
 
-## 6. Firmware Design
+## 7. Firmware Design
 
 The firmware spans three files: [`reefer_cold_chain_monitor.ino`](firmware/reefer_cold_chain_monitor/reefer_cold_chain_monitor.ino) contains `setup()`, `loop()`, and the top-level sample-cycle driver; [`reefer_cold_chain_monitor_helpers.h`](firmware/reefer_cold_chain_monitor/reefer_cold_chain_monitor_helpers.h) defines constants, `AppState`, clamp helpers, and function prototypes; and [`reefer_cold_chain_monitor_helpers.cpp`](firmware/reefer_cold_chain_monitor/reefer_cold_chain_monitor_helpers.cpp) implements sensor drivers, the door and temperature state machines, and all Notecard communication.
 
@@ -410,7 +415,7 @@ NotePayloadSaveAndSleep(&out, (int)g_sampleIntervalSec, NULL);
 
 ---
 
-## 7. Data Flow
+## 8. Data Flow
 
 ![Data Flow](diagrams/03-data-flow.svg)
 
@@ -420,10 +425,10 @@ Every 60 s the firmware wakes, reads both temperature probes and the door pin, r
 
 **Transmitted:**
 - `trailer_alert.qo` — evaluated and queued during the next sample cycle (up to `sample_interval_sec` after the event, default 60 s); transmitted immediately via `hub.sync` (bypasses the outbound timer) on: door opens, door closes, door open past `door_alert_sec`, probe exceeds `temp_max_c`, probe drops below `temp_min_c`. Delivered over the first available transport (cellular preferred; NTN satellite fallback). Temperature alerts are rate-limited by `alert_cooldown_sec`.
-- `trailer_log_cell.qo` — one note per sample cycle (default every 60 s), cellular/WiFi only, queued and shipped on the next outbound sync. Gaps expected during NTN-only coverage (see §9).
+- `trailer_log_cell.qo` — one note per sample cycle (default every 60 s), cellular/WiFi only, queued and shipped on the next outbound sync. Gaps expected during NTN-only coverage (see §10).
 - `trailer_summary_cell.qo` — one note per `summary_interval_min` (default 60 min), cellular/WiFi only, queued and shipped on the next outbound sync. Contains mean, min, and max for each probe plus door-open count and current door state.
 
-**Location.** `hubConfigure` calls [`card.location.mode`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-location-mode) with `mode:"periodic"` and `seconds:600`. The Notecard maintains location autonomously in the background — `periodic` mode samples at the configured interval only when the Notecard detects motion, so the GNSS radio activates roughly every 10 minutes while the trailer is moving and stays off while it is stationary. The host MCU does not poll `card.location` on each 60-second sample cycle; instead, `sendAlert` issues a single `card.location` request immediately before writing each alert Note, embedding the most recent fix as `lat`/`lon` fields. This means every alert is geo-stamped with the trailer's position at event-detection time without adding a GNSS query to the routine sample cycle. When no fix has been acquired yet (first power-on, GNSS antenna obstructed), both fields are `0.0`. The GNSS antenna must have an unobstructed sky view — mount it on the trailer roof or exterior wall, away from the refrigeration unit, per [§4](#4-wiring-and-assembly).
+**Location.** `hubConfigure` calls [`card.location.mode`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-location-mode) with `mode:"periodic"` and `seconds:600`. The Notecard maintains location autonomously in the background — `periodic` mode samples at the configured interval only when the Notecard detects motion, so the GNSS radio activates roughly every 10 minutes while the trailer is moving and stays off while it is stationary. The host MCU does not poll `card.location` on each 60-second sample cycle; instead, `sendAlert` issues a single `card.location` request immediately before writing each alert Note, embedding the most recent fix as `lat`/`lon` fields. This means every alert is geo-stamped with the trailer's position at event-detection time without adding a GNSS query to the routine sample cycle. When no fix has been acquired yet (first power-on, GNSS antenna obstructed), both fields are `0.0`. The GNSS antenna must have an unobstructed sky view — mount it on the trailer roof or exterior wall, away from the refrigeration unit, per [§5](#4-wiring-and-assembly).
 
 **Routing.** All three Notefiles land in Notehub. From there, routes fan them out to downstream systems. Typical pattern: `trailer_alert.qo` → TMS or messaging gateway (real-time dispatch); `trailer_log_cell.qo` and `trailer_summary_cell.qo` → cold-chain compliance database.
 
@@ -436,7 +441,7 @@ Every 60 s the firmware wakes, reads both temperature probes and the door pin, r
 
 ---
 
-## 8. Validation and Testing
+## 9. Validation and Testing
 
 **Expected steady-state cadence.** On a healthy, closed, in-range trailer: `trailer_log_cell.qo` notes every 60 s (queued locally; arriving in Notehub on the hourly outbound session, up to 60 per batch), one `trailer_summary_cell.qo` per hour, zero alert events. The first batch of log notes arrives in Notehub at the first outbound session (default 60 min); alerts appear within one sample cycle (`sample_interval_sec`, default 60 s) of the event plus network-establishment time in `trailer_alert.qo`.
 
@@ -470,53 +475,19 @@ Mojo is a **bench and commissioning tool**; production units don't require it.
 
 ---
 
-## 9. Limitations and Next Steps
 
-**Simplified for this POC:**
+A Notecarrier CX and a Notecard for Skylo pair with two DS18B20 probes and a magnetic reed switch to watch the two failure modes — temperature excursion and unauthorized door access — that drive most reefer trailer cargo loss. The firmware samples every minute, queues each raw sample locally for Notehub delivery on the next outbound session (`trailer_log_cell.qo`), fires an alert on the next sample cycle (up to ~60 s) when any threshold trips via whatever radio is available (`trailer_alert.qo`, delivered over cellular or NTN satellite automatically), and ships a compact hourly summary (`trailer_summary_cell.qo`) for compliance and trending. The cellular + satellite multi-RAT design means the monitor stays connected as the trailer moves from an urban distribution center through rural interstates to a port staging yard — without any network configuration, SIM swapping, or carrier negotiation required.
 
-- **Per-sample log and summary gaps during NTN-only coverage.** The firmware writes a `trailer_log_cell.qo` note on every 60-second sample cycle and a `trailer_summary_cell.qo` note on every summary interval. Both Notefiles use non-NTN-compatible templates with `delete:true`, so the Notecard discards any queued notes from either file at sync time when connecting via NTN — per-sample records and hourly summaries are never transmitted over satellite and do not consume the 10 KB bundled satellite data budget. The result is a gap in both the per-sample compliance log and the hourly summary record for the duration of any NTN-only blackout; neither file is retained for later terrestrial upload under the current design. A production design requiring uninterrupted per-sample or per-summary delivery should store records to local flash (e.g., an SD card or the host MCU's internal flash) and upload them as a batch file transfer over cellular when coverage returns.
-- **Single pending door-event slot — one edge may be dropped under retry overlap.** The firmware persists exactly one pending door alert at a time. If a `door_open` alert is still retrying (due to a transient Notecard/I²C failure) when the door closes, the close transition overwrites the pending open in `AppState` — the `door_open` edge is dropped and only the `door_close` alert (with full `door_open_sec` duration) is delivered. This is an intentional trade-off: the close alert carries all the information of the open plus its duration and is more actionable. See the `checkDoorEvents` comment in `reefer_cold_chain_monitor_helpers.cpp`. A production design requiring guaranteed per-edge delivery should replace the single-slot latch with a small ring buffer of pending events.
-- **Door detection is polled, not interrupt-driven.** A door that opens and closes entirely within one `sample_interval_sec` window (default 60 s) will be missed. For a shipping dock or rest-stop theft scenario, real events take minutes; but a production design should consider interrupt-driven wake via the Notecard's `card.attn` AUX GPIO mode or an external interrupt on the host MCU.
-- **Single 1-Wire bus, index-based sensor addressing.** Two probes share one bus. The firmware accesses them by enumeration index (0 and 1), which is consistent across restarts but depends on both probes remaining connected. A production design would store and validate the DS18B20 64-bit device addresses at commissioning time and detect unexpected address changes as sensor-swap events.
-- **No dynamic satellite data budget management.** Periodic hub sessions over NTN (which occur when cellular is unavailable) carry no data payload from `trailer_log_cell.qo` or `trailer_summary_cell.qo` (both discarded at sync time by their non-NTN-compatible `delete:true` templates); only pending `trailer_alert.qo` notes consume satellite data. However, the 10 KB bundled data budget is shared with session-establishment and protocol overhead on every NTN session. Developers should validate real NTN usage in Notehub's session logs before setting production cadences, and production deployments with extended satellite exposure should consider reducing the `hub.set outbound` cadence during confirmed NTN-only periods to limit session-overhead accumulation.
-- **Temperature probe CRC not validated at the application layer.** The DallasTemperature library performs the 1-Wire CRC check internally and returns `DEVICE_DISCONNECTED_C` on CRC failure, but the firmware treats that as "sensor absent" without distinguishing a CRC error from a physically missing probe. A production firmware would log CRC fault counts separately.
-- **No probe offset calibration.** DS18B20 probes have ±0.5 °C accuracy from the factory; placement effects and probe-to-probe variation add further spread. A per-trailer calibration offset (stored as an environment variable pair like `t1_offset_c` and `t2_offset_c`) would improve absolute accuracy without reflashing.
-
-**Production next steps:**
-- Interrupt-driven door-event wake via Notecard AUX GPIO or MCU external interrupt — catches brief door opens regardless of sample cadence.
-- Address-based DS18B20 probe identification with commissioning scan.
-- Local flash buffer for per-sample records and hourly summaries during NTN-only coverage, with bulk upload over cellular when terrestrial connectivity returns.
-- Satellite-aware session cadence: reduce the `hub.set outbound` interval during extended NTN-only periods to limit session-overhead consumption of the 10 KB satellite budget.
-- Per-trailer probe offset calibration via `t1_offset_c` / `t2_offset_c` environment variables.
-- [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) for over-the-air firmware updates across the fleet without a shop stop.
-- Reefer unit fault monitoring: a third input from the refrigeration controller's fault relay (normally-closed) would add mechanical-failure detection alongside the temperature monitoring.
-- Add `Blues Scoop` for backup power during trailer-to-truck transfers or shore-power interruptions, ensuring the monitor stays alive through brief power gaps.
+The same firmware structure is a natural starting point for pharmaceutical cold chain, cross-border intermodal containers, or any mobile insulated enclosure where a temperature log and a door audit trail have regulatory or financial weight.
 
 ---
 
 ## 10. Troubleshooting
 
-| Symptom | Likely cause | What to check |
-|---|---|---|
-| Device never appears in Notehub **Devices** tab | `PRODUCT_UID` is wrong or empty; or the antenna is inside a metal enclosure | Re-verify `PRODUCT_UID` in `reefer_cold_chain_monitor_helpers.h` matches the Notehub project exactly. Confirm the cellular antenna is routed outside any steel walls. |
-| `_session.qo` events arrive but no `trailer_log_cell.qo` | Outbound session has not yet flushed the queue; or a `note.template` registration silently failed at first boot | Confirm at least one outbound session has completed since first power-on (default 60 min). Open the serial monitor at 115200 baud and look for `[log] Sample logged` — its absence means `sendLog` did not execute. Check for `note.template` or `note.add` error responses in the serial log after the `[boot]` line. If the problem persists, factory-reset the Notecard and re-flash. |
-| `_session.qo` events arrive but no `trailer_summary_cell.qo` | Outbound window has not yet elapsed; or a `note.template` registration silently failed at first boot; or the device was reset repeatedly before the first `NotePayloadSaveAndSleep` completed (losing the window-start epoch) | Confirm at least `summary_interval_min` minutes (default 60) have elapsed since first power-on. Open the serial monitor at 115200 baud and look for `[summary] Summary queued` — its absence means `sendSummary` did not execute. Check for `note.template` or `note.add` error responses in the serial log immediately after the `[boot]` line on first power-on. If the problem persists, factory-reset the Notecard (`{"req":"card.restore","delete":true}`) and re-flash to force a clean first-boot configuration. |
-| Summary Notes arrive but show `−127` in all temperature fields | Both DS18B20 probes disconnected or failing for the entire summary window — the firmware still sends the summary but fills temperature fields with the sentinel value | Open serial monitor; `[sensor] Probe N not responding` lines confirm dead probes. Check continuity of both probe cables, confirm VDD (red) wires are connected to `+3V3`, and verify the 4.7 kΩ pull-up is wired between `A0` and `+3V3` per [§4](#4-wiring-and-assembly). |
-| Temperature always reads −127 | Probe disconnected, wire reversed, or 4.7 kΩ pull-up missing | Confirm the pull-up resistor (from the Adafruit #381 bag) is wired between A0 and +3V3. Check continuity on the probe cable. |
-| Temperature readings look identical or wrong | Probes in wrong order (index mismatch) | Re-run probe enumeration: connect one probe at a time, record the temperature reported, label it, connect the second. |
-| Door state never changes in Notehub | Reed switch open-circuit; sensor mounted too far from magnet; polarity swapped | Confirm the magnet closes the gap to ≤ 15 mm at the mounting position. Use a multimeter across the sensor terminals — should read near 0 Ω when magnet is adjacent. Verify lead 2 is wired to GND (not floating). |
-| Door opened and closed, but neither `door_open` nor `door_close` arrived | Entire open/close cycle shorter than `sample_interval_sec` — the firmware was asleep throughout and sampled neither transition | For a POC this is expected — see Limitations [§9](#9-limitations-and-next-steps). Reduce `sample_interval_sec` to `10` in the Fleet environment variables for bench testing. A production design should use interrupt-driven door detection to catch brief openings regardless of sample cadence. |
-| `door_open` alert fired, but `door_close` never arrives | `s.door_open` is persisted in Notecard flash across sleep cycles, so the first sampled closed state after a `door_open` always emits `door_close`. Missing `door_close` most commonly means: (a) the device was reset or reflashed after the open fired — persisted state was cleared and `door_close` for that event is lost; (b) the door is still physically open; or (c) `NotePayloadSaveAndSleep` did not complete before a power interruption | Check the serial log for `[warn] ATTN power-gate not firing` as a sign of state-persistence problems. If the device was reset after the open event, close the door and confirm the next complete open/close cycle generates both events. A missing `door_close` after a confirmed `door_open` is never caused by the door closing quickly between samples — that scenario produces neither event (see row above). |
-| Temperature alerts firing continuously | `alert_cooldown_sec` is shorter than the recovery time, or threshold set too close to ambient | Raise `alert_cooldown_sec` to `3600` during initial deployment while observing baseline temps. Then set `temp_max_c` and `temp_min_c` to operational limits with at least 2 °C margin. |
-| Mojo shows continuous 10–30 mA (host never sleeping) | `card.attn` power gating not functioning | Confirm you are using a Notecarrier CX (not a Notecarrier F). Verify the ATTN pad on the Notecard is connected to the Notecarrier CX ATTN line — the M.2 connector handles this automatically. |
-| Satellite session much longer than cellular | Normal behaviour; NTN link establishment takes longer than LTE-M | Confirm the GNSS antenna has a clear sky view — Skylo NTN requires a valid satellite fix for session establishment. |
+---
 
-If a problem isn't on this list, the [Blues community forum](https://discuss.blues.com) is the fastest path to a second pair of eyes on a Notecard + sensor setup.
+## 11. Limitations and Next Steps
 
 ---
 
-## 11. Summary
-
-A Notecarrier CX and a Notecard for Skylo pair with two DS18B20 probes and a magnetic reed switch to watch the two failure modes — temperature excursion and unauthorized door access — that drive most reefer trailer cargo loss. The firmware samples every minute, queues each raw sample locally for Notehub delivery on the next outbound session (`trailer_log_cell.qo`), fires an alert on the next sample cycle (up to ~60 s) when any threshold trips via whatever radio is available (`trailer_alert.qo`, delivered over cellular or NTN satellite automatically), and ships a compact hourly summary (`trailer_summary_cell.qo`) for compliance and trending. The cellular + satellite multi-RAT design means the monitor stays connected as the trailer moves from an urban distribution center through rural interstates to a port staging yard — without any network configuration, SIM swapping, or carrier negotiation required.
-
-The same firmware structure is a natural starting point for pharmaceutical cold chain, cross-border intermodal containers, or any mobile insulated enclosure where a temperature log and a door audit trail have regulatory or financial weight.
+## 12. Summary

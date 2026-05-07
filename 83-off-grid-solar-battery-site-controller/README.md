@@ -10,13 +10,13 @@ A bank-level solar and battery monitoring solution — a Blues [battery manageme
 
 ## 1. Project Overview
 
-> **Interface note.** This project reads the [Victron VE.Direct text protocol](https://www.victronenergy.com/upload/documents/VE.Direct-Protocol-3.34.pdf) — a one-wire broadcast interface that exposes battery-bank aggregates (SoC, voltage, current, temperature, and charge state) and solar-side metrics (panel voltage, power, and daily yield). These are exactly the signals needed to detect the site-uptime failure modes this design targets: persistent recharge deficit, low SoC, thermal overtemperature, and excessive load draw. Bank-level aggregates are the correct scope for a bank-level site-uptime monitor. **Cell-imbalance monitoring was explicitly evaluated during design and scoped out**: per-cell voltages and imbalance data are not broadcast on the VE.Direct wire — they travel over CAN bus and require a dedicated CAN controller and transceiver that are absent from this hardware stack. Implementing cell-level telemetry is a distinct hardware and firmware problem that belongs in a companion design rather than an extension of this project (see §9 for the full rationale and the companion-design specification).
+> **Interface note.** This project reads the [Victron VE.Direct text protocol](https://www.victronenergy.com/upload/documents/VE.Direct-Protocol-3.34.pdf) — a one-wire broadcast interface that exposes battery-bank aggregates (SoC, voltage, current, temperature, and charge state) and solar-side metrics (panel voltage, power, and daily yield). These are exactly the signals needed to detect the site-uptime failure modes this design targets: persistent recharge deficit, low SoC, thermal overtemperature, and excessive load draw. Bank-level aggregates are the correct scope for a bank-level site-uptime monitor. **Cell-imbalance monitoring was explicitly evaluated during design and scoped out**: per-cell voltages and imbalance data are not broadcast on the VE.Direct wire — they travel over CAN bus and require a dedicated CAN controller and transceiver that are absent from this hardware stack. Implementing cell-level telemetry is a distinct hardware and firmware problem that belongs in a companion design rather than an extension of this project (see §10 for the full rationale and the companion-design specification).
 **The problem.** Remote sites that run on solar and battery — cell towers at the edge of coverage, environmental monitoring stations in the backcountry, off-grid cabins — share a common failure mode: a problem that started small, days ago, accumulates unnoticed until the site goes dark. A slowly degrading PV array, a load that crept up after a firmware update to on-site equipment, or a battery bank whose capacity has quietly faded with age: none of these are catastrophic on their own, but any one of them can drain a bank that the solar array is no longer sized to replenish. This design detects that condition directly: if the charge controller fails to reach a full-charge state (Float, Absorption, Equalize, or Auto Equalize) for a configurable number of consecutive days, a `harvest_deficit` alert fires before the bank is depleted — giving the operations team time to respond before the site goes dark. And because the site is, by definition, remote, a days-long recharge deficit is invisible without continuous telemetry.
 
 **Why Notecard.** These sites are by definition off-grid *and* off-network. There is no building WiFi to connect to, no Ethernet jack in the enclosure, and no cellular router whose monthly bill someone else is paying. The Blues Notecard self-manages its radio session, draws microamp-range idle current between transmissions, and requires no site IT involvement to set up. Two SKUs seat in the same M.2 slot on the Notecarrier CX and run the same firmware without modification:
 
 - **[Notecard Cell+WiFi (NOTE-MBGLW)](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/)** — LTE-M cellular with opportunistic WiFi fallback. The practical choice for bench validation and sites with adequate terrestrial coverage.
-- **[Notecard for Skylo (NOTE-NBGLWX)](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/)** — LTE-M cellular combined with Skylo Non-Terrestrial Network (NTN) satellite connectivity on a single card. The Notecard manages radio-mode selection internally; no firmware differences exist between the two SKUs. **Both antennas must be positioned outdoors with an unobstructed view of the sky** — see §3 and §4 for the mounting and enclosure-feedthrough requirements. The Notecard for Skylo is the primary production SKU for the truly remote towers, wilderness arrays, and high-altitude installations this use case targets.
+- **[Notecard for Skylo (NOTE-NBGLWX)](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/)** — LTE-M cellular combined with Skylo Non-Terrestrial Network (NTN) satellite connectivity on a single card. The Notecard manages radio-mode selection internally; no firmware differences exist between the two SKUs. **Both antennas must be positioned outdoors with an unobstructed view of the sky** — see §4 and §4 for the mounting and enclosure-feedthrough requirements. The Notecard for Skylo is the primary production SKU for the truly remote towers, wilderness arrays, and high-altitude installations this use case targets.
 
 **Deployment scenario.** A Notecarrier CX mounted inside the existing site enclosure or a weatherproof addon box, powered from the site's 5V regulation bus or a small DC-DC converter off the main battery bus. Two short VE.Direct cables run from the Notecarrier CX dual-row header to the SmartShunt (battery shunt, usually mounted near the battery bank negative terminal) and to the SmartSolar MPPT controller (typically mounted on the enclosure wall). No changes to the Victron equipment, no interruption to the solar system.
 
@@ -32,7 +32,7 @@ A bank-level solar and battery monitoring solution — a Blues [battery manageme
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other targets; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
 
-## 2.5 Quickstart
+## 3. Technical Summary
 
 To get a working monitor up and running in ~2 hours:
 
@@ -55,23 +55,44 @@ To get a working monitor up and running in ~2 hours:
    - Add routes for `solar_alert.qo` (real-time) and `solar_summary.qo` (storage/analytics).
 7. **Validate** — you should see `_session.qo` and `solar_summary.qo` Notes appearing in Notehub within 5–10 minutes (see "What you should see in Notehub" in §5).
 
-## 3. Hardware Requirements
+---
+
+Here is a sample Note this device emits:
+
+```json
+{
+  "bat_v": 26.1,
+  "bat_a": -3.2,
+  "bat_w": -83.5,
+  "soc_pct": 78.4,
+  "bat_temp_c": 22.1,
+  "pv_v": 34.8,
+  "pv_w": 142.0,
+  "load_w": 225.5,
+  "yield_kwh": 1.24,
+  "ttg_min": -1,
+  "cs": 5
+}
+```
+
+
+## 4. Hardware Requirements
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an embedded Cygnet STM32L433 host — no separate MCU. Provides the UART (Serial1), analog, and SPI/I²C headers needed for this sensor mix. |
 | [Notecard Cell+WiFi (NOTE-MBGLW)](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) | 1 *(bench / sites with reliable cellular coverage)* | LTE-M cellular with opportunistic WiFi fallback. Prepaid global SIM, no monthly commitment. Use this SKU for bench validation and field sites where terrestrial cellular coverage is reliable. |
-| [Notecard for Skylo (NOTE-NBGLWX)](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) | 1 *(sites with marginal or no terrestrial coverage)* | LTE-M cellular combined with Skylo NTN satellite on a single M.2 card — the production SKU for remote towers, backcountry arrays, and high-altitude installations where terrestrial cellular is unreliable. The Notecard-certified satellite/LTE antenna and a passive GPS/GNSS antenna are both required and **must be mounted outdoors with an unobstructed view of the sky** (see §4 for enclosure feedthrough guidance). No firmware changes vs. the NOTE-MBGLW. See the [Notecard for Skylo datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) and [antenna guide](https://dev.blues.io/datasheets/application-notes/antenna-guide/) before deploying. |
-| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Coulomb counter on the +VBAT rail for validating the sleep/wake current profile during commissioning and bench bring-up. See [§8](#8-validation-and-testing). |
+| [Notecard for Skylo (NOTE-NBGLWX)](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) | 1 *(sites with marginal or no terrestrial coverage)* | LTE-M cellular combined with Skylo NTN satellite on a single M.2 card — the production SKU for remote towers, backcountry arrays, and high-altitude installations where terrestrial cellular is unreliable. The Notecard-certified satellite/LTE antenna and a passive GPS/GNSS antenna are both required and **must be mounted outdoors with an unobstructed view of the sky** (see §5 for enclosure feedthrough guidance). No firmware changes vs. the NOTE-MBGLW. See the [Notecard for Skylo datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) and [antenna guide](https://dev.blues.io/datasheets/application-notes/antenna-guide/) before deploying. |
+| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Coulomb counter on the +VBAT rail for validating the sleep/wake current profile during commissioning and bench bring-up. See [§9](#8-validation-and-testing). |
 | [Victron SmartShunt 500A/50mV](https://www.victronenergy.com/battery-monitors/smartshunt) | 1 | Industry-standard battery shunt monitor. Measures battery voltage, current, SoC, and optional temperature via VE.Direct UART. The 500A variant covers the vast majority of off-grid installations from small cabins to telecom sites; a 1000A variant is available for high-current systems. Includes a VE.Direct cable. |
 | [Victron SmartSolar MPPT 75/15](https://www.victronenergy.com/solar-charge-controllers/smartsolar-mppt-75-15) | 1 *(or existing)* | Solar charge controller. Exposes panel voltage, instantaneous panel power, daily yield, and charge state over VE.Direct. Select the MPPT SKU that matches your array size; the VE.Direct protocol and field names are the same across the SmartSolar family. Includes a VE.Direct cable. |
-| [Victron VE.Direct cable](https://www.victronenergy.com/accessories/ve-direct-cable) | 0–2 | 4-pin JST PH 2.0 to bare-wire cable. One included with each Victron device above; purchase extras if your layout requires longer runs. **Wire colors are not standardized — always verify pin assignments with a multimeter before connecting** (see §4). |
-| 10 kΩ, 20 kΩ resistors | 2 each | One voltage-divider pair per VE.Direct RX line: device TX → 10 kΩ → MCU RX pin; junction → 20 kΩ → GND. Output ≈ 3.33 V. VE.Direct is a one-way broadcast protocol — the host only reads, never writes — so a simple resistor divider is the correct and lowest-risk interface for this unidirectional UART application. See [§4](#4-wiring-and-assembly) for the pin-by-pin wiring. |
+| [Victron VE.Direct cable](https://www.victronenergy.com/accessories/ve-direct-cable) | 0–2 | 4-pin JST PH 2.0 to bare-wire cable. One included with each Victron device above; purchase extras if your layout requires longer runs. **Wire colors are not standardized — always verify pin assignments with a multimeter before connecting** (see §5). |
+| 10 kΩ, 20 kΩ resistors | 2 each | One voltage-divider pair per VE.Direct RX line: device TX → 10 kΩ → MCU RX pin; junction → 20 kΩ → GND. Output ≈ 3.33 V. VE.Direct is a one-way broadcast protocol — the host only reads, never writes — so a simple resistor divider is the correct and lowest-risk interface for this unidirectional UART application. See [§5](#4-wiring-and-assembly) for the pin-by-pin wiring. |
 | Victron Temperature Sensor for SmartShunt | 0–1 | Plugs into the SmartShunt's temp sensor port; required to populate `bat_temp_c` in the summary Note. Optional but strongly recommended for lithium battery banks where thermal runaway is a real risk. |
 | [Traco TSR 1-2450](https://www.tracopower.com/int/wp-content/uploads/sites/2/documents/tsr1.pdf) DC-DC converter *(12 V and 24 V sites)* | 1 | 6.5–36 V input, 5 V / 1 A output, SIP-3 package. Input range spans 12 V and 24 V battery buses through their full charge/discharge swing. See the [TSR 1 datasheet](https://www.tracopower.com/int/wp-content/uploads/sites/2/documents/tsr1.pdf) for derating above 40 °C. |
 | [Traco TSR 1-4850](https://www.tracopower.com/int/wp-content/uploads/sites/2/documents/tsr1.pdf) DC-DC converter *(48 V telecom sites)* | 1 | 18–75 V input, 5 V / 1 A output, same SIP-3 footprint as the TSR 1-2450. Covers 48 V telecom battery buses at full charge. Substitute this part for the TSR 1-2450 on 48 V deployments; no other changes required. |
 | [Hammond 1555JGY](https://www.hammfg.com/part/1555JGY) weatherproof enclosure | 1 | 125 × 95 × 57 mm, ABS, IP67, gray. Fits the Notecarrier CX, resistor divider components, and DC-DC converter. Mount inside the site's existing primary enclosure or alongside the SmartShunt. |
-| Skylo-certified cellular/NTN antenna — **included with the NOTE-NBGLWX kit** *(MAIN u.FL port)* | 1 *(NOTE-NBGLWX only)* | Ships in the NOTE-NBGLWX kit; connects to the `MAIN` u.FL port. **Do not substitute** — the Notecard is certified on Skylo's network exclusively with this antenna; replacing it renders the device uncertified and Skylo may block it from the network. If a different antenna is required, a Skylo delta-certification test is needed; contact [Blues](https://blues.com/contact-sales/) for recommended test houses. Must be mounted outdoors with an unobstructed view of the sky (see §4). |
+| Skylo-certified cellular/NTN antenna — **included with the NOTE-NBGLWX kit** *(MAIN u.FL port)* | 1 *(NOTE-NBGLWX only)* | Ships in the NOTE-NBGLWX kit; connects to the `MAIN` u.FL port. **Do not substitute** — the Notecard is certified on Skylo's network exclusively with this antenna; replacing it renders the device uncertified and Skylo may block it from the network. If a different antenna is required, a Skylo delta-certification test is needed; contact [Blues](https://blues.com/contact-sales/) for recommended test houses. Must be mounted outdoors with an unobstructed view of the sky (see §5). |
 | [Blues Flexible Dual LTE/Wi-Fi and GPS/GNSS Antenna (Quectel YCA001BA)](https://shop.blues.com/products/dual-flexible-antenna-cell-wi-fi?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) *(NOTE-NBGLWX GPS port)* | 1 *(NOTE-NBGLWX only)* | Passive flexible multi-band antenna with u.FL connector; GNSS L1 coverage (1560–1620 MHz, including GPS L1 at 1575 MHz) makes it suitable for the `GPS` u.FL port on the NOTE-NBGLWX. The NOTE-NBGLWX must acquire a GPS fix before each satellite session — without a GNSS antenna, NTN transmission cannot occur. **Use a passive (un-amplified) antenna only** on this port; active/LNA GNSS antennas are not compatible with the NOTE-NBGLWX GPS input. Route the flexible cable lead through a cable gland in the enclosure wall and mount flat on the enclosure exterior with a clear sky view. |
 | u.FL to SMA female pigtail, ≥100 mm, RG316 or RG178 (e.g. [SparkFun WRL-09145](https://www.sparkfun.com/products/9145)) + IP67-rated SMA bulkhead connector *(NOTE-NBGLWX MAIN feedthrough)* | 1 *(NOTE-NBGLWX only)* | Routes the included Skylo antenna from the Notecard's `MAIN` u.FL port through the enclosure wall via an SMA bulkhead connector. Use the shortest pigtail that reaches the nearest enclosure wall without sharp bends to minimise insertion loss on the satellite band. IP67-rated SMA panel-mount bulkhead connectors are available from DigiKey and Mouser. The GPS antenna (Quectel YCA001BA above) has a flexible lead long enough to route directly through its own cable gland — no additional pigtail is required for the GPS port. |
 | M16 IP67 cable gland, suitable for 4–8 mm cable OD *(NOTE-NBGLWX GPS feedthrough)* | 1 *(NOTE-NBGLWX only)* | Seals the GPS antenna (Quectel YCA001BA) cable lead where it passes through the enclosure wall. The MAIN antenna routes through the SMA bulkhead connector listed above, which provides its own weather seal. Thread and bore size must match your enclosure wall thickness; nylon M16 glands are available from DigiKey, Mouser, and electrical distributors. |
@@ -79,11 +100,11 @@ To get a working monitor up and running in ~2 hours:
 
 All Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
-## 4. Wiring and Assembly
+## 5. Wiring and Assembly
 
 ![Wiring: SmartShunt on UART1, SmartSolar MPPT on UART2 (both VE.Direct); MAIN antenna for cellular or satellite; site 5 V bus → DC-DC step-down → Mojo (bench) → +VBAT](diagrams/02-wiring-assembly.svg)
 
-All host I/O uses the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual-row 16-pin header. The Notecard (Cell+WiFi or Skylo — see §3) seats into the carrier's M.2 slot. The Mojo sits inline on the +VBAT power rail for bench bring-up and commissioning. VE.Direct TX-to-MCU level shifting is handled by a simple 10 kΩ/20 kΩ resistor divider on each RX line — this is the only documented and validated interface for this project; active level-shifter boards with bidirectional MOSFETs are not recommended for this unidirectional UART application.
+All host I/O uses the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual-row 16-pin header. The Notecard (Cell+WiFi or Skylo — see §4) seats into the carrier's M.2 slot. The Mojo sits inline on the +VBAT power rail for bench bring-up and commissioning. VE.Direct TX-to-MCU level shifting is handled by a simple 10 kΩ/20 kΩ resistor divider on each RX line — this is the only documented and validated interface for this project; active level-shifter boards with bidirectional MOSFETs are not recommended for this unidirectional UART application.
 
 > **Safety — high-current DC systems.** Off-grid battery banks can source thousands of amps into a short circuit. Before making any connections in or near battery, shunt, or MPPT wiring: disconnect the solar array at the MPPT PV input terminals; verify polarity at every connection point with a multimeter before making contact; and have all DC wiring reviewed by a qualified installer before commissioning. The VE.Direct signal connections below are low-voltage and carry microamp-level current — they do not interrupt the high-current path — but they pass through the same enclosure as live battery wiring.
 
@@ -124,7 +145,7 @@ Wire the complete power chain in this order:
 
 1. **Battery bus positive tap → inline fuse → Traco VIN+ (Pin 1).** Install a 2 A glass-cartridge or automotive blade fuse at the battery bus tap point, as close to the battery or busbar as practical. The TSR 1 is rated 1 A output; a 2 A fuse protects the converter and the 22–24 AWG wiring used at this current level while providing headroom for inrush. A fuse holder with a visual indicator (e.g. Littelfuse OMNI-BLOK series or equivalent) simplifies field commissioning.
 2. **Battery bus return (negative) → Traco GND/VIN− (Pin 2).** Connect the battery-bus return directly to the converter's GND pin. Do not float the input return.
-3. **Traco VOUT+ (Pin 3) → Mojo BAT pin** (when Mojo is installed for bench validation — see §8). Route the 5 V output through the Mojo so it measures all current drawn from the regulated rail. When Mojo is not installed, connect VOUT+ directly to step 4.
+3. **Traco VOUT+ (Pin 3) → Mojo BAT pin** (when Mojo is installed for bench validation — see §9). Route the 5 V output through the Mojo so it measures all current drawn from the regulated rail. When Mojo is not installed, connect VOUT+ directly to step 4.
 4. **Mojo LOAD pin → Notecarrier CX +VBAT pin.** The Mojo passes current through and measures cumulative mAh.
 5. **Traco GND (Pin 2) / system return → Notecarrier CX GND pin.** The TSR 1's shared GND is both the input return and the output return; connect it to the Notecarrier CX GND. This is also the signal ground for the VE.Direct cable shields — connect the battery-bus return and signal ground together at one point only (at the converter or at the shunt negative terminal, not both) to avoid a ground loop through the VE.Direct cables.
 
@@ -150,7 +171,7 @@ The NOTE-MBGLW includes a GNSS receiver, but GNSS is not used in this project �
 
 > **Tip:** VE.Direct cables are short (0.9 m or 1.8 m). Mount the Notecarrier CX close to the SmartShunt and MPPT to avoid signal integrity issues on long runs.
 
-## 5. Notehub Setup
+## 6. Notehub Setup
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:solar-battery-site`.
 2. **Set the ProductUID in firmware.** Open `firmware/solar_battery_controller/solar_battery_controller.ino` and replace the empty string on the `#define PRODUCT_UID ""` line with your project's value.
@@ -191,7 +212,7 @@ Replace `lat`/`lon` with the site's actual GPS-derived coordinates. **Do not use
 
 **First-boot environment variables.** On first boot the firmware calls `hub.set` to associate the Notecard with your Notehub project, then calls `env.get` to pull any pre-configured Fleet environment variables. However, the Notecard must complete an **inbound sync with Notehub** before `env.get` returns Fleet-level values — a cold-start device that has never synced has no cached env vars yet. On LTE-M the first inbound sync typically completes within one to two minutes of power-on, so the second wake onward reflects pre-configured Fleet variables. The exposure window is at most one 15-minute sample interval before the correct env vars take effect.
 
-For NOTE-NBGLWX Skylo deployments this window matters more: a single wake at the 4-hour cellular default can consume a meaningful fraction of the 10 KB satellite data budget. The safest approach is to compile with `-DSKYLO_BUILD` in your build flags (see §6.1 and the `#ifdef SKYLO_BUILD` block in `firmware/solar_battery_controller/solar_battery_controller_notecard_helpers.h`). This changes the compile-time default for `DEFAULT_REPORT_INTERVAL_MIN` to 1440 minutes, so even the very first wake — before any Notehub inbound sync — uses the satellite-safe daily cadence. Fleet environment variables then tune thresholds and cadence further after the first inbound sync arrives. If you are not using the `SKYLO_BUILD` flag, set `report_interval_min = 1440` in your Fleet Environment before commissioning and allow a minute or two after first power-on for the first inbound sync to deliver it.
+For NOTE-NBGLWX Skylo deployments this window matters more: a single wake at the 4-hour cellular default can consume a meaningful fraction of the 10 KB satellite data budget. The safest approach is to compile with `-DSKYLO_BUILD` in your build flags (see §7.1 and the `#ifdef SKYLO_BUILD` block in `firmware/solar_battery_controller/solar_battery_controller_notecard_helpers.h`). This changes the compile-time default for `DEFAULT_REPORT_INTERVAL_MIN` to 1440 minutes, so even the very first wake — before any Notehub inbound sync — uses the satellite-safe daily cadence. Fleet environment variables then tune thresholds and cadence further after the first inbound sync arrives. If you are not using the `SKYLO_BUILD` flag, set `report_interval_min = 1440` in your Fleet Environment before commissioning and allow a minute or two after first power-on for the first inbound sync to deliver it.
 
 ### What you should see in Notehub
 
@@ -224,9 +245,9 @@ Within a minute of first power-on, the Events tab in your project should begin p
     "v3": -156.8
   }
   ```
-  Fields: `v1` = current SoC %, `v2` = battery voltage V, `v3` = net battery power W (negative = discharging). See [§7](#7-data-flow) for the complete alert taxonomy and context value meanings for each alert type (`temp_high`, `load_high`, `harvest_deficit`).
+  Fields: `v1` = current SoC %, `v2` = battery voltage V, `v3` = net battery power W (negative = discharging). See [§8](#7-data-flow) for the complete alert taxonomy and context value meanings for each alert type (`temp_high`, `load_high`, `harvest_deficit`).
 
-## 6. Firmware Design
+## 7. Firmware Design
 
 Five files:
 - [`firmware/solar_battery_controller/solar_battery_controller.ino`](firmware/solar_battery_controller/solar_battery_controller.ino) — main application sketch (orchestration, accumulation, alert evaluation)
@@ -381,7 +402,7 @@ Load draw is derived algebraically rather than measured directly:
 float load = mppt.pv_w - shunt.bat_w;
 ```
 
-## 7. Data Flow
+## 8. Data Flow
 
 ![Data flow: 15-min sample of battery V/I/SoC, PV W, charge controller mode → four edge rules (soc_low, temp_high, load_high, harvest_deficit) → solar_alert.qo (sync:true on threshold trip) and solar_summary.qo (4-hr templated) → Notehub](diagrams/03-data-flow.svg)
 
@@ -398,7 +419,7 @@ Every 15 minutes (default `sample_interval_sec = 900`) the firmware wakes, reads
   - `load_high` — computed load draw above `load_alert_w`. Fires once per ~30 minutes. Context: load W, SoC, current PV power.
   - `harvest_deficit` — MPPT has not reached a full-charge state (Float `cs=5`, Absorption `cs=4`, Equalize `cs=7`, or Auto Equalize `cs=247`) for `harvest_deficit_days` consecutive days (disabled by default; enable via env var). Fires once per ~24 hours while the deficit persists. Context: average SoC % over the window, number of consecutive windows without a full-charge state, today's accumulated solar yield kWh. This alert is the primary indicator of a recharge imbalance — a degraded array, persistent cloud cover, or load growth that the system can no longer recover from overnight. The firmware does not count Equalize/Recondition as a deficit: these cycles run after the battery has already reached Float, so their presence confirms a healthy charge cycle completed.
 
-## 8. Validation and Testing
+## 9. Validation and Testing
 
 **Expected steady-state behavior.** A healthy site running with solar in bulk or float mode produces one `solar_summary.qo` every 4 hours and zero `solar_alert.qo` events. `bat_a` will be slightly positive (battery absorbing a maintenance trickle) during the day and slightly negative at night (load drawing from battery overnight). `soc_pct` should be above 80% on a well-sized system by mid-morning.
 
@@ -445,63 +466,19 @@ A healthy Skylo trace on Mojo shows: flat **~350–380 µA baseline** (the +VBAT
 
 Mojo is a **bench bring-up tool**, not a production sensor. Once a firmware revision passes the trace check, deployed units don't need it.
 
-## 9. Limitations and Next Steps
-
-**VE.Direct interface coverage and cell-imbalance scope decision.** This project reads the Victron VE.Direct text protocol (SmartShunt + SmartSolar MPPT). VE.Direct exposes battery-bank aggregates — SoC, voltage, current, temperature, and charge state — which are sufficient for every site-uptime failure mode this design targets (recharge deficit, low SoC, thermal overtemperature, overload). **Cell-imbalance monitoring was evaluated during design and explicitly scoped out.** Per-cell voltages and imbalance data are not available on the VE.Direct wire — they travel over CAN bus and require a dedicated CAN controller (e.g. MCP2515 SPI) and CAN transceiver (e.g. MCP2551), hardware that is absent from the Notecarrier CX stack used here. The STM32L433 on the Cygnet also has no native CAN peripheral. Implementing cell-level telemetry is a sufficiently distinct hardware and firmware problem that it belongs in a dedicated companion design (see "CAN-bus cell-level monitor" in Production next steps below), not as an extension of this bank-level monitor.
-
-**Material assumptions:**
-- VE.Direct is a broadcast-only protocol — there is no request/response handshake. If either Victron device stops transmitting (e.g. a disconnected VE.Direct cable, an unpowered controller, or a wiring fault), `readVEDirectFrame` will time out cleanly and those fields will carry sentinel values (−9999 for floats, −1 for `cs`) in the next summary Note. This is expected behavior, not an error — the sentinel values distinguish a sensor dropout from a real zero reading.
-- The `harvest_deficit` alert detects multi-day recharge failures by tracking whether the MPPT reaches a full-charge state (Float, Absorption, Equalize, or Auto Equalize) each summary window. It does not distinguish between cloud cover, shade, array degradation, or wiring faults as the cause — it only signals that the battery did not reach a full state of charge. True panel-fault detection (e.g. "daytime, expected sun angle, but zero PV watts") would require sunrise/sunset computation from the Notecard's GPS fix via `card.time` — documented in "Production next steps" below.
-- The firmware reads from two specific Victron device types (SmartShunt and SmartSolar MPPT). Other VE.Direct devices in the Victron product family (BMV-700/712, Phoenix inverter, etc.) have different field sets. The `applyField()` function in the helpers is easy to extend with additional labels.
-
-**Simplified for the POC:**
-- `SoftwareSerial` is used for the second VE.Direct port (MPPT). On the STM32L433, `SoftwareSerial` is interrupt-driven and reliable at 19200 baud, but a hardware UART (`HardwareSerial` with explicit pin assignment) is preferable for production where other interrupt-heavy peripherals might be present.
-- The VE.Direct checksum is verified (any frame that fails checksum is discarded and the parser waits for the next frame), but individual field values are not range-checked — an erroneous `SOC` field reading `9999` from line noise would be accepted and averaged into the window.
-- Alert cooldown is counted in samples rather than wall-clock time. If `sample_interval_sec` changes via environment variable mid-deployment, the cooldown period (in minutes) changes proportionally. This is harmless but worth noting.
-- No on-site data logging: the Notecard's multi-day Note queue handles re-transmission if the cellular session fails, but there is no local SD card or FRAM backup.
-
-**Production next steps:**
-- **CAN-bus cell-level monitor** (scoped-out companion design): cell-imbalance and per-cell voltage monitoring were explicitly evaluated for this project and moved here because the VE.Direct wire does not carry per-cell data. A companion build would add an MCP2515 SPI CAN controller and MCP2551 transceiver to read per-cell voltages and imbalance data from a Victron Lynx BMS, REC BMS, or any third-party BMS with CANopen/CANbus output. The STM32L433 on the Cygnet has no native CAN peripheral, making this a distinct hardware and firmware design that would complement this bank-level monitor in installations where a CANbus BMS is already present.
-- Panel-fault isolation: query `card.time` for UTC epoch, compute sunrise/sunset from the Notecard's GPS-fixed latitude/longitude, and refine the `harvest_deficit` detection to distinguish "no PV during expected sun hours" from "extended cloud cover." This upgrade would give operators a clearer fault signal rather than the current "recharge deficit detected."
-- Voltage-variable cellular sync: if the system's 5V supply is derived directly from the battery bus and scaled down to feed the Notecard's VBAT pin (rather than regulated flat at 5V), the Notecard's `voutbound` parameter can adaptively extend the transmit interval when battery voltage is low — saving cellular energy exactly when it matters most.
-- Extend alert payload with Notehub environment variables for per-site solar system nameplate ratings (array Wp, battery Ah, inverter VA rating) to enable automated over/under-production detection as a fleet-level rule in Notehub.
-- [Notecard Outboard Firmware Update](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) for OTA host firmware delivery — avoids physical access to the site for firmware changes.
-
-## 10. Troubleshooting and Common Issues
-
-**No Notes appearing in Notehub after power-on:**
-- Check the ProductUID in `solar_battery_controller.ino` line 62 matches your Notehub project exactly. Without it, the Notecard cannot claim itself.
-- Verify the antenna connection — see §4 for your SKU (LTE-M requires a u.FL cellular antenna; Skylo requires both satellite and GPS antennas mounted outdoors).
-- Check serial monitor (115200 baud) for Notecard configuration logs on first boot — any `note-error` entries indicate I²C or API failures.
-- Confirm the device appears in Notehub **Devices** tab before checking **Events** — it can take 2–5 minutes for the first cellular claim.
-
-**`_session.qo` never appears (Notecard not communicating):**
-- Verify USB connection to Notecarrier CX; check the virtual COM port is enumerating. On Windows look for "USB Serial Device"; on Mac/Linux check `ls /dev/cu.usbmodem*` or `dmesg | grep -i serial`.
-- If flashing succeeded but the device is not reachable, power-cycle the board (pull USB and reapply).
-- For Skylo (NOTE-NBGLWX) deployments at sites with no cellular coverage, allow 5–15 minutes on first power-up for GPS acquisition and initial satellite registration, then check **Devices** for a claim event.
-
-**`solar_summary.qo` shows sentinel values (−9999 or −1 for all fields):**
-- A sentinel-only Note means neither Victron device sent valid frames during that window. Common causes:
-  - **VE.Direct cable disconnected** — the cable between the Notecarrier CX header and the Victron device is loose or unplugged.
-  - **Victron device unpowered** — the SmartShunt or MPPT has no power. Confirm with a multimeter at the VE.Direct pin 4 (+5V from the Victron device, not the Notecard) — should read ~5 V when the device is powered.
-  - **Wrong pin assignment** — verify polarity with a multimeter (pin 4 = +5V relative to pin 1 = GND) and confirm pin 3 (TX) is wired to the MCU RX pin through the 10 kΩ/20 kΩ divider per §4.
-- To isolate which device is missing, check the firmware serial output: it logs a one-line summary on each wake (15-min interval by default) stating which devices responded.
-
-**`bat_temp_c` always shows −9999 even though a temperature sensor is connected:**
-- The Victron Temperature Sensor must be plugged into the **SmartShunt's dedicated temp-sensor port** (a small JST connector on the SmartShunt body itself), not into the Notecarrier CX. The SmartShunt broadcasts the reading on the VE.Direct wire automatically.
-- Confirm the sensor is seated fully — a loose connector prevents the SmartShunt from detecting it.
-
-**Alerts firing too frequently (every wake, not every ~30 min):**
-- Check the cooldown constant `ALERT_COOLDOWN_SAMPLES` in `solar_battery_controller_notecard_helpers.h` — it should be 2 for a ~30-minute repeat at the default 15-min interval. If `sample_interval_sec` was recently changed via environment variable, the wall-clock cooldown period (minutes) will scale proportionally. To return to ~30-min behavior, adjust `ALERT_COOLDOWN_SAMPLES` or revert `sample_interval_sec` to 900 s.
-
-**For Skylo (NOTE-NBGLWX) deployments only:**
-- **Alerts not firing immediately** — satellite sessions have 2–10 min latency vs. seconds for LTE-M. This is expected per §5; size NOC response SLAs accordingly.
-- **Satellite data quota consumed too quickly** — confirm `report_interval_min` is set to 1440 (once daily) in your Fleet Environment. Check for excessive inbound syncs — if you are not using `SKYLO_BUILD` compile flag, manually set `report_interval_min=1440` before first power-on to avoid a high-cadence first boot.
-- **GPS takes minutes to acquire (not seconds)** — lock the location once at commissioning using `{"req": "card.location.mode", "mode": "fixed", "lat": <your_lat>, "lon": <your_lon>}` in the Notehub terminal, passing GPS-derived coordinates (not cell-tower-derived estimates from `_session.qo`). See §5 Skylo deployment guidance for details.
-
-## 11. Summary
 
 A Notecarrier CX and Notecard pair with two Victron VE.Direct devices to turn an opaque off-grid power system into a continuously-monitored, remotely-observable asset. The device wakes every 15 minutes, reads battery SoC, current, temperature, and solar harvest in a few seconds, and goes back to sleep — accumulating a window of averages that flush to Notehub every four hours. A site going dark gets a warning Note via cellular before the battery drops too far to communicate, giving the operations team a fighting chance to dispatch before the outage. None of this requires any site networking, IT coordination, or infrastructure that wasn't already there — just a 5V supply and two short VE.Direct cables.
 
 For the truly remote sites where terrestrial cellular coverage is marginal or absent, the [Notecard for Skylo (NOTE-NBGLWX)](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) slots into the same M.2 carrier with no firmware changes — the same API the Notecard Cell+WiFi uses. Deploying the Skylo variant requires mounting both antennas outdoors with an unobstructed sky view, as documented in §3 and §4. The pattern scales from a single off-grid cabin to a fleet of hundreds of remote towers, with per-fleet threshold management and per-device overrides handled entirely from Notehub.
 
+---
+
+## 10. Troubleshooting and Common Issues
+
+---
+
+## 11. Limitations and Next Steps
+
+---
+
+## 12. Summary

@@ -8,9 +8,10 @@ This reference application is intended to provide inspiration and help you get s
 
 A [supply chain tracking](https://blues.com/solutions-supply-chain-tracking/) reference design for leased freight and tank rail cars. A solar-powered [Notecard for Skylo](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) — Blues' all-in-one cellular and satellite module — pairs with an embedded Cygnet STM32 host to monitor **car-level** conditions: location, shock/impact events, and coupler state. On TANK_CAR builds, the same device adds low-pressure vent-port fitting pressure via the Adafruit MPRLS (0–25 PSI absolute) and single-point lading temperature via a waterproof DS18B20 probe.
 
-> **POC scope.** This is a car-health and interchange-tracking foundation — it produces the location, coupler, motion, and shock telemetry stream that downstream geofencing services consume. **Not implemented here, all three documented as production next steps in [§9](#9-limitations-and-next-steps):** on-device interchange-boundary detection and EDI integration; certified DOT-111/DOT-105-class tank pressure sensing (the MPRLS is rated for vent and low-pressure fittings only); multi-point cargo temperature.
+> **POC scope.** This is a car-health and interchange-tracking foundation — it produces the location, coupler, motion, and shock telemetry stream that downstream geofencing services consume. **Not implemented here, all three documented as production next steps in [§11](#11-limitations-and-next-steps):** on-device interchange-boundary detection and EDI integration; certified DOT-111/DOT-105-class tank pressure sensing (the MPRLS is rated for vent and low-pressure fittings only); multi-point cargo temperature.
 
 ## 1. Project Overview
+
 
 **The problem.** A leased tank car or intermodal flat leaves a chemical plant in Texas headed for a refinery in New Jersey. It crosses four railroads, rolls through a classification yard in Tennessee for three days, then moves overnight to a second yard before final delivery. The lessor has no idea where it is unless the lessee files an EDI interchange report — which may or may not be accurate, and which tells the lessor nothing about *condition*. Did the car take a hard coupling impact? Is a fitting pressure trending down, suggesting a valve leak? Was the car decoupled from its consist somewhere in Iowa at 2 AM? Without on-car telemetry, none of those questions have timely answers.
 
@@ -26,6 +27,7 @@ This architecture maps directly to Blues' [supply chain tracking](https://blues.
 
 ## 2. System Architecture
 
+
 **Device-side responsibilities.** The Cygnet STM32L433 host on the Notecarrier CX wakes every 15 minutes (via [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) sleep), reads sensors, scores shock events, detects coupler-state edges, evaluates three alert conditions in standard builds (seven in TANK_CAR builds), and queues notes to the Notecard over I²C. Between wakes, the host is fully powered off — the Notecard holds the persistent state struct in its own flash and rehydrates it on the next ATTN fire.
 
 **Notecard responsibilities.** The Notecard stores [Notes](https://dev.blues.io/api-reference/glossary/#note) in its on-device queue, runs GPS position fixes every five minutes when motion is detected (motion-gated to avoid draining the battery in a stationary yard), and syncs outbound data using voltage-variable [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) timing that stretches sync intervals when the battery charge is low. It manages the cellular-to-satellite fallback entirely: if LTE-M can't reach a tower, it transitions to Skylo NTN mode and sends the queued notes over satellite. The host firmware doesn't participate in transport selection. The Notecard also distributes [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) from Notehub, letting fleet operators adjust thresholds across a fleet without a truck roll.
@@ -36,7 +38,8 @@ This architecture maps directly to Blues' [supply chain tracking](https://blues.
 
 ![System architecture: on-car sensors → Notecarrier CX with Cygnet host + Notecard for Skylo → LTE-M/NB-IoT + Skylo NTN satellite → Notehub → routes](diagrams/01-system-architecture.svg)
 
-## 2.5 Quickstart
+## 3. Technical Summary
+
 
 **What you'll have when you're done:** a weatherproof, solar-powered electronics sidecar that mounts to a freight car, samples sensors every 15 minutes, scores shock events, detects coupler state changes, and reports GPS location and condition through Notehub — automatically using cellular when available, switching to satellite in remote areas, and queuing everything offline until connectivity returns.
 
@@ -44,23 +47,39 @@ This architecture maps directly to Blues' [supply chain tracking](https://blues.
 
 1. Create a [Notehub project](https://notehub.io), copy the **ProductUID** (shown under **Project Settings → ProductUID**).
 2. Set `PRODUCT_UID` in `firmware/rail_car_tracker/rail_car_tracker_helpers.h` (line 40: replace `""` with your ProductUID).
-3. Connect ADXL345 accelerometer and reed switch to [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) over I²C/D5 (see [§4 Wiring](#4-wiring-and-assembly) for pinout).
-4. Flash with `arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/rail_car_tracker/ && arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbmodem* firmware/rail_car_tracker/` (exact commands in [§6.1](#61-installing-and-flashing)).
-5. Open Notehub **Devices** tab — the Notecard appears within a few minutes. Within 15 minutes you'll see `railcar_status.qo` with `coupled`, `moving`, `shock_peak_g`, and `shock_windows` fields. See [§5 What you should see](#what-you-should-see-in-notehub) for sample JSON payloads.
+3. Connect ADXL345 accelerometer and reed switch to [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) over I²C/D5 (see [§5 Wiring](#5-wiring-and-assembly) for pinout).
+4. Flash with `arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/rail_car_tracker/ && arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbmodem* firmware/rail_car_tracker/` (exact commands in [§8.1](#71-installing-and-flashing)).
+5. Open Notehub **Devices** tab — the Notecard appears within a few minutes. Within 15 minutes you'll see `railcar_status.qo` with `coupled`, `moving`, `shock_peak_g`, and `shock_windows` fields. See [§6 What you should see](#what-you-should-see-in-notehub) for sample JSON payloads.
 
-## 3. Hardware Requirements
+Here is a sample Note this device emits:
+
+```json
+{
+  "file": "railcar_alert.qo",
+  "body": {
+    "alert": "impact",
+    "value": 3.8,
+    "_lat": 41.4993,
+    "_lon": -81.6944,
+    "_ltime": 1713888000
+  }
+}
+```
+
+## 4. Hardware Requirements
+
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with onboard Cygnet STM32L433 host — no separate MCU needed. I²C, six analog inputs, nine digital I/O, and M.2 Notecard slot. See the [Notecarrier CX datasheet](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/). |
 | [Notecard for Skylo (NOTE-NBGLWX)](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Single M.2 module with LTE-M/NB-IoT/GPRS + Skylo NTN satellite. 500 MB cellular + 10 KB satellite bundled; no monthly fees. **Ships with its Skylo-certified LTE/NTN antenna — do not substitute another antenna** without a CTIA/OTA delta test report; Skylo may block uncertified devices. See the [Notecard for Skylo datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/). |
-| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Coulomb counter for bench power validation. See [§8](#8-validation-and-testing). Not deployed to the field. See the [Mojo datasheet](https://dev.blues.io/datasheets/mojo-datasheet/). |
+| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Coulomb counter for bench power validation. See [§12](#9-validation-and-testing). Not deployed to the field. See the [Mojo datasheet](https://dev.blues.io/datasheets/mojo-datasheet/). |
 | [Blues Scoop](https://shop.blues.com/products/scoop?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Lithium-ion capacitor (250 F) peak-current buffer, wired **inline** between the 5 V boost module and the Notecarrier CX `+VBAT` rail. The Scoop has two connectors and two sets of header pins: **J1 (CHG)** JST input (4.8–24 V; headers **J3** are a through-hole alternative to J1) and **J2 (OUT)** JST output (2.5–3.8 V; headers **J4** are a through-hole alternative to J2). The 5 V boost module output connects to J1/J3; Scoop J2/J4 connects to Notecarrier CX `+VBAT`. The internal LiC charges from J1 between radio sessions and supplements the supply rail through J2 during high-current cellular and satellite bursts. **J1 requires ≥ 4.8 V — do not connect it directly to the LiPo (max 4.2 V) or to a raw solar panel.** It is **not** a LiPo charger and does not replace the solar charge controller. See the [Scoop datasheet](https://dev.blues.io/datasheets/scoop-datasheet/). |
-| 5 V boost regulator, 3.0–4.2 V input, 5 V regulated output, ≥ 500 mA (e.g., Pololu U1V11F5 or equivalent single-cell LiPo boost module) | 1 | Converts LiPo voltage (3.0–4.2 V) to the regulated 5 V that the Scoop J1 (CHG) input requires. Connect the LiPo JST to this module's input and the 5 V output to Scoop J1 (see [§4](#4-wiring-and-assembly)). A 500 mA output rating provides sufficient current to recharge the Scoop's internal LiC between radio sessions. |
+| 5 V boost regulator, 3.0–4.2 V input, 5 V regulated output, ≥ 500 mA (e.g., Pololu U1V11F5 or equivalent single-cell LiPo boost module) | 1 | Converts LiPo voltage (3.0–4.2 V) to the regulated 5 V that the Scoop J1 (CHG) input requires. Connect the LiPo JST to this module's input and the 5 V output to Scoop J1 (see [§6](#5-wiring-and-assembly)). A 500 mA output rating provides sufficient current to recharge the Scoop's internal LiC between radio sessions. |
 | [Adafruit Triple-Axis Accelerometer ADXL345 (product 1231)](https://www.adafruit.com/product/1231) | 1 | ±16 G, I²C, 3.3 V. Provides raw G-force readings for shock scoring at ±16 G full resolution. The Notecard's internal accelerometer tracks motion state but doesn't expose raw G values — the ADXL345 is needed for impact magnitude scoring. |
-| [Adafruit MPRLS Ported Pressure Sensor Breakout (product 3965)](https://www.adafruit.com/product/3965) | 1 | **TANK_CAR builds only** (enable by uncommenting `#define TANK_CAR` in `rail_car_tracker_helpers.h`). I²C, 3.3 V, **0–25 PSI absolute** (0–1723 hPa), ±0.25 % FSS. Returns absolute pressure — at sea level a port open to atmosphere reads approximately 14.7 PSI absolute. Suitable for monitoring fitting pressure on the car body where working pressure is within the 0–25 PSI absolute range. **Not rated for DOT-111, DOT-105, or higher-class tank pressure.** For production cargo pressure monitoring use a certified industrial transducer — see [§9](#9-limitations-and-next-steps). Omit from the BOM entirely for intermodal flat, boxcar, gondola, and other non-tank builds. |
+| [Adafruit MPRLS Ported Pressure Sensor Breakout (product 3965)](https://www.adafruit.com/product/3965) | 1 | **TANK_CAR builds only** (enable by uncommenting `#define TANK_CAR` in `rail_car_tracker_helpers.h`). I²C, 3.3 V, **0–25 PSI absolute** (0–1723 hPa), ±0.25 % FSS. Returns absolute pressure — at sea level a port open to atmosphere reads approximately 14.7 PSI absolute. Suitable for monitoring fitting pressure on the car body where working pressure is within the 0–25 PSI absolute range. **Not rated for DOT-111, DOT-105, or higher-class tank pressure.** For production cargo pressure monitoring use a certified industrial transducer — see [§11](#11-limitations-and-next-steps). Omit from the BOM entirely for intermodal flat, boxcar, gondola, and other non-tank builds. |
 | [Adafruit DS18B20 Waterproof Digital Temperature Sensor (product 381)](https://www.adafruit.com/product/381) | 1 | **TANK_CAR builds only.** One-wire (OneWire protocol), 3.3–5 V, −55 to +125 °C, ±0.5 °C accuracy (−10 to +85 °C range). Configured at 12-bit resolution (0.0625 °C). Connects to pin `D6` on the Notecarrier CX header. Extend the probe through a sealed cable gland into the lading compartment for single-point cargo temperature monitoring. Verify chemical compatibility of the stainless-steel probe housing with the lading before installation. |
-| 4.7 kΩ resistor, ¼ W, through-hole or SMD 0603/0805 | 1 | **TANK_CAR builds only.** Pull-up resistor for the DS18B20 one-wire data line. Connects between the `D6` data line and the `+3V3_OUT` rail (see [§4](#4-wiring-and-assembly)). Standard 1 % or 5 % tolerance; any common supplier (Yageo, Bourns, Vishay, etc.). |
+| 4.7 kΩ resistor, ¼ W, through-hole or SMD 0603/0805 | 1 | **TANK_CAR builds only.** Pull-up resistor for the DS18B20 one-wire data line. Connects between the `D6` data line and the `+3V3_OUT` rail (see [§6](#5-wiring-and-assembly)). Standard 1 % or 5 % tolerance; any common supplier (Yageo, Bourns, Vishay, etc.). |
 | Magnetic reed switch, N.O. contacts, weatherproof (e.g. [Adafruit 375](https://www.adafruit.com/product/375)) | 1 | Mounts near the coupler knuckle. Closes when the paired actuator magnet is within range. Detects coupled/decoupled state. Adafruit 375 is sold individually; source a compatible cylindrical rare-earth magnet separately (see next row). |
 | Cylindrical rare-earth (neodymium) magnet, ≥ 10 mm diameter, weatherproof or epoxy-coated (e.g. [Adafruit 373](https://www.adafruit.com/product/373)) | 1 | Actuator for the reed switch above. Mounts to the coupler pin, knuckle carrier, or adjacent structural member such that the magnet is within the reed switch's rated operating distance when the coupler is closed. Verify magnet-to-switch operating distance against the chosen switch's datasheet before mounting. |
 | Solar charge controller, 6 V panel input, single-cell LiPo output, MPPT (e.g. CN3065-based module, 450 mA max charge) | 1 | Manages CC/CV LiPo charging from the solar panel with input-side MPPT. **Never connect the solar panel directly to the LiPo terminal.** The controller charges the LiPo; a separate 5 V boost module (see row above) then supplies the Scoop J1 input — the charge controller itself does not need a USB/5 V output port. |
@@ -72,7 +91,8 @@ This architecture maps directly to Blues' [supply chain tracking](https://blues.
 
 The Notecard for Skylo ships with bundled cellular and satellite connectivity — 500 MB cellular data and 10 KB satellite data included, with no activation fees and no monthly commitment. The Notecarrier CX is a carrier board and does not contain a SIM.
 
-## 4. Wiring and Assembly
+## 5. Wiring and Assembly
+
 
 All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard for Skylo seats into the carrier's M.2 slot; its MAIN u.FL port connects to the included Skylo-certified LTE/NTN antenna, and its GPS u.FL port connects to the separate GNSS antenna via the u.FL-to-SMA pigtail adapter listed in the BOM. The Mojo sits inline between Scoop J2 and the Notecarrier `+VBAT` during bench testing (remove for field deployment).
 
@@ -107,7 +127,7 @@ The DS18B20 uses a single-wire protocol on `D6`. Wire as follows:
 - DS18B20 **power** (red) wire → `+3V3_OUT`.
 - DS18B20 **GND** (black) wire → `GND`.
 
-Route the DS18B20's stainless-steel probe through a watertight cable gland in the enclosure wall and extend it into the lading compartment. The probe housing is rated for direct immersion; verify chemical compatibility with the specific lading before installation. See §4.1 Safety before planning any lading-compartment penetration.
+Route the DS18B20's stainless-steel probe through a watertight cable gland in the enclosure wall and extend it into the lading compartment. The probe housing is rated for direct immersion; verify chemical compatibility with the specific lading before installation. See §5.1 Safety before planning any lading-compartment penetration.
 
 **Power to sensor breakouts:**
 
@@ -122,21 +142,22 @@ Route the DS18B20's stainless-steel probe through a watertight cable gland in th
 
 **MPRLS pressure port:**
 
-The MPRLS breakout has a 1/8 NPT threaded port on the sensor body. For field deployment, connect this port via a short stainless-steel or brass fitting to a **low-pressure vent or access port on the car body** — not a pressurized cargo line or any fitting carrying hazardous contents. Mount the sensor board inside the electronics enclosure; run the fitting through the enclosure wall with a sealed bulkhead union. Verify that the fitting material is compatible with any vapors that may be present. See §4.1 Safety before planning any pressure port installation.
+The MPRLS breakout has a 1/8 NPT threaded port on the sensor body. For field deployment, connect this port via a short stainless-steel or brass fitting to a **low-pressure vent or access port on the car body** — not a pressurized cargo line or any fitting carrying hazardous contents. Mount the sensor board inside the electronics enclosure; run the fitting through the enclosure wall with a sealed bulkhead union. Verify that the fitting material is compatible with any vapors that may be present. See §5.1 Safety before planning any pressure port installation.
 
-### 4.1 Safety Considerations
+### 5.1 Safety Considerations
 
 > **Read before installing.** Failure to follow the guidance below could result in personal injury, property damage, regulatory violations, or Skylo network exclusion.
 
 - **Certified antenna.** The Notecard for Skylo ships with a Skylo-certified LTE/NTN antenna. Using any other antenna invalidates the Skylo certification and may result in Skylo blocking the device from its NTN network. Do not substitute another antenna without obtaining a delta test lab report through a CTIA/OTA-authorized facility. Contact [Blues](https://blues.com/contact-sales/) for recommended test houses.
 
-- **Pressure port safety.** The Adafruit MPRLS (product 3965) is a consumer-grade breakout with a 25 PSI absolute upper limit. It must **not** be plumbed into a pressurized cargo line, any fitting carrying hazardous or flammable contents, or any port that may exceed its 25 PSI absolute rating. Installation of any fitting or sensor on a regulated tank car must be performed by qualified personnel following all applicable DOT, AAR, and carrier/operator rules. For production cargo pressure sensing, replace the MPRLS with a certified industrial transducer rated for the lading and pressure class (see [§9](#9-limitations-and-next-steps)).
+- **Pressure port safety.** The Adafruit MPRLS (product 3965) is a consumer-grade breakout with a 25 PSI absolute upper limit. It must **not** be plumbed into a pressurized cargo line, any fitting carrying hazardous or flammable contents, or any port that may exceed its 25 PSI absolute rating. Installation of any fitting or sensor on a regulated tank car must be performed by qualified personnel following all applicable DOT, AAR, and carrier/operator rules. For production cargo pressure sensing, replace the MPRLS with a certified industrial transducer rated for the lading and pressure class (see [§11](#11-limitations-and-next-steps)).
 
 - **Solar power wiring.** Never connect the solar panel output directly to the LiPo battery. Always route the panel through the specified charge controller (or an equivalent CC/CV controller rated for the panel and battery). Operating a LiPo without proper charge control can cause fire, venting, or permanent battery damage.
 
 - **Rail-car installation.** All work on in-service rail cars must comply with applicable AAR, FRA, and carrier rules. This reference design is a bench proof-of-concept. Mounting hardware to the car structure, routing wiring through the car body, or connecting to the car's fittings requires authorization from the car owner or lessor and must follow all applicable federal and industry regulations.
 
-## 5. Notehub Setup
+## 6. Notehub Setup
+
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) (format: `com.your-company.your-name:rail-tracker`) and paste it into the `PRODUCT_UID` macro in `firmware/rail_car_tracker/rail_car_tracker_helpers.h`.
 
@@ -180,7 +201,7 @@ In **Devices → [device] → Events** (or **Project → Devices → Events** de
     "shock_windows": 0
   }
   ```
-  **Field meanings:** `coupled` is the latest reed-switch state (true = magnet present, coupled). `moving` is whether the Notecard's internal accelerometer detected motion in this sample window. `shock_peak_g` is the highest peak resultant G-force magnitude detected across all sample bursts since the previous summary (reported 0.0 if ADXL345 is missing or all reads failed). `shock_windows` is the count of **sample windows whose peak exceeded `shock_threshold_g`** — not a total impact count; see [§6.3](#63-sensor-reading-strategy). For TANK_CAR builds, `pressure_psi` (fitting absolute pressure) and `tank_temp_c` (cargo temperature) are added to this template. A value of `-9999` in `pressure_psi` or `tank_temp_c` means the sensor did not initialize on that wake — treat as a transient sensor fault.
+  **Field meanings:** `coupled` is the latest reed-switch state (true = magnet present, coupled). `moving` is whether the Notecard's internal accelerometer detected motion in this sample window. `shock_peak_g` is the highest peak resultant G-force magnitude detected across all sample bursts since the previous summary (reported 0.0 if ADXL345 is missing or all reads failed). `shock_windows` is the count of **sample windows whose peak exceeded `shock_threshold_g`** — not a total impact count; see [§8.3](#73-sensor-reading-strategy). For TANK_CAR builds, `pressure_psi` (fitting absolute pressure) and `tank_temp_c` (cargo temperature) are added to this template. A value of `-9999` in `pressure_psi` or `tank_temp_c` means the sensor did not initialize on that wake — treat as a transient sensor fault.
 
 - **`railcar_alert.qo`** — emitted only when a threshold is exceeded, with an immediate `hub.sync` request. The `alert` field is one of: `impact`, `coupled`, `decoupled`, `pressure_high`, `pressure_drop`, `tank_temp_low`, `tank_temp_high` (last four in TANK_CAR builds only). Sample alert on a coupling impact:
   ```json
@@ -205,7 +226,8 @@ In **Devices → [device] → Events** (or **Project → Devices → Events** de
   ```
   This provides downstream geofencing services with both position and operational context (moving/coupled) needed to detect railroad boundary crossings and coupler changes at interchange points. GPS coordinates are injected from the Notecard's last known fix; no host query is needed.
 
-## 6. Firmware Design
+## 7. Firmware Design
+
 
 **Three-file sketch.** All three files must reside in the same sketch directory to compile:
 
@@ -215,7 +237,7 @@ In **Devices → [device] → Events** (or **Project → Devices → Events** de
 | [`rail_car_tracker_helpers.h`](firmware/rail_car_tracker/rail_car_tracker_helpers.h) | Compile-time constants, `#define TANK_CAR` build flag, `PersistState` struct, `extern` declarations, function prototypes |
 | [`rail_car_tracker_helpers.cpp`](firmware/rail_car_tracker/rail_car_tracker_helpers.cpp) | All Notecard interactions, sensor reads, and note-emission helpers |
 
-### 6.0 TANK_CAR build flag
+### 7.0 TANK_CAR build flag
 
 The firmware compiles into two distinct profiles controlled by a single `#define` in `rail_car_tracker_helpers.h`:
 
@@ -236,7 +258,7 @@ In the default standard build, the MPRLS is never initialized, the `pressure_psi
 
 > **Switching build profiles.** The firmware encodes the build profile into `CONFIG_VERSION` (standard = 4, TANK_CAR = 104). Toggling `#define TANK_CAR` therefore automatically invalidates the stored configuration on the Notecard and forces `defineTemplates()` to re-register the correct schema on the next wake — no manual version bump is needed. Without this coupling, flipping the flag while keeping the same `CONFIG_VERSION` would leave a stale `railcar_status.qo` template that either lacks or spuriously includes `pressure_psi` and `tank_temp_c`, causing `note.add` to reject payloads whose schema does not match the registered template.
 
-### 6.1 Installing and flashing
+### 7.1 Installing and flashing
 
 **Dependencies:**
 
@@ -281,7 +303,7 @@ arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbm
 
 After the first sample cycle, the host powers off until the next ATTN fire (default 15 minutes) — serial output going quiet is **expected behavior, not a hang.** Use the timing shown above to verify the sample interval. Open a serial monitor at **115200 baud** (e.g., `screen /dev/cu.usbmodem* 115200` on Mac/Linux, or Arduino IDE's Serial Monitor).
 
-### 6.2 Modules
+### 7.2 Modules
 
 | Responsibility | Function |
 |---|---|
@@ -297,18 +319,18 @@ After the first sample cycle, the host powers off until the next ATTN fire (defa
 | Location emission | `sendLocationNote` — compact position note to `railcar_location.qo`; fired on motion-state edges and `location_interval_min` cadence while moving |
 | Sleep | `NotePayloadSaveAndSleep` / `NotePayloadRetrieveAfterSleep` — separate restore/save descriptors; return values checked |
 
-### 6.3 Sensor reading strategy
+### 7.3 Sensor reading strategy
 
 - **ADXL345 shock scoring.** The sensor is configured for ±16 G full-resolution mode (3.9 mg/LSB). Each sample cycle reads 64 samples at ~100 Hz (~640 ms burst) and tracks the peak resultant vector magnitude `√(Gx²+Gy²+Gz²)`. At rest, this reads ~1.0 G (static gravity). An impact registers as a spike above that baseline. Because the firmware compares total resultant magnitude — not gravity-compensated acceleration — the relationship between the 2.5 G threshold and the net dynamic impact depends on sensor mounting orientation: the gravity vector's contribution to the resultant is not simply subtractable. Empirical per-install calibration using observed baseline readings in `railcar_status.qo` is the reliable way to set `shock_threshold_g` for a specific installation. **`shock_windows` counts sample windows, not individual impacts.** The 640 ms burst is read once per 15-minute wake: an impact that occurs between bursts is invisible to this firmware. `shock_windows` is therefore the number of wakes in the summary period where the burst peak exceeded `shock_threshold_g` — it can be zero when real impacts occurred outside sample windows. Do not interpret it as a total impact count. Each I²C read in the burst is validated; if the repeated-start write fails or fewer than 6 bytes are returned, the individual sample is discarded rather than allowed to produce a spurious magnitude spike. If all reads in a burst fail, `peakG` returns `NAN` and neither `shock_peak_g` accumulation nor `shock_windows` is incremented for that cycle.
-- **MPRLS.** Single I²C measurement via the Adafruit library. `readPressure()` returns pressure in **hPa** (absolute); the firmware divides by 68.948 to convert to PSI absolute. Valid range 0–25 PSI absolute (0–1723 hPa); accuracy ±0.25 % FSS typical. At standard sea-level conditions a port open to atmosphere reads approximately 14.7 PSI absolute; a pressurized fitting reads above that baseline. A sharp drop in absolute pressure toward atmospheric may indicate a leak or valve event; a reading significantly below atmospheric likely indicates a sensor wiring fault. This sensor is not rated for full DOT-111 or higher-class tank pressure — see [§9](#9-limitations-and-next-steps).
+- **MPRLS.** Single I²C measurement via the Adafruit library. `readPressure()` returns pressure in **hPa** (absolute); the firmware divides by 68.948 to convert to PSI absolute. Valid range 0–25 PSI absolute (0–1723 hPa); accuracy ±0.25 % FSS typical. At standard sea-level conditions a port open to atmosphere reads approximately 14.7 PSI absolute; a pressurized fitting reads above that baseline. A sharp drop in absolute pressure toward atmospheric may indicate a leak or valve event; a reading significantly below atmospheric likely indicates a sensor wiring fault. This sensor is not rated for full DOT-111 or higher-class tank pressure — see [§11](#11-limitations-and-next-steps).
 - **DS18B20 cargo temperature probe (TANK_CAR builds).** Initialized via the DallasTemperature library over the OneWire bus on `D6`. Configured at 12-bit resolution (0.0625 °C step). Each wake calls `requestTemperatures()`, which blocks approximately 750 ms for the conversion, then reads the result with `getTempCByIndex(0)`. The library returns `DEVICE_DISCONNECTED_C` (−127 °C) when the probe is absent or wiring is broken; the firmware treats any value below −100 °C as an error and stores `NAN`, which is reported as `−9999` in `tank_temp_c`. Sensor accuracy is ±0.5 °C across the −10 to +85 °C range. Verify chemical compatibility of the stainless-steel probe housing with the lading before installation.
 - **Reed switch.** Five `digitalRead` samples with 20 ms spacing; majority vote (≥ 3 of 5 agreeing) determines the accepted state. Edge detection against the persisted previous state triggers coupler-change alerts.
 
-### 6.4 Event payload design
+### 7.4 Event payload design
 
-All three Notefiles use [compact note templates](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates), which is required for satellite (NTN) transport and dramatically reduces per-note byte count over cellular as well. The `_lat`, `_lon`, and `_ltime` compact reserved fields restore GPS coordinates into the otherwise stripped compact template — the Notecard injects the most recent fix automatically, no host GPS query needed for summary notes. The `railcar_status.qo` template body occupies approximately 28 bytes in a standard build (add ~4 bytes each for `pressure_psi` and `tank_temp_c` in TANK_CAR builds, totalling ~36 bytes) — this is the compact note **body size only**, not the total satellite data consumption per note. Real NTN delivery also incurs session-establishment overhead, routing metadata, and delivery receipts. See [§9 Limitations](#9-limitations-and-next-steps) for satellite budget guidance.
+All three Notefiles use [compact note templates](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates), which is required for satellite (NTN) transport and dramatically reduces per-note byte count over cellular as well. The `_lat`, `_lon`, and `_ltime` compact reserved fields restore GPS coordinates into the otherwise stripped compact template — the Notecard injects the most recent fix automatically, no host GPS query needed for summary notes. The `railcar_status.qo` template body occupies approximately 28 bytes in a standard build (add ~4 bytes each for `pressure_psi` and `tank_temp_c` in TANK_CAR builds, totalling ~36 bytes) — this is the compact note **body size only**, not the total satellite data consumption per note. Real NTN delivery also incurs session-establishment overhead, routing metadata, and delivery receipts. See [§11 Limitations](#11-limitations-and-next-steps) for satellite budget guidance.
 
-The `railcar_status.qo` body carries the most recent sensor readings from the sample cycle that triggered the summary, plus `shock_peak_g` (highest G seen since the previous summary) and `shock_windows` (number of **sample windows** in the summary period whose burst peak exceeded `shock_threshold_g`). `shock_windows` is a sampled-threshold window count, not a count of individual impacts — see [§6.3](#63-sensor-reading-strategy). This is not a window average of all samples — it is the latest single reading plus accumulated extremes.
+The `railcar_status.qo` body carries the most recent sensor readings from the sample cycle that triggered the summary, plus `shock_peak_g` (highest G seen since the previous summary) and `shock_windows` (number of **sample windows** in the summary period whose burst peak exceeded `shock_threshold_g`). `shock_windows` is a sampled-threshold window count, not a count of individual impacts — see [§8.3](#73-sensor-reading-strategy). This is not a window average of all samples — it is the latest single reading plus accumulated extremes.
 
 Sample `railcar_alert.qo` body (GPS coordinates are injected from the Notecard's last known fix via `_lat`/`_lon`/`_ltime` compact template fields — they do not appear in the host-side `note.add` call):
 
@@ -337,7 +359,7 @@ Alert types and their `value` fields:
 | `tank_temp_low` | DS18B20 cargo temperature (°C) that tripped the threshold | TANK_CAR only |
 | `tank_temp_high` | DS18B20 cargo temperature (°C) that tripped the threshold | TANK_CAR only |
 
-### 6.5 Low-power strategy
+### 7.5 Low-power strategy
 
 The host Cygnet STM32L433 is fully powered off between samples via `card.attn` sleep mode. Following the pattern of the reference accelerators, all sensing and logic runs in `setup()`; `loop()` holds only the `NotePayloadSaveAndSleep` call and a fallback `delay`. `NotePayloadSaveAndSleep` serializes the `PersistState` struct into Notecard flash, then issues the `card.attn` sleep request that cuts the host power rail for `sample_interval_min × 60` seconds. On ATTN fire, the Notecarrier CX re-applies host power, the MCU enters `setup()` from cold, and `NotePayloadRetrieveAfterSleep` rehydrates the struct. The host is awake for only the few seconds needed to read sensors, evaluate rules, and queue notes — on the order of 5–10 seconds per 15-minute interval.
 
@@ -353,7 +375,7 @@ The Notecard for Skylo idles at ~8–18 µA @ 5V between sessions (see the [low-
 
 At high charge (good solar harvest), the Notecard syncs every 2 hours; at normal charge, every 4 hours; at low charge, every 8 hours. At "dead" voltage, outbound syncs are suspended to protect the battery. On first boot, the firmware sends a summary note immediately regardless of the report interval — this ensures a known-good status lands in Notehub during commissioning.
 
-### 6.6 Retry and error handling
+### 7.6 Retry and error handling
 
 - **Per-boot Notecard readiness.** `notecardReady()` issues a lightweight `card.version` via `sendRequestWithRetry(req, 10)` at the top of every `setup()` call, before any other Notecard transaction. The host MCU can power up before the Notecard's I²C stack is ready after every `NotePayloadSaveAndSleep` wake, not just on initial firmware flash. This ensures the bus is live before `fetchEnvOverrides`, `card.time`, and all other requests.
 - **One-time configuration retry.** `configureNotecard`, `defineTemplates`, and `configureMotionAndGPS` all return `bool`. `state.configured` is set `true` only if all three succeed. If any step fails, `state.configured` stays `false` and the next wake retries the full configuration sequence automatically.
@@ -367,7 +389,7 @@ At high charge (good solar harvest), the Notecard syncs every 2 hours; at normal
 - **Alert sync coalescing.** `sendAlert` and `sendLocationNote` (on motion-state edges) do not set `sync:true` on individual `note.add` calls. After all alert and location logic completes for a wake, a single `hub.sync` is issued if any alert or motion-edge location note was queued. This avoids redundant sync-session requests when multiple events fire in the same wake.
 - **Env-var clamping.** All values from `fetchEnvOverrides` are clamped before use — a malformed Notehub value can't produce an out-of-range sleep duration or division-by-zero interval.
 
-### 6.7 Key code snippet 1: compact template with GPS fields
+### 7.7 Key code snippet 1: compact template with GPS fields
 
 The `format:"compact"` argument is required for Notecard-for-Skylo NTN notes. The `_lat`/`_lon`/`_ltime` keywords restore GPS coordinates into an otherwise stripped compact template — the Notecard injects the most recent fix automatically, no host GPS query needed for summary notes. The `pressure_psi` and `tank_temp_c` fields are added only in TANK_CAR builds (wrapped in `#ifdef TANK_CAR`); the snippet below shows the standard (non-tank) template.
 
@@ -391,7 +413,7 @@ JAddNumberToObject(body, "shock_windows", TINT16);
 notecard.sendRequest(req);
 ```
 
-### 6.8 Key code snippet 2: voltage-variable hub.set
+### 7.8 Key code snippet 2: voltage-variable hub.set
 
 `voutbound` adjusts the outbound sync interval based on the VBAT voltage reported by the Notecard — no host-side battery measurement needed. At `high` charge the Notecard syncs every 120 minutes; at `normal` every 240 minutes; at `low` every 480 minutes; at `dead` outbound is suspended entirely.
 
@@ -406,7 +428,7 @@ JAddStringToObject(req, "vinbound",
 notecard.sendRequestWithRetry(req, 10);
 ```
 
-### 6.9 Key code snippet 3: ADXL345 shock scoring burst
+### 7.9 Key code snippet 3: ADXL345 shock scoring burst
 
 64 reads at ~100 Hz gives a ~640 ms window — long enough to capture a coupling impact transient. The resultant vector magnitude includes the static gravity component (~1.0 G at rest). Because the firmware does not compensate for gravity, translating a 2.5 G threshold into a "net impact" figure depends on the angle between the gravity vector and the impact direction — use empirical per-install calibration rather than simple arithmetic to set `shock_threshold_g` for your installation. Each I²C read is validated; failed reads are skipped so a short I²C transfer can't inject a spurious magnitude. The function returns `NAN` if no reads succeed.
 
@@ -424,7 +446,7 @@ for (uint8_t i = 0; i < 64; i++) {
 return (validSamples > 0) ? peakG : NAN;
 ```
 
-### 6.10 Key code snippet 4: persist state and sleep
+### 7.10 Key code snippet 4: persist state and sleep
 
 `NotePayloadSaveAndSleep` is a `note-arduino` helper that writes the state struct to Notecard flash and issues `card.attn` sleep — cutting host power entirely. On the next ATTN fire the MCU re-enters `setup()` cold; `NotePayloadRetrieveAfterSleep` rehydrates the struct in the first few lines.
 
@@ -447,7 +469,8 @@ bool sleepOk = segOk && NotePayloadSaveAndSleep(&savePayload, g_sampleMin * 60U,
 if (!sleepOk) { /* fallback card.attn sleep */ }
 ```
 
-## 7. Data Flow
+## 8. Data Flow
+
 
 ![Data flow: sensors sampled every 15 min → three standard + four TANK_CAR edge rules → railcar_alert.qo (hub.sync, immediate), railcar_status.qo (every 4 h, compact template), railcar_location.qo (motion edges + every 30 min) → Notehub → routes](diagrams/03-data-flow.svg)
 
@@ -471,11 +494,12 @@ if (!sleepOk) { /* fallback card.attn sleep */ }
 | `pressure_drop` | Fitting pressure fell > `pressure_drop_psi` since the previous sample | One alert per detected sudden-drop event; suppressed unless both the previous **and** current readings are valid (prevents stale readings from producing false alerts after a failed cycle) | TANK_CAR only |
 | `tank_temp_low` / `tank_temp_high` | DS18B20 cargo temperature outside `tank_temp_min_c` / `tank_temp_max_c` | Edge-detected: fires once when condition is first observed; suppressed on subsequent samples while it persists; re-arms when temperature returns inside range | TANK_CAR only |
 
-## 8. Validation and Testing
+## 9. Validation and Testing
+
 
 **Expected steady-state cadence.** A correctly installed unit generates one `railcar_status.qo` every `report_interval_min` (default 4 hours) and delivers it on the next scheduled sync session. At normal battery voltage over cellular, generation and delivery are both on a 4-hour cadence. At low voltage, the sync interval stretches to 8 hours and notes may queue for that duration before delivery. `railcar_location.qo` fires on every detected motion-state-edge and, while moving, every `location_interval_min` minutes (default 30 min). Motion-state edges are detected on the host's 15-minute wake cadence — a stopped ↔ moving transition can be reported up to `sample_interval_min` minutes after it occurs; once detected, a `hub.sync` is requested immediately within the same wake. To reduce the detection window, lower `sample_interval_min` (via env var) at the cost of battery life. Zero `railcar_alert.qo` events is normal during smooth transit. During initial commissioning, review the `shock_peak_g` values in the first several `railcar_status.qo` notes to establish the car's baseline vibration signature, then tune `shock_threshold_g` and the pressure-drop threshold accordingly. The firmware does not implement automatic calibration or baseline learning — commissioning-time threshold tuning is a manual step using observed data.
 
-**Power validation with Mojo.** The [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) sits inline on the VBAT rail during bench bring-up and reports cumulative mAh to the Notecard over Qwiic (see [§4](#4-wiring-and-assembly) for the full bench wiring).
+**Power validation with Mojo.** The [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) sits inline on the VBAT rail during bench bring-up and reports cumulative mAh to the Notecard over Qwiic (see [§6](#5-wiring-and-assembly) for the full bench wiring).
 
 The table below lists per-phase reference figures drawn from the [NOTE-NBGLWX datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) and the [Notecard low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/), alongside whole-system bench estimates for this assembly. Read the two columns differently: the reference column reflects what Blues has published; the bench estimate column is a starting point to confirm with Mojo.
 
@@ -509,7 +533,8 @@ The table below lists per-phase reference figures drawn from the [NOTE-NBGLWX da
 
 Mojo is a bench-validation and per-firmware-revision regression tool. Field units don't need it.
 
-## 8.1 Troubleshooting
+## 10. Troubleshooting
+
 
 | Symptom | Diagnosis | Recovery |
 |---|---|---|
@@ -523,7 +548,8 @@ Mojo is a bench-validation and per-firmware-revision regression tool. Field unit
 | Mojo shows high baseline current (30–50 mA continuously) | Host is not sleeping. The Notecarrier CX ATTN pin controls host power gating; it must be connected (internal on CX, no external wire needed). If something is holding the host awake, the baseline will not drop to sleep levels (~20–50 µA). | Check the serial log for `[loop]` — if it appears more frequently than once per 15 minutes, the host is looping instead of sleeping. Verify `NotePayloadSaveAndSleep` returns true and issues a `card.attn sleep` request in the log. A failed power-save will leave the host consuming ~30–50 mA continuously. |
 | Rapid satellite session bursts (1–4 min high-current events) | Cellular coverage is lost; the Notecard is falling back to Skylo NTN. This is expected and correct behavior. | No action needed — this is the reference design working as intended. Monitor satellite data consumption in Notehub to confirm you're within your NTN budget. Validate compact templates are being used before the first `note.add` call — a non-compact note over NTN costs 3–10× more bytes. |
 
-## 9. Limitations and Next Steps
+## 11. Limitations and Next Steps
+
 
 **Simplified for this POC:**
 
@@ -546,6 +572,7 @@ Mojo is a bench-validation and per-firmware-revision regression tool. Field unit
 - Connect Notehub location events to a geofencing service or location time-series store (via a [Notehub route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub)) to detect railroad territory boundary crossings and generate interchange events for each custody handoff.
 - Feed those interchange events to an AAR/Railinc EDI gateway (Umler or Railinc platforms) for automated interchange reporting.
 
-## 10. Summary
+## 12. Summary
 
-Rail cars are among the most asset-intensive, least-connected freight assets in the supply chain. A leased tank car can disappear into the railroad network for weeks; the lessor's best data point is an interchange report filed by someone else. This reference design puts the car itself on the network — sampling conditions every quarter-hour, scoring every coupling impact, and reporting location and status through whatever radio window is available. The continuous GPS track, coupler-state transitions, and motion events that reach Notehub are precisely the inputs a downstream geofencing service needs to detect railroad boundary crossings and generate interchange records; the geofencing and EDI integration steps that convert that telemetry into formal interchange events are production work outlined in [§9 Production Next Steps](#9-limitations-and-next-steps). Status notes are generated every 4 hours and delivered on the next sync session — within 2–4 hours over cellular at good charge, or the next time the Notecard can establish an NTN session across the open Nebraska Sandhills. Location notes flow at every motion-state edge and on a configurable in-motion cadence (default 30 min), giving downstream geofencing services a dense-enough position stream to detect railroad territory boundary crossings. The key insight is that the Notecard for Skylo doesn't ask the firmware to choose — it manages cellular and satellite autonomously, queuing everything that can't transmit immediately and flushing it when connectivity returns. For an asset class where "no news" has historically meant "no visibility," that queue-and-forward guarantee is the entire value proposition.
+
+Rail cars are among the most asset-intensive, least-connected freight assets in the supply chain. A leased tank car can disappear into the railroad network for weeks; the lessor's best data point is an interchange report filed by someone else. This reference design puts the car itself on the network — sampling conditions every quarter-hour, scoring every coupling impact, and reporting location and status through whatever radio window is available. The continuous GPS track, coupler-state transitions, and motion events that reach Notehub are precisely the inputs a downstream geofencing service needs to detect railroad boundary crossings and generate interchange records; the geofencing and EDI integration steps that convert that telemetry into formal interchange events are production work outlined in [§11 Production Next Steps](#11-limitations-and-next-steps). Status notes are generated every 4 hours and delivered on the next sync session — within 2–4 hours over cellular at good charge, or the next time the Notecard can establish an NTN session across the open Nebraska Sandhills. Location notes flow at every motion-state edge and on a configurable in-motion cadence (default 30 min), giving downstream geofencing services a dense-enough position stream to detect railroad territory boundary crossings. The key insight is that the Notecard for Skylo doesn't ask the firmware to choose — it manages cellular and satellite autonomously, queuing everything that can't transmit immediately and flushing it when connectivity returns. For an asset class where "no news" has historically meant "no visibility," that queue-and-forward guarantee is the entire value proposition.

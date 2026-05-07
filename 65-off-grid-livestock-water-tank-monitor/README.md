@@ -19,8 +19,8 @@ After following this guide, you will have a solar-powered off-grid tank monitor 
 
 Expected data consumption: ~6 KB/month on the 500 MB included prepaid Blues data plan (cellular path; satellite is separate). First production event visible in Notehub within 4 hours of power-on.
 
-
 ## 1. Project Overview
+
 
 **The problem.** Stock tanks in remote pastures are one of agriculture's oldest and most persistent operational problems. A rancher managing a spread across multiple pastures — each with its own poly or galvanized stock tank and a submersible pump pulling from a well — has to physically drive every road to verify that every tank is full. On a working ranch with pastures spread over thousands of acres, that inspection loop can take several hours and still miss a dry tank that empties between visits. The consequences aren't just inconvenience: cattle deprived of water for even a few hours in summer heat suffer rapid decline in health, and emergency water delivery is expensive before factoring in animal losses at all.
 
@@ -32,6 +32,7 @@ The failure modes are simple and repeatable. Tanks go dry because a float valve 
 
 ## 2. System Architecture
 
+
 ![System architecture: ultrasonic level sensor + pump CT + battery voltage divider → Notecarrier CX with Cygnet host and NOTE-NBGLWX → cellular or Skylo satellite → Notehub → SMS / time-series DB / trends](diagrams/01-system-architecture.svg)
 
 **Device-side responsibilities.** The onboard Cygnet STM32L433 host on the Notecarrier CX wakes on a 15-minute interval driven by [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn), reads three sensors (ultrasonic level, pump RMS current, solar battery voltage), evaluates alert thresholds, accumulates readings into a rolling window for the next summary, and returns to sleep. All Notecard interaction happens over I²C — no AT commands, no serial buffers, no JSON hand-rolling.
@@ -42,9 +43,10 @@ The failure modes are simple and repeatable. Tanks go dry because a float valve 
 
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and other destinations; route configuration is project-specific and outside the scope of this reference design. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no downstream endpoint.
 
-## 2.5 Quickstart
+## 3. Technical Summary
 
-1. **Assemble hardware.** Order the BOM from §3, build the circuit per §4, and mount the enclosure on the tank post.
+
+1. **Assemble hardware.** Order the BOM from §4, build the circuit per §5, and mount the enclosure on the tank post.
 2. **Flash firmware.** Clone this repo, set your Notehub ProductUID in the sketch, and flash via Arduino IDE. The FQBN below matches `firmware/livestock_water_tank_monitor/sketch.yaml`, so omitting `--fqbn` also works when invoked from the sketch directory:
    ```bash
    arduino-cli compile --fqbn STMicroelectronics:stm32:Blues:pnum=CYGNET \
@@ -52,13 +54,30 @@ The failure modes are simple and repeatable. Tanks go dry because a float valve 
    arduino-cli upload -p /dev/ttyACM0 --fqbn STMicroelectronics:stm32:Blues:pnum=CYGNET \
      firmware/livestock_water_tank_monitor
    ```
-3. **Set calibration.** Power on and wait for the device to sync to Notehub (first cellular connection within minutes if coverage exists, or satellite within ~10 minutes if cellular is unavailable). Once a `tank_status.qo` Note appears in Notehub, measure your actual tank geometry and set `tank_depth_mm` and `sensor_min_mm` as environment variables in Notehub (see §5 step 4 for the path). After the next sync, `level_pct` will report accurate percentages.
-4. **Set routes.** In Notehub, add two routes: one for `tank_alert.qo` (to SMS/push service) and one for `tank_status.qo` (to your time-series database or data lake). See §5 and the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub).
+3. **Set calibration.** Power on and wait for the device to sync to Notehub (first cellular connection within minutes if coverage exists, or satellite within ~10 minutes if cellular is unavailable). Once a `tank_status.qo` Note appears in Notehub, measure your actual tank geometry and set `tank_depth_mm` and `sensor_min_mm` as environment variables in Notehub (see §6 step 4 for the path). After the next sync, `level_pct` will report accurate percentages.
+4. **Set routes.** In Notehub, add two routes: one for `tank_alert.qo` (to SMS/push service) and one for `tank_status.qo` (to your time-series database or data lake). See §6 and the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub).
 
 Full assembly and calibration instructions follow in later sections; this quickstart gets you to first event in under an hour.
 
+Here is a sample Note this device emits:
 
-## 3. Hardware Requirements
+```json
+{
+  "file": "tank_status.qo",
+  "body": {
+    "_time": 1717200000,
+    "level_pct": 68.4,
+    "distance_mm": 542.0,
+    "pump_amps": 7.2,
+    "pump_on": true,
+    "battery_v": 12.8,
+    "alerts": 0
+  }
+}
+```
+
+## 4. Hardware Requirements
+
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
@@ -77,7 +96,7 @@ Full assembly and calibration instructions follow in later sections; this quicks
 | 100 kΩ resistor, ¼ W | 1 | BSS84 gate pullup to 12 V battery+. Ensures the PMOS switch is off by default when the host MCU is unpowered, keeping A2 at GND through the low-side 10 kΩ. |
 | 5V/1A step-down DC-DC regulator (e.g., [Pololu D24V10F5](https://www.pololu.com/product/2831)) | 1 | Derives stable 5V from the 12V solar battery bus; the 5.1–36V input range accommodates healthy and partial-charge battery states without dropout. |
 | 12V sealed lead-acid (SLA) or LiFePO₄ battery, ≥20 Ah | 1 | Field power reserve; LiFePO₄ preferred for wider operating temperature range and deeper discharge tolerance across cold-weather winters. Size to the expected run time between solar recharge events. |
-| [Renogy Wanderer 10A PWM Solar Charge Controller](https://www.renogy.com/wanderer-10a-pwm-charge-controller/) | 1 | Manages panel-to-battery charging and protects against over-discharge via a low-voltage disconnect on the LOAD terminals. Any standard 12V PWM or MPPT controller with dedicated LOAD output terminals works; LOAD-output isolation is required for the power chain described in §4. |
+| [Renogy Wanderer 10A PWM Solar Charge Controller](https://www.renogy.com/wanderer-10a-pwm-charge-controller/) | 1 | Manages panel-to-battery charging and protects against over-discharge via a low-voltage disconnect on the LOAD terminals. Any standard 12V PWM or MPPT controller with dedicated LOAD output terminals works; LOAD-output isolation is required for the power chain described in §5. |
 | [Renogy 20W 12V Monocrystalline Solar Panel](https://www.renogy.com/20-watt-12-volt-monocrystalline-solar-panel/) | 1 | Sized for the energy budget of this design at most US latitudes; increase wattage for far-northern deployments or extended overcast seasons. |
 | Skylo-certified LTE-capable antenna — use the antenna included with the NOTE-NBGLWX kit (a Blues-qualified, dual-band antenna covering the LTE bands used for cellular plus the S-Band/L-Band frequencies on B23/B255/B256 used for Skylo NTN). The same antenna handles both cellular and satellite traffic; the NOTE-NBGLWX has a single `MAIN` u.FL antenna port for both transports. The Notecard is certified on Skylo's network **exclusively with the antenna provided in the kit** — replacing or modifying it results in an uncertified device that may be blocked by Skylo. If a different antenna is required, a Skylo delta-certification test is needed; see the [Satellite Best Practices guide](https://dev.blues.io/starnote/satellite-best-practices/) and [contact Blues](https://blues.com/contact-sales/) for recommended test houses. | 1 | Must have a clear, unobstructed view of the equator-facing sky (southern sky in the northern hemisphere; northern sky in the southern hemisphere) for the satellite path. Mount flat on the enclosure lid or on an elevated bracket above the enclosure; never inside a metal enclosure. |
 | u.FL to SMA female pigtail, 100 mm+ (e.g. [SparkFun WRL-09145](https://www.sparkfun.com/products/9145) or equivalent RG316/RG178 assembly) + IP67-rated SMA bulkhead fitting | 1 each | Routes the included Skylo-certified antenna's connection from the NOTE-NBGLWX `MAIN` u.FL port through the enclosure wall. Match the bulkhead hole size to your enclosure; nickel-plated or stainless SMA bulkheads are widely available from DigiKey and Mouser. Use the shortest pigtail that reaches the bulkhead to minimize cable loss. |
@@ -85,7 +104,8 @@ Full assembly and calibration instructions follow in later sections; this quicks
 
 All Blues hardware ships with an active SIM including 500 MB of cellular data and 10 years of service — no activation fees, no monthly commitment. The NOTE-NBGLWX also includes Skylo satellite data as part of its service plan; see the [Blues pricing page](https://blues.com/pricing/) for current satellite data allotments and usage terms.
 
-## 4. Wiring and Assembly
+## 5. Wiring and Assembly
+
 
 ![Wiring: MB7389 ultrasonic to A0; SCT-013 CT with V/2 bias to A1; battery divider to A2 with PMOS gated by A3; Skylo MAIN antenna via u.FL to SMA bulkhead; solar 20 W → charge controller → 12 V battery → 5 V step-down → +VBAT](diagrams/02-wiring-assembly.svg)
 
@@ -136,7 +156,8 @@ The voltage scaling is unchanged: `battery_V = V_adc / 0.175`, mapping 0–14.5 
 
 **Level sensor mounting:** Mount the MB7389 vertically (sensing face pointing straight down) through a 1.5–2 inch hole in a tank lid or on a bracket over the open top. Keep at least 300mm of clearance between the sensor face and the maximum expected water surface — this is the MB7389's blanking zone below which readings are unreliable. Record the actual mounting height above the full waterline and enter it as `sensor_min_mm` in Notehub after installation.
 
-## 5. Notehub Setup
+## 6. Notehub Setup
+
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/livestock_water_tank_monitor/livestock_water_tank_monitor.ino` as `PRODUCT_UID`.
 2. **Claim the Notecard.** Power the unit; on first successful Notehub session, whether over cellular or Skylo satellite, the Notecard associates with your project automatically.
@@ -151,8 +172,8 @@ The voltage scaling is unchanged: `battery_V = V_adc / 0.175`, mapping 0–14.5 
    | `level_critical_pct` | `10` | Tank level (%) below which a `level_critical` alert fires. Cattle may dewater within hours. |
    | `pump_on_amps` | `1.0` | RMS amps above which the pump is considered running. Set above the CT noise floor and below the pump's normal running current. |
    | `battery_alert_v` | `11.5` | Solar battery voltage (V) below which a `battery_low` alert fires. Indicates extended overcast weather or a charge controller fault. |
-   | `sample_interval_sec` | `900` | Seconds between sensor samples. Default is 15 minutes. Reduce this during calibration (alongside `summary_interval_min`) so that each summary window contains at least one fresh sample; see §8. |
-   | `summary_interval_min` | `240` | Minutes between periodic summary Notes. Default is 4 hours (6 Notes per day). **Must be at least ⌈`sample_interval_sec` ÷ 60⌉ minutes** — a summary window shorter than one sample wake contains no data. The firmware auto-clamps values below this floor at runtime; reduce `sample_interval_sec` proportionally when a short calibration window is needed (see §8). When this value changes, the firmware detects the difference on the next wake and re-issues `hub.set` with the updated cadence, so the Notecard's outbound sync interval stays aligned with the local summary schedule — no physical reboot required. |
+   | `sample_interval_sec` | `900` | Seconds between sensor samples. Default is 15 minutes. Reduce this during calibration (alongside `summary_interval_min`) so that each summary window contains at least one fresh sample; see §10. |
+   | `summary_interval_min` | `240` | Minutes between periodic summary Notes. Default is 4 hours (6 Notes per day). **Must be at least ⌈`sample_interval_sec` ÷ 60⌉ minutes** — a summary window shorter than one sample wake contains no data. The firmware auto-clamps values below this floor at runtime; reduce `sample_interval_sec` proportionally when a short calibration window is needed (see §10). When this value changes, the firmware detects the difference on the next wake and re-issues `hub.set` with the updated cadence, so the Notecard's outbound sync interval stays aligned with the local summary schedule — no physical reboot required. |
    | `alert_cooldown_sec` | `3600` | Minimum seconds between repeated `level_low` and `level_critical` alerts. The `battery_low` alert is edge-triggered instead and is not subject to this cooldown — it fires once per episode and re-arms only after the voltage recovers above `battery_alert_v + 0.5V`. |
 
 5. **Configure routes.** Add at minimum one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `tank_alert.qo` (to an SMS gateway, push-notification service, or on-call webhook) and a second for `tank_status.qo` (to a time-series store for trend analysis and historical review). The Notefile separation means you can send alerts to your phone immediately while batching summaries to a database nightly, without any filtering logic in the route.
@@ -183,7 +204,8 @@ The voltage scaling is unchanged: `battery_V = V_adc / 0.175`, mapping 0–14.5 
    ```
    `alerts` = count of `tank_alert.qo` Notes sent since the last summary; `pump_on` is derived from window-average `pump_amps` vs. the `pump_on_amps` threshold.
 
-## 6. Firmware Design
+## 7. Firmware Design
+
 
 The implementation spans three files in the [`firmware/livestock_water_tank_monitor/`](firmware/livestock_water_tank_monitor/) directory, with the `.ino` as the entry point:
 
@@ -358,13 +380,14 @@ if (envOk && g_summaryIntervalMin != g.appliedSummaryIntervalMin) {
 }
 ```
 
-## 7. Data Flow
+## 8. Data Flow
+
 
 ![Data flow: 15-min sample of level / pump amps / battery V → three rules (level_low, level_critical, battery_low) → tank_alert.qo (sync:true) and tank_status.qo (every 4 h templated) → Notehub routes](diagrams/03-data-flow.svg)
 
 Every 15 minutes the Cygnet wakes, reads three sensors, and evaluates three independent alert conditions. Valid readings accumulate across wakes into a rolling window; each 4-hour summary averages each metric over that window.
 
-**Collected each sample.** Tank fill level (distance mm → level percentage), pump RMS amps, solar battery voltage (V), per-alert cooldown timestamps. (`pump_on` is not sampled directly — it is derived at summary time from the window-average of `pump_amps`; see §6.)
+**Collected each sample.** Tank fill level (distance mm → level percentage), pump RMS amps, solar battery voltage (V), per-alert cooldown timestamps. (`pump_on` is not sampled directly — it is derived at summary time from the window-average of `pump_amps`; see §7.)
 
 **Transmitted.**
 - `tank_status.qo` — one compact template-encoded Note (port 50) every `summary_interval_min` (default 4 hours, 6 Notes per day). Every numeric field — `level_pct`, `distance_mm`, `pump_amps`, and `battery_v` — is the mean of valid samples collected over the window. A sensor that produced zero valid reads in the window emits `-1.0` as a sentinel; `alerts` carries the count of alert Notes sent since the last summary. `pump_on` is a derived boolean set at summary time: `true` when the window-average `pump_amps` is at or above `pump_on_amps` (default 1.0 A) — it reflects the window average, not a per-sample observation.
@@ -377,7 +400,8 @@ Every 15 minutes the Cygnet wakes, reads three sensors, and evaluates three inde
 
 **Routed.** Both Notefiles flow to Notehub and from there to whatever downstream the project's routes specify. The deliberate Notefile separation means `tank_alert.qo` can go to an SMS gateway for immediate rancher notification while `tank_status.qo` goes to a time-series database for historical trend analysis and predictive maintenance — without any per-note filtering logic in the routes.
 
-## 8. Validation and Testing
+## 9. Validation and Testing
+
 
 **Expected cadence in normal operation.** A healthy, full tank generates one `tank_status.qo` Note every 4 hours and zero `tank_alert.qo` Notes. After first power-on, confirm Notehub shows a summary Note within 4 hours and that `level_pct` is non-zero and plausible given the tank's actual fill state.
 
@@ -412,19 +436,21 @@ If the Mojo trace shows continuous multi-mA draw with no idle transitions, the h
 
 **Validating the satellite path.** To confirm satellite delivery before field deployment, take the device to a location with no usable cellular coverage and trigger a `tank_alert.qo` Note by lowering `level_alert_pct` to 99 in Notehub. With a clear equator-facing sky view, the NOTE-NBGLWX will switch to the Skylo satellite path. Confirm the alert Note appears in Notehub — it will carry the same body as a cellular-delivered Note but the session metadata will reflect the satellite transport. Session establishment may take several minutes; allow up to 10 minutes before concluding satellite is not working. Common issues: antenna blocked or not facing the equator-facing direction, obstructions between the antenna and the horizon, or the device too close to a building or tree line. Refer to the [Satellite Best Practices guide](https://dev.blues.io/starnote/satellite-best-practices/) for a complete troubleshooting checklist.
 
-## 8a. Troubleshooting
+## 10. Troubleshooting
+
 
 | Symptom | Root Cause | Fix |
 |---------|-----------|-----|
 | No `tank_status.qo` Notes appear in Notehub after 4 hours | Device has not synced yet; check connectivity | If indoors or in a valley, move the antenna to an exterior location with sky view. For cellular, confirm you are in LTE-M/NB-IoT coverage (check a carrier map). For satellite, confirm the antenna has unobstructed equator-facing sky view. |
-| `level_pct` reads 0% or 100% regardless of actual tank fill | `tank_depth_mm` or `sensor_min_mm` not calibrated correctly | Follow the calibration procedure in §8. Tank must be held at full and completely empty for one 5-minute window each while sampling every 60 seconds. |
+| `level_pct` reads 0% or 100% regardless of actual tank fill | `tank_depth_mm` or `sensor_min_mm` not calibrated correctly | Follow the calibration procedure in §10. Tank must be held at full and completely empty for one 5-minute window each while sampling every 60 seconds. |
 | `level_pct` fluctuates wildly or reads negative | Sensor is outside the 300–5000 mm range, or mounting is unstable | Check that the MB7389 is mounted vertically (face pointing straight down) with at least 300 mm clearance above the maximum water surface. Secure the mounting bracket so it does not vibrate. |
 | `pump_amps` reads 0 even when pump is running | CT is not clamped around the pump supply line, or CT jaws are open | Verify the CT jaws are fully closed around a single conductor of the pump supply cable. Check the bias circuit wiring (10 kΩ divider, 10 µF cap, Notecarrier A1). Use a calibrated clamp meter on the same conductor to verify current is present. |
 | Device sends an alert every 15 minutes instead of respecting `alert_cooldown_sec` | Alert cooldown timer was not persisted across a reboot (state loss from power interruption) | This is expected behavior immediately after power-on if the Notecard's real-time clock (RTC) has not yet synced to the network. Once the first network sync completes, RTC is set and cooldown works. If alerts continue to repeat after multiple syncs, check `alert_cooldown_sec` in Notehub and confirm it is present in `env.get` responses (enable `TANK_MONITOR_DEBUG` in the sketch to view I²C traces). |
 | Device stops reporting after several days | Battery voltage has dropped below the critical-discharge threshold | Check the solar panel is unobstructed and receiving adequate sunlight. Check the charge controller's LOAD output is supplying 5V to the step-down regulator. If the panel or controller is faulty, the battery will deplete and the device will go silent when the step-down regulator voltage drops below ~4.3V. Check Notehub's last-seen timestamp to estimate when the device lost power. |
 | Satellite acquisition times out (no Note appears in 10+ minutes) | Antenna has poor or no sky view, or device is too close to structures that block the horizon | Move the antenna outdoors or to an elevated position with unobstructed equator-facing sky (south in northern hemisphere, north in southern hemisphere). Refer to the [Satellite Best Practices guide](https://dev.blues.io/starnote/satellite-best-practices/). If the site truly has no equator-facing sky view, satellite will not work; confirm cellular coverage as fallback. |
 
-## 9. Limitations and Next Steps
+## 11. Limitations and Next Steps
+
 
 **Simplified for this reference design:**
 
@@ -444,6 +470,7 @@ If the Mojo trace shows continuous multi-mA draw with no idle transitions, the h
 - `env.get` with the `time` argument to fetch environment variables only when they have changed since the last sync, reducing I²C overhead on each wake.
 - Satellite data usage monitoring: a Notehub route or environment variable feedback loop that alerts operators when satellite data consumption approaches the plan's included allotment.
 
-## 10. Summary
+## 12. Summary
+
 
 A Notecarrier CX and Notecard for Skylo — paired with a weatherproof ultrasonic level sensor, a clamp-on current transformer, and a handful of passive components — give a rancher continuous visibility into every stock tank on the property without driving the pasture roads. The Notecard for Skylo uses cellular where a tower is reachable and falls back to the Skylo satellite network where terrestrial coverage ends, so tanks in covered valleys and tanks on remote ridges both report through the same firmware and the same Notehub project. Sampling happens locally every 15 minutes with the host MCU asleep between measurements; the radio wakes only for the 4-hour summary or an immediate alert. That duty cycle makes the system comfortable running indefinitely on a modest solar setup, with built-in power-aware sleep extension to handle extended overcast stretches in northern winters. Dry-tank alerts and solar fault alerts reach the rancher's phone before cattle suffer from dehydration; pump current is captured as observational telemetry in every summary and alert payload so operators can correlate it with tank levels after the fact. It's a simple problem — know when the tank is low — and the Blues stack is a proportionately simple solution: a sensor, a Notecard, and a network path that follows the asset wherever it lives.

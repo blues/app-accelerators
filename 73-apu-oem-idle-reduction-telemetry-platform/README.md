@@ -8,15 +8,16 @@ This reference application is intended to provide inspiration and help you get s
 
 A connected-APU reference platform for [asset performance optimization](https://blues.com/solutions-asset-performance-optimization/) that bridges the gap between the mechanical systems APU OEMs build and the cloud connectivity they need. An **APU** (auxiliary power unit) replaces truck-engine idling — instead of leaving a 400-hp diesel running all night to power a sleeper cab's HVAC and electronics, a diesel or battery APU handles the job on a fraction of the fuel. This design puts a [Blues Notecard for Skylo](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) between the APU controller's RS-485 port and [Notehub](https://notehub.io), reporting fault codes, runtime, software-estimated fuel savings, and cab temperature back to the manufacturer in near-real time — even in the Wyoming high desert at 2 AM.
 
-> **Scope.** This is the *software fuel-estimation* variant: fuel figures are computed from APU runtime × configurable consumption-rate env vars, with no hardware flow meter required. For revenue-grade hardware metering, see §9 Production next steps.
+> **Scope.** This is the *software fuel-estimation* variant: fuel figures are computed from APU runtime × configurable consumption-rate env vars, with no hardware flow meter required. For revenue-grade hardware metering, see §10 Production next steps.
 
 ---
 
 ## 1. Project Overview
 
+
 **The problem.** Long-haul trucking has a massive and largely invisible fuel waste problem: engine idling. A Class 8 tractor sitting in a truck stop burns roughly 0.8–1.2 gallons per hour just to run its HVAC and electronics overnight. At that rate, a single truck running continental routes can waste 1,500–2,000 gallons a year in idle fuel alone — somewhere between $4,000 and $6,000 at typical diesel prices, and many fleets run hundreds of units. Regulators have noticed; anti-idling legislation covers major portions of the US and Canada, with fines for extended stops in many jurisdictions.
 
-APU manufacturers — companies that build diesel APUs, battery-based no-idle systems, and cab heaters — have been attacking this problem for decades. Their hardware works. What they've traditionally lacked is a connected product: a way to know how much idling each unit actually prevented (tracked both per-hour in `apu_telemetry.qo` and as a daily on-device rollup in `apu_daily.qo` — see §7), when the APU ran and for how long, what fault codes it threw in the field, and whether the warranty claim that came back two years later was from a unit that was used correctly. These are the questions a manufacturer needs to answer to price extended warranties, improve the next product generation, and prove ROI to fleet customers.
+APU manufacturers — companies that build diesel APUs, battery-based no-idle systems, and cab heaters — have been attacking this problem for decades. Their hardware works. What they've traditionally lacked is a connected product: a way to know how much idling each unit actually prevented (tracked both per-hour in `apu_telemetry.qo` and as a daily on-device rollup in `apu_daily.qo` — see §8), when the APU ran and for how long, what fault codes it threw in the field, and whether the warranty claim that came back two years later was from a unit that was used correctly. These are the questions a manufacturer needs to answer to price extended warranties, improve the next product generation, and prove ROI to fleet customers.
 
 The trouble is that APU OEMs are mechanical and power-electronics engineering companies. They know diesel combustion and HVAC thermodynamics; they don't maintain an embedded connectivity stack. Standing up a cellular or satellite IoT solution from scratch means negotiating SIM contracts, managing radio certifications, hiring firmware engineers for the connectivity layer, and doing all of that in dozens of countries as the product goes global. Most APU OEMs conclude this is a distraction from their core competency and ship hardware with no connectivity at all.
 
@@ -30,6 +31,7 @@ Beyond connectivity resilience, the Notecard's pre-certified global cellular rem
 
 ## 2. System Architecture
 
+
 **Device-side responsibilities.** The onboard Cygnet STM32L433 host on the Notecarrier CX acts as the application layer: polling the APU controller over Modbus RTU every 60 seconds, reading both DS18B20 temperature probes on a shared OneWire bus, and reading the truck's ignition state from a voltage-divided analog input. It runs a three-state idle-vs-APU state machine, accumulates hourly and daily statistics in a struct that persists across sleep cycles in the Notecard's flash, and emits one of three note types: an hourly summary, a daily fuel-saved rollup, or an immediate fault alert. After each sample cycle the Cygnet calls [`NotePayloadSaveAndSleep`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) to commit state to the Notecard and cut host power entirely for the next `sample_interval_sec` seconds via `card.attn`, keeping the host MCU completely dark between samples.
 
 **Notecard responsibilities.** The [Notecard for Skylo](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) queues [Notes](https://dev.blues.io/api-reference/glossary/#note) in onboard flash, syncs on the [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 min), and flushes any `sync:true` fault alerts immediately on whatever transport is available. Its `card.transport` is configured to `"cell-ntn"` — cellular first, Skylo satellite fallback — so rural dead zones become brief delays in the hourly summary stream rather than data gaps. The Notecard also handles GNSS position for the notes (important for fleet managers who want to know where the truck was when the APU ran) and distributes [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) from Notehub so operators can retune fuel-rate assumptions and alert thresholds without reflashing firmware.
@@ -42,13 +44,14 @@ Beyond connectivity resilience, the Notecard's pre-certified global cellular rem
 
 ---
 
-## 2.5 Quickstart
+## 3. Technical Summary
 
-1. **Assemble the hardware** (§3, §4): Notecarrier CX, Notecard for Skylo, RS-485 BOB-10124, two DS18B20 probes, and ignition-sense voltage divider. For bench testing, use a USB 5V supply instead of the vehicle DC/DC converter.
 
-2. **Set up Notehub** (§5): Sign up at [notehub.io](https://notehub.io), create a project, copy the **ProductUID**, and set it in the firmware.
+1. **Assemble the hardware** (§4, §5): Notecarrier CX, Notecard for Skylo, RS-485 BOB-10124, two DS18B20 probes, and ignition-sense voltage divider. For bench testing, use a USB 5V supply instead of the vehicle DC/DC converter.
 
-3. **Flash the firmware** (§6.1):
+2. **Set up Notehub** (§6): Sign up at [notehub.io](https://notehub.io), create a project, copy the **ProductUID**, and set it in the firmware.
+
+3. **Flash the firmware** (§7.1):
    ```bash
    # Install dependencies once
    arduino-cli lib install "Blues Wireless Notecard" "OneWire" "DallasTemperature"
@@ -63,13 +66,37 @@ Beyond connectivity resilience, the Notecard's pre-certified global cellular rem
    arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbmodem14102 firmware/apu_oem_telemetry/apu_oem_telemetry.ino
    ```
 
-4. **Watch first events** — Power the Notecarrier. On the first cellular sync, the device registers with your Notehub project. In the **Devices** tab, click the device and select **Events** to see incoming `_session.qo`, `apu_telemetry.qo`, and test alerts (see §5, "Triggering test events").
+4. **Watch first events** — Power the Notecarrier. On the first cellular sync, the device registers with your Notehub project. In the **Devices** tab, click the device and select **Events** to see incoming `_session.qo`, `apu_telemetry.qo`, and test alerts (see §6, "Triggering test events").
 
-For a simulation without the real APU controller, see §8 "Modbus first-light" for USB-to-RS-485 and software Modbus simulator steps.
+For a simulation without the real APU controller, see §9 "Modbus first-light" for USB-to-RS-485 and software Modbus simulator steps.
 
 ---
 
-## 3. Hardware Requirements
+Here is a sample Note this device emits:
+
+```json
+{
+  "file": "apu_telemetry.qo",
+  "body": {
+    "state": 2,
+    "apu_runtime_min": 54,
+    "idle_time_min": 6,
+    "fuel_saved_gal": 0.44,
+    "fuel_used_gal": 0.45,
+    "amb_temp_f": 41.3,
+    "cab_temp_f": 68.7,
+    "dc_volts": 13.6,
+    "output_watts": 840,
+    "power_valid": 1,
+    "fault_count": 0,
+    "last_fault": 0,
+    "controller_runtime_hr": 1247.3
+  }
+}
+```
+
+## 4. Hardware Requirements
+
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
@@ -84,16 +111,17 @@ For a simulation without the real APU controller, see §8 "Modbus first-light" f
 | 120 Ω resistor, 1/4 W | 1–2 | Modbus RS-485 bus termination. A two-node RS-485 link requires 120 Ω across the A/B pair at **each** physical end of the cable. Place one at the APU controller end and one at the Notecarrier/BOB-10124 end — the BOB-10124 has no onboard terminator. If the APU controller already provides a built-in or switchable 120 Ω terminator (check its documentation), only the Notecarrier-end resistor is needed. |
 | Skylo-certified LTE/satellite antenna — **included with NOTE-NBGLWX** (MAIN u.FL connector) | 1 | Ships with the Notecard for Skylo; certified for both LTE-M/NB-IoT cellular and Skylo L-band satellite (B23/B255/B256 bands). **Do not substitute** without a CTIA/OTA delta-test report confirming EIRP ≤ 30 dBm; Skylo will classify an uncertified device as blocked. For exterior cab-roof mounting, extend with a u.FL-to-SMA adapter inside the enclosure and route through a weatherproof SMA bulkhead cable gland. Both antennas require an unobstructed southern-sky view (northern hemisphere). See [NOTE-NBGLWX antenna requirements](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/). |
 | [Molex Flexible GNSS Antenna — u.FL (SparkFun WRL-17519)](https://www.sparkfun.com/molex-flexible-gnss-antenna-u-fl-adhesive.html) | 1 | Passive GPS L1/L2/L5 + GLONASS/BeiDou flexible adhesive antenna, u.FL connector, for bench and protected-interior mounting. Connects to the Notecard's separate **GPS** u.FL connector (not the MAIN connector). For exterior cab-roof deployment in a metal enclosure, use a weatherproof puck or dome antenna with a u.FL-to-SMA pigtail routed through a bulkhead gland — see [NOTE-NBGLWX antenna requirements](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/). |
-| 5 V DC/DC converter, 12–30 V input, ≥ 1 A (e.g. Pololu D24V22F5) | 1 | Steps down the APU's 12 V or 24 V bus to the 5 V the Notecarrier CX requires. **Bench/POC-only** — the Pololu D24V22F5 provides no load-dump clamping, reverse-polarity protection, or AEC-Q100 qualification. See the vehicle electrical note below and §9 for production requirements. |
+| 5 V DC/DC converter, 12–30 V input, ≥ 1 A (e.g. Pololu D24V22F5) | 1 | Steps down the APU's 12 V or 24 V bus to the 5 V the Notecarrier CX requires. **Bench/POC-only** — the Pololu D24V22F5 provides no load-dump clamping, reverse-polarity protection, or AEC-Q100 qualification. See the vehicle electrical note below and §10 for production requirements. |
 | Sealed ABS enclosure, IP54 or better, ≥ 140 × 70 mm internal footprint (e.g., Hammond Manufacturing [1591DFLBK](https://www.hammfg.com/part/1591DFLBK) or equivalent) | 1 | Cab-mounted housing rated for –40 °C to +85 °C storage. The Notecarrier CX footprint is approximately 90 × 65 mm; add clearance for the RS-485 breakout and screw terminals alongside. The Hammond 1591DFLBK (145 × 78 mm external, ~138 × 70 mm internal, IP54) is one proven fit — verify internal dimensions against your specific board layout before ordering. |
 
-> **Fuel-flow sensor: not included in this variant.** This estimation-only design computes all fuel figures in software from APU runtime × environment-variable-supplied consumption rates (`apu_fuel_rate_gph`, `idle_fuel_rate_gph`). No flow meter, pulse-counter circuit, or additional fuel-line wiring is needed. For revenue-grade metering, see §9 Production next steps.
+> **Fuel-flow sensor: not included in this variant.** This estimation-only design computes all fuel figures in software from APU runtime × environment-variable-supplied consumption rates (`apu_fuel_rate_gph`, `idle_fuel_rate_gph`). No flow meter, pulse-counter circuit, or additional fuel-line wiring is needed. For revenue-grade metering, see §10 Production next steps.
 
-> **Vehicle electrical environment — production requirements.** A 12 V or 24 V truck bus is a harsh electrical environment that requires front-end protection **not included in the bench BOM above**: **(1)** an inline 5 A ATO/ATC blade fuse in the positive lead at the APU bus tap (as close to the source as practical); **(2)** a TVS diode across the DC/DC input to clamp ISO 7637-2 load-dump transients — select one whose standoff voltage exceeds the maximum normal bus voltage and whose clamping voltage is below the converter's absolute-maximum rated input; ISO 7637-2 pulse 5a can reach 87 V peak on a 24 V bus, so verify the TVS ratings against your converter's datasheet before specifying; and **(3)** a reverse-polarity protection device in series with the positive lead (a Schottky diode such as 1N5819, or a P-channel MOSFET with gate-source clamped to GND). For production, replace the Pololu D24V22F5 with an AEC-Q100 or AEC-Q101 qualified automotive DC/DC converter rated for your bus voltage range and −40 °C to +85 °C operation. See §9.
+> **Vehicle electrical environment — production requirements.** A 12 V or 24 V truck bus is a harsh electrical environment that requires front-end protection **not included in the bench BOM above**: **(1)** an inline 5 A ATO/ATC blade fuse in the positive lead at the APU bus tap (as close to the source as practical); **(2)** a TVS diode across the DC/DC input to clamp ISO 7637-2 load-dump transients — select one whose standoff voltage exceeds the maximum normal bus voltage and whose clamping voltage is below the converter's absolute-maximum rated input; ISO 7637-2 pulse 5a can reach 87 V peak on a 24 V bus, so verify the TVS ratings against your converter's datasheet before specifying; and **(3)** a reverse-polarity protection device in series with the positive lead (a Schottky diode such as 1N5819, or a P-channel MOSFET with gate-source clamped to GND). For production, replace the Pololu D24V22F5 with an AEC-Q100 or AEC-Q101 qualified automotive DC/DC converter rated for your bus voltage range and −40 °C to +85 °C operation. See §10.
 
 ---
 
-## 4. Wiring and Assembly
+## 5. Wiring and Assembly
+
 
 All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard for Skylo (NOTE-NBGLWX) seats in the carrier's M.2 slot. The Mojo sits inline between the 5 V DC/DC converter output and the Notecarrier's +VBAT pad for bench validation.
 
@@ -104,7 +132,7 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
 - DC/DC converter `VOUT` (5 V) → Mojo `BAT` input → Mojo `LOAD` output → Notecarrier CX `+VBAT`.
 - Notecarrier `GND` → APU chassis GND.
 
-> **Front-end protection (required before production deployment on a vehicle bus).** The bench wiring above connects the DC/DC converter directly to the APU bus. For any production installation, insert the following protection between the bus tap and the DC/DC `VIN` in this order: **(1)** 5 A inline blade fuse (ATO/ATC) in the positive lead, mounted as close to the battery/APU bus tap as practical; **(2)** a TVS diode across `VIN`–`GND` rated to absorb ISO 7637-2 load-dump transients — select one whose standoff voltage exceeds the maximum normal bus voltage and whose clamping voltage is below the converter's absolute-maximum rated input; ISO 7637-2 pulse 5a can reach 87 V peak on a 24 V bus, so verify the TVS against your converter's datasheet before specifying; **(3)** reverse-polarity protection in series with the positive lead (Schottky diode or P-channel MOSFET with gate-source clamped to GND). None of these are in the bench bring-up rig. The wiring diagram above shows the correct series order in the power chain. See §9 for the POC/production distinction.
+> **Front-end protection (required before production deployment on a vehicle bus).** The bench wiring above connects the DC/DC converter directly to the APU bus. For any production installation, insert the following protection between the bus tap and the DC/DC `VIN` in this order: **(1)** 5 A inline blade fuse (ATO/ATC) in the positive lead, mounted as close to the battery/APU bus tap as practical; **(2)** a TVS diode across `VIN`–`GND` rated to absorb ISO 7637-2 load-dump transients — select one whose standoff voltage exceeds the maximum normal bus voltage and whose clamping voltage is below the converter's absolute-maximum rated input; ISO 7637-2 pulse 5a can reach 87 V peak on a 24 V bus, so verify the TVS against your converter's datasheet before specifying; **(3)** reverse-polarity protection in series with the positive lead (Schottky diode or P-channel MOSFET with gate-source clamped to GND). None of these are in the bench bring-up rig. The wiring diagram above shows the correct series order in the power chain. See §10 for the POC/production distinction.
 
 **RS-485 interface (Cygnet UART → SparkFun BOB-10124):**
 - Cygnet `TX` (UART2, pin `PA2`) → BOB-10124 `TXD` input.
@@ -135,7 +163,8 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
 
 ---
 
-## 5. Notehub Setup
+## 6. Notehub Setup
+
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:apu-telemetry`.
 2. **Set the ProductUID in firmware.** Open `apu_oem_telemetry.ino` and replace the empty string on the `#define PRODUCT_UID ""` line with your value.
@@ -155,7 +184,7 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
    | `cab_temp_high_f` | `85.0` | `85.0` | Cab temperature (°F) above which `cab_overheat` alert fires. Adjust for climate and HVAC capacity. |
    | `cab_temp_low_f` | `32.0` | `32.0` | Cab temperature (°F) below which `cab_freeze` alert fires. Set above expected winter ambient. |
    | `alert_cooldown_sec` | `1800` | `1800` | Minimum seconds between repeated alerts of the same type. Prevents alert floods on a drifting sensor. |
-   | `amb_rom_id` | *(not set)* | *required* | 64-bit OneWire ROM address of the **ambient** DS18B20 probe, as exactly 16 hex characters (upper or lower case), e.g. `2800a1b2c3d4e501`. Set both `amb_rom_id` and `cab_rom_id` to enable deterministic probe-role assignment. Read the ROM IDs from the serial debug output on first boot (see §6.3). If unset, the firmware falls back to discovery-index commissioning and prints a warning — physical roles may be swapped. |
+   | `amb_rom_id` | *(not set)* | *required* | 64-bit OneWire ROM address of the **ambient** DS18B20 probe, as exactly 16 hex characters (upper or lower case), e.g. `2800a1b2c3d4e501`. Set both `amb_rom_id` and `cab_rom_id` to enable deterministic probe-role assignment. Read the ROM IDs from the serial debug output on first boot (see §7.3). If unset, the firmware falls back to discovery-index commissioning and prints a warning — physical roles may be swapped. |
    | `cab_rom_id` | *(not set)* | *required* | 64-bit OneWire ROM address of the **cab** DS18B20 probe, same 16-hex-character format as `amb_rom_id`. Both vars must be set together; a partial pair is ignored. |
 
 6. **Configure routes.** In Notehub, go to **Routes** and add three [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub): 
@@ -168,13 +197,14 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
 ### What you should see in Notehub
 
 - **`_session.qo`** — Notecard housekeeping on each cellular/satellite session. Presence confirms the radio is reaching Notehub.
-- **`apu_telemetry.qo`** — one per `summary_interval_min`. See §7 for the payload shape.
-- **`apu_daily.qo`** — one per calendar day, emitted at the day boundary using `card.time`. Contains daily totals for `fuel_saved_gal`, `fuel_used_gal`, `apu_runtime_min`, and `idle_time_min`. See §7.
+- **`apu_telemetry.qo`** — one per `summary_interval_min`. See §8 for the payload shape.
+- **`apu_daily.qo`** — one per calendar day, emitted at the day boundary using `card.time`. Contains daily totals for `fuel_saved_gal`, `fuel_used_gal`, `apu_runtime_min`, and `idle_time_min`. See §8.
 - **`apu_event.qo`** — only on fault codes, cab temperature excursions, or state transitions worth flagging. Transmitted immediately.
 
 ---
 
-## 6. Firmware Design
+## 7. Firmware Design
+
 
 The firmware is split across three files:
 
@@ -182,7 +212,7 @@ The firmware is split across three files:
 - **[`firmware/apu_oem_telemetry/apu_oem_telemetry_helpers.h`](firmware/apu_oem_telemetry/apu_oem_telemetry_helpers.h)** — pin assignments, Notefile names, state machine constants, Modbus register offsets, default configuration values, `EnvConfig` and `AppState` struct definitions, and function declarations.
 - **[`firmware/apu_oem_telemetry/apu_oem_telemetry_helpers.cpp`](firmware/apu_oem_telemetry/apu_oem_telemetry_helpers.cpp)** — implementations: `notecardConfigure`, `defineTemplates`, `fetchEnvOverrides`, `modbusReadHolding` / `modbusCRC16`, `readTemperatures`, `sendAlert`, `sendSummary`.
 
-### 6.1 Installing and flashing
+### 7.1 Installing and flashing
 
 **Dependencies:**
 - **Arduino core for STM32** — [`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32). Add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` to **File → Preferences → Additional Boards Manager URLs**, then install "STM32 MCU based boards." Select **Blues Cygnet** as the board (the Notecarrier CX's embedded host is the Blues Cygnet — STM32L433-based; the canonical FQBN is `STMicroelectronics:stm32:Blues:pnum=CYGNET`).
@@ -214,7 +244,7 @@ arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbm
 ```
 **USB serial is always active; `DEBUG` controls verbose output.** `Serial.begin(115200)` runs unconditionally in `setup()`, so error and warning messages — `[boot] WARN`, `[alert] WARN`, `[modbus fail]`, and all `ERR` lines — are available over USB whenever a service technician connects a terminal to a deployed unit. Before flashing for bench bring-up, uncomment the `#define DEBUG` line near the top of `apu_oem_telemetry.ino`. With `DEBUG` defined, open a serial monitor at **115200 baud** — on the first boot you'll see verbose initialization messages and a first `[sample]` line before the Cygnet goes dark until the next interval. Remove or re-comment `#define DEBUG` before deploying to production. With `DEBUG` undefined: (1) the 3-second USB host-detection wait is skipped, saving meaningful awake time on every wake; (2) the Notecard debug stream (verbose per-request I²C traffic) is disabled; and (3) diagnostic `[sample]`, `[modbus ok]`, `[event]`, `[alert]`, and `[summary]` log lines are compiled out. WARN and ERR messages remain active in all builds and are always reachable over USB at 115200 baud.
 
-### 6.2 Modules
+### 7.2 Modules
 
 | Responsibility | Where |
 |---|---|
@@ -231,13 +261,13 @@ arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbm
 | Checked Notecard send with error logging | `ncSend` |
 | Sleep/wake state persistence | `AppState` struct + `NotePayloadSaveAndSleep` / `NotePayloadRetrieveAfterSleep` |
 
-### 6.3 Sensor reading strategy
+### 7.3 Sensor reading strategy
 
 **Modbus APU registers.** Five holding registers are read in one transaction starting at `modbus_reg_base`. The layout expected from the APU controller is: APU status (bitmask: bit 0 = powered on, bit 1 = fault), active fault code (0 = no fault), cumulative runtime hours (×10, unsigned — decoded as `controller_runtime_hr` in hours and included in `apu_telemetry.qo`; the most recent valid value is stored in `AppState.lastControllerRuntimeHr` and persisted across sleep cycles so it is always available for the next summary even if a single Modbus read fails), DC output voltage (tenths of volt), and output watts. The firmware implements a minimal CRC-16 Modbus RTU client with configurable slave ID and baud rate — no external Modbus library required. On RS-485 half-duplex, the direction pin (`RS485_DE_PIN`) is asserted HIGH for transmit, pulled LOW immediately after the last byte flushes, and the firmware waits up to 200 ms for the response frame before returning a read failure.
 
 > **Modbus addressing:** `modbus_reg_base` is the raw 0-based wire address sent in the Modbus RTU request frame — it is **not** the human-facing register number. If the APU controller's datasheet uses 1-based numbering (e.g., "Register 1 = APU status"), subtract 1: set `modbus_reg_base = 0` to address register 1, `1` for register 2, and so on. If it uses 40001-style notation, subtract 40001. The default value `1` is an illustrative map choice; always confirm the correct start address from your controller's register map before commissioning.
 
-**DS18B20 temperatures.** Probe roles are assigned by operator-provisioned ROM IDs when `amb_rom_id` and `cab_rom_id` are set in Notehub fleet environment variables (see §5). On each wake the firmware parses those env-var ROM IDs and matches them against devices found on the OneWire bus — no discovery-index assumption is made and role assignment is stable regardless of OneWire bus enumeration order, which is determined by ROM address value, not physical location.
+**DS18B20 temperatures.** Probe roles are assigned by operator-provisioned ROM IDs when `amb_rom_id` and `cab_rom_id` are set in Notehub fleet environment variables (see §6). On each wake the firmware parses those env-var ROM IDs and matches them against devices found on the OneWire bus — no discovery-index assumption is made and role assignment is stable regardless of OneWire bus enumeration order, which is determined by ROM address value, not physical location.
 
 When the env vars are not set, the firmware falls back to index-based commissioning on the first wake where both probes are simultaneously present (index 0 = ambient, index 1 = cab) and logs a prominent warning. To determine the correct env var values: flash with `#define DEBUG` uncommented, connect both probes, and open a serial monitor at 115200 baud. The firmware prints two ROM ID lines (`[ds18b20] index-0 (assigned ambient) ROM:` and `[ds18b20] index-1 (assigned cab) ROM:`) after index-based commissioning. Physically verify which probe (the one routed outside the enclosure vs. the one routed to the bunk area) corresponds to which ROM ID, then set `amb_rom_id` and `cab_rom_id` in the Notehub fleet environment. On the next wake the firmware uses the env-var IDs and the index-based warning disappears.
 
@@ -245,7 +275,7 @@ On every wake — whether using env-var or persisted ROM IDs — the firmware en
 
 **Ignition state.** `analogRead` on the voltage-divided ignition input; values above the mid-point threshold (`IGNITION_THRESHOLD_ADC`) indicate ignition ON.
 
-### 6.4 Idle-vs-APU state machine
+### 7.4 Idle-vs-APU state machine
 
 Three states capture what matters to an APU manufacturer:
 
@@ -257,7 +287,7 @@ Three states capture what matters to an APU manufacturer:
 
 State transitions fire `apu_event.qo` notes (with `sync:true`) so the OEM's backend captures every mode change. The fuel-saved accumulator runs while the state machine is in `STATE_APU_ACTIVE`; the accumulated total is included in the next hourly `apu_telemetry.qo` summary and reset at that point.
 
-### 6.5 Event payload design
+### 7.5 Event payload design
 
 Three [compact-format template](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefiles. Compact format is essential here: when the Notecard falls back to Skylo satellite, only compact-template notes are transmitted (the satellite data budget is measured in kilobytes, not megabytes). All three Notefiles use `port` values in the range 50–52 and include `_lat`, `_lon`, and `_time` — Notecard-reserved compact-template keywords that the Notecard automatically fills from its onboard GPS fix and RTC each time a note is stored. The host does **not** set these fields in `note.add`; they are populated by the Notecard firmware and appear in every stored and transmitted note. See the [Blues low-bandwidth design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) for the full list of reserved compact-template keywords.
 
@@ -318,15 +348,15 @@ Sample `apu_daily.qo` (once per calendar day, compact template on port 52):
 
 The `apu_daily.qo` template uses `TFLOAT32` for the fuel fields and `TUINT16` for the runtime fields, plus the reserved `_lat`, `_lon`, and `_time` keywords. Daily accumulators run independently of the per-summary-window accumulators and are reset only after a confirmed `note.add` success, so a failed delivery retries at the next calendar-day boundary check rather than silently dropping the data.
 
-### 6.6 Low-power strategy
+### 7.6 Low-power strategy
 
 The Cygnet is cut entirely between samples using `NotePayloadSaveAndSleep`. The host MCU draws essentially zero current from the +VBAT rail while off; only the Notecard remains powered at its idle draw (~8–18 µA typical at 5 V, excluding GNSS). With a 60-second sample interval and a 60-minute outbound sync, the Cygnet is live for roughly 3–5 seconds per minute and the radio fires once per hour. Sample rate and transmit cadence are decoupled: samples accumulate locally on the Notecard, and the radio only wakes to push the queued batch.
 
-The Notecard also runs `card.location.mode` in periodic mode at a 600-second interval, so a GNSS acquisition occurs approximately every 10 minutes independently of whether the host is awake — position is stamped into outbound notes without any host involvement. During acquisition the Notecard draws tens of milliamps for the duration of the fix (see power table in §8); this is a meaningful contribution to the 24-hour energy budget and should be verified with Mojo during bring-up.
+The Notecard also runs `card.location.mode` in periodic mode at a 600-second interval, so a GNSS acquisition occurs approximately every 10 minutes independently of whether the host is awake — position is stamped into outbound notes without any host involvement. During acquisition the Notecard draws tens of milliamps for the duration of the fix (see power table in §9); this is a meaningful contribution to the 24-hour energy budget and should be verified with Mojo during bring-up.
 
 The Notecard for Skylo's `card.transport` is set to `"cell-ntn"`. In practice, cellular handles the vast majority of syncs; satellite fires only when the truck is in a genuine dead zone. With this transport setting, **both** `apu_event.qo` alerts and `apu_telemetry.qo` summary notes may transit satellite when cellular is unavailable at sync time — the firmware does not suppress routine summaries when only NTN is reachable. The satellite data budget is small (10 KB included per device); production deployments concerned about exhausting it should add logic in `sendSummary` to skip the outbound sync when the active transport is NTN-only, or size the deployment around cellular as the primary path with satellite used only for gap-bridging.
 
-### 6.7 Retry and error handling
+### 7.7 Retry and error handling
 
 - The first `hub.set` call uses `notecard.sendRequestWithRetry(req, 5)` to handle the cold-boot I²C race described in the note-arduino docs.
 - All other Notecard requests use `ncSend()`, a thin helper that calls `requestAndResponse`, checks the response for a NULL return or a non-empty `"err"` field, and logs failures to the serial debug output. This ensures that template registration failures, transport-config failures, and failed `note.add` calls are visible rather than silently swallowed.
@@ -336,7 +366,7 @@ The Notecard for Skylo's `card.transport` is set to `"cell-ntn"`. In practice, c
 - `sensor_fail` alert: `badSensorCycles` increments only when **both** temperature probes return invalid readings **and** the Modbus read fails in the same cycle; any one subsystem succeeding resets the counter to zero. After three consecutive cycles in which all three sensor sources fail simultaneously, an `apu_event.qo` with `event: "sensor_fail"` is emitted (subject to `alert_cooldown_sec`). Isolated Modbus-only or temperature-only failures (including a single missing probe) do not trigger this alert.
 - Alert de-duplication uses a per-alert monotonic sample counter rather than `card.time`. Cooldown is expressed as `alert_cooldown_sec / sample_interval_sec` samples and applies to all three alert types (`apu_fault`, cab temperature, `sensor_fail`). This keeps dedup correct even when a GPS or network fix has not yet established wall-clock time.
 
-### 6.8 Key code snippet 1: satellite transport and compact templates
+### 7.8 Key code snippet 1: satellite transport and compact templates
 
 Setting `cell-ntn` transport and defining compact templates happens once on cold boot. The compact format is what allows these notes to transit Skylo's 256-byte-per-message payload budget.
 
@@ -379,7 +409,7 @@ JAddNumberToObject(body, "_time", TUINT32);   // auto-filled by Notecard RTC
 if (!ncSend(notecard, req)) Serial.println("[tmpl] WARN: telemetry template failed");
 ```
 
-### 6.9 Key code snippet 2: lightweight Modbus RTU read
+### 7.9 Key code snippet 2: lightweight Modbus RTU read
 
 No external Modbus library required — the full read-holding-registers client is ~50 lines of serial framing.
 
@@ -415,7 +445,7 @@ bool modbusReadHolding(uint8_t slaveId, uint16_t startAddr,
 }
 ```
 
-### 6.10 Key code snippet 3: sleep with persisted state
+### 7.10 Key code snippet 3: sleep with persisted state
 
 `NotePayloadSaveAndSleep` serializes the `AppState` struct into Notecard flash and then triggers `card.attn` to cut host power. The next wake enters `setup()` fresh; `NotePayloadRetrieveAfterSleep` rehydrates the struct.
 
@@ -428,7 +458,8 @@ NotePayloadSaveAndSleep(&payload, (uint32_t)g_env.sampleIntervalSec, NULL);
 
 ---
 
-## 7. Data Flow
+## 8. Data Flow
+
 
 Every `sample_interval_sec` (default 60 s) the Cygnet wakes, samples all inputs, runs the state machine, and decides what to send:
 
@@ -440,7 +471,7 @@ Every `sample_interval_sec` (default 60 s) the Cygnet wakes, samples all inputs,
 - From ignition sense: ON/OFF state.
 - Fuel volume: software-estimated from APU runtime × `apu_fuel_rate_gph` and `idle_fuel_rate_gph` environment variables.
 
-**Summarized.** Every `summary_interval_min` (default hourly): accumulated APU runtime (minutes), accumulated ignition-on (inferred idle) time (minutes), per-summary-window fuel saved (gallons), per-summary-window fuel consumed by the APU (gallons), average ambient and cab temperatures, average DC volts and output watts (with `power_valid` flag — see §6.5), fault count in window, last non-zero fault code. Window accumulators reset after each confirmed summary delivery.
+**Summarized.** Every `summary_interval_min` (default hourly): accumulated APU runtime (minutes), accumulated ignition-on (inferred idle) time (minutes), per-summary-window fuel saved (gallons), per-summary-window fuel consumed by the APU (gallons), average ambient and cab temperatures, average DC volts and output watts (with `power_valid` flag — see §7.5), fault count in window, last non-zero fault code. Window accumulators reset after each confirmed summary delivery.
 
 **Daily rollup.** Once per calendar day (at the `card.time` day boundary, with a sample-count fallback before the first time sync): `apu_daily.qo` is emitted with the accumulated day totals for `fuel_saved_gal`, `fuel_used_gal`, `apu_runtime_min`, and `idle_time_min`. The pre-sync fallback fires after ceiling(`86400 / sample_interval_sec`) samples — the correct one-day count at any configured sampling rate. Daily accumulators are independent of the hourly-window accumulators and are reset only after confirmed `apu_daily.qo` delivery so a failed send retries on the next wake of the same calendar day.
 
@@ -472,11 +503,12 @@ Sample `apu_daily.qo` (one per calendar day):
 
 ---
 
-## 8. Validation and Testing
+## 9. Validation and Testing
+
 
 **Expected steady-state cadence.** On a healthy APU in operation: one `apu_telemetry.qo` per hour and zero `apu_event.qo` entries unless a fault occurs or the driver turns the APU on or off. During initial bench bring-up, lower `summary_interval_min` to `1` via the Fleet environment variables to get a telemetry note every minute without waiting. Environment variable changes take effect after the next inbound sync (every 120 minutes by default); trigger an immediate update by clicking **Sync** on the device page in Notehub.
 
-**Modbus first-light.** Before connecting to a real APU controller, use a [USB-to-RS-485 adapter](https://www.sparkfun.com/sparkfun-usb-to-rs-485-converter.html) and a software Modbus simulator (Modbus Mechanic or ModRSsim2) wired to the BOB-10124 screw terminals. Verify the firmware reads all five registers correctly by watching the serial debug output (requires `#define DEBUG` to be uncommented — see §6.1). The debug lines print `[modbus ok]` with the raw register values on a successful read, or `[modbus fail]` with the retry count on timeouts.
+**Modbus first-light.** Before connecting to a real APU controller, use a [USB-to-RS-485 adapter](https://www.sparkfun.com/sparkfun-usb-to-rs-485-converter.html) and a software Modbus simulator (Modbus Mechanic or ModRSsim2) wired to the BOB-10124 screw terminals. Verify the firmware reads all five registers correctly by watching the serial debug output (requires `#define DEBUG` to be uncommented — see §7.1). The debug lines print `[modbus ok]` with the raw register values on a successful read, or `[modbus fail]` with the retry count on timeouts.
 
 **Triggering test events.** Lower `cab_temp_high_f` to a value below current room temperature via the Fleet environment variables. After the next inbound sync the device pulls the new threshold, and the next sample cycle fires a `cab_overheat` event to Notehub. Restore the threshold to confirm the alert stops.
 
@@ -499,19 +531,20 @@ Measure the 24-hour energy total on your specific hardware with Mojo before comm
 
 ---
 
-## 9. Troubleshooting
+## 10. Troubleshooting
+
 
 **Device does not appear in Notehub after flashing.**
-- Verify `PRODUCT_UID` is correctly set in `apu_oem_telemetry.ino` before flashing (§5.1).
+- Verify `PRODUCT_UID` is correctly set in `apu_oem_telemetry.ino` before flashing (§6.1).
 - Confirm cellular or satellite coverage: place the antenna in a window or outdoors; Notehub logs connection attempts in the **Events** tab under `_session.qo`.
-- Check that the 5V power is stable. With Mojo (§8), verify the rail voltage does not sag below 4.5 V.
+- Check that the 5V power is stable. With Mojo (§9), verify the rail voltage does not sag below 4.5 V.
 
 **Modbus reads fail repeatedly.**
-- Verify `modbus_slave_id`, `modbus_baud`, and `modbus_reg_base` match the APU controller datasheet — see §6.3 for register addressing.
+- Verify `modbus_slave_id`, `modbus_baud`, and `modbus_reg_base` match the APU controller datasheet — see §7.3 for register addressing.
 - Check RS-485 cable: length should be under 50 m for 19200 baud. Longer runs may need termination revision or lower baud rates.
 - Confirm 120 Ω termination resistors are installed at **both ends** of the RS-485 cable (Notecarrier end and APU controller end). Many premature failures are caused by missing terminators.
 - USB serial debug output (requires `#define DEBUG`) prints `[modbus fail]` with retry count. Timeouts (200 ms with no response) usually indicate missing terminator, wrong baud rate, or wrong slave ID.
-- Before connecting to a real APU controller, test with a USB-to-RS-485 adapter and software Modbus simulator (see §8 "Modbus first-light").
+- Before connecting to a real APU controller, test with a USB-to-RS-485 adapter and software Modbus simulator (see §9 "Modbus first-light").
 
 **Temperature probes not reading.**
 - Confirm both DS18B20 probes are wired to the same GPIO (`D3`), with 3.3 V and GND connections.
@@ -523,25 +556,26 @@ Measure the 24-hour energy total on your specific hardware with Mojo before comm
 - Verify `NotePayloadSaveAndSleep` is being called in `loop()` — the host should cut power after every sample cycle.
 - Check the ATTN pin wiring: pin `D18` on the Notecarrier CX must be connected to the Notecard's ATTN pad. Without this connection, the Notecard cannot signal the host to wake.
 - Confirm the firmware does not get stuck in an error loop after `NotePayloadSaveAndSleep` (should never return; if it does, the sleep command failed). Serial WARN/ERR messages provide clues.
-- With Mojo (§8), observe the trace: the baseline should drop sharply (order of magnitude) when the host enters sleep. If it doesn't, host power gating is not working.
+- With Mojo (§9), observe the trace: the baseline should drop sharply (order of magnitude) when the host enters sleep. If it doesn't, host power gating is not working.
 
 **Alert cooldown not working; repeated identical alerts.**
 - Alert deduplication uses sample-count, not wall-clock time. Verify `alert_cooldown_sec` and `sample_interval_sec` are set (default 1800 s cooldown / 60 s interval = 30 sample threshold).
 - Check the device logs (`Events` tab in Notehub) to confirm alerts are being fired; a very-short cooldown interval may allow rapid re-firing if the condition persists.
 
 **Ignition sense always ON or always OFF.**
-- Voltage-divider thresholds are hardcoded: ON at 1700 ADC counts, OFF at 1400 counts (§6.3).
+- Voltage-divider thresholds are hardcoded: ON at 1700 ADC counts, OFF at 1400 counts (§7.3).
 - At 12 V truck logic: ignition ON should read ~1941 counts; at 24 V it reads ~3888 counts. Both are above threshold.
 - If readings are far off, verify 220 kΩ / 33 kΩ resistor values and Zener diode orientation. Use a multimeter to check divider output voltage at the `A0` pad under ignition ON and OFF conditions.
 
 ---
 
-## 10. Limitations and Next Steps
+## 11. Limitations and Next Steps
+
 
 **Simplified for this reference design:**
 
 - **Generic Modbus register map.** The five-register layout in this firmware is representative, not universal. Real APU controllers from Thermo King, Carrier, Webasto, Espar, and others each have their own register addresses, scaling factors, fault-code tables, and communication parameters. Production firmware needs a vendor-specific register map; the `modbus_reg_base` environment variable handles address offset, but field-level scaling and fault-code interpretation are hardcoded in this POC.
-- **DS18B20 probe replacement requires updating env vars.** When `amb_rom_id` / `cab_rom_id` are set in Notehub (the preferred commissioning path — see §6.3), replacing a probe in the field means reading the new probe's ROM ID (from the `[ds18b20]` debug output) and updating the relevant env var in Notehub. The firmware picks up the new ID on the next wake without reflashing. When using index-based fallback commissioning (no env vars set), a replaced probe is treated as absent until both probes are simultaneously on the bus, a fresh cold boot fires, and index-based re-commissioning assigns the IDs again.
+- **DS18B20 probe replacement requires updating env vars.** When `amb_rom_id` / `cab_rom_id` are set in Notehub (the preferred commissioning path — see §7.3), replacing a probe in the field means reading the new probe's ROM ID (from the `[ds18b20]` debug output) and updating the relevant env var in Notehub. The firmware picks up the new ID on the next wake without reflashing. When using index-based fallback commissioning (no env vars set), a replaced probe is treated as absent until both probes are simultaneously on the bus, a fresh cold boot fires, and index-based re-commissioning assigns the IDs again.
 - **Software fuel-rate estimation (intentional scope decision).** A hardware fuel-flow sensor is explicitly out of scope for this reference design. Fuel savings are computed from APU runtime × environment-variable-supplied consumption rates (`apu_fuel_rate_gph`, `idle_fuel_rate_gph`). This approach requires no additional sensors or always-on host power and is accurate enough for fleet-level reporting and warranty analytics. Representative defaults (APU 0.5 gph, idle 1.0 gph) are set via Notehub environment variables and can be refined per fleet or per unit without reflashing. Actual per-unit rates vary by engine load and HVAC demand; revenue-grade metering requires a positive-displacement flow meter — see Production next steps below.
 - **CAN not implemented.** Several APU controller families communicate over SAE J1939 CAN rather than RS-485 Modbus. CAN would require an external SPI CAN controller (e.g., MCP2515) since the Notecarrier CX header does not expose the STM32L433's CAN peripheral. RS-485 Modbus is implemented here as the simpler and more commonly available interface.
 - **Single Modbus slave.** The firmware polls one configurable slave address. APU systems with both a main APU controller and a separate fuel-heater controller on the same RS-485 bus need an extended polling loop.
@@ -560,7 +594,8 @@ Measure the 24-hour energy total on your specific hardware with Mojo before comm
 
 ---
 
-## 11. Summary
+## 12. Summary
+
 
 The idle-reduction APU market has a straightforward problem: the hardware that replaces diesel idling already exists and works well, but the data those devices generate — runtime, fuel saved, active fault codes, warranty-relevant operating hours — has nowhere to go. The truck is in the field, crossing terrain where no single cellular carrier is reliable, and the APU OEM is a mechanical engineering company that should be focused on combustion efficiency rather than SIM provisioning.
 

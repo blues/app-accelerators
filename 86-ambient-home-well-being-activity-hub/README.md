@@ -14,7 +14,7 @@ A [remote patient monitoring](https://blues.com/remote-patient-monitoring/) hub 
 
 These are hard questions to answer without either placing a camera in someone's home (unacceptable to most patients) or asking the patient to wear a device and remember to charge it (unreliable in practice). The answer is environmental inference: a handful of passive sensors that observe the home rather than the person, aggregated by a small hub that does the pattern-matching locally and only reports when something looks off.
 
-This project builds that hub. A PIR motion sensor in the main living area detects morning movement. A magnetic reed switch on the bathroom door detects nighttime trips. A humidity sensor in the bathroom records bathroom temperature and humidity as telemetry; raw readings appear in each hourly summary. Shower and bath inference from humidity spikes is a planned next-step enhancement (see [§9](#9-limitations-and-next-steps)). And a small piezo vibration sensor tucked under the mattress pad provides a coarse, single-point vibration signal that serves as a proxy for bed presence — detecting the micro-movements that suggest a person is in bed — but cannot confirm an immobile occupant, and is explicitly not full-coverage bed-occupancy detection (see [§9 Limitations](#9-limitations-and-next-steps)).
+This project builds that hub. A PIR motion sensor in the main living area detects morning movement. A magnetic reed switch on the bathroom door detects nighttime trips. A humidity sensor in the bathroom records bathroom temperature and humidity as telemetry; raw readings appear in each hourly summary. Shower and bath inference from humidity spikes is a planned next-step enhancement (see [§10](#9-limitations-and-next-steps)). And a small piezo vibration sensor tucked under the mattress pad provides a coarse, single-point vibration signal that serves as a proxy for bed presence — detecting the micro-movements that suggest a person is in bed — but cannot confirm an immobile occupant, and is explicitly not full-coverage bed-occupancy detection (see [§9 Limitations](#9-limitations-and-next-steps)).
 
 > **Scope re-statement — bed sensor.** The project definition called for a *bed-occupancy piezo mat* at this position. This build formally re-scopes that requirement to a single-point *vibration-proxy* approach using the SparkFun SEN-09197 PVDF piezo film element — inexpensive, widely available, and requiring only the resistor voltage divider described in §4. The semantic change is deliberate and material: the SEN-09197 is a single-point vibration sensor, not a full-mat pressure array, so the system detects *absence of vibration at one point under the mattress* rather than confirmed bed vacancy. An immobile occupant — deeply asleep, post-surgery, or heavily medicated — can produce vibration below the detection threshold and read as "no vibration" even when present in the bed. Accordingly, the `no_bed_motion_during_sleep` alert signals a prolonged vibration-quiet period, not a confirmed empty bed, and `bed_motion_pct` in the summary is a vibration-activity percentage, not an occupancy percentage. For deployments that require positive occupancy confirmation — fall-risk or elopement monitoring for patients with limited mobility — substitute a weight-based FSR pressure mat or a dedicated medical-grade bed-exit sensor; the firmware's `readBedMotion()` interface, `bed_motion_pct` summary field, and Rule C detection logic are unchanged regardless of which sensor is installed. See [§9 Limitations](#9-limitations-and-next-steps) for a full discussion.
 
@@ -29,7 +29,7 @@ The Blues Notecard Cell+WiFi (NOTE-MBGLW) adds a second layer of resilience: for
 - **PIR sensor** — mounts on or immediately above the hub enclosure, facing the open room through a ventilation cutout. Cable length: under 0.3 m (sensor is attached directly to the enclosure).
 - **Bed piezo sensor** — slipped under the mattress pad at torso height. Cable routed along the mattress edge and down the nightstand leg. Cable length: ≤ 1.5 m.
 - **Bathroom reed switch** — installed on the bathroom door frame. Cable routed along the baseboard from door frame to nightstand. Cable length: ≤ 4 m.
-- **SHT31 humidity sensor** — mounted on or near the bathroom door frame alongside the reed switch, or just inside the bathroom threshold. Shares the same cable run as the reed switch. For any bathroom-to-hub run longer than ≈ 1.5 m, use the NXP PCA9615 differential I²C bus extender included in the BOM (see §3 and §4); raw I²C over hookup wire is reliable only for short runs.
+- **SHT31 humidity sensor** — mounted on or near the bathroom door frame alongside the reed switch, or just inside the bathroom threshold. Shares the same cable run as the reed switch. For any bathroom-to-hub run longer than ≈ 1.5 m, use the NXP PCA9615 differential I²C bus extender included in the BOM (see §4 and §4); raw I²C over hookup wire is reliable only for short runs.
 
 Nothing the patient interacts with. Nothing that needs charging.
 
@@ -45,7 +45,7 @@ Nothing the patient interacts with. Nothing that needs charging.
 
 **Routing to the cloud (high level only).** Notehub supports HTTP/HTTPS webhooks, MQTT, AWS, Azure, GCP, and several other destinations. The specific downstream endpoint is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific cloud endpoint. Consider using [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) to group devices by care team or geographic region and apply routing rules at the fleet level.
 
-## 2.5 Quickstart
+## 3. Technical Summary
 
 1. **Assemble hardware** (§3–4): Notecarrier CX + Notecard Cell+WiFi, four sensors, hookup wire. Route cables as shown in the wiring diagram.
 2. **Create Notehub project**: sign up at [notehub.io](https://notehub.io), create a new project, copy the **ProductUID** (looks like `com.your-company.your-name:activity-hub`).
@@ -57,7 +57,25 @@ Nothing the patient interacts with. Nothing that needs charging.
 
 See §6 for detailed firmware structure and §8 for power validation with the Mojo coulomb counter.
 
-## 3. Hardware Requirements
+Here is a sample Note this device emits:
+
+```json
+{
+  "file": "activity_summary.qo",
+  "body": {
+    "pir_count": 14,
+    "door_count": 2,
+    "humidity_pct": 48.6,
+    "temp_c": 21.2,
+    "bed_motion_pct": 88,
+    "night_bath_count": 1,
+    "morning_activity": true
+  }
+}
+```
+
+
+## 4. Hardware Requirements
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
@@ -66,19 +84,19 @@ See §6 for detailed firmware structure and §8 for power validation with the Mo
 | [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/mojo-datasheet/)) | 1 | **Bench-only.** Coulomb counter placed inline on the +VBAT rail during validation to measure idle current (should be < 25 µA) and cellular session energy. Removed before permanent deployment. See §8 for usage. |
 | [Adafruit Mini PIR Motion Sensor with 3-Pin Header (ID 4871)](https://www.adafruit.com/product/4871) ([tech docs](https://learn.adafruit.com/pir-passive-infrared-proximity-motion-sensor/)) | 1 | Breadboard-friendly PIR based on the AM312 sensor: 3–12 V supply, 3.3 V digital output — directly compatible with the Cygnet's 3.3 V GPIO logic. Up to 5 m detection range, 100° field of view, ~2 s output hold-off. Detects any occupant movement in the living area. |
 | [Adafruit Magnetic Contact Switch — Door Sensor (ID 375)](https://www.adafruit.com/product/375) | 1 | Normally-open reed switch in a plastic enclosure; closes within ~13 mm of its magnet. Full electrical specifications are on the product page. Installs on any door frame without modification. Mounts on the bathroom door for nighttime trip counting. |
-| [Adafruit Sensirion SHT31-D Temp & Humidity Breakout (ID 2857)](https://www.adafruit.com/product/2857) ([Sensirion SHT31 datasheet](https://sensirion.com/products/catalog/SHT31-DIS-B/)) | 1 | ±2% RH, ±0.3°C accuracy over I²C; 3 V or 5 V compatible. In this POC the firmware reports the most recent reading as telemetry in each hourly summary and maintains a slow EWMA baseline; shower/bath inference from humidity spikes is a planned enhancement (see [§9](#9-limitations-and-next-steps)). Mounts at the bathroom door frame alongside the reed switch. |
-| [SparkFun Piezo Vibration Sensor — Large with Mass (SEN-09197)](https://www.sparkfun.com/products/9197) ([datasheet on product page](https://www.sparkfun.com/products/9197)) | 1 | **Vibration-based bed-presence proxy.** A small PVDF piezo film element that generates an AC signal when flexed. Tucked under the mattress pad, it detects the micro-vibrations associated with a person in bed. This provides a coarse single-point vibration signal — **not** full-coverage bed-occupancy detection; an immobile occupant can read as "no vibration" (see [§9](#9-limitations-and-next-steps)). Requires a voltage divider and clamp diode — see §4. |
+| [Adafruit Sensirion SHT31-D Temp & Humidity Breakout (ID 2857)](https://www.adafruit.com/product/2857) ([Sensirion SHT31 datasheet](https://sensirion.com/products/catalog/SHT31-DIS-B/)) | 1 | ±2% RH, ±0.3°C accuracy over I²C; 3 V or 5 V compatible. In this POC the firmware reports the most recent reading as telemetry in each hourly summary and maintains a slow EWMA baseline; shower/bath inference from humidity spikes is a planned enhancement (see [§10](#9-limitations-and-next-steps)). Mounts at the bathroom door frame alongside the reed switch. |
+| [SparkFun Piezo Vibration Sensor — Large with Mass (SEN-09197)](https://www.sparkfun.com/products/9197) ([datasheet on product page](https://www.sparkfun.com/products/9197)) | 1 | **Vibration-based bed-presence proxy.** A small PVDF piezo film element that generates an AC signal when flexed. Tucked under the mattress pad, it detects the micro-vibrations associated with a person in bed. This provides a coarse single-point vibration signal — **not** full-coverage bed-occupancy detection; an immobile occupant can read as "no vibration" (see [§10](#9-limitations-and-next-steps)). Requires a voltage divider and clamp diode — see §5. |
 | 1 MΩ resistor, 1/4 W | 1 | Series element of the piezo voltage divider; attenuates the piezo's ±90 V maximum output to ADC-safe levels. |
 | 10 kΩ resistor, 1/4 W | 1 | Shunt leg of the piezo voltage divider (to GND). |
 | 1N4148 small-signal diode | 1 | Clamps negative voltage swings on the piezo divider output to −0.6 V, protecting the Cygnet's analog input from the piezo's negative half-cycles. |
-| 22–26 AWG stranded hookup wire | 1 lot | Three cable runs: **4 m × 6-conductor** (SDAP, SDAN, SCLP, SCLN, 3V3, GND) between the hub-side PCA9615 board and the sensor-side PCA9615 board near the bathroom door frame — the differential I²C link for the SHT31 bathroom run (see §4 for pin-by-pin details); **4 m × 2-conductor** for the reed switch bathroom run (D9, GND) — both runs clipped along the same baseboard path to the door frame; **1.5 m × 2-conductor** for the bed piezo run (A0, GND) along the nightstand leg and under the mattress. If the bathroom sensor is co-located with the hub (≤ 0.5 m) and the PCA9615 is omitted, substitute a short **4-conductor** cable (3V3, GND, SDA, SCL) directly from the Notecarrier CX header to the SHT31. Total ≈ 9.5 m across three runs (with extender). Each bathroom cable has its own GND conductor so either can be replaced without disturbing the other. |
+| 22–26 AWG stranded hookup wire | 1 lot | Three cable runs: **4 m × 6-conductor** (SDAP, SDAN, SCLP, SCLN, 3V3, GND) between the hub-side PCA9615 board and the sensor-side PCA9615 board near the bathroom door frame — the differential I²C link for the SHT31 bathroom run (see §5 for pin-by-pin details); **4 m × 2-conductor** for the reed switch bathroom run (D9, GND) — both runs clipped along the same baseboard path to the door frame; **1.5 m × 2-conductor** for the bed piezo run (A0, GND) along the nightstand leg and under the mattress. If the bathroom sensor is co-located with the hub (≤ 0.5 m) and the PCA9615 is omitted, substitute a short **4-conductor** cable (3V3, GND, SDA, SCL) directly from the Notecarrier CX header to the SHT31. Total ≈ 9.5 m across three runs (with extender). Each bathroom cable has its own GND conductor so either can be replaced without disturbing the other. |
 | [NXP PCA9615 differential I²C bus extender](https://www.nxp.com/products/interfaces/ic-spi-i3c-interface-devices/ic-bus-repeaters-hubs-extenders/pca9615:PCA9615) (e.g. [Adafruit breakout ID 4756](https://www.adafruit.com/product/4756)) | 2 | **Required when the bathroom SHT31 is more than ≈ 1.5 m from the hub.** Converts the single-ended I²C bus to differential signalling, eliminating the cable-capacitance problem that makes long raw I²C runs unreliable. Two boards are needed for a complete link — one at the hub end and one at the sensor end. Omit only if the bathroom sensor is effectively co-located with the hub (≤ 0.5 m). See §4 for wiring details. |
 | USB-C 5V wall adapter, ≥ 1 A (e.g. [Adafruit ID 4298](https://www.adafruit.com/product/4298)) | 1 | Wall power for the hub. The Notecarrier CX accepts 5 V via its USB-C port. See §4 and §6.5 for an important note on idle-current figures when VUSB is present. |
 | [Hammond 1591XXFLBK project enclosure](https://www.hammfg.com/product/1591XX) (~5.9 × 3.1 × 2.2 in, ABS, black) | 1 | Houses the Notecarrier CX, Notecard, and any in-enclosure sensors. **Use a non-metallic enclosure** — a metal box will attenuate the cellular antenna significantly. Drill a ventilation aperture for the PIR field of view and cable entry holes for the off-board sensor leads. |
 
 All Blues parts include an active global SIM with 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
-## 4. Wiring and Assembly
+## 5. Wiring and Assembly
 
 ![Wiring and assembly](diagrams/02-wiring-assembly.svg)
 
@@ -172,7 +190,7 @@ The divider ratio is 10k / (1M + 10k) ≈ 1/101, so the worst-case 90 V input be
 - Connect the Mojo's USB-C port to a PC and monitor readings there — current (mA), voltage (V), and cumulative charge (mAh) are reported directly to the host PC; see the [Mojo quickstart](https://dev.blues.io/quickstart/mojo-quickstart/) for setup details. The firmware does not interact with Mojo at all, and no Mojo data flows through the Notecard to Notehub.
 - Remove Mojo and reconnect USB-C for permanent deployment.
 
-## 5. Notehub Setup
+## 6. Notehub Setup
 
 ### Project creation
 
@@ -203,7 +221,7 @@ In Notehub: **Fleet → Environment** (or **Device → Environment** for a per-d
 | `sleep_end_hour` | `6` | Local hour when the sleep window ends (same as morning start in the default config). |
 | `night_bathroom_limit` | `3` | Number of nighttime door trips above which `night_bathroom_pattern` fires. UTI, overactive bladder, and some cardiac medications can push this count; set per patient after a baseline period. |
 | `bed_threshold` | `50` | ADC peak-to-peak count (0–4095) above which bed vibration is detected. Tune based on mattress type and piezo placement — start at 50 and adjust down if the sensor reads "no vibration" when a person is in bed, up if it detects vibration when the bed is empty. |
-| `utc_offset_hours` | `0` | Hours ahead of UTC for the patient's local time. For example, US Eastern Standard Time is `-5`; US Pacific Daylight Time is `-7`. The firmware uses this to convert the Notecard's UTC epoch into local hour-of-day for window checks. **Whole-hour offsets only** — half-hour and 45-minute offset regions (India UTC+5:30, Iran UTC+3:30, Nepal UTC+5:45, etc.) are not supported; use the nearest whole-hour value as an approximation, or see §9 for a firmware extension path. |
+| `utc_offset_hours` | `0` | Hours ahead of UTC for the patient's local time. For example, US Eastern Standard Time is `-5`; US Pacific Daylight Time is `-7`. The firmware uses this to convert the Notecard's UTC epoch into local hour-of-day for window checks. **Whole-hour offsets only** — half-hour and 45-minute offset regions (India UTC+5:30, Iran UTC+3:30, Nepal UTC+5:45, etc.) are not supported; use the nearest whole-hour value as an approximation, or see §10 for a firmware extension path. |
 | `quiet_minutes_for_alert` | `20` | Minimum consecutive minutes of no detected bed vibration (inside the sleep window) before `no_bed_motion_during_sleep` fires. The firmware converts this to a sample count using `sample_interval_sec`, so the threshold scales correctly when the sample interval is changed. Increase for patients who are very still sleepers; decrease for more sensitive early detection. |
 
 ### Routing configuration
@@ -240,7 +258,7 @@ Within a minute of first power-on, the **Events** tab in your project should sta
   ```
   To test alert delivery during bench bring-up: (1) set `night_bathroom_limit` to `1`; (2) set `sleep_start_hour=0` and `sleep_end_hour=23` so the entire clock-day counts as the sleep window — door trips increment `night_bathroom_count` only when the current local time is inside the configured sleep window, so the alert will not fire if the current hour falls outside it; (3) force an environment sync by power-cycling the hub or issuing `{"req":"hub.sync"}` from the Notecard's USB serial console. Once the new values are active, open the bathroom door — the rule fires on the next `runCycle()` call. Worst-case alert latency from door-open to Notehub delivery is one full sample interval (up to 5 minutes at the default cadence) plus 15–60 seconds for cellular session establishment; allow up to 6 minutes before concluding the alert did not fire.
 
-## 6. Firmware Design
+## 7. Firmware Design
 
 Sketch folder: [`firmware/activity_hub/`](firmware/activity_hub/). The main entry point is [`activity_hub.ino`](firmware/activity_hub/activity_hub.ino); four helper files sit alongside it in the same folder: `app_state.h` (shared types, compile-time constants, and user configuration), `notecard_helpers.h/.cpp` (Notecard API wrappers, environment variable parsing, and time helpers), and `sensor_alert.h/.cpp` (sensor reads and outbound Note helpers). Arduino compiles all `.ino`, `.h`, and `.cpp` files in the sketch folder as a single build unit. Unlike the single-file reference builds (51, 52), the helpers here are split into separate translation units to keep each concern clearly bounded; the on-disk layout follows the same `firmware/<sketch_name>/` convention used by those references.
 
@@ -348,7 +366,7 @@ The Notecard runs in `hub.set` `periodic` mode with `outbound:60` and `inbound:1
 - The `cooldownExpired` check prevents alert storms: once an anomaly fires, the same alert type is suppressed for `ALERT_COOLDOWN_SEC` (30 minutes). Each rule also carries an independent latch that is *more* restrictive than the cooldown alone — the cooldown is an additional guard on top of the latch, not the primary repeat-alert control:
     - **Rule A (`no_morning_activity`):** the per-day `morning_alerted` latch limits this to **at most one fire per calendar day**, reset at `morning_start_hour` each day.
     - **Rule B (`night_bathroom_pattern`):** the per-night `night_bath_alerted` latch limits this to **at most one fire per night**, reset at `sleep_end_hour`. Additional bathroom trips that accumulate after the first alert do **not** trigger a second alert until the following night — the rule stays silent until the latch resets.
-    - **Rule C (`no_bed_motion_during_sleep`):** the `bed_empty_alerted` latch limits this to **one fire per distinct quiet episode**. The latch re-arms the next time bed vibration is detected (the patient returns to bed and moves), so a patient who leaves bed, returns, and then has another prolonged absence can trigger Rule C a second time. The latch also resets at `sleep_end_hour`. This means an operator who reads the README description "subject to 30-min cooldown" would expect more frequent re-alerting than the firmware actually delivers; see [§7](#7-data-flow) for the full per-rule trigger conditions.
+    - **Rule C (`no_bed_motion_during_sleep`):** the `bed_empty_alerted` latch limits this to **one fire per distinct quiet episode**. The latch re-arms the next time bed vibration is detected (the patient returns to bed and moves), so a patient who leaves bed, returns, and then has another prolonged absence can trigger Rule C a second time. The latch also resets at `sleep_end_hour`. This means an operator who reads the README description "subject to 30-min cooldown" would expect more frequent re-alerting than the firmware actually delivers; see [§8](#7-data-flow) for the full per-rule trigger conditions.
 - A `last_reset_day` byte in `AppState` guards the daily counter reset, preventing it from firing multiple times in the same hour when the hub happens to wake several times near the `morning_start_hour` boundary.
 
 ### 6.7 Key code snippet 1: template registration
@@ -421,7 +439,7 @@ bool inWindow(uint8_t hour, uint8_t start_h, uint8_t end_h) {
 }
 ```
 
-## 7. Data Flow
+## 8. Data Flow
 
 ![Data flow](diagrams/03-data-flow.svg)
 
@@ -443,11 +461,11 @@ bool inWindow(uint8_t hour, uint8_t start_h, uint8_t end_h) {
 
 All three rules are independent. A patient sleeping poorly and not getting up at all could trigger both `no_bed_motion_during_sleep` (if the bed shows no vibration during sleep hours) and `no_morning_activity` (if no PIR or door event occurred during the morning window) simultaneously — each fires on its own per-rule latch schedule (at most once per night / per absence episode / per calendar day as described above) and each requires its own routing action.
 
-## 8. Validation and Testing
+## 9. Validation and Testing
 
 **Expected cadence in steady state.** A correctly-deployed hub generates one `activity_summary.qo` per hour and zero `activity_alert.qo` events. The first summary will appear roughly one hour after power-on. To trigger a `night_bathroom_pattern` alert during bench testing, three conditions must all be satisfied simultaneously: `night_bathroom_limit` must be set to `1`, the current local time must fall inside the configured sleep window (the firmware increments `night_bathroom_count` only inside that window), and at least one door-open event must have been recorded since the last sleep-end reset. For bench use, set `sleep_start_hour=0` and `sleep_end_hour=23` so the entire clock-day counts as the sleep window. Then force an environment sync (power-cycle the hub or issue `{"req":"hub.sync"}` from the Notecard's serial console). Once the new values are active, open the bathroom door — the alert fires on the next `runCycle()` call, up to one full sample interval (5 minutes at the default cadence) later. Add 15–60 seconds for cellular session establishment. Worst-case end-to-end latency from door-open to Notehub delivery is approximately 6 minutes.
 
-**Using Mojo to validate power behavior.** The Mojo ([datasheet](https://dev.blues.io/datasheets/mojo-datasheet/)) sits inline on the +VBAT rail (bypassing USB-C — see §4) and reports real-time current (mA), voltage (V), and cumulative charge (mAh) directly to a PC via its USB-C port — see the [Mojo quickstart](https://dev.blues.io/quickstart/mojo-quickstart/) for setup. The firmware does not interact with Mojo; no Mojo data flows through the Notecard to Notehub. Expected current envelopes for this firmware, from the published [low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/):
+**Using Mojo to validate power behavior.** The Mojo ([datasheet](https://dev.blues.io/datasheets/mojo-datasheet/)) sits inline on the +VBAT rail (bypassing USB-C — see §5) and reports real-time current (mA), voltage (V), and cumulative charge (mAh) directly to a PC via its USB-C port — see the [Mojo quickstart](https://dev.blues.io/quickstart/mojo-quickstart/) for setup. The firmware does not interact with Mojo; no Mojo data flows through the Notecard to Notehub. Expected current envelopes for this firmware, from the published [low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/):
 
 | Phase | Draw | Notes |
 |---|---|---|
@@ -468,7 +486,7 @@ The Notecard Cell+WiFi idles at ~18 µA @ 5 V on the VBAT path (VUSB absent). Ce
 
 **Bed sensor calibration.** The firmware ships with a `CALIBRATION_MODE` compile flag (see the `#define CALIBRATION_MODE` comment near the top of `app_state.h`). **You must uncomment both `#define CALIBRATION_MODE` and `#define DEBUG_SERIAL`** — `CALIBRATION_MODE` has no effect unless `DEBUG_SERIAL` is also active. With both defines enabled, recompile and flash. With the hub connected to the serial monitor at 115200 baud, every bed measurement will print a line like `Bed peak-to-peak (ADC counts): 143`. Set `bed_threshold` to a value between the vibration-present and quiet clusters, with some margin, then re-comment `CALIBRATION_MODE` and reflash before deployment. A typical mattress and firm mattress pad combination might produce amplitude readings of 80–200 counts with a person present vs. 2–8 counts on an unoccupied mattress.
 
-## 8.5. Troubleshooting Common Issues
+## 10. Troubleshooting Common Issues
 
 | Symptom | Cause | Fix |
 |---|---|---|
@@ -480,7 +498,7 @@ The Notecard Cell+WiFi idles at ~18 µA @ 5 V on the VBAT path (VUSB absent). Ce
 | Alerts never fire even with `night_bathroom_limit=1` | Alert cooldown or latch prevention. Also verify environment variables pulled. | Check current local time falls inside the configured sleep window (`sleep_start_hour` to `sleep_end_hour`). Issue `{"req":"hub.sync"}` to force environment variable fetch. Verify cooldown has expired (30 minutes after last same-type alert). Check serial output for "Alert cooldown" messages. |
 | High idle current (mA) even in Stop mode, or no sleep/wake cycles | MCU not entering Stop mode, or USB-C power is inhibiting Notecard low-power state. | If USB-C is connected for this test, that's expected — Notecard idles at ~1–3 mA with VUSB present. For accurate power measurement, use the Mojo on the +VBAT rail with USB-C disconnected. Check serial output for exceptions or early returns preventing `LowPower.deepSleep()` from being reached. |
 
-## 9. Limitations and Next Steps
+## 11. Limitations and Next Steps
 
 **Simplified for this proof-of-concept:**
 
@@ -514,7 +532,7 @@ The Notecard Cell+WiFi idles at ~18 µA @ 5 V on the VBAT path (VUSB absent). Ce
 - Per-device commissioning: after a 1–2 week baseline period, export the patient's activity summary data from Notehub and compute personalized threshold defaults for `morning_start_hour`, `morning_end_hour`, `night_bathroom_limit`, and `bed_threshold`. Push these as device-level environment variable overrides.
 - GNSS site geolocation: the NOTE-MBGLW includes a GNSS radio that can autonomously record the deployment address as a one-time commissioning step. Enabling it requires adding a GNSS antenna to the BOM and issuing a `card.location.mode` command at first boot — no ongoing firmware logic is needed. See the [Notecard location and time documentation](https://dev.blues.io/notecard/notecard-walkthrough/time-and-location-requests/) for setup details.
 
-## 10. Summary
+## 12. Summary
 
 Four passive sensors, one Notecard, and a handful of pattern-matching rules turn an ordinary spare room or ALF suite into a low-obtrusion remote monitoring point — one that flags the deviations that matter clinically while staying quiet on normal days. The cellular-first connectivity means the hub works reliably regardless of whether the patient's WiFi is functional, and the Notehub environment variable system means care teams can tune the alert thresholds without any firmware engineering involvement after deployment.
 

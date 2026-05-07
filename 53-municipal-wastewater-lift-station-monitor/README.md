@@ -10,6 +10,7 @@ A [downtime prevention](https://blues.com/downtime-prevention/) retrofit for mun
 
 ## 1. Project Overview
 
+
 **The problem.** A **lift station** (also called a pump station) is a below-grade concrete vault or roadside cabinet that collects raw sewage from the surrounding gravity sewer system and pumps it uphill toward the treatment plant. Every municipality has dozens of them, often scattered across low-lying neighborhoods, industrial zones, and rural road shoulders — most with no onsite staff and no way to know what's happening inside until a citizen calls to report a smell or, worse, a spill.
 
 When a lift station fails, the **wet well** — the collection basin that feeds the pumps — fills up and overflows. The result is a **SSO**: a sanitary sewer overflow. SSOs draw immediate regulatory attention; they trigger EPA reporting obligations, risk consent decree violations, and require expensive emergency cleanups. A station that fails on a Friday evening and isn't discovered until Monday morning is a public health event, a PR crisis, and a significant unplanned expense all at once. The failure modes are rarely dramatic: a pump fails to start because its float control sticks, a discharge check valve fails and allows backflow that clogged the impeller, or a wet-well float switch trips but no one receives the alarm because the SCADA dial-up modem lost its phone line. Each of these is detectable minutes after it starts — if someone is watching.
@@ -21,6 +22,7 @@ This project is that watcher. It straps to the inside of the station, samples th
 **Deployment scenario.** A sealed NEMA 4X enclosure mounted **inside the lift station's above-grade control cabinet**, powered from the 120 VAC control circuit that already powers the pump starters. The specified Blues hardware and NEMA 4X ABS enclosure are **not** rated for hazardous (classified) locations. Wet wells and sealed vaults can accumulate methane and hydrogen sulfide — both potentially classified atmospheres under NFPA 820 / NEC Article 820. Do not install this hardware inside the wet well or any classified-atmosphere zone. If your jurisdiction classifies the vault interior as a hazardous location, any hardware in that zone must be rated for the classification; consult a licensed electrical engineer before proceeding. Sensor cables enter through conduit fittings: one multiconductor cable to the submersible level transducer in the wet well, two split-core CT jaws clamped around the pump motor supply conductors inside the control panel, and one float switch cable to a new dedicated high-water alarm float switch hung in the wet well alongside the station's existing level floats. No station modification is required beyond adding three sensor connections to the existing control wiring. Cellular antenna cable exits through a conduit fitting to a magnetic-mount or direct-mount antenna on the cabinet exterior or above-grade access point.
 
 ## 2. System Architecture
+
 
 ![System architecture: wet well sensors (level transducer, two CTs, float) → above-grade enclosure with Notecarrier CX → cellular MBGLW or Starnote satellite → Notehub → on-call/analytics](diagrams/01-system-architecture.svg)
 
@@ -38,17 +40,18 @@ The Starnote uses the same Notecard API as the MBGLW, but the satellite link has
 
 **Alert latency.** `sync:true` notes are prioritized for the next available satellite pass, but locating a Skylo satellite and completing transmission can take several minutes. For Starnote stations, "alert in minutes" is realistic; "alert in seconds" is not. The 30-minute alert cooldown in the firmware is still meaningful because a satellite station is reporting a fault to the crew before the wet well overflows, not instantaneously.
 
-**Inbound sync cadence and data cost.** Each inbound sync (used to pull updated environment variables from Notehub) consumes approximately 50 bytes of satellite data. At the default `inbound:120` (every 2 hours), that is ~600 bytes per day — a significant fraction of the bundled 10 KB. For Starnote deployments, set `inbound_interval_min` to `240` or higher via the Notehub environment-variable panel to reduce inbound satellite data consumption. The firmware re-issues `hub.set` whenever `inbound_interval_min` or `summary_interval_min` changes, so neither adjustment requires a firmware reflash (see the env-var table in [Section 5](#5-notehub-setup)).
+**Inbound sync cadence and data cost.** Each inbound sync (used to pull updated environment variables from Notehub) consumes approximately 50 bytes of satellite data. At the default `inbound:120` (every 2 hours), that is ~600 bytes per day — a significant fraction of the bundled 10 KB. For Starnote deployments, set `inbound_interval_min` to `240` or higher via the Notehub environment-variable panel to reduce inbound satellite data consumption. The firmware re-issues `hub.set` whenever `inbound_interval_min` or `summary_interval_min` changes, so neither adjustment requires a firmware reflash (see the env-var table in [Section 5](#6-notehub-setup)).
 
 **Payload discipline.** Starnote for Skylo enforces a hard 256-byte maximum per Note; Notes exceeding this limit are silently dropped by the satellite network. The [`note.template`](https://dev.blues.io/api-reference/notecard-api/note-requests/#note-template) encoding used by this firmware (with `format:"compact"` and a numeric `port`) keeps both `lift_alert.qo` and `lift_summary.qo` well within that ceiling. Do not add free-form string fields to satellite Notefiles, and validate payload size on any schema change.
 
 **Antenna placement.** The Starnote for Skylo must operate with its antenna outdoors and free from obstructions — for the northern hemisphere, an unobstructed view of the southern sky. A station where the enclosure is entirely below grade or inside a steel cabinet will require an above-grade antenna cable run; plan that conduit path at installation time. Use only the Skylo-certified antenna supplied with the Starnote; substituting an uncertified GPS/GNSS patch risks regulatory non-compliance and link failure.
 
-**Power envelope.** The Starnote idles at typically less than 4 µA @ 5 V — lower than the MBGLW's ~18 µA. During a satellite session, VMODEM_P requires a sustained 350 mA supply capability, similar in magnitude to an LTE session. The HDR-15-5 (3 A rated) handles both variants with margin. See the [Validation section](#8-validation-and-testing) for a per-state current breakdown.
+**Power envelope.** The Starnote idles at typically less than 4 µA @ 5 V — lower than the MBGLW's ~18 µA. During a satellite session, VMODEM_P requires a sustained 350 mA supply capability, similar in magnitude to an LTE session. The HDR-15-5 (3 A rated) handles both variants with margin. See the [Validation section](#9-validation-and-testing) for a per-state current breakdown.
 
 **Mandatory initial cellular sync.** Before any satellite (NTN) operation is possible, the Starnote must complete at least one non-NTN sync with Notehub over cellular or WiFi to associate with a project. Ensure the unit has cellular coverage during initial commissioning, even if the deployment site relies on satellite for routine operation.
 
-## 2.5 Quickstart
+## 3. Technical Summary
+
 
 **What you'll have:** A [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) + Notecard sending sample lift_alert and lift_summary events to your Notehub project every 60 seconds without needing sensors in the field.
 
@@ -71,7 +74,24 @@ For bench-only testing, use compile-time flags to inject synthetic sensor values
 
 Two connectivity SKUs cover the full deployment spectrum. Stations within LTE coverage use a **Notecard Cell+WiFi (MBGLW)**. Truly rural stations beyond reliable cellular reach use a **[Starnote](https://shop.blues.com/products/starnote?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)** ([datasheet](https://dev.blues.io/datasheets/starnote/starnote-for-skylo/)), which routes telemetry over the Skylo satellite network. The firmware is identical for both variants; Notehub configuration is shared, though satellite deployments benefit from wider inbound sync intervals to conserve bundled satellite data — see [Satellite-specific considerations](#satellite-specific-considerations-option-b--starnote) in Section 2.
 
-## 3. Hardware Requirements
+Here is a sample Note this device emits:
+
+```json
+{
+  "file": "lift_alert.qo",
+  "body": {
+    "alert": "pump_fail_to_start",
+    "level_pct": 87.4,
+    "pump1_amps": 0.2,
+    "pump2_amps": 0.1,
+    "float_sw": false
+  },
+  "sync": true
+}
+```
+
+## 4. Hardware Requirements
+
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
@@ -97,7 +117,8 @@ Two connectivity SKUs cover the full deployment spectrum. Stations within LTE co
 
 **Option B (Starnote):** Ships with 10 KB of bundled Skylo satellite data; no satellite provider subscription, monthly minimums, or activation fees apply. Additional data is billed per byte (see the [Starnote for Skylo datasheet](https://dev.blues.io/datasheets/starnote/starnote-for-skylo/) for current pricing). Minimizing inbound sync frequency conserves the bundled allocation — see [Section 2](#satellite-specific-considerations-option-b--starnote) for guidance.
 
-## 4. Wiring and Assembly
+## 5. Wiring and Assembly
+
 
 ![Wiring: 4–20 mA loop with 150 Ω shunt → A0; dual SCT-013 CTs with 10 kΩ/10 kΩ bias and 10 µF cap → A1/A2; dedicated Gems float → D2 PULLUP; HDR-15-24 and HDR-15-5 from 120 VAC](diagrams/02-wiring-assembly.svg)
 
@@ -148,14 +169,15 @@ The Gems RS-500-Y-PP provides a galvanically isolated SPST N.O. dry contact rate
 - HDR-15-5 `V-` → system GND.
 - Mojo sits inline on the 5 V rail between the HDR-15-5 output and the Notecarrier CX power input during bench validation (see Section 8).
 
-## 5. Notehub Setup
+## 6. Notehub Setup
 
-### 5.1 Project and Device Claim
+
+### 6.1 Project and Device Claim
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into the firmware as `PRODUCT_UID` (in `lift_station_monitor_helpers.h`). Rebuild and flash.
 2. **Claim the Notecard.** Power the Notecarrier CX. On first cellular sync, the Notecard associates with your project automatically — no manual claim step required. Watch the **Devices** panel in Notehub; your Notecard appears within 60 seconds.
 
-### 5.2 Environment Variables for Threshold Tuning
+### 6.2 Environment Variables for Threshold Tuning
 
 All thresholds below are optional overrides of firmware defaults. Set them via **Notehub > Fleet > Environment**, not in the firmware. Any variable set in Notehub is picked up by the device on its next inbound sync without a firmware reflash.
 
@@ -169,7 +191,7 @@ All thresholds below are optional overrides of firmware defaults. Set them via *
 
 To set variables: Click your project's **Fleet**, then the **Environment** tab. Add each variable as a key-value pair (e.g., `high_level_pct = 75.0`), then click **Save**. The device pulls the updated values on its next inbound sync.
 
-### 5.3 Routing Events to the Outside World
+### 6.3 Routing Events to the Outside World
 
 Add [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) in **Notehub > Routes** to forward events to your on-call notification system (PagerDuty, Slack, email, webhook) or analytics backend:
 
@@ -178,7 +200,8 @@ Add [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with
 
 Keeping alerts and summaries in separate Notefiles means each route handles them independently — alerts fire immediately for urgent notification, summaries batch for efficient storage. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for supported destination types and step-by-step setup.
 
-## 6. Firmware Design
+## 7. Firmware Design
+
 
 The firmware is split across three files in [`firmware/lift_station_monitor/`](firmware/lift_station_monitor/):
 
@@ -353,7 +376,8 @@ JAddBoolToObject(body,   "float_sw",   float_sw);
 bool ok = notecard.sendRequestWithRetry(req, 5);
 ```
 
-## 7. Data Flow
+## 8. Data Flow
+
 
 ![Data flow: 60s sample of level/CT1/CT2/float → three rules (high_water_alarm, pump_fail_to_start, pump_clog) with 30-min cooldowns → lift_alert.qo (sync:true) and lift_summary.qo (hourly) → Notehub routes](diagrams/03-data-flow.svg)
 
@@ -372,7 +396,8 @@ bool ok = notecard.sendRequestWithRetry(req, 5);
 
 **Routed:** `lift_alert.qo` goes to a real-time notification channel. `lift_summary.qo` goes to a long-term store. Notehub applies project routes without any filter logic needed in the route itself, because the separation of Notefiles at the source is already the filter.
 
-## 8. Validation and Testing
+## 9. Validation and Testing
+
 
 **Expected steady-state.** In normal operation a properly functioning lift station generates one `lift_summary.qo` note per summary interval (default 60 minutes) and zero `lift_alert.qo` notes. A healthy summary shows `level_avg_pct` well below `high_level_pct`, `alert_count: 0`, and at least one pump with non-zero runtime in the window. Lead/lag stations commonly show one pump carrying the entire load in a quiet hour — zero runtime on the lag pump during a single interval is normal, not an alarm condition.
 
@@ -425,7 +450,8 @@ bool ok = notecard.sendRequestWithRetry(req, 5);
 
 **Troubleshooting constant mid-level draw:** If Mojo shows a continuous ~10–50 mA rather than this spike pattern, the ATTN pin is likely not cutting host power. The Notecarrier CX pairs the Notecard's `ATTN` interrupt with an `EN` input that gates the on-board host's 3.3 V rail; ATTN-driven host power gating requires those two pins be tied together. Verify that connection (check your Notecarrier wiring diagram) before assuming a firmware bug — the HST/NC DIP switch on the Notecarrier CX selects only which device is connected to the USB serial interface and has no effect on host power. Mojo is the fastest way to confirm sleep architecture is working before the unit goes underground.
 
-## 9. Troubleshooting
+## 10. Troubleshooting
+
 
 **Firmware won't compile.** Ensure you have the correct board package and library versions:
 ```bash
@@ -454,7 +480,8 @@ arduino-cli lib install "Blues Wireless Notecard"
 2. **CT channels (A1, A2):** Verify the 10 kΩ bias divider and 10 µF decoupling cap are correctly installed. The DC bias should read around 2048 counts (VREF/2 ≈ 1.65 V). If the bias is outside 1024–3072, the resistors are mismatched or the CT is shorted.
 3. **Float switch (D2):** The pin is `INPUT_PULLUP`, so a logic LOW (GND) is active (alarm). Jumper D2 to GND to test.
 
-## 10. Limitations and Next Steps
+## 11. Limitations and Next Steps
+
 
 **Simplified for the POC:**
 
@@ -463,7 +490,7 @@ arduino-cli lib install "Blues Wireless Notecard"
 - **fail-to-start detection is level-threshold only.** The firmware does not know what level the pump float controls are actually set to. The `high_level_pct` threshold is a firmware-side approximation of the hardware float control setpoint; the two may not match unless calibrated after installation.
 - **No discharge pressure or flow measurement.** The pump_clog rule fires on level-rising-while-running, which is a necessary but not sufficient condition for a clog — it also fires on genuine high-inflow conditions (heavy rain) or when both pumps are running and inflow exceeds combined capacity. Production deployments benefit from a discharge pressure sensor that can distinguish "pump is pumping but line is blocked" from "pump is pumping but inflow is just overwhelming."
 - **No SCADA integration.** The sketch is standalone. Most municipal lift stations already have a local RTU or telemetry unit. Integrating with that system (e.g., reading dry contacts from the existing SCADA outputs, or making the Notecard's data available to the local RTU) is outside the scope of this POC.
-- **Satellite variant caveats (Option B — Starnote).** The Starnote firmware is identical to the cellular variant, but the satellite link has material operational differences. Alert and summary notes queue in the Notecard's local store and sync on the Starnote's satellite session schedule — `sync:true` notes are prioritized for the next available pass, but locating a Skylo satellite and completing transmission takes several minutes (not seconds). Each Note must stay within the Starnote for Skylo's 256-byte maximum; Notes exceeding this are silently dropped by the satellite network without transmission. Inbound syncs (env-var pulls) consume approximately 50 bytes of the 10 KB bundled satellite data allocation each; the default 2-hour inbound cadence costs roughly 600 bytes/day. The Skylo-certified antenna included with the Starnote must be mounted outdoors with an unobstructed sky view (in the northern hemisphere, an unobstructed view of the southern sky); stations with the enclosure entirely below grade will need an above-grade cable run. Starnote idle current is typically less than 4 µA @ 5 V; satellite modem sessions require up to 350 mA sustained on VMODEM_P — the HDR-15-5 at 3 A handles both variants with margin (see [Section 8](#8-validation-and-testing) for the full per-state breakdown).
+- **Satellite variant caveats (Option B — Starnote).** The Starnote firmware is identical to the cellular variant, but the satellite link has material operational differences. Alert and summary notes queue in the Notecard's local store and sync on the Starnote's satellite session schedule — `sync:true` notes are prioritized for the next available pass, but locating a Skylo satellite and completing transmission takes several minutes (not seconds). Each Note must stay within the Starnote for Skylo's 256-byte maximum; Notes exceeding this are silently dropped by the satellite network without transmission. Inbound syncs (env-var pulls) consume approximately 50 bytes of the 10 KB bundled satellite data allocation each; the default 2-hour inbound cadence costs roughly 600 bytes/day. The Skylo-certified antenna included with the Starnote must be mounted outdoors with an unobstructed sky view (in the northern hemisphere, an unobstructed view of the southern sky); stations with the enclosure entirely below grade will need an above-grade cable run. Starnote idle current is typically less than 4 µA @ 5 V; satellite modem sessions require up to 350 mA sustained on VMODEM_P — the HDR-15-5 at 3 A handles both variants with margin (see [Section 8](#9-validation-and-testing) for the full per-state breakdown).
 - **Mojo is bench-validation only.** The firmware does not read the Mojo's coulomb counter register over Qwiic. Adding a `mojo_mah` field to the hourly summary is a simple extension using the LTC2959 register map if fleet-level energy telemetry is valuable.
 
 **Production next steps:**
@@ -475,6 +502,7 @@ arduino-cli lib install "Blues Wireless Notecard"
 - Pump cycle-count tracking: log each pump start and stop (transition from below to above `pump_on_amps`) to accumulate lifetime cycle counts and flag motors approaching their rated duty cycle limits.
 - Integration with the municipal SCADA or CMMS: a `lift_alert.qo` Notehub route that creates a CMMS work order automatically, so the on-call response begins the moment the Notecard transmits, not the moment an engineer reads an SMS.
 
-## 11. Summary
+## 12. Summary
+
 
 Every municipality is already sitting on the data it needs to prevent SSOs — the level is there, the pump current is there, the float switch is there. What's missing is a network path out. The Notecarrier CX plus a Notecard MBGLW or Starnote — depending on where the station sits relative to LTE coverage — and three sensor types provides that path for the full spread of municipal infrastructure: from the station three blocks from city hall to the one at the edge of the service territory where the nearest building is a grain elevator. The firmware runs entirely at the edge — three rules, 60-second samples, 30-minute alert cooldowns — and the Notecard handles everything else: the periodic outbound session, the local queue, the environment-variable distribution that lets an operator retune thresholds from a browser without touching a single vault lid. The M.2 module and antenna are the only hardware difference between a cellular station and a satellite station; the firmware, Notehub project, routes, and thresholds are shared across the fleet. The two variants do differ in alert delivery timing — a cellular alert reaches the on-call engineer within a minute of detection; a satellite alert arrives on the next available Skylo pass, typically within a few minutes. In either case, when a pump fails at 2 AM on a holiday weekend, the alert reaches the on-call engineer as soon as the configured thresholds are crossed — not after a Monday morning site visit.

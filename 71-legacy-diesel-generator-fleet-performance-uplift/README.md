@@ -28,7 +28,7 @@ This project closes that gap — for active alarm state, a firmware-observed ala
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
 
-## 2.5 Quickstart
+## 3. Technical Summary
 
 **You will have:** A commissioning note in Notehub confirming Modbus connectivity, hourly summaries showing generator status, and immediate alerts on controller faults.
 
@@ -50,7 +50,33 @@ This project closes that gap — for active alarm state, a firmware-observed ala
 4. **Set Modbus register addresses:** In Notehub, navigate Fleet → Environment. Add variables `reg_engine_rpm`, `reg_fuel_pct`, `reg_load_pct`, `reg_oil_kpa`, `reg_coolant_c`, `reg_run_hours`, `reg_alarm_word` with the correct addresses from your controller's Modbus map. Set `modbus_baud`, `modbus_slave_id`, `modbus_parity`, `modbus_stop_bits` to match the controller's configuration. The device fetches these on the next inbound sync (120 min by default; to test immediately, set `inbound` to 1 min in `hub.set` on the device).
 5. **Validate:** Open Notehub and wait for the device to appear in the project. After the first Modbus poll (1 min) and report boundary (60 min), you'll see a `gen_summary.qo` note with `data_ok = 1`, fuel level, alarm word, and run status. If `data_ok = 0` on all notes, check wiring, register addresses, baud rate, and slave address against the controller's commissioning menu (see [Validation and Testing](#8-validation-and-testing) / "Modbus first-light").
 
-**Firmware-observed alarm chronology.** The firmware polls the controller's active alarm bitmask once per `sample_minutes` (default 1 min) and fires a `controller_alarm` event on first observed assertion — on a zero→non-zero transition, or immediately at the first valid poll after boot if those bits are already set. Every distinct alarm-word transition — initial assertion, any mid-nonzero change where bits are added or cleared while at least one fault remains active, and the final clearance to zero — is appended to an 8-slot on-device ring buffer (`AlarmHistoryEntry`) and flushed as `gen_alarm_log.qo` at every report boundary, giving operations teams a per-window fault-set chronology. Transient faults that assert and clear entirely between two consecutive polls can still be missed. The controller's own internal timestamped alarm log (vendor-specific multi-register reads that may cover events predating the monitor's installation) is a production extension; see [Limitations](#9-limitations-and-next-steps).
+**Sample Note (gen_summary.qo):** Here is a sample Note this device emits:
+
+```json
+{
+  "file": "gen_summary.qo",
+  "body": {
+    "data_ok": 1,
+    "fuel_pct": 78.0,
+    "load_pct": -1.0,
+    "load_pct_peak": -1.0,
+    "oil_kpa_mean": -1.0,
+    "oil_kpa_peak": -1.0,
+    "coolant_c_mean": 24,
+    "coolant_c_peak": 24,
+    "run_hours": 1847,
+    "run_min": 0,
+    "stop_min": 60,
+    "engine_starts": 0,
+    "alarm_word": 0,
+    "alarm_word_stale": 0,
+    "samples_ok": 60,
+    "samples_failed": 0
+  }
+}
+```
+
+**Firmware-observed alarm chronology.** The firmware polls the controller's active alarm bitmask once per `sample_minutes` (default 1 min) and fires a `controller_alarm` event on first observed assertion — on a zero→non-zero transition, or immediately at the first valid poll after boot if those bits are already set. Every distinct alarm-word transition — initial assertion, any mid-nonzero change where bits are added or cleared while at least one fault remains active, and the final clearance to zero — is appended to an 8-slot on-device ring buffer (`AlarmHistoryEntry`) and flushed as `gen_alarm_log.qo` at every report boundary, giving operations teams a per-window fault-set chronology. Transient faults that assert and clear entirely between two consecutive polls can still be missed. The controller's own internal timestamped alarm log (vendor-specific multi-register reads that may cover events predating the monitor's installation) is a production extension; see [Limitations](#11-limitations-and-next-steps).
 
 **Why Notecard.** The timing of this deployment is the whole point. The standby generator exists to provide power when mains power fails — which is exactly when the facility's WiFi router also goes dark. A monitoring system that relies on the building's LAN cannot report a failure-to-start at the moment that matters most. Worse, a purely LAN-dependent monitor might be relied on as evidence that everything is fine, right up until the UPS batteries run dry. Cellular with an antenna routed outside the metal generator enclosure provides a communication path that is completely independent of the facility's power and network infrastructure. The cellular path is alive precisely because it draws from the generator panel's own battery-backed DC control bus — the same battery that starts the engine.
 
@@ -58,7 +84,7 @@ This is the key architectural insight: a well-designed generator panel already h
 
 **Deployment scenario.** A single OPTA RS485 + Wireless for OPTA mounted on the DIN rail inside the generator's main control panel, powered from the panel's existing battery-backed DC control bus, RS-485 wired to the controller's communications port, cellular antenna routed out through a cable gland. RS-485 wiring and Modbus communication-setting matching are required; beyond that, no writes to safety circuits, no OEM cooperation, and no IT involvement.
 
-## 3. Hardware Requirements
+## 4. Hardware Requirements
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
@@ -67,6 +93,8 @@ This is the key architectural insight: a well-designed generator panel already h
 | External cellular antenna, SMA, ~3m lead (e.g. [SparkFun WRL-14987](https://www.sparkfun.com/products/14987)) | 1 required, 2 recommended | Route the **primary** cellular antenna through a cable gland to the exterior of the metal generator enclosure — rubber-duck antennas inside a steel cabinet will not reliably maintain a cellular session. A **diversity** antenna on the second port improves LTE Cat-1 performance at marginal-signal sites. |
 | [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Bench-only coulomb counter. Spliced inline between the power supply and the Wireless for OPTA input during commissioning to validate Notecard energy per cellular session. Not deployed to the field. |
 | 24 VDC DIN-rail supply, ≥10W (e.g. [MeanWell HDR-15-24](https://www.meanwell.com/Upload/PDF/HDR-15/HDR-15-SPEC.PDF)) | 1 | For bench testing only. In field deployments, power the OPTA and expansion from the generator panel's existing battery-backed DC control bus. The [Wireless for OPTA Quickstart](https://dev.blues.io/quickstart/wireless-for-opta-quickstart/) documents supplying 12–24 VDC to the OPTA's power terminals and jumping that same rail to the expansion's power input, confirming the full 12–24 V range is supported end-to-end with no step-up converter required. |
+
+See [§4](#4-hardware-requirements) for the BOM.
 | 120 Ω termination resistor | 1–2 | RS-485 termination at each physical end of the bus. Place one at the OPTA and one at the controller. |
 | Shielded twisted pair, 22 AWG, RS-485 rated, 1–3 m | 1 | A → A, B → B, shield → controller signal ground between the OPTA and the generator controller. Length depends on panel layout. |
 | DIN rail section, ~15 cm | 1 | Mount for the OPTA + expansion. The generator panel likely already has DIN rail. |
@@ -74,7 +102,7 @@ This is the key architectural insight: a well-designed generator panel already h
 
 The Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
-## 4. Wiring and Assembly
+## 5. Wiring and Assembly
 
 ![Wiring: OPTA RS485 + Wireless for OPTA on DIN rail; RS-485 A/B/COM to controller with 120 Ω terminators at each end; antennas through cable glands; powered from panel's battery-backed DC bus](diagrams/02-wiring-assembly.svg)
 
@@ -82,7 +110,7 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 1. **Mount.** Snap the OPTA RS485 onto the DIN rail. Snap the Blues Wireless for OPTA onto the OPTA's right-hand expansion port and connect the supplied solderless AUX connector between the two — this carries the I²C lines that the Notecard uses. Per the [Wireless for OPTA Quickstart](https://dev.blues.io/quickstart/wireless-for-opta-quickstart/), the expansion is not powered through USB-C; use the 12–24 VDC supply rail for any testing beyond the bench.
 
-2. **Power.** In the field: **install the 3 A inline fuse holder (see [Hardware Requirements](#3-hardware-requirements)) in series with the positive supply lead from the battery-backed DC control bus before it reaches the OPTA's `+` terminal.** This fused branch protects the control bus against a sustained hard fault in the monitoring hardware. Wire the OPTA's `+` and `−` terminals to the generator panel's battery-backed DC control bus (12 or 24 VDC as appropriate for the installation), with the fuse in the positive lead. This bus is live from the engine start battery when mains power fails — giving the monitor its independent communication path precisely when the stakes are highest. Jump the same fused supply rail to the expansion's power input terminal so the Wireless for OPTA shares the fused branch. The [Wireless for OPTA Quickstart](https://dev.blues.io/quickstart/wireless-for-opta-quickstart/) documents exactly this wiring pattern for 12–24 VDC supplies. For bench testing: wire the 24 VDC DIN-rail supply's `+V` and `GND` outputs to the OPTA's `+` and `−` terminals in the same way, then power it from mains.
+2. **Power.** In the field: **install the 3 A inline fuse holder (see [Hardware Requirements](#4-hardware-requirements)) in series with the positive supply lead from the battery-backed DC control bus before it reaches the OPTA's `+` terminal.** This fused branch protects the control bus against a sustained hard fault in the monitoring hardware. Wire the OPTA's `+` and `−` terminals to the generator panel's battery-backed DC control bus (12 or 24 VDC as appropriate for the installation), with the fuse in the positive lead. This bus is live from the engine start battery when mains power fails — giving the monitor its independent communication path precisely when the stakes are highest. Jump the same fused supply rail to the expansion's power input terminal so the Wireless for OPTA shares the fused branch. The [Wireless for OPTA Quickstart](https://dev.blues.io/quickstart/wireless-for-opta-quickstart/) documents exactly this wiring pattern for 12–24 VDC supplies. For bench testing: wire the 24 VDC DIN-rail supply's `+V` and `GND` outputs to the OPTA's `+` and `−` terminals in the same way, then power it from mains.
 
 3. **Antennas.** Thread an SMA-female bulkhead lead through a cable gland for the primary cellular antenna and tighten it onto the first antenna port on the Wireless for OPTA. Add a second lead for the diversity antenna if the enclosure layout allows — it meaningfully improves LTE Cat-1 performance in generator rooms deep inside buildings. The bundled rubber-duck antennas are bench-only; steel enclosures kill their signal.
 
@@ -96,7 +124,9 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 6. **Bench validation.** During first-light testing, splice the Mojo inline between the 24 VDC supply and the Wireless for OPTA power input so it measures the expansion + Notecard subsystem energy per cellular session.
 
-## 5. Notehub Setup
+See [§4](#4-wiring-and-assembly) for detailed wiring instructions.
+
+## 6. Notehub Setup
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Once created, open the project dashboard and look for the **ProductUID** in the top-right corner (it looks like `com:yourcompany:projectname`). Copy it and paste it into `firmware/diesel_gen_monitor/diesel_gen_monitor.ino` line 39, replacing `com.your-company.your-name:diesel_gen_monitor`.
 
@@ -131,7 +161,7 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 5. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `gen_event.qo` (low-volume real-time alerts, destined for on-call paging or a **CMMS** — computerized maintenance management system) and a second for `gen_summary.qo` (long-term storage and trend analysis). Route `gen_alarm_log.qo` to the same real-time destination as `gen_event.qo` — the two share urgency (fault chronology belongs alongside alert notifications) but `gen_alarm_log.qo` is batched with the periodic outbound sync rather than triggering its own immediate cellular session. Keeping the three [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile) separate at the source lets each fan out to a different destination at a different urgency without filter logic in the route.
 
-## 6. Firmware Design
+## 7. Firmware Design
 
 Single sketch: [`firmware/diesel_gen_monitor/diesel_gen_monitor.ino`](firmware/diesel_gen_monitor/diesel_gen_monitor.ino), with helpers factored into [`diesel_gen_monitor_helpers.h`](firmware/diesel_gen_monitor/diesel_gen_monitor_helpers.h) and [`diesel_gen_monitor_helpers.cpp`](firmware/diesel_gen_monitor/diesel_gen_monitor_helpers.cpp).
 
@@ -380,7 +410,7 @@ if (stats.run_samples > 0) {
 }
 ```
 
-## 7. Data Flow
+## 8. Data Flow
 
 ![Data flow: poll 7 holding registers → per-poll alarm/FTS/Modbus rules (immediate) and report-window threshold rules (hourly) → gen_event.qo (sync:true) and gen_summary.qo (hourly templated) → Notehub](diagrams/03-data-flow.svg)
 
@@ -407,7 +437,7 @@ if (stats.run_samples > 0) {
 - `coolant_overtemp` — window-peak coolant temperature above `coolant_alarm_c`. Peak, not mean, because an overheat event can spike and resolve within a single report window.
 - `oil_low_pressure` — window-mean oil pressure below `oil_low_kpa` **while the engine was running**. Only evaluated when `run_samples > 0`.
 
-## 8. Validation and Testing
+## 9. Validation and Testing
 
 **Expected steady-state behavior.** A correctly-commissioned generator in standby should produce one `gen_summary.qo` event per hour with `run_min = 0`, `engine_starts = 0`, and `alarm_word = 0`. During a weekly exercise test (typically 30 minutes), the summary windows that straddle the test will show non-zero `run_min`, `engine_starts = 1` in the window that captured the start, and non-zero `load_pct` and `oil_kpa_mean`. Verifying that pattern during the first scheduled test after installation is the primary validation step.
 
@@ -429,7 +459,7 @@ Confirm on the Mojo trace: idle current between syncs is in the µA range. Durin
 
 In the field, the generator's start battery sustains the control bus through a mains failure, but it is not an infinite reservoir. The dominant continuous load is the OPTA host (0.6–2.2 W per the datasheet); the Notecard expansion's 8–18 µA idle draw is negligible alongside it. Use the ammeter or second Mojo measurement described above to record actual OPTA host current during commissioning, then compare it against the site's rated battery capacity to bound worst-case autonomy — particularly relevant at 12 V sites with smaller batteries. The 3 A fuse required in [Hardware Requirements](#3-hardware-requirements) and installed per [Wiring and Assembly](#4-wiring-and-assembly) Step 2 is sized for worst-case 12 V operation: the OPTA host draws up to ≤183 mA continuous and the Notecard expansion can burst to ≤2 A at the bus input, for a combined worst-case total of ≤2.2 A. To verify sizing at your specific installation, add the measured OPTA supply current to the peak Notecard-expansion burst current (≤2 A) from the Mojo trace and confirm the combined total remains below the installed fuse rating. Sites with 24 V supplies see proportionally lower bus currents, making the 3 A rating conservative; do not omit the fuse.
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 **Device appears in Notehub but all `gen_summary.qo` notes show `data_ok = 0`**
 - Modbus polling failed on all retries. Check wiring: are OPTA `A/B/COM` correctly wired to the controller's corresponding terminals? Use a multimeter to verify continuity.
@@ -450,7 +480,7 @@ In the field, the generator's start battery sustains the control bus through a m
 - Environment variables not applied. Changes set in Notehub take effect on the device's next **inbound sync**, not immediately. The default `inbound` cadence is 120 min; to test quickly, temporarily set it to 1 min via `hub.set` on the device or via a direct Notehub API call, then revert after testing.
 - Rule thresholds not realistic. If `fuel_low_pct` is set to 100, the device will trigger `fuel_low` on every summary. Verify threshold values match your site's expectations (e.g., `fuel_low_pct = 25.0` for "alert when fuel falls below 25%").
 
-## 10. Limitations and Next Steps
+## 11. Limitations and Next Steps
 
 **Simplified for this reference design:**
 
@@ -471,6 +501,6 @@ In the field, the generator's start battery sustains the control bus through a m
 - Fuel consumption rate: derive from the rate of change in fuel level across run events. Combined with load data, this gives a fuel-per-kWh efficiency figure that accumulates across the maintenance history.
 - Automatic weekly test verification: flag a `test_not_detected` event if no engine start is observed in a configurable rolling window, catching test skips before an audit or inspection.
 
-## 11. Summary
+## 12. Summary
 
 The controller sitting inside that generator enclosure has been measuring fuel level, coolant temperature, oil pressure, load, run hours, and active alarm state for years — the data has always existed. What was missing was a communication path that works when the data matters most: when mains power fails, when the facility's network is dark, and when the generator either starts successfully or fails to do so in the next thirty seconds. An OPTA RS485 + Blues Wireless for OPTA mounted on the DIN rail, powered from the generator's own battery-backed control bus, provides exactly that path — a cellular uplink that is structurally independent of facility power and completely indifferent to whether the WiFi router is working. The same Modbus interface that was installed for local diagnostics now provides real-time remote visibility, alarm alerting, and the run-hour and load history needed to get ahead of maintenance intervals. Weekly exercise tests leave a clear signature in the hourly summaries — `engine_starts`, `run_min`, `load_pct`, and `oil_kpa_mean` all show up in the window that captured the test — so a facility manager can review test outcomes without being on site. Automatic detection of a missed test (flagging `test_not_detected` when no start is observed in a configurable rolling window) is a planned next step; see [Limitations](#9-limitations-and-next-steps). The generator doesn't change. Only the information does.
