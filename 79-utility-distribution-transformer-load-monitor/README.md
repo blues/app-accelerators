@@ -324,7 +324,7 @@ The firmware defines several key tuning constants in `transformer_load_monitor_h
 
 ### 10.5 Event payload design
 
-One [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefile for summaries (`xfmr_summary.qo`), one untemplated Notefile for alerts (`xfmr_alert.qo`). Templates trade flexibility for efficiency: the Notecard stores fixed-length binary records internally and the wire payload is ~3–5× smaller than free-form JSON, which matters across a fleet that may transmit daily summaries for a decade.
+One [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefile for summaries (`xfmr_summary.qo`), one untemplated Notefile for alerts (`xfmr_alert.qo`). Templates trade flexibility for efficiency: the Notecard stores fixed-length binary records internally and the wire payload is ~3–5× smaller than free-form JSON, which matters across a fleet that may transmit daily summaries for a decade.
 
 Sample alert body (phase imbalance event):
 ```json
@@ -361,7 +361,7 @@ The Notecard Cell+WiFi itself idles at [~18 µA @ 5V](https://dev.blues.io/notec
 
 ### 10.8 Key code snippet 1: note template definition
 
-Template fields use [numeric type hints](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates): `14.1` means 4-byte IEEE-754 float; `12` means 2-byte signed integer.
+Template fields use [numeric type hints](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates): `14.1` means 4-byte IEEE-754 float; `12` means 2-byte signed integer.
 
 ```cpp
 J *req = notecard.newRequest("note.template");

@@ -343,7 +343,7 @@ A Rogowski coil installed with reversed lead polarity produces a consistently ne
 
 ### 9.4 Event payload design
 
-`meter_summary.qo` is registered as a [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) notefile at first boot. Templates store Notes as fixed-length binary records, reducing on-wire size by 3–5× vs. free-form JSON.
+`meter_summary.qo` is registered as a [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) notefile at first boot. Templates store Notes as fixed-length binary records, reducing on-wire size by 3–5× vs. free-form JSON.
 
 **`meter_summary.qo` — emitted hourly (canonical record)**
 

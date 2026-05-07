@@ -350,7 +350,7 @@ The DS18B20 temperature probe is retained in the design for cloud-side seasonal 
 
 ### Event payload design
 
-Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefiles. Templates store notes as compact fixed-length records rather than free-form JSON — at 365 summary notes per tank per year across a fleet of thousands of tanks, the bandwidth savings are material on a prepaid SIM.
+Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefiles. Templates store notes as compact fixed-length records rather than free-form JSON — at 365 summary notes per tank per year across a fleet of thousands of tanks, the bandwidth savings are material on a prepaid SIM.
 
 `tank_status.qo` (daily summary):
 

@@ -195,7 +195,7 @@ arduino-cli upload -p /dev/ttyUSB0 --fqbn STMicroelectronics:stm32:Blues:pnum=CY
 
 ### Event payload design
 
-Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefiles. Templates store records as fixed-length binary on the Notecard rather than free-form JSON, reducing on-wire payload by roughly 3–5×.
+Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefiles. Templates store records as fixed-length binary on the Notecard rather than free-form JSON, reducing on-wire payload by roughly 3–5×.
 
 `pm25_avg` and `pm10_avg` are computed over the subset of wake cycles in which the PM sensor returned a valid read (tracked separately in `AppState.pmSampleCount`), so a failed sensor read on one cycle does not dilute the window mean. `pm_samples` carries that valid-read count as an explicit validity field. When `pm_samples` is `0`, every read in the window failed: `pm25_avg` and `pm10_avg` are emitted as `–9999.0` — an unambiguous invalid-data sentinel that no downstream consumer can mistake for genuinely particulate-free air. `db_a_avg` is computed over all wake cycles (`sampleCount`), since the ADC is always sampled. Example summary body:
 

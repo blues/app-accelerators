@@ -186,7 +186,7 @@ After upload, open the serial monitor at **115200 baud** to watch the `[sample]`
 
 ### 7.4 Event payload design
 
-One [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) summary note (`rtu_summary.qo`) shipped hourly; untemplated alerts (`rtu_alert.qo`) shipped immediately via `sync:true`. Templates matter here because an RTU pack running for 10 years on 500 MB has to respect its data budget — templated notes travel as fixed-length records, not free-form JSON, and shrink the wire size by roughly 3–5×.
+One [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) summary note (`rtu_summary.qo`) shipped hourly; untemplated alerts (`rtu_alert.qo`) shipped immediately via `sync:true`. Templates matter here because an RTU pack running for 10 years on 500 MB has to respect its data budget — templated notes travel as fixed-length records, not free-form JSON, and shrink the wire size by roughly 3–5×.
 
 A quick refresher on the [Note template format](https://dev.blues.io/api-reference/notecard-api/note-requests/#note-template), which the snippet below uses: each numeric placeholder is a magic number whose integer part declares the wire type and whose fractional part declares the precision. `14.1` is a 4-byte IEEE-754 float kept to 1 decimal place; `12` is a 2-byte signed integer; `11` is a 1-byte signed integer; `18` is a 64-bit float. The Notecard rejects any subsequent `note.add` whose body doesn't match the registered shape, which catches firmware mistakes at the device rather than days later in your downstream pipeline.
 

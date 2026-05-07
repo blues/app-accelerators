@@ -200,7 +200,7 @@ fill_pct = (tank_empty_cm - dist_cm) / (tank_empty_cm - tank_full_cm) × 100
 
 ### Event payload design
 
-Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefiles. Templates encode each Note as a fixed-length binary record, reducing over-the-air payload size by roughly 3–5× relative to free-form JSON — meaningful for a device on a prepaid SIM running for years between physical service visits.
+Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefiles. Templates encode each Note as a fixed-length binary record, reducing over-the-air payload size by roughly 3–5× relative to free-form JSON — meaningful for a device on a prepaid SIM running for years between physical service visits.
 
 `sanitation_summary.qo` (hourly):
 

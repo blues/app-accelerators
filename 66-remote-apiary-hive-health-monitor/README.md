@@ -264,7 +264,7 @@ These three features are averaged across the 12 windows and stored in the daily 
 
 ### Event payload design
 
-Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefiles using `"format": "compact"` — required for NTN/Starnote operation and good practice regardless, as compact templates reduce on-wire payload size by 3–5× compared with free-form JSON.
+Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefiles using `"format": "compact"` — required for NTN/Starnote operation and good practice regardless, as compact templates reduce on-wire payload size by 3–5× compared with free-form JSON.
 
 `hive_summary.qo` (daily, templated compact):
 

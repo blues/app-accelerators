@@ -310,7 +310,7 @@ For **arrival events**, `captureGnssState()` is called while GPS is still in per
 
 ### 7.4 Event payload design
 
-All three Notefiles use [`"format":"compact"`](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) templates to minimize over-the-air size. Iridium SBD enforces a maximum payload size per message, and the compact format strips the JSON envelope and stores Notes as fixed-length binary records; at the field sizes used here (uint8, float16, float32, int32), each Note is approximately 14–20 bytes on the wire — well within the limit.
+All three Notefiles use [`"format":"compact"`](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) templates to minimize over-the-air size. Iridium SBD enforces a maximum payload size per message, and the compact format strips the JSON envelope and stores Notes as fixed-length binary records; at the field sizes used here (uint8, float16, float32, int32), each Note is approximately 14–20 bytes on the wire — well within the limit.
 
 **Payload Reference (for downstream integrators):**
 

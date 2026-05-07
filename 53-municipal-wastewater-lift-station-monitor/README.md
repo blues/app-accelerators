@@ -247,7 +247,7 @@ The `.ino` file is self-contained for the Arduino IDE (which compiles `.ino` + `
 
 ### Event payload design
 
-Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefiles. Templates give both files a fixed-width wire encoding, shrinking each note by roughly 3–5× versus free-form JSON — meaningful over a multi-year deployment with 24 summary notes per day per station.
+Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefiles. Templates give both files a fixed-width wire encoding, shrinking each note by roughly 3–5× versus free-form JSON — meaningful over a multi-year deployment with 24 summary notes per day per station.
 
 **`lift_alert.qo`** — Emitted immediately (within seconds for cellular, minutes for satellite) when any fault rule trips. Example:
 

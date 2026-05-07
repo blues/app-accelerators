@@ -198,7 +198,7 @@ All seven must succeed in a single attempt before the sample is marked valid. Pa
 
 ### Event payload design
 
-Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefiles. Templates store records as fixed-length binary rather than free-form JSON, shrinking on-wire payload 3–5×. For a fleet of 50 generators sending hourly summaries over a prepaid SIM with a finite data budget, that compression is not optional. Template binary data is decoded by Notehub and displayed as JSON in your browser or API responses.
+Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefiles. Templates store records as fixed-length binary rather than free-form JSON, shrinking on-wire payload 3–5×. For a fleet of 50 generators sending hourly summaries over a prepaid SIM with a finite data budget, that compression is not optional. Template binary data is decoded by Notehub and displayed as JSON in your browser or API responses.
 
 `gen_summary.qo` (periodic, default hourly) — example shows a standby window where the engine was stopped the entire hour. This is the decoded JSON you'll see in the Notehub dashboard or when retrieving notes via API:
 

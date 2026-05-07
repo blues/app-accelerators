@@ -236,7 +236,7 @@ Main sketch: [`firmware/construction_equipment_anti_theft/construction_equipment
 
 ### Event payload design
 
-Both Notefiles use [`compact` note templates](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) with a `port` number. Compact templates are **required** for Notecard for Skylo: they store notes as fixed-length binary records rather than free-form JSON, shrinking per-note wire size by 3–5×.
+Both Notefiles use [`compact` note templates](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) with a `port` number. Compact templates are **required** for Notecard for Skylo: they store notes as fixed-length binary records rather than free-form JSON, shrinking per-note wire size by 3–5×.
 
 Compact record sizes are derived directly from the template field types declared in `defineTemplates()`:
 

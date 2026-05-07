@@ -202,7 +202,7 @@ Three-file Arduino project in `firmware/creek_flood_gauge/`:
 
 ### Event payload design
 
-Two [compact template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefiles. Compact format (`"format":"compact"`) strips metadata overhead from each note, shrinking the on-wire payload to the minimum needed — important for conserving the 10 KB Skylo satellite data budget that the Notecard for Skylo ships with.
+Two [compact template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefiles. Compact format (`"format":"compact"`) strips metadata overhead from each note, shrinking the on-wire payload to the minimum needed — important for conserving the 10 KB Skylo satellite data budget that the Notecard for Skylo ships with.
 
 `gauge_alert.qo` (immediate, `sync:true`):
 
@@ -263,7 +263,7 @@ Sampling and transmission are intentionally decoupled: the device samples every 
 
 ### Key code snippet 1: compact template definition
 
-All three Notefiles (`gauge_reading.qo`, `gauge_alert.qo`, `gauge_fault.qo`) use [compact format](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates). The `port` field is required for compact templates; `tips_window` and `tips_total` use unsigned integer encodings (`22` = 2-byte unsigned, `24` = 4-byte unsigned) to avoid negative-sentinel ambiguity. The `kind` field in `gauge_alert.qo` and `gauge_fault.qo` is declared with `"16"` (16 characters) to accommodate the longest alert identifier (`level_critical`, 14 characters). For floating-point fields, `"14.1"` means 14 bits of range, 1 bit of fractional precision—sufficient for millimeters and mm/min rates without bloating each note's byte count.
+All three Notefiles (`gauge_reading.qo`, `gauge_alert.qo`, `gauge_fault.qo`) use [compact format](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates). The `port` field is required for compact templates; `tips_window` and `tips_total` use unsigned integer encodings (`22` = 2-byte unsigned, `24` = 4-byte unsigned) to avoid negative-sentinel ambiguity. The `kind` field in `gauge_alert.qo` and `gauge_fault.qo` is declared with `"16"` (16 characters) to accommodate the longest alert identifier (`level_critical`, 14 characters). For floating-point fields, `"14.1"` means 14 bits of range, 1 bit of fractional precision—sufficient for millimeters and mm/min rates without bloating each note's byte count.
 
 ```cpp
 J *req = notecard.newRequest("note.template");

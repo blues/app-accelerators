@@ -268,7 +268,7 @@ The four measurement characteristics use three different wire encodings — it i
 
 ### 6.5 Event payload design
 
-Each Notefile uses a [template](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) that stores notes as fixed-length binary records on the Notecard rather than free-form JSON, reducing per-reading wire size by 3–5×.
+Each Notefile uses a [template](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) that stores notes as fixed-length binary records on the Notecard rather than free-form JSON, reducing per-reading wire size by 3–5×.
 
 `weight.qo` sample:
 ```json

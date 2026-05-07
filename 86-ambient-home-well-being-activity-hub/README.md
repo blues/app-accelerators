@@ -315,7 +315,7 @@ To watch Notecard JSON traffic during bring-up, first uncomment the `// #define 
 
 ### 7.4 Event payload design
 
-`activity_summary.qo` uses a [note template](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) registered at boot, giving each note a fixed binary encoding on the wire — roughly 3–5× smaller than free-form JSON for this field set. An hourly summary looks like:
+`activity_summary.qo` uses a [note template](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) registered at boot, giving each note a fixed binary encoding on the wire — roughly 3–5× smaller than free-form JSON for this field set. An hourly summary looks like:
 
 ```json
 {

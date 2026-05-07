@@ -170,7 +170,7 @@ Samples taken while the machine is **idle** (cycle state ≠ 1) are excluded fro
 
 ### Event payload design
 
-Three [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefiles. Templates store Notes as fixed-length binary records on the Notecard rather than free-form JSON, cutting wire size by 3–5× — meaningful for a device that may run for a decade against its included 500 MB.
+Three [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefiles. Templates store Notes as fixed-length binary records on the Notecard rather than free-form JSON, cutting wire size by 3–5× — meaningful for a device that may run for a decade against its included 500 MB.
 
 `cnc_summary.qo` (queued hourly, templated):
 

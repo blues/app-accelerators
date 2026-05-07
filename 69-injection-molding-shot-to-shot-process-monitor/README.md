@@ -235,7 +235,7 @@ Single sketch: [`firmware/injection_molding_shot_monitor/injection_molding_shot_
 
 ### Event payload design
 
-Both Notefiles are [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates). Templates tell the Notecard to store and transmit fixed-length binary records rather than free-form JSON, shrinking per-Note wire size by 3–5×. On a machine cycling every 30 seconds across a three-shift day, that's roughly 2,880 shot Notes per day — templates materially reduce per-Note wire size, which helps keep the daily cellular data budget manageable at high cycle rates.
+Both Notefiles are [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates). Templates tell the Notecard to store and transmit fixed-length binary records rather than free-form JSON, shrinking per-Note wire size by 3–5×. On a machine cycling every 30 seconds across a three-shift day, that's roughly 2,880 shot Notes per day — templates materially reduce per-Note wire size, which helps keep the daily cellular data budget manageable at high cycle rates.
 
 `pack_psi` and `cool_c_s` are recorded in `shot.qo` for downstream trend analysis but do not drive alert rules in this design — only `peak_psi`, `fill_ms`, and `temp_avg_c` are evaluated against configurable alert thresholds.
 

@@ -342,7 +342,7 @@ Open the serial monitor at **115200 baud** to watch `[meas]` lines during bring-
 
 ### 6.4 Event payload design
 
-Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefiles. Compact format (`format: "compact"`) with unique port numbers is required so notes are compatible with satellite transmission. `battery_status.qo` carries `delete: true`, which instructs the Notecard to discard any queued summaries if the Notecard establishes a satellite NTN session (rather than sending several hours of accumulated summaries over the metered satellite link). `battery_alert.qo` has no `delete` flag — critical alerts must get through on any available transport.
+Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefiles. Compact format (`format: "compact"`) with unique port numbers is required so notes are compatible with satellite transmission. `battery_status.qo` carries `delete: true`, which instructs the Notecard to discard any queued summaries if the Notecard establishes a satellite NTN session (rather than sending several hours of accumulated summaries over the metered satellite link). `battery_alert.qo` has no `delete` flag — critical alerts must get through on any available transport.
 
 **`battery_status.qo` hourly summary:**
 

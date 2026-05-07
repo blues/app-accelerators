@@ -281,7 +281,7 @@ Location is provided by [`card.triangulate`](https://dev.blues.io/notecard/notec
 
 Motion events are untemplated — they're low-volume (at most a handful per day per container) and the flexible JSON schema is useful while the design evolves. `sync:true` tells the Notecard to bypass the `outbound` cadence timer and initiate a cellular session as soon as the note is queued, so the event typically reaches Notehub within a session-establishment window of 15–60 s after the motion threshold is crossed (depending on network conditions and the configured bucket duration). Notehub appends triangulated `where_*` fields before forwarding to any configured routes.
 
-**`tote_heartbeat.qo`** (daily, `sync:true`, [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates)):
+**`tote_heartbeat.qo`** (daily, `sync:true`, [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates)):
 
 ```json
 {

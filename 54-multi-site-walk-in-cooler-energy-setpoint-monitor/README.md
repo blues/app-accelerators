@@ -218,7 +218,7 @@ Main sketch plus helper files: [`firmware/cooler_monitor/cooler_monitor.ino`](fi
 
 ### Event payload design
 
-Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefiles. Templates let the Notecard store Notes as fixed-length binary records rather than free-form JSON, shrinking on-wire payload size by roughly 3–5×. At 24 summary Notes per box per day across a thousand-store fleet, the difference compounds. When you view events in Notehub (Events tab), they appear as human-readable JSON; the binary template format is internal storage only.
+Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefiles. Templates let the Notecard store Notes as fixed-length binary records rather than free-form JSON, shrinking on-wire payload size by roughly 3–5×. At 24 summary Notes per box per day across a thousand-store fleet, the difference compounds. When you view events in Notehub (Events tab), they appear as human-readable JSON; the binary template format is internal storage only.
 
 **Template type encoding** (used by the firmware in `defineTemplates()`): `14.1` = IEEE 754 4-byte float; `14` = 4-byte signed integer; `12` = 2-byte signed integer; `22` = 2-byte unsigned integer. These are specified when registering a template to the Notecard so it knows how to pack and unpack each field.
 

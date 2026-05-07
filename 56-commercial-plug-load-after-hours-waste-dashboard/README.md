@@ -219,7 +219,7 @@ The 12-bit ADC on the STM32L433 is enabled explicitly with `analogReadResolution
 
 ### Event payload design
 
-Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefiles. Templates store records as fixed-length binary rather than free-form JSON, reducing on-wire size roughly 3–5× — material for a device transmitting 24 summary notes per day per panel over a multi-month engagement.
+Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefiles. Templates store records as fixed-length binary rather than free-form JSON, reducing on-wire size roughly 3–5× — material for a device transmitting 24 summary notes per day per panel over a multi-month engagement.
 
 `circuit_summary.qo` (hourly):
 

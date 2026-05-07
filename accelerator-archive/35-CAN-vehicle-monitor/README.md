@@ -141,7 +141,7 @@ Then, if we check back on the Events tab of our project on Notehub, we should se
 }
 ```
 
-The `data` array has been padded with zeros to 8 elements. The firmware is using a [Note Template](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) to send this data. Setting aside the nitty gritty details, suffice to say that an array in a Note Template will always be padded to the max length. Since the max data length in a CAN message is 8 bytes, that explains the padding. To extract the appropriate "valid" bytes from the data array, you can use the `length` field.
+The `data` array has been padded with zeros to 8 elements. The firmware is using a [Note Template](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) to send this data. Setting aside the nitty gritty details, suffice to say that an array in a Note Template will always be padded to the max length. Since the max data length in a CAN message is 8 bytes, that explains the padding. To extract the appropriate "valid" bytes from the data array, you can use the `length` field.
 
 Next, try sending a message with an ID we don't care about:
 

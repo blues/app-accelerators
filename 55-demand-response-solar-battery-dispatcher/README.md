@@ -265,7 +265,7 @@ Each device allows up to three retries per poll cycle. If all three fail, `valid
 
 Two Notefiles, with different urgencies and destinations.
 
-`solar_telemetry.qo` is [template-encoded](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) and transmitted on the `report_minutes` cadence (default 15 min). Templates compress these notes from free-form JSON into fixed-length records — at 96 records per day across a multi-year deployment on a prepaid SIM, the 3–5× bandwidth savings is material. Example body when all devices are reachable:
+`solar_telemetry.qo` is [template-encoded](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) and transmitted on the `report_minutes` cadence (default 15 min). Templates compress these notes from free-form JSON into fixed-length records — at 96 records per day across a multi-year deployment on a prepaid SIM, the 3–5× bandwidth savings is material. Example body when all devices are reachable:
 
 ```json
 {

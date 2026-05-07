@@ -253,7 +253,7 @@ Data-path helpers: [`firmware/solar_string_monitor/solar_string_monitor_helpers.
 
 ### Event payload design
 
-Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefiles. Templates store notes as fixed-length binary records rather than free-form JSON, reducing per-note wire size by 3–5× — meaningful at 24 summary notes/day per device over a multi-year deployment on a shared SIM.
+Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefiles. Templates store notes as fixed-length binary records rather than free-form JSON, reducing per-note wire size by 3–5× — meaningful at 24 summary notes/day per device over a multi-year deployment on a shared SIM.
 
 **Alert note** (`solar_alert.qo`, `sync:true`, fires on Performance Ratio threshold trip):
 

@@ -253,7 +253,7 @@ The SDM120 performs all V and I measurement and computation internally; the Cygn
 
 ### 7.4 Event payload design
 
-`charger_summary.qo` uses a [template](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) that encodes each record as ~40 bytes on the wire (versus ~200 bytes as free-form JSON). At one record per hour per charger across a 50-unit fleet, this is meaningful over the lifetime of a 500 MB SIM. The template is registered once at cold boot and survives Notecard reboots.
+`charger_summary.qo` uses a [template](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) that encodes each record as ~40 bytes on the wire (versus ~200 bytes as free-form JSON). At one record per hour per charger across a 50-unit fleet, this is meaningful over the lifetime of a 500 MB SIM. The template is registered once at cold boot and survives Notecard reboots.
 
 `charger_session.qo` and `charger_alert.qo` are intentionally left untemplated. Session Notes are infrequent (one per EV charge, typically 1–8 per day) and the alert body has a different shape from the session body, so keeping them untemplated avoids the schema-conflict issue that arises from mixing two different body shapes under a single template.
 

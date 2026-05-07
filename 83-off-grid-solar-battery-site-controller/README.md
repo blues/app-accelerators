@@ -312,7 +312,7 @@ After upload, open the serial monitor at **115200 baud**. On first boot you'll s
 
 ### 6.4 Event payload design
 
-`solar_summary.qo` uses a [Note template](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) registered at first boot. Templated Notes are stored as fixed-length records on the Notecard rather than free-form JSON, reducing wire size by roughly 3–5× — meaningful on a system that will run for years on a prepaid cellular SIM. Every field in the template schema is **always present** in every Note body, using explicit sentinel values when no valid samples were collected for that metric in the window:
+`solar_summary.qo` uses a [Note template](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) registered at first boot. Templated Notes are stored as fixed-length records on the Notecard rather than free-form JSON, reducing wire size by roughly 3–5× — meaningful on a system that will run for years on a prepaid cellular SIM. Every field in the template schema is **always present** in every Note body, using explicit sentinel values when no valid samples were collected for that metric in the window:
 
 - `SUMMARY_SENTINEL_F = −9999.0` — all float fields (`bat_v`, `bat_a`, `bat_w`, `soc_pct`, `bat_temp_c`, `pv_v`, `pv_w`, `yield_kwh`, `load_w`).
 - `SUMMARY_SENTINEL_TTG = −9999` — `ttg_min` when no SmartShunt data was received in the window. A value of −1 (separate from the sentinel) means the SmartShunt was present but the battery was not in an active discharge (TTG is inapplicable or infinite). A value ≥ 0 is the active discharge estimate in minutes.

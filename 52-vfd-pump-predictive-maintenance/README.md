@@ -157,7 +157,7 @@ Polling cadence is `sample_minutes` (default 1 min). For each sample, `accumulat
 
 ### Event payload design
 
-Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) Notefiles. Templates give summary and alert records a stable schema, store as fixed-length records on the Notecard rather than free-form JSON, and minimize on-wire payload size — material at 24 summary Notes per day per pump over a multi-year deployment. Actual cellular data usage depends on sync cadence, signal conditions, routing behavior, and event frequency, so production deployments should validate usage with [Notehub usage data](https://dev.blues.io/notehub/notehub-walkthrough/#viewing-billing-account-usage) before sizing SIM data plans.
+Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefiles. Templates give summary and alert records a stable schema, store as fixed-length records on the Notecard rather than free-form JSON, and minimize on-wire payload size — material at 24 summary Notes per day per pump over a multi-year deployment. Actual cellular data usage depends on sync cadence, signal conditions, routing behavior, and event frequency, so production deployments should validate usage with [Notehub usage data](https://dev.blues.io/notehub/notehub-walkthrough/#viewing-billing-account-usage) before sizing SIM data plans.
 
 `vfd_summary.qo` (hourly):
 

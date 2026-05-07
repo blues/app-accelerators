@@ -267,7 +267,7 @@ Classifying engine vibration from transport vibration was the primary design cha
 
 ### 7.4 Event payload design
 
-Both Notefiles use [compact templates](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) — required for Notecard for Skylo, where satellite data packets are constrained to 256 bytes and cost per byte beyond the included 10 KB. Compact templates store notes as fixed-length binary records on the Notecard rather than free-form JSON, reducing wire size 3–5× compared to untemplated notes.
+Both Notefiles use [compact templates](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) — required for Notecard for Skylo, where satellite data packets are constrained to 256 bytes and cost per byte beyond the included 10 KB. Compact templates store notes as fixed-length binary records on the Notecard rather than free-form JSON, reducing wire size 3–5× compared to untemplated notes.
 
 `equip_summary.qo` (rolling summary window, queued):
 ```json
@@ -360,7 +360,7 @@ JAddNumberToObject(body, "_lon",          14.1);      // 4-byte float, auto-popu
 notecard.sendRequest(req);
 ```
 
-See [Notecard compact template documentation](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) for the complete list of format codes and their ranges.
+See [Notecard compact template documentation](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) for the complete list of format codes and their ranges.
 
 ### 7.9 Key code snippet 3: immediate event with session duration
 

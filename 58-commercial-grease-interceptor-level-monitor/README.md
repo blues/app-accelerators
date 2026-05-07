@@ -198,7 +198,7 @@ The A02YYUW streams 4-byte UART packets continuously at 9600 baud: `[0xFF][high]
 
 ### Event payload design
 
-One [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates) daily summary note (`grease_summary.qo`), plus an untemplated immediate alert (`grease_alert.qo`) whenever `fill_pct` is at or above the alert threshold and the 1-hour cooldown has elapsed — which means a new alert fires every cooldown interval for as long as the interceptor remains above threshold. The template fixes each summary to a compact binary record (approximately 28 bytes on the wire), a meaningful saving over a full deployment lifetime with a sensor that's been installed for years in hundreds of interceptors. See "Example payloads routed to Notehub" below (§8) for the payload shape.
+One [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) daily summary note (`grease_summary.qo`), plus an untemplated immediate alert (`grease_alert.qo`) whenever `fill_pct` is at or above the alert threshold and the 1-hour cooldown has elapsed — which means a new alert fires every cooldown interval for as long as the interceptor remains above threshold. The template fixes each summary to a compact binary record (approximately 28 bytes on the wire), a meaningful saving over a full deployment lifetime with a sensor that's been installed for years in hundreds of interceptors. See "Example payloads routed to Notehub" below (§8) for the payload shape.
 
 ### Low-power strategy
 
