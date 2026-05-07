@@ -87,7 +87,11 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ![Wiring: 24 VDC supply, OPTA RS485, Wireless for OPTA, antennas on DIN rail; Cat6 Ethernet point-to-point to CNC at 192.168.250.1; six contiguous holding registers polled per minute](diagrams/02-wiring-assembly.svg)
 
-> **Safety.** Machine electrical panels contain hazardous voltages on the main power bus, even when control wiring is low-voltage. Installation must be performed by qualified personnel following site lockout/tagout procedures and applicable electrical codes. This reference design is **read-only** over Modbus — it does not issue any commands to the CNC controller.
+<Warning>
+
+**Safety.** Machine electrical panels contain hazardous voltages on the main power bus, even when control wiring is low-voltage. Installation must be performed by qualified personnel following site lockout/tagout procedures and applicable electrical codes. This reference design is **read-only** over Modbus — it does not issue any commands to the CNC controller.
+
+</Warning>
 
 1. **Mount and power.** Snap the Wireless for OPTA onto the OPTA's right-hand expansion port. The AUX connector between the two carries the I²C bus that the Notecard rides on — use the solderless AUX connector included with Wireless for OPTA. Mount the assembly on the DIN rail. Wire 24 VDC from the panel supply to the OPTA's `+` and `-` terminals. Per the [Wireless for OPTA quickstart](https://dev.blues.io/quickstart/wireless-for-opta-quickstart/), 24 VDC is required for field deployment — USB-C powers the host CPU for programming but does not power the OPTA's output stage or the expansion. Jumper the OPTA's `+24V` terminal to the expansion's corresponding power input so both share the same supply rail.
 
@@ -280,7 +284,7 @@ s.spindleLoadPct  = rawSpindle      / 10.0f;
 s.feedOverridePct = rawFeedOverride / 10.0f;  // e.g. 1000 → 100.0 % of programmed rate
 ```
 
-### Key code snippet 3 — Immediate alarm note with `sync:true`
+### Key code snippet 3 — Immediate alarm note with sync:true
 
 ```cpp
 // sync:true bypasses the hourly outbound window — the Notecard wakes the

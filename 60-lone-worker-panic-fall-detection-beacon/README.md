@@ -11,7 +11,11 @@ A wearable [safety assurance](https://blues.com/safety-assurance/) device for ut
 ## 1. Project Overview
 
 
-> **Not a certified life-safety device.** This is a proof-of-concept reference design intended to demonstrate Blues hardware and firmware patterns. It is not a certified personal emergency response system (PERS), not a classified man-down or lone-worker protection device under any regulatory scheme, and has not been evaluated for fail-safe or safety-critical operation. It must **supplement — not replace** — established lone-worker safety procedures, mandatory check-in protocols, required PPE, and any regulatory or contractual safety obligations that apply to your operation. Never deploy this design as a sole means of worker protection.
+<Warning>
+
+**Not a certified life-safety device.** This is a proof-of-concept reference design intended to demonstrate Blues hardware and firmware patterns. It is not a certified personal emergency response system (PERS), not a classified man-down or lone-worker protection device under any regulatory scheme, and has not been evaluated for fail-safe or safety-critical operation. It must **supplement — not replace** — established lone-worker safety procedures, mandatory check-in protocols, required PPE, and any regulatory or contractual safety obligations that apply to your operation. Never deploy this design as a sole means of worker protection.
+
+</Warning>
 
 **The problem.** A utility lineman working an isolated substation, an oilfield pumper checking a remote wellhead at night, a field-service tech in a basement boiler room at 2 AM — each of these workers shares a common vulnerability: if something goes wrong, nobody will know for hours. Lone-worker incidents don't always announce themselves. Falls from elevation are silent. Heart events are silent. The worker simply stops moving, and no one notices until a shift check-in is missed or a buddy does a welfare call.
 
@@ -303,7 +307,7 @@ A startup fault — missing or empty `PRODUCT_UID`, `hub.set` failure after five
 
 **Alert rate limiting and suppression.** `DEFAULT_ALERT_COOLDOWN_SEC` (60 s) gates fall and panic alerts. If a fall or panic event occurs within 60 seconds of the previous alert, no note is queued and no GPS acquisition is attempted. A suppressed fall produces no local indication; a suppressed panic produces a single haptic buzz so the worker knows the hold was registered (distinct from the triple-buzz that confirms an alert was accepted). This prevents alert storms from a tumbling device without requiring any worker action.
 
-### Key Code Snippet 1: Compact Template with `_lat`/`_lon`
+### Key Code Snippet 1: Compact Template with _lat/_lon
 
 The `format: "compact"` and `port` arguments are required for Starnote NTN transport. The `_lat`/`_lon` template fields tell the Notecard to embed its cached best-available location (GNSS or cell-derived) in the compact packet automatically — the firmware never passes coordinates in the note body. The `event_id` field uses type hint `14` (4-byte signed int32, per the Blues compact-template encoding table) and is written to both `beacon_alert.qo` and `beacon_location.qo` with the same value; downstream systems join the two notes using `(device, event_id)` as the key.
 

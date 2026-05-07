@@ -121,13 +121,21 @@ All Blues parts ship with an active SIM including 500 MB of data and 10 years of
 
 All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard Cell+WiFi (MBGLW) seats into the carrier's M.2 slot. During bench validation, the Mojo sits inline between the 5 V supply output and the Notecarrier's `+VUSB` pad, and connects to the **Notecarrier CX's Qwiic connector** (the carrier exposes the I²C bus; the Notecard reads the Mojo's LTC2959 coulomb counter from there). The Mojo is bench-validation equipment — it is not installed in the field deployment.
 
-> **Electrical safety.** The injection molding machine's electrical cabinet contains hazardous voltages. All wiring and installation work inside the cabinet must be performed by qualified personnel following site lockout/tagout procedures and applicable electrical codes. This system is read-only — it does not command injection, clamp, or any machine motion.
+<Warning>
 
-> **Hydraulic safety.** Installing the pressure transducer requires opening a port on a high-pressure hydraulic circuit. Before breaking into the hydraulic system:
-> 1. **Shut down the hydraulic power unit and apply full lockout/tagout (LOTO)** to the hydraulic circuit following the machine OEM's procedure. Do not rely on a control-panel E-stop alone — verify zero pressure at the work port with a calibrated gauge before loosening any fittings.
-> 2. **Use only a transducer, fitting, and thread sealant rated above the circuit's maximum working pressure and compatible with the hydraulic fluid in use.** Hydraulic injection circuits commonly exceed the 2,000 PSI range of the reference transducer — verify the circuit's maximum pressure and upgrade both the transducer range and fitting ratings to match before installation. An undersized transducer or fitting is a burst and injection-hazard risk.
-> 3. **Follow the machine OEM's procedure for port access, thread engagement count, and sealant selection.** Use the sealant type specified for the hydraulic fluid (mineral-oil circuits typically use PTFE tape or anaerobic thread sealant; confirm compatibility). Incorrect or excess sealant can contaminate the hydraulic fluid or block the transducer port.
-> 4. **Torque all fittings to the manufacturer's specification.** After re-pressurizing, **leak-check at full system pressure before returning the machine to service** — inspect the transducer port and all disturbed fittings. Even a pinhole leak in a high-pressure hydraulic line is a serious injection and fire hazard.
+**Electrical safety.** The injection molding machine's electrical cabinet contains hazardous voltages. All wiring and installation work inside the cabinet must be performed by qualified personnel following site lockout/tagout procedures and applicable electrical codes. This system is read-only — it does not command injection, clamp, or any machine motion.
+
+</Warning>
+
+<Warning>
+
+**Hydraulic safety.** Installing the pressure transducer requires opening a port on a high-pressure hydraulic circuit. Before breaking into the hydraulic system:
+1. **Shut down the hydraulic power unit and apply full lockout/tagout (LOTO)** to the hydraulic circuit following the machine OEM's procedure. Do not rely on a control-panel E-stop alone — verify zero pressure at the work port with a calibrated gauge before loosening any fittings.
+2. **Use only a transducer, fitting, and thread sealant rated above the circuit's maximum working pressure and compatible with the hydraulic fluid in use.** Hydraulic injection circuits commonly exceed the 2,000 PSI range of the reference transducer — verify the circuit's maximum pressure and upgrade both the transducer range and fitting ratings to match before installation. An undersized transducer or fitting is a burst and injection-hazard risk.
+3. **Follow the machine OEM's procedure for port access, thread engagement count, and sealant selection.** Use the sealant type specified for the hydraulic fluid (mineral-oil circuits typically use PTFE tape or anaerobic thread sealant; confirm compatibility). Incorrect or excess sealant can contaminate the hydraulic fluid or block the transducer port.
+4. **Torque all fittings to the manufacturer's specification.** After re-pressurizing, **leak-check at full system pressure before returning the machine to service** — inspect the transducer port and all disturbed fittings. Even a pinhole leak in a high-pressure hydraulic line is a serious injection and fire hazard.
+
+</Warning>
 
 **4–20 mA pressure transducer loop (A0):**
 
@@ -334,7 +342,7 @@ JAddNumberToObject(body, "peak_psi", peak_psi);
 notecard.sendRequest(req);
 ```
 
-### Key code snippet 3 — feature extraction: mold-temperature trend slope (`cool_c_s`)
+### Key code snippet 3 — feature extraction: mold-temperature trend slope (cool_c_s)
 
 Because the 1/8″ sheath thermocouple has a thermal response time of several seconds — longer than a typical injection cooling phase — `cool_c_s` does not capture the within-shot cooling transient. What it does capture is the direction and rate of mold-surface temperature drift across the tail end of each cycle window. A least-squares slope is fitted over the post-gate-seal samples in the capture buffer; the result is a °C/s value (negative = mold surface cooling, positive = rising). Used as a trend signal across many shots, a slope drifting toward zero (mold cooling more slowly than baseline) is an early indicator of a fouled or partially-blocked cooling circuit, surfacing the degradation before it shows up in part dimensions or cycle time.
 

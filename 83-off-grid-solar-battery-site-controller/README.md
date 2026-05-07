@@ -106,7 +106,11 @@ All Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 All host I/O uses the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual-row 16-pin header. The Notecard (Cell+WiFi or Skylo — see §4) seats into the carrier's M.2 slot. The Mojo sits inline on the +VBAT power rail for bench bring-up and commissioning. VE.Direct TX-to-MCU level shifting is handled by a simple 10 kΩ/20 kΩ resistor divider on each RX line — this is the only documented and validated interface for this project; active level-shifter boards with bidirectional MOSFETs are not recommended for this unidirectional UART application.
 
-> **Safety — high-current DC systems.** Off-grid battery banks can source thousands of amps into a short circuit. Before making any connections in or near battery, shunt, or MPPT wiring: disconnect the solar array at the MPPT PV input terminals; verify polarity at every connection point with a multimeter before making contact; and have all DC wiring reviewed by a qualified installer before commissioning. The VE.Direct signal connections below are low-voltage and carry microamp-level current — they do not interrupt the high-current path — but they pass through the same enclosure as live battery wiring.
+<Warning>
+
+**Safety — high-current DC systems.** Off-grid battery banks can source thousands of amps into a short circuit. Before making any connections in or near battery, shunt, or MPPT wiring: disconnect the solar array at the MPPT PV input terminals; verify polarity at every connection point with a multimeter before making contact; and have all DC wiring reviewed by a qualified installer before commissioning. The VE.Direct signal connections below are low-voltage and carry microamp-level current — they do not interrupt the high-current path — but they pass through the same enclosure as live battery wiring.
+
+</Warning>
 
 ### VE.Direct cable pinout
 

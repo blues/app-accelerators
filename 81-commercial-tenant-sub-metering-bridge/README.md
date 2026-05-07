@@ -178,7 +178,11 @@ The module's onboard burden resistor and trim pot set the output peak-to-peak sw
 
 Each Rogowski coil wraps around **one conductor only** of the tenant's single-phase branch-circuit feed — the hot leg. The coil must close fully (the two ends of the flexible Rogowski coil clip together); an open coil gap produces a non-integrable signal. This firmware is designed for single-phase circuits where all tenants derive from the same phase leg; see [§11](#11-limitations-and-next-steps) for the multi-phase case.
 
-> **Electrical safety.** Panel interiors operate at hazardous voltages. Installation must be performed by a licensed electrician following applicable electrical code, site lockout/tagout procedures, and the panel manufacturer's instructions. The Rogowski coils and voltage transducer are galvanically isolated from the mains; the hazard is the bus bars and termination points nearby during installation.
+<Warning>
+
+**Electrical safety.** Panel interiors operate at hazardous voltages. Installation must be performed by a licensed electrician following applicable electrical code, site lockout/tagout procedures, and the panel manufacturer's instructions. The Rogowski coils and voltage transducer are galvanically isolated from the mains; the hazard is the bus bars and termination points nearby during installation.
+
+</Warning>
 
 
 Before powering on for the first time:

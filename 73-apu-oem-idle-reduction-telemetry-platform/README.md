@@ -116,7 +116,11 @@ Here is a sample Note this device emits:
 
 > **Fuel-flow sensor: not included in this variant.** This estimation-only design computes all fuel figures in software from APU runtime × environment-variable-supplied consumption rates (`apu_fuel_rate_gph`, `idle_fuel_rate_gph`). No flow meter, pulse-counter circuit, or additional fuel-line wiring is needed. For revenue-grade metering, see §10 Production next steps.
 
-> **Vehicle electrical environment — production requirements.** A 12 V or 24 V truck bus is a harsh electrical environment that requires front-end protection **not included in the bench BOM above**: **(1)** an inline 5 A ATO/ATC blade fuse in the positive lead at the APU bus tap (as close to the source as practical); **(2)** a TVS diode across the DC/DC input to clamp ISO 7637-2 load-dump transients — select one whose standoff voltage exceeds the maximum normal bus voltage and whose clamping voltage is below the converter's absolute-maximum rated input; ISO 7637-2 pulse 5a can reach 87 V peak on a 24 V bus, so verify the TVS ratings against your converter's datasheet before specifying; and **(3)** a reverse-polarity protection device in series with the positive lead (a Schottky diode such as 1N5819, or a P-channel MOSFET with gate-source clamped to GND). For production, replace the Pololu D24V22F5 with an AEC-Q100 or AEC-Q101 qualified automotive DC/DC converter rated for your bus voltage range and −40 °C to +85 °C operation. See §10.
+<Warning>
+
+**Vehicle electrical environment — production requirements.** A 12 V or 24 V truck bus is a harsh electrical environment that requires front-end protection **not included in the bench BOM above**: **(1)** an inline 5 A ATO/ATC blade fuse in the positive lead at the APU bus tap (as close to the source as practical); **(2)** a TVS diode across the DC/DC input to clamp ISO 7637-2 load-dump transients — select one whose standoff voltage exceeds the maximum normal bus voltage and whose clamping voltage is below the converter's absolute-maximum rated input; ISO 7637-2 pulse 5a can reach 87 V peak on a 24 V bus, so verify the TVS ratings against your converter's datasheet before specifying; and **(3)** a reverse-polarity protection device in series with the positive lead (a Schottky diode such as 1N5819, or a P-channel MOSFET with gate-source clamped to GND). For production, replace the Pololu D24V22F5 with an AEC-Q100 or AEC-Q101 qualified automotive DC/DC converter rated for your bus voltage range and −40 °C to +85 °C operation. See §10.
+
+</Warning>
 
 ---
 
@@ -132,7 +136,11 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
 - DC/DC converter `VOUT` (5 V) → Mojo `BAT` input → Mojo `LOAD` output → Notecarrier CX `+VBAT`.
 - Notecarrier `GND` → APU chassis GND.
 
-> **Front-end protection (required before production deployment on a vehicle bus).** The bench wiring above connects the DC/DC converter directly to the APU bus. For any production installation, insert the following protection between the bus tap and the DC/DC `VIN` in this order: **(1)** 5 A inline blade fuse (ATO/ATC) in the positive lead, mounted as close to the battery/APU bus tap as practical; **(2)** a TVS diode across `VIN`–`GND` rated to absorb ISO 7637-2 load-dump transients — select one whose standoff voltage exceeds the maximum normal bus voltage and whose clamping voltage is below the converter's absolute-maximum rated input; ISO 7637-2 pulse 5a can reach 87 V peak on a 24 V bus, so verify the TVS against your converter's datasheet before specifying; **(3)** reverse-polarity protection in series with the positive lead (Schottky diode or P-channel MOSFET with gate-source clamped to GND). None of these are in the bench bring-up rig. The wiring diagram above shows the correct series order in the power chain. See §10 for the POC/production distinction.
+<Warning>
+
+**Front-end protection (required before production deployment on a vehicle bus).** The bench wiring above connects the DC/DC converter directly to the APU bus. For any production installation, insert the following protection between the bus tap and the DC/DC `VIN` in this order: **(1)** 5 A inline blade fuse (ATO/ATC) in the positive lead, mounted as close to the battery/APU bus tap as practical; **(2)** a TVS diode across `VIN`–`GND` rated to absorb ISO 7637-2 load-dump transients — select one whose standoff voltage exceeds the maximum normal bus voltage and whose clamping voltage is below the converter's absolute-maximum rated input; ISO 7637-2 pulse 5a can reach 87 V peak on a 24 V bus, so verify the TVS against your converter's datasheet before specifying; **(3)** reverse-polarity protection in series with the positive lead (Schottky diode or P-channel MOSFET with gate-source clamped to GND). None of these are in the bench bring-up rig. The wiring diagram above shows the correct series order in the power chain. See §10 for the POC/production distinction.
+
+</Warning>
 
 **RS-485 interface (Cygnet UART → SparkFun BOB-10124):**
 - Cygnet `TX` (UART2, pin `PA2`) → BOB-10124 `TXD` input.

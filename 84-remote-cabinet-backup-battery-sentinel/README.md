@@ -119,7 +119,11 @@ All Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ![Wiring diagram: INA228 high-side current sensing and Qwiic I²C, NTC thermistor voltage divider on A0, LiPo on JST, power chain from cabinet bus through DC-DC module to Notecarrier CX +VBAT](diagrams/02-wiring-assembly.svg)
 
-> **Safety reminder:** Review the safety requirements in §3 before proceeding. Ensure the inline fuse is installed on the sentinel's power supply and the INA228 shunt is on a battery branch with upstream overcurrent protection.
+<Warning>
+
+**Safety reminder:** Review the safety requirements in §3 before proceeding. Ensure the inline fuse is installed on the sentinel's power supply and the INA228 shunt is on a battery branch with upstream overcurrent protection.
+
+</Warning>
 
 All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header and Qwiic connector. The Notecard Cell+WiFi seats into the M.2 slot.
 

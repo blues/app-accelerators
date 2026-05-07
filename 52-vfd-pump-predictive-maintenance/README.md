@@ -79,7 +79,11 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ![Wiring: OPTA + Wireless for OPTA on DIN rail; RS-485 A/B/COM daisy to VFD with 120 Ω terminators at each end; antennas through cable glands; 24 VDC supply](diagrams/02-wiring-assembly.svg)
 
-> **Safety.** VFD cabinets contain hazardous voltages even when control wiring is low-voltage. Installation must be performed by qualified personnel following site lockout/tagout procedures, the VFD manufacturer's instructions, and applicable electrical codes. This reference design is **read-only** over Modbus — it does not command pump start/stop or speed.
+<Warning>
+
+**Safety.** VFD cabinets contain hazardous voltages even when control wiring is low-voltage. Installation must be performed by qualified personnel following site lockout/tagout procedures, the VFD manufacturer's instructions, and applicable electrical codes. This reference design is **read-only** over Modbus — it does not command pump start/stop or speed.
+
+</Warning>
 
 1. **Mount and power.** Snap the OPTA onto the DIN rail, snap the Blues Wireless for OPTA onto the OPTA's right-hand expansion port. Use the supplied solderless AUX connector between the two — the connector carries the I²C lines that the Notecard rides on. Wire 24 VDC from the panel supply to the OPTA's `+` and `-` terminals. Per the [Wireless for OPTA Quickstart](https://dev.blues.io/quickstart/wireless-for-opta-quickstart/), the OPTA's outputs are not powered by USB-C, so use the 12–24 VDC supply for any deployment beyond bench testing. Jumper the OPTA's `+24V` to the expansion's `+24V` terminal so the expansion shares the same supply.
 2. **Antennas.** Thread an SMA-female bulkhead lead through a cable gland for the primary cellular antenna and screw it onto the first antenna port on Wireless for OPTA. If the layout allows, do the same for the diversity port — it improves LTE Cat-1 performance in marginal-signal sites. Don't rely on the bundled rubber-duck antennas inside a metal cabinet; they're for bench testing only.

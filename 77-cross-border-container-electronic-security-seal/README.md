@@ -133,7 +133,11 @@ Pin-by-pin:
 8. Connect the LiPo battery (or Mojo for bench testing).
 9. Tighten all four cable glands; close and latch the enclosure.
 
-> **Safety and deployment note.** The LiPo battery is a lithium cell and may be subject to shipping restrictions (IATA/DOT; confirm with your logistics provider before including it in cargo). Temperature derating is significant: a standard LiPo loses approximately 20–30% of rated capacity at 0 °C and more below that. Container doors on trans-Pacific or northern-route voyages can see sustained temperatures well below freezing; select a cell rated to at least −20 °C and size capacity with a minimum 2× margin above the projected daily draw. Ensure all three cable glands are fully tightened after routing cables — loose glands admit water and can allow cables to be snagged during container handling. Use locking, IP-rated glands for any field deployment. Secure the enclosure to the container door with corrosion-resistant fasteners; adhesive mounting alone is not adequate for multi-month sea voyages subject to vibration and thermal cycling.
+<Warning>
+
+**Safety and deployment note.** The LiPo battery is a lithium cell and may be subject to shipping restrictions (IATA/DOT; confirm with your logistics provider before including it in cargo). Temperature derating is significant: a standard LiPo loses approximately 20–30% of rated capacity at 0 °C and more below that. Container doors on trans-Pacific or northern-route voyages can see sustained temperatures well below freezing; select a cell rated to at least −20 °C and size capacity with a minimum 2× margin above the projected daily draw. Ensure all three cable glands are fully tightened after routing cables — loose glands admit water and can allow cables to be snagged during container handling. Use locking, IP-rated glands for any field deployment. Secure the enclosure to the container door with corrosion-resistant fasteners; adhesive mounting alone is not adequate for multi-month sea voyages subject to vibration and thermal cycling.
+
+</Warning>
 
 Mount the enclosure on the container door latch side, approximately 150 mm from the door edge. Adhere the companion magnet to the door frame at the matching position. Close the door and verify the reed switch reads LOW (sealed) before first boot.
 

@@ -97,7 +97,11 @@ All Blues hardware ships with an active SIM and no activation fees or monthly co
 
 All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard for Skylo seats in the carrier's M.2 slot. The Mojo sits inline between the 5V supply output and the Notecarrier's VBAT+ pad during bench validation.
 
-> **⚠ Safety.** Battery packs on electric aerial lifts carry potentially lethal voltages (24–80V DC) and very high fault currents. All connections to the high-voltage pack circuit must be made by qualified personnel following applicable electrical codes and the machine manufacturer's service procedures. Use appropriately rated wire, fusing, and insulation for all connections to the pack. The INA228 and its associated wiring must be rated for the pack's full voltage and anticipated fault current. This project does not provide a connection to the machine's control system and cannot command motion or charging.
+<Warning>
+
+**⚠ Safety.** Battery packs on electric aerial lifts carry potentially lethal voltages (24–80V DC) and very high fault currents. All connections to the high-voltage pack circuit must be made by qualified personnel following applicable electrical codes and the machine manufacturer's service procedures. Use appropriately rated wire, fusing, and insulation for all connections to the pack. The INA228 and its associated wiring must be rated for the pack's full voltage and anticipated fault current. This project does not provide a connection to the machine's control system and cannot command motion or charging.
+
+</Warning>
 
 **Pack-bus-voltage sensing — I²C (INA228) — all builds:**
 
@@ -113,7 +117,11 @@ All INA228 logic signals operate at 3.3 V referenced to pack-negative ground, wh
 
 The external shunt is wired **inline on the main traction conductor** — current flows through it just as with the INA228 bench shunt or the ACS758, but a properly rated external shunt carries the full traction current safely. Wire the INA228 `VIN+` and `VIN–` differentially across the shunt.
 
-> **⚠ High-current conductor work.** Breaking and re-terminating the traction conductor for an inline shunt must be performed by qualified personnel with the pack fully isolated — main contactor open, pack-negative bus bar disconnected or insulated. Follow the machine manufacturer's lockout/tagout procedures before handling the traction conductor.
+<Warning>
+
+**⚠ High-current conductor work.** Breaking and re-terminating the traction conductor for an inline shunt must be performed by qualified personnel with the pack fully isolated — main contactor open, pack-negative bus bar disconnected or insulated. Follow the machine manufacturer's lockout/tagout procedures before handling the traction conductor.
+
+</Warning>
 
 High-voltage connections (external shunt primary field path):
 - Battery pack positive terminal → external shunt `IN+` (high side) → INA228 `VIN+`
@@ -126,7 +134,11 @@ High-voltage connections (external shunt primary field path):
 
 The ACS758LCB-200B-PFF-T is an **inline** Hall-effect current sensor — not a clamp-on or non-invasive part. The pack's main traction conductor must be **broken and re-terminated** through the sensor's primary conductor terminals (`IP+` → `IP–`). Use this path if galvanic isolation from the traction bus is required, or if the external shunt path is impractical.
 
-> **⚠ High-current conductor work.** Breaking and re-terminating the traction conductor must be performed by qualified personnel with the pack fully isolated — main contactor open, pack-negative bus bar disconnected or insulated. Follow the machine manufacturer's lockout/tagout procedures before handling the traction conductor.
+<Warning>
+
+**⚠ High-current conductor work.** Breaking and re-terminating the traction conductor must be performed by qualified personnel with the pack fully isolated — main contactor open, pack-negative bus bar disconnected or insulated. Follow the machine manufacturer's lockout/tagout procedures before handling the traction conductor.
+
+</Warning>
 
 - Battery pack positive conductor → ACS758 `IP+` terminal
 - ACS758 `IP–` terminal → main load/charger positive bus

@@ -146,7 +146,11 @@ The MPRLS breakout has a 1/8 NPT threaded port on the sensor body. For field dep
 
 ### 5.1 Safety Considerations
 
-> **Read before installing.** Failure to follow the guidance below could result in personal injury, property damage, regulatory violations, or Skylo network exclusion.
+<Warning>
+
+**Read before installing.** Failure to follow the guidance below could result in personal injury, property damage, regulatory violations, or Skylo network exclusion.
+
+</Warning>
 
 - **Certified antenna.** The Notecard for Skylo ships with a Skylo-certified LTE/NTN antenna. Using any other antenna invalidates the Skylo certification and may result in Skylo blocking the device from its NTN network. Do not substitute another antenna without obtaining a delta test lab report through a CTIA/OTA-authorized facility. Contact [Blues](https://blues.com/contact-sales/) for recommended test houses.
 

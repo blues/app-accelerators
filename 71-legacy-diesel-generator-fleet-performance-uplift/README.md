@@ -106,7 +106,11 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ![Wiring: OPTA RS485 + Wireless for OPTA on DIN rail; RS-485 A/B/COM to controller with 120 Ω terminators at each end; antennas through cable glands; powered from panel's battery-backed DC bus](diagrams/02-wiring-assembly.svg)
 
-> **Safety.** Generator control panels contain hazardous voltages even when the generator is stopped. Installation must be performed by qualified personnel following site lockout/tagout procedures, the generator and controller manufacturer's instructions, and applicable electrical codes. This reference design is **read-only** over Modbus — it does not command start/stop or modify any generator setpoint.
+<Warning>
+
+**Safety.** Generator control panels contain hazardous voltages even when the generator is stopped. Installation must be performed by qualified personnel following site lockout/tagout procedures, the generator and controller manufacturer's instructions, and applicable electrical codes. This reference design is **read-only** over Modbus — it does not command start/stop or modify any generator setpoint.
+
+</Warning>
 
 1. **Mount.** Snap the OPTA RS485 onto the DIN rail. Snap the Blues Wireless for OPTA onto the OPTA's right-hand expansion port and connect the supplied solderless AUX connector between the two — this carries the I²C lines that the Notecard uses. Per the [Wireless for OPTA Quickstart](https://dev.blues.io/quickstart/wireless-for-opta-quickstart/), the expansion is not powered through USB-C; use the 12–24 VDC supply rail for any testing beyond the bench.
 

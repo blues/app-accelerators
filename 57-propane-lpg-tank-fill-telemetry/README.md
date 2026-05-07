@@ -107,9 +107,13 @@ Here is a sample Note this device emits:
 
 Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees and no monthly SIM commitment.
 
-> **Safety notice.** LP gas (liquefied petroleum gas) is a flammable compressed gas. Any sensor connection to a propane tank — including at the gauge port — must be performed by a qualified LP gas technician following applicable codes (NFPA 58, CGA, and local authority having jurisdiction). The level transmitter, fittings, and wiring must be rated for LP gas service.
->
-> **Classified-area / hazardous-location requirement.** Blues Notecard and Notecarrier CX electronics are **not** rated for hazardous locations (NEC Class I Division 1 or Division 2 / ATEX Zone equivalents) and must **not** be installed inside the classified area as defined by the installation's authority having jurisdiction (AHJ) and NFPA 58. The classified area boundary around a propane container typically extends several feet from fittings, relief valves, and regulators — confirm the boundary with the AHJ and the installing LP gas technician before positioning the enclosure. Mount the electronics enclosure outside that boundary. For 4–20 mA transmitter loop wiring that crosses the classified-area boundary, the AHJ may require a listed intrinsic-safety (IS) barrier or other approved interface device in the loop circuit, between the tank-side transmitter and the enclosure-side electronics. Confirm IS barrier requirements with the installing LP gas technician and the AHJ before wiring.
+<Warning>
+
+**Safety notice.** LP gas (liquefied petroleum gas) is a flammable compressed gas. Any sensor connection to a propane tank — including at the gauge port — must be performed by a qualified LP gas technician following applicable codes (NFPA 58, CGA, and local authority having jurisdiction). The level transmitter, fittings, and wiring must be rated for LP gas service.
+
+**Classified-area / hazardous-location requirement.** Blues Notecard and Notecarrier CX electronics are **not** rated for hazardous locations (NEC Class I Division 1 or Division 2 / ATEX Zone equivalents) and must **not** be installed inside the classified area as defined by the installation's authority having jurisdiction (AHJ) and NFPA 58. The classified area boundary around a propane container typically extends several feet from fittings, relief valves, and regulators — confirm the boundary with the AHJ and the installing LP gas technician before positioning the enclosure. Mount the electronics enclosure outside that boundary. For 4–20 mA transmitter loop wiring that crosses the classified-area boundary, the AHJ may require a listed intrinsic-safety (IS) barrier or other approved interface device in the loop circuit, between the tank-side transmitter and the enclosure-side electronics. Confirm IS barrier requirements with the installing LP gas technician and the AHJ before wiring.
+
+</Warning>
 
 ## 5. Wiring and Assembly
 
@@ -118,7 +122,11 @@ Blues hardware ships with an active SIM including 500 MB of data and 10 years of
 
 All Notecarrier CX host I/O lands on its dual 16-pin header. The Notecard Cell+WiFi seats into the M.2 slot. The Mojo sits inline between the 5 V step-down and the Notecarrier +VBAT pad during bench validation only; it is not deployed in the field.
 
-> **Enclosure placement first.** Blues Notecard and Notecarrier CX electronics must be installed **outside** the classified-area boundary defined by NFPA 58 and the authority having jurisdiction — confirm that boundary with the installing LP gas technician before drilling cable-gland holes or positioning the enclosure (see the safety notice in §4).
+<Warning>
+
+**Enclosure placement first.** Blues Notecard and Notecarrier CX electronics must be installed **outside** the classified-area boundary defined by NFPA 58 and the authority having jurisdiction — confirm that boundary with the installing LP gas technician before drilling cable-gland holes or positioning the enclosure (see the safety notice in §4).
+
+</Warning>
 
 **Step 1 — Enclosure and cable-gland assignment.** Install the NEMA 4X polycarbonate enclosure at the chosen mounting location. Drill and install one cable gland for each field-cable penetration before pulling cables. Assign glands as follows:
 

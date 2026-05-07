@@ -23,7 +23,11 @@ This project closes that gap. A Blues Wireless for OPTA expansion snapped onto a
 
 **Deployment scenario.** A single OPTA RS485 + Wireless for OPTA mounted on the DIN rail inside the solar equipment cabinet, next to the inverter's communication interface. The RS-485 bus daisies from the OPTA to the inverter and then to the BMS. Four relay output wires run to the corresponding digital control inputs on the inverter and BMS. The cellular antenna routes through a cable gland to the outside of the cabinet. Line power from the 24 VDC supply already present in the equipment cabinet. No PC, no gateway, no building LAN.
 
-> **⚠ Commissioning safety — TOU windows are disabled by default.** Both the peak window (`peak_start_utc` / `peak_end_utc`) and the off-peak charge window (`charge_start_utc` / `charge_end_utc`) ship with start and end hours equal (both `0`), which disables autonomous TOU dispatch. The controller stays in `normal` mode until an operator explicitly configures non-equal window hours in the Notehub fleet environment variables. **Enable and tune the TOU windows only after confirming wiring, Modbus addressing, and SOC thresholds are correct for the site.** Cloud `dispatch.qi` commands are honoured immediately regardless of TOU configuration. See [Section 5](#6-notehub-setup) for the full environment variable reference.
+<Warning>
+
+**⚠ Commissioning safety — TOU windows are disabled by default.** Both the peak window (`peak_start_utc` / `peak_end_utc`) and the off-peak charge window (`charge_start_utc` / `charge_end_utc`) ship with start and end hours equal (both `0`), which disables autonomous TOU dispatch. The controller stays in `normal` mode until an operator explicitly configures non-equal window hours in the Notehub fleet environment variables. **Enable and tune the TOU windows only after confirming wiring, Modbus addressing, and SOC thresholds are correct for the site.** Cloud `dispatch.qi` commands are honoured immediately regardless of TOU configuration. See [Section 5](#6-notehub-setup) for the full environment variable reference.
+
+</Warning>
 
 ## 2. System Architecture
 
@@ -106,7 +110,11 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ![Wiring and assembly diagram showing DIN-rail layout, RS-485 daisy-chain with terminators, relay output paths, power, and antenna routing](diagrams/02-wiring-assembly.svg)
 
-> **Safety.** Solar equipment cabinets contain hazardous DC and AC voltages. Installation must be performed by qualified personnel following site lockout/tagout procedures, the inverter and BMS manufacturers' instructions, and applicable electrical codes. The relay outputs in this reference design provide contact closures to the inverter's and BMS's digital control inputs — they do not switch high-voltage circuits directly. Confirm input voltage and current ratings before wiring.
+<Warning>
+
+**Safety.** Solar equipment cabinets contain hazardous DC and AC voltages. Installation must be performed by qualified personnel following site lockout/tagout procedures, the inverter and BMS manufacturers' instructions, and applicable electrical codes. The relay outputs in this reference design provide contact closures to the inverter's and BMS's digital control inputs — they do not switch high-voltage circuits directly. Confirm input voltage and current ratings before wiring.
+
+</Warning>
 
 ### Power and DIN rail
 
@@ -476,7 +484,11 @@ void applyRelays(DispatchMode mode, float soc_pct, bool bms_valid) {
 ## 9. Validation and Testing
 
 
-> **Pre-wiring check.** The shipped firmware has both TOU windows disabled by default (`peak_start_utc` and `peak_end_utc` both default to `0`; equal values = window off). The discharge relay will not assert autonomously until an operator explicitly sets a non-equal peak window via Notehub fleet environment variables. Verify the fleet environment variables are at their defaults (or intentionally set) before connecting relay outputs to live inverter or BMS control inputs. Enable and tune the peak window only after wiring, Modbus addressing, and SOC threshold validation are complete.
+<Warning>
+
+**Pre-wiring check.** The shipped firmware has both TOU windows disabled by default (`peak_start_utc` and `peak_end_utc` both default to `0`; equal values = window off). The discharge relay will not assert autonomously until an operator explicitly sets a non-equal peak window via Notehub fleet environment variables. Verify the fleet environment variables are at their defaults (or intentionally set) before connecting relay outputs to live inverter or BMS control inputs. Enable and tune the peak window only after wiring, Modbus addressing, and SOC threshold validation are complete.
+
+</Warning>
 
 **Cellular first-light.** Before connecting Modbus hardware or issuing dispatch commands, verify the Notecard has registered with Notehub. Issue a [`card.status`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-status) request from the [Notehub in-browser terminal](https://dev.blues.io/notehub/notehub-walkthrough/#using-the-notecard-api-from-notehub) and confirm `connected:true`. Follow with a [`hub.status`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-status) request to confirm the project association and that at least one sync has completed. Both commands can be issued without any tooling beyond a browser. Only proceed to Modbus and dispatch testing once cellular is confirmed.
 

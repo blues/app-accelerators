@@ -10,7 +10,11 @@ A [remote patient monitoring](https://blues.com/remote-patient-monitoring/) hub 
 
 ## 1. Project Overview
 
-> **⚠️ Proof-of-concept only — not a medical device.** This is a reference design intended for technical evaluation and developer education. It is **not** a cleared or certified medical device, is **not** validated for diagnostic use, and must **not** be used for emergency response or life-sustaining patient monitoring. Any deployment that collects, stores, or routes patient health data must address patient-data governance (including HIPAA/PHI compliance where applicable), secure data routing and storage, data retention and auditability requirements, and all applicable regulatory obligations. Consult qualified clinical, legal, and compliance teams before collecting real patient data.
+<Warning>
+
+**⚠️ Proof-of-concept only — not a medical device.** This is a reference design intended for technical evaluation and developer education. It is **not** a cleared or certified medical device, is **not** validated for diagnostic use, and must **not** be used for emergency response or life-sustaining patient monitoring. Any deployment that collects, stores, or routes patient health data must address patient-data governance (including HIPAA/PHI compliance where applicable), secure data routing and storage, data retention and auditability requirements, and all applicable regulatory obligations. Consult qualified clinical, legal, and compliance teams before collecting real patient data.
+
+</Warning>
 
 **The problem.** Hospital discharge coordinators who manage heart failure, COPD (chronic obstructive pulmonary disease), post-surgical, and high-risk diabetic patients increasingly send patients home with a pack of BLE-enabled monitoring devices — a connected scale to catch fluid retention, a BP (blood pressure) cuff to watch for hypertension spikes, a pulse oximeter to flag respiratory deterioration, and an activity band to monitor resting heart rate. The clinical evidence for remote patient monitoring in this window is strong: daily weight checks and BP readings reduce 30-day readmissions, and early intervention on a trending SpO2 (blood oxygen saturation) drop catches pneumonia or PE (pulmonary embolism) while it is still outpatient-treatable.
 
@@ -467,7 +471,11 @@ If a problem is not on this list, the [Blues community forum](https://discuss.bl
 
 ## 10. Limitations and Next Steps
 
-> **Reminder:** this is a proof-of-concept reference design, not a cleared medical device. It is not intended for diagnostic, emergency, or life-sustaining use. Any production deployment must address PHI/HIPAA compliance, secure data routing and storage, auditability, data retention policies, and applicable regulatory review before handling real patient data.
+<Warning>
+
+**Reminder:** this is a proof-of-concept reference design, not a cleared medical device. It is not intended for diagnostic, emergency, or life-sustaining use. Any production deployment must address PHI/HIPAA compliance, secure data routing and storage, auditability, data retention policies, and applicable regulatory review before handling real patient data.
+
+</Warning>
 
 **Simplified for the POC:**
 

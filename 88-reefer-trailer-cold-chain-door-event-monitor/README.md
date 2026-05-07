@@ -140,7 +140,11 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
 >
 > **Skylo antenna substitution.** The `MAIN` port antenna must be the Skylo-certified flexible antenna included with the NOTE-NBGLWX. Connecting any substitute antenna — including a seemingly equivalent cellular/NTN whip — decertifies the device on Skylo's network and Skylo may block it from the NTN service. If a different antenna is required for a custom enclosure or mounting scenario, contact [Blues](https://blues.com/contact-sales/) about the delta EIRP certification process before deployment.
 
-> **Field installation caution.** Tap the 12 V feed from a dedicated trailer accessory circuit and fit a 3 A automotive blade fuse as close to the source as practical — do not wire directly to the battery without overcurrent protection. Route all sensor and power cables away from refrigerant lines, the reefer unit wiring harness, and OEM trailer wiring; do not share conduit with high-current circuits. Avoid penetrating insulated trailer panels where possible — route cables through existing grommets or approved bulkhead fittings to preserve the trailer's thermal envelope. Any non-OEM penetrations must be sealed with closed-cell foam tape and recorded in the trailer maintenance log.
+<Warning>
+
+**Field installation caution.** Tap the 12 V feed from a dedicated trailer accessory circuit and fit a 3 A automotive blade fuse as close to the source as practical — do not wire directly to the battery without overcurrent protection. Route all sensor and power cables away from refrigerant lines, the reefer unit wiring harness, and OEM trailer wiring; do not share conduit with high-current circuits. Avoid penetrating insulated trailer panels where possible — route cables through existing grommets or approved bulkhead fittings to preserve the trailer's thermal envelope. Any non-OEM penetrations must be sealed with closed-cell foam tape and recorded in the trailer maintenance log.
+
+</Warning>
 
 ---
 

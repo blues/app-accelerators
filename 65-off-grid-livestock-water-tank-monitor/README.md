@@ -111,7 +111,11 @@ All Blues hardware ships with an active SIM including 500 MB of cellular data an
 
 All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard for Skylo seats into the M.2 slot. The Mojo is a bench power-measurement instrument spliced inline between the step-down regulator output and the Notecarrier's `+VBAT` pad during commissioning; it is not read by the deployed firmware and is removed before field installation.
 
-> **Safety.** This installation involves the pump's supply conductors, a 12V battery, solar panel wiring, and charge-controller terminals — all of which can carry hazardous voltages or stored energy. **De-energize and lock out / tag out the pump circuit before installing or modifying any wiring.** Follow the pump manufacturer's and charge-controller manufacturer's installation instructions in full. Place a fuse in the positive battery lead as close to the battery terminal as practical (3–5 A for the monitor load; consult the charge-controller manual for the panel and battery leads). Electrical work should be performed by qualified personnel following applicable local electrical codes.
+<Warning>
+
+**Safety.** This installation involves the pump's supply conductors, a 12V battery, solar panel wiring, and charge-controller terminals — all of which can carry hazardous voltages or stored energy. **De-energize and lock out / tag out the pump circuit before installing or modifying any wiring.** Follow the pump manufacturer's and charge-controller manufacturer's installation instructions in full. Place a fuse in the positive battery lead as close to the battery terminal as practical (3–5 A for the monitor load; consult the charge-controller manual for the panel and battery leads). Electrical work should be performed by qualified personnel following applicable local electrical codes.
+
+</Warning>
 
 **Solar power chain (panel, charge controller, battery):**
 - Solar panel **+** → charge controller **PV +** input; solar panel **−** → charge controller **PV −** input.

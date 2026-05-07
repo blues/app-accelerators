@@ -23,7 +23,11 @@ This project takes a better approach. The Notecard's built-in accelerometer watc
 
 **Bench and limited field-trial assembly.** This reference build uses a Notecarrier CX, a Notecard, and a rechargeable 2 Ah LiPo battery enclosed in a polycarbonate IP67 housing (Hammond 1554C2GY or equivalent — see [§4](#4-hardware-requirements)) and affixed directly to the container using non-penetrating fasteners — stainless zip ties, band clamps, cradle brackets, or industrial-grade adhesive pads depending on the container type. No wiring to the container, no site infrastructure. Battery swaps are expected every 12–24 months in a low-motion deployment, so this hardware stack is suited to bench validation and short-duration field trials rather than a multi-year production rollout. The device self-configures on first power-on and operates autonomously; fleet operators manage all devices and tune per-fleet settings from Notehub. For production deployments requiring 3–5+ years between swaps, a custom carrier board with a Li-SOCl₂ primary cell replaces the LiPo path — see [§11](#11-limitations-and-next-steps).
 
-> **Safety: not rated for classified or explosive atmospheres.** This build uses standard commercial electronics and a LiPo battery. It is **not** ATEX, IECEx, Class I Division 2, or intrinsically safe certified, and must not be deployed in classified or explosive atmospheres — including any location where flammable gas or vapour may be present — unless the complete assembly (enclosure, battery, antenna, and all electronics) has been certified for that environment by a recognised testing body.
+<Warning>
+
+**Safety: not rated for classified or explosive atmospheres.** This build uses standard commercial electronics and a LiPo battery. It is **not** ATEX, IECEx, Class I Division 2, or intrinsically safe certified, and must not be deployed in classified or explosive atmospheres — including any location where flammable gas or vapour may be present — unless the complete assembly (enclosure, battery, antenna, and all electronics) has been certified for that environment by a recognised testing body.
+
+</Warning>
 
 ## 2. System Architecture
 
@@ -154,9 +158,17 @@ No external sensors are required for this project — the Notecard's built-in ac
 
 **5. Enclosure.** Mount the board and battery in the polycarbonate enclosure (Hammond 1554C2GY for field deployment; 1591XXBSFLBK for bench-only) with any external cellular antenna cable routed through a cable gland. Affix the housing to the container using non-penetrating fasteners only: stainless zip ties or hose-clamp style straps on plastic totes, band clamps or collar brackets on kegs and cylinders, industrial-grade VHB adhesive pads on flat polymer surfaces.
 
-> **Safety: pressurized vessels must not be drilled or tapped.** Kegs, gas cylinders, and any other pressurized container must never be drilled, tapped, welded, or structurally modified in any way to mount a tracker. Use only external band clamps, collar brackets, or strap-style mounts that attach to the vessel's exterior surface without breaching its structural integrity.
+<Warning>
 
-> **Safety: not rated for classified or explosive atmospheres.** This assembly is not ATEX, IECEx, Class I Division 2, or intrinsically safe certified. Do not deploy it in any classified or explosive atmosphere — including flammable-gas environments associated with certain gas-cylinder applications — without a fully certified enclosure, battery, antenna, and complete assembly.
+**Safety: pressurized vessels must not be drilled or tapped.** Kegs, gas cylinders, and any other pressurized container must never be drilled, tapped, welded, or structurally modified in any way to mount a tracker. Use only external band clamps, collar brackets, or strap-style mounts that attach to the vessel's exterior surface without breaching its structural integrity.
+
+</Warning>
+
+<Warning>
+
+**Safety: not rated for classified or explosive atmospheres.** This assembly is not ATEX, IECEx, Class I Division 2, or intrinsically safe certified. Do not deploy it in any classified or explosive atmosphere — including flammable-gas environments associated with certain gas-cylinder applications — without a fully certified enclosure, battery, antenna, and complete assembly.
+
+</Warning>
 
 > **Important: ATTN pin power-gating.** The Notecarrier CX routes the Notecard's ATTN pin to the Cygnet's power-enable input, which is what allows `NotePayloadSaveAndSleep` to cut the host rail entirely between cycles — dropping the Cygnet to essentially zero current draw. If you adapt this firmware to a different carrier board, verify that the ATTN-to-host-power wiring is equivalent. Without it, the host never actually powers off and battery life suffers dramatically. See the [Attention Pin Guide](https://dev.blues.io/guides-and-tutorials/notecard-guides/attention-pin-guide/) for wiring details.
 

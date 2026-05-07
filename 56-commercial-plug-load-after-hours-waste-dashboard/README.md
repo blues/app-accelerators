@@ -119,7 +119,11 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
 
 > **Antenna placement.** The Notecard Cell+WiFi's cellular port is a u.FL connector (`MAIN`). For any installation inside or adjacent to a metal sub-panel or enclosure, connect a short u.FL-to-SMA-female bulkhead pigtail to the Notecard's `MAIN` u.FL port, thread the SMA bulkhead fitting through a cable gland in the enclosure wall, and screw the external cellular antenna onto the SMA fitting on the outside of the enclosure. A chip or flexible antenna left inside a metal enclosure will not maintain a reliable cellular link. The onboard WiFi chip antenna is similarly blocked by metalwork; if WiFi fallback matters at a given site, route a second u.FL pigtail from the Notecard's WiFi port to a second external antenna via the same cable-gland approach.
 
-> **Safety.** Sub-panels contain hazardous voltages. CT installation must be performed by a qualified person following site lockout/tagout procedures and applicable electrical codes. The CT clamps themselves are non-invasive and do not require breaking or de-energizing the circuit being monitored. The AC/DC supply wiring *does* require connection to live conductors — always de-energize the panel before making line-voltage connections.
+<Warning>
+
+**Safety.** Sub-panels contain hazardous voltages. CT installation must be performed by a qualified person following site lockout/tagout procedures and applicable electrical codes. The CT clamps themselves are non-invasive and do not require breaking or de-energizing the circuit being monitored. The AC/DC supply wiring *does* require connection to live conductors — always de-energize the panel before making line-voltage connections.
+
+</Warning>
 
 **Shared bias circuit (build this once for all four channels):**
 
@@ -294,7 +298,7 @@ JAddNumberToObject(body, "samples",     12);
 notecard.sendRequest(req);
 ```
 
-### Key code snippet 2: immediate-sync alert (`PLUG_LOAD_ALERTS` builds only)
+### Key code snippet 2: immediate-sync alert (PLUG_LOAD_ALERTS builds only)
 
 `sync:true` tells the Notecard to open a session immediately rather than waiting for the next scheduled outbound window. When `PLUG_LOAD_ALERTS` is defined, an after-hours alert note arrives in Notehub within the session-establishment latency (~15–60 s) of the threshold trip. The full implementation lives in `plug_load_monitor_helpers.cpp` inside `#ifdef PLUG_LOAD_ALERTS` guards (`sendAlert()` and the alert-gating block inside `runSampleCycle()`).
 

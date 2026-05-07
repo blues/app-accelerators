@@ -137,7 +137,11 @@ All Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ![Wiring: DS18B20 1-Wire to D5; SCT-013 CT with V/2 bias to A0; door reed switch to D6 (PULLUP); external SMA antenna via u.FL pigtail; 120/240 VAC → IRM-10-5 → Mojo → +VBAT](diagrams/02-wiring-assembly.svg)
 
-> **Safety — qualified personnel only.** This assembly connects to mains-voltage AC power. The AC/DC supply installation (wiring to the cooler's dedicated circuit) must be performed by a licensed electrician in compliance with applicable electrical codes (NEC Articles 100 and 110 and local amendments). Apply **lockout/tagout** procedures to the circuit breaker before opening any conduit or junction box. Once installed, all three sensors (temperature probe, CT clamp, reed switch) are electrically non-invasive — the CT clamps over the wire without breaking the circuit and is isolated from the mains conductor — but the supply wiring itself is not. Do not energize the enclosure until all wiring is complete and the enclosure lid is secured.
+<Warning>
+
+**Safety — qualified personnel only.** This assembly connects to mains-voltage AC power. The AC/DC supply installation (wiring to the cooler's dedicated circuit) must be performed by a licensed electrician in compliance with applicable electrical codes (NEC Articles 100 and 110 and local amendments). Apply **lockout/tagout** procedures to the circuit breaker before opening any conduit or junction box. Once installed, all three sensors (temperature probe, CT clamp, reed switch) are electrically non-invasive — the CT clamps over the wire without breaking the circuit and is isolated from the mains conductor — but the supply wiring itself is not. Do not energize the enclosure until all wiring is complete and the enclosure lid is secured.
+
+</Warning>
 
 All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard Cell+WiFi seats into the carrier's M.2 slot. **An external antenna is mandatory in a metal walk-in box or steel mechanical-room cabinet** — a Notecard antenna inside a metal enclosure cannot radiate reliably. Route a short u.FL-to-SMA pigtail from the Notecard's u.FL port through a cable gland in the NEMA 4X enclosure wall and attach it to the panel-mount SMA whip antenna on the exterior. The Mojo sits inline between the 5V supply and the Notecarrier's +VBAT pad for bench validation.
 

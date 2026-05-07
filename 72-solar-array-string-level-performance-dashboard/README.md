@@ -118,13 +118,17 @@ All Blues hardware ships with a prepaid SIM including 500 MB of data and 10 year
 
 ![Wiring: BOB-10124 RS-485 transceiver to Cygnet UART (DE/RE on D9); Apogee SP-110-SS pyranometer to A0; DS18B20 to D5 with 4.7 kΩ pull-up; Taoglas GA.111 LTE antenna via SMA-u.FL; 120/240 VAC → IRM-10-5 → Mojo → +VBAT](diagrams/02-wiring-assembly.svg)
 
-> ⚠️ **Electrical Safety — Qualified Personnel Required**
-> Solar PV arrays and associated combiner/inverter equipment involve hazardous DC voltages (typically 300–1000 V on the string bus) and AC mains. All installation, wiring, and commissioning work must be performed by a licensed electrician or qualified PV installer in accordance with:
-> - Applicable national and local electrical codes (NEC Article 690, IEC 62548, or jurisdiction equivalent)
-> - Inverter and combiner manufacturer installation instructions
-> - Lockout/tagout (LOTO) procedures before working near or on energized PV conductors
->
-> Do not work on wiring connected to the PV array, combiner, or AC supply without confirmed isolation.
+<Warning>
+
+⚠️ **Electrical Safety — Qualified Personnel Required**
+Solar PV arrays and associated combiner/inverter equipment involve hazardous DC voltages (typically 300–1000 V on the string bus) and AC mains. All installation, wiring, and commissioning work must be performed by a licensed electrician or qualified PV installer in accordance with:
+- Applicable national and local electrical codes (NEC Article 690, IEC 62548, or jurisdiction equivalent)
+- Inverter and combiner manufacturer installation instructions
+- Lockout/tagout (LOTO) procedures before working near or on energized PV conductors
+
+Do not work on wiring connected to the PV array, combiner, or AC supply without confirmed isolation.
+
+</Warning>
 
 All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard Cell+WiFi seats in the M.2 slot and communicates with the Cygnet host over the on-board I²C bus — no additional wiring required between the Notecard and the host. The Mojo sits inline between the 5V supply and the Notecarrier's +VBAT pad as an inline bench power monitor; a Qwiic cable from one of Mojo's Qwiic ports to the Notecarrier CX Qwiic connector provides the data path the Notecard uses to read Mojo's coulomb counter. See the Mojo subsection below and [§9](#9-validation-and-testing) for the bench readout procedure.
 

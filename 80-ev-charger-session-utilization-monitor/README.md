@@ -92,7 +92,11 @@ All Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ![Wiring: SDM120 energy meter via BOB-10124 RS-485 transceiver; cellular antenna via u.FL; bench Mojo on Qwiic; 120/240 VAC → HDR-15-5 → Mojo → +VBAT](diagrams/02-wiring-assembly.svg)
 
-> **Electrical safety.** The 120/240VAC feed inside an electrical panel is hazardous. This installation inserts the SDM120 energy meter **in series** on the EVSE feed, which requires interrupting and re-terminating the live mains conductors. Panel work **must be performed by a qualified electrician** following applicable electrical codes and lockout/tagout procedures.
+<Warning>
+
+**Electrical safety.** The 120/240VAC feed inside an electrical panel is hazardous. This installation inserts the SDM120 energy meter **in series** on the EVSE feed, which requires interrupting and re-terminating the live mains conductors. Panel work **must be performed by a qualified electrician** following applicable electrical codes and lockout/tagout procedures.
+
+</Warning>
 
 > **Panel placement.** Mounting third-party low-voltage electronics inside a mains EVSE panel is subject to the enclosure's UL/CSA listing and local electrical code. Where the panel listing or jurisdiction does not permit auxiliary equipment in the mains compartment, install the Notecarrier CX, power supply, and RS-485 transceiver module in a separately listed auxiliary enclosure mounted adjacent to the main panel. Route the RS-485 signal cable and AC supply conductors between the two enclosures through a listed conduit entry or knockout. The auxiliary-enclosure approach is the safe default for any installation where the main panel's interior cannot be confirmed suitable.
 

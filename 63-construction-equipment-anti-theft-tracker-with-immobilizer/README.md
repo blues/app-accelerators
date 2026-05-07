@@ -132,7 +132,11 @@ All Blues hardware ships with an active SIM including 500 MB of cellular data an
 ## 5. Wiring and Assembly
 
 
-> **Safety.** The ignition and starter circuits on heavy equipment carry significant inrush current and may involve safety-critical functions. All wiring must be performed by qualified personnel following the equipment manufacturer's service manual and applicable electrical codes. The relay wiring described here is a reference example — confirm the correct interrupt point for your specific machine (skid steer, generator, light tower, etc.) before installation. Never interrupt circuits that control active running loads (fuel injection, hydraulics) while the engine is running.
+<Warning>
+
+**Safety.** The ignition and starter circuits on heavy equipment carry significant inrush current and may involve safety-critical functions. All wiring must be performed by qualified personnel following the equipment manufacturer's service manual and applicable electrical codes. The relay wiring described here is a reference example — confirm the correct interrupt point for your specific machine (skid steer, generator, light tower, etc.) before installation. Never interrupt circuits that control active running loads (fuel injection, hydraulics) while the engine is running.
+
+</Warning>
 
 The Notecard for Skylo seats into the Notecarrier CX's M.2 slot. Route the **`MAIN` u.FL** lead (cellular/satellite) to the Skylo-certified antenna included with the kit. Route the **`GPS` u.FL** lead to the separate passive GNSS antenna. Leave both antenna leads slack until the enclosure mounting location is finalized — antenna placement and sky-view clearance matter significantly for Skylo satellite connectivity.
 
