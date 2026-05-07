@@ -157,7 +157,7 @@ Polling cadence is `sample_minutes` (default 1 min). For each sample, `accumulat
 
 ### Event payload design
 
-Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefiles. Templates give summary and alert records a stable schema, store as fixed-length records on the Notecard rather than free-form JSON, and minimize on-wire payload size — material at 24 summary Notes per day per pump over a multi-year deployment. Actual cellular data usage depends on sync cadence, signal conditions, routing behavior, and event frequency, so production deployments should validate usage with [Notehub usage data](https://dev.blues.io/notehub/notehub-walkthrough/#viewing-billing-account-usage) before sizing SIM data plans.
+Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefiles. Templates give summary and alert records a stable schema, store as fixed-length records on the Notecard rather than free-form JSON, and minimize on-wire payload size — material at 24 summary Notes per day per pump over a multi-year deployment. Actual cellular data usage depends on sync cadence, signal conditions, routing behavior, and event frequency, so production deployments should validate usage with [Notehub usage data](https://dev.blues.io/notehub/notehub-walkthrough/#configuring-your-billing-account) before sizing SIM data plans.
 
 `vfd_summary.qo` (hourly):
 
@@ -311,7 +311,7 @@ Expected steady-state behavior on a healthy pump: one summary Note per hour and 
 
 **Modbus first-light.** Before connecting to the real drive, run the firmware against a [USB-to-RS-485 adapter](https://www.sparkfun.com/products/9822) and a software Modbus simulator (Modbus Mechanic, ModRSsim2, or equivalent) wired to the OPTA's RS-485 terminals. Verify the six register reads match what the simulator is publishing.
 
-**Power validation with Mojo.** The Notecard's published current envelope (from the [Notecard low-power-design docs](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/) and the [NOTE-WBNAW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-wbnaw/)):
+**Power validation with Mojo.** The Notecard's published current envelope (from the [Notecard low-power-design docs](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) and the [NOTE-WBNAW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-wbnaw/)):
 
 | Phase | Expected current |
 |---|---|
@@ -319,7 +319,7 @@ Expected steady-state behavior on a healthy pump: one summary Note per hour and 
 | Modem active (cellular session) | ~250 mA average, with ≤2 A bursts during GSM transmit |
 | WiFi active (when WiFi fallback engaged) | ~80 mA average |
 
-Splice the [Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) inline on the Wireless-for-OPTA power input and confirm: (a) idle current is in the published µA range between syncs, (b) per-session energy lands in the few-mAh range for an hourly outbound sync, and (c) total energy per day is consistent across runs. Note that this measurement is the **whole expansion subsystem** — Notecard plus the expansion's onboard regulators and I²C glue — not the Notecard alone, unless you physically isolate the Notecard's `VMODEM_P` rail. Also note that the Notecard's lowest-power state requires `VUSB` not present and `AUX_EN` not held high; see the [Notecard low-power-design docs](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/) for the gating conditions.
+Splice the [Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) inline on the Wireless-for-OPTA power input and confirm: (a) idle current is in the published µA range between syncs, (b) per-session energy lands in the few-mAh range for an hourly outbound sync, and (c) total energy per day is consistent across runs. Note that this measurement is the **whole expansion subsystem** — Notecard plus the expansion's onboard regulators and I²C glue — not the Notecard alone, unless you physically isolate the Notecard's `VMODEM_P` rail. Also note that the Notecard's lowest-power state requires `VUSB` not present and `AUX_EN` not held high; see the [Notecard low-power-design docs](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) for the gating conditions.
 
 **Fault simulation.** Easiest path: drop `current_alarm_factor` to 1.0 in the Fleet's environment variables — the next `inbound` sync will pull the new value, the next hourly summary will trip `load_anomaly`, and the event will land in Notehub within a session-establishment window.
 

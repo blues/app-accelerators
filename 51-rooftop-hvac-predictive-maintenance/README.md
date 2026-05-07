@@ -213,7 +213,7 @@ The Notecard itself sits in its own [low-power idle](https://dev.blues.io/noteca
 
 ### 7.6 Retry and error handling
 
-- The first Notecard transaction uses [`sendRequestWithRetry(req, 10)`](https://dev.blues.io/tools-and-sdks/arduino-library/) to paper over the cold-boot I²C race that the `note-arduino` library docs warn about.
+- The first Notecard transaction uses [`sendRequestWithRetry(req, 10)`](https://dev.blues.io/tools-and-sdks/firmware-libraries/arduino-library/) to paper over the cold-boot I²C race that the `note-arduino` library docs warn about.
 - Sensor reads returning `NaN` (unplugged probe, ADC rail pegged) are excluded from summary averages on a per-metric basis — each metric carries its own valid-sample counter so a single bad SDP810 read doesn't bias the thermistor averages. If a metric has zero valid samples in the window, the summary emits `-9999` as a sentinel rather than a misleading zero.
 - The compressor-on branch also guards against evaluating delta-T when the unit is not actually cooling, so a perfectly-fine RTU idling overnight doesn't page anyone.
 - Env var changes to `summary_interval_min` re-apply `hub.set` on the next wake, so the Notecard's outbound cellular cadence stays in sync with local summary cadence rather than drifting apart.

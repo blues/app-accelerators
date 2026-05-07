@@ -89,7 +89,7 @@ Here is a sample Note this device emits:
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
-| [Notecarrier XI](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-xi/) | 1 | Carrier board with M.2 Notecard slot, Starnote for Iridium connector, Feather MCU slot, and +VBAT / Qwiic headers. |
+| Notecarrier XI | 1 | Carrier board with M.2 Notecard slot, Starnote for Iridium connector, Feather MCU slot, and +VBAT / Qwiic headers. |
 | Standard cellular Notecard — e.g., [NOTE-WBEX](https://dev.blues.io/datasheets/notecard-datasheet/note-wbex/) | 1 | Global LTE-M / NB-IoT cellular + GPS/GNSS in an M.2 module. The Notecard handles the cellular session and motion detection; the Starnote for Iridium provides satellite fallback and combined GPS+satellite antenna. |
 | [Starnote for Iridium](https://dev.blues.io/datasheets/starnote-datasheet/starnote-for-iridium/) | 1 | Iridium LEO satellite module with a single Iridium-certified antenna that handles both satellite and GPS/GNSS. Plugs into the Notecarrier XI Starnote connector. No additional GPS antenna required. |
 | [Swan (STM32U5)](https://dev.blues.io/datasheets/swan-datasheet/) | 1 | Blues Feather-format STM32U5 host MCU. Seats in the Notecarrier XI Feather slot; enters deep sleep via `NotePayloadSaveAndSleep` / `card.attn` ATTN interrupt between wake cycles. |
@@ -552,7 +552,7 @@ For the arrival event, note the **asymmetric detection latency**: once the track
 **Iridium fallback isn't triggering (device only sends on cellular):**
 - Iridium satellite mode activates automatically only when cellular is unavailable. On a bench with cellular available, events will always use LTE-M.
 - To test Iridium: move the device to a location with no cellular coverage (verified with a phone). On the next transmission window, the Notecard will route through the Starnote.
-- Check that the Starnote firmware is up-to-date; Blues periodically releases Starnote firmware via Notehub OTA. See [Notehub documentation](https://dev.blues.io/notehub/notehub-walkthrough/system-applications/).
+- Check that the [Starnote firmware is up-to-date](/starnote/starnote-firmware-releases/).
 
 **Template registration fails (see error in serial log):**
 - The compact templates (port 50, 51, 52) are registered once on first boot. If registration fails, the device retries after 60 seconds (CONFIG_RETRY_SECS).

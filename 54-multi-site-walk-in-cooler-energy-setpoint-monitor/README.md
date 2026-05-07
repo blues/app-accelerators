@@ -348,14 +348,14 @@ These are order-of-magnitude benchmarks; actual figures vary significantly with 
 
 **Using Mojo to validate power behavior.** The [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) sits inline between the 5V supply output and the Notecarrier CX +VBAT pin during bench testing and reports cumulative mAh over its [Qwiic](https://www.sparkfun.com/qwiic) I²C link. Because Mojo measures at the +VBAT rail, it sees the *whole assembly* — Notecard, Notecarrier CX, Cygnet host, DS18B20, CT bias circuit, and reed switch — not the Notecard alone.
 
-**(a) Published Notecard Cell+WiFi (MBGLW) current figures.** The table below cites figures from the [Blues low-power design documentation](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/) and the [MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/). These are Notecard-only figures; the Mojo reading will be higher because it includes the Notecarrier and sensors.
+**(a) Published Notecard Cell+WiFi (MBGLW) current figures.** The table below cites figures from the [Blues low-power design documentation](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) and the [MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/). These are Notecard-only figures; the Mojo reading will be higher because it includes the Notecarrier and sensors.
 
 | Operating mode | Published current (Notecard only) | Source |
 |---|---|---|
-| Idle, radio off (between syncs) | ~8–18 µA @ 5V | [Blues low-power docs](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/) |
+| Idle, radio off (between syncs) | ~8–18 µA @ 5V | [Blues low-power docs](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) |
 | LTE Cat-1 bis session active (primary RAT) | ~250 mA average; supply rail must handle brief current peaks — see [Blues cellular power-supply guidance](https://dev.blues.io/datasheets/application-notes/low-power-hardware-design/#power-supply-selection) for sizing | [MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) |
 | GSM fallback (rare; areas without LTE coverage) | Up to ~2 A for a few milliseconds during GSM transmit burst; absorbed by the supply's output bulk capacitance within the IRM-10-5's 2 A continuous rating | [MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) |
-| Per-session energy (single queued note, bench test) | ~0.3 mAh | [Blues low-power design tests](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/) |
+| Per-session energy (single queued note, bench test) | ~0.3 mAh | [Blues low-power design tests](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) |
 | WiFi active (opportunistic fallback) | Not independently specified in the MBGLW datasheet; the integrated Silicon Labs WFM200S WiFi module adds to the cellular idle baseline when active — consult the WFM200S transceiver datasheet for characterization data | [MBGLW datasheet — hardware overview](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) |
 
 **(b) Expected Mojo trace (whole assembly at +VBAT).** Your Mojo readings will exceed the Notecard-only floor because they include the Notecarrier CX regulator, the CT bias voltage divider (~165 µA continuous from the 3V3 rail), and connected-sensor quiescent draw. Expected pattern and approximate ranges by firmware phase:

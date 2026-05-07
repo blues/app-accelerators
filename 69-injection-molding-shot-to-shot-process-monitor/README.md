@@ -300,7 +300,7 @@ The Notecard runs in [`hub.set`](https://dev.blues.io/api-reference/notecard-api
 
 ### Key code snippet 1 — template definition
 
-The template registers each field's data type using [Notecard type-hint syntax](https://dev.blues.io/notecard/notecard-walkthrough/note-template/):
+The template registers each field's data type using [Notecard type-hint syntax](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#working-with-note-templates):
 - `14` = 4-byte signed integer (e.g. `cycle`, `fill_ms`, `shot_ms`)
 - `14.1` = 4-byte IEEE 754 float with one decimal place of precision (e.g. `peak_psi`, `pack_psi`, `cool_c_s`, `temp_avg_c`)
 
@@ -399,7 +399,7 @@ float denom = (float)(n * sxx - sx * sx);
 
 1. **Estimate your daily Note volume.** Use: `notes_per_day = (86400 s ÷ cycle_time_s) ÷ report_every_n_shots`. A 20-second cycle with `report_every_n_shots=1` produces ~4,320 Notes/day; setting `report_every_n_shots=10` drops that to ~432 — still capturing trend signals without a 10× data-volume penalty.
 
-2. **Run a 24–72 hour validation soak.** After commissioning, check [Notehub usage data](https://dev.blues.io/notehub/notehub-walkthrough/#viewing-billing-account-usage) to confirm actual consumption aligns with your estimate. Cellular data usage depends on sync cadence, signal conditions, Note queue depth at sync time, and routing behavior — the measured figure is more reliable than any pre-deployment estimate.
+2. **Run a 24–72 hour validation soak.** After commissioning, check [Notehub usage data](https://dev.blues.io/notehub/notehub-walkthrough/#configuring-your-billing-account) to confirm actual consumption aligns with your estimate. Cellular data usage depends on sync cadence, signal conditions, Note queue depth at sync time, and routing behavior — the measured figure is more reliable than any pre-deployment estimate.
 
 3. **Tune `report_every_n_shots` and `outbound_min` for the machine.** A fast machine (≤15 s cycle) running at `report_every_n_shots=1` will accumulate large numbers of queued Notes between hourly syncs. Validate queue headroom empirically before production: disconnect the cellular antenna, let the machine run for the expected outage window (e.g. 4–8 hours for a typical overnight signal gap), reconnect, and confirm that all Notes arrive in Notehub. Missing `cycle` sequence numbers in the delivered Notes reveal dropped queue entries. If your Note rate times the expected outage window risks saturation, increase `report_every_n_shots` or shorten `outbound_min` to flush the queue more frequently. Actual queue capacity depends on template size, Notecard firmware version, and session behavior — the measured result is more reliable than any pre-deployment estimate.
 

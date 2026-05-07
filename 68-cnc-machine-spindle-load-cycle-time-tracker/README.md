@@ -379,7 +379,7 @@ arduino-cli monitor -p /dev/cu.usbmodem1234567 -c baudrate=115200
 4. Any nonzero spindle reading in the next poll will trigger a `cnc_alarm.qo`.
 5. Reset `spindle_overload_pct` to its normal value (e.g., 90) once tested.
 
-**Power validation (optional Mojo).** Splice the [Mojo coulomb counter](https://dev.blues.io/datasheets/mojo-datasheet/) between the 24 VDC supply and the Wireless for OPTA power input. Expected current envelope (from [Notecard low-power design](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/)):
+**Power validation (optional Mojo).** Splice the [Mojo coulomb counter](https://dev.blues.io/datasheets/mojo-datasheet/) between the 24 VDC supply and the Wireless for OPTA power input. Expected current envelope (from [Notecard low-power design](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/)):
 
 | Phase | Expected current |
 |---|---|
@@ -389,7 +389,7 @@ arduino-cli monitor -p /dev/cu.usbmodem1234567 -c baudrate=115200
 
 Confirm: (a) idle current between syncs is in the µA range (ensures the device will run for years on field deployment), (b) per-session energy for one hourly sync is ~10–30 mAh, and (c) energy is consistent across consecutive cycles.
 
-> **Bench caveat:** When the OPTA is powered and programmed over USB-C, the USB rail keeps the Notecard in a higher-power idle state — do not expect µA idle current while USB is connected. For true field idle measurements, power from 24 VDC only (disconnect USB) and verify the conditions in [Notecard low-power design docs](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/).
+> **Bench caveat:** When the OPTA is powered and programmed over USB-C, the USB rail keeps the Notecard in a higher-power idle state — do not expect µA idle current while USB is connected. For true field idle measurements, power from 24 VDC only (disconnect USB) and verify the conditions in [Notecard low-power design docs](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/).
 
 ## 11. Troubleshooting
 

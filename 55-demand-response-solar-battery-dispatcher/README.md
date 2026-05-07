@@ -70,7 +70,7 @@ To compile and flash the firmware to an Arduino OPTA RS485:
 
 5. **Power the OPTA.** Provide 24 VDC to the board's power terminals. Within the first inbound sync window (up to 5 minutes), the Notecard automatically associates with your Notehub project.
 
-6. **Verify Notehub registration.** Open the [Notehub browser terminal](https://dev.blues.io/notehub/notehub-walkthrough/#using-the-notecard-api-from-notehub) and issue `card.status` to confirm `connected:true`, then `hub.status` to verify the project UID and at least one completed sync.
+6. **Verify Notehub registration.** Open the [In-Browser Terminal](https://dev.blues.io/terminal/) and issue `card.status` to confirm `connected:true`, then `hub.status` to verify the project UID and at least one completed sync.
 
 Here is a sample Note this device emits:
 
@@ -490,7 +490,7 @@ void applyRelays(DispatchMode mode, float soc_pct, bool bms_valid) {
 
 </Warning>
 
-**Cellular first-light.** Before connecting Modbus hardware or issuing dispatch commands, verify the Notecard has registered with Notehub. Issue a [`card.status`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-status) request from the [Notehub in-browser terminal](https://dev.blues.io/notehub/notehub-walkthrough/#using-the-notecard-api-from-notehub) and confirm `connected:true`. Follow with a [`hub.status`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-status) request to confirm the project association and that at least one sync has completed. Both commands can be issued without any tooling beyond a browser. Only proceed to Modbus and dispatch testing once cellular is confirmed.
+**Cellular first-light.** Before connecting Modbus hardware or issuing dispatch commands, verify the Notecard has registered with Notehub. Issue a [`card.status`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-status) request from the [In-Browser Terminal](https://dev.blues.io/terminal/) and confirm `connected:true`. Follow with a [`hub.status`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-status) request to confirm the project association and that at least one sync has completed. Both commands can be issued without any tooling beyond a browser. Only proceed to Modbus and dispatch testing once cellular is confirmed.
 
 **Expected steady-state behavior.** In normal operation, the device generates one `solar_telemetry.qo` note every 15 minutes and one `dr_event.qo` note each time the mode transitions (typically twice per day — peak-window entry and exit). During commissioning, simulate a DR event by posting a `dispatch.qi` note via the Notehub API with `"mode": "dr_curtail"` and `"expires_epoch"` set 10 minutes in the future. Within `5 min + sample_minutes` of queuing the note (next inbound sync plus the following sample cycle), the `RELAY_DR_INDICATOR` relay should close and a `dr_event.qo` note should appear in Notehub. At the default `sample_minutes = 1` this is at most **6 minutes**. If `sample_minutes` has been set to `5` (the firmware-enforced maximum), allow up to 10 minutes before expecting relay closure. Ten minutes after queuing the note, the relay should release and a second `dr_event.qo` should record the reversion to the current scheduled mode (typically `normal` if the bench test is run outside any configured TOU window; run the test outside any active peak or charge window for a deterministic `normal` reversion).
 
@@ -502,7 +502,7 @@ Connect your USB-to-RS-485 adapter to the OPTA's RS-485 terminals and configure 
 
 **Using Mojo to validate power behavior.** The Wireless for OPTA expansion runs from the 24 VDC supply. Splice the [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) inline between the 24 VDC supply and the expansion's power input to capture session energy data. There are two distinct measurement layers to keep separate:
 
-**Layer 1 — Published Notecard supply-rail figures** (from the [NOTE-WBNAW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-wbnaw/) and the [Notecard low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/)). These describe the Notecard's own internal supply rail and are provided here for reference; they are **not** what Mojo will read at the 24 V expansion input:
+**Layer 1 — Published Notecard supply-rail figures** (from the [NOTE-WBNAW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-wbnaw/) and the [Notecard low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/)). These describe the Notecard's own internal supply rail and are provided here for reference; they are **not** what Mojo will read at the 24 V expansion input:
 
 | Phase | Notecard supply-rail current |
 |---|---|

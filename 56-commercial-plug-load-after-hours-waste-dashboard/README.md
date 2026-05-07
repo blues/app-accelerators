@@ -266,7 +266,7 @@ Here all three ch4 fields carry `-9999.0` (the `INVALID_SENTINEL`) because `circ
 
 ### Low-power strategy
 
-Even though the enclosure is grid-tied to 120 VAC, the host runs in deep sleep between samples. After each sample cycle the host calls `NotePayloadSaveAndSleep`, which serializes the `AppState` struct into Notecard flash and issues [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) to cut the host power rail for `sample_interval_sec` seconds. The Notecard itself enters its [low-power idle state](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/) (~8–18 µA @ 5 V) between cellular sessions. Sampling and transmitting are deliberately decoupled: the host wakes every 60 seconds but the Notecard only opens a cellular session once an hour. When the `PLUG_LOAD_ALERTS` extension is enabled, alert notes carry `sync:true`, bypassing the hourly window so a 2 AM anomaly pages immediately rather than waiting until the next scheduled session — but this is not active in the default build.
+Even though the enclosure is grid-tied to 120 VAC, the host runs in deep sleep between samples. After each sample cycle the host calls `NotePayloadSaveAndSleep`, which serializes the `AppState` struct into Notecard flash and issues [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) to cut the host power rail for `sample_interval_sec` seconds. The Notecard itself enters its [low-power idle state](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) (~8–18 µA @ 5 V) between cellular sessions. Sampling and transmitting are deliberately decoupled: the host wakes every 60 seconds but the Notecard only opens a cellular session once an hour. When the `PLUG_LOAD_ALERTS` extension is enabled, alert notes carry `sync:true`, bypassing the hourly window so a 2 AM anomaly pages immediately rather than waiting until the next scheduled session — but this is not active in the default build.
 
 When ATTN is not gating host power — typical of bench setups over USB without the full Notecarrier CX power path active — `NotePayloadSaveAndSleep` returns without cutting the rail and `loop()` drives the sample cadence itself: it waits `sample_interval_sec` seconds, re-reads env vars, and calls `runSampleCycle()` before the next sleep attempt. The accumulation, alert, and summary logic are identical on both paths.
 
@@ -387,7 +387,7 @@ Every 60 seconds the host wakes, reads all active CT channels, and checks whethe
 
 | Phase | Notecard datasheet (bare Notecard only) |
 |---|---|
-| Deep sleep (radio off, host gated off) | ~8–18 µA @ 5 V — see [low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-design/) |
+| Deep sleep (radio off, host gated off) | ~8–18 µA @ 5 V — see [low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) |
 | Host awake, sampling 4 CT channels | — (host MCU run-mode + 4× ADC bursts, ~100–300 ms; consult the STM32L433 datasheet and confirm the actual whole-assembly figure with Mojo on your bench) |
 | Cellular session (LTE Cat-1 bis, single note) | ~250 mA average; brief higher-current bursts during modem attach and any 2G/GSM-fallback transmit |
 

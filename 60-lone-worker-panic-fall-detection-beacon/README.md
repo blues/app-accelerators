@@ -555,7 +555,7 @@ A productive bench exercise: run the device for 2 hours on a known-capacity LiPo
 
 - **Starnote requires initial cellular sync.** The Starnote NTN path is not available until the device has completed at least one successful cellular or WiFi session. A device that ships directly into a no-cellular zone will be unable to send via satellite until it has found cellular coverage at least once. Pre-provisioning during QA on a cellular-capable bench is the standard mitigation.
 
-- **Satellite payload budget.** The Starnote for Skylo bundle includes 10 KB of data with a 50-byte minimum per packet. The compact alert template is well under 256 bytes; frequent triggering in a no-cellular environment will consume the bundle faster. Monitor satellite usage via [Notehub billing/usage data](https://dev.blues.io/notehub/notehub-walkthrough/#viewing-billing-account-usage).
+- **Satellite payload budget.** The Starnote for Skylo bundle includes 10 KB of data with a 50-byte minimum per packet. The compact alert template is well under 256 bytes; frequent triggering in a no-cellular environment will consume the bundle faster. Monitor satellite usage via [Notehub billing/usage data](https://dev.blues.io/notehub/notehub-walkthrough/#configuring-your-billing-account).
 
 - **Single I²C bus for all peripherals.** LIS3DH and DRV2605L share the bus with the internal Notecard connection. A severe I²C lockup (e.g., a partially-completed transaction interrupted by a reset) could block all communication. A production design should include bus-error recovery and a hardware watchdog.
 
