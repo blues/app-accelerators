@@ -6,7 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-A solar-trickle-charged, tractor-independent GPS and motion tracker for [asset location tracking](https://blues.com/solutions-location-tracking/) on freight trailers and intermodal chassis. The device delivers cellular-first telemetry with truly global Iridium LEO satellite fallback — keeping the trailer or chassis visible across trans-oceanic container routes and polar corridors where geostationary satellite networks have no coverage at all. The hardware is a Blues Notecarrier XI with a Swan host, a cellular Notecard, and a Starnote for Iridium (see §4 for the BOM).
+This project is a solar-trickle-charged, tractor-independent GPS and motion tracker for [asset location tracking](https://blues.com/solutions-location-tracking/) on freight trailers and intermodal chassis. The device delivers cellular-first telemetry with truly global Iridium LEO satellite fallback — keeping the trailer or chassis visible across trans-oceanic container routes and polar corridors where geostationary satellite networks have no coverage at all. The hardware is a Blues Notecarrier XI with a Swan host, a cellular Notecard, and a Starnote for Iridium (see §4 for the BOM).
 
 The unit mounts on the trailer roof or chassis frame, runs a parked/moving state machine entirely on-device, and delivers departure, arrival, and position notes to [Notehub](https://notehub.io) over cellular with automatic Iridium satellite fallback — no tractor hookup, no site IT, and no dependence on terrestrial coverage.
 
@@ -29,6 +29,8 @@ Third, **power is scarce**. Trailers have no reliable 12V auxiliary hookup — t
 
 ---
 
+<NewToBlues/>
+
 ## 2. System Architecture
 
 
@@ -38,7 +40,7 @@ Third, **power is scarce**. Trailers have no reliable 12V auxiliary hookup — t
 
 The [Swan](https://dev.blues.io/datasheets/swan-datasheet/) STM32U5 host in the Notecarrier XI Feather slot runs the motion/parked state machine. On each wake it queries the cellular Notecard's built-in accelerometer via [`card.motion`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-motion), detects state transitions, and queues the appropriate [Note](https://dev.blues.io/api-reference/glossary/#note) over I²C. On PARKED→MOVING transitions the firmware issues [`card.location.mode {"mode":"periodic"}`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-location-mode) to begin GPS acquisition; on MOVING→PARKED transitions it issues [`card.location.mode {"mode":"off"}`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-location-mode) to shut GPS down for the parked dwell. Transition notes are stamped at transition detection time — the wake cycle on which the state change is first observed — with the Notecard's current cached GPS fix and epoch. Those values are stored in the pending-event queue immediately; every delivery attempt, including retries on future wakes, uses the stored snapshot so a retried departure note never picks up a stale location from a subsequent parking period. The Swan then saves its state to Notecard flash via `NotePayloadSaveAndSleep` and enters deep sleep via the ATTN interrupt until the next timer fires.
 
-Departure notes carry `sync:true`; on cellular this requests an immediate radio wake to deliver the note. On NTN/satellite paths, `sync:true` marks the note as high priority but cannot interrupt a satellite orbital pass on demand — the Notecard queues it and delivers it at the next scheduled satellite transmission opportunity (which may be minutes to tens of minutes away depending on the Iridium LEO geometry). Position and heartbeat notes batch until the next outbound window on either transport.
+Departure notes carry `sync:true`; on cellular this requests an immediate radio wake to deliver the Note. On NTN/satellite paths, `sync:true` marks the note as high priority but cannot interrupt a satellite orbital pass on demand — the Notecard queues it and delivers it at the next scheduled satellite transmission opportunity (which may be minutes to tens of minutes away depending on the Iridium LEO geometry). Position and heartbeat Notes batch until the next outbound window on either transport.
 
 ### 3.2 Notecard and Starnote for Iridium responsibilities
 
@@ -61,7 +63,7 @@ The Notecard manages its own cellular and satellite sessions against the support
 2. **Wire the bench rig** — Notecarrier XI + Swan + cellular Notecard + Starnote for Iridium + solar chain; full pinout in [§5.1](#51-notecarrier-xi-swan).
 3. **Edit one line** of [`firmware/trailer_fleet_tracker_starnote/trailer_fleet_tracker_starnote_helpers.h`](firmware/trailer_fleet_tracker_starnote/trailer_fleet_tracker_starnote_helpers.h) — set `PRODUCT_UID` to your Notehub project's ProductUID (in Notehub: **Project Settings → ProductUID**).
 4. **Flash** via Arduino IDE or `arduino-cli` (see [§7.1](#71-dependencies-and-flashing)).
-5. **Watch** — open Notehub → **Events** tab. You should see a `_session.qo` within a few minutes of power-on — this confirms the first cellular session and clock sync. The firmware then queues a `trailer_heartbeat.qo` locally on the next parked-check wake (~5 min in). Because heartbeat notes are **not** marked `sync:true`, they wait for the next scheduled outbound sync window rather than transmitting immediately: **~60 minutes** at a full battery (`voutbound high:60`) or **~120 minutes** at nominal charge (`voutbound normal:120`). Budget **1–2 hours from first power-on** before the first heartbeat appears in Notehub.
+5. **Watch** — open Notehub → **Events** tab. You should see a `_session.qo` within a few minutes of power-on — this confirms the first cellular session and clock sync. The firmware then queues a `trailer_heartbeat.qo` locally on the next parked-check wake (~5 minutes in). Because heartbeat Notes are **not** marked `sync:true`, they wait for the next scheduled outbound sync window rather than transmitting immediately: **~60 minutes** at a full battery (`voutbound high:60`) or **~120 minutes** at nominal charge (`voutbound normal:120`). Budget **1–2 hours from first power-on** before the first heartbeat appears in Notehub.
 
 ---
 
@@ -90,17 +92,17 @@ Here is a sample Note this device emits:
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | Notecarrier XI | 1 | Carrier board with M.2 Notecard slot, Starnote for Iridium connector, Feather MCU slot, and +VBAT / Qwiic headers. |
-| Standard cellular Notecard — e.g., [NOTE-WBEX](https://dev.blues.io/datasheets/notecard-datasheet/note-wbex/) | 1 | Global LTE-M / NB-IoT cellular + GPS/GNSS in an M.2 module. The Notecard handles the cellular session and motion detection; the Starnote for Iridium provides satellite fallback and combined GPS+satellite antenna. |
+| Standard cellular Notecard, e.g., [NOTE-WBEX](https://dev.blues.io/datasheets/notecard-datasheet/note-wbex/) | 1 | Global LTE-M / NB-IoT cellular + GPS/GNSS in an M.2 module. The Notecard handles the cellular session and motion detection; the Starnote for Iridium provides satellite fallback and combined GPS+satellite antenna. |
 | [Starnote for Iridium](https://dev.blues.io/datasheets/starnote-datasheet/starnote-for-iridium/) | 1 | Iridium LEO satellite module with a single Iridium-certified antenna that handles both satellite and GPS/GNSS. Plugs into the Notecarrier XI Starnote connector. No additional GPS antenna required. |
 | [Swan (STM32U5)](https://dev.blues.io/datasheets/swan-datasheet/) | 1 | Blues Feather-format STM32U5 host MCU. Seats in the Notecarrier XI Feather slot; enters deep sleep via `NotePayloadSaveAndSleep` / `card.attn` ATTN interrupt between wake cycles. |
-| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) *(bench-only — not field-deployed)* | 1 | Coulomb counter for power validation during bench bring-up. Connects inline between LiPo and Notecarrier XI +VBAT pad via Qwiic; remove before field deployment. |
+| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) *(bench-only, not field-deployed)* | 1 | Coulomb counter for power validation during bench bring-up. Connects inline between LiPo and Notecarrier XI +VBAT pad via Qwiic; remove before field deployment. |
 | [SparkFun Sunny Buddy MPPT Solar Charger](https://www.sparkfun.com/sparkfun-sunny-buddy-mppt-solar-charger.html) | 1 | LT3652-based MPPT charger; accepts 6–20V solar input and charges a single-cell LiPo at up to 450 mA. MPPT ensures the panel operates at its maximum power point across the wide irradiance range seen on a trailer roof. |
 | [SparkFun Small Solar Panel — 0.6W, 6V ETFE](https://www.sparkfun.com/products/18725) | 1 | Flexible ETFE panel, weather-resistant, 6V nominal. At 4 peak sun hours it delivers roughly 250–300 mAh/day. Whether that exceeds the system's parked quiescent draw depends on the Starnote for Iridium board's unpublished standby current; measure the actual floor with Mojo (§10) before drawing final sizing conclusions. Mount flat on the trailer roof above the enclosure. |
 | [SparkFun Lithium Ion Battery — 2Ah (PRT-13855)](https://www.sparkfun.com/products/13855) | 1 | 3.7V / 2000 mAh cell with 2mm JST-PH connector. Provides multi-day backup through cloudy dwell periods. |
 | Cellular antenna *(included with NOTE-WBEX)* | 1 *(included)* | Ships in the NOTE-WBEX kit. Connects to the Notecard MAIN u.FL port via the u.FL-to-SMA pigtail and SMA bulkhead fitting below. Covers the LTE-M / NB-IoT frequency bands for the regions of deployment. Route through the first SMA bulkhead to the exterior of the enclosure lid. |
 | Iridium-certified combined Iridium+GPS antenna *(included with Starnote for Iridium)* | 1 *(included)* | Ships in the Starnote for Iridium kit. A single u.FL antenna that covers both Iridium satellite uplink (1616–1626.5 MHz) and GPS/GNSS — no separate GPS antenna is needed. **Must use only the included antenna**: [Starnote for Iridium is certified on Iridium's network exclusively with this antenna](https://dev.blues.io/datasheets/starnote-datasheet/starnote-for-iridium/); substituting another antenna voids Iridium network certification and risks network blocking. Route through the second SMA bulkhead to the exterior of the enclosure lid and mount with an unobstructed 360° sky view. |
-| u.FL to SMA pigtail, ~100 mm — e.g. [SparkFun Interface Cable SMA to U.FL, WRL-09145](https://www.sparkfun.com/products/9145) | 2 | Two pigtails: one for the NOTE-WBEX cellular MAIN u.FL port (routes to the cellular antenna via the first SMA bulkhead) and one for the Starnote's Iridium+GPS u.FL port (routes to the combined Iridium+GPS antenna via the second SMA bulkhead). |
-| SMA female panel-mount (bulkhead) connector, 50Ω — e.g., [Amphenol RF 132289](https://www.mouser.com/ProductDetail/Amphenol-RF/132289) | 2 | Two fittings in the enclosure lid: one for the cellular antenna (NOTE-WBEX MAIN path) and one for the Iridium+GPS combined antenna (Starnote path). Both antennas exit externally through the lid — no inside-mounted GPS patch is needed. The Amphenol RF 132289 is a standard panel-mount SMA female chassis connector (50Ω, through-hole); any electrically equivalent 50Ω SMA female panel-mount fitting with a compatible flange size is an acceptable substitute. |
+| u.FL to SMA pigtail, ~100 mm, e.g., [SparkFun Interface Cable SMA to U.FL, WRL-09145](https://www.sparkfun.com/products/9145) | 2 | Two pigtails: one for the NOTE-WBEX cellular MAIN u.FL port (routes to the cellular antenna via the first SMA bulkhead) and one for the Starnote's Iridium+GPS u.FL port (routes to the combined Iridium+GPS antenna via the second SMA bulkhead). |
+| SMA female panel-mount (bulkhead) connector, 50Ω, e.g., [Amphenol RF 132289](https://www.mouser.com/ProductDetail/Amphenol-RF/132289) | 2 | Two fittings in the enclosure lid: one for the cellular antenna (NOTE-WBEX MAIN path) and one for the Iridium+GPS combined antenna (Starnote path). Both antennas exit externally through the lid — no inside-mounted GPS patch is needed. The Amphenol RF 132289 is a standard panel-mount SMA female chassis connector (50Ω, through-hole); any electrically equivalent 50Ω SMA female panel-mount fitting with a compatible flange size is an acceptable substitute. |
 | IP67 weatherproof enclosure, ~130×80×50 mm | 1 | Protects the electronics from road spray, rain, and the wide temperature swings of a trailer roof installation. Because both antennas route through SMA bulkheads, **the lid material does not need to be RF-transparent** — ABS, polycarbonate, or aluminum are all acceptable. Mount flat on the trailer roof; a cable entry gland in the side wall admits the solar panel leads. |
 
 **Antenna note.** The Starnote for Iridium ships with an Iridium-certified antenna that connects to its single u.FL port and covers both Iridium satellite link and GPS/GNSS — no separate GPS antenna is needed and the NOTE-WBEX GPS u.FL port is not used. The NOTE-WBEX ships with a cellular antenna for its MAIN u.FL port. Both antennas route through separate SMA bulkhead fittings to the exterior of the enclosure lid. Mount the Iridium+GPS antenna with an unobstructed 360° sky view — Iridium LEO satellites pass over every azimuth, so directional orientation does not matter.
@@ -173,7 +175,7 @@ An intermodal chassis has no roof — it is a flat, low steel frame sized for a 
 
 **Solar panel.** When a container is loaded, the chassis roof surface is blocked entirely. Mount the solar panel on a **bracket welded or bolted to the inboard face of the front bolster rail**, angled 30–45° skyward and oriented south in the northern hemisphere. Verify the bracket geometry clears the container twist-lock castings and does not protrude beyond the chassis rail envelope where it would interfere with loading or transport width limits. Budget conservatively: assume 2–3 peak sun hours per day for a chassis-mounted panel (compared with 4 on an unobstructed trailer roof), and consider upgrading to a 4 Ah LiPo for high-latitude or winter deployments.
 
-**Antennas.** Both the cellular antenna and the Iridium+GPS combined antenna need a clear sky view. Install both SMA bulkhead fittings on the **top or outboard face** of the enclosure lid and orient the enclosure so that face points upward or outboard — not buried against the chassis rail. On a loaded chassis, antennas mounted inside the container envelope will have the container floor plate directly overhead; position the enclosure forward enough that the antennas clear the front edge of the container.
+**Antennas.** Both the cellular antenna and the Iridium+GPS combined antenna need a clear sky view. Install both SMA bulkhead fittings on the **top or outboard face** of the enclosure lid and orient the enclosure so that face points upward or outboard, not buried against the chassis rail. On a loaded chassis, antennas mounted inside the container envelope will have the container floor plate directly overhead; position the enclosure forward enough that the antennas clear the front edge of the container.
 
 **Enclosure protection.** Chassis environments are harder than trailer roofs: road spray from below the frame is continuous, forklift tines pass close to the frame rails, and container-handling operations subject nearby hardware to impact and scuff loads. Use an IP67 enclosure with stainless fasteners throughout, protect cable entry glands with reinforced strain-relief fittings rated for abrasion and UV, and consider adding a steel guard plate over the enclosure if the mount location is within reach of forklift traffic.
 
@@ -190,7 +192,7 @@ An intermodal chassis has no roof — it is a flat, low steel frame sized for a 
 
 ### Fleet organization
 
-Create one [Fleet](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) per equipment category — for example, `reefer-trailers`, `dry-vans`, and `flatbed-trailers`. Fleet-level [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) flow to every device in that fleet on the next inbound sync, so you can tune heartbeat cadence or motion sensitivity for the whole category at once. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) can auto-classify trailers by device attribute if your fleet uses a consistent naming scheme.
+Create one [Fleet](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) per equipment category, for example, `reefer-trailers`, `dry-vans`, and `flatbed-trailers`. Fleet-level [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) flow to every device in that fleet on the next inbound sync, so you can tune heartbeat cadence or motion sensitivity for the whole category at once. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) can auto-classify trailers by device attribute if your fleet uses a consistent naming scheme.
 
 ### Environment variables
 
@@ -229,7 +231,7 @@ The **Events** tab in your project shows all Note types:
   }
   ```
 
-  `type` 1 = departed, 2 = arrived. `dwell_h` is the number of hours the trailer sat parked before this departure; it will be 0 for arrival notes. `gps_valid` is 1 when a valid GPS fix was available at detection time, 0 when no fix existed (e.g., on first departure from a freshly installed unit — ignore `lat`/`lon` when `gps_valid` is 0). `lat`, `lon`, and `evt_time` are the GPS coordinates and Unix epoch captured at transition detection time — the wake cycle on which the state change was first observed. Timestamp accuracy is bounded by `parked_check_mins` for departures and `moving_ping_mins` for arrivals; location is the Notecard's most recent cached fix at detection time. These values are stored in the event queue at detection time and preserved across retried deliveries so a note retried on a later wake always carries the original detection-time data, not the post-transition GPS state.
+  `type` 1 = departed, 2 = arrived. `dwell_h` is the number of hours the trailer sat parked before this departure; it will be 0 for arrival notes. `gps_valid` is 1 when a valid GPS fix was available at detection time, 0 when no fix existed (e.g., on first departure from a freshly installed unit, ignore `lat`/`lon` when `gps_valid` is 0). `lat`, `lon`, and `evt_time` are the GPS coordinates and Unix epoch captured at transition detection time — the wake cycle on which the state change was first observed. Timestamp accuracy is bounded by `parked_check_mins` for departures and `moving_ping_mins` for arrivals; location is the Notecard's most recent cached fix at detection time. These values are stored in the event queue at detection time and preserved across retried deliveries so a note retried on a later wake always carries the original detection-time data, not the post-transition GPS state.
 
 - **`trailer_location.qo`** — queued every `moving_ping_mins` while rolling; the compact envelope carries the GPS fix embedded by the Notecard. Visible on a map in Notehub's device view.
 - **`trailer_heartbeat.qo`** — fired every `heartbeat_hours` while parked. Body:
@@ -285,7 +287,7 @@ arduino-cli upload  -b STMicroelectronics:stm32:GenU5:pnum=SWAN_R5 \
 | Motion state query | `isMoving()` |
 | Time and voltage reads | `getEpoch()`, `getBatteryVoltage()` |
 | GNSS state capture for transition events | `captureGnssState()` |
-| GPS validity gate (location and heartbeat notes) | `hasValidGnssFix()` |
+| GPS validity gate (location and heartbeat Notes) | `hasValidGnssFix()` |
 | State machine, sleep/wake scheduling | `setup()` |
 | Note emission | `sendTransitionEvent()`, `sendLocationNote()`, `sendHeartbeatNote()` |
 | Transition event FIFO queue and retry | `enqueuePendingEvent()`, `drainPendingQueue()` |
@@ -293,7 +295,7 @@ arduino-cli upload  -b STMicroelectronics:stm32:GenU5:pnum=SWAN_R5 \
 
 ### 7.3 Motion and GPS strategy
 
-Motion detection is handled by the Notecard's built-in accelerometer, configured with [`card.motion.mode`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-motion-mode). The firmware uses `motion:5, seconds:60` — meaning the Notecard declares the trailer "moving" when five or more motion events accumulate in a single 60-second bucket, and "stopped" when the bucket falls quiet. `sensitivity:2` (25 Hz / ±4G) is tuned to catch the low-frequency road vibration of a loaded trailer without triggering on wind buffeting or dock impacts while parked.
+Motion detection is handled by the Notecard's built-in accelerometer, configured with [`card.motion.mode`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-motion-mode). The firmware uses `motion:5, seconds:60`, meaning the Notecard declares the trailer "moving" when five or more motion events accumulate in a single 60-second bucket, and "stopped" when the bucket falls quiet. `sensitivity:2` (25 Hz / ±4G) is tuned to catch the low-frequency road vibration of a loaded trailer without triggering on wind buffeting or dock impacts while parked.
 
 GPS mode is managed explicitly by the state machine rather than relying on the Notecard's implicit periodic-mode motion-gating — which is documented only for the Notecard's own GPS module and not guaranteed for the Starnote for Iridium's combined GPS hardware path. On first boot, `notecardConfigure()` issues [`card.location.mode {"mode":"off"}`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-location-mode) because the unit always enters parked state. On each PARKED→MOVING departure the firmware issues `card.location.mode {"mode":"periodic", "seconds":<moving_ping_secs>}` to start GPS acquisition; on each MOVING→PARKED arrival it issues `card.location.mode {"mode":"off"}` to shut the GPS module down for the parked dwell. This explicit toggling guarantees the GPS module never runs while the trailer sits parked, regardless of how the Starnote for Iridium's combined GPS hardware interacts with the Notecard on this path. On this hardware GPS is provided by the Starnote for Iridium's combined Iridium+GPS antenna; the standard `card.location` API returns the fix transparently.
 
@@ -317,7 +319,7 @@ All three Notefiles use [`"format":"compact"`](https://dev.blues.io/notecard/not
 | Notefile | Trigger | Fields | Notes |
 |---|---|---|---|
 | `trailer_event.qo` | Departure or arrival | `type` (1=departed, 2=arrived), `dwell_h` (parked duration in hours), `gps_valid` (1=fix, 0=none), `lat`, `lon`, `evt_time` | `sync:true`; immediate cellular delivery. Iridium fallback on next window if cellular unavailable. |
-| `trailer_location.qo` | Moving state, interval elapsed | `lat`, `lon`, `gps_valid`, `volt` | Batched; sent at next outbound window (60–360 min depending on battery state). |
+| `trailer_location.qo` | Moving state, interval elapsed | `lat`, `lon`, `gps_valid`, `volt` | Batched; sent at next outbound window (60–360 minutes depending on battery state). |
 | `trailer_heartbeat.qo` | Parked state, interval elapsed | `volt`, `gps_valid` | Batched; sent every 6 hours (default, overridable). Used to confirm solar charging (declining volt = charging failure). |
 
 Sample `trailer_event.qo` (departed, 18.5 hours of dwell, GPS fix confirmed at detection time):
@@ -337,7 +339,7 @@ Sample `trailer_event.qo` (departed, 18.5 hours of dwell, GPS fix confirmed at d
 }
 ```
 
-`type` 1 = departed, 2 = arrived. `dwell_h` is hours parked before this departure; it is `0` for arrival notes. `gps_valid` is `1` when a valid GPS fix was available at detection time, `0` when no fix existed (e.g., a freshly installed unit — ignore `lat`/`lon` when `gps_valid` is `0`). `lat` and `lon` are the GPS coordinates captured at transition detection time; `evt_time` is the Unix epoch at that same wake. Timestamp accuracy is bounded by `parked_check_mins` (for departures) or `moving_ping_mins` (for arrivals), and location is the Notecard's most recently cached fix at detection time. These fields are written explicitly by the host at detection time so they are preserved correctly across retried deliveries. Unlike `trailer_location.qo` and `trailer_heartbeat.qo` — which use the Notecard's auto-populated `_lat`/`_lon`/`_time` keywords — event notes use explicit host-supplied fields so that a note retried on a later wake never picks up a stale post-transition GPS state.
+`type` 1 = departed, 2 = arrived. `dwell_h` is hours parked before this departure; it is `0` for arrival notes. `gps_valid` is `1` when a valid GPS fix was available at detection time, `0` when no fix existed (e.g., a freshly installed unit, ignore `lat`/`lon` when `gps_valid` is `0`). `lat` and `lon` are the GPS coordinates captured at transition detection time; `evt_time` is the Unix epoch at that same wake. Timestamp accuracy is bounded by `parked_check_mins` (for departures) or `moving_ping_mins` (for arrivals), and location is the Notecard's most recently cached fix at detection time. These fields are written explicitly by the host at detection time so they are preserved correctly across retried deliveries. Unlike `trailer_location.qo` and `trailer_heartbeat.qo` — which use the Notecard's auto-populated `_lat`/`_lon`/`_time` keywords — event Notes use explicit host-supplied fields so that a note retried on a later wake never picks up a stale post-transition GPS state.
 
 Sample `trailer_heartbeat.qo` (parked, battery healthy, GPS fix available):
 
@@ -361,7 +363,7 @@ A downward trend in `volt` across consecutive heartbeats is an early warning tha
 
 **GPS suppression.** The firmware issues `card.location.mode {"mode":"off"}` on each MOVING→PARKED arrival and `card.location.mode {"mode":"periodic"}` on each PARKED→MOVING departure — a parked trailer never runs the GPS module. Given trailers spend the majority of their lives at docks, yards, and distribution centers, this explicit GPS gating is the single biggest power saving in the system.
 
-**Voltage-variable sync.** `hub.set` is configured with `voutbound:"high:60;normal:120;low:360;dead:0"` — as the solar battery drains, the cellular outbound sync interval stretches from 1 hour to 6 hours, then suspends entirely if the battery is critically depleted. Transition events use `sync:true` to request priority delivery regardless of the outbound schedule; on cellular this wakes the radio immediately, while on NTN it queues the note for the next satellite transmission opportunity rather than suspending delivery entirely.
+**Voltage-variable sync.** `hub.set` is configured with `voutbound:"high:60;normal:120;low:360;dead:0"` — as the solar battery drains, the cellular outbound sync interval stretches from 1 hour to 6 hours, then suspends entirely if the battery is critically depleted. Transition events use `sync:true` to request priority delivery regardless of the outbound schedule; on cellular this wakes the radio immediately, while on NTN it queues the Note for the next satellite transmission opportunity rather than suspending delivery entirely.
 
 ### 7.6 Retry and error handling
 
@@ -453,7 +455,7 @@ if (prev == STATE_PARKED && moving) {
 ## 8. Data Flow
 
 
-![Data flow: accelerometer (5 min parked) + GPS (15 min moving) + battery ADC → parked/moving state machine with transition detect and timer checks → trailer_event.qo (departure/arrival, sync:true) and trailer_location.qo + trailer_heartbeat.qo (batched) → Notehub → routes](diagrams/03-data-flow.svg)
+![Data flow: accelerometer (5 minutes parked) + GPS (15 minutes moving) + battery ADC → parked/moving state machine with transition detect and timer checks → trailer_event.qo (departure/arrival, sync:true) and trailer_location.qo + trailer_heartbeat.qo (batched) → Notehub → routes](diagrams/03-data-flow.svg)
 
 **Collected.** On every wake: the Notecard accelerometer's moving/stopped status. When moving: GPS coordinates from the Notecard's periodic GPS module. When parked: LiPo battery voltage from the Notecard's ADC.
 
@@ -462,10 +464,10 @@ if (prev == STATE_PARKED && moving) {
 | Notefile | Trigger | Cadence | Transport |
 |---|---|---|---|
 | `trailer_event.qo` | State transition (depart or arrive) | On event, `sync:true` | Cellular (immediate); NTN satellite (next transmission window) |
-| `trailer_location.qo` | While moving, interval elapsed | Every `moving_ping_mins` (default 15 min) | Batched, outbound window |
-| `trailer_heartbeat.qo` | While parked, interval elapsed | Every `heartbeat_hours` (default 6 hr) | Batched, outbound window |
+| `trailer_location.qo` | While moving, interval elapsed | Every `moving_ping_mins` (default 15 minutes) | Batched, outbound window |
+| `trailer_heartbeat.qo` | While parked, interval elapsed | Every `heartbeat_hours` (default 6 hours) | Batched, outbound window |
 
-On **cellular**, queued Notes flush at the outbound window (60 min at high battery, 120 min at normal battery, stretching to 360 min at low battery — matching `VOUTBOUND_PROFILE`). Transition events bypass the queue via `sync:true`, waking the radio immediately for delivery.
+On **cellular**, queued Notes flush at the outbound window (60 minutes at high battery, 120 minutes at normal battery, stretching to 360 minutes at low battery, matching `VOUTBOUND_PROFILE`). Transition events bypass the queue via `sync:true`, waking the radio immediately for delivery.
 
 On **NTN/satellite**, `sync:true` marks transition events as high priority but the Notecard cannot interrupt a satellite orbital pass on demand. Events are queued and delivered at the next scheduled Iridium transmission opportunity rather than triggering an immediate radio wake. This is a [documented Notecard behavior](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set); expect delivery within the next satellite window (typically minutes, depending on Iridium LEO geometry) rather than sub-60-second cellular latency.
 
@@ -478,7 +480,7 @@ On **NTN/satellite**, `sync:true` marks transition events as high priority but t
 ## 9. Validation and Testing
 
 
-**Expected event cadence.** On first boot, `last_heartbeat_at` is zero, so the heartbeat condition fires on the first wake where the Notecard has a valid clock (`now > 0`). The Notecard syncs its clock during the initial cellular session, which completes within a few minutes of first power-on; the heartbeat is therefore queued locally on the following parked-check wake (~5 minutes in). Because heartbeat notes are **not** marked `sync:true`, the Notecard does not transmit them immediately — they ride the next scheduled outbound sync window. At full battery that window opens after **60 minutes** (`voutbound high:60`); at nominal charge after **120 minutes** (`voutbound normal:120`). Expect the first `trailer_heartbeat.qo` to appear in Notehub **roughly 1–2 hours after first power-on** under typical battery conditions.
+**Expected event cadence.** On first boot, `last_heartbeat_at` is zero, so the heartbeat condition fires on the first wake where the Notecard has a valid clock (`now > 0`). The Notecard syncs its clock during the initial cellular session, which completes within a few minutes of first power-on; the heartbeat is therefore queued locally on the following parked-check wake (~5 minutes in). Because heartbeat Notes are **not** marked `sync:true`, the Notecard does not transmit them immediately — they ride the next scheduled outbound sync window. At full battery that window opens after **60 minutes** (`voutbound high:60`); at nominal charge after **120 minutes** (`voutbound normal:120`). Expect the first `trailer_heartbeat.qo` to appear in Notehub **roughly 1–2 hours after first power-on** under typical battery conditions.
 
 **Commissioning state.** On first boot (or after a reflash that clears the persisted payload), the firmware seeds `parked_since` with the current Unix epoch from the Notecard's clock. For any unit that has already been running in the field and is then reflashed, the clock is synced and the first departure will carry an accurate dwell measured from the reflash moment. For a brand-new unit at the very first power-on, the Notecard must complete its first cellular session before it has a time reference (typically within a few minutes); if the clock is not yet available when setup first runs, `parked_since` is left at 0 and the first departure will report `dwell_h: 0`. To avoid this edge case on a new unit, **let the device sit powered and stationary until a `_session.qo` appears in Notehub** (confirming clock sync) before the trailer moves.
 
@@ -501,10 +503,10 @@ After a hookup, departure, run, and drop, you should see two `trailer_event.qo` 
 | Iridium 9603N modem in Notecard-managed sleep (cellular available, NTN not active) | ~30 µA (per Iridium 9603N module datasheet) |
 | Starnote for Iridium board supporting circuitry quiescent (regulators, level shifters, supervisory MCU) | **Not published by Blues — measure with Mojo before sizing** |
 | Swan host deep sleep (ATTN interrupt) | ~2–10 µA |
-| Swan active (brief wake cycle, ~1–2 s) | ~5–25 mA |
-| GPS acquisition via Starnote antenna (first fix, ~30–90 s) | ~20–50 mA |
+| Swan active (brief wake cycle, ~1–2 seconds) | ~5–25 mA |
+| GPS acquisition via Starnote antenna (first fix, ~30–90 seconds) | ~20–50 mA |
 | Cellular session (LTE-M data transfer, NOTE-WBEX) | ~200–300 mA avg, ≤2 A peak |
-| Iridium satellite session (Starnote SBD uplink, ~15–30 s) | ~300–500 mA avg, ≤1.5 A peak |
+| Iridium satellite session (Starnote SBD uplink, ~15–30 seconds) | ~300–500 mA avg, ≤1.5 A peak |
 
 In `cell-ntn` mode the Notecard keeps the Iridium modem in a Notecard-managed low-power sleep state whenever cellular is available; the Iridium 9603N modem's published sleep current is ~30 µA. Blues does not publish a board-level quiescent figure for the Starnote for Iridium's supporting circuitry (voltage regulators, level shifters, and supervisory MCU). **That board-level number is the dominant unknown in the parked-mode power budget for this design, and no authoritative daily energy total or solar-panel sizing conclusion can be stated until it is measured.** Use the Mojo bench procedure (§5.1) to measure the full system quiescent floor before selecting the final panel and battery. The published Iridium 9603N modem sleep figure (~30 µA) is a lower bound on the Starnote board's contribution; the true board-level draw will be higher once regulator and supervisory-circuit losses are included.
 
@@ -514,13 +516,13 @@ For high-latitude (above 60°N), winter-deployment, or chassis-mounted scenarios
 
 Three Mojo trace signatures to recognize:
 
-- **Healthy (parked, cellular available):** a near-continuous quiescent floor (the measured Starnote board draw — use this run to establish the value), a brief ~2 s blip every 5 minutes (motion check + Swan wake), and one 10–30 s cellular burst at ~200 mA every 2 hours at normal battery.
-- **Satellite fallback session:** a 15–30 s burst at ~300–500 mA with a short high peak — this is the Iridium SBD exchange. Expect this when cellular has failed and the Notecard routes through the Starnote.
+- **Healthy (parked, cellular available):** a near-continuous quiescent floor (the measured Starnote board draw, use this run to establish the value), a brief ~2 seconds blip every 5 minutes (motion check + Swan wake), and one 10–30 seconds cellular burst at ~200 mA every 2 hours at normal battery.
+- **Satellite fallback session:** a 15–30 seconds burst at ~300–500 mA with a short high peak — this is the Iridium SBD exchange. Expect this when cellular has failed and the Notecard routes through the Starnote.
 - **Stuck awake:** continuous current well above the quiescent floor means `NotePayloadSaveAndSleep` is not driving the Swan into deep sleep. Check that the Swan ATTN wiring on the Notecarrier XI is intact and watch serial output for `[sleep]` lines.
 
 **Functional test without a real trailer.** To verify the departure/arrival state machine without driving anywhere: shake or tap the Notecarrier gently to trigger accelerometer motion events. The Notecard accumulates events in 60-second buckets, but the host only wakes to query `card.motion` on the `parked_check_mins` cadence (default 5 minutes). After shaking, wait up to **`parked_check_mins` + 60 seconds + cellular sync time** (roughly 6–7 minutes at defaults) before expecting a `trailer_event.qo` with `type:1` in Notehub. To speed up bench testing, temporarily lower `parked_check_mins` to `1` via a Notehub environment variable — then the motion check fires within about 90 seconds of the shake.
 
-For the arrival event, note the **asymmetric detection latency**: once the tracker transitions to STATE_MOVING, it sleeps for `moving_ping_secs` (default 15 minutes) between wakes. Departure detection is bounded by `parked_check_mins` (5 min default), while arrival detection is bounded by `moving_ping_mins` (15 min default). To see a `type:2` note after letting the unit sit still, wait up to **`moving_ping_mins` + sync time** (roughly 16–17 minutes at defaults).
+For the arrival event, note the **asymmetric detection latency**: once the tracker transitions to STATE_MOVING, it sleeps for `moving_ping_secs` (default 15 minutes) between wakes. Departure detection is bounded by `parked_check_mins` (5 minutes default), while arrival detection is bounded by `moving_ping_mins` (15 minutes default). To see a `type:2` note after letting the unit sit still, wait up to **`moving_ping_mins` + sync time** (roughly 16–17 minutes at defaults).
 
 ---
 
@@ -536,7 +538,7 @@ For the arrival event, note the **asymmetric detection latency**: once the track
 **No departure/arrival events in Notehub:**
 - Confirm the accelerometer is working: check Notehub for `_session.qo` events (connection handshakes). If none appear, the Notecard isn't connecting.
 - Check that `PRODUCT_UID` is set correctly in `helpers.h` (Notehub: **Project Settings → ProductUID**).
-- Physically move the device to trigger a departure. **Departure detection is bounded by `parked_check_mins` (default 5 min)**; wait up to 6 minutes and check Notehub.
+- Physically move the device to trigger a departure. **Departure detection is bounded by `parked_check_mins` (default 5 minutes)**; wait up to 6 minutes and check Notehub.
 - For **arrival** (the device must be in MOVING state), wait up to **`moving_ping_mins` + sync time** (default ~16 minutes) for the note to appear.
 
 **Position always shows as GPS invalid (gps_valid=0):**
@@ -584,7 +586,7 @@ For the arrival event, note the **asymmetric detection latency**: once the track
 
 - **No DFU wired up.** [Notecard Outboard Firmware Update](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) on the Swan is not configured in this POC. Field firmware updates currently require physical access to the Swan's USB-C port.
 
-- **Alternative hardware path — Skylo NTN (land routes only).** For fleets confined to North American land-route corridors within Skylo's geostationary footprint, the [Notecard for Skylo (NOTE-NBGLWX)](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) on a [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) integrates cellular, Skylo NTN satellite, GPS, and the accelerometer in a single M.2 module with no Starnote or external MCU board required. The same Notefile schemas (`trailer_event.qo`, `trailer_location.qo`, `trailer_heartbeat.qo`) and the same Notehub project apply. **Skylo's service area covers defined land-route corridors only — no ocean-route or polar coverage.** See the [Choosing Between Skylo and Iridium](https://dev.blues.io/starnote/choosing-between-skylo-and-iridium/) guide for the full coverage comparison.
+- **Alternative hardware path — [Skylo](https://www.skylo.tech/resources/geographical-coverage) NTN (land routes only).** For fleets confined to North American land-route corridors within Skylo's geostationary footprint, the [Notecard for Skylo (NOTE-NBGLWX)](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) on a [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) integrates cellular, Skylo NTN satellite, GPS, and the accelerometer in a single M.2 module with no Starnote or external MCU board required. The same Notefile schemas (`trailer_event.qo`, `trailer_location.qo`, `trailer_heartbeat.qo`) and the same Notehub project apply. **Skylo's service area covers defined land-route corridors only — no ocean-route or polar coverage.** See the [Choosing Between Skylo and Iridium](https://dev.blues.io/starnote/choosing-between-skylo-and-iridium/) guide for the full coverage comparison.
 
 **Production next steps:**
 

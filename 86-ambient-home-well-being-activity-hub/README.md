@@ -6,7 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-A [remote patient monitoring](https://blues.com/remote-patient-monitoring/) hub that gives clinicians and family caregivers a low-obtrusion signal that life is unfolding normally — without asking an elderly patient to wear anything or interact with any device. Four inexpensive sensors feed a [Blues Notecard Cell+WiFi](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), which reports hourly activity summaries and immediately flags the anomalies that matter: no sign of life by mid-morning, a pattern of repeated nighttime bathroom trips, or no detectable bed vibration during expected sleep hours.
+This project is a [remote patient monitoring](https://blues.com/remote-patient-monitoring/) hub that gives clinicians and family caregivers a low-obtrusion signal that life is unfolding normally — without asking an elderly patient to wear anything or interact with any device. Four inexpensive sensors feed a [Blues Notecard Cell+WiFi](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), which reports hourly activity summaries and immediately flags the anomalies that matter: no sign of life by mid-morning, a pattern of repeated nighttime bathroom trips, or no detectable bed vibration during expected sleep hours.
 
 ## 1. Project Overview
 
@@ -33,13 +33,15 @@ The Blues Notecard Cell+WiFi (NOTE-MBGLW) adds a second layer of resilience: for
 
 Nothing the patient interacts with. Nothing that needs charging.
 
+<NewToBlues/>
+
 ## 2. System Architecture
 
 ![System architecture](diagrams/01-system-architecture.svg)
 
 **Device-side responsibilities.** The onboard Cygnet STM32L4 host on the Notecarrier CX runs continuously at ultra-low power in STM32 Stop mode between 5-minute sensor cycles. PIR and door-contact edges are captured immediately by EXTI interrupt service routines (ISRs) that increment volatile event counters in SRAM, so every motion event and bathroom trip that occurs during sleep is counted regardless of when it occurs relative to the scheduled sample cycle. Every five minutes the MCU wakes from Stop mode, atomically copies and clears the ISR counters, reads all four sensors, updates in-RAM accumulators, evaluates three anomaly rules against the current time-of-day, and returns to Stop mode. Application state is a static SRAM global — retained across Stop mode wakes, reset on power-on. The Notecard handles all I²C communication and the cellular connection; the host never manages a modem directly.
 
-**Notecard responsibilities.** The Notecard queues [Notes](https://dev.blues.io/api-reference/glossary/#note) in its own on-device flash, establishes a cellular (or WiFi) session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 minutes), and flushes any `sync:true` alert notes immediately. It also distributes [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) pushed from Notehub — so the care team can re-tune activity thresholds (morning window, nighttime bathroom limit, etc.) without a firmware update or a truck roll.
+**Notecard responsibilities.** The Notecard queues [Notes](https://dev.blues.io/api-reference/glossary/#note) in its own on-device flash, establishes a cellular (or WiFi) session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 minutes), and flushes any `sync:true` alert Notes immediately. It also distributes [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) pushed from Notehub — so the care team can re-tune activity thresholds (morning window, nighttime bathroom limit, etc.) without a firmware update or a truck roll.
 
 **Notehub responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to [Notehub](https://notehub.io) over the Internet; Notehub ingests events, stores every event, and applies project-level routes. The two Notefiles have deliberately different urgency profiles — `activity_summary.qo` is a low-urgency hourly record suitable for a long-term analytics store, while `activity_alert.qo` is an immediate notification worth routing to a care coordination platform or on-call paging service. Separating them at the source means the routing configuration stays simple.
 
@@ -82,7 +84,7 @@ Here is a sample Note this device emits:
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/)) | 1 | Compact carrier with an embedded Cygnet STM32L4 host MCU — no separate Feather board required for this sensor mix. Onboard I²C pull-ups, analog reference, and dual 16-pin headers with GPIO, I²C, analog, and UART breakout are all included. |
 | [Notecard Cell+WiFi (NOTE-MBGLW)](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/)) | 1 | LTE Cat-1 bis cellular with 2.4 GHz WiFi fallback; 500 MB of prepaid global data. Cellular-first design means the hub works even when the patient's WiFi is absent or changes. No SIM activation or monthly fee. Cellular and WiFi u.FL antennas are included in the box — route them outside any metal enclosure for best performance. |
 | [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/mojo-datasheet/)) | 1 | **Bench-only.** Coulomb counter placed inline on the +VBAT rail during validation to measure idle current (should be < 25 µA) and cellular session energy. Removed before permanent deployment. See §8 for usage. |
-| [Adafruit Mini PIR Motion Sensor with 3-Pin Header (ID 4871)](https://www.adafruit.com/product/4871) ([tech docs](https://learn.adafruit.com/pir-passive-infrared-proximity-motion-sensor/)) | 1 | Breadboard-friendly PIR based on the AM312 sensor: 3–12 V supply, 3.3 V digital output — directly compatible with the Cygnet's 3.3 V GPIO logic. Up to 5 m detection range, 100° field of view, ~2 s output hold-off. Detects any occupant movement in the living area. |
+| [Adafruit Mini PIR Motion Sensor with 3-Pin Header (ID 4871)](https://www.adafruit.com/product/4871) ([tech docs](https://learn.adafruit.com/pir-passive-infrared-proximity-motion-sensor/)) | 1 | Breadboard-friendly PIR based on the AM312 sensor: 3–12 V supply, 3.3 V digital output — directly compatible with the Cygnet's 3.3 V GPIO logic. Up to 5 m detection range, 100° field of view, ~2 seconds output hold-off. Detects any occupant movement in the living area. |
 | [Adafruit Magnetic Contact Switch — Door Sensor (ID 375)](https://www.adafruit.com/product/375) | 1 | Normally-open reed switch in a plastic enclosure; closes within ~13 mm of its magnet. Full electrical specifications are on the product page. Installs on any door frame without modification. Mounts on the bathroom door for nighttime trip counting. |
 | [Adafruit Sensirion SHT31-D Temp & Humidity Breakout (ID 2857)](https://www.adafruit.com/product/2857) ([Sensirion SHT31 datasheet](https://sensirion.com/products/catalog/SHT31-DIS-B/)) | 1 | ±2% RH, ±0.3°C accuracy over I²C; 3 V or 5 V compatible. In this POC the firmware reports the most recent reading as telemetry in each hourly summary and maintains a slow EWMA baseline; shower/bath inference from humidity spikes is a planned enhancement (see [§11](#11-limitations-and-next-steps)). Mounts at the bathroom door frame alongside the reed switch. |
 | [SparkFun Piezo Vibration Sensor — Large with Mass (SEN-09197)](https://www.sparkfun.com/products/9197) ([datasheet on product page](https://www.sparkfun.com/products/9197)) | 1 | **Vibration-based bed-presence proxy.** A small PVDF piezo film element that generates an AC signal when flexed. Tucked under the mattress pad, it detects the micro-vibrations associated with a person in bed. This provides a coarse single-point vibration signal — **not** full-coverage bed-occupancy detection; an immobile occupant can read as "no vibration" (see [§11](#11-limitations-and-next-steps)). Requires a voltage divider and clamp diode — see §5. |
@@ -178,7 +180,7 @@ Piezo (−) ─────────────────── GND
 - 1N4148 anode to `GND`, cathode to junction node (clamps negative swings)
 - Piezo `−` lead → Notecarrier CX `GND`
 
-The divider ratio is 10k / (1M + 10k) ≈ 1/101, so the worst-case 90 V input becomes ≈ 0.89 V at A0 — well inside the 0–3.3 V ADC range. The normal bed-vibration signal will be a few tens of millivolts; the firmware measures peak-to-peak amplitude over a 500 ms window and compares it against a configurable threshold.
+The divider ratio is 10k / (1M + 10k) ≈ 1/101, so the worst-case 90 V input becomes ≈ 0.89 V at A0 — well inside the 0–3.3 V ADC range. The normal bed-vibration signal will be a few tens of millivolts; the firmware measures peak-to-peak amplitude over a 500 milliseconds window and compares it against a configurable threshold.
 
 **Bed sensor placement and cable routing:** wrap the piezo element in a thin cloth or small foam pouch, then place it under the mattress pad at approximately torso height. The element should have slight preload (the weight of the mattress pad above it) to improve sensitivity to small vibrations. Route a 2-conductor 22–26 AWG wire from A0 and GND at the hub along the nightstand leg, under the bed frame, and under the mattress to the element (≤ 1.5 m). Keep the leads away from bed springs to avoid false positives from metal contact.
 
@@ -213,8 +215,8 @@ In Notehub: **Fleet → Environment** (or **Device → Environment** for a per-d
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `sample_interval_sec` | `300` | Seconds between sensor reads (5 min default). Decrease for higher temporal resolution during commissioning; increase to conserve power on battery deployments. |
-| `summary_interval_min` | `60` | Minutes between hourly summary notes. Changing this also re-applies `hub.set` so the Notecard's outbound cadence stays in sync. |
+| `sample_interval_sec` | `300` | Seconds between sensor reads (5 minutes default). Decrease for higher temporal resolution during commissioning; increase to conserve power on battery deployments. |
+| `summary_interval_min` | `60` | Minutes between hourly summary Notes. Changing this also re-applies `hub.set` so the Notecard's outbound cadence stays in sync. |
 | `morning_start_hour` | `6` | Local hour (0–23) when the "morning activity" window opens each day. |
 | `morning_end_hour` | `9` | Local hour at which the firmware checks whether any activity was seen. If none: alert fires. |
 | `sleep_start_hour` | `22` | Local hour when the sleep window begins (door trips counted as nighttime bathroom visits). |
@@ -236,7 +238,7 @@ Add at minimum two [routes](https://dev.blues.io/notehub/notehub-walkthrough/#ro
 Within a minute of first power-on, the **Events** tab in your project should start populating. Three event kinds matter for this project:
 
 - **`_session.qo`** — automatic Notecard housekeeping events on each cellular session. If you see these, the radio is reaching Notehub. If the device never appears in the **Devices** tab, the most common causes are: `PRODUCT_UID` is empty or wrong, the cellular antenna is folded inside a metal enclosure, or there is no cellular coverage at the test site.
-- **`activity_summary.qo`** — one per `summary_interval_min` (default: 60 min). A correctly-deployed hub generates one per hour in steady state. Example:
+- **`activity_summary.qo`** — one per `summary_interval_min` (default: 60 minutes). A correctly-deployed hub generates one per hour in steady state. Example:
   ```json
   {
     "pir_count": 14,
@@ -307,15 +309,15 @@ To watch Notecard JSON traffic during bring-up, first uncomment the `// #define 
 
 - **PIR.** A volatile `g_pir_count` counter is incremented by `pirISR()`, an EXTI interrupt registered on `PIN_PIR` for `RISING` edges. At the start of each 5-minute cycle, the counter is copied and cleared atomically inside a `noInterrupts()`/`interrupts()` critical section, and its value is added to `pir_count`. If the counter is zero but `PIN_PIR` is currently `HIGH`, the PIR went active between `setup()` and the first `deepSleep()` call before any RISING edge existed to capture; the firmware records it as one event. Using a counter rather than a boolean latch means every rising edge is tallied separately — multiple motion events within a single 5-minute interval each contribute to `pir_count` and can set `morning_activity` when inside the morning window.
 
-- **Door contact.** A volatile `g_door_count` counter is incremented by `doorISR()`, an EXTI interrupt registered on `PIN_DOOR` for `RISING` edges (LOW-to-HIGH = door opens); a 50 ms software debounce in the ISR prevents reed-switch contact bounce from inflating the count. At the start of each cycle the counter is copied and cleared atomically, and every recorded opening is added to `door_count` and, when inside the sleep window, `night_bathroom_count`. If the counter is zero but a level transition is detected (door is open and was last sampled as closed), one event is recorded to catch a transition that occurred after `deepSleep()` returned. Using a counter rather than a boolean latch means multiple bathroom trips within a single sleep interval are each counted — a patient who opens the bathroom door twice during one 5-minute interval contributes 2 to `night_bathroom_count`, not 1.
+- **Door contact.** A volatile `g_door_count` counter is incremented by `doorISR()`, an EXTI interrupt registered on `PIN_DOOR` for `RISING` edges (LOW-to-HIGH = door opens); a 50 milliseconds software debounce in the ISR prevents reed-switch contact bounce from inflating the count. At the start of each cycle the counter is copied and cleared atomically, and every recorded opening is added to `door_count` and, when inside the sleep window, `night_bathroom_count`. If the counter is zero but a level transition is detected (door is open and was last sampled as closed), one event is recorded to catch a transition that occurred after `deepSleep()` returned. Using a counter rather than a boolean latch means multiple bathroom trips within a single sleep interval are each counted — a patient who opens the bathroom door twice during one 5-minute interval contributes 2 to `night_bathroom_count`, not 1.
 
 - **Humidity (SHT31).** The Adafruit SHT31 library's `readTemperature()` and `readHumidity()` calls over I²C. Returns `NaN` on communication failure; the firmware checks with `isnan()` before updating state. A slow exponential weighted moving average (EWMA, α = 0.02) maintains a rolling ambient baseline in `AppState` — this baseline is used locally to track seasonal drift and is a foundation for a future humidity-spike detector, but it is **not transmitted** in `activity_summary.qo`. Only the most recent humidity reading (`humidity_pct`) and temperature (`temp_c`) are included in the hourly summary. Adding a humidity-spike counter as an independent bathroom-visit signal is a planned enhancement (see [Limitations](#11-limitations-and-next-steps)).
 
-- **Bed vibration (piezo).** `analogRead` on A0 is called 100 times at 5 ms intervals (500 ms total), accumulating the minimum and maximum ADC counts. If `(max - min) >= g_bed_threshold`, the sample is recorded as "vibration detected." At a normal respiratory rate of 12–20 breaths/min each breath cycle takes 3–5 seconds; the 500 ms window is shorter than a single breath cycle, but it is sufficient to detect the continuous micro-vibration that distinguishes a moving person in the bed from an unoccupied or fully-immobile mattress. This is a coarse single-point vibration signal — a proxy for bed presence — not full-coverage occupancy detection or a physiological measurement.
+- **Bed vibration (piezo).** `analogRead` on A0 is called 100 times at 5 milliseconds intervals (500 milliseconds total), accumulating the minimum and maximum ADC counts. If `(max - min) >= g_bed_threshold`, the sample is recorded as "vibration detected." At a normal respiratory rate of 12–20 breaths/min each breath cycle takes 3–5 seconds; the 500 milliseconds window is shorter than a single breath cycle, but it is sufficient to detect the continuous micro-vibration that distinguishes a moving person in the bed from an unoccupied or fully-immobile mattress. This is a coarse single-point vibration signal — a proxy for bed presence — not full-coverage occupancy detection or a physiological measurement.
 
 ### 7.4 Event payload design
 
-`activity_summary.qo` uses a [note template](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) registered at boot, giving each note a fixed binary encoding on the wire — roughly 3–5× smaller than free-form JSON for this field set. An hourly summary looks like:
+`activity_summary.qo` uses a [note template](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) registered at boot, giving each Note a fixed binary encoding on the wire — roughly 3–5× smaller than free-form JSON for this field set. An hourly summary looks like:
 
 ```json
 {
@@ -334,7 +336,7 @@ To watch Notecard JSON traffic during bring-up, first uncomment the `// #define 
 
 `bed_motion_pct` is the percentage of 5-minute samples within the hour that detected bed vibration (0–100); it is a vibration-based proxy for bed presence, not a confirmed occupancy count. `morning_activity` is `true` if any PIR or door-open event was detected during the configured morning window (`morning_start_hour` to `morning_end_hour`) on the current day; it resets to `false` at the next daily rollover at `morning_start_hour`. A summary emitted near `morning_end_hour` with `morning_activity: false` means no qualifying activity has been seen in the morning window yet that day — which is the primary alerting signal. Summaries later in the day will report `false` for any hour in which no morning-window activity occurred, and `true` once the morning window produced at least one event. A `bed_motion_pct` of 0 across the overnight hours, combined with `morning_activity: false` in the morning, is the cluster pattern most worth routing to a clinician.
 
-`activity_alert.qo` is intentionally *not* templated. Alert notes are low-volume and each rule type benefits from carrying different supporting fields, so the slightly larger free-form JSON is worth the flexibility. A sample alert:
+`activity_alert.qo` is intentionally *not* templated. Alert Notes are low-volume and each rule type benefits from carrying different supporting fields, so the slightly larger free-form JSON is worth the flexibility. A sample alert:
 
 ```json
 {
@@ -394,7 +396,7 @@ notecard.deleteResponse(rsp);
 
 ### 7.8 Key code snippet 2: immediate-sync alert
 
-`sync:true` instructs the Notecard to bypass the hourly outbound window and open a cellular session immediately. An alert note reaches Notehub in typically 15–60 seconds after the rule trips.
+`sync:true` instructs the Notecard to bypass the hourly outbound window and open a cellular session immediately. An alert Note reaches Notehub in typically 15–60 seconds after the rule trips.
 
 ```cpp
 J *req = notecard.newRequest("note.add");
@@ -457,7 +459,7 @@ bool inWindow(uint8_t hour, uint8_t start_h, uint8_t end_h) {
 |---|---|---|
 | `no_morning_activity` | `morning_end_hour` reached with `morning_activity = false` (no PIR or door event was detected inside the `morning_start_hour`–`morning_end_hour` window that day); fires at most once per calendar day (per-day `morning_alerted` latch) subject to the 30-min cooldown | `detail` |
 | `night_bathroom_pattern` | `night_bathroom_count` reaches or exceeds `night_bathroom_limit`; the count is incremented only during the sleep window, but the threshold check runs on every wake cycle — the alert fires on the first wake after the limit is reached, which may be outside the sleep window; **fires at most once per night** via the per-night `night_bath_alerted` latch (reset at `sleep_end_hour`); additional bathroom trips after the first alert do not retrigger until the following night; 30-min cooldown is an additional guard | `detail` with count and limit |
-| `no_bed_motion_during_sleep` | ≥ 4 *consecutive* samples with no detected bed vibration at the sensor point (20 min of vibration-silence, not confirmed bed vacancy) during sleep window; fires once per distinct quiet episode via the `bed_empty_alerted` latch, which re-arms when bed vibration is next detected and also resets at `sleep_end_hour` (30-min cooldown is an additional guard). A single sample with vibration also resets the consecutive quiet-sample counter. | `detail` |
+| `no_bed_motion_during_sleep` | ≥ 4 *consecutive* samples with no detected bed vibration at the sensor point (20 minutes of vibration-silence, not confirmed bed vacancy) during sleep window; fires once per distinct quiet episode via the `bed_empty_alerted` latch, which re-arms when bed vibration is next detected and also resets at `sleep_end_hour` (30-min cooldown is an additional guard). A single sample with vibration also resets the consecutive quiet-sample counter. | `detail` |
 
 All three rules are independent. A patient sleeping poorly and not getting up at all could trigger both `no_bed_motion_during_sleep` (if the bed shows no vibration during sleep hours) and `no_morning_activity` (if no PIR or door event occurred during the morning window) simultaneously — each fires on its own per-rule latch schedule (at most once per night / per absence episode / per calendar day as described above) and each requires its own routing action.
 
@@ -470,11 +472,11 @@ All three rules are independent. A patient sleeping poorly and not getting up at
 | Phase | Draw | Notes |
 |---|---|---|
 | MCU Stop mode + Notecard idle (between syncs) — VBAT path | < 25 µA combined *(Blues-published for Notecard; MCU Stop adds ~2–5 µA)* | Applies only when powered via +VBAT with VUSB absent. USB-C-powered deployments will idle at ~1–3 mA *(Blues-published)*. |
-| Host active (sensor reads, 5 min interval) | 15–25 mA *(estimated)* | ~1–2 s per wake |
-| Notecard cellular session (hourly) | 100–300 mA average *(Blues-published)* | 30–60 s |
+| Host active (sensor reads, 5 minutes interval) | 15–25 mA *(estimated)* | ~1–2 seconds per wake |
+| Notecard cellular session (hourly) | 100–300 mA average *(Blues-published)* | 30–60 seconds |
 | 24-hour steady state (5-min sample, hourly sync) — VBAT path | **~25–30 mAh/day** *(estimated)* | Increases to ~75–100 mAh/day *(estimated)* with USB-C idle current. |
 
-The Notecard Cell+WiFi idles at ~18 µA @ 5 V on the VBAT path (VUSB absent). Cellular session energy for the NOTE-MBGLW in periodic mode with hourly syncs is roughly 1 mAh per session (based on published 12-hour test data at 30-minute cadence); 24 sessions/day yields ~24 mAh from cellular alone. Host contribution is small (~3 mAh/day at 2 s active × 288 wakes/day × 20 mA). These are order-of-magnitude estimates; actual values depend on signal strength and session duration.
+The Notecard Cell+WiFi idles at ~18 µA @ 5 V on the VBAT path (VUSB absent). Cellular session energy for the NOTE-MBGLW in periodic mode with hourly syncs is roughly 1 mAh per session (based on published 12-hour test data at 30-minute cadence); 24 sessions/day yields ~24 mAh from cellular alone. Host contribution is small (~3 mAh/day at 2 seconds active × 288 wakes/day × 20 mA). These are order-of-magnitude estimates; actual values depend on signal strength and session duration.
 
 **What a healthy Mojo trace looks like (VBAT-powered bench rig):** a sub-25 µA baseline for ~5 minutes (Notecard idle + MCU Stop mode), a brief 1–2-second blip to 15–25 mA (host active, sensor reads), repeated, with a longer 30–60-second burst at 100–300 mA once per hour (cellular session).
 
@@ -516,7 +518,7 @@ The Notecard Cell+WiFi idles at ~18 µA @ 5 V on the VBAT path (VUSB absent). Ce
 
 - **Stale SHT31 readings after transient I²C errors.** Once the SHT31 has produced at least one valid reading, any subsequent I²C failure leaves `humidity_pct` and `temp_c` in the summary at their last valid values rather than at the `-9999` sentinel. A downstream consumer therefore cannot distinguish a stale-but-plausible reading from a fresh one without also tracking the gap between the note timestamp and the last known-good read time. Production deployments that depend on humidity data for bathroom-visit inference should add a `sht31_valid_count` field to the summary (the number of successful reads in the window) so consumers can detect sustained sensor failures before they corrupt trend data.
 
-- **Alert notes are not acknowledged.** The firmware emits `activity_alert.qo` and continues; there is no inbound acknowledgment or escalation path if the alert note is not delivered within a time window. A production system should use a Notehub route with a retry policy and a monitoring job that checks for expected heartbeat notes.
+- **Alert Notes are not acknowledged.** The firmware emits `activity_alert.qo` and continues; there is no inbound acknowledgment or escalation path if the alert Note is not delivered within a time window. A production system should use a Notehub route with a retry policy and a monitoring job that checks for expected heartbeat Notes.
 
 - **Mojo is bench-validation equipment only.** Mojo data is read directly from the Mojo's USB-C port on a PC — the [Mojo quickstart](https://dev.blues.io/quickstart/mojo-quickstart/) covers setup. The firmware does not interact with Mojo at all; no Mojo data flows through the Notecard to Notehub. For persistent power-budget monitoring in a production deployment, add a dedicated I²C coulomb counter (e.g., MAX17048 or LTC2943) to the sensor mix, read it alongside the other I²C sensors, and add a `mah_consumed` field to `activity_summary.qo`.
 

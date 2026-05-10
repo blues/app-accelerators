@@ -6,7 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-A cellular [energy monitoring](https://blues.com/solutions-energy-monitoring/) retrofit for multi-tenant commercial buildings. Four Rogowski coil sensors with per-channel active integrator circuits on a panel, a Blues Notecard Cell+WiFi, and a Notecarrier CX with its onboard Cygnet host — and a landlord gains per-tenant estimated interval energy (Wh), 15-minute blocked-average demand (W), and a per-channel fault bitmask every hour, on a data channel the tenants can neither see nor interfere with, without running a single network cable through the building.
+This project is a cellular [energy monitoring](https://blues.com/solutions-energy-monitoring/) retrofit for multi-tenant commercial buildings. Four Rogowski coil sensors with per-channel active integrator circuits on a panel, a Blues Notecard Cell+WiFi, and a Notecarrier CX with its onboard Cygnet host — and a landlord gains per-tenant estimated interval energy (Wh), 15-minute blocked-average demand (W), and a per-channel fault bitmask every hour, on a data channel the tenants can neither see nor interfere with, without running a single network cable through the building.
 
 ## 1. Project Overview
 
@@ -16,7 +16,7 @@ The problem is the cost and the complexity. Commercial sub-meters require a wire
 
 This project takes a different path. Instead of installing meters with network cards, it clips Rogowski coil sensors onto each tenant's existing feed conductors — no wire cuts, no conduit, no utility coordination — and uses a Notecard to move the data to the cloud. A voltage transducer provides a coherent voltage reference so the device computes active power (W) and estimated interval energy (Wh) from sequential interleaved V×I measurements, rather than an estimated figure derived from an assumed voltage and fixed power factor. The system installs in an afternoon and costs a fraction of a traditional per-tenant metered retrofit.
 
-**What this project delivers — and what it does not.** This design provides estimated tenant load allocation data useful for proportional charge-back, load profiling, and identifying unusually high-consumption tenants. It does **not** replace a utility-certified sub-meter. Readings are derived from periodic active-power snapshots (one ~200 ms V×I mean every five minutes) rather than continuous integration, and the sequential (non-simultaneous) V/I sampling introduces a small systematic error at low power factors. For internal bill-back purposes the approach is accurate enough to support proportional allocation between tenants. For billing applications requiring certified metering accuracy — for example, sub-metering subject to utility-tariff accuracy regulations — a dedicated simultaneous-sampling energy-metering IC or certified sub-meter interface should replace this approach.
+**What this project delivers — and what it does not.** This design provides estimated tenant load allocation data useful for proportional charge-back, load profiling, and identifying unusually high-consumption tenants. It does **not** replace a utility-certified sub-meter. Readings are derived from periodic active-power snapshots (one ~200 milliseconds V×I mean every five minutes) rather than continuous integration, and the sequential (non-simultaneous) V/I sampling introduces a small systematic error at low power factors. For internal bill-back purposes the approach is accurate enough to support proportional allocation between tenants. For billing applications requiring certified metering accuracy — for example, sub-metering subject to utility-tariff accuracy regulations — a dedicated simultaneous-sampling energy-metering IC or certified sub-meter interface should replace this approach.
 
 **Why Notecard — and why cellular specifically.** The "why cellular" argument in most IoT applications is about location: the asset is remote, or on a rooftop, or in a place where running Ethernet is impractical. This application is different. The panel room is usually indoors, and there is WiFi somewhere nearby. The problem is *whose* WiFi it is.
 
@@ -32,13 +32,15 @@ This is not a niche edge case. Billing disputes are among the most contentious i
 
 **Deployment scenario.** A small, weatherproof or panel-rated enclosure mounted inside or alongside the building's electrical panel. Four Rogowski coil sensors — one per tenant feed — with the coil lead running to the enclosure via a short cable gland. A voltage transducer taps the same panel bus for a building voltage reference. Line power sourced from a spare breaker on the same panel. No rented rack space, no network closet, no IT involvement from anyone.
 
+<NewToBlues/>
+
 ## 2. System Architecture
 
 ![System architecture: 4 Rogowski coils + ZMPT101B voltage transducer → Notecarrier CX with Cygnet host and Notecard MBGLW → cellular → Notehub → bill-back / analytics / property management](diagrams/01-system-architecture.svg)
 
-**Device-side responsibilities.** The onboard Cygnet STM32L433 host on the Notecarrier CX wakes every five minutes (default), reads each active tenant channel by interleaving ADC samples from the voltage transducer output and the Rogowski integrator output, computes active power (W) via the V×I cross-product, accumulates estimated interval energy (Wh), 15-minute blocked-average demand (W), and a per-channel hardware-fault bitmask per tenant in a RAM struct persisted to Notecard flash across sleep cycles, and falls back to sleep. Once per hour it emits a summary note containing the accumulated energy, peak demand, and fault flags. The host reads all configuration at every wake from [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) distributed by Notehub, so sensor sensitivity and volt scaling can be adjusted in the field without a reflash.
+**Device-side responsibilities.** The onboard Cygnet STM32L433 host on the Notecarrier CX wakes every five minutes (default), reads each active tenant channel by interleaving ADC samples from the voltage transducer output and the Rogowski integrator output, computes active power (W) via the V×I cross-product, accumulates estimated interval energy (Wh), 15-minute blocked-average demand (W), and a per-channel hardware-fault bitmask per tenant in a RAM struct persisted to Notecard flash across sleep cycles, and falls back to sleep. Once per hour it emits a summary Note containing the accumulated energy, peak demand, and fault flags. The host reads all configuration at every wake from [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) distributed by Notehub, so sensor sensitivity and volt scaling can be adjusted in the field without a reflash.
 
-**Notecard responsibilities.** The Notecard stores [Notes](https://dev.blues.io/api-reference/glossary/#note) in its on-device queue, wakes the cellular radio on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 min), and flushes the queue to Notehub in a single cellular session. The Notecard also distributes environment variable changes pushed from Notehub on its `inbound` cadence (default 120 min), and uses [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) sleep mode to cut host power between samples — ensuring the Cygnet draws essentially zero current from the supply between wakeups.
+**Notecard responsibilities.** The Notecard stores [Notes](https://dev.blues.io/api-reference/glossary/#note) in its on-device queue, wakes the cellular radio on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 minutes), and flushes the queue to Notehub in a single cellular session. The Notecard also distributes environment variable changes pushed from Notehub on its `inbound` cadence (default 120 minutes), and uses [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) sleep mode to cut host power between samples — ensuring the Cygnet draws essentially zero current from the supply between wakeups.
 
 **Notehub responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to [Notehub](https://notehub.io) over the Internet; [Notehub](https://dev.blues.io/notehub/notehub-walkthrough/) ingests events, stores them durably, and applies project-level routes. Notehub is the **sole monthly aggregation path**: a billing or property-management platform sums each tenant's `t*_wh` values across all hourly `meter_summary.qo` events for any device over any billing period using the [Notehub Event Query API](https://dev.blues.io/api-reference/notehub-api/api-introduction/). No device-side monthly rollup or month-end note is generated — the hourly event stream in Notehub is the complete, authoritative record.
 
@@ -236,7 +238,7 @@ If compilation fails with "PRODUCT_UID is not defined", you missed step 1. If up
 
 ### What you should see in Notehub
 
-Within minutes of first power-on, the **Events** tab in your project should show a `_session.qo` (the cellular handshake). The firmware emits a summary note on first boot, so the first `meter_summary.qo` typically arrives in the initial session.
+Within minutes of first power-on, the **Events** tab in your project should show a `_session.qo` (the cellular handshake). The firmware emits a summary Note on first boot, so the first `meter_summary.qo` typically arrives in the initial session.
 
 **Example `meter_summary.qo` payload:**
 
@@ -323,19 +325,19 @@ After flashing, open the serial monitor at **115200 baud**. On first power-on yo
 
 ### 9.3 Sensor reading strategy
 
-The `measureChannel()` function captures 2000 interleaved voltage/current sample pairs from VOLTAGE_PIN (voltage transducer output) and the selected current pin (Rogowski integrator output). At the STM32L433's default 12-bit ADC rate, each `analogRead()` takes approximately 50 µs; one interleaved pair therefore takes ~100 µs, so 2000 pairs cover ~200 ms — approximately 12 full 60 Hz cycles. Voltage is sampled first within each pair, so any systematic ADC switching latency between channels is consistent across all pairs.
+The `measureChannel()` function captures 2000 interleaved voltage/current sample pairs from VOLTAGE_PIN (voltage transducer output) and the selected current pin (Rogowski integrator output). At the STM32L433's default 12-bit ADC rate, each `analogRead()` takes approximately 50 microseconds; one interleaved pair therefore takes ~100 microseconds, so 2000 pairs cover ~200 milliseconds — approximately 12 full 60 Hz cycles. Voltage is sampled first within each pair, so any systematic ADC switching latency between channels is consistent across all pairs.
 
 **DC removal.** Both signals are biased to 1.65 V (half-rail) by external resistor dividers. A single-pass mean calculation over all samples determines the per-channel DC offset, which is subtracted before computing RMS or cross-products. This removes the bias voltage and any residual ADC offset without a separate hardware AC-coupling capacitor in the signal path.
 
 **Active power computation.** Active power P = mean(v[n] × i[n]), where v[n] and i[n] are the DC-removed voltage and current samples scaled to physical units. The V×I cross-product captures the actual phase relationship between voltage and current — no assumed power factor is needed.
 
-**Phase/accuracy limitation from sequential sampling.** Because voltage and current are read sequentially (not simultaneously), there is a fixed ~50 µs time offset between the V sample and the I sample in each pair. At 60 Hz, one full cycle is 16.67 ms, so 50 µs corresponds to a consistent phase offset δ of approximately 1.08°. The relative error in active power is approximately tan(φ)·sin(δ) — where φ = arccos(PF) is the load power-factor angle — because the measured cross-product evaluates cos(φ − δ) rather than cos(φ). At power factors above 0.9 (typical commercial loads, φ ≈ 26°), this error is approximately 1% of the true active-power reading. At PF 0.7 (φ ≈ 46°) it reaches approximately 2%. For inductive loads (positive φ) the firmware systematically over-reads active power by this margin. For metering applications requiring certified accuracy (e.g., utility-tariff sub-metering subject to accuracy regulations), a dedicated simultaneous-sampling energy-metering IC should replace this approach.
+**Phase/accuracy limitation from sequential sampling.** Because voltage and current are read sequentially (not simultaneously), there is a fixed ~50 microseconds time offset between the V sample and the I sample in each pair. At 60 Hz, one full cycle is 16.67 milliseconds, so 50 microseconds corresponds to a consistent phase offset δ of approximately 1.08°. The relative error in active power is approximately tan(φ)·sin(δ) — where φ = arccos(PF) is the load power-factor angle — because the measured cross-product evaluates cos(φ − δ) rather than cos(φ). At power factors above 0.9 (typical commercial loads, φ ≈ 26°), this error is approximately 1% of the true active-power reading. At PF 0.7 (φ ≈ 46°) it reaches approximately 2%. For inductive loads (positive φ) the firmware systematically over-reads active power by this margin. For metering applications requiring certified accuracy (e.g., utility-tariff sub-metering subject to accuracy regulations), a dedicated simultaneous-sampling energy-metering IC should replace this approach.
 
 A Rogowski coil installed with reversed lead polarity produces a consistently negative watts result; the firmware clamps negative values to zero and the issue is visible in the serial log as a zero-energy reading on the affected channel.
 
-**Energy estimation.** Each `sample_interval_sec` (default 5 min) the firmware takes one ~200 ms active-power snapshot (mean V×I over 2000 sample pairs) and multiplies it by the full interval duration to produce an estimated interval energy in Wh. This is accurate for constant or slowly-varying loads, but may over- or under-state energy on bursting or cycling loads where power changes significantly within the 5-minute window. The `t*_wh` accumulator sums these interval estimates; it is not a continuous integral. This makes the design suitable for proportional load allocation — identifying which tenants use more energy than others — but not for applications requiring certified metering accuracy.
+**Energy estimation.** Each `sample_interval_sec` (default 5 minutes) the firmware takes one ~200 milliseconds active-power snapshot (mean V×I over 2000 sample pairs) and multiplies it by the full interval duration to produce an estimated interval energy in Wh. This is accurate for constant or slowly-varying loads, but may over- or under-state energy on bursting or cycling loads where power changes significantly within the 5-minute window. The `t*_wh` accumulator sums these interval estimates; it is not a continuous integral. This makes the design suitable for proportional load allocation — identifying which tenants use more energy than others — but not for applications requiring certified metering accuracy.
 
-**Demand window.** Energy accumulated in `demand_window_mwh` and elapsed time in `demand_window_sec` grow across sample wakes. Once `demand_window_sec` reaches `DEMAND_INTERVAL_SEC` (900 s = 15 minutes), average watts are computed as `demand_window_mwh × 3600 / (demand_window_sec × 1000)` and compared against `peak_demand_cw` — the per-tenant centi-watt accumulator for the current summary period. If the new average is higher, `peak_demand_cw` is updated. Both window fields then reset to begin the next 15-minute interval. This is a true interval-average demand reading — not a transient snapshot — matching the most common North American utility demand-charge billing window. The `t*_demand_w` field in `meter_summary.qo` reports `peak_demand_cw / 100` (converted to watts) for the summary period. The demand window deliberately straddles summary-period boundaries: `peak_demand_cw` is cleared after each confirmed `sendSummary()`, but `demand_window_mwh` and `demand_window_sec` continue uninterrupted so no 15-minute interval is silently truncated at a summary boundary.
+**Demand window.** Energy accumulated in `demand_window_mwh` and elapsed time in `demand_window_sec` grow across sample wakes. Once `demand_window_sec` reaches `DEMAND_INTERVAL_SEC` (900 seconds = 15 minutes), average watts are computed as `demand_window_mwh × 3600 / (demand_window_sec × 1000)` and compared against `peak_demand_cw` — the per-tenant centi-watt accumulator for the current summary period. If the new average is higher, `peak_demand_cw` is updated. Both window fields then reset to begin the next 15-minute interval. This is a true interval-average demand reading — not a transient snapshot — matching the most common North American utility demand-charge billing window. The `t*_demand_w` field in `meter_summary.qo` reports `peak_demand_cw / 100` (converted to watts) for the summary period. The demand window deliberately straddles summary-period boundaries: `peak_demand_cw` is cleared after each confirmed `sendSummary()`, but `demand_window_mwh` and `demand_window_sec` continue uninterrupted so no 15-minute interval is silently truncated at a summary boundary.
 
 **Summary interval and demand window floor.** `summary_interval_min` is clamped to a minimum of 15 in firmware (`MIN_SUMMARY_INTERVAL_MIN`), matching `DEMAND_INTERVAL_SEC / 60`. A summary period shorter than one demand window would always emit `t*_demand_w = 0` because no complete 15-minute window could close within it — not a hardware fault, just a window-timing gap. Operators who need finer-grained reporting should use the `t*_wh` field and accumulate their own demand windows in the downstream system.
 
@@ -347,7 +349,7 @@ A Rogowski coil installed with reversed lead polarity produces a consistently ne
 
 **`meter_summary.qo` — emitted hourly (canonical record)**
 
-Nine 4-byte floats: estimated interval energy (Wh), 15-minute blocked-average demand (W), and a combined fault bitmask per summary period. `t*_wh` is the sum of (W_sample × sample_interval_sec / 3600) across all periodic samples in the reporting period — estimated interval energy derived from power snapshots, not a continuous integral or kVAh estimate. `t*_demand_w` is the peak 15-minute blocked-average demand observed during the summary period — the highest average watts across any completed `DEMAND_INTERVAL_SEC` (900 s) window; see §11.3. `fault_mask` packs per-channel hardware-fault flags as a 4-bit nibble per tenant (T1 in bits 3:0; see §11.3 for bit definitions); 0 means all channels clean for the entire period.
+Nine 4-byte floats: estimated interval energy (Wh), 15-minute blocked-average demand (W), and a combined fault bitmask per summary period. `t*_wh` is the sum of (W_sample × sample_interval_sec / 3600) across all periodic samples in the reporting period — estimated interval energy derived from power snapshots, not a continuous integral or kVAh estimate. `t*_demand_w` is the peak 15-minute blocked-average demand observed during the summary period — the highest average watts across any completed `DEMAND_INTERVAL_SEC` (900 seconds) window; see §11.3. `fault_mask` packs per-channel hardware-fault flags as a 4-bit nibble per tenant (T1 in bits 3:0; see §11.3 for bit definitions); 0 means all channels clean for the entire period.
 
 ```json
 {
@@ -369,7 +371,7 @@ To derive monthly per-tenant totals, sum `t*_wh` across all `meter_summary.qo` e
 
 The panel installation is line-powered, but keeping the host asleep between samples reduces enclosure heat, reduces supply wear, and produces firmware that ports directly to battery variants without a rewrite. After each sample cycle, `NotePayloadSaveAndSleep` serializes the RAM `PersistState` struct into Notecard flash and issues a [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) request that cuts host power for `sample_interval_sec` seconds. The Notecarrier CX's ATTN→EN routing handles the physical power switch; no external relay or MOSFET is needed. The Cygnet re-enters `setup()` from cold on each wake; `NotePayloadRetrieveAfterSleep` rehydrates the struct transparently — but only after `notecardReady()` has confirmed the Notecard is ready to accept I2C requests.
 
-The Notecard sits in its own [low-power idle state](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) (~18 µA at 5 V for the Cell+WiFi variant) between cellular sessions. Summary notes queue locally and flush together in one hourly session — the radio is not touched on intermediate wakes.
+The Notecard sits in its own [low-power idle state](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) (~18 µA at 5 V for the Cell+WiFi variant) between cellular sessions. Summary Notes queue locally and flush together in one hourly session — the radio is not touched on intermediate wakes.
 
 ### 9.6 Retry and error handling
 
@@ -439,6 +441,47 @@ NotePayloadSaveAndSleep(&out, cfg.sample_interval_sec, NULL);
 
 ## 8. Build and Flash
 
+**Prerequisites:** Arduino IDE (or `arduino-cli` on the command line) with the following installed via Boards Manager and Library Manager:
+- Boards: `STM32 MCU based boards` (the `stm32duino/Arduino_Core_STM32` core). Add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs** if it is not already listed.
+- Libraries: `Blues Wireless Notecard` (from [`note-arduino`](https://github.com/blues/note-arduino)).
+
+**Steps:**
+
+1. Clone or download the repo and open [`firmware/tenant_sub_meter/tenant_sub_meter.ino`](firmware/tenant_sub_meter/tenant_sub_meter.ino) in the Arduino IDE. All three files in the `firmware/tenant_sub_meter/` directory must be present in the same sketch folder.
+
+2. Set your Notehub ProductUID in [`firmware/tenant_sub_meter/tenant_sub_meter_helpers.h`](firmware/tenant_sub_meter/tenant_sub_meter_helpers.h) by replacing the empty string on line 17:
+   ```cpp
+   #define PRODUCT_UID "com.your-company:your-app"
+   ```
+   Find this value in Notehub under **Project Settings → ProductUID**, or see [Finding a ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid).
+
+3. Set the DIP switch on the Notecarrier CX to `HST` so USB serial routes to the host MCU for programming.
+
+4. **Via Arduino IDE:** Select **Tools → Board → Blues Cygnet**, choose the serial port that appears when the Notecarrier CX is connected over USB, then click **Upload**. The Notecarrier CX exposes the ST-Link interface on the same USB cable, so no external programmer is needed.
+
+5. **Via command line (`arduino-cli`):**
+   ```bash
+   # Compile
+   arduino-cli compile \
+     -b STMicroelectronics:stm32:Blues:pnum=CYGNET \
+     firmware/tenant_sub_meter/
+
+   # Find the port (replace below with the value reported)
+   arduino-cli board list
+
+   # Upload
+   arduino-cli upload \
+     -b STMicroelectronics:stm32:Blues:pnum=CYGNET \
+     -p /dev/cu.usbmodem* \
+     firmware/tenant_sub_meter/
+   ```
+   On Windows the port appears as `COM3`, `COM4`, etc.; on macOS or Linux it is typically `/dev/cu.usbmodem*` or `/dev/ttyUSB*`.
+
+6. Open the Arduino IDE Serial Monitor at **115200 baud** to verify the sketch boots. On first power-on you should see the Notecard configuration exchange (`hub.set`, template registration), followed by the first channel sample lines. After the initial cycle the host enters cold sleep for `sample_interval_sec` and the serial output goes quiet — that silence is expected, since the Notecarrier CX cuts host power between wakes and `setup()` runs again from scratch on the next sample.
+
+7. Once the device appears in Notehub and the first `meter_summary.qo` Note arrives, flip the DIP switch back to `NCD` for production operation.
+
+If compilation fails with a `PRODUCT_UID is not defined` warning, revisit step 2. If upload fails with a "board not found" error, check the DIP switch position and USB cable.
 
 ---
 
@@ -446,14 +489,14 @@ NotePayloadSaveAndSleep(&out, cfg.sample_interval_sec, NULL);
 
 ![Data flow: 5-min sample of V × I cross-product → per-tenant Wh accumulation and 15-min demand block → meter_summary.qo (hourly templated) → Notehub event-query API for monthly bill-back](diagrams/03-data-flow.svg)
 
-**Collected.** Every `sample_interval_sec` (default 5 min): 2000 sequential interleaved V+I ADC sample pairs per active tenant channel. The V×I cross-product yields active power (W); RMS current (A) is computed as an intermediate value and is available to callers but is not transmitted in the current firmware. Adding per-channel RMS current to the summary note is a straightforward future extension — see [§11](#11-limitations-and-next-steps).
+**Collected.** Every `sample_interval_sec` (default 5 minutes): 2000 sequential interleaved V+I ADC sample pairs per active tenant channel. The V×I cross-product yields active power (W); RMS current (A) is computed as an intermediate value and is available to callers but is not transmitted in the current firmware. Adding per-channel RMS current to the summary Note is a straightforward future extension — see [§11](#11-limitations-and-next-steps).
 
 **Accumulated on-device.** Between summaries: per-tenant estimated Wh (sum of W_sample × sample_interval_sec / 3600); per-tenant peak 15-minute blocked-average demand W (highest completed `DEMAND_INTERVAL_SEC` window average; see §11.3); per-tenant hardware-fault flags (OR of FAULT_* bits across all wakes in the period).
 
 **Transmitted — hourly (canonical record).**
 `meter_summary.qo` — one note per `summary_interval_min` (default 24 per day). Template-encoded, queued and flushed in the Notecard's periodic outbound sync. Carries `t1_wh`–`t4_wh` (estimated interval energy in Wh), `t1_demand_w`–`t4_demand_w` (peak 15-minute blocked-average demand W), and `fault_mask` (combined per-channel fault bitmask) for each tenant. Note is **not** sync:true; it batches with the periodic radio window. These notes are the authoritative energy record and the sole input for Notehub-side monthly aggregation.
 
-**Routed.** Notes flow through Notehub to whatever downstream the project routes specify. A typical deployment routes `meter_summary.qo` to a time-series database as the primary billing and analytics record. Monthly per-tenant totals are derived by summing `t*_wh` across the billing period's hourly events in Notehub — either via the [Event Query API](https://dev.blues.io/api-reference/notehub-api/api-introduction/) or a downstream aggregation pipeline. Notehub stores every note durably; no device-side aggregate is needed to reconstruct any monthly total.
+**Routed.** Notes flow through Notehub to whatever downstream the project routes specify. A typical deployment routes `meter_summary.qo` to a time-series database as the primary billing and analytics record. Monthly per-tenant totals are derived by summing `t*_wh` across the billing period's hourly events in Notehub — either via the [Event Query API](https://dev.blues.io/api-reference/notehub-api/api-introduction/) or a downstream aggregation pipeline. Notehub stores every Note durably; no device-side aggregate is needed to reconstruct any monthly total.
 
 ## 10. Validation and Testing
 
@@ -475,13 +518,13 @@ Skipping calibration leaves you with readings that may be off by ±10–30% depe
 | Phase | Expected current |
 |---|---|
 | Notecard idle (between syncs, radio off) | ~18 µA @ 5 V (Cell+WiFi variant) |
-| Host active (sampling four channels) | ~15–30 mA for < 1 s |
+| Host active (sampling four channels) | ~15–30 mA for < 1 seconds |
 | Notecard cellular session (LTE Cat-1 bis) | ~0.28 mAh per warm sync; ~0.49 mAh after cold restart; depends on signal strength |
 | Host off (card.attn sleep, between wakes) | essentially 0 mA from +VBAT |
 
 The dominant energy cost is the once-per-hour cellular session. Because the supply is line-powered, absolute mAh is less important than the *shape* of the current trace:
 
-- **Healthy trace:** near-zero baseline, brief (<1 s) micro-spikes every 5 minutes as the host wakes and samples, one 10–20 s burst at 80–150 mA once per hour.
+- **Healthy trace:** near-zero baseline, brief (<1 seconds) micro-spikes every 5 minutes as the host wakes and samples, one 10–20 seconds burst at 80–150 mA once per hour.
 - **Host not sleeping:** continuous 15–30 mA baseline. Almost always a `card.attn` routing fault — verify the ATTN pin is driving the EN rail on the Notecarrier CX.
 - **Cellular sessions running long (60+ s):** correctly-spaced hourly bursts but each running long. Usually a weak-signal site; check antenna placement or move closer to a window.
 
@@ -502,7 +545,7 @@ If a problem is not on this list, visit the [Blues community forum](https://disc
 
 ## 11. Limitations and Next Steps
 
-**Allocation-grade estimation, not certified metering.** This design measures estimated interval energy by taking one ~200 ms active-power snapshot per `sample_interval_sec` and multiplying it by the full interval duration. The firmware does not continuously integrate power between wakes. This approach is accurate for constant or slowly-varying loads but may over- or under-state energy on bursting or cycling loads. For internal bill-back between tenants in the same building it is an appropriate allocation method. It is **not** suitable for applications where accuracy is subject to regulatory oversight — for example, utility-tariff sub-metering subject to accuracy standards — without replacing the measurement front end with a dedicated simultaneous-sampling energy-metering IC or a certified pulse-output sub-meter interface.
+**Allocation-grade estimation, not certified metering.** This design measures estimated interval energy by taking one ~200 milliseconds active-power snapshot per `sample_interval_sec` and multiplying it by the full interval duration. The firmware does not continuously integrate power between wakes. This approach is accurate for constant or slowly-varying loads but may over- or under-state energy on bursting or cycling loads. For internal bill-back between tenants in the same building it is an appropriate allocation method. It is **not** suitable for applications where accuracy is subject to regulatory oversight — for example, utility-tariff sub-metering subject to accuracy standards — without replacing the measurement front end with a dedicated simultaneous-sampling energy-metering IC or a certified pulse-output sub-meter interface.
 
 **Single-phase voltage reference shared across all channels.** The voltage transducer provides one voltage waveform used as the reference for all four current channels. This is accurate when all tenant circuits derive from the same phase leg of the building supply — common in small commercial buildings with a single-phase 120 V service. In a split-phase (120/240 V) building where tenants may be on different legs, or in a three-phase building where tenant feeds come from different phases, the phase relationship between the shared voltage reference and a tenant's actual line voltage introduces a power-factor error in the real-power calculation. For buildings with known multi-phase distribution, a dedicated voltage sensor per phase (and per-phase V×I pairs in the firmware) is required for accurate real-power metering across all tenants.
 
@@ -518,7 +561,7 @@ If a problem is not on this list, visit the [Blues community forum](https://disc
 
 **No local display.** The firmware provides no real-time readout at the panel. A small OLED on I²C or a status LED driven by a firmware threshold check would be a straightforward addition.
 
-**Mojo is bench equipment.** The firmware does not read the Mojo's coulomb-counter register over Qwiic. Adding a runtime mAh field to the summary note is a straightforward extension if fleet-level power telemetry is valuable.
+**Mojo is bench equipment.** The firmware does not read the Mojo's coulomb-counter register over Qwiic. Adding a runtime mAh field to the summary Note is a straightforward extension if fleet-level power telemetry is valuable.
 
 **Production next steps:**
 - Per-channel calibration workflow: at commissioning, capture a reference reading alongside a calibrated clamp meter to establish the correct `rogowski_amps_per_volt` for each installed coil, then push the trimmed value as a per-device environment variable in Notehub.
@@ -539,7 +582,7 @@ If a problem is not on this list, visit the [Blues community forum](https://disc
 
 ## 12. Summary
 
-A Notecarrier CX and a Cell+WiFi Notecard, four Rogowski coil sensors with active per-channel integrator circuits, and a voltage transducer turn a panel into a landlord-controlled, tenant-invisible energy monitoring bridge. Sampling is local every five minutes, sequential-interleaved V×I power computation runs on-device, and the Notecard delivers compact hourly summary notes to Notehub with estimated interval energy (Wh), 15-minute blocked-average demand (W), and a per-channel fault bitmask per tenant. Monthly per-tenant totals are derived Notehub-side by querying the hourly event stream — no device-side aggregate is needed.
+A Notecarrier CX and a Cell+WiFi Notecard, four Rogowski coil sensors with active per-channel integrator circuits, and a voltage transducer turn a panel into a landlord-controlled, tenant-invisible energy monitoring bridge. Sampling is local every five minutes, sequential-interleaved V×I power computation runs on-device, and the Notecard delivers compact hourly summary Notes to Notehub with estimated interval energy (Wh), 15-minute blocked-average demand (W), and a per-channel fault bitmask per tenant. Monthly per-tenant totals are derived Notehub-side by querying the hourly event stream — no device-side aggregate is needed.
 
 The readings are allocation-grade estimates: accurate for proportional charge-back between tenants in the same building, not certified to utility-tariff accuracy standards. For many commercial landlords, that is the right trade-off — the alternative is no per-tenant allocation at all, or a full certified sub-meter retrofit at substantially higher cost and installation complexity.
 

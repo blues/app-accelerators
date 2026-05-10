@@ -6,19 +6,21 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-A [downtime prevention](https://blues.com/downtime-prevention/) reference design that turns an industrial centrifugal pump into a predictively-maintained, remotely-monitored asset by reading what the pump's existing **VFD** (variable frequency drive) already knows about itself — over **Modbus RTU**, on a real industrial **PLC** (programmable logic controller), with a cellular [Notecard](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) for the uplink.
+This project is a [downtime prevention](https://blues.com/downtime-prevention/) reference design that turns an industrial centrifugal pump into a predictively-maintained, remotely-monitored asset by reading what the pump's existing **VFD** (variable frequency drive) already knows about itself — over **Modbus RTU**, on a real industrial **PLC** (programmable logic controller), with a cellular [Notecard](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) for the uplink.
 
 ## 1. Project Overview
 
-**The problem.** Industrial centrifugal pumps almost universally run behind a VFD. Modern drives from ABB, Yaskawa, Danfoss, and Schneider all expose the pump's operating telemetry through Modbus holding registers — motor current, output frequency, output torque, drive temperature, runtime hours, active fault code — and almost nobody reads them. The VFD is sitting in the cabinet doing the work; the data is right there. What's missing is the network path off the plant floor.
+**The problem.** Industrial centrifugal pumps almost universally run behind a VFD. Modern drives from ABB, Yaskawa, Danfoss, and Schneider all expose the pump's operating telemetry through Modbus holding registers — motor current, output frequency, output torque, drive temperature, runtime hours, active fault code, and almost nobody reads them. The VFD is sitting in the cabinet doing the work; the data is right there. What's missing is the network path off the plant floor.
 
-A failing pump rarely just stops. It signals first: motor current can shift at constant frequency as bearing drag, fouling, valve position, fluid viscosity, or impeller condition change the load on the drive. Transient electrical faults can cluster on a stressed contactor or in a cavitating hydraulic regime. Actual runtime can drift above expected duty cycle as a downstream valve fouls and the pump runs longer to do the same work. None of these telemetry shifts are *diagnostic* by themselves — but they are leading indicators a maintenance team would happily act on a week early. This project is the device that catches those anomalies and routes them out, before a tank runs dry on a Saturday night. See the [Signal limitations](#12-limitations-and-next-steps) note for what this telemetry can and cannot conclude.
+A failing pump rarely just stops. It signals first: motor current can shift at constant frequency as bearing drag, fouling, valve position, fluid viscosity, or impeller condition change the load on the drive. Transient electrical faults can cluster on a stressed contactor or in a cavitating hydraulic regime. Actual runtime can drift above expected duty cycle as a downstream valve fouls and the pump runs longer to do the same work. None of these telemetry shifts are *diagnostic* by themselves, but they are leading indicators a maintenance team would happily act on a week early. This project is the device that catches those anomalies and routes them out, before a tank runs dry on a Saturday night. See the [Signal limitations](#12-limitations-and-next-steps) note for what this telemetry can and cannot conclude.
 
 **Why Notecard.** Pump rooms sit on isolated **OT** (operational technology) networks where corporate WiFi is off-limits for instrumentation by plant policy, and retrofitting a separate OT-friendly access point per pump is unrealistic. Cellular removes the dependency on plant LAN credentials, VLAN provisioning, site WiFi, or a local gateway. (Some sites will still require OT/security review before *any* wireless instrumentation is allowed; the device just doesn't need access to the plant network itself.) The Notecard's prepaid global cellular service means the same firmware and architecture deploys across regions — choose the matching Wireless for OPTA cellular variant for the deployment geography. WiFi remains as an opportunistic fallback for the rare site that *can* offer a rooftop AP, without compromising the cellular-first model.
 
-**Why OPTA.** This is exactly the sweet spot for Wireless for OPTA: a real industrial PLC reading a real industrial Modbus device, with no PC or gateway in the middle. The Arduino OPTA is DIN-rail-mounted, 12–24 VDC powered, and programmable with both Arduino sketches and IEC 61131-3 PLC languages — so it deploys exactly the same way across plants whose IT and OT teams will never agree on a network plan. Pairing it with Blues Wireless for OPTA adds cellular and WiFi to a device that already speaks the language of the plant.
+**Why OPTA.** This is exactly the sweet spot for Wireless for OPTA: a real industrial PLC reading a real industrial Modbus device, with no PC or gateway in the middle. The Arduino OPTA is DIN-rail-mounted, 12–24 VDC powered, and programmable with both Arduino sketches and IEC 61131-3 PLC languages, so it deploys exactly the same way across plants whose IT and OT teams will never agree on a network plan. Pairing it with Blues Wireless for OPTA adds cellular and WiFi to a device that already speaks the language of the plant.
 
 **Deployment scenario.** A single OPTA + Wireless for OPTA mounted on the DIN rail next to the VFD inside the pump's electrical panel, RS-485 daisied to the drive's communication port, antenna routed out through a cable gland to a magnetic-mount whip on the cabinet roof. Line power from a 24 VDC panel supply that's already there. No PC, no gateway, no plant LAN involvement.
+
+<NewToBlues/>
 
 ## 2. System Architecture
 
@@ -28,7 +30,7 @@ A failing pump rarely just stops. It signals first: motor current can shift at c
 
 **Notecard responsibilities.** The Notecard stores [Notes](https://dev.blues.io/api-reference/glossary/#note) in its on-device queue, establishes the cellular (or WiFi) session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence, and pushes any `sync:true` alert Notes immediately. The Notecard also handles [environment variable](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) distribution from Notehub — operators retune thresholds and Modbus register addresses without re-flashing firmware.
 
-**Notehub responsibilities.** [Notehub](https://notehub.io) ingests events over the Internet, stores every event, and applies project-level [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub). Per-fleet [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) are how a single firmware image services multiple plants whose VFDs are from different vendors and live at different register addresses — see [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) for how to organize them.
+**Notehub responsibilities.** [Notehub](https://notehub.io) ingests events over the Internet, stores every event, and applies project-level [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub). Per-fleet [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) are how a single firmware image services multiple plants whose VFDs are from different vendors and live at different register addresses. See [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) for how to organize them.
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
 
@@ -110,13 +112,13 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
    | `modbus_baud` | `19200` | Bus baud rate; must match the VFD configuration. |
    | `modbus_parity` | `none` | Parity setting: `none`, `even`, or `odd`. Must match the VFD. |
    | `modbus_stop_bits` | `1` | Stop bits: `1` or `2`. Must match the VFD. |
-   | `vfd_profile` | `demo_contiguous` | Placeholder identifying the register-map convention this firmware build targets. The shipped firmware only implements `demo_contiguous` — see [Limitations](#12-limitations-and-next-steps) for the production path. |
+   | `vfd_profile` | `demo_contiguous` | Placeholder identifying the register-map convention this firmware build targets. The shipped firmware only implements `demo_contiguous`. See [Limitations](#12-limitations-and-next-steps) for the production path. |
    | `reg_freq` | `259` | Holding-register address (wire-level, 0-based) for output frequency. Demo firmware assumes 0.01 Hz units. |
    | `reg_current` | `260` | Holding-register address for motor current. Demo firmware assumes 0.01 A units. |
    | `reg_torque` | `261` | Holding-register address for output torque. Demo firmware assumes % of nominal (signed 16-bit). |
    | `reg_drive_temp` | `262` | Holding-register address for drive heatsink temperature. Demo firmware assumes °C (signed 16-bit). |
    | `reg_runtime_hours` | `263` | Holding-register address for cumulative runtime hours. Demo firmware reads a single 16-bit register. |
-   | `reg_fault_code` | `264` | Holding-register address for **active** fault code (0 = no fault). This is *not* a fault history log — see [Limitations](#12-limitations-and-next-steps). |
+   | `reg_fault_code` | `264` | Holding-register address for **active** fault code (0 = no fault). This is *not* a fault history log. See [Limitations](#12-limitations-and-next-steps). |
    | `current_alarm_factor` | `1.20` | Fires `load_anomaly` when hourly mean current exceeds the rolling baseline by this factor while running. |
    | `transient_fault_window_hours` | `4` | Window for transient-fault clustering. |
    | `transient_fault_count` | `3` | Distinct fault *transitions* within the window above which `transient_faults` fires. |
@@ -147,13 +149,13 @@ Dependencies:
 | Rolling hourly stats | `RollingStats` struct, `accumulate` |
 | Edge logic (load anomaly, transient faults, runtime drift, drive overtemp) | `evaluateRules` (with frequency-binned baselines and edge-triggered alerts) |
 | Outbound Note emission (summary + event) | `sendSummary`, `sendEvent` |
-| Periodic cycle scheduler (no sleep — line-powered) | `loop()` |
+| Periodic cycle scheduler (no sleep, line-powered) | `loop()` |
 
 ### Sensor reading strategy
 
 Six holding registers are pulled in a single Modbus transaction (`requestFrom` with `HOLDING_REGISTERS`, quantity 6, starting address taken from `reg_freq`). Reading all six in one transaction is roughly 8× cheaper in time and bus utilization than six individual reads. The firmware assumes the six registers are contiguous; on drives where they aren't, override `reg_*` variables individually and the firmware falls back to per-register reads.
 
-Polling cadence is `sample_minutes` (default 1 min). For each sample, `accumulate` updates the rolling hourly windows for current, frequency, torque, and drive temperature — separately tracking samples taken while the pump is *running* (frequency > 1 Hz) versus *stopped*, since a hot drive at 0 Hz is a different signal than a hot drive under load.
+Polling cadence is `sample_minutes` (default 1 minutes). For each sample, `accumulate` updates the rolling hourly windows for current, frequency, torque, and drive temperature — separately tracking samples taken while the pump is *running* (frequency > 1 Hz) versus *stopped*, since a hot drive at 0 Hz is a different signal than a hot drive under load.
 
 ### Event payload design
 
@@ -209,12 +211,12 @@ Production builds may rename the firmware fields to alert-specific names (e.g. `
 
 ### Power and sync strategy
 
-The OPTA + expansion is line-powered (24 VDC), so MCU sleep is not the goal — bus and bandwidth efficiency is. The Notecard runs in [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `periodic` mode with `outbound:60` and `inbound:120` (minutes). Summary Notes accumulate in the on-device queue and ship in a single session every hour; alert Notes set `sync:true` and ship within a session-establishment window of the trigger (~15–60 s typical).
+The OPTA + expansion is line-powered (24 VDC), so MCU sleep is not the goal — bus and bandwidth efficiency is. The Notecard runs in [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `periodic` mode with `outbound:60` and `inbound:120` (minutes). Summary Notes accumulate in the on-device queue and ship in a single session every hour; alert Notes set `sync:true` and ship within a session-establishment window of the trigger (~15–60 seconds typical).
 
 ### Retry and error handling
 
 - The first `hub.set` uses `notecard.sendRequestWithRetry()` with a 5-second window — there is a known cold-boot race condition where the host comes up before the Notecard is ready to receive I²C transactions.
-- Modbus reads are retried up to 3× per cycle on `lastError() != 0`. If all three fail, the firmware skips that sample (no NaN ever appears in any payload — JSON has no valid `NaN` literal and templated Notes validate field types) and emits a separate `modbus_unreachable` event Note. The event is rate-limited to once per hour to avoid alarm fatigue when the drive itself is powered off for service.
+- Modbus reads are retried up to 3× per cycle on `lastError() != 0`. If all three fail, the firmware skips that sample (no NaN ever appears in any payload, JSON has no valid `NaN` literal and templated Notes validate field types) and emits a separate `modbus_unreachable` event Note. The event is rate-limited to once per hour to avoid alarm fatigue when the drive itself is powered off for service.
 - Notecard requests use `notecard.requestAndResponse()` and check both `NULL` return and the `err` field on the response object before trusting the data.
 
 ### Key code snippets
@@ -289,7 +291,7 @@ if (g_baseline_seeded[bin] &&
 
 ![Data flow: poll 6 holding registers → rolling hourly stats with 5 Hz frequency bins and EWMA baselines → four anomaly rules → vfd_event.qo (sync) and vfd_summary.qo (hourly) → Notehub](diagrams/03-data-flow.svg)
 
-**Collected.** Every `sample_minutes`: output frequency, motor current, output torque, drive heatsink temperature, cumulative runtime hours, **active** fault code (not the fault history log — the live fault register only).
+**Collected.** Every `sample_minutes`: output frequency, motor current, output torque, drive heatsink temperature, cumulative runtime hours, **active** fault code (not the fault history log, the live fault register only).
 
 **Summarized.** Every `report_minutes` (default hourly): mean and peak of each scalar, separate run/stop minute counts, total runtime hours, count of distinct fault *transitions* observed in the hour, and the last non-zero fault code seen.
 
@@ -319,7 +321,7 @@ Expected steady-state behavior on a healthy pump: one summary Note per hour and 
 | Modem active (cellular session) | ~250 mA average, with ≤2 A bursts during GSM transmit |
 | WiFi active (when WiFi fallback engaged) | ~80 mA average |
 
-Splice the [Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) inline on the Wireless-for-OPTA power input and confirm: (a) idle current is in the published µA range between syncs, (b) per-session energy lands in the few-mAh range for an hourly outbound sync, and (c) total energy per day is consistent across runs. Note that this measurement is the **whole expansion subsystem** — Notecard plus the expansion's onboard regulators and I²C glue — not the Notecard alone, unless you physically isolate the Notecard's `VMODEM_P` rail. Also note that the Notecard's lowest-power state requires `VUSB` not present and `AUX_EN` not held high; see the [Notecard low-power-design docs](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) for the gating conditions.
+Splice the [Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) inline on the Wireless-for-OPTA power input and confirm: (a) idle current is in the published µA range between syncs, (b) per-session energy lands in the few-mAh range for an hourly outbound sync, and (c) total energy per day is consistent across runs. Note that this measurement is the **whole expansion subsystem** — Notecard plus the expansion's onboard regulators and I²C glue, not the Notecard alone, unless you physically isolate the Notecard's `VMODEM_P` rail. Also note that the Notecard's lowest-power state requires `VUSB` not present and `AUX_EN` not held high; see the [Notecard low-power-design docs](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) for the gating conditions.
 
 **Fault simulation.** Easiest path: drop `current_alarm_factor` to 1.0 in the Fleet's environment variables — the next `inbound` sync will pull the new value, the next hourly summary will trip `load_anomaly`, and the event will land in Notehub within a session-establishment window.
 

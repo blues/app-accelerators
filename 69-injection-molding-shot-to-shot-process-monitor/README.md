@@ -6,7 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-A shot-level process monitor for plastic [injection molding](https://blues.com/industrial-equipment-monitoring/) machines. The device captures the two signals that drive part quality on every shot — hydraulic injection pressure and mold temperature — and reduces each shot to a handful of summary metrics a process engineer would want to see (peak pressure, fill time, pack pressure, average mold temperature, shot sequence number), then pushes them to the cloud over cellular. Because the connectivity sits outside the plant's OT network, no IT or network ticket is required at the customer site. The hardware is a Blues Notecarrier CX paired with a [Notecard Cell+WiFi](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) (see §4 for the full BOM).
+This project is a shot-level process monitor for plastic [injection molding](https://blues.com/industrial-equipment-monitoring/) machines. The device captures the two signals that drive part quality on every shot — hydraulic injection pressure and mold temperature — and reduces each shot to a handful of summary metrics a process engineer would want to see (peak pressure, fill time, pack pressure, average mold temperature, shot sequence number), then pushes them to the cloud over cellular. Because the connectivity sits outside the plant's OT network, no IT or network ticket is required at the customer site. The hardware is a Blues Notecarrier CX paired with a [Notecard Cell+WiFi](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) (see §4 for the full BOM).
 
 ## Expected Outcome
 
@@ -27,12 +27,14 @@ After completing this project, you will have:
 
 **Deployment scenario.** A compact DIN-rail or panel-mount enclosure installed in or adjacent to the machine's electrical cabinet, powered from the machine's existing 24 VDC control rail. The hydraulic injection pressure transducer taps into a 1/4-18 NPT port on the injection cylinder's hydraulic manifold block — on the hydraulic oil side of the machine, with no contact with the polymer melt — so **no mold modification is required**. The thermocouple probe is seated in the mold's existing thermocouple pocket. No modification to the machine's controller, no connection to the plant LAN, no IT ticket.
 
+<NewToBlues/>
+
 ## 2. System Architecture
 
 
 ![System architecture: hydraulic pressure transducer + K-type thermocouple → Notecarrier CX with Cygnet host and Notecard MBGLW → cellular/WiFi → Notehub → quality / historian / alerts](diagrams/01-system-architecture.svg)
 
-**Device-side responsibilities.** The Notecarrier CX's onboard Cygnet STM32L433 host runs continuously (this is a line-powered machine; no deep-sleep cycling needed). It polls injection-manifold pressure at 10 Hz during idle; when the pressure signal crosses the shot-detection threshold, it enters capture mode at 20 Hz (50 ms per sample), filling a RAM buffer with a pressure and temperature profile for feature extraction. After each shot the host computes five shot-level features from the buffer, increments a per-boot-session shot counter, and queues a [Note](https://dev.blues.io/api-reference/glossary/#note) for transmission. All of this happens in the STM32's 64 KB SRAM — a 102-second shot captured at 20 Hz produces at most 16 KB of profile data, well within budget.
+**Device-side responsibilities.** The Notecarrier CX's onboard Cygnet STM32L433 host runs continuously (this is a line-powered machine; no deep-sleep cycling needed). It polls injection-manifold pressure at 10 Hz during idle; when the pressure signal crosses the shot-detection threshold, it enters capture mode at 20 Hz (50 milliseconds per sample), filling a RAM buffer with a pressure and temperature profile for feature extraction. After each shot the host computes five shot-level features from the buffer, increments a per-boot-session shot counter, and queues a [Note](https://dev.blues.io/api-reference/glossary/#note) for transmission. All of this happens in the STM32's 64 KB SRAM — a 102-second shot captured at 20 Hz produces at most 16 KB of profile data, well within budget.
 
 **Notecard responsibilities.** The Notecard stores Notes in its on-device queue, establishes the cellular (or WiFi) session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 minutes), and flushes any `sync:true` alert Notes immediately regardless of the outbound schedule. The Notecard also handles [environment variable](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) distribution — operators adjust detection thresholds and alert bands from Notehub without reflashing.
 
@@ -43,7 +45,7 @@ After completing this project, you will have:
 ## 3. Technical Summary
 
 
-**Path to First Event (5–10 min bench demo)**
+**Path to First Event (5–10 minutes bench demo)**
 
 1. **Assemble the minimum bench kit** (no production hydraulics needed):
    - Notecarrier CX + Notecard Cell+WiFi
@@ -68,7 +70,7 @@ After completing this project, you will have:
 4. **Monitor the serial output:**
    - Open a serial terminal at 9600 baud to see shot detection and feature extraction logs
    - Inject a fake pressure pulse (e.g. short the 150 Ω resistor for ~2 seconds) to trigger a shot
-   - Verify the next Notehub sync (within 60 min) shows a `shot.qo` event
+   - Verify the next Notehub sync (within 60 minutes) shows a `shot.qo` event
 
 5. **Inspect the event in Notehub:**
    - Log into notehub.io, open your project, and navigate to Events
@@ -195,7 +197,7 @@ The Notecarrier CX includes a short flexible LTE antenna connected to the Noteca
    | `fill_time_min_ms` | `200` | Alert fires when fill time is shorter than this (milliseconds). Unexpectedly short fill times suggest a gate or nozzle issue. |
    | `fill_time_max_ms` | `3000` | Alert fires when fill time exceeds this (milliseconds). Slow fill indicates degraded material flow or low injection speed. |
    | `mold_temp_max_c` | `80.0` | Alert fires when average mold temperature exceeds this value (°C). Rising mold temperature can indicate cooling circuit degradation. |
-   | `outbound_min` | `60` | Cellular outbound sync cadence in minutes. When this value changes in Notehub, the firmware detects the difference on its next 5-minute env-var check and immediately re-issues `hub.set` with the new cadence — no reflash needed. Allow up to the `inbound` poll interval (default 120 min) for the Notecard to pull the updated value from Notehub, then up to 5 more minutes for the firmware to apply it. |
+   | `outbound_min` | `60` | Cellular outbound sync cadence in minutes. When this value changes in Notehub, the firmware detects the difference on its next 5-minute env-var check and immediately re-issues `hub.set` with the new cadence — no reflash needed. Allow up to the `inbound` poll interval (default 120 minutes) for the Notecard to pull the updated value from Notehub, then up to 5 more minutes for the firmware to apply it. |
    | `report_every_n_shots` | `1` | Emit a `shot.qo` Note every N shots. Set to 10 to reduce data volume on high-speed machines without losing trend visibility. |
 
 5. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) targeting `shot_alert.qo` (real-time delivery to a quality alert or CMMS endpoint) and a second targeting `shot.qo` (batch delivery to a process historian or analytics platform). Because the two Notefiles are separate at the source, each route operates independently — high-urgency alerts can go to an on-call webhook while trend data lands in a time-series database, all without any filter logic in the routes.
@@ -231,7 +233,7 @@ Single sketch: [`firmware/injection_molding_shot_monitor/injection_molding_shot_
 
 **Probe response-time limitation.** A 1/8″ stainless sheath seated in a mold pocket has a thermal response time of several seconds, which is longer than a typical injection-molding cooling phase. As a result, `cool_c_s` (the least-squares slope of temperature during the cooling window of a single shot) primarily reflects slow mold-surface temperature drift across multiple shots rather than the fast within-shot cooling transient. It remains a useful signal for detecting gradual cooling-circuit degradation over time; it should not be interpreted as a precise shot-level cooling rate. `temp_avg_c` (the mean temperature across the whole captured buffer) is similarly a lagged, averaged reading of the mold surface that is well-suited for steady-state mold temperature trending and the `mold_temp_high` alert threshold.
 
-**Shot capture.** Between shots, `readPressurePsi()` is polled at 10 Hz. When the reading crosses `shot_detect_psi`, the firmware enters `captureShot()`, which samples pressure and temperature at 20 Hz (50 ms cadence) into two pre-allocated float arrays. A 102.4-second maximum shot window at 20 Hz = 2,048 samples × 2 channels × 4 bytes = 16 KB — well within the Cygnet's 64 KB SRAM. `SHOT_TIMEOUT_MS` is defined as `SHOT_BUF_SIZE × SHOT_SAMPLE_MS` (102,400 ms) so the safety timeout fires at exactly the moment the buffer would otherwise fill, preventing a buffer-exhaustion exit from being mistaken for a naturally-ended shot. If the while-condition exits the loop rather than a `break` (buffer completely full), `captureShot()` returns `false` and logs a diagnostic — the partial profile is discarded rather than silently computing features on truncated data.
+**Shot capture.** Between shots, `readPressurePsi()` is polled at 10 Hz. When the reading crosses `shot_detect_psi`, the firmware enters `captureShot()`, which samples pressure and temperature at 20 Hz (50 milliseconds cadence) into two pre-allocated float arrays. A 102.4-second maximum shot window at 20 Hz = 2,048 samples × 2 channels × 4 bytes = 16 KB — well within the Cygnet's 64 KB SRAM. `SHOT_TIMEOUT_MS` is defined as `SHOT_BUF_SIZE × SHOT_SAMPLE_MS` (102,400 milliseconds) so the safety timeout fires at exactly the moment the buffer would otherwise fill, preventing a buffer-exhaustion exit from being mistaken for a naturally-ended shot. If the while-condition exits the loop rather than a `break` (buffer completely full), `captureShot()` returns `false` and logs a diagnostic — the partial profile is discarded rather than silently computing features on truncated data.
 
 ### Event payload design
 
@@ -280,7 +282,7 @@ Sample `shot_alert.qo` Note body (immediate sync):
 
 The injection molding machine is line-powered 24/7, so the host runs a continuous `loop()` rather than cycling through deep sleep. There is no `NotePayloadSaveAndSleep` call — the host must stay responsive between shots to catch the pressure rising edge. Bandwidth efficiency, not sleep depth, is the power concern.
 
-The Notecard runs in [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `periodic` mode with `outbound: 60` and `inbound: 120` (minutes). Shot Notes accumulate in the on-device queue and flush once per hour; alert Notes bypass the queue and sync within a session-establishment window (~15–60 s). See the [Notecard low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) and the [MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) for authoritative figures.
+The Notecard runs in [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `periodic` mode with `outbound: 60` and `inbound: 120` (minutes). Shot Notes accumulate in the on-device queue and flush once per hour; alert Notes bypass the queue and sync within a session-establishment window (~15–60 seconds). See the [Notecard low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) and the [MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) for authoritative figures.
 
 ### Retry and error handling
 
@@ -296,7 +298,7 @@ The Notecard runs in [`hub.set`](https://dev.blues.io/api-reference/notecard-api
 
 **Sensor faults.** `readMoldTempC()` returns `NAN` on any MAX31855 fault bit. `computeFeatures()` guards every temperature accumulation with `isnan()` so fault samples are silently excluded. A shot with zero valid temperature samples produces `0.0` in the `temp_avg_c` and `cool_c_s` fields — see the sensor reading section for the implications of this sentinel choice.
 
-**Shot capture guard.** `captureShot()` discards events shorter than `MIN_SHOT_DURATION_MS` (500 ms) so that machine vibration or idle pressure noise cannot increment `g_cycle_count` and pollute the trend data.
+**Shot capture guard.** `captureShot()` discards events shorter than `MIN_SHOT_DURATION_MS` (500 milliseconds) so that machine vibration or idle pressure noise cannot increment `g_cycle_count` and pollute the trend data.
 
 ### Key code snippet 1 — template definition
 
@@ -401,7 +403,7 @@ float denom = (float)(n * sxx - sx * sx);
 
 2. **Run a 24–72 hour validation soak.** After commissioning, check [Notehub usage data](https://dev.blues.io/notehub/notehub-walkthrough/#configuring-your-billing-account) to confirm actual consumption aligns with your estimate. Cellular data usage depends on sync cadence, signal conditions, Note queue depth at sync time, and routing behavior — the measured figure is more reliable than any pre-deployment estimate.
 
-3. **Tune `report_every_n_shots` and `outbound_min` for the machine.** A fast machine (≤15 s cycle) running at `report_every_n_shots=1` will accumulate large numbers of queued Notes between hourly syncs. Validate queue headroom empirically before production: disconnect the cellular antenna, let the machine run for the expected outage window (e.g. 4–8 hours for a typical overnight signal gap), reconnect, and confirm that all Notes arrive in Notehub. Missing `cycle` sequence numbers in the delivered Notes reveal dropped queue entries. If your Note rate times the expected outage window risks saturation, increase `report_every_n_shots` or shorten `outbound_min` to flush the queue more frequently. Actual queue capacity depends on template size, Notecard firmware version, and session behavior — the measured result is more reliable than any pre-deployment estimate.
+3. **Tune `report_every_n_shots` and `outbound_min` for the machine.** A fast machine (≤15 seconds cycle) running at `report_every_n_shots=1` will accumulate large numbers of queued Notes between hourly syncs. Validate queue headroom empirically before production: disconnect the cellular antenna, let the machine run for the expected outage window (e.g. 4–8 hours for a typical overnight signal gap), reconnect, and confirm that all Notes arrive in Notehub. Missing `cycle` sequence numbers in the delivered Notes reveal dropped queue entries. If your Note rate times the expected outage window risks saturation, increase `report_every_n_shots` or shorten `outbound_min` to flush the queue more frequently. Actual queue capacity depends on template size, Notecard firmware version, and session behavior — the measured result is more reliable than any pre-deployment estimate.
 
 4. **Watch `shot_alert.qo` volume separately.** Each `sync:true` alert Note triggers its own cellular session. The 10-minute per-alert cooldown limits the worst case to 6 sessions per alert type per hour, but if multiple alert types fire simultaneously on a badly off-spec process, session frequency can add up. Check the Notehub event log for alert Note volume during commissioning and confirm that alert thresholds are set appropriately for the specific mold and resin.
 
@@ -448,7 +450,7 @@ The Mojo reports cumulative mAh to the Notecard at 1% accuracy over the Qwiic bu
 - **Cycle counter resets on power loss.** `g_cycle_count` is a RAM-only variable. The `cycle` field in every Note is a per-boot-session shot sequence number — it resets to zero on every power loss or reboot. It is not a persistent lifetime part counter. For cumulative production counting in a downstream system, use Notehub event timestamps as the canonical ordering key. A production enhancement would persist `g_cycle_count` to the STM32's internal flash (using HAL_FLASH_Program) or to a small external EEPROM, with writes batched (e.g. every 100 shots) to stay well within flash endurance limits.
 
 - **Pressure range is POC-level.** The default 0–2,000 PSI range suits benchtop and lab hydraulic circuits but may be insufficient for production injection machines, where hydraulic injection pressures often exceed this range. Deploying on a higher-pressure circuit requires a transducer rated for the actual maximum hydraulic pressure — update `max_pressure_psi` to match and confirm the manifold fitting and transducer pressure ratings before installation.
-- **20 Hz shot capture is POC-level.** The firmware samples at 20 Hz (50 ms per sample), which is sufficient for extracting the five summary features used here but is too coarse to capture the fine structure of the fill waveform. Fast injection molding machines — particularly those with fill times under 200 ms or rapid gate-seal transients — may require 100–1000 Hz sampling to faithfully characterize fill dynamics and detect peak-pressure spikes. Achieving higher rates on the Cygnet would require SPI DMA, double-buffering, and a deeper profile buffer.
+- **20 Hz shot capture is POC-level.** The firmware samples at 20 Hz (50 milliseconds per sample), which is sufficient for extracting the five summary features used here but is too coarse to capture the fine structure of the fill waveform. Fast injection molding machines — particularly those with fill times under 200 milliseconds or rapid gate-seal transients — may require 100–1000 Hz sampling to faithfully characterize fill dynamics and detect peak-pressure spikes. Achieving higher rates on the Cygnet would require SPI DMA, double-buffering, and a deeper profile buffer.
 - **Profile waveform is not transmitted.** The firmware captures the pressure and temperature profile in RAM and extracts features from it, but only the five features are sent to Notehub. The raw profile arrays are discarded after each shot. A production system that needs SPC waveform analysis or golden-sample comparison would need to transmit the profile itself — but at 2,048 samples × 8 bytes × 2,880 shots per day, transmitting raw profiles is a very different data volume problem.
 - **Single sensor per shot.** One pressure transducer and one thermocouple. Multi-cavity molds (two-cavity, four-cavity, family molds) would need one transducer per cavity plus a firmware extension to track per-cavity features independently.
 - **Gate-seal detection is heuristic.** Pack-phase end is detected when pressure drops to 50% of peak. Real-world molds may have a different ratio depending on gate geometry and resin rheology. The `GATE_SEAL_FRAC` constant in firmware is the tuning point for this.

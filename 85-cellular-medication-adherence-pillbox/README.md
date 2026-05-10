@@ -6,13 +6,13 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-A [remote patient monitoring](https://blues.com/remote-patient-monitoring/) device that catches missed doses before they become clinical events. A Blues Notecard Cell+WiFi riding on a Notecarrier CX wakes every 30 seconds, reads seven snap-action micro-switches inside a standard weekly pillbox, and uploads a cellular event to Notehub **each time a compartment lid is detected open during a scheduled 30-second poll** — no WiFi configuration, no smartphone, and nothing for the patient to set up.
+This project is a [remote patient monitoring](https://blues.com/remote-patient-monitoring/) device that catches missed doses before they become clinical events. A Blues Notecard Cell+WiFi riding on a Notecarrier CX wakes every 30 seconds, reads seven snap-action micro-switches inside a standard weekly pillbox, and uploads a cellular event to Notehub **each time a compartment lid is detected open during a scheduled 30-second poll** — no WiFi configuration, no smartphone, and nothing for the patient to set up.
 
 ---
 
 ## 1. Project Overview
 
-**The problem.** Medication non-adherence is among the most consequential and underreported drivers of poor outcomes in chronic disease. Patients with diabetes, heart failure, hypertension, or transplant histories who skip or mistime doses cost the healthcare system tens of billions of dollars annually in preventable hospitalizations — and far more in years of life. A clinician or care coordinator who knows a patient hasn't opened their Tuesday compartment by 10 PM can intervene with a phone call; one who only discovers the missed doses at the next clinic visit, six weeks later, is always playing catch-up.
+**The problem.** Medication non-adherence is among the most consequential and underreported drivers of poor outcomes in chronic disease. Patients with diabetes, heart failure, hypertension, or transplant histories who skip or mistime doses cost the healthcare system tens of billions of dollars annually in preventable hospitalizations, and far more in years of life. A clinician or care coordinator who knows a patient hasn't opened their Tuesday compartment by 10 PM can intervene with a phone call; one who only discovers the missed doses at the next clinic visit, six weeks later, is always playing catch-up.
 
 Existing IoT pillboxes have tried to close this gap, and most fail in the same place: the connectivity model. WiFi-dependent devices work fine in young, tech-fluent households. They fail quietly in the homes of elderly patients — who are statistically the highest-risk population — because those homes have locked WiFi routers, forgotten passwords, carrier-grade NAT, and no one around to troubleshoot a dropped connection at 7 AM. Bluetooth-to-smartphone bridges work until the phone is low on battery, out of range, or the patient ignores the pairing prompt. The result is a connected pillbox that isn't connected.
 
@@ -20,9 +20,11 @@ Existing IoT pillboxes have tried to close this gap, and most fail in the same p
 
 **Deployment scenario.** The device ships pre-provisioned: the Notecard's ProductUID is flashed at the pharmacy or care coordinator's office, and the patient only needs to plug in a USB charger (or replace the LiPo annually). The clinician views adherence events in Notehub and receives real-time alerts through a downstream route. No app installation, no WiFi onboarding, and no ongoing patient engagement with the device is required.
 
-**An important signal limitation.** The device reports compartment lid opens, not confirmed ingestion — and weekly tray-loading sessions by a caregiver or pharmacist produce events that are operationally indistinguishable from patient dose-taking opens. A full refill of the seven-day tray can set all seven bits in `daily_opens` in a single polling interval. Downstream workflow must account for this; see [§10](#10-limitations-and-next-steps) for operational mitigations.
+**An important signal limitation.** The device reports compartment lid opens, not confirmed ingestion, and weekly tray-loading sessions by a caregiver or pharmacist produce events that are operationally indistinguishable from patient dose-taking opens. A full refill of the seven-day tray can set all seven bits in `daily_opens` in a single polling interval. Downstream workflow must account for this; see [§10](#10-limitations-and-next-steps) for operational mitigations.
 
 ---
+
+<NewToBlues/>
 
 ## 2. System Architecture
 
@@ -67,8 +69,8 @@ Here is a sample Note this device emits:
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an embedded Cygnet STM32L4 host — no separate MCU needed. Exposes 7 digital I/O pins (D5, D6, D9–D13) exactly matching the 7-day compartment count. |
-| [Notecard Cell+WiFi (NOTE-MBGLW)](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Cellular with WiFi fallback — see the [NOTE-MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) for radio and power specifications. Cellular removes all patient-side network configuration; cellular-first is the deployment model that serves the target demographic. |
-| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Coulomb counter for bench-validation of sleep/wake power budget before patient deployment. Not required in production — see [§9](#9-validation-and-testing). |
+| [Notecard Cell+WiFi (NOTE-MBGLW)](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Cellular with WiFi fallback. See the [NOTE-MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) for radio and power specifications. Cellular removes all patient-side network configuration; cellular-first is the deployment model that serves the target demographic. |
+| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Coulomb counter for bench-validation of sleep/wake power budget before patient deployment. Not required in production. See [§9](#9-validation-and-testing). |
 | [Adafruit #819 Micro Switch w/Roller Lever](https://www.adafruit.com/product/819), ×7 | 7 | One switch per compartment lid. Mounts in the pillbox base with the roller lever engaging the closed lid. Wire C to the digital pin and NO to GND; leave NC unconnected. The Cygnet's internal pull-up holds the pin HIGH when the lid is open; the closed lid depresses the lever and pulls the pin LOW. |
 | Cellular and WiFi u.FL antenna leads (included with NOTE-MBGLW) | 1 set | Both the cellular and WiFi u.FL flex-antenna leads ship inside the NOTE-MBGLW retail box — no separate antenna purchase is required for an indoor pillbox installation. Attach each lead to the matching u.FL connector on the Notecard face and route flat inside the enclosure away from the LiPo. See §4. |
 | [Adafruit #328 Lithium Ion Polymer Battery](https://www.adafruit.com/product/328), 3.7 V 2500 mAh, JST-PH connector | 1 | Direct plug-in to the Notecarrier CX LIPO JST connector. At the expected power budget (~5–15 mAh/day), a 2500 mAh cell provides multi-month autonomy between charges. |
@@ -151,7 +153,7 @@ Retain the LiPo inside the enclosure with a strip of hook-and-loop tape (Velcro)
    | `outbound_min` | `720` | Minutes between Notecard outbound syncs. Immediate open events are never delayed by this value — they use `sync:true`. Changing this value triggers an automatic `hub.set` reapply. |
    | `inbound_min` | `120` | Minutes between Notecard inbound syncs (environment variable fetch cadence). Changing this value triggers an automatic `hub.set` reapply. |
 
-6. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `pill_open.qo` (to a real-time alert endpoint — SMS, email, nurse-call system, or care-coordination platform) and a second for `pill_summary.qo` (to a long-term analytics store or dashboard). Separating the two Notefiles at the source means the real-time alert path has no dependency on the analytics path.
+6. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `pill_open.qo` (to a real-time alert endpoint, SMS, email, nurse-call system, or care-coordination platform) and a second for `pill_summary.qo` (to a long-term analytics store or dashboard). Separating the two Notefiles at the source means the real-time alert path has no dependency on the analytics path.
 
 ### What you should see in Notehub
 
@@ -274,11 +276,11 @@ The `full:true` flag on the daily summary's `note.add` request preserves `opens_
 
 ### 6.5 Low-power strategy
 
-The Cygnet STM32L4 host MCU is powered off entirely between wakes — not merely sleeping in a low-power mode, but physically de-energized by the Notecard's ATTN pin gating the Notecarrier CX's 3.3V host rail. This means every 30-second cycle consists of ~100–200 ms of active host execution followed by ~29.8 seconds of zero host draw.
+The Cygnet STM32L4 host MCU is powered off entirely between wakes, not merely sleeping in a low-power mode, but physically de-energized by the Notecard's ATTN pin gating the Notecarrier CX's 3.3V host rail. This means every 30-second cycle consists of ~100–200 milliseconds of active host execution followed by ~29.8 seconds of zero host draw.
 
 After each sample cycle, `sleepHost()` serializes the `PillboxState` struct into the Notecard's flash memory via `NotePayloadAddSegment` and `NotePayloadSaveAndSleep`, then issues `card.attn` in sleep mode. The Notecard cuts host power for `poll_sec` seconds and then re-asserts ATTN, which re-powers the host rail. From the firmware author's perspective, the sleep call is a single function invocation; from the patient's perspective, the device is simply always on.
 
-The Notecard itself remains powered continuously and idles at approximately 8–18 µA between cellular sessions. Cellular sessions — triggered by `sync:true` open events or the scheduled outbound timer for queued summary notes — draw several hundred milliamps for the duration of the transmission (typically under 30 seconds) and then return to idle.
+The Notecard itself remains powered continuously and idles at approximately 8–18 µA between cellular sessions. Cellular sessions — triggered by `sync:true` open events or the scheduled outbound timer for queued summary Notes — draw several hundred milliamps for the duration of the transmission (typically under 30 seconds) and then return to idle.
 
 ### 6.6 Retry and error handling
 
@@ -378,9 +380,9 @@ The daily summary is queued on the first wake after UTC midnight (or after the c
 
 | Phase | Estimated draw |
 |---|---|
-| Host MCU active (~150 ms per 30 s wake) | ~10 mA for ~150 ms every 30 s (~50 µA average contribution) |
-| Cellular session — open-event sync (`sync:true`, ~2–3 per day) | ~250 mA average, ~20–30 s per session |
-| Cellular session — scheduled outbound sync (every 12 h) | ~250 mA average, ~15–20 s per session |
+| Host MCU active (~150 milliseconds per 30 seconds wake) | ~10 mA for ~150 milliseconds every 30 seconds (~50 µA average contribution) |
+| Cellular session — open-event sync (`sync:true`, ~2–3 per day) | ~250 mA average, ~20–30 seconds per session |
+| Cellular session — scheduled outbound sync (every 12 h) | ~250 mA average, ~15–20 seconds per session |
 
 At 30-second polling with the default 12-hour outbound sync and roughly 2–3 open events per day triggering immediate syncs, the modeled daily energy total is on the order of **5–15 mAh/day** — treat this as an estimated starting point until confirmed with a bench trace.
 
@@ -427,7 +429,7 @@ If a problem isn't on this list, the [Blues community forum](https://discuss.blu
 - **No tamper or battery-low reporting.** The device does not currently alert if someone removes the Notecard, cuts power, or if the LiPo voltage drops below a safe threshold. Battery voltage monitoring via `card.voltage` and a `sync:true` low-battery event would be a straightforward addition.
 - **No local visual or audible reminder.** The device is purely a reporting platform; it does not buzz or light up to remind the patient to take their medication. Adding a piezo buzzer on a PWM-capable pin would require a scheduled inbound event from Notehub to trigger it.
 - **Pre-time-sync opens carry no calendar date.** On first boot, the device may accumulate opens before the Notecard acquires valid UTC time. Those opens remain in `daily_opens` and are associated with the first valid UTC day once time becomes available, then move into `prev_day_opens` at the next actual day rollover to feed the subsequent summary, with the correct bitmask. However, the summary's timestamp reflects when it was sent, not the (unknown) calendar day when the lids were opened. If accurate calendar-day attribution of pre-sync opens is required, wait for a `_session.qo` event in Notehub (confirming time-sync) before placing the device with the patient.
-- **Firmware state holds only one pending day's summary data.** The `PillboxState` struct contains a single `prev_day_opens` slot. If two consecutive UTC-day boundaries pass while a pending summary has not yet been emitted — for example, because the device is powered off spanning an entire day, or because total power loss causes `NotePayloadRetrieveAfterSleep` to fail on the next boot — the slot is overwritten and the earlier day's adherence data is unrecoverable. Note that a lack of cellular connectivity alone does *not* cause this: the Notecard stores queued Notes locally in its on-device flash and delivers them automatically once connectivity is restored. The risk is power loss before `emitDailySummary()` executes. Size the LiPo for the intended deployment duration to minimize exposure.
+- **Firmware state holds only one pending day's summary data.** The `PillboxState` struct contains a single `prev_day_opens` slot. If two consecutive UTC-day boundaries pass while a pending summary has not yet been emitted, for example, because the device is powered off spanning an entire day, or because total power loss causes `NotePayloadRetrieveAfterSleep` to fail on the next boot — the slot is overwritten and the earlier day's adherence data is unrecoverable. Note that a lack of cellular connectivity alone does *not* cause this: the Notecard stores queued Notes locally in its on-device flash and delivers them automatically once connectivity is restored. The risk is power loss before `emitDailySummary()` executes. Size the LiPo for the intended deployment duration to minimize exposure.
 - **Patient identity must stay out of Note payloads and Notehub metadata.** Note bodies are stored and routed as plaintext through Notehub and any downstream systems. Notehub device metadata (tags, serial-number field) is not designed as a covered system for protected health information. For an RPM deployment, never embed a patient name, MRN, date of birth, or any other PHI in a Note body or in Notehub device metadata. Assign only an opaque, non-PHI deployment identifier (for example, a random UUID or clinic-assigned device code) to the Notehub device tag or serial-number field. Maintain the mapping from device UID to patient record exclusively in your downstream covered system. If your deployment architecture requires routing PHI through any cloud component, engage qualified counsel to review the complete data path before go-live.
 
 **Production next steps:**
