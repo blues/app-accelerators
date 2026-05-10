@@ -10,21 +10,19 @@ This project is a retrofit [asset location tracking](https://blues.com/solutions
 
 ## 1. Project Overview
 
-
 **The problem.** A piece of rental heavy equipment is a revenue-generating asset measured in hours. The excavator that a contractor rented on Monday morning needs an accurate engine-hour count for billing on Friday afternoon, a warranty-hours check before the next delivery, and a predictive-maintenance flag at 250-hour service intervals. Hardwired telematics — OBD-II interfaces, CAN-bus taps, hour-meter relays — work well on new fleet acquisitions but are expensive to retrofit on older machines, often require equipment downtime for installation, and occasionally void warranties when they involve accessing the engine control unit.
 
 Vibration-based hour detection solves the retrofit problem entirely. A small enclosure attached magnetically to the equipment frame asks one question on each sample: *is this equipment's engine currently running?* Getting the answer right is harder than it sounds. A rented excavator sitting in the back of a flatbed travels to a job site with its engine off, but the truck's diesel vibration and road shock look a lot like engine idle to a simple threshold-based accelerometer. This project addresses that with a two-parameter vibration signature algorithm: the root-mean-square (RMS) amplitude of the net acceleration residual measures activity level, and the coefficient of variation (CV, or σ/μ) discriminates steady periodic engine vibration from the irregular, bursty character of transport shock. Engine idle produces a low CV; road vibration produces a high one. Together they give three reliable states — **engine running**, **in transport**, and **idle/stopped** — without a single wire to the equipment.
 
 **Why Notecard for Skylo.** The equipment is mobile by definition, moving among customer job sites with no WiFi and often in areas where cellular coverage is marginal or absent. Open-pit mine sites, remote pipeline corridors, and offshore wind-farm construction zones all fall into this category. The [Notecard for Skylo (NOTE-NBGLWX)](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) consolidates LTE-M, NB-IoT, GPRS, WiFi fallback, and Skylo satellite NTN (non-terrestrial network) on a single M.2 module — no separate satellite modem, no Starnote companion board required. When cellular is available, notes flow over LTE-M with the low latency and high throughput you'd expect. When the equipment sits at the bottom of a quarry or behind a ridge where no tower reaches, the Notecard automatically falls back to satellite uplink through Skylo's NTN satellite service. The operator sees unbroken location and hours telemetry regardless of site topology, and the firmware never has to know which network was used.
 
+<NewToBlues/>
+
 **Deployment scenario.** The enclosure mounts magnetically to any ferrous chassis surface — frame rail, tool-box lid, battery tray. No holes drilled, no wiring harness, no OEM cooperation. A small solar panel epoxied or bolted to the top of the enclosure trickle-charges a 2000 mAh LiPo through the Notecarrier CX's built-in solar charging circuit. The equipment can sit unused on a lot for weeks and the tracker will maintain charge; when the operator fires up the machine on a remote site, the vibration classifier detects the engine-start event and the Notecard ships the telemetry by whatever network is available.
 
 ---
 
-<NewToBlues/>
-
 ## 2. System Architecture
-
 
 ![System architecture: LSM6DSOX accelerometer → Notecarrier CX with Cygnet host and NOTE-NBGLWX → cellular or Skylo NTN satellite → Notehub → billing / CMMS / alerts](diagrams/01-system-architecture.svg)
 
@@ -39,7 +37,6 @@ Vibration-based hour detection solves the retrofit problem entirely. A small enc
 ---
 
 ## 3. Technical Summary
-
 
 1. Create a [Notehub project](https://notehub.io) and copy your ProductUID.
 2. Wire the bench: Notecarrier CX + NOTE-NBGLWX + LSM6DSOX on I2C (see [§5](#5-wiring-and-assembly) for pinout).
@@ -68,7 +65,6 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with embedded Cygnet STM32L4 host — solar/LiPo charging circuits, ATTN power-gating header, and I2C break-outs in one compact board. No separate MCU needed. |
@@ -87,7 +83,6 @@ The Notecard for Skylo ships with a factory-provisioned SIM, global cellular and
 ---
 
 ## 5. Wiring and Assembly
-
 
 ![Wiring: LSM6DSOX accelerometer on I²C; ATTN→EN jumper required for sleep gating; MAIN antenna for cellular/satellite plus GPS antenna via Notecard u.FL; solar 2 W → LiPo 2 Ah → Mojo (bench) → +VBAT](diagrams/02-wiring-assembly.svg)
 
@@ -124,7 +119,6 @@ Confirm the port assignments in the [NOTE-NBGLWX datasheet](https://dev.blues.io
 ---
 
 ## 6. Notehub Setup
-
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) (format: `com.your-company.your-name:equipment-tracker`).
 
@@ -199,7 +193,6 @@ Confirm the port assignments in the [NOTE-NBGLWX datasheet](https://dev.blues.io
 ---
 
 ## 7. Firmware Design
-
 
 The firmware is split across three files that must reside together in the same Arduino sketch folder:
 
@@ -401,7 +394,6 @@ notecard.sendRequest(notecard.newRequest("hub.sync"));
 
 ## 8. Data Flow
 
-
 ![Data flow: 30-s accelerometer burst → RMS + CV vibration classifier → idle/running/transport state machine → equip_event.qo (sync:true on state change) and equip_summary.qo (daily templated) → Notehub](diagrams/03-data-flow.svg)
 
 **Collected** on each 30-second wake: per-sample 3-axis acceleration magnitudes at 104 Hz for 2 seconds → RMS and CV → one of three equipment states: IDLE, RUNNING, TRANSPORT.
@@ -426,7 +418,6 @@ notecard.sendRequest(notecard.newRequest("hub.sync"));
 ---
 
 ## 9. Validation and Testing
-
 
 **Expected steady-state on an active job site.** In normal operation, expect 2–4 `equip_event.qo` notes per day (engine start, engine stop, possibly a midday shutdown), one `equip_summary.qo` per summary window (default every 24 hours), and six `_track.qo` location heartbeats per day (one every 4 hours, matching `GPS_HEARTBEAT_HOURS = 4`), plus any additional `_track.qo` notes triggered by geofence events. On a delivery day, expect additional `transport_start` and `transport_stop` events bracketing the transit. If the engine was running immediately before transport, the `transport_start` note will carry a non-zero `session_min` recording the run duration.
 
@@ -475,7 +466,6 @@ If the baseline is continuously 10+ mA, the Cygnet is not sleeping — confirm t
 
 ## 10. Troubleshooting
 
-
 | Symptom | Likely Cause | Solution |
 |---------|--------------|----------|
 | Serial monitor shows no output after upload | Board not selected correctly, or USB driver missing | Verify **Generic STM32L4 → Cygnet** is selected in Arduino IDE; on Windows, install [ST-Link drivers](https://www.st.com/en/development-tools/stsw-link009.html). |
@@ -491,7 +481,6 @@ If the baseline is continuously 10+ mA, the Cygnet is not sleeping — confirm t
 ---
 
 ## 11. Limitations and Next Steps
-
 
 **Simplified for this POC:**
 
@@ -525,7 +514,6 @@ If the baseline is continuously 10+ mA, the Cygnet is not sleeping — confirm t
 ---
 
 ## 12. Summary
-
 
 This project puts a compact, self-powered sensor node on any piece of mobile heavy equipment in under ten minutes — no drilling, no wiring, no OEM involvement, and turns it into a continuously-tracked asset whose engine hours, location, and work-session events flow to Notehub over the best available network, cellular or satellite. The vibration signature classifier running on the Notecarrier CX's Cygnet host is the core innovation: instead of a single amplitude threshold (which would fire on a flatbed delivery), a two-parameter RMS + coefficient-of-variation algorithm reliably separates steady periodic engine idle from bursty road vibration, giving rental fleet operators billing-grade engine-hour data without a hardwired telematics install.
 

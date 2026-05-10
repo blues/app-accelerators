@@ -10,7 +10,6 @@ This project is an [asset performance optimization](https://blues.com/solutions-
 
 ## 1. Project Overview
 
-
 **The problem.** Utility-scale and large commercial-and-industrial (C&I) solar installations routinely bleed 3–8% of annual production to three mundane, entirely preventable causes: soiling (dust, bird droppings, pollen), partial shading (a branch that grew six inches over winter, a newly-installed HVAC unit on a flat roof), and a single degraded or failed module in a series string. None of these losses are invisible — they all have distinctive electrical signatures in the per-string DC current and voltage data. The problem is that almost nobody reads that data in real time.
 
 A modern string inverter or combiner box already knows, at the register level, exactly how much DC current and voltage each string is producing. What it doesn't have is a network path off the array and into the asset manager's dashboard. The maintenance tech has to show up on-site with a laptop and a Modbus cable to pull that data, which is exactly what doesn't happen until something breaks badly enough to trigger a service ticket. The result is months of invisible partial production loss that neither the owner nor the O&M (operations and maintenance) contractor can see until the quarterly energy report shows a yield gap.
@@ -18,6 +17,8 @@ A modern string inverter or combiner box already knows, at the register level, e
 This project adds that missing network path. It reads per-string DC voltage and current from a Modbus RTU source — typically a multi-MPPT string inverter where each MPPT input tracks one string — every five minutes, reads the irradiance from a pyranometer (a calibrated instrument that measures incident solar radiation in watts per square meter, W/m²) and the panel temperature from a backsheet probe, and computes a **Performance Ratio** (**PR**) — the ratio of actual string power to the expected power given current irradiance and temperature — for each string independently. The root-cause hypothesis (shading, soiling, string fault) depends on having an independent operating voltage reading per string; multi-MPPT inverters implementing the [SunSpec Model 160 Multiple MPPT](https://sunspec.org/sunspec-modbus-specifications/) register model provide this signal set. See [§11](#11-limitations-and-next-steps) for hardware compatibility and the implications for deployments where only per-string current is available from the monitored device. Strings that fall below a configurable PR threshold get an immediate alert with a root-cause hypothesis. When a string's PR recovers above the threshold, the device locally rearms the alert — the internal underperformance flag is cleared so a subsequent degradation fires a fresh event, but no recovery note is sent to Notehub. Every hour a summary Note records the per-string window means and the array-level shared-reference irradiance and module temperature for trend analysis.
 
 **Why Notecard.** Solar arrays sit on rooftops, in open fields, and under parking canopies — three of the places where WiFi ranges the least and site IT involvement is the highest hurdle. A rooftop system at a strip mall isn't going to get a permanent AP installed on the ballast tray. A ground mount in a rural field has no building nearby. A carport canopy shared by a retail parking lot has a network owned by the tenant's coffee franchise, not the solar O&M contractor. Cellular removes every one of those constraints. The Notecard Cell+WiFi variant ships with a prepaid global SIM and registers on the cellular network automatically — no SIM activation form, no per-site IT discussion, and no router credentials to manage. The WiFi radio is present in the hardware but is not used in this build: a metal NEMA 4X enclosure substantially attenuates WiFi signals, and the firmware explicitly clears any previously stored WiFi credentials at first boot via `card.wifi` — this ensures cellular-only operation even on a reused or previously provisioned Notecard rather than relying on an assumption about the device's prior state. For a portfolio O&M operator managing dozens of customer sites, the single most valuable thing about cellular-first IoT is that the same firmware and SKU deploys identically on site one and site forty-three. There is no site-specific network configuration at all.
+
+<NewToBlues/>
 
 **Deployment scenario.** A metal NEMA 4X enclosure mounted on or near the combiner box or string inverter, powered from the array's AC output via a compact AC/DC converter. Three cables exit the enclosure: one RS-485 shielded pair to the combiner's Modbus port, one pair for the pyranometer, and the DS18B20 backsheet temperature probe cable routed to a representative panel in the array. No inverter modification and no plant-network involvement required.
 
@@ -29,10 +30,7 @@ This project adds that missing network path. It reads per-string DC voltage and 
 
 **Modbus register map is a demo.** The firmware reads contiguous holding-register pairs `[V, I, V, I, …]` with fixed scaling. Real inverters (SMA SunnyBoy, Fronius Symo, Huawei SUN2000, etc.) have vendor-specific register maps, addressing conventions, and scaling. Production deployments require a vendor-specific firmware build or careful manual register validation (see Modbus first-light in §9).
 
-<NewToBlues/>
-
 ## 2. System Architecture
-
 
 ![System architecture: inverter (Modbus RTU), pyranometer, and DS18B20 backsheet probe → Notecarrier CX with Cygnet host and Notecard MBGLW → cellular → Notehub → O&M / yield / alerts](diagrams/01-system-architecture.svg)
 
@@ -45,7 +43,6 @@ This project adds that missing network path. It reads per-string DC voltage and 
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
 
 ## 3. Technical Summary
-
 
 **What you'll have when you're done:** A cellular-connected device that reads per-string DC voltage and current from your Modbus inverter or combiner every 5 minutes, computes each string's performance ratio (actual power / temperature-derated expected power), fires an immediate alert to [Notehub](https://notehub.io) when any string drops below 80% of expected power (with a root-cause hypothesis: shading, soiling, or string fault), and sends an hourly summary Note for trend analysis.
 
@@ -96,7 +93,6 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with onboard Cygnet STM32L433 host — exposes UART TX/RX and A0–A5 analog inputs needed for this project, no external MCU required. |
@@ -116,7 +112,6 @@ Here is a sample Note this device emits:
 All Blues hardware ships with a prepaid SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
 ## 5. Wiring and Assembly
-
 
 ![Wiring: BOB-10124 RS-485 transceiver to Cygnet UART (DE/RE on D9); Apogee SP-110-SS pyranometer to A0; DS18B20 to D5 with 4.7 kΩ pull-up; Taoglas GA.111 LTE antenna via SMA-u.FL; 120/240 VAC → IRM-10-5 → Mojo → +VBAT](diagrams/02-wiring-assembly.svg)
 
@@ -185,7 +180,6 @@ No external jumper is required. The Notecarrier CX gates the Cygnet host's 3.3 V
 
 ## 6. Notehub Setup
 
-
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/solar_string_monitor/solar_string_monitor.ino` as `PRODUCT_UID`.
 2. **Claim the Notecard.** Power the unit; on first cellular session the Notecard associates with your project automatically.
 3. **Create a Fleet per site.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) group devices for shared configuration and routing. The natural unit is one fleet per installation — every device on the same site reads the same inverter model with the same register map and the same string rating. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) let you promote a device to a different fleet dynamically (e.g., a replacement unit with a different panel model) without re-flashing.
@@ -217,7 +211,6 @@ No external jumper is required. The Notecarrier CX gates the Cygnet host's 3.3 V
 5. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `solar_alert.qo` (real-time delivery to an O&M on-call system or CMMS) and one for `solar_summary.qo` (batched delivery to a long-term analytics store). Separating the two Notefiles at the source means each can be fanned out to a different destination at a different urgency without any filtering logic in the route.
 
 ## 7. Firmware Design
-
 
 Main sketch: [`firmware/solar_string_monitor/solar_string_monitor.ino`](firmware/solar_string_monitor/solar_string_monitor.ino).
 Data-path helpers: [`firmware/solar_string_monitor/solar_string_monitor_helpers.cpp`](firmware/solar_string_monitor/solar_string_monitor_helpers.cpp) / [`firmware/solar_string_monitor/solar_string_monitor_helpers.h`](firmware/solar_string_monitor/solar_string_monitor_helpers.h).
@@ -385,7 +378,6 @@ NotePayloadSaveAndSleep(&payload, g_sample_interval_sec, NULL);
 
 ## 8. Data Flow
 
-
 ![Data flow: 5-min sample of per-string V/I plus irradiance and module temp → PR computation with root-cause classification (shading, soiling, string_fault) → solar_alert.qo (sync:true with 30-min cooldown) and solar_summary.qo (hourly templated) → Notehub routes](diagrams/03-data-flow.svg)
 
 **Collected every `sample_interval_sec` (default 5 minutes):** DC voltage and current for each configured string (from Modbus), irradiance in W/m² (from pyranometer ADC), and module backsheet temperature in °C (from DS18B20).
@@ -411,7 +403,6 @@ NotePayloadSaveAndSleep(&payload, g_sample_interval_sec, NULL);
 
 ## 9. Validation and Testing
 
-
 **Expected cadence.** In steady state on a sunny day a correctly-behaving array generates one `solar_summary.qo` event per `report_interval_min` minutes (default: one per hour) and zero `solar_alert.qo` events. Tuning `report_interval_min` down via Notehub automatically re-issues `hub.set` on the next wake cycle so the Notecard's outbound sync cadence stays aligned with the new summary interval. When changing either `report_interval_min` or `sample_interval_sec`, verify that `report_interval_min × 60` remains an integer multiple of `sample_interval_sec`; if it is not, the firmware rounds the window length up so the actual summary window covers at least the full configured period (see §6 Timing constraint note). At night or under heavy overcast, irradiance falls below `irradiance_min_wm2` and PR evaluation is suppressed — the summary Note still emits, carrying the actual (near-zero) measured values.
 
 **Modbus first-light.** Before connecting to the real inverter, run the firmware against a USB-RS-485 adapter and a Modbus simulator (Modbus Mechanic, ModRSsim2, or any slave simulator) to verify the register reads match the expected values. Confirm that `modbus_baud`, `modbus_slave_id`, `modbus_parity`, and `modbus_stop_bits` match the inverter configuration — all four are settable via Notehub [environment variables](#6-notehub-setup) without re-flashing. Default framing is 8N1 (no parity, 1 stop bit), which matches most Modbus RTU devices. Most field-commissioning problems trace to a single parameter mismatch.
@@ -436,7 +427,6 @@ With the default cadence (5-minute samples, hourly sync), a healthy trace shows 
 
 ## 10. Troubleshooting
 
-
 | Symptom | Likely Cause | Solution |
 |---------|--------------|----------|
 | Notecard doesn't connect to cellular on first power-up. | No ProductUID set, or invalid UID. | Confirm `PRODUCT_UID` in the sketch is your real Notehub project UID (not the placeholder). Flash again and watch the USB serial monitor for error messages. |
@@ -449,7 +439,6 @@ With the default cadence (5-minute samples, hourly sync), a healthy trace shows 
 | Pyranometer reads seem consistently low or high. | Pyranometer is shaded, or unit calibration differs from nominal. | Verify the sensor is in full sun, co-planar with the array, and away from shading objects. Each sensor has a calibration tolerance; the default `pyranometer_mv_per_wm2_x1000 = 200` (0.200 mV/W/m²) is the Apogee SP-110-SS nominal. Update it with your unit's calibration certificate value if available. |
 
 ## 11. Limitations and Next Steps
-
 
 (Note: This is the detailed per-constraint section referenced throughout. For a quick pre-deployment checklist, see §8.5 Commissioning Checklist above.)
 
@@ -487,6 +476,5 @@ With the default cadence (5-minute samples, hourly sync), a healthy trace shows 
 - Per-device commissioning: record a 7-day baseline PR per string immediately after installation so the alert threshold adapts to site-specific shading and soiling patterns rather than relying on a generic default.
 
 ## 12. Summary
-
 
 A Notecarrier CX + Cell+WiFi Notecard pairs with a Modbus RS-485 interface, an analog pyranometer, and a DS18B20 backsheet probe to give an asset manager per-string production visibility across a solar portfolio — without WiFi, without site IT involvement, and without any modification to the existing inverter. Every five minutes the device reads what the combiner already knows, contextualizes it against the current irradiance and temperature, and decides whether a string is performing within normal bounds. Every hour that context is shipped to Notehub as a compact summary. When a string underperforms, an alert goes out in under a minute with a root-cause hypothesis that gives the O&M technician a starting point before they even load the truck. The cellular-first deployment model — one SKU, one SIM, no per-site configuration — is what makes this economically viable at portfolio scale. For the 3–8% of annual production that gets silently lost to soiling and shading today, the alternative is a quarterly energy report that's always looking backward.

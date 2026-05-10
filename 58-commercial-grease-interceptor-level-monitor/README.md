@@ -14,7 +14,6 @@ This project is a [truck-roll reduction](https://blues.com/truck-roll-reduction/
 
 ## 1. Project Overview
 
-
 **The problem.** Every commercial kitchen is legally required to install a **grease interceptor** (sometimes called a grease trap) — a chamber plumbed into the kitchen drain line that intercepts **FOG** (fats, oils, and grease) before it enters the municipal sewer. FOG accumulates as a floating layer at the top of the interceptor. Left unchecked, that layer eventually reaches the inlet pipe and starts flowing into the sewer, a violation that can result in fines, shutdowns, and backups into the kitchen floor drains.
 
 To stay compliant, **FSEs** (food service establishments, restaurants, cafeterias, ghost kitchens, institutional foodservice) hire a pumping provider who periodically vacuums the trap clean. The industry default is a fixed service cadence: the truck shows up every four weeks, or every two weeks, regardless of how full the trap actually is. In practice, a slow-season week produces far less grease than a holiday rush. Fixed cadence means the pumper sometimes arrives when the interceptor is only 30% full — a truck roll that did nothing for compliance, and sometimes arrives after the interceptor has already overflowed. Neither outcome is good, and the FSE pays for every dispatch.
@@ -25,12 +24,11 @@ A fill-level sensor changes the economics entirely. With a real-time reading, th
 
 **Why Notecard.** Grease interceptors are typically located outside the building — in the rear yard, buried in a rear parking lot, or set into the floor of a utility room in the basement. None of these locations have reliable access to the restaurant's WiFi. And unlike a single building-owner deploying one device, a pumping provider is managing hundreds of independent FSE accounts spread across a city, each with a different WiFi network, a different IT contact (usually "the owner's nephew"), and a different level of willingness to hand out network credentials to a pumping vendor. Cellular removes all of that friction: no access point to pair to, no password to manage, no IT ticket to chase. The Notecard Cell+WiFi ships with a prepaid global SIM, so the same hardware-firmware combination deploys identically at every FSE on a pumper's route — from a two-seat taqueria to a stadium commissary. WiFi remains as an opportunistic fallback for the rare installation in a utility room that happens to have building WiFi overhead, without any firmware changes.
 
-**Deployment scenario.** A small weatherproof electronics box mounted on the wall adjacent to the interceptor access cover. **This documented build targets indoor utility-room HGI installations where a standard 120 VAC wall outlet is accessible within ~1.5 m of the installation point.** A DFRobot A02YYUW IP67-rated ultrasonic probe is mounted through a 22 mm clearance hole drilled in the interceptor's access cover (one cover penetration per installation), held by a P-clip and sealed with an IP67 silicone grommet and RTV. See §5 for the full mechanical procedure. The probe hangs below the cover, pointing at the liquid/FOG surface. The box is powered by an external UL-listed 5 V DC wall adapter; a low-voltage DC pigtail cable enters the sealed enclosure through a cable gland and connects directly to the Notecarrier CX `+VBAT` header pin — no mains wiring inside the enclosure, and VUSB stays absent so the Notecard reaches its lowest idle power floor (~8 µA between syncs). No drilling into the interceptor tank body or drain piping, no drain-line modification, and no coordination with the building owner beyond "we're mounting a small sensor on your grease trap cover and a box on the wall next to it." For outdoor, rear-yard, or below-grade installations without accessible indoor power, see [Limitations](#10-limitations-and-next-steps).
-
 <NewToBlues/>
 
-## 2. System Architecture
+**Deployment scenario.** A small weatherproof electronics box mounted on the wall adjacent to the interceptor access cover. **This documented build targets indoor utility-room HGI installations where a standard 120 VAC wall outlet is accessible within ~1.5 m of the installation point.** A DFRobot A02YYUW IP67-rated ultrasonic probe is mounted through a 22 mm clearance hole drilled in the interceptor's access cover (one cover penetration per installation), held by a P-clip and sealed with an IP67 silicone grommet and RTV. See §5 for the full mechanical procedure. The probe hangs below the cover, pointing at the liquid/FOG surface. The box is powered by an external UL-listed 5 V DC wall adapter; a low-voltage DC pigtail cable enters the sealed enclosure through a cable gland and connects directly to the Notecarrier CX `+VBAT` header pin — no mains wiring inside the enclosure, and VUSB stays absent so the Notecard reaches its lowest idle power floor (~8 µA between syncs). No drilling into the interceptor tank body or drain piping, no drain-line modification, and no coordination with the building owner beyond "we're mounting a small sensor on your grease trap cover and a box on the wall next to it." For outdoor, rear-yard, or below-grade installations without accessible indoor power, see [Limitations](#10-limitations-and-next-steps).
 
+## 2. System Architecture
 
 ![System architecture: Interceptor → A02YYUW probe → Edge enclosure (Notecarrier CX + Cygnet + Notecard) → Notehub → Routes](diagrams/01-system-architecture.svg)
 
@@ -43,7 +41,6 @@ A fill-level sensor changes the economics entirely. With a real-time reading, th
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
 
 ## 3. Technical Summary
-
 
 ### First Event in Minutes
 
@@ -71,7 +68,6 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an onboard Cygnet STM32L433 host MCU — no separate host board needed. ATTN pin wiring to control the host power rail is built in. |
@@ -90,7 +86,6 @@ Here is a sample Note this device emits:
 All Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
 ## 5. Wiring and Assembly
-
 
 <Warning>
 
@@ -128,7 +123,6 @@ Route the cable from the cover to the enclosure box on the adjacent wall and ent
 
 ## 6. Notehub Setup
 
-
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/grease_interceptor_monitor/grease_interceptor_monitor.ino` as `PRODUCT_UID`.
 2. **Claim the Notecard.** Power the unit; on first cellular connection the Notecard auto-associates with your project.
 3. **Create a Fleet per pumping route.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) are how Notehub groups devices for shared configuration and routing. A natural fit here is one fleet per service route — all interceptors on the same truck route likely share similar sizes and fill cadences, so fleet-level [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) can encode route-wide defaults and you override on a per-device basis for unusual installations. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) can be used to auto-assign devices based on FSE metadata tags.
@@ -144,7 +138,6 @@ Route the cable from the cover to the enclosure box on the adjacent wall and ent
 5. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) targeting `grease_alert.qo` for real-time dispatch notification (webhook to a field-service platform, SMS gateway, or dispatch email), and a second for `grease_summary.qo` pointed at a long-term analytics store. Keeping the two Notefiles separate at the source means each can be routed to a different destination without filtering logic in the route itself.
 
 ## 7. Firmware Design
-
 
 ### Building and Flashing
 
@@ -269,7 +262,6 @@ NotePayloadSaveAndSleep(&new_payload, cfg.sample_interval_sec, NULL);
 
 ## 8. Data Flow
 
-
 ![Data flow: 15-min sample → evaluate threshold and window → grease_alert.qo (sync:true) / grease_summary.qo (daily, templated) → Notehub → routes](diagrams/03-data-flow.svg)
 
 Every 15 minutes the Cygnet host wakes, fires the sensor five times, takes the median distance, and converts it to a fill percentage. That reading is added to the rolling daily accumulator. Two conditional paths run in parallel:
@@ -320,7 +312,6 @@ These Notefiles are separate so you can route them to different endpoints: summa
 
 ## 9. Validation and Testing
 
-
 ### Expected Steady-State Behavior
 
 On a correctly-behaving install, one `grease_summary.qo` event appears in Notehub every 24 hours and zero `grease_alert.qo` events appear (unless the interceptor is genuinely near full). The `valid_samples` field in the summary is the most useful commissioning diagnostic — after the first complete 24-hour reporting interval, a correctly-behaving unit should show roughly 96 valid samples at the default 15-minute interval. (The very first summary fires on cold boot with only the samples collected since power-on; do not treat a low count in that first event as a fault.) A count materially below 96 on subsequent days indicates intermittent sensor reads (cable length, probe positioning, or FOG reflectivity issues). 
@@ -357,7 +348,6 @@ The dominant daily energy consumer is likely the always-on sensor (~8 mA continu
 
 ## 10. Limitations and Next Steps
 
-
 **Simplified for the POC:**
 
 - **Scoped to HGI and batch-collection geometries, not validated for conventional constant-level interceptors.** This reference design is scoped to hydromechanical and batch-collection interceptors without a fixed outlet weir — geometries where the top liquid surface rises with FOG and wastewater accumulation, making the fill percentage a meaningful pump-out indicator. On a **conventional constant-level gravity interceptor** (outlet weir holds the liquid surface at a fixed height regardless of FOG thickness), the top surface stays nearly constant as grease accumulates, so `fill_pct` will not track FOG buildup and the 75% alert threshold will not map to regulatory pump-out criteria. **Do not deploy this reference design on a conventional constant-level interceptor for compliance purposes without independent empirical validation** that surface elevation correlates with FOG accumulation in that specific unit. For conventional interceptors, direct FOG-layer measurement (e.g., differential float pair, bottom conductivity probe, or matched top-and-bottom ultrasonic sensors) is required.
@@ -390,6 +380,5 @@ The dominant daily energy consumer is likely the always-on sensor (~8 mA continu
 - Per-device pump-out logging: add a `grease_service.qi` inbound Notefile that the dispatch system writes to when a pump-out event is completed, allowing the firmware to reset the fill accumulator on confirmed service and start fresh from a known-empty state.
 
 ## 11. Summary
-
 
 A Notecarrier CX, a Notecard Cell+WiFi, and an IP67 waterproof ultrasonic probe are enough to turn a hydromechanical grease interceptor into a remotely-monitored asset. Sampling happens every 15 minutes; outbound summary syncs happen once a day (with inbound environment-variable polls every 2 hours); an alert bypasses the outbound batch and wakes the radio within minutes whenever fill is at or above the threshold (repeating hourly while the interceptor remains over limit). The cellular-first design means the same firmware deploys identically at every HGI on a pumping route — independent of that FSE's WiFi setup, IT policy, or building age, and the same Notehub environment variables let the pumping provider tune thresholds and cadence across hundreds of devices without touching a single line of code. The reference design is scoped to HGI and batch-collection geometries where the fill percentage is a direct proxy for pump-out urgency; see §10 before applying it to conventional constant-level interceptors. For a service company whose margin depends on route density and avoided overflows, that's the difference between a fixed-schedule liability and a condition-based service model.

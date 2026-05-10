@@ -10,7 +10,6 @@ This project is a pack-level sentinel — a Blues [battery management systems](h
 
 > **Hardware scope — pack-level sentinel only.** This design measures four signals at the pack level: terminal voltage, bidirectional current, surface temperature, and state-of-charge via coulomb counting. **Per-cell voltage monitoring and cell-imbalance detection are intentionally outside the scope of this design**; they require a dedicated cell-monitor IC (e.g. TI BQ76940) wired to individual cell taps — a substantially different hardware design that is noted as a future extension in §9. SoC is tracked by integrating pack current against a commissioned `usable_capacity_ah` baseline — see §6 for commissioning and §9 for accuracy caveats. The onboard 15 mΩ INA228 shunt is rated for approximately 8 A continuous — appropriate for installations where peak discharge current stays within that range. For installations where peak discharge current exceeds 8 A, use the breakout's external-shunt footprint with a lower-value busbar shunt; see §4 and §9 for details.
 
-
 ## 1. Project Overview
 
 **The problem.** VRLA (valve-regulated lead-acid) and LFP (lithium iron phosphate) backup batteries in roadside cabinets and remote equipment enclosures are the last line of defense against site downtime — and they're almost universally untested until they fail. A healthy-looking battery can have lost 60% of its usable capacity to sulfation while still holding nominal open-circuit voltage. A single shorted cell in a 12 V six-cell VRLA string depresses the pack voltage, but the charger compensates by pushing more current, masking the fault entirely from any simple voltage-only check.
@@ -23,11 +22,11 @@ This project instruments it. A precision bidirectional current monitor sits in s
 
 **Why Notecard.** The Notecard's independence from site infrastructure is the fundamental feature here. A traffic-cabinet controller, a roadside LoRaWAN gateway, or a roadside remote terminal unit all have their own modems and radios — but those are exactly the devices the backup battery is supposed to keep running during a mains failure. You cannot use the site's LTE modem to report that the site's LTE modem just went down because the backup battery was dead.
 
+<NewToBlues/>
+
 The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM, on a power path independent of the site equipment. When mains fails, the sentinel continues running from the cabinet battery bus through the DC-DC converter — which is precisely what allows it to observe the discharge in real time: voltage sag under actual site load, current draw, duration, and eventual recovery. The Notecarrier CX's onboard LiPo charger adds a reporting tail for the end-of-discharge case: once the cabinet battery is deeply depleted, the bus falls below the DC-DC converter's minimum input voltage, or the battery is disconnected entirely, the 2000 mAh LiPo takes over and extends cellular reporting beyond the battery's own capacity. If the sentinel needs to be fully independent of the monitored battery from the moment of mains failure — not riding on it at all — a separate, isolated power source is required. That discharge curve — only available because the sentinel kept running while everything else went dark — is the most valuable diagnostic data you can collect about backup battery health.
 
 **Deployment scenario.** A compact enclosure mounted inside a traffic-signal controller housing, roadside IoT gateway enclosure, industrial RTU cabinet, or telecom equipment shelter — installations running on a 12 V or 24 V positive-referenced DC bus. The Adafruit INA228 shunt monitor wires in series with the battery's positive terminal; the NTC thermistor is affixed to the battery case surface with thermal adhesive. A DC-DC step-down module converts the cabinet bus voltage to regulated 5 V for the Notecarrier CX; a 2000 mAh LiPo on the JST connector is charged from that 5 V supply; during a mains outage the sentinel continues running from the cabinet battery via the DC-DC converter, with the LiPo taking over only when the monitored battery is deeply depleted or the bus drops below the converter's input range. The Notecard's cellular antenna routes out of the enclosure via u.FL pigtail to a patch or magnetic-mount antenna on the cabinet exterior.
-
-<NewToBlues/>
 
 ## 2. System Architecture
 
@@ -184,7 +183,6 @@ For bench bring-up, splice the [Mojo](https://dev.blues.io/datasheets/mojo-datas
 **I²C topology:** this firmware does not read Mojo's coulomb counter over I²C; Mojo is inline power measurement only. The INA228 connects directly to the Notecarrier CX Qwiic connector as described above — Mojo's Qwiic port does not need to be wired for this bring-up.
 
 Remove Mojo from the power path for production deployment; see §9.
-
 
 ## 6. Notehub Setup
 
@@ -442,7 +440,6 @@ Use the Mojo to measure whole-device energy over a full 24-hour cycle on your sp
 - **No blips, no bursts:** the Notecard is not reaching Notehub. Check `PRODUCT_UID` matches the Notehub project exactly and verify cellular coverage at the installation site.
 
 Mojo is not required in deployed hardware — it is a bench bring-up and regression tool. Once a firmware version passes the trace check, deployed units don't need it.
-
 
 A Notecarrier CX and a Cell+WiFi Notecard, paired with a 20-bit precision current monitor and a surface thermistor, turn a passive backup battery into a continuously-monitored asset that reports float conditions every two minutes, tracks state-of-charge via coulomb counting, trends float current over months as an early indicator of VRLA capacity degradation, and pages an operator within one sample interval of the site going dark. The same hardware and firmware run on 12 V roadside cabinet batteries and 24 V industrial UPS banks. The cellular uplink is independent of every piece of equipment the battery protects — which is the whole point. When the cabinet's own LTE radio shuts down because the mains failed and the battery turned out to be half-sulfated and incapable of holding the load, the sentinel is still running — riding on that failing battery through the DC-DC converter, capturing the discharge curve as the voltage collapses, and then switching to the onboard LiPo for the final reporting tail as the bus drops out.
 

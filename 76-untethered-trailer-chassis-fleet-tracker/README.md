@@ -12,12 +12,13 @@ The unit mounts on the trailer roof or chassis frame, runs a parked/moving state
 
 ## 1. Project Overview
 
-
 **The problem.** Long-haul trucking fleets have wrestled with a persistent visibility gap for decades: the tractor has an ELD (electronic logging device), a telematics unit, and a driver. The 53-foot box it drags around has none of those things. An intermodal chassis is even worse — the same steel frame might be owned by a chassis pool, leased to a carrier, loaded by a shipper, and dragged by three different tractors in a single week. At any given moment, a fleet operator's dispatch system knows where the power unit is. The trailer? It's wherever the last driver left it.
 
 This matters because trailers and chassis represent enormous capital. A $100,000+ refrigerated trailer that sits dark for five days at a shipper's dock is invisible to the fleet — the carrier can't bill for detention time it can't prove, can't recover equipment without calling around, and can't prevent the slow-drain of assets that leak out of rotation. At the chassis pool level, the problem is even more acute: intermodal equipment management is largely still a phone call business because there's no inexpensive, tractor-independent way to know where each piece of equipment is.
 
 **Why Notecard.** A trailer changes tractors every day and can change carriers every few days. Any solution that depends on the tractor — a J1939 tap, a cab-mount device, a driver's phone — fails the moment the trailer unhooks. The Blues Notecard is the right fit here for three reasons that compound:
+
+<NewToBlues/>
 
 First, **cellular is tractor-independent**. The Notecard on the trailer roof has its own prepaid SIM and cellular session. It doesn't know or care what tractor pulls it.
 
@@ -29,10 +30,7 @@ Third, **power is scarce**. Trailers have no reliable 12V auxiliary hookup — t
 
 ---
 
-<NewToBlues/>
-
 ## 2. System Architecture
-
 
 ![System architecture: solar power chain → Notecarrier XI with Swan + NOTE-WBEX + Starnote for Iridium → LTE-M primary / Iridium LEO satellite fallback → Notehub → fleet / TMS / analytics routes](diagrams/01-system-architecture.svg)
 
@@ -55,7 +53,6 @@ The Notecard manages its own cellular and satellite sessions against the support
 ---
 
 ## 3. Technical Summary
-
 
 **What you'll have when you're done:** A solar-powered trailer or chassis tracker that reports motion-triggered departure/arrival events and position updates to Notehub over LTE-M (primary) or Iridium LEO satellite (automatic fallback). No tractor hookup, no site IT, global pole-to-pole coverage.
 
@@ -86,7 +83,6 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-
 > **Hardware stack note.** This design uses Notecarrier XI + Swan rather than the default Notecarrier CX/Cygnet stack because the ocean-capable Iridium path requires the dedicated Starnote connector exposed by the Notecarrier XI — the Notecarrier CX/Cygnet combination does not provide that interface and therefore cannot support Starnote for Iridium or Iridium NTN satellite fallback.
 
 | Part | Qty | Rationale |
@@ -112,7 +108,6 @@ The cellular Notecard (e.g., NOTE-WBEX) ships with an active Blues SIM including
 ---
 
 ## 5. Wiring and Assembly
-
 
 ![Wiring: solar panel → Sunny Buddy MPPT → LiPo → Notecarrier XI +VBAT; NOTE-WBEX MAIN u.FL → pigtail → SMA bulkhead → cellular antenna; Starnote u.FL → pigtail → SMA bulkhead → Iridium+GPS antenna; Mojo inline between LiPo and +VBAT for bench bring-up](diagrams/02-wiring-assembly.svg)
 
@@ -183,7 +178,6 @@ An intermodal chassis has no roof — it is a flat, low steel frame sized for a 
 
 ## 6. Notehub Setup
 
-
 ### Creating the project and provisioning the device
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:trailer-tracker`.
@@ -247,7 +241,6 @@ The **Events** tab in your project shows all Note types:
 ---
 
 ## 7. Firmware Design
-
 
 The firmware lives in [`firmware/trailer_fleet_tracker_starnote/`](firmware/trailer_fleet_tracker_starnote/). All application logic runs in `setup()`; `loop()` forces a system reset if ever reached, ensuring the tracker resumes normal operation.
 
@@ -454,7 +447,6 @@ if (prev == STATE_PARKED && moving) {
 
 ## 8. Data Flow
 
-
 ![Data flow: accelerometer (5 minutes parked) + GPS (15 minutes moving) + battery ADC → parked/moving state machine with transition detect and timer checks → trailer_event.qo (departure/arrival, sync:true) and trailer_location.qo + trailer_heartbeat.qo (batched) → Notehub → routes](diagrams/03-data-flow.svg)
 
 **Collected.** On every wake: the Notecard accelerometer's moving/stopped status. When moving: GPS coordinates from the Notecard's periodic GPS module. When parked: LiPo battery voltage from the Notecard's ADC.
@@ -478,7 +470,6 @@ On **NTN/satellite**, `sync:true` marks transition events as high priority but t
 ---
 
 ## 9. Validation and Testing
-
 
 **Expected event cadence.** On first boot, `last_heartbeat_at` is zero, so the heartbeat condition fires on the first wake where the Notecard has a valid clock (`now > 0`). The Notecard syncs its clock during the initial cellular session, which completes within a few minutes of first power-on; the heartbeat is therefore queued locally on the following parked-check wake (~5 minutes in). Because heartbeat Notes are **not** marked `sync:true`, the Notecard does not transmit them immediately — they ride the next scheduled outbound sync window. At full battery that window opens after **60 minutes** (`voutbound high:60`); at nominal charge after **120 minutes** (`voutbound normal:120`). Expect the first `trailer_heartbeat.qo` to appear in Notehub **roughly 1–2 hours after first power-on** under typical battery conditions.
 
@@ -528,7 +519,6 @@ For the arrival event, note the **asymmetric detection latency**: once the track
 
 ## 10. Troubleshooting
 
-
 **Device won't stay asleep (stuck awake, draining battery fast):**
 - Check that the **ATTN wiring** on Notecarrier XI is intact (Swan ATTN line to Notecarrier pin).
 - Watch serial output with `usbSerial` enabled (uncomment in helpers.h). You should see `[sleep]` log every cycle.
@@ -565,7 +555,6 @@ For the arrival event, note the **asymmetric detection latency**: once the track
 
 ## 11. Limitations and Next Steps
 
-
 **Simplified for this POC:**
 
 - **Transition detection latency and GPS freshness.** The firmware samples motion only on wake boundaries — every `parked_check_mins` while parked (for departure detection) and every `moving_ping_mins` while moving (for arrival detection). Transition events are stamped with the wake time and the Notecard's cached GPS fix at that moment, not the exact physical instant of hookup or drop. For departure events after a long parked dwell, the GPS module has been off the entire time, so the cached fix may be from the trailer's last known pre-dwell location — potentially hours or days stale; `gps_valid` is still `1` because the fix is structurally valid, only its freshness is in question. Retried deliveries always carry the original detection-time capture (never re-stamped with the current state). If fresh departure coordinates are a hard requirement, the firmware can be extended to issue `card.location.mode {"mode":"on"}` and poll until a valid fix is available before enqueuing the departure event, at the cost of 30–90 seconds of additional GPS-on time per departure.
@@ -598,7 +587,6 @@ For the arrival event, note the **asymmetric detection latency**: once the track
 ---
 
 ## 12. Summary
-
 
 The trailer visibility gap is one of those problems that's been tolerated for decades because the fix was always too expensive per asset to justify. A GPS unit that needs a tractor hookup is useless at the dock. A cellular tracker without satellite fallback goes dark the moment the route goes rural or crosses a border. A battery-only device dies after a long winter dwell. And a tracker that relies on geostationary satellite simply doesn't work over the ocean or in polar corridors — the geometry doesn't reach.
 

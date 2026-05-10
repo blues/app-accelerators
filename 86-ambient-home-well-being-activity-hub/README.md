@@ -20,6 +20,8 @@ This project builds that hub. A PIR motion sensor in the main living area detect
 
 **Why Notecard.** The project description puts it plainly: many elderly patients don't have configured WiFi, others have a router that gets unplugged during cleaning, and others live somewhere — an assisted living facility (ALF) room, an adult child's spare bedroom — where the network changes regularly. A device that depends on WiFi to phone home simply stops working through any of those transitions, and the gap in data is invisible to the care team until someone thinks to check. Cellular-first means the hub keeps reporting through all of it, with no site IT involvement and no router to pair to.
 
+<NewToBlues/>
+
 The Blues Notecard Cell+WiFi (NOTE-MBGLW) adds a second layer of resilience: for sites that can provide 2.4 GHz WiFi credentials, the hub can use WiFi as an optional fallback when cellular coverage at that address is marginal. WiFi is not automatic — it requires configured credentials or an open network at the deployment site — but for installations where WiFi is available and stable it reduces session latency and modem energy. For the care team, the connectivity model is transparent — data arrives on a schedule, and if it doesn't, that absence itself is signal worth acting on. See [Notehub device health monitoring](https://dev.blues.io/notehub/notehub-walkthrough/) for how to detect stale devices.
 
 **Why Notecarrier CX instead of Swan.** The project description mentions Swan as the host MCU. In practice, the onboard Cygnet STM32L4 embedded in the Notecarrier CX is a complete host MCU with more than enough I/O for this sensor mix (six GPIO/analog pins, I²C, UART, SPI), runs the full STM32 Arduino core, and needs no Feather board attached. Using the Notecarrier CX keeps the assembly compact, reduces power draw slightly, and preserves Feather slots for future expansion. There is no capability difference for this project.
@@ -32,8 +34,6 @@ The Blues Notecard Cell+WiFi (NOTE-MBGLW) adds a second layer of resilience: for
 - **SHT31 humidity sensor** — mounted on or near the bathroom door frame alongside the reed switch, or just inside the bathroom threshold. Shares the same cable run as the reed switch. For any bathroom-to-hub run longer than ≈ 1.5 m, use the NXP PCA9615 differential I²C bus extender included in the BOM (see §4 and §4); raw I²C over hookup wire is reliable only for short runs.
 
 Nothing the patient interacts with. Nothing that needs charging.
-
-<NewToBlues/>
 
 ## 2. System Architecture
 
@@ -75,7 +75,6 @@ Here is a sample Note this device emits:
   }
 }
 ```
-
 
 ## 4. Hardware Requirements
 

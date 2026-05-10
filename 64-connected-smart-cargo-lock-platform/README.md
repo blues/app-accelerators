@@ -18,6 +18,8 @@ The underlying challenge isn't mechanical; modern locks are strong. The challeng
 
 **Why Notecard.** The Notecard for [Skylo](https://www.skylo.tech/resources/geographical-coverage) (SKU: NOTE-NBGLWX) addresses all three of the lock OEM's critical needs in one module:
 
+<NewToBlues/>
+
 - **Pre-certified global cellular** (LTE-M, NB-IoT, GPRS) with a bundled SIM and 500 MB of data — no per-country carrier contracts, no activation fees, works identically in North America, Europe, and beyond.
 - **Skylo satellite failover** — when the lock drops off cellular coverage entirely (mid-ocean crossing, remote intermodal depot, rural cross-border corridor with no cellular infrastructure), the Notecard automatically routes through the Skylo **NTN** (non-terrestrial network) satellite constellation, provided the MAIN antenna has a usable view of the sky. Satellite cannot help inside steel containers or under heavy structural obstructions — those are GNSS-denied environments, not just cellular-denied ones. From firmware, the failover is completely transparent: the same `note.add` calls land in Notehub regardless of which radio carried them.
 - **Low-power discipline** — the Notecard's idle current is measured in microamps, and its `card.attn` sleep mechanism cuts host power entirely between wakes — including the SS461A hall sensor and pull-up resistors on the host-gated +3V3 rail. A lock that wakes every `SAMPLE_INTERVAL_SEC` (default 60 seconds), checks sensors, and syncs once every six hours draws substantially less energy under cellular-dominant operation than under satellite-dominant operation — the four scheduled outbound sessions per day (default 6-hour cadence) cost very different amounts depending on which radio carries them. See the [power budget discussion in §6](#low-power-strategy) for documented current envelopes and an example calculation. Multi-month battery life on a 5,000 mAh pack (on the order of ~5 months under the assumptions in §6) is achievable in cellular-dominant operation; satellite-heavy deployments significantly reduce projected endurance. Use [Mojo](#9-validation-and-testing) measurements in your target deployment environment to establish a ground-truth figure before committing to a cell size.
@@ -25,8 +27,6 @@ The underlying challenge isn't mechanical; modern locks are strong. The challeng
 **Deployment scenario.** A weatherproof polycarbonate enclosure integrated into the lock body, powered from a rechargeable Li-Po cell. The included Skylo-certified MAIN antenna mounts inside the RF-transparent polycarbonate enclosure lid, facing skyward — no external pigtail or cable gland required for the antenna. The enclosure is oriented so the lid faces skyward when the lock is deployed. No wired power, no SIM provisioning, no site-specific configuration. A fleet manager assigns locks to loads in Notehub before dispatch; thresholds and check-in cadence are adjusted per-fleet via environment variables without touching the firmware.
 
 **What this POC does not include.** Optional BLE short-range key authentication — letting a driver's phone cryptographically authorize a legitimate unlock — is intentionally out of scope for this reference platform. It requires an external UART BLE module, a challenge/response crypto library, and a provisioning workflow that go beyond the firmware size target for this example. It is deferred as a production extension; see [Limitations](#11-limitations-and-next-steps).
-
-<NewToBlues/>
 
 ## 2. System Architecture
 

@@ -10,7 +10,6 @@ This project is a cellular [energy savings](https://blues.com/energy-savings/) r
 
 ## 1. Project Overview
 
-
 **The problem.** For a chain QSR (quick-service restaurant), c-store (convenience store), or grocery operator, the walk-in cooler is one of the most expensive assets in a store, and one of the least visible. Energy cost per location is second only to labor, and a significant fraction of that energy budget runs through the compressor of one or more walk-in boxes. Operators who get visibility into compressor runtime, door discipline, and temperature trends across their fleet can cut energy spend materially: a door held open five minutes longer than necessary during a busy lunch rush costs real money in wasted refrigeration, and a compressor running six hours a day instead of four because box air temperature has quietly drifted 2 °F above the corporate temperature target costs even more at scale.
 
 The harder problem is that an operator running 800 locations has 800 different network environments — franchisees on consumer ISPs, independent operators with POS (point-of-sale) systems that their IT vendors won't let anyone touch, c-stores with back-office networks that preclude any new guest devices. Getting corporate visibility through all of that friction is the barrier that keeps most energy-monitoring pilots from becoming fleet-wide programs. The pilot sites get instrumented; the rollout stalls at 50.
@@ -19,12 +18,11 @@ This project is the device that gets past that barrier. One SKU, cellular-connec
 
 **Why Notecard.** The project description says it plainly: corporate energy management can't touch 800 independent-operator or franchisee WiFi networks — each would be its own ticket. A cellular Notecard is one SKU the field can plug in without asking anyone for a WiFi password. That's not a convenience; it's the difference between a program that deploys at fleet scale and one that stays perpetually in pilot. Deploying on cellular also keeps the energy-monitoring data stream entirely off the POS network, which matters both for network security and for the operational reality that POS downtime is the one thing nobody is willing to accept as a side effect of an energy program. The [Notecard Cell+WiFi](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) variant keeps WiFi as an opportunistic fallback for the occasional site that can offer it, without compromising the cellular-first deployment model.
 
-**Deployment scenario.** A small weatherproof enclosure mounted in or near the cooler's refrigeration cabinet or mechanical room, powered from the cooler's dedicated circuit (typically 120VAC for single-phase residential-style units; many commercial condensing units run on 208/240VAC. See Limitations). Three sensor leads run into the box: a waterproof DS18B20 temperature probe positioned in open box air at mid-box height or along the return-air path (reading representative box air temperature away from the evaporator and door), a split-core CT clamped on one hot leg of the compressor's dedicated circuit, and a two-wire reed switch mounted on the door frame with a magnet on the door itself. No OEM cooperation, no cooler modification, no network integration required.
-
 <NewToBlues/>
 
-## 2. System Architecture
+**Deployment scenario.** A small weatherproof enclosure mounted in or near the cooler's refrigeration cabinet or mechanical room, powered from the cooler's dedicated circuit (typically 120VAC for single-phase residential-style units; many commercial condensing units run on 208/240VAC. See Limitations). Three sensor leads run into the box: a waterproof DS18B20 temperature probe positioned in open box air at mid-box height or along the return-air path (reading representative box air temperature away from the evaporator and door), a split-core CT clamped on one hot leg of the compressor's dedicated circuit, and a two-wire reed switch mounted on the door frame with a magnet on the door itself. No OEM cooperation, no cooler modification, no network integration required.
 
+## 2. System Architecture
 
 ![System architecture: walk-in cooler sensors (box temp, compressor CT, door reed) → Notecarrier CX with Cygnet host and Notecard MBGLW → cellular/WiFi → Notehub → energy ops / BI / alerts](diagrams/01-system-architecture.svg)
 
@@ -37,7 +35,6 @@ This project is the device that gets past that barrier. One SKU, cellular-connec
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and other destinations. Route configuration is project-specific — this project ships no downstream endpoint. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for setup details.
 
 ## 3. Technical Summary
-
 
 ### First Event in 30 Minutes
 
@@ -113,7 +110,6 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an embedded Cygnet STM32 host — no separate MCU needed for this three-sensor combination. |
@@ -135,7 +131,6 @@ Here is a sample Note this device emits:
 All Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees and no monthly commitment.
 
 ## 5. Wiring and Assembly
-
 
 ![Wiring: DS18B20 1-Wire to D5; SCT-013 CT with V/2 bias to A0; door reed switch to D6 (PULLUP); external SMA antenna via u.FL pigtail; 120/240 VAC → IRM-10-5 → Mojo → +VBAT](diagrams/02-wiring-assembly.svg)
 
@@ -165,7 +160,6 @@ Pin-by-pin connections:
 
 ## 6. Notehub Setup
 
-
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/cooler_monitor/cooler_monitor.ino` as the `PRODUCT_UID` constant before flashing.
 2. **Claim the Notecard.** Power the unit; on first cellular connection the Notecard associates with your project automatically.
 3. **Create Fleets.** The natural grouping for a multi-site cooler program is one [Fleet](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) per banner or region — every store in a given franchise territory typically shares the same setpoint targets and alert thresholds. [Smart Fleet](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) rules let you break out exceptions automatically (e.g., flagship stores with tighter temperature tolerances) without manual device reassignment.
@@ -184,7 +178,6 @@ Pin-by-pin connections:
 5. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `cooler_alert.qo` (real-time delivery to a store-ops or facilities channel) and a second for `cooler_summary.qo` (to a long-term analytics store or BI tool). Keeping the two Notefiles separate at the source means they can fan out to entirely different destinations without any filter logic inside the route.
 
 ## 7. Firmware Design
-
 
 Main sketch plus helper files: [`firmware/cooler_monitor/cooler_monitor.ino`](firmware/cooler_monitor/cooler_monitor.ino) (entry point, sample cycle), [`firmware/cooler_monitor/cooler_monitor_helpers.cpp`](firmware/cooler_monitor/cooler_monitor_helpers.cpp) (Notecard config, sensor reads, note emission), and [`firmware/cooler_monitor/cooler_monitor_helpers.h`](firmware/cooler_monitor/cooler_monitor_helpers.h) (shared constants, types, and declarations).
 
@@ -317,7 +310,6 @@ NotePayloadSaveAndSleep(&outPayload, cfgSampleSec, NULL);
 
 ## 8. Data Flow
 
-
 ![Data flow: 60s sample of box temp/compressor amps/door state → two rules (door_open_long, temp_high) with 30-min cooldowns → cooler_alert.qo (sync:true) and cooler_summary.qo (hourly templated) → Notehub routes](diagrams/03-data-flow.svg)
 
 **Collected** every `sample_interval_sec` (default 60 seconds): box air temperature (°F), compressor RMS amps, door open/closed state.
@@ -335,7 +327,6 @@ NotePayloadSaveAndSleep(&outPayload, cfgSampleSec, NULL);
 - `temp_high` — box temperature exceeds `temp_alert_f` (default 40 °F). The alert carries the current amps reading, so the responder can immediately see whether the compressor is running (equipment issue) or is off (power outage, breaker trip).
 
 ## 9. Validation and Testing
-
 
 **Expected steady-state cadence.** A correctly-running cooler generates one `cooler_summary.qo` event approximately every `summary_interval_min` (default 60 minutes) and zero `cooler_alert.qo` events unless thresholds are breached. As a rough illustrative reference, a mid-size commercial walk-in cooler (800–1200 cu ft) at a typical QSR may show:
 - **Compressor runtime:** 35–55% duty cycle (21–33 minutes per 60-minute window)
@@ -372,7 +363,6 @@ The *shape* of the trace is as informative as the absolute level. What you want 
 
 ## 10. Troubleshooting
 
-
 **Device claims to Notehub but no events appear after 2+ hours.**
 - Check Notecard firmware is up to date: Notehub → Devices → click your device → Device Info → Notecard version. If outdated, trigger a [Notecard firmware update](https://dev.blues.io/notecard/notecard-walkthrough/updating-notecard-firmware/).
 - Confirm ProductUID in firmware matches your Notehub project. Notecard will not transmit to the wrong project.
@@ -395,7 +385,6 @@ The *shape* of the trace is as informative as the absolute level. What you want 
 
 ## 11. Limitations and Next Steps
 
-
 **Simplified for this POC:**
 
 - **Sensor reads are sample-based, not interrupt-driven.** All three sensors are polled once per `sample_interval_sec` (default 60 seconds). Any door opening, door closing, or compressor start/stop that occurs *and completes* within one 60-second sleep interval goes undetected. This quantizes edge timing to the sample period, which directly affects `door_opens`, `door_open_sec`, compressor runtime, and `kwh_window` — all can undercount if events are shorter than the sample period. `door_open_long` alert timing is similarly quantized: a door that opens just after one sample and closes just before the next may not trip the alert even if the physical open duration exceeded `door_open_alert_sec`. Reducing `sample_interval_sec` via environment variable improves resolution but increases host awake time and may increase alert frequency (more frequent checks means alert conditions are detected sooner and `sync:true` sessions may be triggered more often); scheduled outbound cellular sessions are still governed by `summary_interval_min` and do not increase with the sample interval alone.
@@ -417,6 +406,5 @@ The *shape* of the trace is as informative as the absolute level. What you want 
 - A `cooler_config.qi` inbound Notefile for ops-team-initiated diagnostic dumps (full state snapshot on demand without waiting for the next summary).
 
 ## 12. Summary
-
 
 A Notecarrier CX + Notecard Cell+WiFi + three inexpensive sensors close a gap that's stopped energy programs at hundreds of chains and operators: corporate visibility across sites you cannot touch IT-wise. The cellular uplink is one SKU; the field tech plugs it in without a WiFi ticket; the data stream stays off the POS network. What lands in Notehub — compressor apparent kWh per summary window (with per-day totals derived downstream by summing `kwh_window` records), compressor runtime, door events, and temperature-to-target deviation — gives a corporate energy team the fleet-level signal needed to surface outlier boxes running significantly more compressor-hours than their peers, locations where cumulative door-open time is an order of magnitude above the fleet median, and units where box air temperature has quietly drifted above the configured corporate target — all without asking anyone for a network password.

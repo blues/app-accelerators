@@ -20,9 +20,9 @@ This project is that watcher. It's a retrofit sidecar that gets strapped to the 
 
 **Why Notecard.** RTUs have no line-of-sight to indoor WiFi access points, and HVAC OEMs and service companies need a single SKU that works identically in a strip mall and in a warehouse. Cellular removes the per-site IT involvement entirely — there's no network form to fill out, no AP to pair to, and no IT ticket to chase. The Notecard Cell+WiFi variant keeps WiFi as an optional fallback for the occasional site that happens to have a rooftop-accessible AP, without compromising the cellular-first deployment model.
 
-**Deployment scenario.** A weatherproof enclosure strapped to the RTU frame, powered from 120VAC line at the RTU service disconnect (or from the 24VAC control transformer with an alternate supply. See [Limitations](#11-limitations-and-next-steps)), with four pigtails running into the unit: two thermistors (supply and return ducts), one clamp-on current transformer on the compressor hot leg, and one differential-pressure sensor with silicone tubes tapped across the filter. No RTU modification, no OEM cooperation, and no site IT coordination required.
-
 <NewToBlues/>
+
+**Deployment scenario.** A weatherproof enclosure strapped to the RTU frame, powered from 120VAC line at the RTU service disconnect (or from the 24VAC control transformer with an alternate supply. See [Limitations](#11-limitations-and-next-steps)), with four pigtails running into the unit: two thermistors (supply and return ducts), one clamp-on current transformer on the compressor hot leg, and one differential-pressure sensor with silicone tubes tapped across the filter. No RTU modification, no OEM cooperation, and no site IT coordination required.
 
 ## 2. System Architecture
 

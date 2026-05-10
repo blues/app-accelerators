@@ -14,7 +14,6 @@ This project is a connected-APU reference platform for [asset performance optimi
 
 ## 1. Project Overview
 
-
 **The problem.** Long-haul trucking has a massive and largely invisible fuel waste problem: engine idling. A Class 8 tractor sitting in a truck stop burns roughly 0.8–1.2 gallons per hour just to run its HVAC and electronics overnight. At that rate, a single truck running continental routes can waste 1,500–2,000 gallons a year in idle fuel alone — somewhere between $4,000 and $6,000 at typical diesel prices, and many fleets run hundreds of units. Regulators have noticed; anti-idling legislation covers major portions of the US and Canada, with fines for extended stops in many jurisdictions.
 
 APU manufacturers — companies that build diesel APUs, battery-based no-idle systems, and cab heaters — have been attacking this problem for decades. Their hardware works. What they've traditionally lacked is a connected product: a way to know how much idling each unit actually prevented (tracked both per-hour in `apu_telemetry.qo` and as a daily on-device rollup in `apu_daily.qo`. See §8), when the APU ran and for how long, what fault codes it threw in the field, and whether the warranty claim that came back two years later was from a unit that was used correctly. These are the questions a manufacturer needs to answer to price extended warranties, improve the next product generation, and prove ROI to fleet customers.
@@ -23,16 +22,15 @@ The trouble is that APU OEMs are mechanical and power-electronics engineering co
 
 **Why Notecard.** Long-haul trucks run continental routes through hundreds of cellular handoffs, significant rural dead zones, and conditions where no single carrier provides reliable coverage. A cellular-only solution that drops data whenever the truck rolls through a no-service corridor is useless to a manufacturer trying to build warranty and maintenance databases. The Notecard for [Skylo](https://www.skylo.tech/resources/geographical-coverage) solves this by combining LTE-M/NB-IoT global cellular with Skylo satellite fallback in a single M.2 module: the Notecard tries cellular first and, when no tower is reachable, uses Skylo's geostationary network to get the data out. The firmware doesn't manage the transport selection at all — the Notecard handles it transparently.
 
+<NewToBlues/>
+
 Beyond connectivity resilience, the Notecard's pre-certified global cellular removes the three-to-six-month certification cycle that would otherwise gate each new market entry for an APU OEM. The prepaid SIM with 500 MB cellular and 10 KB Skylo data included means an OEM shipping 5,000–100,000 units per year can enter the connectivity business without becoming a connectivity company: no per-unit SIM provisioning, no monthly data plans to track, no roaming negotiations. The hardware lands on the assembly line and ships globally under a single SKU.
 
 **Deployment scenario.** A small sealed enclosure mounted inside the APU housing or the truck's electrical panel, powered from the APU's own 12 V or 24 V DC bus. RS-485 pigtail to the APU controller's communication port; two temperature probes (one ambient, one cab interior) routed through a grommet seal; and a voltage-divided input from the truck's ignition circuit. Two antennas on the cab roof: the Skylo-certified LTE/satellite antenna for cellular and satellite, and a passive GPS antenna for GNSS. No OEM-specific gateway, no telematics device to compete with, no dependency on the fleet's own telematics vendor. Fuel accounting is software-estimated from APU runtime × configurable consumption rates — suitable for fleet-level reporting and warranty analytics without any additional hardware (see the scope note at the top of this document).
 
 ---
 
-<NewToBlues/>
-
 ## 2. System Architecture
-
 
 **Device-side responsibilities.** The onboard Cygnet STM32L433 host on the Notecarrier CX acts as the application layer: polling the APU controller over Modbus RTU every 60 seconds, reading both DS18B20 temperature probes on a shared OneWire bus, and reading the truck's ignition state from a voltage-divided analog input. It runs a three-state idle-vs-APU state machine, accumulates hourly and daily statistics in a struct that persists across sleep cycles in the Notecard's flash, and emits one of three note types: an hourly summary, a daily fuel-saved rollup, or an immediate fault alert. After each sample cycle the Cygnet calls [`NotePayloadSaveAndSleep`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) to commit state to the Notecard and cut host power entirely for the next `sample_interval_sec` seconds via `card.attn`, keeping the host MCU completely dark between samples.
 
@@ -47,7 +45,6 @@ Beyond connectivity resilience, the Notecard's pre-certified global cellular rem
 ---
 
 ## 3. Technical Summary
-
 
 1. **Assemble the hardware** (§4, §5): Notecarrier CX, Notecard for Skylo, RS-485 BOB-10124, two DS18B20 probes, and ignition-sense voltage divider. For bench testing, use a USB 5V supply instead of the vehicle DC/DC converter.
 
@@ -99,7 +96,6 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an embedded Cygnet STM32L433 host — no separate MCU board needed. ATTN-pin power gating enables true host power-off between samples. |
@@ -127,7 +123,6 @@ Here is a sample Note this device emits:
 ---
 
 ## 5. Wiring and Assembly
-
 
 All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard for Skylo (NOTE-NBGLWX) seats in the carrier's M.2 slot. The Mojo sits inline between the 5 V DC/DC converter output and the Notecarrier's +VBAT pad for bench validation.
 
@@ -175,7 +170,6 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
 
 ## 6. Notehub Setup
 
-
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:apu-telemetry`.
 2. **Set the ProductUID in firmware.** Open `apu_oem_telemetry.ino` and replace the empty string on the `#define PRODUCT_UID ""` line with your value.
 3. **Claim the Notecard.** Power the assembled unit. On first cellular or satellite session the Notecard associates with your Notehub project automatically — no manual claim step needed. The device appears in your project's **Devices** tab within a minute or two.
@@ -214,7 +208,6 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
 ---
 
 ## 7. Firmware Design
-
 
 The firmware is split across three files:
 
@@ -470,7 +463,6 @@ NotePayloadSaveAndSleep(&payload, (uint32_t)g_env.sampleIntervalSec, NULL);
 
 ## 8. Data Flow
 
-
 Every `sample_interval_sec` (default 60 seconds) the Cygnet wakes, samples all inputs, runs the state machine, and decides what to send:
 
 ![Data flow: APU Modbus + DS18B20 + ignition sampled every 60 seconds → five checks (APU fault, cab temp excursion, state change, sensor fail, day boundary) → apu_event.qo alerts (sync:true), apu_telemetry.qo hourly summaries (templated), and apu_daily.qo daily rollups (templated) → Notehub → three routes](diagrams/03-data-flow.svg)
@@ -515,7 +507,6 @@ Sample `apu_daily.qo` (one per calendar day):
 
 ## 9. Validation and Testing
 
-
 **Expected steady-state cadence.** On a healthy APU in operation: one `apu_telemetry.qo` per hour and zero `apu_event.qo` entries unless a fault occurs or the driver turns the APU on or off. During initial bench bring-up, lower `summary_interval_min` to `1` via the Fleet environment variables to get a telemetry note every minute without waiting. Environment variable changes take effect after the next inbound sync (every 120 minutes by default); trigger an immediate update by clicking **Sync** on the device page in Notehub.
 
 **Modbus first-light.** Before connecting to a real APU controller, use a [USB-to-RS-485 adapter](https://www.sparkfun.com/sparkfun-usb-to-rs-485-converter.html) and a software Modbus simulator (Modbus Mechanic or ModRSsim2) wired to the BOB-10124 screw terminals. Verify the firmware reads all five registers correctly by watching the serial debug output (requires `#define DEBUG` to be uncommented. See §7.1). The debug lines print `[modbus ok]` with the raw register values on a successful read, or `[modbus fail]` with the retry count on timeouts.
@@ -542,7 +533,6 @@ Measure the 24-hour energy total on your specific hardware with Mojo before comm
 ---
 
 ## 10. Troubleshooting
-
 
 **Device does not appear in Notehub after flashing.**
 - Verify `PRODUCT_UID` is correctly set in `apu_oem_telemetry.ino` before flashing (§6.1).
@@ -581,7 +571,6 @@ Measure the 24-hour energy total on your specific hardware with Mojo before comm
 
 ## 11. Limitations and Next Steps
 
-
 **Simplified for this reference design:**
 
 - **Generic Modbus register map.** The five-register layout in this firmware is representative, not universal. Real APU controllers from Thermo King, Carrier, Webasto, Espar, and others each have their own register addresses, scaling factors, fault-code tables, and communication parameters. Production firmware needs a vendor-specific register map; the `modbus_reg_base` environment variable handles address offset, but field-level scaling and fault-code interpretation are hardcoded in this POC.
@@ -605,7 +594,6 @@ Measure the 24-hour energy total on your specific hardware with Mojo before comm
 ---
 
 ## 12. Summary
-
 
 The idle-reduction APU market has a straightforward problem: the hardware that replaces diesel idling already exists and works well, but the data those devices generate — runtime, fuel saved, active fault codes, warranty-relevant operating hours — has nowhere to go. The truck is in the field, crossing terrain where no single cellular carrier is reliable, and the APU OEM is a mechanical engineering company that should be focused on combustion efficiency rather than SIM provisioning.
 

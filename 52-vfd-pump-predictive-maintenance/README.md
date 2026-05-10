@@ -16,11 +16,11 @@ A failing pump rarely just stops. It signals first: motor current can shift at c
 
 **Why Notecard.** Pump rooms sit on isolated **OT** (operational technology) networks where corporate WiFi is off-limits for instrumentation by plant policy, and retrofitting a separate OT-friendly access point per pump is unrealistic. Cellular removes the dependency on plant LAN credentials, VLAN provisioning, site WiFi, or a local gateway. (Some sites will still require OT/security review before *any* wireless instrumentation is allowed; the device just doesn't need access to the plant network itself.) The Notecard's prepaid global cellular service means the same firmware and architecture deploys across regions — choose the matching Wireless for OPTA cellular variant for the deployment geography. WiFi remains as an opportunistic fallback for the rare site that *can* offer a rooftop AP, without compromising the cellular-first model.
 
+<NewToBlues/>
+
 **Why OPTA.** This is exactly the sweet spot for Wireless for OPTA: a real industrial PLC reading a real industrial Modbus device, with no PC or gateway in the middle. The Arduino OPTA is DIN-rail-mounted, 12–24 VDC powered, and programmable with both Arduino sketches and IEC 61131-3 PLC languages, so it deploys exactly the same way across plants whose IT and OT teams will never agree on a network plan. Pairing it with Blues Wireless for OPTA adds cellular and WiFi to a device that already speaks the language of the plant.
 
 **Deployment scenario.** A single OPTA + Wireless for OPTA mounted on the DIN rail next to the VFD inside the pump's electrical panel, RS-485 daisied to the drive's communication port, antenna routed out through a cable gland to a magnetic-mount whip on the cabinet roof. Line power from a 24 VDC panel supply that's already there. No PC, no gateway, no plant LAN involvement.
-
-<NewToBlues/>
 
 ## 2. System Architecture
 

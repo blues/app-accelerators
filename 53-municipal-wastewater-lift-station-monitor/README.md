@@ -10,7 +10,6 @@ This project is a [downtime prevention](https://blues.com/downtime-prevention/) 
 
 ## 1. Project Overview
 
-
 **The problem.** A **lift station** (also called a pump station) is a below-grade concrete vault or roadside cabinet that collects raw sewage from the surrounding gravity sewer system and pumps it uphill toward the treatment plant. Every municipality has dozens of them, often scattered across low-lying neighborhoods, industrial zones, and rural road shoulders — most with no onsite staff and no way to know what's happening inside until a citizen calls to report a smell or, worse, a spill.
 
 When a lift station fails, the **wet well** — the collection basin that feeds the pumps — fills up and overflows. The result is a **SSO**: a sanitary sewer overflow. SSOs draw immediate regulatory attention; they trigger EPA reporting obligations, risk consent decree violations, and require expensive emergency cleanups. A station that fails on a Friday evening and isn't discovered until Monday morning is a public health event, a PR crisis, and a significant unplanned expense all at once. The failure modes are rarely dramatic: a pump fails to start because its float control sticks, a discharge check valve fails and allows backflow that clogged the impeller, or a wet-well float switch trips but no one receives the alarm because the SCADA dial-up modem lost its phone line. Each of these is detectable minutes after it starts — if someone is watching.
@@ -19,12 +18,11 @@ This project is that watcher. It straps to the inside of the station, samples th
 
 **Why Notecard.** The wireless-first architecture here isn't a convenience — it's a necessity. Lift stations sit in concrete vaults underground, often with no AC power outlet in the vault itself (power runs to the pump control panel, not a wall socket). They're geographically distributed across a municipality in a pattern that matches the sewer network, not the municipal network — there's no fiber running to a roadside pump cabinet, and there's no corporate WiFi AP that can reach through a concrete lid to a sensor inside. Utility supervisors would need to deploy and maintain a WiFi access point at every single station to achieve what one Notecard SIM covers automatically. The NOTE-MBGLW's cellular radio reaches the vast majority of municipal infrastructure without site-specific network provisioning, login credentials, firewall rules, or per-site IT overhead. WiFi is available as an opportunistic fallback for the rare station adjacent to an accessible AP. Stations at the fringe of the service territory — beyond the reach of any cellular carrier — use a Starnote instead: the same M.2 form factor, the same Notecard API, the same firmware, but with a satellite link over the [Skylo](https://www.skylo.tech/resources/geographical-coverage) network rather than a terrestrial cell tower. The same firmware image deploys across the entire fleet; the connectivity module is the only variable.
 
-**Deployment scenario.** A sealed NEMA 4X enclosure mounted **inside the lift station's above-grade control cabinet**, powered from the 120 VAC control circuit that already powers the pump starters. The specified Blues hardware and NEMA 4X ABS enclosure are **not** rated for hazardous (classified) locations. Wet wells and sealed vaults can accumulate methane and hydrogen sulfide — both potentially classified atmospheres under NFPA 820 / NEC Article 820. Do not install this hardware inside the wet well or any classified-atmosphere zone. If your jurisdiction classifies the vault interior as a hazardous location, any hardware in that zone must be rated for the classification; consult a licensed electrical engineer before proceeding. Sensor cables enter through conduit fittings: one multiconductor cable to the submersible level transducer in the wet well, two split-core CT jaws clamped around the pump motor supply conductors inside the control panel, and one float switch cable to a new dedicated high-water alarm float switch hung in the wet well alongside the station's existing level floats. No station modification is required beyond adding three sensor connections to the existing control wiring. Cellular antenna cable exits through a conduit fitting to a magnetic-mount or direct-mount antenna on the cabinet exterior or above-grade access point.
-
 <NewToBlues/>
 
-## 2. System Architecture
+**Deployment scenario.** A sealed NEMA 4X enclosure mounted **inside the lift station's above-grade control cabinet**, powered from the 120 VAC control circuit that already powers the pump starters. The specified Blues hardware and NEMA 4X ABS enclosure are **not** rated for hazardous (classified) locations. Wet wells and sealed vaults can accumulate methane and hydrogen sulfide — both potentially classified atmospheres under NFPA 820 / NEC Article 820. Do not install this hardware inside the wet well or any classified-atmosphere zone. If your jurisdiction classifies the vault interior as a hazardous location, any hardware in that zone must be rated for the classification; consult a licensed electrical engineer before proceeding. Sensor cables enter through conduit fittings: one multiconductor cable to the submersible level transducer in the wet well, two split-core CT jaws clamped around the pump motor supply conductors inside the control panel, and one float switch cable to a new dedicated high-water alarm float switch hung in the wet well alongside the station's existing level floats. No station modification is required beyond adding three sensor connections to the existing control wiring. Cellular antenna cable exits through a conduit fitting to a magnetic-mount or direct-mount antenna on the cabinet exterior or above-grade access point.
 
+## 2. System Architecture
 
 ![System architecture: wet well sensors (level transducer, two CTs, float) → above-grade enclosure with Notecarrier CX → cellular MBGLW or Starnote satellite → Notehub → on-call/analytics](diagrams/01-system-architecture.svg)
 
@@ -53,7 +51,6 @@ The Starnote uses the same Notecard API as the MBGLW, but the satellite link has
 **Mandatory initial cellular sync.** Before any satellite (NTN) operation is possible, the Starnote must complete at least one non-NTN sync with Notehub over cellular or WiFi to associate with a project. Ensure the unit has cellular coverage during initial commissioning, even if the deployment site relies on satellite for routine operation.
 
 ## 3. Technical Summary
-
 
 **What you'll have:** A [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) + Notecard sending sample lift_alert and lift_summary events to your Notehub project every 60 seconds without needing sensors in the field.
 
@@ -94,7 +91,6 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an embedded Cygnet STM32L433 host — no separate MCU needed for this analog + digital sensor mix. |
@@ -120,7 +116,6 @@ Here is a sample Note this device emits:
 **Option B (Starnote):** Ships with 10 KB of bundled Skylo satellite data; no satellite provider subscription, monthly minimums, or activation fees apply. Additional data is billed per byte (see the [Starnote for Skylo datasheet](https://dev.blues.io/datasheets/starnote-datasheet/starnote-for-skylo/) for current pricing). Minimizing inbound sync frequency conserves the bundled allocation. See [Section 2](#satellite-specific-considerations-option-b-starnote) for guidance.
 
 ## 5. Wiring and Assembly
-
 
 ![Wiring: 4–20 mA loop with 150 Ω shunt → A0; dual SCT-013 CTs with 10 kΩ/10 kΩ bias and 10 µF cap → A1/A2; dedicated Gems float → D2 PULLUP; HDR-15-24 and HDR-15-5 from 120 VAC](diagrams/02-wiring-assembly.svg)
 
@@ -177,7 +172,6 @@ The Gems RS-500-Y-PP provides a galvanically isolated SPST N.O. dry contact rate
 
 ## 6. Notehub Setup
 
-
 ### 6.1 Project and Device Claim
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into the firmware as `PRODUCT_UID` (in `lift_station_monitor_helpers.h`). Rebuild and flash.
@@ -207,7 +201,6 @@ Add [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with
 Keeping alerts and summaries in separate Notefiles means each route handles them independently — alerts fire immediately for urgent notification, summaries batch for efficient storage. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for supported destination types and step-by-step setup.
 
 ## 7. Firmware Design
-
 
 The firmware is split across three files in [`firmware/lift_station_monitor/`](firmware/lift_station_monitor/):
 
@@ -384,7 +377,6 @@ bool ok = notecard.sendRequestWithRetry(req, 5);
 
 ## 8. Data Flow
 
-
 ![Data flow: 60s sample of level/CT1/CT2/float → three rules (high_water_alarm, pump_fail_to_start, pump_clog) with 30-min cooldowns → lift_alert.qo (sync:true) and lift_summary.qo (hourly) → Notehub routes](diagrams/03-data-flow.svg)
 
 **Collected (every 60 seconds):** wet-well fill level (%), pump 1 RMS current (A), pump 2 RMS current (A), float switch state.
@@ -403,7 +395,6 @@ bool ok = notecard.sendRequestWithRetry(req, 5);
 **Routed:** `lift_alert.qo` goes to a real-time notification channel. `lift_summary.qo` goes to a long-term store. Notehub applies project routes without any filter logic needed in the route itself, because the separation of Notefiles at the source is already the filter.
 
 ## 9. Validation and Testing
-
 
 **Expected steady-state.** In normal operation a properly functioning lift station generates one `lift_summary.qo` note per summary interval (default 60 minutes) and zero `lift_alert.qo` notes. A healthy summary shows `level_avg_pct` well below `high_level_pct`, `alert_count: 0`, and at least one pump with non-zero runtime in the window. Lead/lag stations commonly show one pump carrying the entire load in a quiet hour — zero runtime on the lag pump during a single interval is normal, not an alarm condition.
 
@@ -458,7 +449,6 @@ bool ok = notecard.sendRequestWithRetry(req, 5);
 
 ## 10. Troubleshooting
 
-
 **Firmware won't compile.** Ensure you have the correct board package and library versions:
 ```bash
 arduino-cli board install stm32duino:STM32:1.11.0
@@ -488,7 +478,6 @@ arduino-cli lib install "Blues Wireless Notecard"
 
 ## 11. Limitations and Next Steps
 
-
 **Simplified for the POC:**
 
 - **Level sensor accuracy assumes a clean straight wet well.** The firmware maps ADC counts linearly to % fill using the transducer's pressure-to-level formula, assuming a uniform cross-section. Wet wells with irregular geometry or foaming conditions will read inaccurately; a field-calibrated offset via an environment variable is the production fix.
@@ -509,6 +498,5 @@ arduino-cli lib install "Blues Wireless Notecard"
 - Integration with the municipal SCADA or CMMS: a `lift_alert.qo` Notehub route that creates a CMMS work order automatically, so the on-call response begins the moment the Notecard transmits, not the moment an engineer reads an SMS.
 
 ## 12. Summary
-
 
 Every municipality is already sitting on the data it needs to prevent SSOs — the level is there, the pump current is there, the float switch is there. What's missing is a network path out. The Notecarrier CX plus a Notecard MBGLW or Starnote — depending on where the station sits relative to LTE coverage, and three sensor types provides that path for the full spread of municipal infrastructure: from the station three blocks from city hall to the one at the edge of the service territory where the nearest building is a grain elevator. The firmware runs entirely at the edge — three rules, 60-second samples, 30-minute alert cooldowns, and the Notecard handles everything else: the periodic outbound session, the local queue, the environment-variable distribution that lets an operator retune thresholds from a browser without touching a single vault lid. The M.2 module and antenna are the only hardware difference between a cellular station and a satellite station; the firmware, Notehub project, routes, and thresholds are shared across the fleet. The two variants do differ in alert delivery timing — a cellular alert reaches the on-call engineer within a minute of detection; a satellite alert arrives on the next available Skylo pass, typically within a few minutes. In either case, when a pump fails at 2 AM on a holiday weekend, the alert reaches the on-call engineer as soon as the configured thresholds are crossed, not after a Monday morning site visit.

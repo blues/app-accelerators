@@ -10,7 +10,6 @@ This project is a [loss prevention](https://blues.com/loss-prevention/) referenc
 
 ## 1. Project Overview
 
-
 **The problem.** Construction equipment theft is a serious, costly, and chronically underreported problem. A skid steer that costs $60,000 to replace can be driven onto a flatbed and hauled off in under ten minutes. A light tower or portable generator can be gone before the morning crew arrives. These aren't smash-and-grab events — the equipment is large, identifiable, and completely exposed on a site that often goes unwatched overnight. Law enforcement recovery rates for heavy equipment are low; the stolen unit frequently ends up at a rural stash yard, stripped, or loaded into a shipping container for export. Neither scenario is good for cellular telemetry that depends on urban coverage.
 
 The result is an industry that leans heavily on equipment marking, insurance claims, and post-theft police reports. What's mostly missing is a device that provides real-time location during a theft in progress *and* can physically disable the equipment before it leaves the region — all without depending on an infrastructure that may not exist at the job site or at the final stash location.
@@ -19,12 +18,11 @@ This project is that device. It monitors GPS location against a configurable job
 
 **Why Notecard.** Construction sites have no WiFi. Even if a site happens to have a hotspot, requiring site IT coordination for a security device defeats the purpose. Cellular works for the vast majority of scenarios, but a stolen skid steer doesn't stay parked in a well-covered urban area. It ends up in a rural equipment yard, a metal barn, or a shipping container at a port. That's the scenario where cellular alone fails and satellite becomes the difference between a recovered asset and a total write-off. The Notecard for Skylo ([NOTE-NBGLWX](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/)) handles all three radio paths — LTE-M/NB-IoT cellular, WiFi (where available), and Skylo satellite — in a single M.2 module, without any firmware branching. Planetary roaming and satellite fallover are not optional extras for this use case; they are the core differentiators.
 
-**Deployment scenario.** A NEMA 4X weatherproof enclosure is hidden inside the equipment housing or attached to a non-visible structural member. Power is self-contained: a LiPo battery kept topped off by a small rooftop solar panel, so the tracker keeps running even after a thief disconnects the equipment's main battery. Two wires tap the ignition circuit: one reads ignition-on state via a voltage divider, one runs through the relay that can cut the starter circuit on command. Antennas are routed to externally-mounted elements that have a clear view of the sky.
-
 <NewToBlues/>
 
-## 2. System Architecture
+**Deployment scenario.** A NEMA 4X weatherproof enclosure is hidden inside the equipment housing or attached to a non-visible structural member. Power is self-contained: a LiPo battery kept topped off by a small rooftop solar panel, so the tracker keeps running even after a thief disconnects the equipment's main battery. Two wires tap the ignition circuit: one reads ignition-on state via a voltage divider, one runs through the relay that can cut the starter circuit on command. Antennas are routed to externally-mounted elements that have a clear view of the sky.
 
+## 2. System Architecture
 
 ![System architecture: equipment signals → Notecarrier CX with Cygnet host and Notecard for Skylo → LTE-M/NB-IoT + Skylo satellite → Notehub → security and fleet-management routes](diagrams/01-system-architecture.svg)
 
@@ -37,7 +35,6 @@ This project is that device. It monitors GPS location against a configurable job
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS IoT, Azure, GCP, Snowflake, and other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
 
 ## 3. Technical Summary
-
 
 **What you'll have when done:**
 - Device powered and claimed in Notehub, showing real GPS location
@@ -106,7 +103,6 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-
 > **12 V systems only.** This reference design — the voltage-divider ratios, relay coil rating, and all wiring guidance — is engineered for 12 V electrical systems. Most compact construction equipment (skid steers, portable generators, light towers) ships with a 12 V system, but larger machines (heavy excavators, some European platforms) use 24 V. With the 33 kΩ / 10 kΩ ignition-sense divider shown here, a 24 V ignition rail would put approximately 5.6 V on the Cygnet A2 GPIO — exceeding the 3.3 V limit, and the 12 V relay coil would overheat. **Verify your equipment's system voltage before proceeding.** Adapting to 24 V requires different divider values (e.g. 68 kΩ high-side + 10 kΩ low-side → 24 V × 10/78 ≈ 3.1 V, within the GPIO limit) and a 24 V–rated relay coil.
 
 | Part | Qty | Rationale |
@@ -132,7 +128,6 @@ All Blues hardware ships with an active SIM including 500 MB of cellular data an
 > **Important satellite note.** Skylo's constellation sits in geostationary orbit (GEO). From the northern hemisphere, the antenna needs an unobstructed view toward the southern sky to lock onto the satellites. A metal equipment cab that blocks the southern horizon will prevent satellite connectivity. Mount the antenna on the roof of the enclosure and orient it accordingly. See the [Satellite Best Practices guide](https://dev.blues.io/starnote/satellite-best-practices/) for detailed antenna placement guidance.
 
 ## 5. Wiring and Assembly
-
 
 <Warning>
 
@@ -170,7 +165,6 @@ Verify that your charger module's output connector pitch and polarity match the 
 
 ## 6. Notehub Setup
 
-
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/construction_equipment_anti_theft/construction_equipment_anti_theft.ino` as `PRODUCT_UID`.
 2. **Claim the Notecard.** Power the unit. On first cellular connection the Notecard auto-provisions to your project. Verify the device appears in the Notehub device list.
 3. **Create a Fleet per job site.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) group devices for shared configuration. One fleet per active job site is a natural boundary — all equipment on site shares the same geofence center and after-hours window via fleet-level [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/), with per-device overrides available when a specific machine has unusual requirements. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) can automate fleet membership based on location data.
@@ -200,7 +194,6 @@ Verify that your charger module's output connector pitch and polarity match the 
 6. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `alert.qo` (real-time delivery to a security or on-call platform) and a second for `tracker.qo` (position history to a fleet-management or asset-tracking store). Keeping the two Notefiles separate at the source lets you route them to different systems at different urgency without filter logic in the route itself.
 
 ## 7. Firmware Design
-
 
 Main sketch: [`firmware/construction_equipment_anti_theft/construction_equipment_anti_theft.ino`](firmware/construction_equipment_anti_theft/construction_equipment_anti_theft.ino). All Notecard interaction is encapsulated in [`construction_equipment_anti_theft_helpers.h`](firmware/construction_equipment_anti_theft/construction_equipment_anti_theft_helpers.h) and [`construction_equipment_anti_theft_helpers.cpp`](firmware/construction_equipment_anti_theft/construction_equipment_anti_theft_helpers.cpp) — the `.ino` contains only application logic and the `setup()` / `loop()` entry points.
 
@@ -385,7 +378,6 @@ NotePayloadSaveAndSleep(&save, sleep_sec, NULL);
 
 ## 8. Data Flow
 
-
 ![Data flow: ignition/motion/GPS/battery → Cygnet edge rules → alert.qo (sync:true, immediate) and tracker.qo (queued, batch outbound) → Notehub → routes; immobilize.qi inbound from Notehub to Cygnet → relay](diagrams/03-data-flow.svg)
 
 **Collected every wake cycle.** Ignition state (12V voltage divider), motion status (Notecard accelerometer, read via `card.motion`), GPS fix (Notecard GNSS, read via `card.location`), battery voltage (`card.voltage`), UTC epoch (`card.time`). No I²C sensors external to the Notecard are used — all sensing is built into the Notecard for Skylo module.
@@ -408,7 +400,6 @@ NotePayloadSaveAndSleep(&save, sleep_sec, NULL);
 **Inbound commands.** The operator sends `{"cmd":"immobilize"}` or `{"cmd":"release"}` to `immobilize.qi` from the Notehub UI or REST API. End-to-end command latency has two sequential components: first, the Notecard must complete an inbound sync session to pull the queued Note from Notehub (the inbound interval is context-aware: `inbound_min` default 4 minutes after-hours/moving, or `heartbeat_stopped_min` default 60 minutes when parked and daytime); second, the host Cygnet must wake and execute `setup()`, where `checkAndHandleCommand()` drains the entire `immobilize.qi` queue — calling `note.get` in a loop until the queue is empty, and applies each command in order (last command wins). The host wake interval is context-dependent: after hours (≤ 2 minutes), moving (≤ 5 minutes), stationary business hours (≤ 60 minutes by default). Combined worst-case end-to-end latency under default settings: **up to ~6 minutes** after-hours (≤ 4 minutes inbound sync + ≤ 2 minutes wake interval), **up to ~9 minutes** while moving (4 + 5 minutes), and **just under 2 hours** while stationary during business hours (up to 60 minutes daytime inbound sync + up to 60 minutes wake interval). The worst-case window — a stationary unit during business hours — is therefore just under **2 hours** from command post to `immobilize_armed` acknowledgment appearing in Notehub. If near-real-time command delivery is required around the clock, reduce `heartbeat_stopped_min` or see §11 Production next steps for the interrupt-driven ignition sense upgrade. Note that reliable inbound delivery requires cellular or WiFi connectivity — the Skylo satellite link is primarily uplink; commands staged while the unit is out of cellular coverage will be delivered when cellular is next restored.
 
 ## 9. Validation and Testing
-
 
 **Expected steady-state cadence.** A correctly-deployed tracker on a secure job site generates `tracker.qo` heartbeat Notes at the stationary cadence (every 60 minutes by default, day and night), zero `alert.qo` notes, and confirms `fence_ok:1` in every heartbeat. Notes accumulate in Notecard flash and are batch-transmitted in outbound sessions every 4 hours by default — expect 24 heartbeats queued per 24-hour period (6 outbound sessions, each carrying ~4 notes). The device wakes every 2 minutes during after-hours to scan for motion and check inbound commands, but only emits a heartbeat when the 60-minute interval elapses. Any single `alert.qo` event warrants investigation.
 
@@ -448,7 +439,6 @@ Satellite session validation requires outdoor antenna placement with clear sky v
 
 ## 10. Troubleshooting
 
-
 **Device not appearing in Notehub after power-on.**
 - Confirm USB power is stable (green LED on Notecarrier CX). If no LED, USB connection may be faulty.
 - Verify ProductUID is correctly pasted into the firmware sketch (top of `construction_equipment_anti_theft.ino`). Empty or mismatched ProductUID prevents auto-provisioning.
@@ -487,7 +477,6 @@ Satellite session validation requires outdoor antenna placement with clear sky v
 
 ## 11. Limitations and Next Steps
 
-
 **Simplified for the POC:**
 
 - **Staged, polled, edge-triggered immobilizer, not a continuously-held cut.** The immobilizer in this POC is a _next-wake / next-key-on-edge_ design. `NotePayloadSaveAndSleep` physically cuts the Cygnet's power during the sleep window, so the relay coil de-energizes on every sleep interval and the NC contact re-closes — briefly restoring the ignition circuit. The Cygnet re-asserts the relay only when it wakes and reads `immobilized = true`. For the default 2-minute after-hours cycle, the relay is active for only a few seconds every 2 minutes; a determined thief who turns the key during the sleep gap can crank the engine. Additionally, the relay only fires on an OFF→ON ignition edge — the previous wake must have observed ignition OFF and the current wake must observe ignition ON. If the equipment is already running when the immobilize command is staged, the firmware deliberately holds off until the next key cycle (this avoids cutting the starter circuit while the engine is actively running, per the safety guidance in §5). If the thief cycles the key fully between two Cygnet wakes (OFF→ON→OFF inside one sleep window), the firing edge is missed entirely until the next OFF→ON transition the Cygnet observes. This is a proof-of-concept staging mechanism. Production deployments require a **latching (bistable) relay** that holds its contact state with no continuous coil power and survives Cygnet sleep, power cuts, and wiring interruptions. See Production next steps below.
@@ -511,8 +500,6 @@ Satellite session validation requires outdoor antenna placement with clear sky v
 - Consider a dedicated anti-tamper microswitch on the enclosure lid connected to an AUX GPIO, firing `enclosure_opened` as a Note if someone tries to physically remove the device.
 - [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) enables wireless firmware updates to the Cygnet — essential for pushing updated geofence logic, new alert types, or threshold recipes to an entire fleet without any truck roll.
 
-
 ## 12. Summary
-
 
 A Notecarrier CX and Notecard for Skylo, a LiPo battery trickle-charged by a solar panel, and two wires into the ignition circuit turn a piece of construction equipment into a recoverable asset. The firmware runs a tight sleep-wake-sense-sleep loop: hourly heartbeats during the business-hour parking window (worst-case 60-minute geofence-detection latency), rapid two-minute after-hours scans that detect unauthorized movement and fire immediate alerts, and a staged relay mechanism that is set to block ignition on the thief's next key-on attempt the Cygnet observes — a next-wake / next-key-on proof-of-concept immobilizer that demonstrates the control path and command flow, with a production latching-relay upgrade as the clear next step. When cellular coverage fails — rural stash yard, shipping container, metal barn — the Skylo satellite link continues to push location and alert Notes skyward, because planetary roaming and satellite fallover are not optional extras for this use case. They're the reason a stolen skid steer ends up recovered instead of exported.

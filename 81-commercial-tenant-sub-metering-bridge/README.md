@@ -20,6 +20,8 @@ This project takes a different path. Instead of installing meters with network c
 
 **Why Notecard — and why cellular specifically.** The "why cellular" argument in most IoT applications is about location: the asset is remote, or on a rooftop, or in a place where running Ethernet is impractical. This application is different. The panel room is usually indoors, and there is WiFi somewhere nearby. The problem is *whose* WiFi it is.
 
+<NewToBlues/>
+
 In a multi-tenant building, the WiFi access points are almost always under tenant control. A retail tenant pays for their own ISP and runs their own router; a professional office tenant does the same. The building owner typically has no WiFi at all, or if they do, tenants have access to it. Routing billing telemetry through any network the tenants can reach is a political and legal problem: a savvy tenant can see what's being transmitted, disrupt the connection, or argue that the data was tampered with. The landlord needs a data channel that is:
 
 1. 100% landlord-controlled — the tenant cannot touch it
@@ -31,8 +33,6 @@ A cellular Notecard meets all three criteria. It's a SIM-bearing module that cal
 This is not a niche edge case. Billing disputes are among the most contentious issues in commercial tenancy, and the architecture matters: a meter whose data travels over the tenant's network is a meter whose readings a clever tenant can plausibly dispute. A cellular Notecard is the only architecture that eliminates that dispute by design.
 
 **Deployment scenario.** A small, weatherproof or panel-rated enclosure mounted inside or alongside the building's electrical panel. Four Rogowski coil sensors — one per tenant feed — with the coil lead running to the enclosure via a short cable gland. A voltage transducer taps the same panel bus for a building voltage reference. Line power sourced from a spare breaker on the same panel. No rented rack space, no network closet, no IT involvement from anyone.
-
-<NewToBlues/>
 
 ## 2. System Architecture
 
@@ -185,7 +185,6 @@ Each Rogowski coil wraps around **one conductor only** of the tenant's single-ph
 **Electrical safety.** Panel interiors operate at hazardous voltages. Installation must be performed by a licensed electrician following applicable electrical code, site lockout/tagout procedures, and the panel manufacturer's instructions. The Rogowski coils and voltage transducer are galvanically isolated from the mains; the hazard is the bus bars and termination points nearby during installation.
 
 </Warning>
-
 
 Before powering on for the first time:
 

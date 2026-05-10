@@ -19,9 +19,9 @@ This project is the watcher. A small monitoring device clipped to the pack reads
 
 **Why Notecard.** The lift is on a construction site that is unlikely to have public WiFi, and even if it does, the rental company's fleet app has to work identically at every job site — a residential project in rural Montana and a high-rise downtown. Cellular removes that dependency entirely: no network form, no AP to pair with, no IT ticket. But construction sites can also be in coverage gaps — in-building below grade, in mountain foothills, in rural areas where the crew has gone to break ground. That's where the [Skylo](https://www.skylo.tech/resources/geographical-coverage) satellite fallback earns its place: the same JSON note that normally travels over LTE-M can, transparently to the firmware, use the Notecard for Skylo's NTN (Non-Terrestrial Network) radio when cellular isn't reachable. The satellite link isn't the primary path — it's the insurance policy that makes the system work the same way at every job. The Notecard for Skylo integrates cellular, WiFi, and Skylo satellite on a single M.2 SoM, so there's no companion board to wire up and no secondary UART to manage.
 
-**Deployment scenario.** A sealed IP67 enclosure strapped to the battery pack housing or bolted to the machine frame near the pack, powered from the machine's 12V auxiliary circuit (derived internally from the main pack and available on most electric lifts as a utility supply). Two sensing leads run from the enclosure to the INA228 bus-voltage monitor, whose `VIN+` pad connects to the pack's positive terminal for high-side bus-voltage measurement; a single NTC probe wire runs to the pack housing; and, in field builds (`ENABLE_ACS758 1`), a separate ACS758 Hall-effect sensor connects inline on the main traction conductor for pack-current sensing. When the machine's BMS is CAN-accessible, an OBD-style cable runs to the machine's service port. No BMS modification, no charger modification, no customer involvement.
-
 <NewToBlues/>
+
+**Deployment scenario.** A sealed IP67 enclosure strapped to the battery pack housing or bolted to the machine frame near the pack, powered from the machine's 12V auxiliary circuit (derived internally from the main pack and available on most electric lifts as a utility supply). Two sensing leads run from the enclosure to the INA228 bus-voltage monitor, whose `VIN+` pad connects to the pack's positive terminal for high-side bus-voltage measurement; a single NTC probe wire runs to the pack housing; and, in field builds (`ENABLE_ACS758 1`), a separate ACS758 Hall-effect sensor connects inline on the main traction conductor for pack-current sensing. When the machine's BMS is CAN-accessible, an OBD-style cable runs to the machine's service port. No BMS modification, no charger modification, no customer involvement.
 
 ## 2. System Architecture
 
@@ -68,7 +68,6 @@ Here is a sample Note this device emits:
   "can_ok":         true
 }
 ```
-
 
 ## 4. Hardware Requirements
 

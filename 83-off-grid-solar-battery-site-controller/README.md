@@ -15,12 +15,12 @@ This project is a bank-level solar and battery monitoring solution — a Blues [
 
 **Why Notecard.** These sites are by definition off-grid *and* off-network. There is no building WiFi to connect to, no Ethernet jack in the enclosure, and no cellular router whose monthly bill someone else is paying. The Blues Notecard self-manages its radio session, draws microamp-range idle current between transmissions, and requires no site IT involvement to set up. Two SKUs seat in the same M.2 slot on the Notecarrier CX and run the same firmware without modification:
 
+<NewToBlues/>
+
 - **[Notecard Cell+WiFi (NOTE-MBGLW)](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/)** — LTE-M cellular with opportunistic WiFi fallback. The practical choice for bench validation and sites with adequate terrestrial coverage.
 - **[Notecard for Skylo (NOTE-NBGLWX)](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/)** — LTE-M cellular combined with [Skylo](https://www.skylo.tech/resources/geographical-coverage) Non-Terrestrial Network (NTN) satellite connectivity on a single card. The Notecard manages radio-mode selection internally; no firmware differences exist between the two SKUs. **Both antennas must be positioned outdoors with an unobstructed view of the sky**. See §4 and §4 for the mounting and enclosure-feedthrough requirements. The Notecard for Skylo is the primary production SKU for the truly remote towers, wilderness arrays, and high-altitude installations this use case targets.
 
 **Deployment scenario.** A Notecarrier CX mounted inside the existing site enclosure or a weatherproof addon box, powered from the site's 5V regulation bus or a small DC-DC converter off the main battery bus. Two short VE.Direct cables run from the Notecarrier CX dual-row header to the SmartShunt (battery shunt, usually mounted near the battery bank negative terminal) and to the SmartSolar MPPT controller (typically mounted on the enclosure wall). No changes to the Victron equipment, no interruption to the solar system.
-
-<NewToBlues/>
 
 ## 2. System Architecture
 
@@ -76,7 +76,6 @@ Here is a sample Note this device emits:
   "cs": 5
 }
 ```
-
 
 ## 4. Hardware Requirements
 
@@ -471,7 +470,6 @@ The voltage-divider standing current dominates — approximately **13–22 mAh/d
 A healthy Skylo trace on Mojo shows: flat **~350–380 µA baseline** (the +VBAT system idle floor), brief blips to ~6–8 mA every 15 minutes (host wake), and once per day a multi-stage radio burst — a ~30 mA plateau for ~60 seconds (GPS fix), followed by a 2–5 minute NTN session that includes a peak ~250–500 mA transmit burst (~20–45 seconds) visible as a sharp spike within a lower-current session envelope (~30–80 mA for the rest of the session). If the GPS acquisition stage takes minutes rather than seconds, the device is likely not in fixed-location mode (see Skylo deployment guidance above).
 
 Mojo is a **bench bring-up tool**, not a production sensor. Once a firmware revision passes the trace check, deployed units don't need it.
-
 
 A Notecarrier CX and Notecard pair with two Victron VE.Direct devices to turn an opaque off-grid power system into a continuously-monitored, remotely-observable asset. The device wakes every 15 minutes, reads battery SoC, current, temperature, and solar harvest in a few seconds, and goes back to sleep — accumulating a window of averages that flush to Notehub every four hours. A site going dark gets a warning Note via cellular before the battery drops too far to communicate, giving the operations team a fighting chance to dispatch before the outage. None of this requires any site networking, IT coordination, or infrastructure that wasn't already there — just a 5V supply and two short VE.Direct cables.
 

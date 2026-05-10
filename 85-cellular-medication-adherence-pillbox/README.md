@@ -18,13 +18,13 @@ Existing IoT pillboxes have tried to close this gap, and most fail in the same p
 
 **Why cellular-first.** The Notecard Cell+WiFi changes the deployment calculus. Cellular connectivity is already provisioned on the device — no router credentials, no smartphone, no IT ticket. The box works the moment it is placed on the patient's nightstand. WiFi remains available as an optional fallback at sites that can offer a nearby access point, but it is never a dependency. For the actual target demographic of chronic-disease patients — many of whom are elderly, live alone, or lack consistent technical support — this is the design decision that makes the device credible as a monitoring tool rather than a gadget. An **RPM** (remote patient monitoring) device that requires patient-side network administration isn't really a remote monitoring device; it's homework.
 
+<NewToBlues/>
+
 **Deployment scenario.** The device ships pre-provisioned: the Notecard's ProductUID is flashed at the pharmacy or care coordinator's office, and the patient only needs to plug in a USB charger (or replace the LiPo annually). The clinician views adherence events in Notehub and receives real-time alerts through a downstream route. No app installation, no WiFi onboarding, and no ongoing patient engagement with the device is required.
 
 **An important signal limitation.** The device reports compartment lid opens, not confirmed ingestion, and weekly tray-loading sessions by a caregiver or pharmacist produce events that are operationally indistinguishable from patient dose-taking opens. A full refill of the seven-day tray can set all seven bits in `daily_opens` in a single polling interval. Downstream workflow must account for this; see [§10](#10-limitations-and-next-steps) for operational mitigations.
 
 ---
-
-<NewToBlues/>
 
 ## 2. System Architecture
 
@@ -60,7 +60,6 @@ Here is a sample Note this device emits:
   "opened_this_poll": 8
 }
 ```
-
 
 ## 4. Hardware Requirements
 

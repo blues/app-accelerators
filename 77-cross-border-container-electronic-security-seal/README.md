@@ -10,12 +10,13 @@ This project is a tamper-evident electronic security seal for [supply chain trac
 
 ## 1. Project Overview
 
-
 **The problem.** An international container shipment touches dozens of parties: the shipper, the freight forwarder, the inland trucker, the port terminal, the ocean carrier, the customs broker, the destination trucker, and the consignee — and that's a short list. At each handoff, the container's physical integrity changes hands along with the paperwork, but the *proof* of that integrity does not. Seals are broken, reapplied, and sometimes falsified. Disputes over who opened a container, and when, are common and expensive. Regulators and industry standards bodies — CBP, EU customs, C-TPAT, ISO 17712 — are driving increasing audit and compliance pressure, and operators increasingly want electronic, time-stamped records that can demonstrate container integrity across every handoff. Paper logbooks and passive bolt seals cannot produce that record on demand.
 
 An electronic security seal that logs every door event, timestamps it, and transmits it to a cloud audit trail addresses the problem directly. The hard part has always been the network path: containers spend days in ports where WiFi and LTE are unreliable, weeks at sea where they are completely absent, and hours on trucks where they blink in and out of coverage. No single terrestrial network reaches the whole journey.
 
 **Why Notecard.** The [Notecard Cell+WiFi](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) paired with a [Starnote for Iridium](https://shop.blues.com/products/starnote?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) is specifically designed for this scenario. The Notecard (NOTE-NBGLW) combines LTE-M, NB-IoT, and GPRS global cellular with WiFi and an onboard GPS receiver. When cellular coverage disappears at sea, the Starnote for Iridium extends connectivity over Iridium's 66-satellite LEO constellation, which provides true pole-to-pole coverage with no gaps — the Arctic Northern Sea Route, the trans-Pacific, Asia-Europe, trans-Atlantic, and Antarctic supply chains are all reachable. That's three connection paths (cellular, WiFi, Iridium satellite) the containerized-cargo problem specifically requires, with one firmware API and one carrier board. The Notecard's planetary cellular roaming means no SIM management across jurisdictions; the Iridium fallback means notes queue reliably during any ocean or polar transit and flush once an Iridium session can be established; and the queuing-first architecture means no data is ever lost to a connectivity gap — the Notecard stores events in flash and transmits them when a window opens.
+
+<NewToBlues/>
 
 To be concrete about the two capabilities that make this possible: **planetary cellular roaming** eliminates the per-country SIM and carrier negotiation that makes traditional GSM-based seals impractical for multi-region deployments, and **Iridium LEO satellite fallback** provides the connection path that cellular simply cannot during open-ocean passages and polar voyages. The Starnote for Iridium includes its own Iridium-certified antenna that handles both satellite communication and GPS/GNSS — no separate GPS antenna is required.
 
@@ -25,10 +26,7 @@ To be concrete about the two capabilities that make this possible: **planetary c
 
 ---
 
-<NewToBlues/>
-
 ## 2. System Architecture
-
 
 ![System architecture: reed switch (A0) and break-wire loop (A1) → Notecarrier XI (Swan host) + Notecard Cell+WiFi + Starnote for Iridium + ATECC608A on Qwiic I²C → cellular / Iridium LEO → Notehub → routes](diagrams/01-system-architecture.svg)
 
@@ -44,9 +42,7 @@ When neither satellite nor cellular is reachable — below-deck stowage, contain
 
 ---
 
-
 ## 3. Technical Summary
-
 
 **Before you start:** You'll need a Notehub account (free at [notehub.io](https://notehub.io)), the hardware from §4, Arduino IDE or `arduino-cli`, and two libraries: Blues Wireless Notecard and SparkFun ATECCX08a Arduino Library. Install via Arduino Library Manager or: `arduino-cli lib install "Blues Wireless Notecard" && arduino-cli lib install "SparkFun ATECCX08a Arduino Library"`.
 
@@ -81,7 +77,6 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Blues Swan](https://shop.blues.com/products/swan?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/feather-mcus/swan/)) | 1 | Feather-compatible STM32L4 host MCU from Blues. Plugs into the Notecarrier XI's Feather socket. Communicates with the Notecard over I²C. Programmed via the STM32 Arduino core or PlatformIO; no external programmer needed — ST-Link is built into the carrier board. |
@@ -101,7 +96,6 @@ Here is a sample Note this device emits:
 ---
 
 ## 5. Wiring and Assembly
-
 
 ![Wiring: reed switch (NC) on A0, break-wire loop on A1 → Notecarrier XI (Swan host); ATECC608A Qwiic breakout on I²C; cellular antenna on u.FL; Iridium+GPS combo antenna on Starnote u.FL; LiPo battery (Mojo inline for bench) on +VBAT](diagrams/02-wiring-assembly.svg)
 
@@ -146,7 +140,6 @@ Mount the enclosure on the container door latch side, approximately 150 mm from 
 ---
 
 ## 6. Notehub Setup
-
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) (e.g. `com.your-company.your-name:container-seal`) and paste it into the `PRODUCT_UID` define in `firmware/container_seal/container_seal.ino`.
 
@@ -231,7 +224,6 @@ Four Notefiles matter for this project:
 ---
 
 ## 7. Firmware Design
-
 
 Five source files:
 - [`firmware/container_seal/container_seal.ino`](firmware/container_seal/container_seal.ino) — main sketch: state management, sleep/wake cycle, GPIO reads, signing calls, scheduling logic.
@@ -520,7 +512,6 @@ for (;;) {
 
 ## 8. Data Flow
 
-
 ![Data flow: reed switch (A0) and break-wire (A1) sampled every 30 seconds → evaluate → ATECC608A signs event/heartbeat → seal_event.qo breach/reseal/seal-break (sync:true), seal_sig_full.qo full sig (cellular), seal_heartbeat.qo (batched), audit-gap (sync:true, unsigned) → Notehub → routes](diagrams/03-data-flow.svg)
 
 **Collected.** Every 30 seconds: door-state reed switch (A0, one `digitalRead`) and seal-wire continuity loop (A1, one `digitalRead`). Every 6 hours: GPS fix (handled autonomously by the Notecard). On state change and on heartbeat schedule: battery voltage via `card.voltage`.
@@ -538,7 +529,6 @@ for (;;) {
 ---
 
 ## 9. Validation and Testing
-
 
 **Expected cadence after deployment.** On a healthy, sealed container: one `seal_heartbeat.qo` created every 6 hours (queued locally), delivered in a batch at each 12-hour outbound sync session; zero `seal_event.qo` events; and `_session.qo` events at the outbound sync interval (cellular or satellite). The first `seal_heartbeat.qo` is created within 6 hours of first power-on but is not visible in Notehub until the next outbound sync — up to 12 hours after power-on at the default `outbound_min=720` setting. For commissioning, set `heartbeat_interval_min=15`, `outbound_min=60`, **and** `inbound_min=60` in the Fleet environment (or trigger a manual sync from the Notehub in-browser terminal with `hub.sync`). **A power cycle alone does not cause the device to fetch fresh env vars** — the Notecard reads whatever env vars it already has cached; the updated values only arrive on the next inbound sync. The full worst-case path for a heartbeat to appear in Notehub after changing env vars is: (1) wait up to `inbound_min` for the device to complete an inbound sync and pull the new values (or trigger one manually with `hub.sync`); (2) wait up to `heartbeat_interval_min` for the next heartbeat to be created and queued on the Notecard; (3) wait up to `outbound_min` for the next outbound session to deliver it to Notehub. With `inbound_min=60`, `heartbeat_interval_min=15`, and `outbound_min=60`, worst-case visibility is up to 135 minutes — not a few minutes. Triggering a manual `hub.sync` from the Notehub in-browser terminal skips step (1) and delivers the new env vars immediately, reducing worst-case to about 75 minutes.
 
@@ -606,7 +596,6 @@ If a problem isn't on this list, the [Blues community forum](https://discuss.blu
 
 ## 10. Limitations and Next Steps
 
-
 **Simplified for this reference design:**
 
 - **30-second poll latency.** The host wakes every 30 seconds to check the door state; a breach that opens and closes faster than 30 seconds (extremely unlikely for a container door, but theoretically possible) could be missed. On the Notecarrier XI, `ATTN` is a Notecard-driven output that power-gates the host — it is not a GPIO input and cannot be driven by an external signal such as a reed switch. A production design targeting sub-second breach capture could add an external SR latch (e.g., a 74HC00 NAND pair configured as a Set-Reset latch) powered from the always-on LiPo rail: the reed switch sets the latch on opening, and the host reads and clears it on the next scheduled wake, ensuring no transition is missed even if the door opens and closes between wakes. Alternatively, `check_interval_sec` can be reduced to shorten the detection window at the cost of higher average current. The 30-second default is a safe and practical compromise for the POC.
@@ -632,7 +621,6 @@ If a problem isn't on this list, the [Blues community forum](https://discuss.blu
 ---
 
 ## 11. Summary
-
 
 A Notecarrier XI, a Notecard Cell+WiFi, a Starnote for Iridium, a magnetic reed switch, a break-wire seal-continuity loop, and an ATECC608A hardware secure element are the components that close the tamper-evidence gap in international containerized cargo. The Blues Swan MCU wakes every 30 seconds, reads two independent sensors, signs the event payload with a hardware-rooted ECC P-256 key held inside the ATECC608A secure element that never leaves the chip, and goes back to sleep — drawing a fraction of a milliamp between samples. The Notecard sits quietly in 18 µA idle until it's time to flush Notes to Notehub, then fires up its cellular radio or hands off to the Starnote for an Iridium session, transmits, and powers back down. Breach and seal-wire events bypass the outbound schedule via `sync:true`, reaching Notehub within seconds in port or within minutes over Iridium anywhere on the globe.
 

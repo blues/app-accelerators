@@ -14,7 +14,6 @@ This project is an [energy monitoring](https://blues.com/solutions-energy-monito
 
 ## 1. Project Overview
 
-
 **The problem.** A distribution transformer is the last powered device between the high-voltage grid and a customer's service entrance. Utilities typically instrument their substations carefully — real-time SCADA, demand data, fault recorders, but the transformer hanging on the pole outside a neighborhood has none of that. The utility knows what's flowing into the substation; it doesn't know what's flowing through any individual transformer until something fails.
 
 That ignorance is expensive. Distribution transformers age and fail for identifiable, preventable reasons: sustained overloading (insulation degrades with each degree of excess temperature), phase imbalance (uneven single-phase loads on a three-phase transformer create circulating currents and localized hot spots), and thermal stress from the combination of high ambient temperature and high loading. None of these conditions are sudden. They develop over hours to days, and a transformer that is running hot on a Tuesday will fail during Friday's peak demand — taking down a neighborhood and requiring an emergency truck roll that costs many times what proactive replacement would have.
@@ -22,6 +21,8 @@ That ignorance is expensive. Distribution transformers age and fail for identifi
 This project puts an end to that ignorance. A handful of sensors clamped to the transformer secondary, a [Notecard](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) for the uplink, and a threshold-checking firmware loop turn an opaque pole-top asset into a continuously-monitored piece of equipment that tells the operations center what's happening in real time and pages the right people before the neighborhood goes dark.
 
 **Why Notecard.** Utility poles are among the least connected pieces of infrastructure there is. They have no Ethernet, no building WiFi, and often nothing except the transformer's own secondary power. Cellular is the only practical backhaul. The Notecard Cell+WiFi variant (MBGLW) carries a prepaid SIM with 500 MB of data and 10 years of service — no per-site activation, no carrier contracts to negotiate, no IT ticket to file for network access. A utility deploying these monitors across its service territory can use a single SKU on every pole in every neighborhood, from dense urban blocks to rural feeders. The Notecard's automatic carrier selection handles varied network conditions without firmware changes.
+
+<NewToBlues/>
 
 The power picture tells the same story. Cellular removes the site infrastructure dependency entirely. The Notecard Cell+WiFi idles at [~18 µA @ 5V](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) between samples while the host MCU is fully powered off, and the 5-minute sample / hourly transmit cadence means the radio wakes for roughly 20–30 seconds per hour — well within what a small AC/DC supply tapped from the transformer's own secondary can comfortably sustain.
 
@@ -33,10 +34,7 @@ CT installation is **non-invasive**: the split-core sensors clamp directly onto 
 
 ---
 
-<NewToBlues/>
-
 ## 2. System Architecture
-
 
 ![System architecture: three split-core CTs and MCP9808 → Notecarrier CX with Cygnet host → Notecard MBGLW → cellular/WiFi → Notehub → routes to OMS/paging and historian](diagrams/01-system-architecture.svg)
 
@@ -51,7 +49,6 @@ CT installation is **non-invasive**: the split-core sensors clamp directly onto 
 ---
 
 ## 3. Technical Summary
-
 
 **What you need:**
 - Notecarrier CX + Notecard Cell+WiFi (MBGLW)
@@ -91,7 +88,6 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with onboard Cygnet STM32L4 host — three ADC-capable analog pins for the CT channels, I²C for the temperature sensor, and ATTN-based host power control for deep sleep. No separate MCU needed. |
@@ -124,7 +120,6 @@ All Blues hardware ships with an active SIM including 500 MB of data and 10 year
 ---
 
 ## 5. Wiring and Assembly
-
 
 ![Wiring diagram: CT bias circuits (22 Ω burden + 10 kΩ divider + 10 µF cap) on A0/A1/A2; MCP9808 on I²C; 120 VAC → slow-blow fuse → IRM-10-5 → Mojo (bench) → +VBAT; outdoor SMA antenna via u.FL pigtail](diagrams/02-wiring-assembly.svg)
 
@@ -204,7 +199,6 @@ Clamp each CT around a single secondary conductor, never around two conductors s
 
 ## 6. Notehub Setup
 
-
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) (format: `com.your-company.your-name:xfmr-monitor`) and set it as `PRODUCT_UID` in the firmware before flashing.
 
 2. **Claim the device.** Power the assembled unit. On first cellular connect, the Notecard associates with your project automatically — no manual claim required. The device appears in the **Devices** tab within a minute or two.
@@ -252,7 +246,6 @@ Clamp each CT around a single secondary conductor, never around two conductors s
 ---
 
 ## 7. Firmware Design
-
 
 The firmware lives in the sketch directory [`firmware/transformer_load_monitor/`](firmware/transformer_load_monitor/) and is split across three files that must be compiled together:
 
@@ -452,7 +445,6 @@ NotePayloadSaveAndSleep(&out, cfg.sample_interval_sec, NULL);
 
 ## 8. Data Flow
 
-
 ![Data flow: three CT channels sampled via two-pass ADC RMS → accumulate into rolling window → three threshold rules → xfmr_alert.qo (sync:true, immediate) and xfmr_summary.qo (hourly template-encoded) → Notehub routes to OMS/paging and historian; state persisted via NotePayloadSaveAndSleep between wakes](diagrams/03-data-flow.svg)
 
 Every 5 minutes (`sample_interval_sec`), the host wakes, reads the configured CT channels (A0 always; A1 when `phase_count≥2`; A2 when `phase_count=3`) and the temperature sensor, and evaluates three threshold rules against the freshly-read values and accumulated history.
@@ -473,7 +465,6 @@ Every 5 minutes (`sample_interval_sec`), the host wakes, reads the configured CT
 ---
 
 ## 9. Validation and Testing
-
 
 **Expected steady-state behavior.** On a healthy, lightly-loaded transformer with well-balanced phases, the **Events** tab in Notehub should show one `xfmr_summary.qo` per hour and zero `xfmr_alert.qo` events. The serial monitor should print `[sample]` lines every 5 minutes and `[summary] queued` once per hour (the Note reaches Notehub on the next outbound sync).
 
@@ -503,7 +494,6 @@ Mojo is a bench-validation and regression tool — it is not required in product
 
 ## 10. Troubleshooting
 
-
 | Symptom | Cause | Solution |
 |---|---|---|
 | Serial console shows `[sample]` lines but no `[summary]` lines after 60+ minutes | Summary not being queued | Check that `summary_interval_min` env var is set (default 60). If you see `[summary] queued` but no Notehub events, the Notecard is not syncing; see "No events in Notehub" row below. |
@@ -516,7 +506,6 @@ Mojo is a bench-validation and regression tool — it is not required in product
 ---
 
 ## 11. Limitations and Next Steps
-
 
 **Simplified for this POC:**
 
@@ -545,7 +534,6 @@ Mojo is a bench-validation and regression tool — it is not required in product
 ---
 
 ## 12. Summary
-
 
 Utilities have had substation instrumentation for decades and transformer instrumentation for almost none of that time. The gap between where the data ends and where the equipment is has been filled, historically, by scheduled inspection cycles and reactive repair. This project bridges that gap with hardware that fits in a belt pouch and a firmware package compact enough for a single sketch directory.
 

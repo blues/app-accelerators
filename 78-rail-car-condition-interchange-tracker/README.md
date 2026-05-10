@@ -12,12 +12,13 @@ This project is a [supply chain tracking](https://blues.com/solutions-supply-cha
 
 ## 1. Project Overview
 
-
 **The problem.** A leased tank car or intermodal flat leaves a chemical plant in Texas headed for a refinery in New Jersey. It crosses four railroads, rolls through a classification yard in Tennessee for three days, then moves overnight to a second yard before final delivery. The lessor has no idea where it is unless the lessee files an EDI interchange report — which may or may not be accurate, and which tells the lessor nothing about *condition*. Did the car take a hard coupling impact? Is a fitting pressure trending down, suggesting a valve leak? Was the car decoupled from its consist somewhere in Iowa at 2 AM? Without on-car telemetry, none of those questions have timely answers.
 
 Rail car lessors operate fleets worth hundreds of millions of dollars with essentially no real-time visibility below the interchange report level. That gap drives everything from underutilized assets (a car in a yard for two weeks that nobody can locate) to safety incidents discovered only after delivery.
 
 **Why Notecard for [Skylo](https://www.skylo.tech/resources/geographical-coverage).** Rail corridors are the canonical example of connectivity infrastructure that doesn't follow population. For every mile of track through Chicago or Houston, there are fifty through Montana, the Appalachian plateau, or the Texas Panhandle where cellular coverage is thin to nonexistent. A device that relies on LTE alone will go dark for hours or days at a time in exactly the stretches where condition changes are most likely to go undetected. Rail cars have no access points to pair to — WiFi has no role in this deployment.
+
+<NewToBlues/>
 
 The Notecard for Skylo (NOTE-NBGLWX) solves the coverage gap with a single M.2 module that carries LTE-M/NB-IoT/GPRS for cellular coverage and Skylo NTN (Non-Terrestrial Network) satellite for everywhere else. The Notecard orchestrates the cellular-to-satellite fallback autonomously — the host firmware doesn't need to know which transport is in use. Notes accumulate in Notecard flash during the long dead zones between windows, then flush the moment any transport opens. For assets that might spend days out of cellular range and weeks in a yard, that queue-and-forward model is load-bearing, not a nice-to-have.
 
@@ -25,10 +26,7 @@ This architecture maps directly to Blues' [supply chain tracking](https://blues.
 
 **Deployment scenario.** A weatherproof NEMA 4X enclosure bolted to the car's end-sill or side-sill, powered by a small rooftop solar panel through a solar LiPo charge controller that safely charges a lithium-ion polymer battery. A [Blues Scoop](https://shop.blues.com/products/scoop?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) lithium-ion capacitor buffer sits inline between a 5 V regulated supply and the Notecarrier VBAT rail, smoothing out the high-current bursts that cellular and especially satellite transmission demand; without it, a modest LiPo under a weak winter sun can brown out the radio mid-session. The Skylo-certified LTE/NTN antenna (included with the Notecard for Skylo) and a passive GNSS antenna mount flush to the roof with a clear sky view. A magnetically actuated reed switch attaches near the coupler knuckle, with a matching magnet mounted to the adjacent coupler structure. On TANK_CAR builds, the MPRLS connects to a low-pressure vent or fitting port on the car body.
 
-<NewToBlues/>
-
 ## 2. System Architecture
-
 
 **Device-side responsibilities.** The Cygnet STM32L433 host on the Notecarrier CX wakes every 15 minutes (via [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) sleep), reads sensors, scores shock events, detects coupler-state edges, evaluates three alert conditions in standard builds (seven in TANK_CAR builds), and queues Notes to the Notecard over I²C. Between wakes, the host is fully powered off — the Notecard holds the persistent state struct in its own flash and rehydrates it on the next ATTN fire.
 
@@ -41,7 +39,6 @@ This architecture maps directly to Blues' [supply chain tracking](https://blues.
 ![System architecture: on-car sensors → Notecarrier CX with Cygnet host + Notecard for Skylo → LTE-M/NB-IoT + Skylo NTN satellite → Notehub → routes](diagrams/01-system-architecture.svg)
 
 ## 3. Technical Summary
-
 
 **What you'll have when you're done:** a weatherproof, solar-powered electronics sidecar that mounts to a freight car, samples sensors every 15 minutes, scores shock events, detects coupler state changes, and reports GPS location and condition through Notehub — automatically using cellular when available, switching to satellite in remote areas, and queuing everything offline until connectivity returns.
 
@@ -70,7 +67,6 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with onboard Cygnet STM32L433 host — no separate MCU needed. I²C, six analog inputs, nine digital I/O, and M.2 Notecard slot. See the [Notecarrier CX datasheet](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/). |
@@ -94,7 +90,6 @@ Here is a sample Note this device emits:
 The Notecard for Skylo ships with bundled cellular and satellite connectivity — 500 MB cellular data and 10 KB satellite data included, with no activation fees and no monthly commitment. The Notecarrier CX is a carrier board and does not contain a SIM.
 
 ## 5. Wiring and Assembly
-
 
 All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard for Skylo seats into the carrier's M.2 slot; its MAIN u.FL port connects to the included Skylo-certified LTE/NTN antenna, and its GPS u.FL port connects to the separate GNSS antenna via the u.FL-to-SMA pigtail adapter listed in the BOM. The Mojo sits inline between Scoop J2 and the Notecarrier `+VBAT` during bench testing (remove for field deployment).
 
@@ -164,7 +159,6 @@ The MPRLS breakout has a 1/8 NPT threaded port on the sensor body. For field dep
 
 ## 6. Notehub Setup
 
-
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) (format: `com.your-company.your-name:rail-tracker`) and paste it into the `PRODUCT_UID` macro in `firmware/rail_car_tracker/rail_car_tracker_helpers.h`.
 
 2. **Claim the Notecard.** Power the assembled unit. The Notecard for Skylo attempts cellular connection on first boot and associates itself with the project automatically. The device appears in the **Devices** tab within a few minutes. If cellular coverage is unavailable at the bench, wait until an antenna is connected and the unit has sky view.
@@ -233,7 +227,6 @@ In **Devices → [device] → Events** (or **Project → Devices → Events** de
   This provides downstream geofencing services with both position and operational context (moving/coupled) needed to detect railroad boundary crossings and coupler changes at interchange points. GPS coordinates are injected from the Notecard's last known fix; no host query is needed.
 
 ## 7. Firmware Design
-
 
 **Three-file sketch.** All three files must reside in the same sketch directory to compile:
 
@@ -477,7 +470,6 @@ if (!sleepOk) { /* fallback card.attn sleep */ }
 
 ## 8. Data Flow
 
-
 ![Data flow: sensors sampled every 15 minutes → three standard + four TANK_CAR edge rules → railcar_alert.qo (hub.sync, immediate), railcar_status.qo (every 4 h, compact template), railcar_location.qo (motion edges + every 30 minutes) → Notehub → routes](diagrams/03-data-flow.svg)
 
 **Collected every `sample_interval_min` (default 15 minutes):** coupler state (boolean), peak resultant G in the sampling burst, Notecard motion state (moving/stopped from internal accelerometer); TANK_CAR builds also collect low-pressure fitting absolute pressure (PSI) and DS18B20 cargo temperature (°C).
@@ -501,7 +493,6 @@ if (!sleepOk) { /* fallback card.attn sleep */ }
 | `tank_temp_low` / `tank_temp_high` | DS18B20 cargo temperature outside `tank_temp_min_c` / `tank_temp_max_c` | Edge-detected: fires once when condition is first observed; suppressed on subsequent samples while it persists; re-arms when temperature returns inside range | TANK_CAR only |
 
 ## 9. Validation and Testing
-
 
 **Expected steady-state cadence.** A correctly installed unit generates one `railcar_status.qo` every `report_interval_min` (default 4 hours) and delivers it on the next scheduled sync session. At normal battery voltage over cellular, generation and delivery are both on a 4-hour cadence. At low voltage, the sync interval stretches to 8 hours and notes may queue for that duration before delivery. `railcar_location.qo` fires on every detected motion-state-edge and, while moving, every `location_interval_min` minutes (default 30 minutes). Motion-state edges are detected on the host's 15-minute wake cadence — a stopped ↔ moving transition can be reported up to `sample_interval_min` minutes after it occurs; once detected, a `hub.sync` is requested immediately within the same wake. To reduce the detection window, lower `sample_interval_min` (via env var) at the cost of battery life. Zero `railcar_alert.qo` events is normal during smooth transit. During initial commissioning, review the `shock_peak_g` values in the first several `railcar_status.qo` notes to establish the car's baseline vibration signature, then tune `shock_threshold_g` and the pressure-drop threshold accordingly. The firmware does not implement automatic calibration or baseline learning — commissioning-time threshold tuning is a manual step using observed data.
 
@@ -541,7 +532,6 @@ Mojo is a bench-validation and per-firmware-revision regression tool. Field unit
 
 ## 10. Troubleshooting
 
-
 | Symptom | Diagnosis | Recovery |
 |---|---|---|
 | Device does not appear in Notehub **Devices** tab after 5 minutes | PRODUCT_UID not set, or set incorrectly. The Notecard claims itself to a ProductUID on first boot over cellular. | Check `firmware/rail_car_tracker/rail_car_tracker_helpers.h` line 40; confirm `PRODUCT_UID` matches **Project Settings → ProductUID** in Notehub. Re-flash. If cellular is unavailable at bench, the Notecard cannot claim itself — connect the LTE/NTN antenna and move near a window, or proceed indoors if NTN is available in your region. |
@@ -555,7 +545,6 @@ Mojo is a bench-validation and per-firmware-revision regression tool. Field unit
 | Rapid satellite session bursts (1–4 minutes high-current events) | Cellular coverage is lost; the Notecard is falling back to Skylo NTN. This is expected and correct behavior. | No action needed — this is the reference design working as intended. Monitor satellite data consumption in Notehub to confirm you're within your NTN budget. Validate compact templates are being used before the first `note.add` call — a non-compact Note over NTN costs 3–10× more bytes. |
 
 ## 11. Limitations and Next Steps
-
 
 **Simplified for this POC:**
 
@@ -579,6 +568,5 @@ Mojo is a bench-validation and per-firmware-revision regression tool. Field unit
 - Feed those interchange events to an AAR/Railinc EDI gateway (Umler or Railinc platforms) for automated interchange reporting.
 
 ## 12. Summary
-
 
 Rail cars are among the most asset-intensive, least-connected freight assets in the supply chain. A leased tank car can disappear into the railroad network for weeks; the lessor's best data point is an interchange report filed by someone else. This reference design puts the car itself on the network — sampling conditions every quarter-hour, scoring every coupling impact, and reporting location and status through whatever radio window is available. The continuous GPS track, coupler-state transitions, and motion events that reach Notehub are precisely the inputs a downstream geofencing service needs to detect railroad boundary crossings and generate interchange records; the geofencing and EDI integration steps that convert that telemetry into formal interchange events are production work outlined in [§11 Production Next Steps](#11-limitations-and-next-steps). Status Notes are generated every 4 hours and delivered on the next sync session — within 2–4 hours over cellular at good charge, or the next time the Notecard can establish an NTN session across the open Nebraska Sandhills. Location notes flow at every motion-state edge and on a configurable in-motion cadence (default 30 minutes), giving downstream geofencing services a dense-enough position stream to detect railroad territory boundary crossings. The key insight is that the Notecard for Skylo doesn't ask the firmware to choose — it manages cellular and satellite autonomously, queuing everything that can't transmit immediately and flushing it when connectivity returns. For an asset class where "no news" has historically meant "no visibility," that queue-and-forward guarantee is the entire value proposition.

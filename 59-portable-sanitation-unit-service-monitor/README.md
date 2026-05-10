@@ -10,7 +10,6 @@ This project is a [truck roll reduction](https://blues.com/truck-roll-reduction/
 
 ## 1. Project Overview
 
-
 **The problem.** Portable restroom companies — and the construction sites, outdoor event venues, and municipalities that rely on them — all share the same dirty secret about service scheduling: it's a guess. A unit at a lightly-attended weekend farmers market gets pumped on the same Monday-Wednesday-Friday schedule as the one chained to a pile of rebar at a hundred-person job site. The result is predictable in both directions: trucks roll to units that are a quarter full, burning fuel and driving up per-service cost; other units overflow on the busiest Saturday of the year, creating a safety hazard and an experience nobody forgets. Neither outcome is caused by a lack of data — the data is right there in the tank. What's missing is any way to read it remotely.
 
 This project is that reader. A compact weatherproof module mounts near the unit's holding tank, with a sealed ultrasonic sensor probe mounted in the tank roof. It reports holding-tank fill level to the service provider's routing system through Blues Notehub. The dispatcher looks at a map of units ranked by fill percentage, sends a truck to the two that are at 80%, and leaves the other eight alone. The result is fewer unnecessary truck rolls and fewer overflows — which is exactly what the phrase "truck roll reduction" means in practice.
@@ -19,12 +18,11 @@ Blues has already demonstrated this works at scale: Satellite Industries, one of
 
 **Why Notecard.** Construction sites and outdoor event venues have exactly one thing in common: no usable WiFi. An active job site with forty porta-potties and no IT department isn't going to provision forty per-device WiFi credentials, and even if it would, the units move to a different site next month. Cellular removes the dependency on site infrastructure entirely — each unit authenticates once and connects anywhere there is LTE-M or NB-IoT coverage. The Notecard Cell+WiFi variant retains WiFi as an opportunistic fallback for fixed installations (a sports stadium's permanent restroom trailers, a county fairground) without changing the SKU or the firmware. Blues ships each Notecard with a prepaid global SIM, so a service company can stock a single part number, drop it in a unit, and have it connected the moment it powers on — no carrier agreements to negotiate, no per-unit provisioning scripts to run.
 
-**Deployment scenario.** A small weatherproof enclosure mounts near the tank, powered by a 3.7V LiPo cell. For bench/POC evaluation, the MaxBotix HRXL-MaxSonar-WR (MB7389) sensor probe is IP67-sealed and inserts through a threaded fitting in the tank roof — the sensor electronics are all contained inside the sealed probe housing, so no acoustic aperture is needed between the enclosure interior and the tank headspace. Note that IP67 is a mechanical ingress rating, not a hazardous-location certification; see §4 and the safety guidance in §5 before planning any real installation in a holding-tank environment. Field deployments must use a sensor arrangement that keeps all energized electronics outside the hazardous-atmosphere zone (see §4). The unit is essentially self-contained: install it, associate it with a fleet in Notehub, and it begins sampling immediately on first power-on. The first hourly summary arrives in Notehub within about an hour by default; if the tank is already above the fill threshold when the unit is first powered, a `fill_high` alert fires before that first window closes and arrives within a typical LTE session-establishment window (~15–60 seconds). When the unit moves to a new site, nothing changes — cellular follows it. See §6 for initial Notehub configuration.
-
 <NewToBlues/>
 
-## 2. System Architecture
+**Deployment scenario.** A small weatherproof enclosure mounts near the tank, powered by a 3.7V LiPo cell. For bench/POC evaluation, the MaxBotix HRXL-MaxSonar-WR (MB7389) sensor probe is IP67-sealed and inserts through a threaded fitting in the tank roof — the sensor electronics are all contained inside the sealed probe housing, so no acoustic aperture is needed between the enclosure interior and the tank headspace. Note that IP67 is a mechanical ingress rating, not a hazardous-location certification; see §4 and the safety guidance in §5 before planning any real installation in a holding-tank environment. Field deployments must use a sensor arrangement that keeps all energized electronics outside the hazardous-atmosphere zone (see §4). The unit is essentially self-contained: install it, associate it with a fleet in Notehub, and it begins sampling immediately on first power-on. The first hourly summary arrives in Notehub within about an hour by default; if the tank is already above the fill threshold when the unit is first powered, a `fill_high` alert fires before that first window closes and arrives within a typical LTE session-establishment window (~15–60 seconds). When the unit moves to a new site, nothing changes — cellular follows it. See §6 for initial Notehub configuration.
 
+## 2. System Architecture
 
 ![System architecture: MB7389 ultrasonic level sensor → Notecarrier CX with Cygnet host and Notecard MBGLW → cellular/WiFi → Notehub → dispatch / analytics / billing](diagrams/01-system-architecture.svg)
 
@@ -37,7 +35,6 @@ Blues has already demonstrated this works at scale: Satellite Industries, one of
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route configuration is project-specific. See the [Notehub routing documentation](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
 
 ## 3. Technical Summary
-
 
 **What you'll have when done:** A live Notecard sending fill-level readings and alerts to [Notehub](https://notehub.io) every hour, routing to your backends via HTTP, MQTT, AWS, or other integrations of your choice.
 
@@ -71,7 +68,6 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-
 <Warning>
 
 ⚠️ **Field-deployment sensor selection.** Portable toilet holding tanks accumulate flammable and toxic gases (methane, H₂S, NH₃). Any sensor installed in or immediately adjacent to the tank headspace must be certified for the applicable hazardous-location standard at your site — ATEX Zone 0/1, IECEx, NEC Class I Division 1, or equivalent — or the installation geometry must keep **all** energized electronics outside the hazardous zone entirely. The [MaxBotix MB7389](https://maxbotix.com/products/mb7389) specified below is **bench/POC-only**: it is IP67-sealed but carries no hazardous-location certification. See §5 for the distinction between the bench/POC assembly and a field-safe deployment path.
@@ -93,7 +89,6 @@ Here is a sample Note this device emits:
 All Blues hardware ships with a prepaid SIM including 500 MB of data and 10 years of service — no carrier agreements, no per-unit recurring SIM fees.
 
 ## 5. Wiring and Assembly
-
 
 ![Wiring: MB7389 ultrasonic sensor PWM to D5 with Taoglas FW.10.0113 internal flex antenna; LiPo 3.7 V → Mojo (bench) → Notecarrier +VBAT; ATTN ↔ EN jumper required for sleep gating](diagrams/02-wiring-assembly.svg)
 
@@ -136,7 +131,6 @@ No level shifting required: the sensor operates at 3.3 V when powered from +3V3_
 
 ## 6. Notehub Setup
 
-
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/sanitation_unit_monitor/sanitation_unit_monitor.ino` as `PRODUCT_UID`.
 
 2. **Claim the Notecard.** Power the unit; on its first cellular session the Notecard associates with the project automatically. The unit appears in the Notehub device list within a few minutes.
@@ -159,7 +153,6 @@ No level shifting required: the sensor operates at 3.3 V when powered from +3V3_
 5. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `sanitation_alert.qo` (dispatch-critical, real-time delivery to a routing or work-order system) and a second for `sanitation_summary.qo` (long-term store for utilization analysis, route optimization, and billing evidence). Keeping the two Notefiles separate at the source means alerts can be delivered to a field dispatch tool while summaries accumulate in a data warehouse, without any filter logic in the route.
 
 ## 7. Firmware Design
-
 
 Single sketch: [`firmware/sanitation_unit_monitor/sanitation_unit_monitor.ino`](firmware/sanitation_unit_monitor/sanitation_unit_monitor.ino).
 
@@ -321,7 +314,6 @@ for (uint8_t i = 0; i < 3; i++) {
 
 ## 8. Data Flow
 
-
 ![Data flow: 5-min sample of ultrasonic distance → median-of-3 fill % → fill_high rule with 4-hr cooldown → sanitation_alert.qo (sync:true) and sanitation_summary.qo (hourly templated) → Notehub routes](diagrams/03-data-flow.svg)
 
 **Collected.** Every `sample_interval_sec` (default 5 minutes): distance from sensor to waste surface (cm); derived fill percentage (0–100%).
@@ -338,7 +330,6 @@ for (uint8_t i = 0; i < 3; i++) {
 - `fill_high` — level alarm: fires whenever `fill_pct >= fill_alert_pct` (default 75%) and at least 4 hours (`ALERT_COOLDOWN_SEC`) have elapsed since the previous alert. There is no edge-detection or cleared-condition logic — as long as the tank stays above threshold, an alert fires approximately once every 4 hours. A serviced tank stops generating alerts only because subsequent fill readings fall below the threshold.
 
 ## 9. Validation and Testing
-
 
 **Expected steady-state cadence.** A unit in the field with a healthy sensor and normal usage generates one `sanitation_summary.qo` Note per hour and zero `sanitation_alert.qo` Notes.
 
@@ -375,7 +366,6 @@ If the cumulative mAh grows continuously at a high rate between expected cellula
 
 ## 10. Troubleshooting
 
-
 | Symptom | Most likely cause | Fix |
 |---------|-------------------|-----|
 | Device never appears in Notehub | ProductUID not set in sketch, or copied incorrectly | Double-check `PRODUCT_UID` in the .ino file. Reflash. Wait 2–3 minutes for first claim to reach Notehub. Check your Notehub project list to confirm you're looking in the right project. |
@@ -386,7 +376,6 @@ If the cumulative mAh grows continuously at a high rate between expected cellula
 | Environmental variable change takes hours to apply | Default inbound sync is 6 hours (360 minutes) | Temporarily lower `inbound_interval_min` to 60 in fleet environment variables; once the device picks up the new value, future changes propagate at the new cadence. Remember to reset it to 360 after commissioning. |
 
 ## 11. Limitations and Next Steps
-
 
 **Simplified for the POC:**
 
@@ -414,7 +403,6 @@ If the cumulative mAh grows continuously at a high rate between expected cellula
 - **Battery service as a truck-roll driver.** The deployment model assumes the LiPo is recharged during routine pump-out visits. If the validated whole-system battery life (measured with Mojo — see §11) is shorter than the target pump-out interval, battery maintenance requires its own truck roll — the opposite of what this system is designed to provide. Mitigations: use a larger cell (6 000 mAh or higher) sized to outlast the longest expected pump-out interval; add a Blues Scoop solar charger for units in high-sun outdoor deployments; or ensure a USB-C charge port on the enclosure is accessible during every pump-out so recharge and service happen in the same visit.
 
 ## 12. Summary
-
 
 At its core, this is a simple problem with a surprisingly durable solution: mount a level sensor above the waste and let fill percentage drive the service call. The on-device alert fires on fill percentage alone — one threshold, one alert type, one dispatch trigger. What makes the problem non-trivial in practice is the deployment environment — no WiFi, no fixed power, constant site changes, hundreds of units across a region, and a service company whose profit margin depends on not rolling a truck unnecessarily. The Notecard Cell+WiFi handles the connectivity problem with a single SKU that follows the unit to every job site with no provisioning overhead. The Notecarrier CX + LiPo handles the power problem with a deep-sleep pattern designed to minimize draw between wakes — validate the whole-device current with Mojo before sizing a battery for production (see §9). Notehub handles the fleet management problem with per-fleet environment variables that let operators calibrate tank geometry and service thresholds without reflashing firmware. The bench/POC assembly uses a MaxBotix MB7389 to demonstrate the full firmware and data flow; a field deployment replaces it with an intrinsically safe certified level sensor selected for the applicable hazardous-area classification (see §4 and §11). What's left is straightforward sensor integration and a simple threshold rule — the kind of problem an IoT engineer can have running on actual hardware within a day.
 

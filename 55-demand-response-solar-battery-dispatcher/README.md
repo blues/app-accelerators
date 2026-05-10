@@ -12,7 +12,6 @@ This project is an [energy savings](https://blues.com/energy-savings/) reference
 
 ## 1. Project Overview
 
-
 **The problem.** Commercial solar-plus-storage systems are a compelling economics story on paper: sell excess solar generation at peak rates, cover load from the battery so you don't draw from the grid during expensive peak windows, and participate in utility DR programs that pay you to curtail export or reduce load on short notice. The value is real, but realizing it requires a reliable, low-latency control channel between the utility signal and the physical system sitting on the roof or in the equipment yard.
 
 That's where most deployments hit the wall. The inverter and **battery management system** (**BMS**) speak Modbus — an industrial serial protocol developed in 1979 that remains the lingua franca of commercial power electronics, and that bus sits in an outdoor equipment cabinet or a rooftop shed with no direct connection to the building's IT network. Even when WiFi does reach the equipment, the solar asset is often owned by a third-party **PPA** (power purchase agreement) provider who has no credentials on the building's network and no relationship with the building's IT team. The control channel that does exist — the inverter's local display, a proprietary cloud portal, or a laptop plugged in at the cabinet — isn't a control channel you can reliably automate, audit, or integrate with a utility DR program.
@@ -20,6 +19,8 @@ That's where most deployments hit the wall. The inverter and **battery managemen
 This project closes that gap. A Blues Wireless for OPTA expansion snapped onto an Arduino OPTA RS485 **PLC** (programmable logic controller) sits on the DIN rail inside the equipment cabinet. The OPTA reads the inverter and BMS over the RS-485 Modbus bus already present in every commercial solar installation, while the Notecard inside the expansion provides a cellular uplink that is completely independent of the building network and requires no IT coordination. When the utility issues a DR event, or when the local time-of-use (**TOU**) peak window opens, the cloud-side system routes a dispatch command to the device through Notehub. The OPTA closes or opens four relay outputs — grid export enable, battery discharge, battery charge, and a DR-active indicator, typically within one to six minutes of the command arriving at Notehub (bounded by the 5-minute inbound sync cadence plus the next 1-minute sample cycle), then reports what it did and why.
 
 **Why Notecard.** The inverter and battery sit outdoors or in a rooftop equipment yard where WiFi is poor. More fundamentally, the solar asset is often owned by a PPA provider who doesn't have access to the building's network and can't request VPN credentials from a tenant's IT department. Cellular gives the asset owner an independent control channel that works identically whether the building is a strip mall, a warehouse, or a multi-tenant office park — no network forms, no AP to pair to, and no IT ticket to chase. That independence is the whole point: the asset owner needs to be able to send a discharge command at 4:57 PM regardless of what the building's network is doing.
+
+<NewToBlues/>
 
 **Deployment scenario.** A single OPTA RS485 + Wireless for OPTA mounted on the DIN rail inside the solar equipment cabinet, next to the inverter's communication interface. The RS-485 bus daisies from the OPTA to the inverter and then to the BMS. Four relay output wires run to the corresponding digital control inputs on the inverter and BMS. The cellular antenna routes through a cable gland to the outside of the cabinet. Line power from the 24 VDC supply already present in the equipment cabinet. No PC, no gateway, no building LAN.
 
@@ -29,10 +30,7 @@ This project closes that gap. A Blues Wireless for OPTA expansion snapped onto a
 
 </Warning>
 
-<NewToBlues/>
-
 ## 2. System Architecture
-
 
 ![System architecture diagram showing the Notehub API and DR cloud feeding through the Notecard to the Arduino OPTA, which polls the inverter and BMS over Modbus and drives four relay outputs](diagrams/01-system-architecture.svg)
 
@@ -45,7 +43,6 @@ This project closes that gap. A Blues Wireless for OPTA expansion snapped onto a
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS IoT Core, Azure IoT Hub, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
 
 ## 3. Technical Summary
-
 
 To compile and flash the firmware to an Arduino OPTA RS485:
 
@@ -93,7 +90,6 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Arduino OPTA RS485](https://store.arduino.cc/products/opta-rs485) | 1 | Industrial PLC with onboard RS-485 transceiver, DIN-rail mount, 12–24 VDC supply, and four relay outputs. Required for the RS-485 interface; the OPTA Lite has no RS-485 and is not suitable. |
@@ -108,7 +104,6 @@ Here is a sample Note this device emits:
 The Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
 ## 5. Wiring and Assembly
-
 
 ![Wiring and assembly diagram showing DIN-rail layout, RS-485 daisy-chain with terminators, relay output paths, power, and antenna routing](diagrams/02-wiring-assembly.svg)
 
@@ -164,7 +159,6 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 6. **Mojo placement.** During commissioning, splice the [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) inline between the 24 VDC supply and the Wireless-for-OPTA power input to measure the expansion + Notecard subsystem energy per cellular session. See [Section 9](#9-validation-and-testing) for the expected figures.
 
 ## 6. Notehub Setup
-
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/solar_battery_dispatcher/solar_battery_dispatcher.ino` as `PRODUCT_UID`.
 
@@ -224,7 +218,6 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
    This example issues a DR curtailment that automatically expires in 10 minutes. The device will respond with a `dr_event.qo` note and close RELAY4 (DR indicator) and open RELAY1 (grid export) on the next sample cycle.
 
 ## 7. Firmware Design
-
 
 Five files in [`firmware/solar_battery_dispatcher/`](firmware/solar_battery_dispatcher/):
 
@@ -464,7 +457,6 @@ void applyRelays(DispatchMode mode, float soc_pct, bool bms_valid) {
 
 ## 8. Data Flow
 
-
 ![Dispatch and data-flow diagram showing inbound dispatch.qi, mode resolution with TOU schedule and SOC guards, and outbound solar_telemetry.qo and dr_event.qo to Notehub](diagrams/03-data-flow.svg)
 
 **Collected.** Every `sample_minutes` (default 1 minutes): PV generation in watts, AC output to load in watts, grid exchange power in watts, battery SOC in percent, battery voltage in volts, battery current in amps, and inverter/BMS state codes (`inv_state`, `bms_state`). The state codes are read from Modbus and stored in the sample structs but are **not included in outbound telemetry or mode-change events** in this reference design — they are placeholder fields for future vendor-specific logic (e.g., detecting inverter fault codes or BMS protection states and triggering mode overrides). They do not influence the current control logic. To use them, add them to the `solar_telemetry.qo` template and `note.add` body in `sendTelemetry()`, or wire them into `resolveMode()` for vendor-specific fault handling.
@@ -484,7 +476,6 @@ void applyRelays(DispatchMode mode, float soc_pct, bool bms_valid) {
 - **SOC guard** — when SOC drops below `soc_min_pct`, or when the BMS becomes unreachable while `peak_discharge` is active, the device transitions to `low_soc_protect` mode: the discharge relay opens and a `dr_event.qo` mode-change event is emitted so operators can see why discharge was halted. The lower-guard latch engages at `soc_min_pct` and releases only after SOC recovers to `soc_min_pct + soc_hyst_pct` (default: 25 % with a 20 % minimum and 5 % band), preventing relay chatter when SOC readings oscillate near the threshold. BMS communication loss also latches the lower protect state; it clears only when comms are restored **and** SOC clears the hysteresis band on the same poll cycle. Additionally, BMS comm loss forces the upper-SOC **charge-inhibit** latch active in `applyRelays()` regardless of the current mode — charging is blocked until the BMS is reachable again and a live SOC reading confirms the battery has dropped below the `soc_max_pct − soc_max_hyst_pct` threshold. Both ends of the SOC operating range therefore fail safe symmetrically on BMS comm loss: discharge is blocked by the lower guard and charging is blocked by the upper guard.
 
 ## 9. Validation and Testing
-
 
 <Warning>
 
@@ -522,7 +513,6 @@ Note that the OPTA itself is an always-on 24 VDC device whose steady-state draw 
 
 ## 10. Troubleshooting
 
-
 **No cellular connection or "Offline" in Notehub.**
 - Verify the external antenna is properly connected via SMA lead (rubber-duck antenna inside a metal cabinet will not work).
 - Check that the Wireless for OPTA is fully seated onto the OPTA's expansion port.
@@ -547,7 +537,6 @@ Note that the OPTA itself is an always-on 24 VDC device whose steady-state draw 
 - Verify the corresponding environment variables are set to non-equal values (equal values disable the window).
 
 ## 11. Limitations and Next Steps
-
 
 **Simplified for this reference design:**
 
@@ -574,7 +563,6 @@ Note that the OPTA itself is an always-on 24 VDC device whose steady-state draw 
 - Over-the-air host firmware updates: [Notecard Outboard Firmware Update](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) is supported on the STM32H7 MCU family (the OPTA's processor) but requires AUX wiring that Blues Wireless for OPTA does not currently break out. Host firmware updates remain local-only via USB-C until that hardware path changes. When it does, Outboard DFU enables pushing a new vendor register map or TOU algorithm to the entire fleet without a truck roll.
 
 ## 12. Summary
-
 
 This project pairs an Arduino OPTA RS485 with a Blues Wireless for OPTA expansion to do something deceptively simple: close a relay when the utility calls for it, and open it again when the window closes. The elegance is in the architecture. The inverter and BMS already speak Modbus and already have the data and control inputs needed to participate in a demand-response program. What's been missing is an independent, cellular uplink that lets the asset owner, not the building's IT team, not a proprietary cloud portal — receive and act on utility signals on their own terms. The Wireless for OPTA adds that channel in a form factor that slots onto the same DIN rail as the rest of the equipment, runs on the 24 VDC already in the cabinet, and requires no building network involvement.
 

@@ -10,7 +10,6 @@ This project is a [truck roll reduction](https://blues.com/truck-roll-reduction/
 
 ## 1. Project Overview
 
-
 **The problem.** Most propane dealers still run their delivery routes on a fixed calendar: every six weeks, every tank gets a truck. That schedule exists not because it matches demand, but because dealers have no way to know which tanks actually need filling. The result is trucks rolling to tanks that are at 60 % (wasted capacity, wasted diesel) and tanks at remote farm properties that run dry between scheduled visits (angry customer, weekend emergency call). Neither failure is exotic — they're structural consequences of not having fill-level data.
 
 The root cause is infrastructure. A propane tank sits in a field, on a farm, at a cabin, at a rural business — almost never near a WiFi access point the dealer can use, and often in areas where cellular is marginal to nonexistent. The tank itself is a sealed pressure vessel with no native communication capability. Retrofitting telemetry means solving a connectivity problem that varies by site, a sensor problem specific to LP (liquefied petroleum) gas vessels, and a data problem — turning raw fill readings into actionable dispatch intelligence.
@@ -19,14 +18,13 @@ This project solves all three. A weatherproof electronics enclosure mounted on a
 
 **Why Notecard.** Propane tanks are at farms, cabins, rural businesses, and residential properties — most with no customer WiFi the dealer can use, and many in areas where cellular coverage is spotty. A dealer network spans all of these site types and can't afford a different hardware solution for each one. The Notecard Cell+WiFi variant handles the vast majority of installs on a single SKU: cellular removes the per-site IT dependency entirely, and the WiFi radio is available as an optional fallback when credentials are provisioned — useful for the rare tank near a residential AP. The Notecard ships with an active SIM including 500 MB of data and 10 years of service — no activation fees and no monthly per-SIM commitment. For the last 5 % of installs — remote mountain cabins, properties with no cellular coverage — a **Starnote for [Skylo](https://www.skylo.tech/resources/geographical-coverage)** connects to the Notecard via its 6-pin JST port and is mounted externally with a clear sky view, extending the same firmware and Notehub project to NTN satellite backhaul with no code changes; see [§4](#4-hardware-requirements), [§5](#5-wiring-and-assembly), [§6](#6-notehub-setup), and [§11](#11-limitations-and-next-steps) for the satellite deployment path.
 
+<NewToBlues/>
+
 **Deployment scenario.** A weatherproof NEMA 4X enclosure mounted on a separate post, wall, or bracket **outside the AHJ-defined classified area** (see the safety notice in §4), powered by a solar-charged 12 V sealed lead-acid battery. A 4-20 mA LP gauge-port float transmitter (Rochester Sensors M6300-LP Magnetel® gauge + R6315-12 transmitter, or equivalent) connects at the tank's existing 1¼″ NPT dip-tube gauge port; field wiring from the transmitter runs to the electronics enclosure outside the hazardous boundary. A waterproof DS18B20 temperature probe is clamped to the tank shell and logged in daily summary Notes for seasonal demand analytics. For installations where cellular coverage is absent, a Starnote for Skylo (Ignion Antennas variant) connects to the Notecard via the 6-pin JST cable and is mounted face-up on the enclosure exterior with an unobstructed sky view; it provides NTN satellite backhaul over the same Notehub project with no firmware changes. No modifications to the tank itself, no on-site internet infrastructure, and no OEM cooperation required.
 
 > **Sensor architecture note — this document is a float-transmitter variant.** The original project specification called for a low-power ultrasonic or pressure level sensor with a temperature probe used for vapor-pressure compensation in the fill measurement path. **This document covers a 4–20 mA float-transmitter variant that intentionally departs from that specification; it should be read as one concrete implementation path for this use case, not as a complete delivery of the original brief.** After evaluating both approaches specifically for LP gas tank service (see the full rationale in [§7](#7-firmware-design)), this variant uses a Rochester Sensors float-type 4–20 mA transmitter. The float tracks the physical liquid propane surface directly, making its 4–20 mA output inherently temperature-independent — no vapor-pressure or density correction is needed or applied in firmware. The DS18B20 temperature probe is retained and its reading is included in every daily summary Note for cloud-side seasonal demand analytics, but temperature is **not** an input to the fill calculation. The principal trade-off accepted by this architecture change is a continuously-powered 4–20 mA current loop (the dominant load in the power budget); the implications are discussed in [§11](#11-limitations-and-next-steps).
 
-<NewToBlues/>
-
 ## 2. System Architecture
-
 
 ![System architecture: propane tank with 4–20 mA float transmitter and DS18B20 → edge enclosure outside hazardous area → cellular MBGLW or Starnote satellite → Notehub → dispatch / ERP / time-series DB](diagrams/01-system-architecture.svg)
 
@@ -39,7 +37,6 @@ This project solves all three. A weatherproof electronics enclosure mounted on a
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this reference design does not ship any specific downstream endpoint. The natural downstream targets for a propane dealer are a route-optimization or ERP system (routed via HTTP webhook) and a time-series database for trend analysis (routed to a cloud data store of the dealer's choosing).
 
 ## 3. Technical Summary
-
 
 Clone this repository, build the firmware, and deploy:
 
@@ -84,7 +81,6 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with onboard Cygnet STM32 host — handles the 12-bit ADC for the 4-20 mA loop and OneWire for the temperature probe with no external MCU needed. |
@@ -118,7 +114,6 @@ Blues hardware ships with an active SIM including 500 MB of data and 10 years of
 </Warning>
 
 ## 5. Wiring and Assembly
-
 
 ![Wiring: 4–20 mA float transmitter with 120 Ω shunt → A0; DS18B20 with 4.7 kΩ pull-up → D2; 24 V boost converter for transmitter loop; solar + SLA dual-rail power chain (5 V → +VBAT, 24 V → loop)](diagrams/02-wiring-assembly.svg)
 
@@ -249,7 +244,6 @@ Required only at sites with no cellular coverage. If adding a Starnote:
 
 ## 6. Notehub Setup
 
-
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into the firmware as `PRODUCT_UID`.
 
 2. **Claim the Notecard.** Power the unit; on first cellular session the Notecard associates with the project automatically. Verify the device appears in the Notehub device list and shows a recent session.
@@ -285,7 +279,6 @@ Required only at sites with no cellular coverage. If adding a Starnote:
 7. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `tank_alert.qo` (real-time delivery to the dealer's dispatch or routing system) and a second for `tank_status.qo` (batched delivery to a time-series store for historical trend analysis and route-density modeling). Keeping the two Notefiles separate at the source means each can be fanned out to a different destination at a different urgency — alerts go somewhere that pages an operator; daily summaries go somewhere that feeds a dashboard.
 
 ## 7. Firmware Design
-
 
 Main sketch: [`firmware/propane_tank_telemetry/propane_tank_telemetry.ino`](firmware/propane_tank_telemetry/propane_tank_telemetry.ino). Sensor math, fill-level calculation, and consumption tracking are factored into [`firmware/propane_tank_telemetry/propane_tank_telemetry_helpers.h`](firmware/propane_tank_telemetry/propane_tank_telemetry_helpers.h).
 
@@ -486,7 +479,6 @@ delay((uint32_t)SAMPLE_INTERVAL_MIN * 60UL * 1000UL);
 
 ## 8. Data Flow
 
-
 ![Data flow: 15-min sample of 4–20 mA loop current → fill % and consumption EWMA → two rules (low_fill, sensor_fault) → tank_alert.qo (sync:true) and tank_status.qo (daily templated) → Notehub routes](diagrams/03-data-flow.svg)
 
 Every `sample_interval_min` (default 15 minutes) the Cygnet wakes, reads the LP gauge-port level transmitter and DS18B20 temperature probe, converts the transmitter current directly to fill %, updates the consumption EWMA, and evaluates three alert conditions.
@@ -507,7 +499,6 @@ Every `sample_interval_min` (default 15 minutes) the Cygnet wakes, reads the LP 
 **Cloud-side usage model (high level).** The dealer's analytics system receives daily `tank_status.qo` notes with `fill_gal` and `gal_per_day` for every tank. A simple projection — `days_until_empty = fill_gal / gal_per_day` — is computed by the firmware and included in each Note, so the dealer's route planner can sort tanks by urgency without running any analytics locally. Route density optimization (grouping tanks within a delivery window by geography and urgency) is a cloud-side concern, not a firmware concern; the device's job is to get accurate fill data into Notehub on time.
 
 ## 9. Validation and Testing
-
 
 **Expected cadence in steady state.** A correctly-functioning unit on a residential propane tank should produce one `tank_status.qo` event per day and zero `tank_alert.qo` events during normal operation. During commissioning, expect a `sensor_fault` event if the transmitter wiring is incomplete, and low-fill alerts if the tank happens to already be below threshold.
 
@@ -530,7 +521,6 @@ Note: the 4-20 mA transmitter loop is powered from the 24 V boost converter circ
 **Satellite deployments (Starnote for Skylo).** The current figures and alert-latency estimates above apply only to cellular (LTE Cat-1 bis) sessions. At NTN satellite sites, the Starnote adds a continuous idle draw on top of the Notecard's ~18 µA, satellite sessions have a different transmit-current envelope than LTE, and Skylo's duty-cycle rules constrain the number of sessions per day. `sync:true` alert delivery depends on a satellite pass being available — latency is minutes to hours, not seconds. **Validate solar panel sizing, battery capacity, and alert latency separately for every satellite deployment** using the [Satellite Best Practices guide](https://dev.blues.io/starnote/satellite-best-practices/) before commissioning; do not assume the cellular sizing figures in this section are sufficient.
 
 ## 10. Troubleshooting
-
 
 **No device appearing in Notehub after power-up.**
 - Confirm the Notecard MAIN u.FL antenna is connected to an external antenna (not left stubbed internally). A missing or unplugged antenna will prevent cellular registration entirely.
@@ -568,7 +558,6 @@ Note: the 4-20 mA transmitter loop is powered from the 24 V boost converter circ
 
 ## 11. Limitations and Next Steps
 
-
 **Simplified for the POC:**
 
 - **Continuously-powered current loop.** The Rochester Sensors M6300-LP + R6315-12 and similar LP gauge-port float transmitters use a **continuously-powered 4–20 mA current loop**. Powered from the 24 V boost converter, the loop draws 96–480 mW from the 24 V rail (4 mA × 24 V to 20 mA × 24 V); accounting for the boost converter's ≈ 87 % efficiency, the draw on the 12 V system rail ranges from ≈ 110 mW (empty tank) to ≈ 550 mW (full tank) continuously. This is the dominant load in the system power budget. At worst case (full tank, 20 mA), the transmitter loop draws ≈ 550 mW for 24 h = ≈ 13.2 Wh/day from the 12 V rail; a 10 W solar panel at ≥ 4 h/day peak sun yields ≈ 40 Wh — well above the combined transmitter and electronics load for mid-latitude deployments. In low-sun environments or high-latitude winter deployments, size the panel to 20 W. Note: the tank spends most of its time between 20–80 % fill (8–16 mA), so the average draw is typically 250–370 mW, materially below the 550 mW worst case.
@@ -593,6 +582,5 @@ Note: the 4-20 mA transmitter loop is powered from the 24 V boost converter circ
 - Over-the-air host firmware updates via [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) once the fleet reaches scale — a threshold recalibration or a new alert type can be pushed fleet-wide without a site visit.
 
 ## 12. Summary
-
 
 Propane dealers today send trucks on a schedule because they have no alternative — they can't see their tanks. A Notecarrier CX with a Notecard Cell+WiFi, a Rochester Sensors M6300-LP Magnetel® gauge + R6315-12 4-20 mA transmitter, and a DS18B20 temperature probe changes that. The transmitter mounts at the tank's existing 1¼″ NPT dip-tube gauge port and its float-type mechanism outputs a 4-20 mA signal proportional to fill level — no second tank connection, no density correction in firmware, a straightforward linear conversion to fill percentage. The DS18B20 temperature reading is included in every daily summary so cloud analytics can correlate demand against ambient conditions and build seasonal models. Each tank reports its fill percentage, consumption rate, and days-until-empty once a day over cellular, with immediate alerts when fill drops below threshold or consumption spikes anomalously. The Notecard's cellular-first design — with optional WiFi when credentials are provisioned and optional Starnote for Skylo satellite backhaul (via the Notecard's 6-pin JST port, Starnote mounted outdoors with a clear sky view) at sites with no cellular coverage — means a single firmware image and a single Notehub project serve the full dealer territory without site-by-site network configuration. The result is route dispatch driven by actual demand, not a calendar: trucks roll to tanks that need filling, not to tanks that happen to be on this week's schedule. That's fewer miles driven, fewer emergency weekend calls, and no more apologizing to a customer whose heat went out on a Friday night.

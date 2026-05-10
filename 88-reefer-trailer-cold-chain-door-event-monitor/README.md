@@ -27,13 +27,13 @@ Both failure modes have a common root: nobody can see inside the trailer while i
 
 **Why Notecard for Skylo.** A trailer is mobile by definition, and its connectivity environment changes constantly. Urban routes have dense cellular coverage. Rural interstates may have significant gaps. Cross-border hauls hand off between carrier networks. Ocean-facing port staging areas can be outside terrestrial coverage entirely. A fixed cellular SIM solves the urban case but silently drops offline everywhere else — exactly when unsupervised, high-value loads are most exposed.
 
+<NewToBlues/>
+
 The [Notecard for Skylo (NOTE-NBGLWX)](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link). See the [datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) — addresses this in a single 30 × 42 mm module: LTE-M, NB-IoT, and GPRS for terrestrial cellular, Skylo **NTN** (non-terrestrial network) satellite as an automatic fallback, and WiFi via an onboard antenna. The firmware enables this multi-RAT behavior with a single one-time [`card.transport`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-transport) request (`method:"wifi-cell-ntn"`); from then on the Notecard manages network selection itself, and the application never needs to know which radio carried a given message. An alert triggered by a door opening at a rural rest stop will use cellular if a tower is within range and satellite if it isn't — with no radio-selection logic required in the application. For a mobile asset that can't self-select its coverage environment, this multi-RAT (radio access technology) automatic failover is the whole value proposition.
 
 **Deployment scenario.** The electronics mount in a weatherproof NEMA 4X enclosure strapped or screwed to the interior trailer wall or exterior chassis rail, powered from the trailer's 12 V DC supply (or the nose-box connector if available). Two DS18B20 stainless steel probes thread through grommets into the cargo compartment — one near the front (forward air) and one near the rear return-air panel, and the reed switch mounts on the door frame with its matching magnet on the door itself.
 
 ---
-
-<NewToBlues/>
 
 ## 2. System Architecture
 
@@ -67,7 +67,6 @@ The [Notecard for Skylo (NOTE-NBGLWX)](https://shop.blues.com/products/notecard?
    ```
    See [§6.1](#61-installing-and-flashing) for full dependency list and IDE steps.
 5. **Watch** — open Notehub → your project → **Events**. You should see `_session.qo` within 1 minutes, then on the next outbound window (default ~60 minutes): batch of `trailer_log_cell.qo` notes (one per 60 seconds sample), `trailer_summary_cell.qo` (hourly), and any alerts as `trailer_alert.qo` (immediate sync).
-
 
 Here is a sample Note this device emits:
 ```json
@@ -480,7 +479,6 @@ Two anomaly patterns stand out immediately on a Mojo trace:
 Mojo is a **bench and commissioning tool**; production units don't require it.
 
 ---
-
 
 A Notecarrier CX and a Notecard for Skylo pair with two DS18B20 probes and a magnetic reed switch to watch the two failure modes — temperature excursion and unauthorized door access — that drive most reefer trailer cargo loss. The firmware samples every minute, queues each raw sample locally for Notehub delivery on the next outbound session (`trailer_log_cell.qo`), fires an alert on the next sample cycle (up to ~60 seconds) when any threshold trips via whatever radio is available (`trailer_alert.qo`, delivered over cellular or NTN satellite automatically), and ships a compact hourly summary (`trailer_summary_cell.qo`) for compliance and trending. The cellular + satellite multi-RAT design means the monitor stays connected as the trailer moves from an urban distribution center through rural interstates to a port staging yard — without any network configuration, SIM swapping, or carrier negotiation required.
 

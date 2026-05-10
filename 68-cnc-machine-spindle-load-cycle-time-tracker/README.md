@@ -10,7 +10,6 @@ This project is an [industrial equipment monitoring](https://blues.com/industria
 
 ## 1. Project Overview
 
-
 **The problem.** A CNC (computer numerical control) machining center is a six-figure piece of capital equipment. The OEM who built it typically has zero visibility into what happens to it after delivery. Is the spindle running at 80% load twelve hours a day, or is it sitting idle because the shop scheduled it wrong? Is the same alarm code triggering every Tuesday morning — a pattern that, with data, is obviously a tooling-change reminder, but without data is an invisible warranty claim? Is a particular operator overriding the feed rate up to 140% on a finishing pass and burning through inserts?
 
 These questions matter to OEMs because the whole industry is moving toward **EaaS** (equipment as a service) and usage-based billing. You cannot sell spindle-hours if you don't know how many spindle-hours are actually running. You cannot offer a predictive-maintenance contract if you can't see the telemetry. And you cannot benchmark your machine's **OEE** (Overall Equipment Effectiveness, a manufacturing KPI that combines availability, performance, and quality into a single utilization score) without a continuous stream of cycle-time and run/idle data flowing back from the shop floor.
@@ -19,14 +18,13 @@ The data is already there — on controls that expose it. A meaningful subset of
 
 **Why Notecard.** Machine shops run their CNC machines on isolated **OT** (operational technology) networks — air-gapped from the corporate LAN by design, and protected by a plant IT department that is deeply skeptical of anyone proposing to plug the OEM's monitoring device into their subnet. Asking every customer to configure a VLAN, assign a static routable IP, punch a firewall rule, and maintain the configuration through staff turnover is a customer-acquisition and support nightmare. The OEM's monitoring device needs to work identically, without any site IT involvement, whether it's deployed in a shop in Ohio, Stuttgart, or Osaka.
 
+<NewToBlues/>
+
 Cellular is the answer. A [Blues Wireless for OPTA](https://shop.blues.com/products/wireless-for-opta?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) snapped onto the Arduino OPTA's expansion port gives the device its own independent cellular data channel — a private uplink to Notehub that needs no plant LAN credentials, no firewall exception, and no IT ticket. The Modbus TCP connection to the CNC runs over a direct point-to-point Ethernet cable between the OPTA and the machine control: two devices on a private subnet with no routing to the shop floor network at all. The monitoring device is invisible to plant IT because it never touches plant IT's infrastructure.
 
 **Deployment scenario.** A single Arduino OPTA RS485 + Blues Wireless for OPTA mounts on the machine's electrical panel DIN rail. A two-meter Cat6 patch cable runs from the OPTA's RJ45 port directly to the CNC controller's Modbus TCP Ethernet port — a closed, private connection with its own subnet. The cellular antenna exits through a cable gland on the panel door. The panel's existing 24 VDC supply powers the assembly. First-light is an hour of wiring; the OEM's service technician never needs to interact with the shop's network team.
 
-<NewToBlues/>
-
 ## 2. System Architecture
-
 
 ![System architecture: CNC controller (Modbus TCP server) → OPTA + Wireless for OPTA via point-to-point Cat6 → cellular → Notehub → OEE / CMMS / paging](diagrams/01-system-architecture.svg)
 
@@ -39,7 +37,6 @@ Cellular is the answer. A [Blues Wireless for OPTA](https://shop.blues.com/produ
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS IoT Core, Azure IoT Hub, GCP Pub/Sub, Snowflake, and several other targets; see the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub). This project does not ship a specific downstream endpoint — the OEE dashboard is routed from Notehub as a project-specific integration.
 
 ## 3. Technical Summary
-
 
 1. **Flash the Arduino OPTA** with `firmware/cnc_spindle_tracker/cnc_spindle_tracker.ino` (requires Arduino IDE + Mbed OS Opta Boards core).
 2. **Get ProductUID** from [notehub.io](https://notehub.io), paste it into the sketch, reflash.
@@ -71,7 +68,6 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Arduino OPTA RS485](https://store.arduino.cc/products/opta-rs485) | 1 | Industrial DIN-rail micro-PLC; built-in Ethernet RJ45 for Modbus TCP to CNC; RS-485 available as a future bus option; Cortex-M7 host with sufficient RAM for rolling stats. |
@@ -85,7 +81,6 @@ Here is a sample Note this device emits:
 The Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
 ## 5. Wiring and Assembly
-
 
 ![Wiring: 24 VDC supply, OPTA RS485, Wireless for OPTA, antennas on DIN rail; Cat6 Ethernet point-to-point to CNC at 192.168.250.1; six contiguous holding registers polled per minute](diagrams/02-wiring-assembly.svg)
 
@@ -106,7 +101,6 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 4. **Bench validation setup.** During first-light commissioning, splice the Mojo inline between the 24 VDC supply and the Wireless for OPTA power terminal. This measures the entire expansion subsystem — Notecard plus the expansion's onboard regulators — during a real cellular session.
 
 ## 6. Notehub Setup
-
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/cnc_spindle_tracker/cnc_spindle_tracker.ino` (line 18, uncomment the `#define PRODUCT_UID` and insert your UID).
 
@@ -138,7 +132,6 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
    Keeping the three Notefiles separate means each can route to a different destination at a different priority without downstream filter logic.
 
 ## 7. Firmware Design
-
 
 Three files in the `firmware/` directory:
 
@@ -304,7 +297,6 @@ notecard.sendRequest(req);
 
 ## 8. Build and Flash
 
-
 **Prerequisites:**
 - Arduino IDE 2.3+ or `arduino-cli` (command-line). If using the IDE, install the **Arduino Mbed OS Opta Boards** board package via Tools > Board Manager — search for "Opta".
 - **Dependencies** (install via Library Manager or `arduino-cli`):
@@ -340,7 +332,6 @@ arduino-cli monitor -p /dev/cu.usbmodem1234567 -c baudrate=115200
 
 ## 9. Data Flow
 
-
 ![Data flow: minute-cadence Modbus poll → three edge rules + operator-ID transition detection → cnc_alarm.qo (sync), cnc_operator.qo (sync), cnc_summary.qo (hourly templated) → Notehub routes](diagrams/03-data-flow.svg)
 
 **Collected.** Every `sample_minutes` (default 1 minutes): spindle load (%), feed-rate override (%), active alarm code, cycle state, cumulative cycle count, and current operator ID (the value presently in the controller's operator-ID register) — six registers in one Modbus TCP transaction.
@@ -360,7 +351,6 @@ arduino-cli monitor -p /dev/cu.usbmodem1234567 -c baudrate=115200
 - `modbus_unreachable` — Modbus TCP connection fails on two consecutive attempts; rate-limited to once per `report_minutes` window.
 
 ## 10. Validation and Testing
-
 
 **Expected steady-state behavior.** A healthy machine generates one `cnc_summary.qo` per hour and zero `cnc_alarm.qo` notes. On first commissioning, you may see one `modbus_unreachable` alarm until the Modbus TCP link is confirmed.
 
@@ -395,7 +385,6 @@ Confirm: (a) idle current between syncs is in the µA range (ensures the device 
 
 ## 11. Troubleshooting
 
-
 | Symptom | Probable Cause | Solution |
 |---------|----------------|----------|
 | Device does not claim to Notehub after first power-up | Missing or malformed `PRODUCT_UID` in firmware | Uncomment and set `PRODUCT_UID` in `cnc_spindle_tracker.ino` line 18; reflash. |
@@ -408,7 +397,6 @@ Confirm: (a) idle current between syncs is in the µA range (ensures the device 
 | Operator-ID transitions not appearing | `operator_id` register not exposed or always zero | Confirm the CNC controller supports operator-ID over Modbus TCP (many do not). Verify the sixth register in the contiguous block (starting at `reg_spindle_load`) is mapped to operator ID in the controller's Modbus documentation. Check the operator ID is actually changing on the machine (some controllers require login/logout). |
 
 ## 12. Limitations and Next Steps
-
 
 **Simplified for this reference design:**
 
@@ -449,6 +437,5 @@ Confirm: (a) idle current between syncs is in the µA range (ensures the device 
 - Wire ODFU to the OPTA's BOOT/RESET pins for over-the-air host updates once the AUX path is available.
 
 ## 13. Summary
-
 
 CNC machines are among the most instrumented pieces of capital equipment in manufacturing, and where a controller exposes telemetry over Modbus TCP that data has been stranded on the shop floor by the same OT network policies that protect the plant from IT. This design cuts that knot cleanly for those controllers: a direct point-to-point Ethernet cable from the OPTA to the machine control captures spindle load, cycle counts, alarm codes, and current operator ID locally, while a cellular Notecard carries the data to the OEM's cloud over its own independent channel that machine-shop IT never sees and never needs to approve. The result is the raw material for a credible equipment-as-a-service offer — utilization data granular enough to bill by the spindle-hour, alarm telemetry detailed enough to offer a proactive-service contract, and OEE components accurate enough to benchmark the fleet. What's left after this reference design is a validated, vendor-specific Modbus TCP register map for each target CNC model — a commissioning task, not an architecture problem.

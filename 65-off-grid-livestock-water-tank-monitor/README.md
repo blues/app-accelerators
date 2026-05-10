@@ -21,19 +21,17 @@ Expected data consumption: ~6 KB/month on the 500 MB included prepaid Blues data
 
 ## 1. Project Overview
 
-
 **The problem.** Stock tanks in remote pastures are one of agriculture's oldest and most persistent operational problems. A rancher managing a spread across multiple pastures — each with its own poly or galvanized stock tank and a submersible pump pulling from a well — has to physically drive every road to verify that every tank is full. On a working ranch with pastures spread over thousands of acres, that inspection loop can take several hours and still miss a dry tank that empties between visits. The consequences aren't just inconvenience: cattle deprived of water for even a few hours in summer heat suffer rapid decline in health, and emergency water delivery is expensive before factoring in animal losses at all.
 
 The failure modes are simple and repeatable. Tanks go dry because a float valve sticks or fails and the tank drains down, because the pump's supply well drops below the intake (the pump keeps running but moves no water), or because the pump motor fails entirely and nothing moves even when the float calls for it. None of these require sophisticated modeling — they are observable conditions that nobody happens to be watching. The sensor suite here measures exactly the two signals a rancher or hired hand would check on a physical inspection: how high is the water, and is the pump drawing current? The third measurement — solar battery voltage — tells you whether the monitoring system itself is healthy and likely to keep reporting through a run of cloudy days.
 
 **Why Notecard.** Stock tanks sit miles from the ranch house, beyond WiFi range, beyond LoRa range, and frequently beyond the reach of any terrestrial infrastructure. The [Notecard for Skylo](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) addresses both halves of the connectivity problem in a single module: it uses cellular (LTE-M/NB-IoT) where a tower is reachable and falls back to the Skylo NTN satellite network where terrestrial coverage ends. Many ranch pastures sit in mixed coverage — a cellular signal may be available across most of a property, but valleys and remote corners go dark. A tank in a covered valley reports over cellular while a tank on a ridge beyond any tower still reports via satellite; the rancher sees both without understanding which network carried the data. No SIM activation, no carrier contract, no per-site configuration required. The Notecard also handles the low-power half: in periodic mode with a 15-minute sampling interval, the radio is active for tens of seconds every few hours and silent the rest of the time, making it possible to run this device indefinitely on a modest solar panel and a single battery even through overcast weeks in a northern winter.
 
-**Deployment scenario.** A weatherproof IP65 enclosure mounted on the tank post or fence rail adjacent to the tank opening. A MaxBotix ultrasonic level sensor peers down through the lid into the tank. A clamp-on current transformer clips around one conductor of the pump's supply lead without cutting any wire. A two-resistor voltage divider reads the 12V solar battery bus. A small solar panel, charge controller, and sealed battery live in or near the enclosure. Once installed and calibrated, the system reports tank levels and pump health to the rancher's phone through Notehub — requiring no physical site visit unless something goes wrong.
-
 <NewToBlues/>
 
-## 2. System Architecture
+**Deployment scenario.** A weatherproof IP65 enclosure mounted on the tank post or fence rail adjacent to the tank opening. A MaxBotix ultrasonic level sensor peers down through the lid into the tank. A clamp-on current transformer clips around one conductor of the pump's supply lead without cutting any wire. A two-resistor voltage divider reads the 12V solar battery bus. A small solar panel, charge controller, and sealed battery live in or near the enclosure. Once installed and calibrated, the system reports tank levels and pump health to the rancher's phone through Notehub — requiring no physical site visit unless something goes wrong.
 
+## 2. System Architecture
 
 ![System architecture: ultrasonic level sensor + pump CT + battery voltage divider → Notecarrier CX with Cygnet host and NOTE-NBGLWX → cellular or Skylo satellite → Notehub → SMS / time-series DB / trends](diagrams/01-system-architecture.svg)
 
@@ -46,7 +44,6 @@ The failure modes are simple and repeatable. Tanks go dry because a float valve 
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and other destinations; route configuration is project-specific and outside the scope of this reference design. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no downstream endpoint.
 
 ## 3. Technical Summary
-
 
 1. **Assemble hardware.** Order the BOM from §4, build the circuit per §5, and mount the enclosure on the tank post.
 2. **Flash firmware.** Clone this repo, set your Notehub ProductUID in the sketch, and flash via Arduino IDE. The FQBN below matches `firmware/livestock_water_tank_monitor/sketch.yaml`, so omitting `--fqbn` also works when invoked from the sketch directory:
@@ -80,7 +77,6 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an embedded Cygnet STM32L433 host — no separate MCU needed for this all-analog sensor mix. |
@@ -107,7 +103,6 @@ Here is a sample Note this device emits:
 All Blues hardware ships with an active SIM including 500 MB of cellular data and 10 years of service — no activation fees, no monthly commitment. The NOTE-NBGLWX also includes Skylo satellite data as part of its service plan; see the [Blues pricing page](https://blues.com/pricing/) for current satellite data allotments and usage terms.
 
 ## 5. Wiring and Assembly
-
 
 ![Wiring: MB7389 ultrasonic to A0; SCT-013 CT with V/2 bias to A1; battery divider to A2 with PMOS gated by A3; Skylo MAIN antenna via u.FL to SMA bulkhead; solar 20 W → charge controller → 12 V battery → 5 V step-down → +VBAT](diagrams/02-wiring-assembly.svg)
 
@@ -164,7 +159,6 @@ The voltage scaling is unchanged: `battery_V = V_adc / 0.175`, mapping 0–14.5 
 
 ## 6. Notehub Setup
 
-
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/livestock_water_tank_monitor/livestock_water_tank_monitor.ino` as `PRODUCT_UID`.
 2. **Claim the Notecard.** Power the unit; on first successful Notehub session, whether over cellular or Skylo satellite, the Notecard associates with your project automatically.
 3. **Create a Fleet per site.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) group devices for shared configuration and routing. A natural unit here is one fleet per pasture — every tank in a pasture shares the same approximate tank geometry, pump type, and battery system. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) can classify devices automatically by a tag or environment variable so you don't have to assign them manually as your fleet grows.
@@ -211,7 +205,6 @@ The voltage scaling is unchanged: `battery_V = V_adc / 0.175`, mapping 0–14.5 
    `alerts` = count of `tank_alert.qo` Notes sent since the last summary; `pump_on` is derived from window-average `pump_amps` vs. the `pump_on_amps` threshold.
 
 ## 7. Firmware Design
-
 
 The implementation spans three files in the [`firmware/livestock_water_tank_monitor/`](firmware/livestock_water_tank_monitor/) directory, with the `.ino` as the entry point:
 
@@ -388,7 +381,6 @@ if (envOk && g_summaryIntervalMin != g.appliedSummaryIntervalMin) {
 
 ## 8. Data Flow
 
-
 ![Data flow: 15-min sample of level / pump amps / battery V → three rules (level_low, level_critical, battery_low) → tank_alert.qo (sync:true) and tank_status.qo (every 4 h templated) → Notehub routes](diagrams/03-data-flow.svg)
 
 Every 15 minutes the Cygnet wakes, reads three sensors, and evaluates three independent alert conditions. Valid readings accumulate across wakes into a rolling window; each 4-hour summary averages each metric over that window.
@@ -407,7 +399,6 @@ Every 15 minutes the Cygnet wakes, reads three sensors, and evaluates three inde
 **Routed.** Both Notefiles flow to Notehub and from there to whatever downstream the project's routes specify. The deliberate Notefile separation means `tank_alert.qo` can go to an SMS gateway for immediate rancher notification while `tank_status.qo` goes to a time-series database for historical trend analysis and predictive maintenance — without any per-note filtering logic in the routes.
 
 ## 9. Validation and Testing
-
 
 **Expected cadence in normal operation.** A healthy, full tank generates one `tank_status.qo` Note every 4 hours and zero `tank_alert.qo` Notes. After first power-on, confirm Notehub shows a summary Note within 4 hours and that `level_pct` is non-zero and plausible given the tank's actual fill state.
 
@@ -444,7 +435,6 @@ If the Mojo trace shows continuous multi-mA draw with no idle transitions, the h
 
 ## 10. Troubleshooting
 
-
 | Symptom | Root Cause | Fix |
 |---------|-----------|-----|
 | No `tank_status.qo` Notes appear in Notehub after 4 hours | Device has not synced yet; check connectivity | If indoors or in a valley, move the antenna to an exterior location with sky view. For cellular, confirm you are in LTE-M/NB-IoT coverage (check a carrier map). For satellite, confirm the antenna has unobstructed equator-facing sky view. |
@@ -456,7 +446,6 @@ If the Mojo trace shows continuous multi-mA draw with no idle transitions, the h
 | Satellite acquisition times out (no Note appears in 10+ minutes) | Antenna has poor or no sky view, or device is too close to structures that block the horizon | Move the antenna outdoors or to an elevated position with unobstructed equator-facing sky (south in northern hemisphere, north in southern hemisphere). Refer to the [Satellite Best Practices guide](https://dev.blues.io/starnote/satellite-best-practices/). If the site truly has no equator-facing sky view, satellite will not work; confirm cellular coverage as fallback. |
 
 ## 11. Limitations and Next Steps
-
 
 **Simplified for this reference design:**
 
@@ -477,6 +466,5 @@ If the Mojo trace shows continuous multi-mA draw with no idle transitions, the h
 - Satellite data usage monitoring: a Notehub route or environment variable feedback loop that alerts operators when satellite data consumption approaches the plan's included allotment.
 
 ## 12. Summary
-
 
 A Notecarrier CX and Notecard for Skylo — paired with a weatherproof ultrasonic level sensor, a clamp-on current transformer, and a handful of passive components — give a rancher continuous visibility into every stock tank on the property without driving the pasture roads. The Notecard for Skylo uses cellular where a tower is reachable and falls back to the Skylo satellite network where terrestrial coverage ends, so tanks in covered valleys and tanks on remote ridges both report through the same firmware and the same Notehub project. Sampling happens locally every 15 minutes with the host MCU asleep between measurements; the radio wakes only for the 4-hour summary or an immediate alert. That duty cycle makes the system comfortable running indefinitely on a modest solar setup, with built-in power-aware sleep extension to handle extended overcast stretches in northern winters. Dry-tank alerts and solar fault alerts reach the rancher's phone before cattle suffer from dehydration; pump current is captured as observational telemetry in every summary and alert payload so operators can correlate it with tank levels after the fact. It's a simple problem — know when the tank is low, and the Blues stack is a proportionately simple solution: a sensor, a Notecard, and a network path that follows the asset wherever it lives.

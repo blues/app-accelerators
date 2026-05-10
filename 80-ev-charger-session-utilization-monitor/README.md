@@ -10,7 +10,6 @@ This project is a cellular [energy monitoring](https://blues.com/solutions-energ
 
 ## 1. Project Overview
 
-
 **The problem.** Fleet managers, facilities teams, and third-party charging network operators are installing Level 2 **EVSE** (electric vehicle supply equipment) at workplace parking lots, fleet depots, and retail locations — and almost universally, they have no idea how those chargers are actually used. Is the 48-amp circuit in Bay 3 running at 90% utilization while Bay 4 sits idle all day? Are sessions clustering in the morning rush so that employees arriving at 9 a.m. find every port occupied? Without instrumentation, all of these questions get answered by anecdote or not at all.
 
 This project addresses the instrumentation gap directly: insert a series-wired DIN-rail energy meter (EASTRON SDM120-Modbus) on the EVSE circuit feed, poll it over Modbus RTU, and report session-level energy delivery and port utilization directly — independent of who built the charger, what network it's connected to, and whether the site team has any standing with the charging network operator. OCPP-based integrations provide richer per-driver and per-RFID records where a charger exposes that interface, but they depend on network-operator cooperation and vary across Blink, ChargePoint, EV Connect, and in-house fleet stacks. The hardware-meter approach requires none of that: it reads the physics of the circuit, and that works on any Level 2 EVSE ever installed.
@@ -19,16 +18,15 @@ This project addresses the instrumentation gap directly: insert a series-wired D
 
 **Why Notecard.** The single biggest deployment friction for EV charger instrumentation is the network question. Chargers installed in a corporate parking structure are almost always on a circuit run by a third-party operator — a fleet management company, a charging network, or a facilities contractor — whose people have zero standing with the site's IT department. The parking lot is treated as a hostile network zone: no WiFi credentials are available, no VLAN is provisioned, and no IT ticket is going to get approved by Friday. Even for in-house fleet teams, the "just connect it to the corporate network" path involves months of security review for every new device class.
 
+<NewToBlues/>
+
 Cellular sidesteps all of that. A Notecard Cell+WiFi (MBGLW) with its included prepaid SIM installs in the same electrical panel as the charger circuit, connects to an LTE Cat-1 bis tower in the parking lot, and is reporting session data within minutes — with no site IT involvement, no network form, no AP to pair to. WiFi remains as an opportunistic fallback for the rare site that has a legitimate parking-structure AP, but it is never required. The same firmware image and the same hardware SKU deploy identically in a workplace, a fleet depot, and a multi-tenant retail center.
 
 **Deployment scenario.** A DIN-rail assembly mounted inside the electrical panel that feeds the EVSE circuit. The SDM120-Modbus energy meter is wired in series on the EVSE circuit (live conductor through the meter's current input); a SparkFun BOB-10124 (SP3485) RS-485 transceiver breakout bridges the meter's RS-485 port to the Cygnet's 3.3 V UART. The Notecarrier CX and Notecard MBGLW are powered from a 5 V / 3 A DIN-rail supply (e.g. MeanWell HDR-15-5) fed from whatever mains voltage is present at the panel — typically 120 VAC line-to-neutral where a neutral is accessible at the subpanel, or 208/240 VAC line-to-line where only two line conductors are available; the HDR-15-5 accepts 85–264 VAC and handles both. Total panel footprint is four to six DIN-rail modules. No modification to the charger hardware, no OCPP enrollment, no IT coordination required.
 
 **Panel placement note.** Whether the DIN-rail assembly can be mounted inside the main EVSE panel depends on the enclosure's listing and local electrical code — not all listed enclosures permit third-party low-voltage auxiliary equipment in the mains compartment. Where the panel interior is not available, mount the assembly in a separately listed auxiliary enclosure bolted adjacent to the main panel and route the RS-485 signal cable and AC supply conductors between the two enclosures through a listed conduit entry or knockout. The auxiliary-enclosure approach is the safe default for any installation where the main panel's suitability cannot be confirmed.
 
-<NewToBlues/>
-
 ## 2. System Architecture
-
 
 ![System architecture: SDM120 energy meter via Modbus RTU → Notecarrier CX with Cygnet host and Notecard MBGLW → cellular → Notehub → utilization / analytics / on-call](diagrams/01-system-architecture.svg)
 
@@ -40,9 +38,7 @@ Cellular sidesteps all of that. A Notecard Cell+WiFi (MBGLW) with its included p
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and other destinations. Route setup is project-specific and outside the scope of this reference — see the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for detailed configuration.
 
-
 ## 3. Technical Summary
-
 
 Before diving into the full documentation, here's the fastest path from parts to first event in Notehub:
 
@@ -71,9 +67,7 @@ Here is a sample Note this device emits:
 }
 ```
 
-
 ## 4. Hardware Requirements
-
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
@@ -90,7 +84,6 @@ Here is a sample Note this device emits:
 All Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
 ## 5. Wiring and Assembly
-
 
 ![Wiring: SDM120 energy meter via BOB-10124 RS-485 transceiver; cellular antenna via u.FL; bench Mojo on Qwiic; 120/240 VAC → HDR-15-5 → Mojo → +VBAT](diagrams/02-wiring-assembly.svg)
 
@@ -131,7 +124,6 @@ Pin summary:
 - **Cellular u.FL** → pigtail to external SMA antenna outside the panel
 
 ## 6. Notehub Setup
-
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:ev-charger-monitor`. Paste it into `firmware/ev_charger_session_monitor/ev_charger_session_monitor.ino` as the value of `PRODUCT_UID`, or pass it via a build flag (`-DPRODUCT_UID=\"com.your-company:your-project\"`).
 
@@ -195,7 +187,6 @@ Three event types matter:
   ```
 
 ## 7. Firmware Design
-
 
 The firmware lives in three files inside `firmware/ev_charger_session_monitor/`:
 
@@ -356,7 +347,6 @@ static float regsToFloat(uint16_t hi, uint16_t lo) {
 
 ## 8. Data Flow
 
-
 ![Data flow: 30-s Modbus polls of V_rms/W/kWh → session state machine + offline detection → charger_alert.qo (sync:true on mains_absent) and charger_summary.qo (hourly templated) → Notehub](diagrams/03-data-flow.svg)
 
 **Collected.** Every `sample_interval_sec` (default 30 seconds): V_rms, active power (W), and cumulative import kWh from the SDM120 via three Modbus RTU reads. The SDM120 performs all measurement and computation internally; the firmware reads the already-computed result registers.
@@ -390,7 +380,6 @@ window_total_kwh = import_kwh_now − import_kwh_at_window_open
 
 ## 9. Validation and Testing
 
-
 **Expected steady-state cadence.** In normal use, a charger with two or three sessions per day generates: one `charger_summary.qo` per hour (24/day), one `charger_session.qo` per session (2–8/day), and zero `charger_alert.qo` events. In a healthy window, `sample_coverage_pct` should be 100.0 (every Modbus poll succeeded). If the summary Note shows `utilization_pct` consistently above 80%, the charger is effectively saturated; if `availability_pct` is below 95%, the charger circuit has been losing power frequently and maintenance is warranted.
 
 **Bench simulation.** Before installing in a live panel, test session detection on the bench by connecting the SDM120 to a live AC circuit (observe all electrical safety precautions) with a resistive load. A 500 W or larger resistive load will exceed the default `session_threshold_w = 500` W. With the SDM120 powered and the RS-485 connection wired correctly, you should see the serial monitor printing `[app] V=XXX.X V  P=XXXX W  kWh=X.XXX` every 30 seconds. Plug the load in; watch the monitor print `[app] session STARTED`. Leave it running for a few minutes, then unplug. Count three wakes printing power near 0 W — the 90-second grace period (`session_end_count = 3`, 30 seconds each). The `charger_session.qo` Note queues with `sync:true` once the session formally closes; allow roughly 2–3 minutes from unplugging for the Note to appear in Notehub (90 seconds grace period + 15–60 seconds cellular sync).
@@ -414,7 +403,6 @@ Two failure patterns are immediately visible on the Mojo:
 Mojo is bench-validation tooling — deployed units running from a panel supply don't need it.
 
 ## 10. Limitations and Next Steps
-
 
 **Design boundaries:**
 
@@ -443,7 +431,6 @@ Mojo is bench-validation tooling — deployed units running from a panel supply 
 - Replace the single-slot pending-session store with a small ring buffer (4–8 slots) in the `State` struct to guarantee per-session delivery even during extended Notecard faults — see the extension notes in `ev_charger_session_monitor_helpers.h`.
 
 ## 11. Summary
-
 
 This project demonstrates that actionable EV charger visibility — per-session metered kWh, peak demand, session duration, port utilization, and charger availability — is achievable with a DIN-rail energy meter, a Notecarrier CX, and a cellular Notecard. No charger modification. No OCPP negotiation. No IT involvement. No per-site network setup. The SDM120 measures actual energy delivery and mains voltage; the Notecard dials home over LTE Cat-1 bis; and Notehub starts receiving session records and hourly availability summaries within minutes of commissioning.
 

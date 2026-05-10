@@ -12,7 +12,6 @@ This project is an [asset location tracking](https://blues.com/solutions-locatio
 
 ## 1. Project Overview
 
-
 **The problem.** Reusable containers are the circulatory system of supply chains — plastic totes move produce from farm to distribution center, pressurized cylinders ferry gases between filling plants and customer sites, stainless kegs make the brewery-to-bar loop thousands of times before retirement. The economics only work when the containers keep circulating. But they leak out of their pools constantly: left on a loading dock past their pickup window, mislaid in a back corner of a customer warehouse, loaded onto the wrong carrier, or simply forgotten at a rail interchange for six months. Industry estimates peg pool shrinkage at anywhere from 5% to 20% annually per container type — a quiet, diffuse cost that rarely generates a single dramatic incident but steadily erodes the pool's working capacity and replacement budget.
 
 The underlying problem is visibility. Traditional approaches all break down somewhere in the supply chain: passive RFID barcodes require scanner infrastructure at every gate, active RFID requires per-site readers the container owner doesn't control, and manual cycle counts are expensive, slow, and never quite synchronized with reality. GPS-plus-cellular seems like the obvious fix, but pure GPS is a poor match for an asset that spends 90% of its time sitting still in a warehouse: the receiver draws tens of milliamps waiting for a fix that adds only marginal precision over simply knowing the container is "at the Memphis DC."
@@ -20,6 +19,8 @@ The underlying problem is visibility. Traditional approaches all break down some
 This project takes a better approach. The Notecard's built-in accelerometer watches for motion while the device sits in microamp sleep. When the accelerometer detects the container moving — being picked up by a forklift, loaded onto a truck, or shunted across a rail yard — it wakes the host MCU. The host queues a motion event; the Notecard delivers it over cellular and uses cell-tower and WiFi AP triangulation for location. This adds no meaningful power cost beyond the cellular session already needed to deliver the Note, and it delivers site-level accuracy — sufficient to answer "is this tote at Supplier A or Customer B?" — without GPS hardware or GPS cold-start latency. A daily heartbeat confirms the device is alive even when the container sits undisturbed for a week.
 
 **Why Notecard.** Containers crisscross supplier warehouses, customer sites, truck yards, and rail interchanges — most of which are not on any WiFi network the container owner controls. There is no realistic way to ask a customer to share their wireless network, and no consistent AP infrastructure across a national supplier base. Cellular removes every one of those dependencies and deploys identically at a Chicago cold-storage facility and a rural agri-distribution depot. Location is provided by cell-tower and WiFi AP triangulation (`mode:"wifi,cell"`) — no GPS hardware and no GPS cold-start latency. On each Notehub session the Notecard scans surrounding cell towers and, where WiFi APs are visible, scans those too; Notehub resolves both sources into a latitude/longitude and appends it to every event automatically. In AP-dense environments such as warehouses and distribution centers, WiFi augmentation can improve accuracy from the kilometer scale to tens of meters; in rural or outdoor areas with no APs the device falls back to cell-only triangulation transparently. The WiFi scan adds a modest overhead to each session startup (typically a few seconds in practice, depending on AP density and radio conditions) — negligible relative to the cellular session itself — making it an effectively free accuracy improvement in environments where APs are available. This is [asset location tracking](https://blues.com/solutions-location-tracking/) built around the actual geography of the supply chain, not a lab ideal.
+
+<NewToBlues/>
 
 **Bench and limited field-trial assembly.** This reference build uses a Notecarrier CX, a Notecard, and a rechargeable 2 Ah LiPo battery enclosed in a polycarbonate IP67 housing (Hammond 1554C2GY or equivalent. See [§4](#4-hardware-requirements)) and affixed directly to the container using non-penetrating fasteners — stainless zip ties, band clamps, cradle brackets, or industrial-grade adhesive pads depending on the container type. No wiring to the container, no site infrastructure. Battery swaps are expected every 12–24 months in a low-motion deployment, so this hardware stack is suited to bench validation and short-duration field trials rather than a multi-year production rollout. The device self-configures on first power-on and operates autonomously; fleet operators manage all devices and tune per-fleet settings from Notehub. For production deployments requiring 3–5+ years between swaps, a custom carrier board with a Li-SOCl₂ primary cell replaces the LiPo path. See [§11](#11-limitations-and-next-steps).
 
@@ -29,10 +30,7 @@ This project takes a better approach. The Notecard's built-in accelerometer watc
 
 </Warning>
 
-<NewToBlues/>
-
 ## 2. System Architecture
-
 
 ![System architecture: Notecard MBGLW built-in accelerometer and cellular → Notecarrier CX Cygnet host → cellular → Notehub → routes](diagrams/01-system-architecture.svg)
 
@@ -89,7 +87,6 @@ The `reason` field is `0` (boot), `1` (heartbeat), or `2` (low battery). The `wh
 
 ## 3. Technical Summary
 
-
 1. Clone this repo and open `/firmware/tote_pool_tracker/tote_pool_tracker.ino` in Arduino IDE.
 2. Replace the empty `#define PRODUCT_UID ""` with your Notehub project's ProductUID.
 3. Install the **Arduino Core for STM32** and **Blues Wireless Notecard** library (see [§7.1](#71-installing-and-flashing)).
@@ -121,7 +118,6 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-
 > **Bench/POC BOM.** The components below equip the bench prototype documented here — the Notecarrier CX and its LiPo charge path are the right platform for bench validation and limited field trials. A production deployment targeting 3–5+ years between swaps requires a custom carrier board with a direct +VBAT input and a Li-SOCl₂ primary cell instead of the LiPo; see [§11](#11-limitations-and-next-steps) for that path.
 
 | Part | Qty | Rationale |
@@ -140,7 +136,6 @@ Here is a sample Note this device emits:
 Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
 ## 5. Wiring and Assembly
-
 
 ![Wiring and assembly: Notecard MBGLW in M.2 slot — cellular u.FL connected, WiFi PCB antenna built-in; LiPo on JST LIPO port; Mojo inline on battery rail (bench only)](diagrams/02-wiring-assembly.svg)
 
@@ -176,7 +171,6 @@ No external sensors are required for this project — the Notecard's built-in ac
 
 ## 6. Notehub Setup
 
-
 **1. Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:tote-tracker`.
 
 **2. Set the ProductUID in firmware.** Open [`tote_pool_tracker.ino`](firmware/tote_pool_tracker/tote_pool_tracker.ino) and replace the empty string on the `#define PRODUCT_UID ""` line (near the top) with your value. Alternatively, pass it as a build flag: `-DPRODUCT_UID=\"com.your-company.your-name:tote-tracker\"`.
@@ -205,7 +199,6 @@ The Notecard initiates an early session on first boot, so events typically appea
 - **`tote_event.qo`** — emitted with `sync:true` when the configured motion threshold is crossed (container starts or stops moving). The `event` field is `"departed"` (stopped → moving) or `"arrived"` (moving → stopped).
 
 ## 7. Firmware Design
-
 
 The firmware spans three files in the `firmware/` directory — keep all three together:
 
@@ -398,7 +391,6 @@ notecard.sendRequest(req);
 
 ## 8. Data Flow
 
-
 ![Data flow: accelerometer or timer wake → Cygnet reads motion state + battery → tote_event.qo (sync:true, immediate) or tote_heartbeat.qo (sync:true, templated) → Notehub appends location + routes](diagrams/03-data-flow.svg)
 
 **Collected.** On each wake cycle: current motion state (`"moving"` or `"stopped"` from the Notecard's internal accelerometer), battery voltage from the Notecard's rail monitor, and the wake-cycle counter. No external sensors are read; the Cygnet is active for only a few seconds per cycle.
@@ -413,7 +405,6 @@ notecard.sendRequest(req);
 **In-band alerts.** The `reason` code `2` (low battery) in `tote_heartbeat.qo` is the primary in-band signal for battery maintenance scheduling. Additional alerting logic, such as detecting containers outside expected site boundaries — is best implemented downstream, not in firmware; see [§11](#11-limitations-and-next-steps).
 
 ## 9. Validation and Testing
-
 
 **Expected steady-state.** A healthy tracker on an idle container generates one `tote_heartbeat.qo` per day and zero `tote_event.qo` events; both note types use `sync:true`, so each fires its own cellular session and arrives in Notehub within a session-establishment window of the on-device event. A tracker on an active container generates between 0 and a dozen `tote_event.qo` events per day (one `"departed"` and one `"arrived"` per transit leg) plus one `tote_heartbeat.qo`. If the Events tab in Notehub shows neither file after 5 minutes, the most likely causes are a missing or incorrect `PRODUCT_UID`, a disconnected antenna, or the device running from USB only (some bring-up environments supply USB power but not battery, which can affect the ATTN power-gating path on the Cygnet).
 
@@ -441,7 +432,6 @@ Useful Mojo bench validation: leave the assembly running for 24 h and confirm th
 - **Motion false triggers:** `tote_event.qo` notes are accumulating from dock-floor vibration or transport. Raise `motion_threshold` via the Fleet environment variable and watch the event rate drop without reflashing.
 
 ## 10. Troubleshooting
-
 
 **Device doesn't appear in Notehub Devices tab after 3–5 minutes.**
 
@@ -473,7 +463,6 @@ Useful Mojo bench validation: leave the assembly running for 24 h and confirm th
 
 ## 11. Limitations and Next Steps
 
-
 **Simplified for the POC:**
 
 - **LiPo battery vs. Li-SOCl₂ — primary scope constraint.** This POC build uses a rechargeable 2 Ah LiPo on the Notecarrier CX's charge-enabled power path. As discussed in [§9](#9-validation-and-testing), LiPo self-discharge limits practical service life to 12–24 months regardless of the low active-drain budget — this is the principal reason this build is documented as a bench prototype rather than a production deployment. For genuinely multi-year deployments — 3 to 5+ years between swaps — the right chemistry is Li-SOCl₂ (e.g., a D-size Tadiran TL-5930 at 3.6 V / 14.5 Ah, under 1% annual self-discharge). However, the Notecarrier CX's onboard charge IC is designed for LiPo chemistry; connecting a Li-SOCl₂ primary cell directly to the JST `LIPO` port would engage the charge circuit against a non-rechargeable cell, which is unsafe. A production deployment with Li-SOCl₂ requires a purpose-designed carrier board with no charging circuitry and a direct +VBAT input matched to the primary cell chemistry — the power path must be engineered from the ground up, not adapted from a charge-enabled design. The Notecarrier CX documented here is the right platform for prototyping and limited field trials.
@@ -501,7 +490,6 @@ Useful Mojo bench validation: leave the assembly running for 24 h and confirm th
 - Per-container asset metadata (container ID, type, tare weight, inspection due date) stored as Notehub device-level environment variables and appended to events by a JSONata route transform, so the fleet portal can display rich container profiles without requiring the tracker to store or transmit that data itself.
 
 ## 12. Summary
-
 
 Losing track of returnable containers is one of those costs that never appears as a single line item — it's diffuse, persistent, and easy to rationalize quarter after quarter until the replacement budget catches up. A tracker that clips to the container, wakes only when something interesting happens, and costs essentially nothing to operate between wakes is the right match for assets that spend most of their time sitting still.
 
