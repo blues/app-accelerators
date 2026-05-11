@@ -6,7 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-This project is a solar-powered [remote monitoring](https://blues.com/solutions-remote-monitoring/) system for bridges, culverts, and low-water crossings. The onboard Cygnet STM32 host samples an ultrasonic water-level sensor and a tipping-bucket rain gauge; a [Notecard for Skylo](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) handles connectivity, storage, and sync — firing flood alerts based on rising-water *trend* — not just a single instantaneous reading — so emergency crews get a warning before the culvert is already overwhelmed.
+This project is a solar-powered [remote monitoring](https://blues.com/solutions-remote-monitoring/) system for bridges, culverts, and low-water crossings. The onboard Cygnet STM32 host samples an ultrasonic water-level sensor and a tipping-bucket rain gauge; a [Notecard for Skylo](https://shop.blues.com/products/notecard-for-skylo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) handles connectivity, storage, and sync — firing flood alerts based on rising-water *trend* — not just a single instantaneous reading — so emergency crews get a warning before the culvert is already overwhelmed.
 
 ## 1. Project Overview
 

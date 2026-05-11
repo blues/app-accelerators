@@ -6,7 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-This project is a [truck roll reduction](https://blues.com/truck-roll-reduction/) project for fleets of portable sanitation units — porta-potties — that are currently serviced on fixed schedules whether they need it or not. A sealed level sensor and a [Blues Notecard Cell+WiFi](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) turn each unit into a self-reporting asset: the holding tank reports its own fill level so the service provider can route a pump truck only when and where it is actually needed.
+This project is a [truck roll reduction](https://blues.com/truck-roll-reduction/) project for fleets of portable sanitation units — porta-potties — that are currently serviced on fixed schedules whether they need it or not. A sealed level sensor and a [Blues Notecard Cell+WiFi](https://shop.blues.com/products/notecard-cellular?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) turn each unit into a self-reporting asset: the holding tank reports its own fill level so the service provider can route a pump truck only when and where it is actually needed.
 
 ## 1. Project Overview
 

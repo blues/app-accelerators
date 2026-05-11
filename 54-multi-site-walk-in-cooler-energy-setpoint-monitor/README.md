@@ -38,7 +38,7 @@ This project is the device that gets past that barrier. One SKU, cellular-connec
 
 ### First Event in 30 Minutes
 
-1. **Assemble the hardware** (Section 3–4): [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) + [Notecard Cell+WiFi](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), DS18B20 temperature probe, SCT-013-030 current transformer, reed switch door sensor, and 5V/2A power supply in a NEMA 4X enclosure.
+1. **Assemble the hardware** (Section 3–4): [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) + [Notecard Cell+WiFi](https://shop.blues.com/products/notecard-cellular?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), DS18B20 temperature probe, SCT-013-030 current transformer, reed switch door sensor, and 5V/2A power supply in a NEMA 4X enclosure.
 
 2. **Create a [Notehub](https://notehub.io) project** and copy your ProductUID.
 
@@ -113,7 +113,7 @@ Here is a sample Note this device emits:
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an embedded Cygnet STM32 host — no separate MCU needed for this three-sensor combination. |
-| [Notecard Cell+WiFi (MBGLW)](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/)) | 1 | Cellular-first connectivity that bypasses site WiFi entirely; WiFi fallback for the occasional co-operative site. |
+| [Notecard Cell+WiFi (MBGLW)](https://shop.blues.com/products/notecard-cell-wifi?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/)) | 1 | Cellular-first connectivity that bypasses site WiFi entirely; WiFi fallback for the occasional co-operative site. |
 | [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Inline coulomb counter for bench validation of sleep/wake current profiles before field deployment. |
 | [Adafruit Waterproof DS18B20 Temperature Sensor (product 381)](https://www.adafruit.com/product/381) | 1 | Calibrated digital 1-Wire temperature probe (±0.5 °C accuracy) in a stainless steel enclosure; purpose-built for wet, food-service environments where a bare thermistor would corrode. |
 | 4.7 kΩ resistor, ¼W | 1 | Required pull-up for the DS18B20 1-Wire data line; without it the bus hangs. |

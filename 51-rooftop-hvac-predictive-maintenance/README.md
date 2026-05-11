@@ -6,7 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-This project is a retrofit [downtime prevention](https://blues.com/downtime-prevention/) pack for commercial rooftop HVAC units. A handful of inexpensive sensors and a Blues [Notecard Cell+WiFi](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) turn an ordinary rooftop unit into a remotely-monitored, predictively-maintained asset — catching refrigerant loss, short-cycling, and clogged filters *before* the unit fails and a tenant loses cooling.
+This project is a retrofit [downtime prevention](https://blues.com/downtime-prevention/) pack for commercial rooftop HVAC units. A handful of inexpensive sensors and a Blues [Notecard Cell+WiFi](https://shop.blues.com/products/notecard-cellular?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) turn an ordinary rooftop unit into a remotely-monitored, predictively-maintained asset — catching refrigerant loss, short-cycling, and clogged filters *before* the unit fails and a tenant loses cooling.
 
 **What you'll have when you're done:** a weatherproof, line-powered sidecar bolted to a commercial rooftop air-conditioning unit that samples four sensors every minute, runs three failure-mode checks locally, and pages your on-call queue within ~60 seconds of a threshold trip — over cellular, with no site IT involvement and no modification to the unit itself. Hourly summaries are emitted on a separate event stream for trending and analytics. Operators can re-tune thresholds in the field from the cloud, with no firmware changes required.
 
@@ -67,7 +67,7 @@ Here is a sample Note this device emits:
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an embedded Cygnet STM32 host — no separate MCU needed for this sensor mix. |
-| [Notecard Cell+WiFi (MBGLW)](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) / [datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) | 1 | Cellular removes per-site IT involvement; WiFi fallback is available for sites that happen to have it. |
+| [Notecard Cell+WiFi (MBGLW)](https://shop.blues.com/products/notecard-cell-wifi?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) / [datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) | 1 | Cellular removes per-site IT involvement; WiFi fallback is available for sites that happen to have it. |
 | [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) *(optional, bench-only)* | 0–1 | Coulomb counter on the power rail for ground-truth energy validation during bench bring-up. **Not required for production deployment**. See [§9](#9-validation-and-testing) and [§11](#11-limitations-and-next-steps). |
 | 10 kΩ NTC thermistor, β=3950, waterproof duct probe | 2 | Duct-mount supply and return air temperature for cooling delta-T. |
 | 10 kΩ 1% resistor (divider series leg) | 2 | Pull-up for each thermistor divider. |

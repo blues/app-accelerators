@@ -6,7 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-This project is a [downtime prevention](https://blues.com/downtime-prevention/) reference design that turns an industrial centrifugal pump into a predictively-maintained, remotely-monitored asset by reading what the pump's existing **VFD** (variable frequency drive) already knows about itself — over **Modbus RTU**, on a real industrial **PLC** (programmable logic controller), with a cellular [Notecard](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) for the uplink.
+This project is a [downtime prevention](https://blues.com/downtime-prevention/) reference design that turns an industrial centrifugal pump into a predictively-maintained, remotely-monitored asset by reading what the pump's existing **VFD** (variable frequency drive) already knows about itself — over **Modbus RTU**, on a real industrial **PLC** (programmable logic controller), with a cellular [Notecard](https://shop.blues.com/products/notecard-cellular?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) for the uplink.
 
 ## 1. Project Overview
 
