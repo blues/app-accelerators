@@ -116,7 +116,7 @@ project. Feed the power into the `V+` and `GND` pins of the Notecarrier-F.
 
 ## Notehub Setup
 
-In order to push data from the Notecard to the cloud, you need to sign up for a free account on [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub).
+In order to push data from the Notecard to the cloud, you need to sign up for a free account on [notehub.io](https://notehub.io) and create a new project.
 
 ## Arduino Code
 

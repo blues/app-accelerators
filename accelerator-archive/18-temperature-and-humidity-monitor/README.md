@@ -23,7 +23,7 @@ Monitor temperature and humidity and send alerts using a Notecard and a BME280 s
 ## Notehub Setup
 
 Sign up for a free account on [notehub.io](https://notehub.io) and
-[create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub).
+create a new project.
 
 ## Hardware Setup
 

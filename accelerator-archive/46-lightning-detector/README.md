@@ -68,7 +68,7 @@ Break off a row of 7 headers and [solder](https://learn.sparkfun.com/tutorials/h
 
 ## Notehub Setup
 
-Sign up for a free account on [Notehub](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub).
+Sign up for a free account on [Notehub](https://notehub.io) and create a new project.
 
 ### Environment Variables
 

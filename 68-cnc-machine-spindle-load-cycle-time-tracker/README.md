@@ -102,7 +102,7 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ## 6. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/cnc_spindle_tracker/cnc_spindle_tracker.ino` (line 18, uncomment the `#define PRODUCT_UID` and insert your UID).
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a new project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/cnc_spindle_tracker/cnc_spindle_tracker.ino` (line 18, uncomment the `#define PRODUCT_UID` and insert your UID).
 
 2. **Claim the device.** Flash the OPTA and power the panel. On first cellular session the Notecard associates with your project automatically. Check Notehub **Fleet > Devices** within 5–10 minutes to confirm the device appears.
 

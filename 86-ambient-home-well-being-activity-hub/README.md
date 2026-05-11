@@ -6,7 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-This project is a [remote patient monitoring](https://blues.com/remote-patient-monitoring/) hub that gives clinicians and family caregivers a low-obtrusion signal that life is unfolding normally — without asking an elderly patient to wear anything or interact with any device. Four inexpensive sensors feed a [Blues Notecard Cell+WiFi](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), which reports hourly activity summaries and immediately flags the anomalies that matter: no sign of life by mid-morning, a pattern of repeated nighttime bathroom trips, or no detectable bed vibration during expected sleep hours.
+This project is a [remote patient monitoring](https://blues.com/remote-patient-monitoring/) hub that gives clinicians and family caregivers a low-obtrusion signal that life is unfolding normally — without asking an elderly patient to wear anything or interact with any device. Four inexpensive sensors feed a [Blues Notecard Cell+WiFi](https://shop.blues.com/products/notecard-cell-wifi?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), which reports hourly activity summaries and immediately flags the anomalies that matter: no sign of life by mid-morning, a pattern of repeated nighttime bathroom trips, or no detectable bed vibration during expected sleep hours.
 
 ## 1. Project Overview
 
@@ -16,15 +16,11 @@ These are hard questions to answer without either placing a camera in someone's 
 
 This project builds that hub. A PIR motion sensor in the main living area detects morning movement. A magnetic reed switch on the bathroom door detects nighttime trips. A humidity sensor in the bathroom records bathroom temperature and humidity as telemetry; raw readings appear in each hourly summary. Shower and bath inference from humidity spikes is a planned next-step enhancement (see [§11](#11-limitations-and-next-steps)). And a small piezo vibration sensor tucked under the mattress pad provides a coarse, single-point vibration signal that serves as a proxy for bed presence — detecting the micro-movements that suggest a person is in bed, but cannot confirm an immobile occupant, and is explicitly not full-coverage bed-occupancy detection (see [§11 Limitations](#11-limitations-and-next-steps)).
 
-> **Scope re-statement — bed sensor.** The project definition called for a *bed-occupancy piezo mat* at this position. This build formally re-scopes that requirement to a single-point *vibration-proxy* approach using the SparkFun SEN-09197 PVDF piezo film element — inexpensive, widely available, and requiring only the resistor voltage divider described in §4. The semantic change is deliberate and material: the SEN-09197 is a single-point vibration sensor, not a full-mat pressure array, so the system detects *absence of vibration at one point under the mattress* rather than confirmed bed vacancy. An immobile occupant — deeply asleep, post-surgery, or heavily medicated — can produce vibration below the detection threshold and read as "no vibration" even when present in the bed. Accordingly, the `no_bed_motion_during_sleep` alert signals a prolonged vibration-quiet period, not a confirmed empty bed, and `bed_motion_pct` in the summary is a vibration-activity percentage, not an occupancy percentage. For deployments that require positive occupancy confirmation — fall-risk or elopement monitoring for patients with limited mobility — substitute a weight-based FSR pressure mat or a dedicated medical-grade bed-exit sensor; the firmware's `readBedMotion()` interface, `bed_motion_pct` summary field, and Rule C detection logic are unchanged regardless of which sensor is installed. See [§11 Limitations](#11-limitations-and-next-steps) for a full discussion.
-
 **Why Notecard.** The project description puts it plainly: many elderly patients don't have configured WiFi, others have a router that gets unplugged during cleaning, and others live somewhere — an assisted living facility (ALF) room, an adult child's spare bedroom — where the network changes regularly. A device that depends on WiFi to phone home simply stops working through any of those transitions, and the gap in data is invisible to the care team until someone thinks to check. Cellular-first means the hub keeps reporting through all of it, with no site IT involvement and no router to pair to.
 
 <NewToBlues/>
 
-The Blues Notecard Cell+WiFi (NOTE-MBGLW) adds a second layer of resilience: for sites that can provide 2.4 GHz WiFi credentials, the hub can use WiFi as an optional fallback when cellular coverage at that address is marginal. WiFi is not automatic — it requires configured credentials or an open network at the deployment site, but for installations where WiFi is available and stable it reduces session latency and modem energy. For the care team, the connectivity model is transparent — data arrives on a schedule, and if it doesn't, that absence itself is signal worth acting on. See [Notehub device health monitoring](https://dev.blues.io/notehub/notehub-walkthrough/) for how to detect stale devices.
-
-**Why Notecarrier CX instead of Swan.** The project description mentions Swan as the host MCU. In practice, the onboard Cygnet STM32L4 embedded in the Notecarrier CX is a complete host MCU with more than enough I/O for this sensor mix (six GPIO/analog pins, I²C, UART, SPI), runs the full STM32 Arduino core, and needs no Feather board attached. Using the Notecarrier CX keeps the assembly compact, reduces power draw slightly, and preserves Feather slots for future expansion. There is no capability difference for this project.
+The Blues Notecard Cell+WiFi (NOTE-MBGLW) adds a second layer of resilience: for sites that can provide 2.4 GHz WiFi credentials, the hub can use WiFi as an optional fallback when cellular coverage at that address is marginal. WiFi is not automatic — it requires configured credentials or an open network at the deployment site, but for installations where WiFi is available and stable it reduces session latency and modem energy. For the care team, the connectivity model is transparent — data arrives on a schedule, and if it doesn't, that absence itself is signal worth acting on.
 
 **Deployment scenario.** This build is sized for a **studio room or compact ALF suite with an adjacent bathroom**, for example, a single-room assisted living unit where the bathroom door is within 4 m of the bed. The hub enclosure (roughly the size of a thick paperback) sits on the nightstand at the head of the bed, plugged into a wall outlet. From that single location, all four sensors are within practical cable range:
 
@@ -45,7 +41,7 @@ Nothing the patient interacts with. Nothing that needs charging.
 
 **Notehub responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM and delivers data to [Notehub](https://notehub.io) over the Internet; Notehub ingests events, stores every event, and applies project-level routes. The two Notefiles have deliberately different urgency profiles — `activity_summary.qo` is a low-urgency hourly record suitable for a long-term analytics store, while `activity_alert.qo` is an immediate notification worth routing to a care coordination platform or on-call paging service. Separating them at the source means the routing configuration stays simple.
 
-**Routing to the cloud (high level only).** Notehub supports HTTP/HTTPS webhooks, MQTT, AWS, Azure, GCP, and several other destinations. The specific downstream endpoint is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific cloud endpoint. Consider using [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) to group devices by care team or geographic region and apply routing rules at the fleet level.
+**Routing to the cloud.** Notehub supports HTTP/HTTPS webhooks, MQTT, AWS, Azure, GCP, and several other destinations. The specific downstream endpoint is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific cloud endpoint. Consider using [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) to group devices by care team or geographic region and apply routing rules at the fleet level.
 
 ## 3. Technical Summary
 
@@ -76,13 +72,12 @@ Here is a sample Note this device emits:
 }
 ```
 
-
 ## 4. Hardware Requirements
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/)) | 1 | Compact carrier with an embedded Cygnet STM32L4 host MCU — no separate Feather board required for this sensor mix. Onboard I²C pull-ups, analog reference, and dual 16-pin headers with GPIO, I²C, analog, and UART breakout are all included. |
-| [Notecard Cell+WiFi (NOTE-MBGLW)](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/)) | 1 | LTE Cat-1 bis cellular with 2.4 GHz WiFi fallback; 500 MB of prepaid global data. Cellular-first design means the hub works even when the patient's WiFi is absent or changes. No SIM activation or monthly fee. Cellular and WiFi u.FL antennas are included in the box — route them outside any metal enclosure for best performance. |
+| [Notecard Cell+WiFi (NOTE-MBGLW)](https://shop.blues.com/products/notecard-cell-wifi?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/)) | 1 | LTE Cat-1 bis cellular with 2.4 GHz WiFi fallback; 500 MB of prepaid global data. Cellular-first design means the hub works even when the patient's WiFi is absent or changes. No SIM activation or monthly fee. Cellular and WiFi u.FL antennas are included in the box — route them outside any metal enclosure for best performance. |
 | [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/mojo-datasheet/)) | 1 | **Bench-only.** Coulomb counter placed inline on the +VBAT rail during validation to measure idle current (should be < 25 µA) and cellular session energy. Removed before permanent deployment. See §8 for usage. |
 | [Adafruit Mini PIR Motion Sensor with 3-Pin Header (ID 4871)](https://www.adafruit.com/product/4871) ([tech docs](https://learn.adafruit.com/pir-passive-infrared-proximity-motion-sensor/)) | 1 | Breadboard-friendly PIR based on the AM312 sensor: 3–12 V supply, 3.3 V digital output — directly compatible with the Cygnet's 3.3 V GPIO logic. Up to 5 m detection range, 100° field of view, ~2 s output hold-off. Detects any occupant movement in the living area. |
 | [Adafruit Magnetic Contact Switch — Door Sensor (ID 375)](https://www.adafruit.com/product/375) | 1 | Normally-open reed switch in a plastic enclosure; closes within ~13 mm of its magnet. Full electrical specifications are on the product page. Installs on any door frame without modification. Mounts on the bathroom door for nighttime trip counting. |
@@ -96,7 +91,7 @@ Here is a sample Note this device emits:
 | USB-C 5V wall adapter, ≥ 1 A (e.g. [Adafruit ID 4298](https://www.adafruit.com/product/4298)) | 1 | Wall power for the hub. The Notecarrier CX accepts 5 V via its USB-C port. See §4 and §7.5 for an important note on idle-current figures when VUSB is present. |
 | [Hammond 1591XXFLBK project enclosure](https://www.hammfg.com/product/1591XX) (~5.9 × 3.1 × 2.2 in, ABS, black) | 1 | Houses the Notecarrier CX, Notecard, and any in-enclosure sensors. **Use a non-metallic enclosure** — a metal box will attenuate the cellular antenna significantly. Drill a ventilation aperture for the PIR field of view and cable entry holes for the off-board sensor leads. |
 
-All Blues parts include an active global SIM with 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
+All Blues Notecards include an active global SIM with 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
 ## 5. Wiring and Assembly
 
@@ -106,7 +101,7 @@ All host I/O lands on the Notecarrier CX dual 16-pin header. The Notecard Cell+W
 
 **Production power:** plug the USB-C 5 V wall adapter into the Notecarrier CX's USB-C port.
 
-> **Idle-current Note.** When powered via USB-C the Notecard's VUSB sense line is asserted, which prevents it from reaching its absolute lowest idle current state. The idle current figures in §7.5 and §8 are the VBAT-only figures from the Blues [low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/); a USB-C-powered deployment should budget 1–3 mA for Notecard idle between sessions rather than the sub-25 µA figure. For installations where minimising idle current is critical (battery backup, solar), power the Notecarrier CX from the +VBAT pad instead and leave USB-C for flashing only — the §8 bench procedure using Mojo on +VBAT will then reflect actual deployment current.
+> **Idle-current Note.** When powered via USB-C the Notecard's VUSB sense line is asserted, which prevents it from reaching its absolute lowest idle current state. The idle current figures in §7.5 and §8 are the VBAT-only figures from the Blues [low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/); a USB-C-powered deployment should budget 1–3 mA for Notecard idle between sessions rather than the sub-25 µA figure. For installations where minimizing idle current is critical (battery backup, solar), power the Notecarrier CX from the +VBAT pad instead and leave USB-C for flashing only — the §8 bench procedure using Mojo on +VBAT will then reflect actual deployment current.
 
 **Bench power (Mojo validation only, VBAT path):** feed an external 5 V supply into Mojo `BAT +`, connect Mojo `LOAD +` to the Notecarrier CX `+VBAT` pad (bypassing USB-C entirely), and connect common GND. This puts the Mojo in-line on the supply rail so it can report accurate mAh data at the low-power VBAT idle levels. Remove the Mojo before permanent deployment and revert to USB-C power.
 
@@ -123,11 +118,8 @@ All host I/O lands on the Notecarrier CX dual 16-pin header. The Notecard Cell+W
 - Mount the switch body on the door frame and the magnet on the door edge, within 13 mm of each other. This is a normally-open (NO) reed switch: when the door is **shut** and the magnet is within ~13 mm of the switch body, the contacts close, pulling D9 LOW. When the door **opens** the contacts open and the internal pull-up pulls D9 HIGH. The firmware detects the LOW→HIGH transition as a door-open event.
 
 **SHT31-D humidity/temperature sensor (Adafruit 2857) → I²C:**
-- Sensor `VIN` → Notecarrier CX `+3V3`
-- Sensor `GND` → Notecarrier CX `GND`
-- Sensor `SDA` → Notecarrier CX `SDA`
-- Sensor `SCL` → Notecarrier CX `SCL`
-- **Cable routing:** route a 4-conductor 22–26 AWG hookup wire from the I²C and power pins at the hub, along the same baseboard run as the reed switch cable, to the bathroom door frame. **I²C cable length:** the I²C specification caps total bus capacitance at 400 pF; typical stranded hookup wire adds roughly 60–100 pF/m. A run beyond ≈ 1.5 m begins to consume a significant fraction of that budget before sensor and controller pin capacitance are counted, and a 4 m run is at or beyond the outer practical limit of 100 kHz raw I²C. **For any bathroom sensor run longer than ≈ 1.5 m, use the NXP PCA9615 differential I²C bus extender from the BOM** — one board at the hub end and one at the sensor end. The PCA9615 converts single-ended I²C to differential signalling and completely eliminates the capacitance constraint, supporting runs well beyond 4 m reliably. If the bathroom sensor is co-located with the hub (≤ 0.5 m), the extender can be omitted. During bring-up, watch the serial log for SHT31 read failures or NaN humidity values — either indicates marginal signal integrity. The two cables (reed switch + SHT31) can share a single cable clip run along the baseboard.
+
+**Cable routing:** route a 4-conductor 22–26 AWG hookup wire from the I²C and power pins at the hub, along the same baseboard run as the reed switch cable, to the bathroom door frame. **I²C cable length:** the I²C specification caps total bus capacitance at 400 pF; typical stranded hookup wire adds roughly 60–100 pF/m. A run beyond ≈ 1.5 m begins to consume a significant fraction of that budget before sensor and controller pin capacitance are counted, and a 4 m run is at or beyond the outer practical limit of 100 kHz raw I²C. **For any bathroom sensor run longer than ≈ 1.5 m, use the NXP PCA9615 differential I²C bus extender from the BOM** — one board at the hub end and one at the sensor end. The PCA9615 converts single-ended I²C to differential signalling and completely eliminates the capacitance constraint, supporting runs well beyond 4 m reliably. If the bathroom sensor is co-located with the hub (≤ 0.5 m), the extender can be omitted. During bring-up, watch the serial log for SHT31 read failures or NaN humidity values — either indicates marginal signal integrity. The two cables (reed switch + SHT31) can share a single cable clip run along the baseboard.
 - Mount the SHT31 on or near the bathroom door frame, or just inside the bathroom threshold, oriented with the PTFE-filtered sensing port facing the air flow. Avoid placing it directly above a mirror or shower head where condensation can form on the PCB. Default I²C address is `0x44` (ADDR pin low); the firmware uses this default.
 
 **PCA9615 differential I²C bus extender (mandatory when the bathroom SHT31 run exceeds ~1.5 m):**
@@ -196,7 +188,7 @@ The divider ratio is 10k / (1M + 10k) ≈ 1/101, so the worst-case 90 V input be
 
 ### Project creation
 
-1. Sign up at [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:activity-hub`.
+1. Sign up at [notehub.io](https://notehub.io) and create a new project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:activity-hub`.
 2. All source files for this project live together in the sketch folder `firmware/activity_hub/`: the main entry point `activity_hub.ino` plus the helper files `app_state.h`, `notecard_helpers.h/.cpp`, and `sensor_alert.h/.cpp`. Open [`firmware/activity_hub/app_state.h`](firmware/activity_hub/app_state.h) — the shared configuration header included by every translation unit in the sketch, and replace the empty `PRODUCT_UID` string on the `#define` line near the top with your project's value. (In the single-file reference builds the ProductUID lives at the top of the `.ino`; because this project uses helper source files, the shared configuration header is the correct location.)
 
 ### Device provisioning
@@ -239,6 +231,7 @@ Within a minute of first power-on, the **Events** tab in your project should sta
 
 - **`_session.qo`** — automatic Notecard housekeeping events on each cellular session. If you see these, the radio is reaching Notehub. If the device never appears in the **Devices** tab, the most common causes are: `PRODUCT_UID` is empty or wrong, the cellular antenna is folded inside a metal enclosure, or there is no cellular coverage at the test site.
 - **`activity_summary.qo`** — one per `summary_interval_min` (default: 60 minutes). A correctly-deployed hub generates one per hour in steady state. Example:
+
   ```json
   {
     "pir_count": 14,
@@ -250,14 +243,17 @@ Within a minute of first power-on, the **Events** tab in your project should sta
     "morning_activity": true
   }
   ```
+
   See [§7.4](#74-event-payload-design) for the full field descriptions. Any field reading `-9999` (humidity or temperature) means no valid SHT31 sample has been recorded — treat it as a sensor fault, not a near-zero measurement.
 - **`activity_alert.qo`** — only emitted when an anomaly rule trips; transmitted immediately via `sync:true`. A healthy patient in a quiet home will generate zero of these per day. Example:
+
   ```json
   {
     "alert": "night_bathroom_pattern",
     "detail": "night_trips=4 limit=3"
   }
   ```
+  
   To test alert delivery during bench bring-up: (1) set `night_bathroom_limit` to `1`; (2) set `sleep_start_hour=0` and `sleep_end_hour=23` so the entire clock-day counts as the sleep window — door trips increment `night_bathroom_count` only when the current local time is inside the configured sleep window, so the alert will not fire if the current hour falls outside it; (3) force an environment sync by power-cycling the hub or issuing `{"req":"hub.sync"}` from the Notecard's USB serial console. Once the new values are active, open the bathroom door — the rule fires on the next `runCycle()` call. Worst-case alert latency from door-open to Notehub delivery is one full sample interval (up to 5 minutes at the default cadence) plus 15–60 seconds for cellular session establishment; allow up to 6 minutes before concluding the alert did not fire.
 
 ## 7. Firmware Design

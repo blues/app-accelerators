@@ -76,7 +76,7 @@ With the build complete, you will have two power monitors, each with an AC inlet
 
 ## Notehub
 
-Sign up for a free account on [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub).
+Sign up for a free account on [notehub.io](https://notehub.io) and create a new project.
 
 ## Application Firmware
 

@@ -63,7 +63,7 @@ This app provides a simple to construct greenhouse monitoring device that can be
 
 ## Notehub
 
-Sign up for a free account on [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub).
+Sign up for a free account on [notehub.io](https://notehub.io) and create a new project.
 
 This solution can be used to monitor a single greenhouse, or monitor multiple greenhouses at a facility by deploying multiple instances of this app. When monitoring multiple greenhouses at a facility, it can be useful to group the monitors at a facility into a Fleet. For more details, see [The Fleet Administrator's Guide](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/).
 

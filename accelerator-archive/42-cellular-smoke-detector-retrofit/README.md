@@ -91,7 +91,7 @@ You're now ready to configure your Notehub project and the Notecard so you can r
 
 ## Notehub Setup
 
-Sign up for a free account on [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Your Notehub project is where you'll view smoke detector alarm events and where you'll configure a Twilio route to get an SMS text when an alarm happens.
+Sign up for a free account on [notehub.io](https://notehub.io) and create a new project. Your Notehub project is where you'll view smoke detector alarm events and where you'll configure a Twilio route to get an SMS text when an alarm happens.
 
 ## Notecard Setup
 

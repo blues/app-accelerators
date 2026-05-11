@@ -180,7 +180,7 @@ An intermodal chassis has no roof — it is a flat, low steel frame sized for a 
 
 ### Creating the project and provisioning the device
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:trailer-tracker`.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a new project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:trailer-tracker`.
 2. **Set the ProductUID in firmware.** Open [`firmware/trailer_fleet_tracker_starnote/trailer_fleet_tracker_starnote_helpers.h`](firmware/trailer_fleet_tracker_starnote/trailer_fleet_tracker_starnote_helpers.h) and replace the empty string on the `#define PRODUCT_UID ""` line with your value.
 3. **Power the unit.** On first cellular session the Notecard associates itself with your project automatically — no manual claim step required. The device appears in your project's **Devices** tab within a minute or two.
 

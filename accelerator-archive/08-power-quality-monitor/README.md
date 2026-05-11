@@ -67,7 +67,7 @@ With the build complete, you will have a power monitor with an AC inlet and two 
 
 ## Notehub
 
-Sign up for a free account on [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub).
+Sign up for a free account on [notehub.io](https://notehub.io) and create a new project.
 
 This solution can be used to monitor a single machine, or monitor multiple machines at a facility. When monitoring multiple machines at a facility, it can be useful to group the monitors at a facility into a Fleet. For more details, see [The Fleet Administrator's Guide](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/).
 

@@ -75,7 +75,7 @@ The Cellular-Connected Electronic Kiosk Python scripts require data from a Noteh
 
 ### Create a New Project
 
-As such, to run this sample sign up for a free account on [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub).
+As such, to run this sample sign up for a free account on [notehub.io](https://notehub.io) and create a new project.
 
 
 ### Create a Proxy Route

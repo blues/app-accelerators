@@ -13,7 +13,7 @@ Receive updates on restroom cleanliness so that it can be serviced when needed.
 
 ## Notehub Setup
 
-Sign up for a free account on [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub).
+Sign up for a free account on [notehub.io](https://notehub.io) and create a new project.
 
 ## LoRa Gateway Setup
 

@@ -146,7 +146,7 @@ With your model trained, you'll now deploy it to the OpenMV cam's MCU.
 
 ## Notehub Setup
 
-In order to push data from the Notecard to the cloud, you need to sign up for a free account on [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub).
+In order to push data from the Notecard to the cloud, you need to sign up for a free account on [notehub.io](https://notehub.io) and create a new project.
 
 ## MicroPython Code
 
