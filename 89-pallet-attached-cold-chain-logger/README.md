@@ -1,4 +1,4 @@
-# Shipper-Owned Cargo-Level Cold Chain Monitor
+# Pallet-Attached Cold Chain Logger
 
 ![pallet-attached cold chain logger banner](banner.png)
 
