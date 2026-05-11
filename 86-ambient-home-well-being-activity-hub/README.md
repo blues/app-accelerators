@@ -1,5 +1,7 @@
 # Ambient Home Well-Being & Activity Hub
 
+![Ambient Home Well-Being & Activity Hub banner](banner.png)
+
 <Note>
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Ambient%20Home%20Well-Being%20%26%20Activity%20Hub).
