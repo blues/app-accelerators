@@ -1,5 +1,7 @@
 # Remote Cabinet Backup Battery Sentinel — Pack-Level 12 V / 24 V Battery Monitor
 
+![Remote Cabinet Backup Battery Sentinel banner](banner.png)
+
 <Note>
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Remote%20Cabinet%20Backup%20Battery%20Sentinel%20%E2%80%94%20Pack-Level%2012%20V%20%2F%2024%20V%20Battery%20Monitor).
@@ -7,9 +9,6 @@ This reference application is intended to provide inspiration and help you get s
 </Note>
 
 This project is a pack-level sentinel — a Blues [battery management systems](https://blues.com/battery-management-systems/) reference design — for the backup battery inside a **traffic-signal controller, roadside IoT gateway, industrial RTU, or equipment cabinet** running on a **12 V or 24 V positive-referenced DC bus**. A Blues [Notecard Cell+WiFi](https://shop.blues.com/products/notecard-cell-wifi?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) and [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), paired with a precision current/voltage monitor and a surface-mounted thermistor, continuously measure pack voltage, bidirectional current, surface temperature, and state-of-charge — with proactive alerts on charger faults, elevated float current (a reliable early indicator of **VRLA** capacity degradation weeks before failure. See §8 for chemistry-specific caveats), mains power loss detected within one sample interval, and a low-SoC threshold trip. Over cellular, independent of every piece of equipment the battery is supposed to protect.
-
-> **Hardware scope — pack-level sentinel only.** This design measures four signals at the pack level: terminal voltage, bidirectional current, surface temperature, and state-of-charge via coulomb counting. **Per-cell voltage monitoring and cell-imbalance detection are intentionally outside the scope of this design**; they require a dedicated cell-monitor IC (e.g. TI BQ76940) wired to individual cell taps — a substantially different hardware design that is noted as a future extension in §9. SoC is tracked by integrating pack current against a commissioned `usable_capacity_ah` baseline. See §6 for commissioning and §9 for accuracy caveats. The onboard 15 mΩ INA228 shunt is rated for approximately 8 A continuous — appropriate for installations where peak discharge current stays within that range. For installations where peak discharge current exceeds 8 A, use the breakout's external-shunt footprint with a lower-value busbar shunt; see §4 and §9 for details.
-
 
 ## 1. Project Overview
 
@@ -33,7 +32,7 @@ The Notecard manages its own cellular session against the supported carrier netw
 
 ![System architecture: battery sensors → Notecarrier CX edge enclosure → cellular/WiFi → Notehub → routes](diagrams/01-system-architecture.svg)
 
-**Device-side responsibilities.** The onboard Cygnet STM32L433 host on the Notecarrier CX wakes every two minutes, reads pack voltage and bidirectional current from the INA228 over Qwiic, reads surface temperature from the NTC thermistor on A0, then evaluates six battery-condition rules plus one sensor-health alert locally. Any rule that trips emits an alert [Note](https://dev.blues.io/api-reference/glossary/#note) with `sync:true` for immediate delivery. All per-window statistics accumulate in a state struct serialised into Notecard flash by `NotePayloadSaveAndSleep` before the host powers off; [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) handles the host power-gating so the MCU is off entirely between samples. Window-average power (`voltAvg × currAvg`) is derived at summary time, not sampled per-read from the INA228 power register.
+**Device-side responsibilities.** The onboard Cygnet STM32L433 host on the Notecarrier CX wakes every two minutes, reads pack voltage and bidirectional current from the INA228 over Qwiic, reads surface temperature from the NTC thermistor on A0, then evaluates six battery-condition rules plus one sensor-health alert locally. Any rule that trips emits an alert [Note](https://dev.blues.io/api-reference/glossary/#note) with `sync:true` for immediate delivery. All per-window statistics accumulate in a state struct serialized into Notecard flash by `NotePayloadSaveAndSleep` before the host powers off; [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) handles the host power-gating so the MCU is off entirely between samples. Window-average power (`voltAvg × currAvg`) is derived at summary time, not sampled per-read from the INA228 power register.
 
 **Notecard responsibilities.** The Notecard manages its own cellular session against the supported carrier networks worldwide via its embedded global SIM, stores Notes in its on-device queue, establishes sessions on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 minutes), and flushes `sync:true` alert Notes immediately. It also distributes [environment variable](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) updates from Notehub to the host on its inbound schedule — operators can retune every threshold and both cadence values without reflashing.
 
@@ -115,7 +114,11 @@ All Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 **Lockout/tagout.** Before making any connections to an energised battery bus: isolate and lock out the battery charger and all parallel discharge paths (lockout/tagout procedure), use insulated tools, remove metallic jewelry and watchbands, and confirm the bus is de-energized before touching conductors. For cabinet installations with multiple parallel battery strings, all strings must be isolated simultaneously before working in the positive-bus circuit.
 
-> **Voltage range Note.** This BOM targets a **positive-referenced DC bus** — the INA228 high-side sensing topology and the non-isolated 5 V step-down converter both reference the negative bus as circuit ground. It covers **12 V and 24 V positive-referenced** VRLA and LFP charger buses (e.g., 12 V VRLA at 13.5–14.7 V float; 24 V VRLA at 27–29.4 V float). For 24 V systems, update `volt_min_v` and `volt_max_v` to match your charger's float window — see §6 — and use the Pololu D24V50F5 listed in the BOM. Also verify that the expected peak discharge current is within the shunt's rating (≤8 A for the onboard 15 mΩ shunt; use an external shunt for higher-current installations).
+<Note>
+
+This BOM targets a **positive-referenced DC bus** — the INA228 high-side sensing topology and the non-isolated 5 V step-down converter both reference the negative bus as circuit ground. It covers **12 V and 24 V positive-referenced** VRLA and LFP charger buses (e.g., 12 V VRLA at 13.5–14.7 V float; 24 V VRLA at 27–29.4 V float). For 24 V systems, update `volt_min_v` and `volt_max_v` to match your charger's float window — see §6 — and use the Pololu D24V50F5 listed in the BOM. Also verify that the expected peak discharge current is within the shunt's rating (≤8 A for the onboard 15 mΩ shunt; use an external shunt for higher-current installations).
+
+</Note>
 
 ## 5. Wiring and Assembly
 
@@ -471,7 +474,6 @@ If a symptom does not appear above, post a description (with the relevant `[sent
 
 ---
 
-
 ## 11. Limitations and Next Steps
 
 **Simplified for the POC:**
@@ -496,7 +498,6 @@ If a symptom does not appear above, post a description (with the relevant `[sent
 - **Add an inbound `battery_command.qi` Notefile** for fleet operators to reset SoH accumulators after a pack swap, clear alert cooldowns following a planned maintenance visit, or trigger an immediate ad-hoc sample-and-report.
 
 ---
-
 
 ## 12. Summary
 
