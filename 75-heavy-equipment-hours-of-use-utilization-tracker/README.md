@@ -14,7 +14,7 @@ This project is a retrofit [asset location tracking](https://blues.com/solutions
 
 Vibration-based hour detection solves the retrofit problem entirely. A small enclosure attached magnetically to the equipment frame asks one question on each sample: *is this equipment's engine currently running?* Getting the answer right is harder than it sounds. A rented excavator sitting in the back of a flatbed travels to a job site with its engine off, but the truck's diesel vibration and road shock look a lot like engine idle to a simple threshold-based accelerometer. This project addresses that with a two-parameter vibration signature algorithm: the root-mean-square (RMS) amplitude of the net acceleration residual measures activity level, and the coefficient of variation (CV, or σ/μ) discriminates steady periodic engine vibration from the irregular, bursty character of transport shock. Engine idle produces a low CV; road vibration produces a high one. Together they give three reliable states — **engine running**, **in transport**, and **idle/stopped** — without a single wire to the equipment.
 
-**Why Notecard for Skylo.** The equipment is mobile by definition, moving among customer job sites with no WiFi and often in areas where cellular coverage is marginal or absent. Open-pit mine sites, remote pipeline corridors, and offshore wind-farm construction zones all fall into this category. The [Notecard for Skylo (NOTE-NBGLWX)](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) consolidates LTE-M, NB-IoT, GPRS, WiFi fallback, and Skylo satellite NTN (non-terrestrial network) on a single M.2 module — no separate satellite modem, no Starnote companion board required. When cellular is available, notes flow over LTE-M with the low latency and high throughput you'd expect. When the equipment sits at the bottom of a quarry or behind a ridge where no tower reaches, the Notecard automatically falls back to satellite uplink through Skylo's NTN satellite service. The operator sees unbroken location and hours telemetry regardless of site topology, and the firmware never has to know which network was used.
+**Why Notecard for Skylo.** The equipment is mobile by definition, moving among customer job sites with no WiFi and often in areas where cellular coverage is marginal or absent. Open-pit mine sites, remote pipeline corridors, and offshore wind-farm construction zones all fall into this category. The [Notecard for Skylo (NOTE-NBGLWX)](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) consolidates LTE-M, NB-IoT, GPRS, WiFi fallback, and Skylo satellite NTN (non-terrestrial network) on a single M.2 module — no separate satellite modem, no Starnote companion board required. When cellular is available, Notes flow over LTE-M with the low latency and high throughput you'd expect. When the equipment sits at the bottom of a quarry or behind a ridge where no tower reaches, the Notecard automatically falls back to satellite uplink through Skylo's NTN satellite service. The operator sees unbroken location and hours telemetry regardless of site topology, and the firmware never has to know which network was used.
 
 <NewToBlues/>
 
@@ -139,7 +139,7 @@ Confirm the port assignments in the [NOTE-NBGLWX datasheet](https://dev.blues.io
    | `geofence_lon` | `0.0` | Longitude of the job-site geofence center (decimal degrees, –180 to 180). Must be set together with `geofence_lat` and `geofence_radius_m`. |
    | `geofence_radius_m` | `0` | Radius in meters. When all three geofence parameters (`geofence_lat`, `geofence_lon`, `geofence_radius_m`) are non-zero and in range, the Notecard monitors the device's position against the fence center and triggers a `_track.qo` event when the equipment leaves the site. A change to any of the three values (including radius alone) is detected on the next device wake and re-applied. Setting to 0 clears an active fence on the next wake. No-op if no fence was previously configured. |
 
-6. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `equip_event.qo` (state-change events, low volume, immediate delivery to billing or dispatch) and a second for `equip_summary.qo` (rolling summary window notes, delivered to a utilization dashboard or historian). A third route on `_track.qo` handles geofence-exit location breadcrumbs. Separating the Notefiles at source means different routing urgencies without any filter logic in the route itself.
+6. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `equip_event.qo` (state-change events, low volume, immediate delivery to billing or dispatch) and a second for `equip_summary.qo` (rolling summary window Notes, delivered to a utilization dashboard or historian). A third route on `_track.qo` handles geofence-exit location breadcrumbs. Separating the Notefiles at source means different routing urgencies without any filter logic in the route itself.
 
 ### What to expect in Notehub
 
@@ -244,7 +244,7 @@ Open the serial monitor at **115200 baud** after flashing. You will see `[BOOT] 
 | Geofence reconfiguration on env-var change | `applyGeofenceIfChanged` |
 | Accelerometer burst sampling + RMS/CV classifier | `classifyVibration` |
 | Hour-meter accumulation per state bucket | `updateHourAccumulator` |
-| State-change event dequeue and delivery (note.add + hub.sync, at-least-once retry) | `sendNextPendingEvent` |
+| State-change event dequeue and delivery (Note.add + hub.sync, at-least-once retry) | `sendNextPendingEvent` |
 | Daily summary emission | `sendSummary` |
 | Time and voltage from Notecard | `getEpoch`, `getBatteryVoltage` |
 | Persist state to Notecard flash + sleep | `goToSleep` / `NotePayloadSaveAndSleep` |
@@ -262,7 +262,7 @@ Classifying engine vibration from transport vibration was the primary design cha
 
 ### 7.4 Event payload design
 
-Both Notefiles use [compact templates](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) — required for Notecard for Skylo, where satellite data packets are constrained to 256 bytes and cost per byte beyond the included 10 KB. Compact templates store notes as fixed-length binary records on the Notecard rather than free-form JSON, reducing wire size 3–5× compared to untemplated Notes.
+Both Notefiles use [compact templates](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) — required for Notecard for Skylo, where satellite data packets are constrained to 256 bytes and cost per byte beyond the included 10 KB. Compact templates store Notes as fixed-length binary records on the Notecard rather than free-form JSON, reducing wire size 3–5× compared to untemplated Notes.
 
 `equip_summary.qo` (rolling summary window, queued):
 ```json
@@ -291,7 +291,7 @@ Both Notefiles use [compact templates](https://dev.blues.io/notecard/notecard-wa
 }
 ```
 
-GPS coordinates are automatically attached to both note types by the Notecard from its last valid GPS fix — declared in the compact templates using the `_lat`/`_lon` metadata keywords. No firmware code explicitly manages coordinates in the note bodies.
+GPS coordinates are automatically attached to both Note types by the Notecard from its last valid GPS fix — declared in the compact templates using the `_lat`/`_lon` metadata keywords. No firmware code explicitly manages coordinates in the Note bodies.
 
 ### 7.5 Low-power strategy
 
@@ -332,7 +332,7 @@ return (cv < g_vib_cv_max) ? ST_RUNNING : ST_TRANSPORT;
 
 ### 7.8 Key code snippet 2: compact template with GPS metadata
 
-The `_lat`/`_lon` keywords in a compact template body instruct the Notecard to embed the most recent GPS fix into the note automatically. No explicit coordinate plumbing in `note.add` calls.
+The `_lat`/`_lon` keywords in a compact template body instruct the Notecard to embed the most recent GPS fix into the Note automatically. No explicit coordinate plumbing in `note.add` calls.
 
 Compact template value encoding (the numeric code parameter):
 - **14.1** = IEEE 754 4-byte float (32-bit), 1 decimal place in display. Use for large dynamic ranges (hours, totals, coordinates).
@@ -371,7 +371,7 @@ else  /* ST_IDLE */                 tag = (g_s.prev_state == ST_RUNNING) ? "engi
 
 `session_min` is non-zero on `engine_stop` (and on `transport_start` when transitioning from RUNNING) — it records how long the engine was running since the last `engine_start`. After being consumed by the first non-RUNNING transition, `run_session_start` is cleared to zero; subsequent non-RUNNING transitions (`transport_stop`, or any transition from a non-RUNNING prior state such as `IDLE → TRANSPORT`) therefore always emit `session_min = 0`.
 
-The note is queued with `note.add` (without `sync:true`); a separate `hub.sync` call then requests prompt delivery without coupling the network session to the note acknowledgement:
+The Note is queued with `note.add` (without `sync:true`); a separate `hub.sync` call then requests prompt delivery without coupling the network session to the Note acknowledgement:
 
 ```cpp
 J *req = notecard.newRequest("note.add");
@@ -388,7 +388,7 @@ notecard.sendRequest(req);
 notecard.sendRequest(notecard.newRequest("hub.sync"));
 ```
 
-`note.add` on a `.qo` outgoing queue Notefile is a pure append — the Notecard API does not expose a deduplication field for outgoing queue Notes. If the I²C acknowledgement is lost after the Notecard has already accepted the note, a host retry on the next wake will create a duplicate entry in the Notecard's queue. This is an acknowledged edge case: the ring-buffer design guarantees **at-least-once delivery**, and a retransmitted duplicate is preferable to a dropped billing record. The `epoch` field — the Unix timestamp of the actual state transition, captured when the event was enqueued rather than when it was delivered — is what makes server-side deduplication tractable: key on `epoch` + `event` in your downstream route to collapse duplicates without discarding any unique transitions.
+`note.add` on a `.qo` outgoing queue Notefile is a pure append — the Notecard API does not expose a deduplication field for outgoing queue Notes. If the I²C acknowledgement is lost after the Notecard has already accepted the Note, a host retry on the next wake will create a duplicate entry in the Notecard's queue. This is an acknowledged edge case: the ring-buffer design guarantees **at-least-once delivery**, and a retransmitted duplicate is preferable to a dropped billing record. The `epoch` field — the Unix timestamp of the actual state transition, captured when the event was enqueued rather than when it was delivered — is what makes server-side deduplication tractable: key on `epoch` + `event` in your downstream route to collapse duplicates without discarding any unique transitions.
 
 ---
 
@@ -401,8 +401,8 @@ notecard.sendRequest(notecard.newRequest("hub.sync"));
 **Accumulated** in flash: running hours today, lifetime running hours, transport hours today, session start timestamp.
 
 **Transmitted:**
-- `equip_event.qo` — one note per state transition; after the Notecard acknowledges the queued Note, the firmware issues a `hub.sync` request to prompt delivery outside the scheduled outbound window. Typically 2–6 notes per work day (engine start, possible midday idle, engine stop; transport start/stop on delivery days). Goes to Notehub within a cellular session-establishment window (~15–60 seconds), or when NTN service is available — satellite delivery depends on sky visibility and session establishment and may take longer than cellular.
-- `equip_summary.qo` — one note per `summary_interval_min` (default 1440 minutes), queued and shipped in the Notecard's next outbound session. Covers the rolling summary window since the last report, not a calendar day; the first Note after boot may represent a partial window if the Notecard's clock was not yet valid at startup. Carries run hours for the window, lifetime total, transport hours, battery voltage, and a fault counter (`fault_ct`) reflecting any event-queue overflows since the last summary.
+- `equip_event.qo` — one Note per state transition; after the Notecard acknowledges the queued Note, the firmware issues a `hub.sync` request to prompt delivery outside the scheduled outbound window. Typically 2–6 Notes per work day (engine start, possible midday idle, engine stop; transport start/stop on delivery days). Goes to Notehub within a cellular session-establishment window (~15–60 seconds), or when NTN service is available — satellite delivery depends on sky visibility and session establishment and may take longer than cellular.
+- `equip_summary.qo` — one Note per `summary_interval_min` (default 1440 minutes), queued and shipped in the Notecard's next outbound session. Covers the rolling summary window since the last report, not a calendar day; the first Note after boot may represent a partial window if the Notecard's clock was not yet valid at startup. Carries run hours for the window, lifetime total, transport hours, battery voltage, and a fault counter (`fault_ct`) reflecting any event-queue overflows since the last summary.
 - `_track.qo` — emitted autonomously by the Notecard's GPS subsystem every 4 hours as a heartbeat location record, and on geofence exit if `geofence_radius_m` is set. The firmware does not generate these directly.
 
 **Routed.** Both application Notefiles go to Notehub and from there to whatever downstream endpoints the project's routes specify. Typical fan-out: `equip_event.qo` → billing/dispatch system or CMMS (computerized maintenance management system) webhook; `equip_summary.qo` → time-series database for trending and predictive maintenance scheduling; `_track.qo` → mapping/GIS layer.
@@ -419,7 +419,7 @@ notecard.sendRequest(notecard.newRequest("hub.sync"));
 
 ## 9. Validation and Testing
 
-**Expected steady-state on an active job site.** In normal operation, expect 2–4 `equip_event.qo` notes per day (engine start, engine stop, possibly a midday shutdown), one `equip_summary.qo` per summary window (default every 24 hours), and six `_track.qo` location heartbeats per day (one every 4 hours, matching `GPS_HEARTBEAT_HOURS = 4`), plus any additional `_track.qo` notes triggered by geofence events. On a delivery day, expect additional `transport_start` and `transport_stop` events bracketing the transit. If the engine was running immediately before transport, the `transport_start` note will carry a non-zero `session_min` recording the run duration.
+**Expected steady-state on an active job site.** In normal operation, expect 2–4 `equip_event.qo` Notes per day (engine start, engine stop, possibly a midday shutdown), one `equip_summary.qo` per summary window (default every 24 hours), and six `_track.qo` location heartbeats per day (one every 4 hours, matching `GPS_HEARTBEAT_HOURS = 4`), plus any additional `_track.qo` Notes triggered by geofence events. On a delivery day, expect additional `transport_start` and `transport_stop` events bracketing the transit. If the engine was running immediately before transport, the `transport_start` Note will carry a non-zero `session_min` recording the run duration.
 
 **Bench validation.** On a desk, the equipment is IDLE — the accelerometer should report low RMS and the classifier should output `ST_IDLE`. The serial monitor shows `[VIB] rms=X.X mg cv=Y.YYY → IDLE`. To simulate an engine:
 
@@ -428,7 +428,7 @@ notecard.sendRequest(notecard.newRequest("hub.sync"));
 
 **Tuning the classifier on your equipment.** If the classifier misfires at default thresholds (false RUNNING on transport, or failure to detect idle):
 
-1. Tap the enclosure in the three states and note the RMS and CV values printed on the serial monitor.
+1. Tap the enclosure in the three states and Note the RMS and CV values printed on the serial monitor.
 2. If **idle is triggering as RUNNING**, raise `vib_run_mg` slightly (try 18.0 or 20.0). This raises the activity floor.
 3. If **transport is triggering as RUNNING**, lower `vib_cv_max` (try 0.35 or 0.30). This tightens the "engine-like vibration" criterion.
 4. If **engine start is missed entirely**, lower `vib_run_mg` (try 12.0 or 10.0) or raise `vib_cv_max` (try 0.45).
@@ -455,12 +455,12 @@ A healthy Mojo trace at default settings will show the following pattern:
 - **Brief ~5–15 mA blip every 30 seconds, ~2–3 seconds long** — the Cygnet powering up, running the IMU sample burst, and classifying vibration before calling `goToSleep()`.
 - **~20–50 mA pulses at up to 15-minute intervals, 10–60 seconds long** — the Notecard GNSS module acquiring a location fix (periodic mode; actual cadence may be lower when the device is stationary).
 - **Three scheduled inbound sessions per day** — every 8 hours the Notecard briefly contacts Notehub to pull environment-variable updates (`inbound: 480`); each session is typically 10–30 seconds on LTE-M. Plus **one daily outbound session** carrying the queued `equip_summary.qo` (typically 10–60 seconds on LTE-M). On NTN, both inbound and outbound sessions may take longer depending on satellite availability.
-- **Additional radio sessions for each state-change event** — after each `equip_event.qo` note is accepted by the Notecard, the firmware issues a `hub.sync` request to trigger an immediate Notecard sync outside the scheduled cadence. A typical active work day produces 2–6 state-change events (engine start, stop, possible midday transport legs), so expect 2–6 additional sessions above the baseline. Combined, expect roughly **6–10 total sessions per active work day** at default settings.
+- **Additional radio sessions for each state-change event** — after each `equip_event.qo` Note is accepted by the Notecard, the firmware issues a `hub.sync` request to trigger an immediate Notecard sync outside the scheduled cadence. A typical active work day produces 2–6 state-change events (engine start, stop, possible midday transport legs), so expect 2–6 additional sessions above the baseline. Combined, expect roughly **6–10 total sessions per active work day** at default settings.
 - **Geofence-triggered transmissions** (if `geofence_radius_m` is set) — the Notecard emits a `_track.qo` autonomously on geofence exit and syncs it immediately.
 
 If the baseline is continuously 10+ mA, the Cygnet is not sleeping — confirm that the `ATTN → EN` jumper described in §5 is physically present and seated, then check that `NotePayloadSaveAndSleep` is not returning early (the serial output will confirm). If a cellular or NTN session is unusually long (>60 seconds on LTE-M), the radio is struggling with signal quality; check the MAIN antenna placement, verify it has an unobstructed sky view, and confirm the antenna is the Skylo-certified unit that ships with the NOTE-NBGLWX.
 
-**Solar viability estimate.** Because the Mojo is on the load rail, it measures consumption only — current flowing through the Notecarrier CX's separate solar charger input is invisible to it. With the solar panel disconnected and the unit running from a known LiPo or bench supply, run the Mojo for a full 24-hour period and note total mAh consumed. Compare that figure against the theoretical harvest for your panel size and site: a 1W panel with 4 effective sun-hours produces **4 Wh (4000 mWh) raw**; after typical derating for panel temperature and incidence angle (~80%), charger conversion efficiency (~85%), and soiling (~90%), usable harvest is roughly **2.4 Wh — approximately 480 mAh at 5V**. At default settings the GPS cadence alone adds ~15–30 mAh/day; combined with host wakes, three daily inbound check-ins, one outbound sync, and typically 2–6 event sessions on active days, expect whole-device consumption of **65–120 mAh/day**. A 1W panel with ≥3 effective sun-hours per day typically covers this on cellular; satellite sessions draw more per session, so size the panel per-site. If Mojo shows a rising deficit across repeated 24-hour tests (solar disconnected), consider a 2–5 W panel, a higher-capacity LiPo, or a longer GPS period (`GPS_PERIOD_SECONDS`). To validate actual panel and charger harvest rather than relying on the derating model, place a DC current meter inline on the solar cable itself and log it over a representative sun-exposed day.
+**Solar viability estimate.** Because the Mojo is on the load rail, it measures consumption only — current flowing through the Notecarrier CX's separate solar charger input is invisible to it. With the solar panel disconnected and the unit running from a known LiPo or bench supply, run the Mojo for a full 24-hour period and Note total mAh consumed. Compare that figure against the theoretical harvest for your panel size and site: a 1W panel with 4 effective sun-hours produces **4 Wh (4000 mWh) raw**; after typical derating for panel temperature and incidence angle (~80%), charger conversion efficiency (~85%), and soiling (~90%), usable harvest is roughly **2.4 Wh — approximately 480 mAh at 5V**. At default settings the GPS cadence alone adds ~15–30 mAh/day; combined with host wakes, three daily inbound check-ins, one outbound sync, and typically 2–6 event sessions on active days, expect whole-device consumption of **65–120 mAh/day**. A 1W panel with ≥3 effective sun-hours per day typically covers this on cellular; satellite sessions draw more per session, so size the panel per-site. If Mojo shows a rising deficit across repeated 24-hour tests (solar disconnected), consider a 2–5 W panel, a higher-capacity LiPo, or a longer GPS period (`GPS_PERIOD_SECONDS`). To validate actual panel and charger harvest rather than relying on the derating model, place a DC current meter inline on the solar cable itself and log it over a representative sun-exposed day.
 
 ---
 
@@ -475,7 +475,7 @@ If the baseline is continuously 10+ mA, the Cygnet is not sleeping — confirm t
 | Classifier falsely triggers `RUNNING` during idle periods | Thresholds too low | Raise `vib_run_mg` to 20.0 and lower `vib_cv_max` to 0.30. |
 | `ATTN → EN` jumper error or baseline current 5–10 mA (not sleeping) | Jumper not installed or miswired | Verify the jumper physically connects `ATTN` and `EN` pins on the Notecarrier CX header (see [§5](#5-wiring-and-assembly), "ATTN → EN jumper" line). Measure with a multimeter to confirm continuity. Without it, the host runs continuously and the power budget collapses. |
 | Battery voltage in `equip_summary.qo` declining over days | Solar input inadequate | Check that the 6V solar panel is receiving adequate direct sunlight (≥3 effective sun-hours per day in temperate climates). If deployment is shaded or at high latitude in winter, upgrade to a 2–5 W panel. Use a DC meter inline on the solar cable to confirm actual harvest. |
-| Duplicate `equip_event.qo` notes in Notehub | I2C acknowledgement lost after Notecard accepted note | This is an edge case by design (at-least-once delivery). Downstream routes should dedup by `epoch` + `event` pair (the note's timestamp and event type are unique per transition). |
+| Duplicate `equip_event.qo` Notes in Notehub | I2C acknowledgement lost after Notecard accepted Note | This is an edge case by design (at-least-once delivery). Downstream routes should dedup by `epoch` + `event` pair (the Note's timestamp and event type are unique per transition). |
 | Arduino-cli reports "board not found" or FQBN error | Core not installed or board name wrong | Run `arduino-cli core list` to confirm STMicroelectronics:stm32 is installed. If not, run the full `core install` command from [§7.1](#71-installing-and-flashing). Verify the FQBN is `STMicroelectronics:stm32:GenL4:pnum=CYGNET` (case-sensitive). |
 
 ---
@@ -492,7 +492,7 @@ If the baseline is continuously 10+ mA, the Cygnet is not sleeping — confirm t
 
 - **Persistent software hour counter, not hardware-backed.** The `run_h_total` field in `PersistState` is persisted to Notecard flash on each sleep. If the Notecard is replaced or factory-reset, the lifetime total is lost. A production implementation should store the authoritative total server-side in Notehub (e.g., as a device-level environment variable updated on each `engine_stop` event) so it survives hardware replacement.
 
-- **No geofence alerting in application firmware.** Geofence exit is handled autonomously by the Notecard (`_track.qo`) — the application firmware only configures the fence center via `card.location.mode`. The resulting `_track.qo` notes contain location data but no application-level label. A production deployment should add a Notehub route that triggers an alert when `_track.qo` appears outside the fence window.
+- **No geofence alerting in application firmware.** Geofence exit is handled autonomously by the Notecard (`_track.qo`) — the application firmware only configures the fence center via `card.location.mode`. The resulting `_track.qo` Notes contain location data but no application-level label. A production deployment should add a Notehub route that triggers an alert when `_track.qo` appears outside the fence window.
 
 - **Geofence cannot be centered at the equator or prime meridian.** The firmware uses `geofence_lat = 0.0` and `geofence_lon = 0.0` as the "not configured" sentinel, and refuses to apply a fence if either coordinate is within ≈0.0001° of zero (the check is `fabsf(lat) > 0.0001f` and `fabsf(lon) > 0.0001f`). A deployment precisely on the equator (lat ≈ 0°) or the prime meridian (lon ≈ 0°), for example, sites in southern Ghana, the Republic of Congo, or the English Channel — cannot use the geofence feature as currently implemented. To lift this restriction, replace the 0,0 sentinel with an explicit enable flag (e.g., a `geofence_enable` environment variable set to `1`) and allow lat/lon to take any in-range value including zero.
 
@@ -506,7 +506,7 @@ If the baseline is continuously 10+ mA, the Cygnet is not sleeping — confirm t
 
 - Per-equipment-class threshold calibration: deploy a "learning mode" firmware build that logs raw RMS/CV data at 1-minute intervals for several shifts before switching to production classification.
 - Lifetime hour counter persistence in Notehub environment variables to survive device replacement.
-- Geofence-exit alert route in Notehub: a route that fires a webhook when a `_track.qo` note appears with a location outside the configured fence, enabling unauthorized-move notifications.
+- Geofence-exit alert route in Notehub: a route that fires a webhook when a `_track.qo` Note appears with a location outside the configured fence, enabling unauthorized-move notifications.
 - [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) for over-the-air firmware updates to the Cygnet host — allows threshold algorithm improvements and new features without a technician visit to each machine.
 - Tamper detection: an abrupt, very high-amplitude single-axis spike (e.g., magnet base being removed) can be distinguished from equipment vibration and flagged as a `tamper` event.
 - Multi-sensor fusion: pairing with an engine temperature sensor (NTC thermistor on the exhaust manifold) or a current clamp on the alternator output would provide a second independent confirmation of engine state, improving classifier reliability on unusual equipment types.

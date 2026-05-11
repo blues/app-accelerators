@@ -42,7 +42,7 @@ Cellular is the answer. A [Blues Wireless for OPTA](https://shop.blues.com/produ
 2. **Get ProductUID** from [notehub.io](https://notehub.io), paste it into the sketch, reflash.
 3. **Wire**: Cat6 from OPTA RJ45 → CNC Modbus TCP port (default `192.168.250.1:502`). Cellular antenna through panel door.
 4. **Power**: 24 VDC to OPTA. Notecard auto-claims to your Notehub project on first cellular session (≈5 minutes).
-5. **Validate**: Check Notehub for `cnc_summary.qo` notes within 60 minutes. One summary per hour, one alarm per event (when triggered).
+5. **Validate**: Check Notehub for `cnc_summary.qo` Notes within 60 minutes. One summary per hour, one alarm per event (when triggered).
 
 **When you're done:** You have continuous spindle load, cycle counts, alarm codes, operator IDs, and run/idle telemetry flowing to Notehub every hour, plus real-time cellular alarms on overload or fault transitions. Aggregate the summaries into an OEE dashboard; route alarms to your CMMS or on-call system via Notehub routes.
 
@@ -153,8 +153,8 @@ Three files in the `firmware/` directory:
 | Rolling hourly stats accumulation | `accumulateSample()` |
 | Alert rule evaluation | `evaluateAlerts()` |
 | Hourly summary Note emission | `sendSummary()` |
-| Immediate alarm note emission | `sendAlarm()` |
-| Immediate operator-change note emission | `sendOperatorChange()` |
+| Immediate alarm Note emission | `sendAlarm()` |
+| Immediate operator-change Note emission | `sendOperatorChange()` |
 | Periodic scheduling (millis-based; no MCU sleep) | `loop()` |
 
 ### Sensor reading strategy
@@ -279,7 +279,7 @@ s.spindleLoadPct  = rawSpindle      / 10.0f;
 s.feedOverridePct = rawFeedOverride / 10.0f;  // e.g. 1000 → 100.0 % of programmed rate
 ```
 
-### Key code snippet 3 — Immediate alarm note with sync:true
+### Key code snippet 3 — Immediate alarm Note with sync:true
 
 ```cpp
 // sync:true bypasses the hourly outbound window — the Notecard wakes the
@@ -339,7 +339,7 @@ arduino-cli monitor -p /dev/cu.usbmodem1234567 -c baudrate=115200
 **Accumulated.** Each sample updates rolling counters: spindle load sum and peak (while running), feed-rate sum (while running), run/idle minute tallies, the per-window cycle-count register delta (difference between consecutive cycleCount register reads, primary source for `cycle_count`), edge-timed cycle durations (for `avg_cycle_sec` only), observed active-alarm-transition count (alarms that assert and clear between polls are never seen), and operator-ID change detection. Cycles that complete entirely within one poll interval are invisible to the edge detector but are still captured in the register delta. See [Limitations](#12-limitations-and-next-steps) for the practical implications of the `avg_cycle_sec` heuristic.
 
 **Transmitted.**
-- `cnc_summary.qo` — once per `report_minutes` (default: 24 notes per day per machine), queued locally and shipped in the Notecard's hourly outbound sync. Fields: spindle mean/peak, feed-rate override mean (`feed_override_pct_mean`, override percentage of the programmed rate, not engineering-unit feed rate; see §11), run minutes, idle minutes, `cycle_count` (per-window delta of the controller's cumulative cycle-count register), `avg_cycle_sec` (edge-timing heuristic. See Limitations), most-recently-observed operator ID, `alarm_count` (count of *observed* active-alarm transitions during the window, not a complete fault history; see [§12 Limitations](#12-limitations-and-next-steps)), `valid_samples` (0 signals a total Modbus communication outage for the window).
+- `cnc_summary.qo` — once per `report_minutes` (default: 24 Notes per day per machine), queued locally and shipped in the Notecard's hourly outbound sync. Fields: spindle mean/peak, feed-rate override mean (`feed_override_pct_mean`, override percentage of the programmed rate, not engineering-unit feed rate; see §11), run minutes, idle minutes, `cycle_count` (per-window delta of the controller's cumulative cycle-count register), `avg_cycle_sec` (edge-timing heuristic. See Limitations), most-recently-observed operator ID, `alarm_count` (count of *observed* active-alarm transitions during the window, not a complete fault history; see [§12 Limitations](#12-limitations-and-next-steps)), `valid_samples` (0 signals a total Modbus communication outage for the window).
 - `cnc_alarm.qo` — immediately on alert trigger, `sync:true`. Three alert types: `spindle_overload`, `cnc_alarm`, `modbus_unreachable`.
 - `cnc_operator.qo` — immediately on operator-ID register transition, `sync:true`. Fields: `operator_id` (incoming value), `prev_operator_id` (outgoing value). Best-effort and sampled: individual events may be lost to comms outages, and any transition that occurs and reverts between consecutive polls is never recorded. The hourly summary captures the last observed ID at window close, not a complete transition history.
 
@@ -352,9 +352,9 @@ arduino-cli monitor -p /dev/cu.usbmodem1234567 -c baudrate=115200
 
 ## 10. Validation and Testing
 
-**Expected steady-state behavior.** A healthy machine generates one `cnc_summary.qo` per hour and zero `cnc_alarm.qo` notes. On first commissioning, you may see one `modbus_unreachable` alarm until the Modbus TCP link is confirmed.
+**Expected steady-state behavior.** A healthy machine generates one `cnc_summary.qo` per hour and zero `cnc_alarm.qo` Notes. On first commissioning, you may see one `modbus_unreachable` alarm until the Modbus TCP link is confirmed.
 
-**Check Notehub for events.** Sign in to [notehub.io](https://notehub.io), navigate to **Fleet > Events**, and filter for your device. Within 1 hour of power-up, you should see a `cnc_summary.qo` note with fields like `spindle_pct_mean`, `run_min`, `cycle_count`, etc. Check the **body** tab to inspect the actual JSON.
+**Check Notehub for events.** Sign in to [notehub.io](https://notehub.io), navigate to **Fleet > Events**, and filter for your device. Within 1 hour of power-up, you should see a `cnc_summary.qo` Note with fields like `spindle_pct_mean`, `run_min`, `cycle_count`, etc. Check the **body** tab to inspect the actual JSON.
 
 **Modbus first-light (bench test).** Before connecting to the real CNC:
 1. Run a Modbus TCP simulator (Modbus Mechanic, ModRSsim2, ModbusMaster, or any open-source server) on your laptop.
@@ -389,9 +389,9 @@ Confirm: (a) idle current between syncs is in the µA range (ensures the device 
 |---------|----------------|----------|
 | Device does not claim to Notehub after first power-up | Missing or malformed `PRODUCT_UID` in firmware | Uncomment and set `PRODUCT_UID` in `cnc_spindle_tracker.ino` line 18; reflash. |
 | No Modbus connection; continuous `modbus_unreachable` alarms | Wrong CNC IP or port; Ethernet cable unplugged; CNC controller powered off or Modbus not enabled | Confirm CNC controller's Modbus TCP IP and port in its documentation. Verify the IP in `_DEFAULT_CNC_IP` (helpers.cpp) matches the CNC. Check Cat6 cable is plugged in at both ends. Confirm `modbus_port` env var matches the CNC's TCP port (default 502). |
-| No `cnc_summary.qo` notes appear in Notehub | Device claimed, but no summaries visible | Check the Notecard's outbound sync interval has elapsed (default 60 minutes). Verify `valid_samples > 0` in any alarm notes — if `valid_samples = 0`, all Modbus polls in that window failed; check network. Use `arduino-cli monitor` to watch Serial output for poll successes/failures. |
+| No `cnc_summary.qo` Notes appear in Notehub | Device claimed, but no summaries visible | Check the Notecard's outbound sync interval has elapsed (default 60 minutes). Verify `valid_samples > 0` in any alarm Notes — if `valid_samples = 0`, all Modbus polls in that window failed; check network. Use `arduino-cli monitor` to watch Serial output for poll successes/failures. |
 | `valid_samples = 0` in all summaries | All Modbus polls failed | Serial console should show Modbus errors. Verify CNC is powered and Modbus TCP enabled. Use a Modbus client tool (QModBus, ModRSsim2) on your laptop to confirm you can reach the CNC at the configured IP and port. If you can, but the OPTA cannot, there may be a routing or firewall issue on the Ethernet segment. |
-| Notecard not syncing; no notes leaving the device | I²C communication between OPTA and Notecard failed; or Notecard not powered | Verify the AUX connector is fully seated. Check 24 VDC is applied to both OPTA and Wireless for OPTA. The Notecard has a small blue LED near the SMA connectors — it should blink during a cellular session. If no blink, the Notecard may not be powered or may have failed. |
+| Notecard not syncing; no Notes leaving the device | I²C communication between OPTA and Notecard failed; or Notecard not powered | Verify the AUX connector is fully seated. Check 24 VDC is applied to both OPTA and Wireless for OPTA. The Notecard has a small blue LED near the SMA connectors — it should blink during a cellular session. If no blink, the Notecard may not be powered or may have failed. |
 | `spindle_overload` alarms fire too frequently | Threshold too low; or noisy spindle-load sensor data | Increase `spindle_overload_pct` in Fleet environment (e.g., from 90 to 95). If the issue persists, the CNC sensor may be noisy; add averaging on the CNC side (most controllers have digital-filter registers) or increase `SPINDLE_ALERT_COOLDOWN_MS` in `cnc_spindle_tracker_helpers.h`. |
 | `avg_cycle_sec` is wildly wrong | Cycle time shorter than sample interval; or `cycleState` semantics differ from expected | `avg_cycle_sec` is a heuristic limited by the sample period (1 minutes default) — cycles faster than that are invisible. Increase `sample_minutes` (e.g., to 0.25 for 15-second samples) if your cycles are fast, but understand this increases Modbus polling overhead. Verify the target CNC model maps `cycleState == 1` to "program running" (vendor-specific). |
 | Operator-ID transitions not appearing | `operator_id` register not exposed or always zero | Confirm the CNC controller supports operator-ID over Modbus TCP (many do not). Verify the sixth register in the contiguous block (starting at `reg_spindle_load`) is mapped to operator ID in the controller's Modbus documentation. Check the operator ID is actually changing on the machine (some controllers require login/logout). |

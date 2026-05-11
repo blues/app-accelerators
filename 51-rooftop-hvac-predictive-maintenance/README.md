@@ -242,7 +242,7 @@ notecard.sendRequest(req);
 
 ### 7.8 Key code snippet 2: immediate-sync alert
 
-`sync:true` tells the Notecard not to wait for the next `outbound` window — the note jumps the queue and the radio wakes right away.
+`sync:true` tells the Notecard not to wait for the next `outbound` window — the Note jumps the queue and the radio wakes right away.
 
 ```cpp
 J *req = notecard.newRequest("note.add");
@@ -325,7 +325,7 @@ If a problem isn't on this list, the [Blues community forum](https://discuss.blu
 - CT readings are single-phase only. Three-phase commercial RTUs need three CTs and a firmware change to sum them.
 - The SDP810 CRC byte is read and discarded rather than verified — a communication-layer fault on the I²C bus won't be caught.
 - Compressor-start detection is sampled, not interrupt-driven: transitions that occur and finish entirely inside one `sample_interval_sec` window won't be counted. The 60-second default is well below normal RTU cycle times, but a badly-misbehaving contactor could in principle cycle faster than the sampler sees.
-- No local storage of historical samples — the Notecard does its own multi-day note queue, but the sketch itself keeps only the current summary window in RAM plus a 16-slot ring buffer of recent compressor starts.
+- No local storage of historical samples — the Notecard does its own multi-day Note queue, but the sketch itself keeps only the current summary window in RAM plus a 16-slot ring buffer of recent compressor starts.
 - The 120VAC power path assumes the installer can tap the RTU service disconnect. Installations that can only offer the 24VAC control-transformer rail need a 24VAC-input supply instead (e.g. a Functional Devices PSH40A or a Mornsun LH05-23B05R3); the downstream 5V wiring is unchanged. A Scoop / solar variant is a reasonable addition for units where neither rail is practical.
 - Mojo is bench-validation equipment in this POC — the firmware does not read its LTC2959 coulomb counter over the Qwiic bus. Adding a runtime mAh field to the summary is a straightforward extension if fleet-level power telemetry is valuable.
 

@@ -30,7 +30,7 @@ This project closes that gap — for active alarm state, a firmware-observed ala
 
 ## 3. Technical Summary
 
-**You will have:** A commissioning note in Notehub confirming Modbus connectivity, hourly summaries showing generator status, and immediate alerts on controller faults.
+**You will have:** A commissioning Note in Notehub confirming Modbus connectivity, hourly summaries showing generator status, and immediate alerts on controller faults.
 
 **Minimum prerequisites:** Arduino IDE or `arduino-cli` v1.3+, a generator controller with accessible Modbus port (DeepSea, Woodward, Kohler, Caterpillar, Cummins, or equivalent), baud rate and slave address from the controller's commissioning menu, and a Notehub project.
 
@@ -48,7 +48,7 @@ This project closes that gap — for active alarm state, a firmware-observed ala
    arduino-cli compile --fqbn arduino:mbed_opta:opta_wifi firmware/diesel_gen_monitor/ --upload
    ```
 4. **Set Modbus register addresses:** In Notehub, navigate Fleet → Environment. Add variables `reg_engine_rpm`, `reg_fuel_pct`, `reg_load_pct`, `reg_oil_kpa`, `reg_coolant_c`, `reg_run_hours`, `reg_alarm_word` with the correct addresses from your controller's Modbus map. Set `modbus_baud`, `modbus_slave_id`, `modbus_parity`, `modbus_stop_bits` to match the controller's configuration. The device fetches these on the next inbound sync (120 minutes by default; to test immediately, set `inbound` to 1 minutes in `hub.set` on the device).
-5. **Validate:** Open Notehub and wait for the device to appear in the project. After the first Modbus poll (1 minutes) and report boundary (60 minutes), you'll see a `gen_summary.qo` note with `data_ok = 1`, fuel level, alarm word, and run status. If `data_ok = 0` on all notes, check wiring, register addresses, baud rate, and slave address against the controller's commissioning menu (see [Validation and Testing](#9-validation-and-testing) / "Modbus first-light").
+5. **Validate:** Open Notehub and wait for the device to appear in the project. After the first Modbus poll (1 minutes) and report boundary (60 minutes), you'll see a `gen_summary.qo` Note with `data_ok = 1`, fuel level, alarm word, and run status. If `data_ok = 0` on all Notes, check wiring, register addresses, baud rate, and slave address against the controller's commissioning menu (see [Validation and Testing](#9-validation-and-testing) / "Modbus first-light").
 
 **Sample Note (gen_summary.qo):** Here is a sample Note this device emits:
 
@@ -202,7 +202,7 @@ All seven must succeed in a single attempt before the sample is marked valid. Pa
 
 Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefiles. Templates store records as fixed-length binary rather than free-form JSON, shrinking on-wire payload 3–5×. For a fleet of 50 generators sending hourly summaries over a prepaid SIM with a finite data budget, that compression is not optional. Template binary data is decoded by Notehub and displayed as JSON in your browser or API responses.
 
-`gen_summary.qo` (periodic, default hourly) — example shows a standby window where the engine was stopped the entire hour. This is the decoded JSON you'll see in the Notehub dashboard or when retrieving notes via API:
+`gen_summary.qo` (periodic, default hourly) — example shows a standby window where the engine was stopped the entire hour. This is the decoded JSON you'll see in the Notehub dashboard or when retrieving Notes via API:
 
 ```json
 {
@@ -228,7 +228,7 @@ Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-ban
 }
 ```
 
-**Schema notes for downstream integrators:**
+**Schema Notes for downstream integrators:**
 
 - `data_ok` — primary validity flag. `1` means at least one successful Modbus poll was completed this window; all measurement fields are valid. `0` means a complete telemetry blackout (all `samples_failed`, no controller contact). When `data_ok = 0`, treat all computed measurement fields (`fuel_pct`, `load_pct*`, `oil_kpa*`, `coolant_c*`, `run_min`, `stop_min`) as undefined. `alarm_word` and `run_hours` are special: rather than emitting zero (which would be indistinguishable from "no alarms" or "zero hours"), the firmware carries forward the last-known values from before the blackout and sets `alarm_word_stale = 1`. See below.
 - `alarm_word_stale` — `0` under normal operation (`data_ok = 1`): `alarm_word` comes from this window's Modbus polls. `1` when `data_ok = 0`: `alarm_word` is the last-known value from before the blackout (preserved in firmware across the stats reset) and `run_hours` is the last successfully polled reading. Use `alarm_word_stale` to distinguish "no active alarms this window" from "controller was unreachable; alarm state unknown."
@@ -293,17 +293,17 @@ Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-ban
 }
 ```
 
-**Schema notes for `gen_event.qo` downstream integrators:**
+**Schema Notes for `gen_event.qo` downstream integrators:**
 
 - `trigger_val` / `trigger_threshold` — present in every `gen_event.qo`. For report-window rules (`fuel_low`, `coolant_overtemp`, `oil_low_pressure`), `trigger_val` is the window aggregate or peak that crossed the configured limit (`trigger_threshold`). For per-poll alerts (`controller_alarm`, `failure_to_start`, `modbus_unreachable`), both fields are `-1.0`; the existing sample fields explain the trigger directly.
 - The sample fields (`engine_rpm`, `fuel_pct`, `load_pct`, `oil_kpa`, `coolant_c`) carry the last-known polled reading at event time — closest to the trigger for per-poll alerts, machine-state context for report-window alerts. For `coolant_overtemp`, `coolant_c` may be below threshold at report time while `trigger_val` (the window peak) is above it; always use `trigger_val` to confirm the threshold crossing.
 
-**Schema notes for `gen_alarm_log.qo` downstream integrators:**
+**Schema Notes for `gen_alarm_log.qo` downstream integrators:**
 
 - `count` — number of entries in this flush (1–8). The ring buffer depth is 8; if more than 8 alarm transitions occur in a single report window, the oldest entries are overwritten.
 - `events[].alert` — one of `"controller_alarm"`, `"alarm_clear"`, `"failure_to_start"`, or `"fts_clear"`. Assertions (`controller_alarm`, `failure_to_start`) include the asserted `alarm_word`; clearances (`alarm_clear`, `fts_clear`) carry `alarm_word: 0`. Multiple `controller_alarm` entries with different `alarm_word` values can appear in a single flush when the active fault set changes while at least one bit remains set (e.g., a second fault asserts before the first clears, or one of several active faults clears before the others). Each entry records the exact bitmask at that poll — read them in `elapsed_s` order for the full per-window fault-set chronology.
-- `events[].elapsed_s` — seconds since device boot (`millis()/1000`) at event time. Use the Notehub-stamped note timestamp for wall-clock time; `elapsed_s` gives relative timing between entries within one flush.
-- `gen_alarm_log.qo` is emitted only when at least one alarm event occurred in the window. Windows with no alarm transitions produce no note. Route it to the same real-time channel as `gen_event.qo` for a complete fault chronology.
+- `events[].elapsed_s` — seconds since device boot (`millis()/1000`) at event time. Use the Notehub-stamped Note timestamp for wall-clock time; `elapsed_s` gives relative timing between entries within one flush.
+- `gen_alarm_log.qo` is emitted only when at least one alarm event occurred in the window. Windows with no alarm transitions produce no Note. Route it to the same real-time channel as `gen_event.qo` for a complete fault chronology.
 
 ### Sync and power strategy
 
@@ -320,9 +320,9 @@ The OPTA + expansion draws continuously from the generator panel's battery-backe
 
 ### Key code snippet 1: latch-based alarm detection, retry-on-send-failure, and alarm history logging
 
-The alarm register is checked on every successful poll. Detection is **latch-based**, not transition-gated: the condition is evaluated against the per-alert latch flags (`g_active_controller_alarm`, `g_active_fts`) rather than against a change in the stored alarm word. This means that if `sendEvent()` fails — transient I²C hiccup, Notecard not yet ready — the latch stays `false` and the alert is automatically retried on every subsequent sample while the fault remains asserted. Once the note is queued successfully the latch blocks re-firing, so a sustained fault still emits only one event per asserted-alarm period. `g_current_alarm_word` is updated unconditionally on every sample, independently of the latch state, so the summary Note always carries the freshest alarm word.
+The alarm register is checked on every successful poll. Detection is **latch-based**, not transition-gated: the condition is evaluated against the per-alert latch flags (`g_active_controller_alarm`, `g_active_fts`) rather than against a change in the stored alarm word. This means that if `sendEvent()` fails — transient I²C hiccup, Notecard not yet ready — the latch stays `false` and the alert is automatically retried on every subsequent sample while the fault remains asserted. Once the Note is queued successfully the latch blocks re-firing, so a sustained fault still emits only one event per asserted-alarm period. `g_current_alarm_word` is updated unconditionally on every sample, independently of the latch state, so the summary Note always carries the freshest alarm word.
 
-History logging captures every distinct `alarm_word` value, not just the initial assertion. A separate `g_alarm_logged_controller` / `g_alarm_logged_fts` flag tracks whether the first entry for a given assertion period has been written; the initial detection logs exactly once through that gate. While the alarm word remains non-zero, any subsequent poll that returns a *different* nonzero value — bits added as a second fault asserts, or one of several bits cleared while others persist — is logged immediately as an additional `controller_alarm` entry with the updated bitmask. No new `sendEvent()` is triggered for these mid-nonzero changes; one alert per assertion period avoids alarm fatigue on gradually-evolving fault sets. Decoupling history-logged state from event-queued state means that when `sendEvent()` fails and the latch stays `false`, the next retry re-calls `sendEvent()` but does **not** re-log the initial entry — without this separation, send retries would accumulate duplicate entries, corrupting the chronology and evicting later events from the 8-slot buffer. The matching clearance (`alarm_clear` / `fts_clear`) is logged once when the alarm word returns to zero, gated on the history flag rather than the event-queued latch, so a clearance entry is always paired with its assertion even when the note never queued successfully.
+History logging captures every distinct `alarm_word` value, not just the initial assertion. A separate `g_alarm_logged_controller` / `g_alarm_logged_fts` flag tracks whether the first entry for a given assertion period has been written; the initial detection logs exactly once through that gate. While the alarm word remains non-zero, any subsequent poll that returns a *different* nonzero value — bits added as a second fault asserts, or one of several bits cleared while others persist — is logged immediately as an additional `controller_alarm` entry with the updated bitmask. No new `sendEvent()` is triggered for these mid-nonzero changes; one alert per assertion period avoids alarm fatigue on gradually-evolving fault sets. Decoupling history-logged state from event-queued state means that when `sendEvent()` fails and the latch stays `false`, the next retry re-calls `sendEvent()` but does **not** re-log the initial entry — without this separation, send retries would accumulate duplicate entries, corrupting the chronology and evicting later events from the 8-slot buffer. The matching clearance (`alarm_clear` / `fts_clear`) is logged once when the alarm word returns to zero, gated on the history flag rather than the event-queued latch, so a clearance entry is always paired with its assertion even when the Note never queued successfully.
 
 **Boot-seeding behavior.** On the *first* valid poll after boot or a watchdog reset, the firmware checks the alarm word immediately and emits `controller_alarm` (and `failure_to_start` if `alarm_mask_fts` is configured) if those bits are already asserted — without waiting for a zero-to-nonzero transition that may never occur on this boot session. This closes the gap where a monitor rebooted mid-outage would otherwise suppress the pre-existing fault. The boot-seeding block calls `logAlarmHistory()` and sets the corresponding `g_alarm_logged_*` flag so the main detection loop does not add a second history entry on the same assertion period if `sendEvent()` fails at boot.
 
@@ -467,7 +467,7 @@ In the field, the generator's start battery sustains the control bus through a m
 
 ## 10. Troubleshooting
 
-**Device appears in Notehub but all `gen_summary.qo` notes show `data_ok = 0`**
+**Device appears in Notehub but all `gen_summary.qo` Notes show `data_ok = 0`**
 - Modbus polling failed on all retries. Check wiring: are OPTA `A/B/COM` correctly wired to the controller's corresponding terminals? Use a multimeter to verify continuity.
 - Baud rate mismatch. Compare `modbus_baud`, `modbus_parity`, and `modbus_stop_bits` in Notehub (Fleet → Environment) against the controller's Modbus commissioning menu. They must match exactly.
 - Slave address mismatch. Verify `modbus_slave_id` in Notehub matches the controller's configured address (often found in Modbus or network setup menus, defaults to 1).

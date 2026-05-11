@@ -6,11 +6,12 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-This project is a [truck roll reduction](https://blues.com/truck-roll-reduction/) project for fleets of portable sanitation units — porta-potties — that are currently serviced on fixed schedules whether they need it or not. A sealed level sensor and a [Blues Notecard Cell+WiFi](https://shop.blues.com/products/notecard-cellular?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) turn each unit into a self-reporting asset: the holding tank reports its own fill level so the service provider can route a pump truck only when and where it is actually needed.
+This project is a [truck roll reduction](https://blues.com/truck-roll-reduction/) project for fleets of portable sanitation units — porta-potties — that are currently serviced on fixed schedules whether they need it or not. A sealed level sensor and a [Blues Notecard Cell+WiFi](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) turn each unit into a self-reporting asset: the holding tank reports its own fill level so the service provider can route a pump truck only when and where it is actually needed.
 
 ## 1. Project Overview
 
-**The problem.** Portable restroom companies — and the construction sites, outdoor event venues, and municipalities that rely on them — all share the same dirty secret about service scheduling: it's a guess. A unit at a lightly-attended weekend farmers market gets pumped on the same Monday-Wednesday-Friday schedule as the one chained to a pile of rebar at a hundred-person job site. The result is predictable in both directions: trucks roll to units that are a quarter full, burning fuel and driving up per-service cost; other units overflow on the busiest Saturday of the year, creating a safety hazard and an experience nobody forgets. Neither outcome is caused by a lack of data — the data is right there in the tank. What's missing is any way to read it remotely.
+
+**The problem.** Portable restroom companies, and the construction sites, outdoor event venues, and municipalities that rely on them — all share the same dirty secret about service scheduling: it's a guess. A unit at a lightly-attended weekend farmers market gets pumped on the same Monday-Wednesday-Friday schedule as the one chained to a pile of rebar at a hundred-person job site. The result is predictable in both directions: trucks roll to units that are a quarter full, burning fuel and driving up per-service cost; other units overflow on the busiest Saturday of the year, creating a safety hazard and an experience nobody forgets. Neither outcome is caused by a lack of data — the data is right there in the tank. What's missing is any way to read it remotely.
 
 This project is that reader. A compact weatherproof module mounts near the unit's holding tank, with a sealed ultrasonic sensor probe mounted in the tank roof. It reports holding-tank fill level to the service provider's routing system through Blues Notehub. The dispatcher looks at a map of units ranked by fill percentage, sends a truck to the two that are at 80%, and leaves the other eight alone. The result is fewer unnecessary truck rolls and fewer overflows — which is exactly what the phrase "truck roll reduction" means in practice.
 
@@ -24,6 +25,7 @@ Blues has already demonstrated this works at scale: Satellite Industries, one of
 
 ## 2. System Architecture
 
+
 ![System architecture: MB7389 ultrasonic level sensor → Notecarrier CX with Cygnet host and Notecard MBGLW → cellular/WiFi → Notehub → dispatch / analytics / billing](diagrams/01-system-architecture.svg)
 
 **Device-side responsibilities.** The onboard Cygnet STM32 host in the Notecarrier CX wakes every five minutes, reads the ultrasonic level sensor, accumulates fill-level samples, and evaluates one threshold rule: is the fill level above the configured service trigger? Between wakes the host is fully powered off by [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn), and only the Notecard's low-power idle circuit (drawing ~8–18 µA) keeps time. Queued [Notes](https://dev.blues.io/api-reference/glossary/#note) travel from the host to the Notecard over I²C — no JSON marshaling, no serial buffer management, no modem AT commands. A mandatory `ATTN`-to-`EN` jumper on the Notecarrier CX header gates the host's power supply and is **required** for the low-power design; see §6.
@@ -36,15 +38,16 @@ Blues has already demonstrated this works at scale: Satellite Industries, one of
 
 ## 3. Technical Summary
 
+
 **What you'll have when done:** A live Notecard sending fill-level readings and alerts to [Notehub](https://notehub.io) every hour, routing to your backends via HTTP, MQTT, AWS, or other integrations of your choice.
 
-**Fastest path to first event (bench eval, ~30 minutes):**
+**Fastest path to first event (bench eval, ~30 min):**
 
 1. Clone this repo; open `firmware/sanitation_unit_monitor/sanitation_unit_monitor.ino` in the Arduino IDE.
 2. [Create a Notehub project](https://notehub.io), copy its ProductUID, paste it into the sketch as `PRODUCT_UID`.
 3. Install dependencies: in the IDE, use Board Manager to add [Arduino Core for STM32](https://github.com/stm32duino/Arduino_Core_STM32); use Library Manager to install [`Blues Wireless Notecard`](https://github.com/blues/note-arduino/releases).
 4. Select board **Blues → Cygnet (Notecarrier CX)** under **Tools → Board → STMicroelectronics STM32 boards**, pick the port, then **Sketch → Upload** (or use `arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET -u -p /dev/ttyACM0 firmware/sanitation_unit_monitor`). This FQBN matches `firmware/sanitation_unit_monitor/sketch.yaml`, which the IDE picks up automatically.
-5. Power the [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) via LiPo or USB. Within ~60 seconds the Notecard claims itself to your Notehub project. Point the MB7389 probe at a flat surface ≥35 cm away. The first hourly summary appears in Notehub within one hour (sooner if you lower `inbound_interval_min` temporarily — see §6).
+5. Power the [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) via LiPo or USB. Within ~60 s the Notecard claims itself to your Notehub project. Point the MB7389 probe at a flat surface ≥35 cm away. The first hourly summary appears in Notehub within one hour (sooner if you lower `inbound_interval_min` temporarily — see §6).
 6. To route data: in Notehub, create one route each for `sanitation_alert.qo` (real-time, dispatch) and `sanitation_summary.qo` (analytics). See §6 and the [Notehub routing guide](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub).
 
 ### Board & Library specifics
@@ -68,6 +71,7 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
+
 <Warning>
 
 ⚠️ **Field-deployment sensor selection.** Portable toilet holding tanks accumulate flammable and toxic gases (methane, H₂S, NH₃). Any sensor installed in or immediately adjacent to the tank headspace must be certified for the applicable hazardous-location standard at your site — ATEX Zone 0/1, IECEx, NEC Class I Division 1, or equivalent — or the installation geometry must keep **all** energized electronics outside the hazardous zone entirely. The [MaxBotix MB7389](https://maxbotix.com/products/mb7389) specified below is **bench/POC-only**: it is IP67-sealed but carries no hazardous-location certification. See §5 for the distinction between the bench/POC assembly and a field-safe deployment path.
@@ -89,6 +93,7 @@ Here is a sample Note this device emits:
 All Blues hardware ships with a prepaid SIM including 500 MB of data and 10 years of service — no carrier agreements, no per-unit recurring SIM fees.
 
 ## 5. Wiring and Assembly
+
 
 ![Wiring: MB7389 ultrasonic sensor PWM to D5 with Taoglas FW.10.0113 internal flex antenna; LiPo 3.7 V → Mojo (bench) → Notecarrier +VBAT; ATTN ↔ EN jumper required for sleep gating](diagrams/02-wiring-assembly.svg)
 
@@ -131,6 +136,7 @@ No level shifting required: the sensor operates at 3.3 V when powered from +3V3_
 
 ## 6. Notehub Setup
 
+
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/sanitation_unit_monitor/sanitation_unit_monitor.ino` as `PRODUCT_UID`.
 
 2. **Claim the Notecard.** Power the unit; on its first cellular session the Notecard associates with the project automatically. The unit appears in the Notehub device list within a few minutes.
@@ -153,6 +159,7 @@ No level shifting required: the sensor operates at 3.3 V when powered from +3V3_
 5. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `sanitation_alert.qo` (dispatch-critical, real-time delivery to a routing or work-order system) and a second for `sanitation_summary.qo` (long-term store for utilization analysis, route optimization, and billing evidence). Keeping the two Notefiles separate at the source means alerts can be delivered to a field dispatch tool while summaries accumulate in a data warehouse, without any filter logic in the route.
 
 ## 7. Firmware Design
+
 
 Single sketch: [`firmware/sanitation_unit_monitor/sanitation_unit_monitor.ino`](firmware/sanitation_unit_monitor/sanitation_unit_monitor.ino).
 
@@ -245,7 +252,7 @@ A 4-hour alert cooldown (`ALERT_COOLDOWN_SEC = 14400`) rate-limits output while 
 
 ### Key code snippet 1: template definition
 
-Registering templates at cold boot gives each Note a stable, compact binary schema on the wire. `14.1` encodes a 4-byte IEEE 754 float. For the alert template's string field, the Notecard sizes the reserved slot to the **byte length of the example string literal** — so passing `"fill_high"` (9 bytes) reserves exactly enough space for every alert name defined in this firmware. Passing a numeric string such as `"24"` would reserve only 2 bytes (the length of the two-character string `"24"`), silently truncating any alert value longer than two characters. If additional alert types with longer names are added, update the example literal in `defineTemplates()` to match the longest name.
+Registering templates at cold boot gives each Note a stable, compact binary schema on the wire. `14.1` encodes a 4-byte IEEE 754 float. For the alert template's string field, the Notecard sizes the reserved slot to the **byte length of the example string literal**, so passing `"fill_high"` (9 bytes) reserves exactly enough space for every alert name defined in this firmware. Passing a numeric string such as `"24"` would reserve only 2 bytes (the length of the two-character string `"24"`), silently truncating any alert value longer than two characters. If additional alert types with longer names are added, update the example literal in `defineTemplates()` to match the longest name.
 
 Summary template:
 
@@ -314,6 +321,7 @@ for (uint8_t i = 0; i < 3; i++) {
 
 ## 8. Data Flow
 
+
 ![Data flow: 5-min sample of ultrasonic distance → median-of-3 fill % → fill_high rule with 4-hr cooldown → sanitation_alert.qo (sync:true) and sanitation_summary.qo (hourly templated) → Notehub routes](diagrams/03-data-flow.svg)
 
 **Collected.** Every `sample_interval_sec` (default 5 minutes): distance from sensor to waste surface (cm); derived fill percentage (0–100%).
@@ -331,15 +339,16 @@ for (uint8_t i = 0; i < 3; i++) {
 
 ## 9. Validation and Testing
 
+
 **Expected steady-state cadence.** A unit in the field with a healthy sensor and normal usage generates one `sanitation_summary.qo` Note per hour and zero `sanitation_alert.qo` Notes.
 
 **First-light commissioning.** Before installing in a real tank:
-1. Point the MB7389 probe at a flat surface (a sheet of cardboard) at a known distance ≥ 35 cm (e.g., 40 cm — above the 30 cm dead zone). Confirm that `fill_cm_last` in the first summary Note matches the measured distance within ±5 mm. To watch results in near-real-time, enable the USB serial debug output — uncomment `#define ENABLE_USB_DEBUG` in the sketch (or pass `-DENABLE_USB_DEBUG` via build flags) and open a serial monitor at 115200 baud. `[sample] dist_cm=` lines print on every wake. **Recomment the define and reflash before taking power measurements or deploying to the field** — the USB enumeration wait adds active-time and current draw on every wake (see §8 Low-power strategy and Measurement conditions in §11).
-2. To trigger a `fill_high` alert without a real tank, temporarily set `fill_alert_pct` to `1.0` in the fleet's environment variables (temporarily lower `inbound_interval_min` to `60` in the fleet environment if you need the change to take effect sooner — see env-var propagation note below). The next wake cycle should fire `sanitation_alert.qo` and it should appear in Notehub within a session-establishment window (~15–60 seconds). Reset `fill_alert_pct` to the desired operating value when done. **Env-var propagation note:** with `inbound_interval_min` at its default of 360 minutes, an env-var change made in Notehub may take up to 6 hours to reach the device. To accelerate pickup, temporarily set `inbound_interval_min` to `60` in the fleet environment variables — the first pickup still obeys the current inbound period, but once the device applies the new value the Notecard checks in more frequently. Reset `inbound_interval_min` to `360` when done.
+1. Point the MB7389 probe at a flat surface (a sheet of cardboard) at a known distance ≥ 35 cm (e.g., 40 cm, above the 30 cm dead zone). Confirm that `fill_cm_last` in the first summary Note matches the measured distance within ±5 mm. To watch results in near-real-time, enable the USB serial debug output — uncomment `#define ENABLE_USB_DEBUG` in the sketch (or pass `-DENABLE_USB_DEBUG` via build flags) and open a serial monitor at 115200 baud. `[sample] dist_cm=` lines print on every wake. **Recomment the define and reflash before taking power measurements or deploying to the field** — the USB enumeration wait adds active-time and current draw on every wake (see §8 Low-power strategy and Measurement conditions in §11).
+2. To trigger a `fill_high` alert without a real tank, temporarily set `fill_alert_pct` to `1.0` in the fleet's environment variables (temporarily lower `inbound_interval_min` to `60` in the fleet environment if you need the change to take effect sooner. See env-var propagation Note below). The next wake cycle should fire `sanitation_alert.qo` and it should appear in Notehub within a session-establishment window (~15–60 seconds). Reset `fill_alert_pct` to the desired operating value when done. **Env-var propagation Note:** with `inbound_interval_min` at its default of 360 minutes, an env-var change made in Notehub may take up to 6 hours to reach the device. To accelerate pickup, temporarily set `inbound_interval_min` to `60` in the fleet environment variables — the first pickup still obeys the current inbound period, but once the device applies the new value the Notecard checks in more frequently. Reset `inbound_interval_min` to `360` when done.
 
 **Calibrating tank endpoints.** At install time:
-- With the tank empty, note the distance reading in `fill_cm_last`. Set `tank_empty_cm` to that value in the fleet environment variables.
-- With a known reference fill (e.g., fill to the rated pump-out level), note the distance and set `tank_full_cm`.
+- With the tank empty, Note the distance reading in `fill_cm_last`. Set `tank_empty_cm` to that value in the fleet environment variables.
+- With a known reference fill (e.g., fill to the rated pump-out level), Note the distance and set `tank_full_cm`.
 
 **Using Mojo to validate power behavior.** Wire [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) inline between the LiPo JST-PH and the Notecarrier CX `+VBAT` pad (as described in §5) and connect the Qwiic cable. Issue `{"req":"card.power","reset":true}` to zero the accumulated charge, run the assembly through a representative period (at least one full cellular session), then issue `{"req":"card.power"}` to read cumulative `milliamp_hours`.
 
@@ -366,6 +375,7 @@ If the cumulative mAh grows continuously at a high rate between expected cellula
 
 ## 10. Troubleshooting
 
+
 | Symptom | Most likely cause | Fix |
 |---------|-------------------|-----|
 | Device never appears in Notehub | ProductUID not set in sketch, or copied incorrectly | Double-check `PRODUCT_UID` in the .ino file. Reflash. Wait 2–3 minutes for first claim to reach Notehub. Check your Notehub project list to confirm you're looking in the right project. |
@@ -377,9 +387,10 @@ If the cumulative mAh grows continuously at a high rate between expected cellula
 
 ## 11. Limitations and Next Steps
 
+
 **Simplified for the POC:**
 
-- **MB7389 minimum range is 30 cm; `tank_full_cm` must be ≥ 35 cm.** The firmware default is 35 cm. At bench commissioning, position the sensor so the target surface at maximum fill is at least 35 cm from the sensor face; measure the actual distances and set `tank_empty_cm` and `tank_full_cm` via fleet environment variables (see §7). If mounting constraints bring the target surface closer than 30 cm, select a sensor with a shorter minimum range. For bench firmware evaluation, the Adafruit RCWL-1601 can substitute with adapted firmware (see `readDistanceCm()` comment and the bench note in §6) — it has a 2 cm minimum range and the HC-SR04 trigger/echo interface. **The RCWL-1601 must not be used in any tank environment** because its bare PCB requires an acoustic aperture that connects the enclosure to the tank headspace, creating a hazardous-atmosphere exposure path.
+- **MB7389 minimum range is 30 cm; `tank_full_cm` must be ≥ 35 cm.** The firmware default is 35 cm. At bench commissioning, position the sensor so the target surface at maximum fill is at least 35 cm from the sensor face; measure the actual distances and set `tank_empty_cm` and `tank_full_cm` via fleet environment variables (see §7). If mounting constraints bring the target surface closer than 30 cm, select a sensor with a shorter minimum range. For bench firmware evaluation, the Adafruit RCWL-1601 can substitute with adapted firmware (see `readDistanceCm()` comment and the bench Note in §6) — it has a 2 cm minimum range and the HC-SR04 trigger/echo interface. **The RCWL-1601 must not be used in any tank environment** because its bare PCB requires an acoustic aperture that connects the enclosure to the tank headspace, creating a hazardous-atmosphere exposure path.
 
 - **Fill-level monitoring only.** This project reports holding-tank fill percentage and fires `fill_high` alerts when the service threshold is crossed. It does not include door-cycle counting. See "Production next steps" below for guidance on adding accurate door-event counting to a production system.
 
@@ -400,9 +411,10 @@ If the cumulative mAh grows continuously at a high rate between expected cellula
 - Wire [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) to the STM32's BOOT/RESET pins for over-the-air firmware updates — critical for a large deployed fleet where a calibration bug or new feature shouldn't require physically opening every enclosure.
 - Add a temperature reading via the Notecard's internal sensor (`card.temp`) to include ambient temperature in summaries — useful for operators in cold climates where biological activity and freeze-thaw cycles affect tank behavior.
 - Evaluate [Blues Scoop](https://shop.blues.com/products/scoop?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) as a solar charge controller if units will be deployed in long-duration, high-sun environments (outdoor festivals, remote construction) where a fixed-cycle LiPo recharge is impractical.
-- **Battery service as a truck-roll driver.** The deployment model assumes the LiPo is recharged during routine pump-out visits. If the validated whole-system battery life (measured with Mojo — see §11) is shorter than the target pump-out interval, battery maintenance requires its own truck roll — the opposite of what this system is designed to provide. Mitigations: use a larger cell (6 000 mAh or higher) sized to outlast the longest expected pump-out interval; add a Blues Scoop solar charger for units in high-sun outdoor deployments; or ensure a USB-C charge port on the enclosure is accessible during every pump-out so recharge and service happen in the same visit.
+- **Battery service as a truck-roll driver.** The deployment model assumes the LiPo is recharged during routine pump-out visits. If the validated whole-system battery life (measured with Mojo. See §11) is shorter than the target pump-out interval, battery maintenance requires its own truck roll — the opposite of what this system is designed to provide. Mitigations: use a larger cell (6 000 mAh or higher) sized to outlast the longest expected pump-out interval; add a Blues Scoop solar charger for units in high-sun outdoor deployments; or ensure a USB-C charge port on the enclosure is accessible during every pump-out so recharge and service happen in the same visit.
 
 ## 12. Summary
+
 
 At its core, this is a simple problem with a surprisingly durable solution: mount a level sensor above the waste and let fill percentage drive the service call. The on-device alert fires on fill percentage alone — one threshold, one alert type, one dispatch trigger. What makes the problem non-trivial in practice is the deployment environment — no WiFi, no fixed power, constant site changes, hundreds of units across a region, and a service company whose profit margin depends on not rolling a truck unnecessarily. The Notecard Cell+WiFi handles the connectivity problem with a single SKU that follows the unit to every job site with no provisioning overhead. The Notecarrier CX + LiPo handles the power problem with a deep-sleep pattern designed to minimize draw between wakes — validate the whole-device current with Mojo before sizing a battery for production (see §9). Notehub handles the fleet management problem with per-fleet environment variables that let operators calibrate tank geometry and service thresholds without reflashing firmware. The bench/POC assembly uses a MaxBotix MB7389 to demonstrate the full firmware and data flow; a field deployment replaces it with an intrinsically safe certified level sensor selected for the applicable hazardous-area classification (see §4 and §11). What's left is straightforward sensor integration and a simple threshold rule — the kind of problem an IoT engineer can have running on actual hardware within a day.
 

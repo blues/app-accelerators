@@ -47,7 +47,7 @@ This project is the remote set of eyes and ears that a beekeeper wants but canno
 
 4. **Commission in Notehub.** Create a project, claim the Notecard, set `hx711_calibration` with known-weight test (§9 procedure), and set environment variables at the fleet level. Deploy.
 
-**What you'll have:** One compact daily note with hive weight (kg), temperature/humidity averages, and acoustic features (ZCR, RMS, peak). Immediate alerts for weight drops, temperature anomalies, or acoustic changes. Full deployment to off-grid sites without cellular infrastructure.
+**What you'll have:** One compact daily Note with hive weight (kg), temperature/humidity averages, and acoustic features (ZCR, RMS, peak). Immediate alerts for weight drops, temperature anomalies, or acoustic changes. Full deployment to off-grid sites without cellular infrastructure.
 
 **Payload example** — `hive_summary.qo` (daily, compact template):
 
@@ -101,7 +101,7 @@ Here is a sample Note this device emits:
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) ([buy](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)) | 1 | Integrated carrier with an embedded Cygnet STM32L433 host MCU — no separate Swan needed. Provides A0–A5 analog inputs, SDA/SCL I2C, and digital GPIO pins sufficient for all three sensors. |
-| [Notecard Cell+WiFi (MBGLW)](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) ([buy](https://shop.blues.com/products/notecard-cellular?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)) | 1 | Cellular connectivity with an integrated prepaid global SIM and no carrier contract. Seats into the Notecarrier CX M.2 slot. This build provisions only a cellular antenna; the MBGLW's WiFi radio is not enabled or used. |
+| [Notecard Cell+WiFi (MBGLW)](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) ([buy](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)) | 1 | Cellular connectivity with an integrated prepaid global SIM and no carrier contract. Seats into the Notecarrier CX M.2 slot. This build provisions only a cellular antenna; the MBGLW's WiFi radio is not enabled or used. |
 | [Starnote for Skylo](https://dev.blues.io/datasheets/starnote-datasheet/) ([buy](https://shop.blues.com/products/starnote?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)) | 1 | Satellite NTN fallback for apiaries beyond cellular range. **Must be mounted externally** — outside the main enclosure — with an unobstructed view of the sky; the integrated Ignion NTN/GPS patch antennas cannot acquire satellites through an opaque polycarbonate or metal enclosure. Skylo GEO coverage varies by geography and service region; verify coverage for your deployment area before relying on Starnote as the sole backhaul (see [satellite best practices](https://dev.blues.io/starnote/satellite-best-practices/)). Connects to the Notecard's onboard 6-pin JST NTN port via the supplied cable; host MCU must use I2C to Notecard when Starnote is attached. This design does not configure or transmit device location — the Starnote's integrated GPS receiver is used by the satellite stack internally for timing and ephemeris, not as a user-facing location source. |
 | Small IP65 weatherproof enclosure for Starnote (e.g. 80 × 80 × 40 mm clear-lid polycarbonate project box) | 1 | Secondary housing for the Starnote module, mounted externally on the hive stand or main enclosure with the clear lid facing the sky. The clear polycarbonate lid passes the GPS and Skylo patch-antenna signals without attenuation; an opaque enclosure lid will degrade or block NTN/GPS reception. Drill one M16 cable-gland hole in the bottom for the 6-pin JST NTN cable and secure the Starnote PCB flat against the base with M2 standoffs or foam tape. Route the JST cable through the gland and seal with silicone. Source from electronics distributors (Hammond 1555C2, LeMotech, or equivalent rated IP54 or better; verify lid material is clear polycarbonate before ordering). |
 | M16 cable glands (nylon, IP68) | 2 | One for the Starnote secondary enclosure (6-pin JST cable entry) and one additional gland if a second penetration is needed in the main enclosure for the sensor cable bundle. |
@@ -194,13 +194,13 @@ The SHT31-D address defaults to 0x44; it coexists on the I2C bus with the Noteca
 
 2. **Claim the Notecard.** Power up the unit at a location with cellular coverage. The Notecard associates with your project on its first cellular sync. This initial sync is also essential for Starnote: it registers the device, downloads the current satellite ephemeris, and sets device time — all required before NTN transmissions will succeed. See the [satellite best practices guide](https://dev.blues.io/starnote/satellite-best-practices/).
 
-   **First-boot timing note.** The firmware anchors the summary window to the first successful `card.time` response — the moment the Notecard returns a valid epoch rather than an error. Any sensor readings accumulated before that time anchor are discarded, and the window clock starts from that point. The first `hive_summary.qo` note therefore arrives after a full `report_interval_hr` window has elapsed **from the first successful time sync** (default: 24 hours from that anchor), which may be later than first power-up if the unit is commissioned indoors or in a weak-signal location before cellular or satellite lock is achieved. This is intentional — a summary sent before a valid time reference would contain at most a single sensor reading and no meaningful weight delta.
+   **First-boot timing Note.** The firmware anchors the summary window to the first successful `card.time` response — the moment the Notecard returns a valid epoch rather than an error. Any sensor readings accumulated before that time anchor are discarded, and the window clock starts from that point. The first `hive_summary.qo` Note therefore arrives after a full `report_interval_hr` window has elapsed **from the first successful time sync** (default: 24 hours from that anchor), which may be later than first power-up if the unit is commissioned indoors or in a weak-signal location before cellular or satellite lock is achieved. This is intentional — a summary sent before a valid time reference would contain at most a single sensor reading and no meaningful weight delta.
 
 3. **Set a fleet per apiary yard.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) group devices for shared configuration. One fleet per yard lets you apply threshold environment variables at the yard level (all hives in a given orchard see similar ambient conditions) while overriding per-device for any hive that's known to be a heavy producer or an established swarm catcher.
 
 4. **Set environment variables.** In Notehub, navigate **Fleet → Environment** and set any values below (all are optional; firmware defaults are shown in the table). Any value set at fleet or device level overrides the compile-time default on the device's next inbound sync. Use [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) to automate fleet assignment based on device metadata.
 
-   > **Commissioning note — inbound cadence.** The firmware configures `inbound: 10080` (one week) to minimise satellite session costs. This means env var changes pushed from Notehub will not be pulled by the device until the next scheduled inbound, which may be up to seven days away. During bench commissioning, **force an immediate inbound sync** after each env var change by sending `{"req":"hub.sync"}` from the **Notehub in-browser terminal** (upper right of the Notehub console). Alternatively, temporarily shorten the inbound interval for the bench session by sending `{"req":"hub.set","mode":"periodic","outbound":1440,"inbound":15}` from the terminal, and restore the weekly inbound (`"inbound":10080`) before field deployment.
+   > **Commissioning Note — inbound cadence.** The firmware configures `inbound: 10080` (one week) to minimise satellite session costs. This means env var changes pushed from Notehub will not be pulled by the device until the next scheduled inbound, which may be up to seven days away. During bench commissioning, **force an immediate inbound sync** after each env var change by sending `{"req":"hub.sync"}` from the **Notehub in-browser terminal** (upper right of the Notehub console). Alternatively, temporarily shorten the inbound interval for the bench session by sending `{"req":"hub.set","mode":"periodic","outbound":1440,"inbound":15}` from the terminal, and restore the weekly inbound (`"inbound":10080`) before field deployment.
 
    | Variable | Default | Purpose |
    |---|---|---|
@@ -322,7 +322,7 @@ When `report_interval_hr` is changed in Notehub, the firmware automatically reis
 
 ### Key code snippet 1: compact template definition
 
-The `"format": "compact"` field is required for Starnote/NTN operation and cuts the per-note wire size by 3–5× (e.g., a 200-byte JSON note becomes ~40–80 bytes in compact form). `port` must be in the range 1–100. The numeric format codes (e.g., `14.1`, `12`) describe the wire encoding: `14.1` means a 4-byte IEEE 754 float, `12` means a 2-byte signed integer. The Notecard handles encoding/decoding automatically; no manual work required.
+The `"format": "compact"` field is required for Starnote/NTN operation and cuts the per-Note wire size by 3–5× (e.g., a 200-byte JSON Note becomes ~40–80 bytes in compact form). `port` must be in the range 1–100. The numeric format codes (e.g., `14.1`, `12`) describe the wire encoding: `14.1` means a 4-byte IEEE 754 float, `12` means a 2-byte signed integer. The Notecard handles encoding/decoding automatically; no manual work required.
 
 ```cpp
 J *req = notecard.newRequest("note.template");
@@ -407,7 +407,7 @@ delay((uint32_t)sampleMin * 60000UL);
 
 **Transmitted.**
 
-- `hive_summary.qo` — one compact-template note every `report_interval_hr` (default 24 hours). Each numeric field is the mean of its valid samples over the window; a field with zero valid reads emits `−9999`. The `weight_delta` field is the difference between the day's first and last valid weight reading, making swarm departure immediately visible in the summary even if no threshold alert fired.
+- `hive_summary.qo` — one compact-template Note every `report_interval_hr` (default 24 hours). Each numeric field is the mean of its valid samples over the window; a field with zero valid reads emits `−9999`. The `weight_delta` field is the difference between the day's first and last valid weight reading, making swarm departure immediately visible in the summary even if no threshold alert fired.
 - `hive_alert.qo` — emitted immediately on a threshold trip, with `sync:true` to force an immediate cellular or NTN uplink. Each alert type is suppressed for `ALERT_COOLDOWN_MIN` (60 minutes) after the first firing.
 
 **Routed.** Both Notefiles land in Notehub and from there to whatever routes the project configures.
@@ -421,7 +421,7 @@ delay((uint32_t)sampleMin * 60000UL);
 ## 9. Validation and Testing
 
 
-**Expected cadence in steady state.** A healthy, settled colony produces one `hive_summary.qo` note per day and zero `hive_alert.qo` notes. Expect a short tuning period after deployment to verify that weight, temperature, and audio thresholds are appropriate for the specific hive: a heavy honey super changes the weight baseline, an aggressive strain may have a higher natural ZCR, and early spring colonies run cooler than peak-season.
+**Expected cadence in steady state.** A healthy, settled colony produces one `hive_summary.qo` Note per day and zero `hive_alert.qo` Notes. Expect a short tuning period after deployment to verify that weight, temperature, and audio thresholds are appropriate for the specific hive: a heavy honey super changes the weight baseline, an aggressive strain may have a higher natural ZCR, and early spring colonies run cooler than peak-season.
 
 **Bench validation sequence.** Before field deployment:
 
@@ -433,7 +433,7 @@ delay((uint32_t)sampleMin * 60000UL);
 
    b. **Clear any partial window in progress.** The firmware restores persisted state across reboots via `NotePayloadRetrieveAfterSleep`, so a power-cycle alone does not reset the summary window. To start from a known-clean boundary: in Notehub set `reset_state` to `1` (see §6) and force an immediate inbound sync (`{"req":"hub.sync"}`). On the next wake the firmware clears all accumulators and sets `last_report_epoch = 0`; the window is re-anchored when the next valid `card.time` response arrives. The reset is one-shot — subsequent wakes that still read `reset_state=1` (before the next inbound sync delivers the updated value) are silently skipped by the firmware. After confirming that the first 1-hour summary has been received (indicating that a complete clean window elapsed), you may leave `reset_state=1` in Notehub or remove it; the window will not reset again.
 
-   c. **Empty-platform window.** Place the empty load-cell platform (no hive body) on the load cell and leave it completely undisturbed. Wait for one complete 1-hour summary. Record `weight_kg` from that note — call it `platform_reading_kg`.
+   c. **Empty-platform window.** Place the empty load-cell platform (no hive body) on the load cell and leave it completely undisturbed. Wait for one complete 1-hour summary. Record `weight_kg` from that Note — call it `platform_reading_kg`.
 
    d. **Known-mass window.** Place a known reference mass (for example, a 10 kg bag of flour or a calibrated test weight) on the platform and leave it completely undisturbed for one full window. Record the resulting `weight_kg` as `reported_weight_kg`.
 
@@ -491,7 +491,7 @@ Because the unit is solar-powered, the absolute mAh number matters less than the
 
 | Symptom | Likely Cause | Check |
 |---------|-------------|-------|
-| No notes appear in Notehub after 48 hours | Notecard not associated with project, or first boot config failed | Verify `PRODUCT_UID` is set correctly. Check Notehub console for any device events. Force a hub.sync from the terminal to trigger association. |
+| No Notes appear in Notehub after 48 hours | Notecard not associated with project, or first boot config failed | Verify `PRODUCT_UID` is set correctly. Check Notehub console for any device events. Force a hub.sync from the terminal to trigger association. |
 | Continuous `temp_anomaly` alerts indoors | SHT31-D reading room temperature, which is below the default `temp_low_c = 32 °C` | This is expected during bench testing (alerts confirm the alert path works). Ignore or lower `temp_low_c` during commissioning. Alerts will cease once the unit is deployed in a warm hive. |
 | Weight readings are negative or too high | Calibration scale factor not set, or platform tare offset is wrong | Run the known-weight calibration procedure in §9 step 1. Confirm `hx711_calibration` and `hx711_zero_offset_kg` are set in Notehub environment variables. |
 | Weight doesn't change between summaries, or only changes erratically | Load cell disconnected, or HX711 powered down before sleep | Verify all four load cell wires (E+, E-, A+, A-) are connected to HX711. Check that D5/D6 GPIO pins are not shorted or pulled low continuously. Confirm the HX711 sleep command is not being called prematurely. |

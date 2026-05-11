@@ -6,7 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-This project is a shot-level process monitor for plastic [injection molding](https://blues.com/industrial-equipment-monitoring/) machines. The device captures the two signals that drive part quality on every shot — hydraulic injection pressure and mold temperature — and reduces each shot to a handful of summary metrics a process engineer would want to see (peak pressure, fill time, pack pressure, average mold temperature, shot sequence number), then pushes them to the cloud over cellular. Because the connectivity sits outside the plant's OT network, no IT or network ticket is required at the customer site. The hardware is a Blues Notecarrier CX paired with a [Notecard Cell+WiFi](https://shop.blues.com/products/notecard-cellular?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) (see §4 for the full BOM).
+This project is a shot-level process monitor for plastic [injection molding](https://blues.com/industrial-equipment-monitoring/) machines. The device captures the two signals that drive part quality on every shot — hydraulic injection pressure and mold temperature, and reduces each shot to a handful of summary metrics a process engineer would want to see (peak pressure, fill time, pack pressure, average mold temperature, shot sequence number), then pushes them to the cloud over cellular. Because the connectivity sits outside the plant's OT network, no IT or network ticket is required at the customer site. The hardware is a Blues Notecarrier CX paired with a [Notecard Cell+WiFi](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) (see §4 for the full BOM).
 
 ## Expected Outcome
 
@@ -20,19 +20,21 @@ After completing this project, you will have:
 
 ## 1. Project Overview
 
+
 **The problem.** Plastic injection molding is a process that looks stable until it isn't. A mold that cycled flawlessly through ten thousand shots can begin producing scrap on shot ten-thousand-and-one — a worn gate land, a slightly off-spec resin lot, a cooling circuit that's partially fouled, a worn check ring on the screw. None of these failures announce themselves dramatically. What they do is introduce subtle, shot-to-shot variation in the two signals that matter most: hydraulic injection pressure at the cylinder's manifold block (the upstream hydraulic forcing function that drives how completely the cavity fills and how aggressively it is packed) and mold temperature (which governs cooling rate, crystallinity, and cycle time). Both of those signals are measurable continuously. Almost nobody measures them continuously.
 
 **Why Notecard.** Plastics processors run their production equipment on isolated **OT** (operational technology) networks — isolated by design, because the machines that run 24/7 production cannot share a network path with corporate IT systems. An OEM that wants to offer a remote process-monitoring service faces a hard choice: either negotiate a network path through every customer's IT and OT security teams (slow, expensive, different every time), or deploy a connectivity solution that bypasses the plant network entirely. The Notecard Cell+WiFi variant does exactly that — it carries data directly to [Notehub](https://notehub.io) over cellular, with WiFi available as an opportunistic fallback for plants that permit it, and the OEM ships the same hardware SKU to every customer regardless of how the plant's networks are organized.
 
 <NewToBlues/>
 
-**Deployment scenario.** A compact DIN-rail or panel-mount enclosure installed in or adjacent to the machine's electrical cabinet, powered from the machine's existing 24 VDC control rail. The hydraulic injection pressure transducer taps into a 1/4-18 NPT port on the injection cylinder's hydraulic manifold block — on the hydraulic oil side of the machine, with no contact with the polymer melt — so **no mold modification is required**. The thermocouple probe is seated in the mold's existing thermocouple pocket. No modification to the machine's controller, no connection to the plant LAN, no IT ticket.
+**Deployment scenario.** A compact DIN-rail or panel-mount enclosure installed in or adjacent to the machine's electrical cabinet, powered from the machine's existing 24 VDC control rail. The hydraulic injection pressure transducer taps into a 1/4-18 NPT port on the injection cylinder's hydraulic manifold block — on the hydraulic oil side of the machine, with no contact with the polymer melt, so **no mold modification is required**. The thermocouple probe is seated in the mold's existing thermocouple pocket. No modification to the machine's controller, no connection to the plant LAN, no IT ticket.
 
 ## 2. System Architecture
 
+
 ![System architecture: hydraulic pressure transducer + K-type thermocouple → Notecarrier CX with Cygnet host and Notecard MBGLW → cellular/WiFi → Notehub → quality / historian / alerts](diagrams/01-system-architecture.svg)
 
-**Device-side responsibilities.** The Notecarrier CX's onboard Cygnet STM32L433 host runs continuously (this is a line-powered machine; no deep-sleep cycling needed). It polls injection-manifold pressure at 10 Hz during idle; when the pressure signal crosses the shot-detection threshold, it enters capture mode at 20 Hz (50 milliseconds per sample), filling a RAM buffer with a pressure and temperature profile for feature extraction. After each shot the host computes five shot-level features from the buffer, increments a per-boot-session shot counter, and queues a [Note](https://dev.blues.io/api-reference/glossary/#note) for transmission. All of this happens in the STM32's 64 KB SRAM — a 102-second shot captured at 20 Hz produces at most 16 KB of profile data, well within budget.
+**Device-side responsibilities.** The Notecarrier CX's onboard Cygnet STM32L433 host runs continuously (this is a line-powered machine; no deep-sleep cycling needed). It polls injection-manifold pressure at 10 Hz during idle; when the pressure signal crosses the shot-detection threshold, it enters capture mode at 20 Hz (50 ms per sample), filling a RAM buffer with a pressure and temperature profile for feature extraction. After each shot the host computes five shot-level features from the buffer, increments a per-boot-session shot counter, and queues a [Note](https://dev.blues.io/api-reference/glossary/#note) for transmission. All of this happens in the STM32's 64 KB SRAM — a 102-second shot captured at 20 Hz produces at most 16 KB of profile data, well within budget.
 
 **Notecard responsibilities.** The Notecard stores Notes in its on-device queue, establishes the cellular (or WiFi) session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 minutes), and flushes any `sync:true` alert Notes immediately regardless of the outbound schedule. The Notecard also handles [environment variable](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) distribution — operators adjust detection thresholds and alert bands from Notehub without reflashing.
 
@@ -42,7 +44,8 @@ After completing this project, you will have:
 
 ## 3. Technical Summary
 
-**Path to First Event (5–10 minutes bench demo)**
+
+**Path to First Event (5–10 min bench demo)**
 
 1. **Assemble the minimum bench kit** (no production hydraulics needed):
    - Notecarrier CX + Notecard Cell+WiFi
@@ -67,7 +70,7 @@ After completing this project, you will have:
 4. **Monitor the serial output:**
    - Open a serial terminal at 9600 baud to see shot detection and feature extraction logs
    - Inject a fake pressure pulse (e.g. short the 150 Ω resistor for ~2 seconds) to trigger a shot
-   - Verify the next Notehub sync (within 60 minutes) shows a `shot.qo` event
+   - Verify the next Notehub sync (within 60 min) shows a `shot.qo` event
 
 5. **Inspect the event in Notehub:**
    - Log into notehub.io, open your project, and navigate to Events
@@ -95,10 +98,11 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
+
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an embedded Cygnet STM32L433 host — runs application code directly with no separate MCU. Exposes ADC, SPI, and I2C via dual 16-pin headers. Includes a short flexible LTE antenna (u.FL); see §5 for cabinet-routing requirements. |
-| [Notecard Cell+WiFi (MBGLW)](https://shop.blues.com/products/notecard-cell-wifi?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/)) | 1 | Cellular removes per-site IT involvement; WiFi available as an opportunistic fallback. Prepaid SIM with 500 MB and 10 years of service included. |
+| [Notecard Cell+WiFi (MBGLW)](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/)) | 1 | Cellular removes per-site IT involvement; WiFi available as an opportunistic fallback. Prepaid SIM with 500 MB and 10 years of service included. |
 | Taoglas CBP.300.11F.200A u.FL-to-SMA female bulkhead pigtail, RG178, 200 mm | 1 | **Required for any metal-cabinet installation** — see §5. Routes the Notecard's cellular u.FL antenna port to an SMA female bulkhead connector at the cabinet wall. The u.FL end snaps onto the Notecard; the SMA female end mounts in a cable gland or conduit knockout. 200 mm is sufficient for most DIN-rail-to-cabinet-wall runs; order Taoglas CBP.300.11F.300A (300 mm) if your enclosure is deeper. Source from Mouser, Arrow, or Taoglas direct (taoglas.com). |
 | External wideband LTE cellular antenna, SMA male, magnetic-mount or direct-mount (e.g. [SparkFun WRL-14987](https://www.sparkfun.com/products/14987)) | 1 | Mounts on the exterior of the cabinet and screws onto the SMA female bulkhead from the pigtail above. A magnetic-mount whip on the cabinet roof is the most practical field option. Ensure the antenna covers the LTE bands in your deployment region. |
 | [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Coulomb counter on the power rail for ground-truth energy measurement during bench validation. |
@@ -113,6 +117,7 @@ Here is a sample Note this device emits:
 All Blues parts ship with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
 ## 5. Wiring and Assembly
+
 
 ![Wiring: 4–20 mA pressure transducer to A0 (with 150 Ω shunt); MAX31855K thermocouple on SPI with CS=D10; external SMA antenna via u.FL pigtail; 24 VDC → SD-25D-5 → Mojo → +VBAT](diagrams/02-wiring-assembly.svg)
 
@@ -151,7 +156,7 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
   > **Notecarrier CX v1.3 label errata.** The MOSI and MISO silkscreen labels are swapped on v1.3 hardware. If SPI reads return garbage, swap the MOSI/MISO connections and retry. See the [Notecarrier CX v1.3 datasheet](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) for the authoritative pin table.
 
 - MAX31855K breakout `CS` → `D10` on the Notecarrier CX header (any digital I/O works; D10 is the firmware default).
-- MAX31855K breakout `TC+` and `TC-` → corresponding positive and negative wires of the K-type thermocouple probe. **Polarity note:** ANSI/US K-type convention uses yellow for the positive lead; IEC 60584-3 uses green for K-type positive. Consult your probe's lead color or connector marking — do not assume from a generalized color table.
+- MAX31855K breakout `TC+` and `TC-` → corresponding positive and negative wires of the K-type thermocouple probe. **Polarity Note:** ANSI/US K-type convention uses yellow for the positive lead; IEC 60584-3 uses green for K-type positive. Consult your probe's lead color or connector marking — do not assume from a generalized color table.
 
 **Antenna (mandatory for metal-cabinet installations):**
 
@@ -173,6 +178,7 @@ The Notecarrier CX includes a short flexible LTE antenna connected to the Noteca
 
 ## 6. Notehub Setup
 
+
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/injection_molding_shot_monitor/injection_molding_shot_monitor.ino` as `PRODUCT_UID`.
 
 2. **Claim the Notecard.** Power the unit; on first cellular connection the Notecard automatically associates with your project.
@@ -191,12 +197,13 @@ The Notecarrier CX includes a short flexible LTE antenna connected to the Noteca
    | `fill_time_min_ms` | `200` | Alert fires when fill time is shorter than this (milliseconds). Unexpectedly short fill times suggest a gate or nozzle issue. |
    | `fill_time_max_ms` | `3000` | Alert fires when fill time exceeds this (milliseconds). Slow fill indicates degraded material flow or low injection speed. |
    | `mold_temp_max_c` | `80.0` | Alert fires when average mold temperature exceeds this value (°C). Rising mold temperature can indicate cooling circuit degradation. |
-   | `outbound_min` | `60` | Cellular outbound sync cadence in minutes. When this value changes in Notehub, the firmware detects the difference on its next 5-minute env-var check and immediately re-issues `hub.set` with the new cadence — no reflash needed. Allow up to the `inbound` poll interval (default 120 minutes) for the Notecard to pull the updated value from Notehub, then up to 5 more minutes for the firmware to apply it. |
+   | `outbound_min` | `60` | Cellular outbound sync cadence in minutes. When this value changes in Notehub, the firmware detects the difference on its next 5-minute env-var check and immediately re-issues `hub.set` with the new cadence — no reflash needed. Allow up to the `inbound` poll interval (default 120 min) for the Notecard to pull the updated value from Notehub, then up to 5 more minutes for the firmware to apply it. |
    | `report_every_n_shots` | `1` | Emit a `shot.qo` Note every N shots. Set to 10 to reduce data volume on high-speed machines without losing trend visibility. |
 
 5. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) targeting `shot_alert.qo` (real-time delivery to a quality alert or CMMS endpoint) and a second targeting `shot.qo` (batch delivery to a process historian or analytics platform). Because the two Notefiles are separate at the source, each route operates independently — high-urgency alerts can go to an on-call webhook while trend data lands in a time-series database, all without any filter logic in the routes.
 
 ## 7. Firmware Design
+
 
 Single sketch: [`firmware/injection_molding_shot_monitor/injection_molding_shot_monitor.ino`](firmware/injection_molding_shot_monitor/injection_molding_shot_monitor.ino)
 
@@ -279,17 +286,17 @@ The Notecard runs in [`hub.set`](https://dev.blues.io/api-reference/notecard-api
 
 ### Retry and error handling
 
-**Notecard initialization.** `configureNotecard()` issues `hub.set` in a retry loop for up to 5 seconds, calling `requestAndResponse()` on each attempt so the response `err` field can be inspected. A semantic failure — such as an unrecognized `PRODUCT_UID` format — is logged and propagated back to `setup()`, which halts with a `FATAL` message rather than silently proceeding in an unprovisioned state. This replaces the earlier `sendRequestWithRetry()` pattern, which returned only a boolean and could not distinguish a transport timeout from a Notecard-side rejection. If `PRODUCT_UID` is empty (the default), `setup()` halts immediately before attempting any Notecard communication.
+**Notecard initialization.** `configureNotecard()` issues `hub.set` in a retry loop for up to 5 seconds, calling `requestAndResponse()` on each attempt so the response `err` field can be inspected. A semantic failure, such as an unrecognized `PRODUCT_UID` format — is logged and propagated back to `setup()`, which halts with a `FATAL` message rather than silently proceeding in an unprovisioned state. This replaces the earlier `sendRequestWithRetry()` pattern, which returned only a boolean and could not distinguish a transport timeout from a Notecard-side rejection. If `PRODUCT_UID` is empty (the default), `setup()` halts immediately before attempting any Notecard communication.
 
 **env.get.** `fetchEnvVars()` calls `requestAndResponse()` and guards against both a `nullptr` response (Notecard unreachable) and a response carrying an `err` field (`notecard.responseError(rsp)` returns `true`). In either case the function returns early and the in-RAM thresholds retain their last-good values — the device keeps running on stale (but valid) thresholds rather than stopping.
 
-**note.template.** `defineTemplates()` runs once at boot and uses `requestAndResponse()` for both `shot.qo` and `shot_alert.qo` registrations, printing the `err` string if either call is rejected. Templates are idempotent — re-running them on the next boot corrects any missed registration, at the cost of one cycle of free-form JSON Notes. The `alert` field in `shot_alert.qo` uses `"peak_pressure_high"` (the longest of the five alert type names, at 18 characters) as its exemplar string so the template allocates sufficient width for all alert values without truncation.
+**Note.template.** `defineTemplates()` runs once at boot and uses `requestAndResponse()` for both `shot.qo` and `shot_alert.qo` registrations, printing the `err` string if either call is rejected. Templates are idempotent — re-running them on the next boot corrects any missed registration, at the cost of one cycle of free-form JSON Notes. The `alert` field in `shot_alert.qo` uses `"peak_pressure_high"` (the longest of the five alert type names, at 18 characters) as its exemplar string so the template allocates sufficient width for all alert values without truncation.
 
-**note.add.** `sendShotNote()` checks the `sendRequest()` return; a failed `note.add` drops that shot Note — there is no per-Note retry queue. Lost shot Notes are acceptable at high cycle rates (the process trend is still visible across surviving Notes). `sendAlertNote()` returns `bool` (the `sendRequest()` result). The per-alert cooldown timer in `loop()` is only advanced when `sendAlertNote()` returns `true` — a transient I2C or Notecard failure therefore does not suppress retries for the full 10-minute cooldown window. The next shot that trips the same condition will attempt the alert Note again immediately.
+**Note.add.** `sendShotNote()` checks the `sendRequest()` return; a failed `note.add` drops that shot Note — there is no per-Note retry queue. Lost shot Notes are acceptable at high cycle rates (the process trend is still visible across surviving Notes). `sendAlertNote()` returns `bool` (the `sendRequest()` result). The per-alert cooldown timer in `loop()` is only advanced when `sendAlertNote()` returns `true` — a transient I2C or Notecard failure therefore does not suppress retries for the full 10-minute cooldown window. The next shot that trips the same condition will attempt the alert Note again immediately.
 
 **card.motion.mode.** The accelerometer-disable call in `configureNotecard()` is best-effort; failure is logged to Serial. A live accelerometer does not affect application correctness — it adds a small amount of idle current to the Notecard's baseline, which is visible on the Mojo trace.
 
-**Sensor faults.** `readMoldTempC()` returns `NAN` on any MAX31855 fault bit. `computeFeatures()` guards every temperature accumulation with `isnan()` so fault samples are silently excluded. A shot with zero valid temperature samples produces `0.0` in the `temp_avg_c` and `cool_c_s` fields — see the sensor reading section for the implications of this sentinel choice.
+**Sensor faults.** `readMoldTempC()` returns `NAN` on any MAX31855 fault bit. `computeFeatures()` guards every temperature accumulation with `isnan()` so fault samples are silently excluded. A shot with zero valid temperature samples produces `0.0` in the `temp_avg_c` and `cool_c_s` fields. See the sensor reading section for the implications of this sentinel choice.
 
 **Shot capture guard.** `captureShot()` discards events shorter than `MIN_SHOT_DURATION_MS` (500 milliseconds) so that machine vibration or idle pressure noise cannot increment `g_cycle_count` and pollute the trend data.
 
@@ -360,9 +367,10 @@ float denom = (float)(n * sxx - sx * sx);
 
 ## 8. Data Flow
 
+
 ![Data flow: 10 Hz idle pressure sampling escalates to 20 Hz capture on shot detection → 5 shot-level features extracted → shot.qo (per shot, templated) and shot_alert.qo (sync:true on out-of-spec) → Notehub routes](diagrams/03-data-flow.svg)
 
-**Collected.** During each shot: a continuous time series of injection-manifold pressure (PSI) and mold temperature (°C) sampled at 20 Hz. After each shot: five aggregated features (peak pressure, fill time, pack pressure, mold temperature average, and mold-temperature trend slope) plus total shot duration and a per-boot-session shot sequence number (`cycle`). Pack pressure and the mold-temperature trend slope (`cool_c_s`) are recorded for downstream trend analysis; they do not trigger alerts. Note that `cool_c_s` reflects multi-shot mold-surface temperature drift rather than the within-shot cooling transient — see §7 for the probe response-time limitation — and should be interpreted over a run of shots, not individually.
+**Collected.** During each shot: a continuous time series of injection-manifold pressure (PSI) and mold temperature (°C) sampled at 20 Hz. After each shot: five aggregated features (peak pressure, fill time, pack pressure, mold temperature average, and mold-temperature trend slope) plus total shot duration and a per-boot-session shot sequence number (`cycle`). Pack pressure and the mold-temperature trend slope (`cool_c_s`) are recorded for downstream trend analysis; they do not trigger alerts. Note that `cool_c_s` reflects multi-shot mold-surface temperature drift rather than the within-shot cooling transient. See §7 for the probe response-time limitation, and should be interpreted over a run of shots, not individually.
 
 **Transmitted.**
 - `shot.qo` — one Note per shot (or per N shots if `report_every_n_shots` is set). Queued in the Notecard and synced on the hourly outbound schedule. Template-encoded for wire efficiency.
@@ -382,6 +390,7 @@ float denom = (float)(n * sxx - sx * sx);
 
 ## 9. Validation and Testing
 
+
 **Expected steady-state cadence.** On a healthy process with default thresholds, the device generates one `shot.qo` Note per injection cycle (e.g., 120 Notes per hour on a 30-second cycle time) and zero `shot_alert.qo` Notes. Expect a commissioning period of 50–100 shots to validate that default thresholds are appropriate for the specific mold and resin — adjusting `peak_psi_min`, `peak_psi_max`, and `fill_time_max_ms` via Notehub environment variables is the intended workflow without touching firmware.
 
 **Simulating alerts during commissioning.** Drop `peak_psi_min` to a value above what the process actually produces (for example, set it to `1500.0` on a process that normally peaks at `1340.0`). The next inbound sync will pull the updated value, and the next shot will trip `peak_pressure_low` — the alert Note should appear in Notehub within a typical cellular session window. Reset the variable to its correct value when done.
@@ -398,7 +407,7 @@ float denom = (float)(n * sxx - sx * sx);
 
 4. **Watch `shot_alert.qo` volume separately.** Each `sync:true` alert Note triggers its own cellular session. The 10-minute per-alert cooldown limits the worst case to 6 sessions per alert type per hour, but if multiple alert types fire simultaneously on a badly off-spec process, session frequency can add up. Check the Notehub event log for alert Note volume during commissioning and confirm that alert thresholds are set appropriately for the specific mold and resin.
 
-**Using Mojo to validate power behavior.** Place the [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) inline between the 5 V step-down converter and the Notecarrier CX `+VUSB` rail during bench testing. Connect the Mojo's Qwiic cable to the **Notecarrier CX's Qwiic connector** so the Notecard can read the LTC2959 coulomb counter over the shared I²C bus. The Mojo measures the entire subsystem at the 5 V input rail — Notecard plus Notecarrier regulators plus Cygnet host — not the Notecard in isolation.
+**Using Mojo to validate power behavior.** Place the [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) inline between the 5 V step-down converter and the Notecarrier CX `+VUSB` rail during bench testing. Connect the Mojo's Qwiic cable to the **Notecarrier CX's Qwiic connector** so the Notecard can read the LTC2959 coulomb counter over the shared I²C bus. The Mojo measures the entire subsystem at the 5 V input rail — Notecard plus Notecarrier regulators plus Cygnet host, not the Notecard in isolation.
 
 Published Notecard figures (from the [MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/)). The MBGLW uses an LTE Cat-1 bis modem (Quectel EG916Q-GL) plus a 2.4 GHz 802.11b/g/n WiFi module; the figures below are for the cellular path used in this design:
 
@@ -419,6 +428,7 @@ The Mojo reports cumulative mAh to the Notecard at 1% accuracy over the Qwiic bu
 
 ## 10. Troubleshooting
 
+
 | Symptom | Likely Cause | Fix |
 |---------|--------------|-----|
 | **Notecard won't connect to cellular** | Antenna not attached or misrouted; cabinet shielding too severe | Verify u.FL-to-SMA pigtail is snapped onto the Notecard's cellular port; confirm external antenna is mounted outside the cabinet on clear metal surface. Run `{"req":"hub.status"}` to check `connected` field. |
@@ -432,15 +442,16 @@ The Mojo reports cumulative mAh to the Notecard at 1% accuracy over the Qwiic bu
 
 ## 11. Limitations and Next Steps
 
+
 **Simplified for this reference design:**
 
-- **Hydraulic injection pressure, not in-cavity pressure.** This design measures hydraulic injection pressure at the injection cylinder's manifold block using a standard 4–20 mA strain-gauge transducer. It does not measure in-cavity pressure, which requires a mold-mounted piezoelectric transducer installed through a dedicated sensor port in the mold (either an existing port or one machined for that purpose). Hydraulic pressure is the upstream forcing function applied by the injection unit; cavity pressure is the actual polymer pressure inside the mold cavity. The two differ by nozzle, gate, and runner losses that vary with resin, temperature, and wear. For shot-to-shot consistency monitoring and trend detection where the hydraulic-to-cavity relationship is reasonably stable, hydraulic pressure is a practical and accessible signal. For applications that require direct cavity pressure (closed-loop pack control, high-precision medical or optical parts), a mold-mounted piezoelectric transducer with appropriate charge amplifier and signal conditioning is required — see the scope note at the top of this document.
+- **Hydraulic injection pressure, not in-cavity pressure.** This design measures hydraulic injection pressure at the injection cylinder's manifold block using a standard 4–20 mA strain-gauge transducer. It does not measure in-cavity pressure, which requires a mold-mounted piezoelectric transducer installed through a dedicated sensor port in the mold (either an existing port or one machined for that purpose). Hydraulic pressure is the upstream forcing function applied by the injection unit; cavity pressure is the actual polymer pressure inside the mold cavity. The two differ by nozzle, gate, and runner losses that vary with resin, temperature, and wear. For shot-to-shot consistency monitoring and trend detection where the hydraulic-to-cavity relationship is reasonably stable, hydraulic pressure is a practical and accessible signal. For applications that require direct cavity pressure (closed-loop pack control, high-precision medical or optical parts), a mold-mounted piezoelectric transducer with appropriate charge amplifier and signal conditioning is required. See the scope Note at the top of this document.
 
 - **Cycle counter resets on power loss.** `g_cycle_count` is a RAM-only variable. The `cycle` field in every Note is a per-boot-session shot sequence number — it resets to zero on every power loss or reboot. It is not a persistent lifetime part counter. For cumulative production counting in a downstream system, use Notehub event timestamps as the canonical ordering key. A production enhancement would persist `g_cycle_count` to the STM32's internal flash (using HAL_FLASH_Program) or to a small external EEPROM, with writes batched (e.g. every 100 shots) to stay well within flash endurance limits.
 
 - **Pressure range is POC-level.** The default 0–2,000 PSI range suits benchtop and lab hydraulic circuits but may be insufficient for production injection machines, where hydraulic injection pressures often exceed this range. Deploying on a higher-pressure circuit requires a transducer rated for the actual maximum hydraulic pressure — update `max_pressure_psi` to match and confirm the manifold fitting and transducer pressure ratings before installation.
 - **20 Hz shot capture is POC-level.** The firmware samples at 20 Hz (50 milliseconds per sample), which is sufficient for extracting the five summary features used here but is too coarse to capture the fine structure of the fill waveform. Fast injection molding machines — particularly those with fill times under 200 milliseconds or rapid gate-seal transients — may require 100–1000 Hz sampling to faithfully characterize fill dynamics and detect peak-pressure spikes. Achieving higher rates on the Cygnet would require SPI DMA, double-buffering, and a deeper profile buffer.
-- **Profile waveform is not transmitted.** The firmware captures the pressure and temperature profile in RAM and extracts features from it, but only the five features are sent to Notehub. The raw profile arrays are discarded after each shot. A production system that needs SPC waveform analysis or golden-sample comparison would need to transmit the profile itself — but at 2,048 samples × 8 bytes × 2,880 shots per day, transmitting raw profiles is a very different data volume problem.
+- **Profile waveform is not transmitted.** The firmware captures the pressure and temperature profile in RAM and extracts features from it, but only the five features are sent to Notehub. The raw profile arrays are discarded after each shot. A production system that needs SPC waveform analysis or golden-sample comparison would need to transmit the profile itself, but at 2,048 samples × 8 bytes × 2,880 shots per day, transmitting raw profiles is a very different data volume problem.
 - **Single sensor per shot.** One pressure transducer and one thermocouple. Multi-cavity molds (two-cavity, four-cavity, family molds) would need one transducer per cavity plus a firmware extension to track per-cavity features independently.
 - **Gate-seal detection is heuristic.** Pack-phase end is detected when pressure drops to 50% of peak. Real-world molds may have a different ratio depending on gate geometry and resin rheology. The `GATE_SEAL_FRAC` constant in firmware is the tuning point for this.
 - **Shot trigger is pressure-only.** Some machine controllers output a digital shot-in-progress signal on their I/O board. Wiring that signal to a digital input pin and using it as the primary trigger (rather than the pressure threshold) would give more precise shot-boundary timing. The firmware's pressure-threshold approach is a practical alternative for installations where the machine's I/O is not accessible.
@@ -458,6 +469,7 @@ The Mojo reports cumulative mAh to the Notecard at 1% accuracy over the Qwiic bu
 
 ## 12. Summary
 
+
 Injection molding is precise and repetitive by design, but precision and repeatability erode gradually in ways that are invisible until scrap rates start climbing. Hydraulic injection pressure at the cylinder's manifold block and mold temperature together encode most of what a process engineer would want to know about how each shot went — whether the mold filled completely, how aggressively the gate was packed, and whether the mold surface temperature is trending in the right direction across shots (a slow upward drift is often the first sign of a fouled cooling circuit). This design measures hydraulic injection pressure — the upstream forcing function the injection unit applies — using a standard 4–20 mA strain-gauge transducer that taps an NPT port on the hydraulic manifold block, requiring no mold modification. That accessibility is a meaningful deployment advantage: the monitoring unit can be retrofitted in an afternoon without touching the mold or the machine controller. This project captures those signals at the edge, reduces each shot to five interpretable numbers, and routes them off the machine over cellular without any dependency on the plant's OT network.
 
-The cellular path is not a convenience feature — it's the thing that makes this kind of monitoring deployable at scale. An OEM that ships a process-monitoring module with every new machine, or retrofits the existing installed base, cannot rely on negotiating a network path through each customer's IT and OT teams. The Notecard removes that conversation from the critical path entirely. The same firmware, the same hardware SKU, and the same Notehub project work at every plant in every geography, without an IT ticket or a site survey. That's the argument for cellular in industrial IoT — not raw bandwidth, but OEM independence and deployment predictability across a fleet that spans dozens or hundreds of sites.
+The cellular path is not a convenience feature — it's the thing that makes this kind of monitoring deployable at scale. An OEM that ships a process-monitoring module with every new machine, or retrofits the existing installed base, cannot rely on negotiating a network path through each customer's IT and OT teams. The Notecard removes that conversation from the critical path entirely. The same firmware, the same hardware SKU, and the same Notehub project work at every plant in every geography, without an IT ticket or a site survey. That's the argument for cellular in industrial IoT, not raw bandwidth, but OEM independence and deployment predictability across a fleet that spans dozens or hundreds of sites.

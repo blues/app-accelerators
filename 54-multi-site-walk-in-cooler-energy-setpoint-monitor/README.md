@@ -152,7 +152,7 @@ Pin-by-pin connections:
 - **SDA / SCL** → Notecard I²C (Notecarrier CX routes these to the M.2 slot internally; no external wiring needed).
 - **+VBAT** → Mojo `LOAD` output (bench use only); Mojo `BAT` input ← 5V DC output of the MeanWell IRM-10-5 (or equivalent 5V/2A AC/DC supply), which is wired to the AC service conductors in the NEMA 4X enclosure.
 
-**CT installation note.** The SCT-013-030 is a split-core clamp; open the clamp, pass it over *one* hot leg of the compressor's circuit (not both, clamping both legs cancels the magnetic fields and you'll read zero). Route the TRRS lead back to the NEMA 4X enclosure through a cable gland. The compressor circuit is line-voltage; installation must be performed by a qualified electrician following applicable codes and lockout/tagout procedures. The CT itself is entirely non-contact and electrically isolated once clamped.
+**CT installation Note.** The SCT-013-030 is a split-core clamp; open the clamp, pass it over *one* hot leg of the compressor's circuit (not both, clamping both legs cancels the magnetic fields and you'll read zero). Route the TRRS lead back to the NEMA 4X enclosure through a cable gland. The compressor circuit is line-voltage; installation must be performed by a qualified electrician following applicable codes and lockout/tagout procedures. The CT itself is entirely non-contact and electrically isolated once clamped.
 
 **DS18B20 placement.** For accurate air temperature monitoring, position the stainless probe tip in open box air at mid-box height or along the return-air path, away from both the evaporator fan discharge and the door. This location gives the most representative reading of box air temperature, which is a useful proxy for stored-product conditions but is not a direct product core-temperature measurement. Avoid the evaporator fan discharge — it is the coldest zone in the box and reads several degrees below true representative air temperature; placing the probe there biases temperature-to-target deviation calculations low and will delay `temp_high` alerts. Avoid the door zone, which sees warm infiltration air on every open cycle. Keep the probe away from direct coil contact for the same reason.
 
@@ -168,7 +168,7 @@ Pin-by-pin connections:
    | Variable | Default | Purpose |
    |---|---|---|
    | `sample_interval_sec` | `60` | Seconds between sensor reads and state updates. |
-   | `summary_interval_min` | `60` | Minutes between `cooler_summary.qo` notes. Also re-applies `hub.set outbound` to keep cellular cadence in sync. The `kwh_window` field reflects energy accumulated across the scheduled sample intervals within this window. |
+   | `summary_interval_min` | `60` | Minutes between `cooler_summary.qo` Notes. Also re-applies `hub.set outbound` to keep cellular cadence in sync. The `kwh_window` field reflects energy accumulated across the scheduled sample intervals within this window. |
    | `temp_setpoint_f` | `35.0` | Target box temperature (°F); transmitted in every summary Note as `setpoint_f` so the corporate dashboard can compute drift = `temp_f − setpoint_f` without a separate lookup. |
    | `temp_alert_f` | `40.0` | Box temperature (°F) above which a `temp_high` alert fires. |
    | `door_open_alert_sec` | `300` | Continuous seconds the door has been open before a `door_open_long` alert fires (default 5 minutes). |
@@ -179,7 +179,7 @@ Pin-by-pin connections:
 
 ## 7. Firmware Design
 
-Main sketch plus helper files: [`firmware/cooler_monitor/cooler_monitor.ino`](firmware/cooler_monitor/cooler_monitor.ino) (entry point, sample cycle), [`firmware/cooler_monitor/cooler_monitor_helpers.cpp`](firmware/cooler_monitor/cooler_monitor_helpers.cpp) (Notecard config, sensor reads, note emission), and [`firmware/cooler_monitor/cooler_monitor_helpers.h`](firmware/cooler_monitor/cooler_monitor_helpers.h) (shared constants, types, and declarations).
+Main sketch plus helper files: [`firmware/cooler_monitor/cooler_monitor.ino`](firmware/cooler_monitor/cooler_monitor.ino) (entry point, sample cycle), [`firmware/cooler_monitor/cooler_monitor_helpers.cpp`](firmware/cooler_monitor/cooler_monitor_helpers.cpp) (Notecard config, sensor reads, Note emission), and [`firmware/cooler_monitor/cooler_monitor_helpers.h`](firmware/cooler_monitor/cooler_monitor_helpers.h) (shared constants, types, and declarations).
 
 **Dependencies:**
 - Arduino core for STM32 ([`stm32duino/Arduino_Core_STM32`](https://github.com/stm32duino/Arduino_Core_STM32)).
