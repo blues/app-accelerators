@@ -1,5 +1,7 @@
 # Cellular Medication Adherence Pillbox
 
+![Cellular Medication Adherence Pillbox banner](banner.png)
+
 <Note>
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Cellular%20Medication%20Adherence%20Pillbox).
@@ -12,7 +14,7 @@ This project is a [remote patient monitoring](https://blues.com/remote-patient-m
 
 ## 1. Project Overview
 
-**The problem.** Medication non-adherence is among the most consequential and underreported drivers of poor outcomes in chronic disease. Patients with diabetes, heart failure, hypertension, or transplant histories who skip or mistime doses cost the healthcare system tens of billions of dollars annually in preventable hospitalizations, and far more in years of life. A clinician or care coordinator who knows a patient hasn't opened their Tuesday compartment by 10 PM can intervene with a phone call; one who only discovers the missed doses at the next clinic visit, six weeks later, is always playing catch-up.
+**The problem.** Medication non-adherence is among the most consequential and under-reported drivers of poor outcomes in chronic disease. Patients with diabetes, heart failure, hypertension, or transplant histories who skip or mistime doses cost the healthcare system tens of billions of dollars annually in preventable hospitalizations, and far more in years of life. A clinician or care coordinator who knows a patient hasn't opened their Tuesday compartment by 10 PM can intervene with a phone call; one who only discovers the missed doses at the next clinic visit, six weeks later, is always playing catch-up.
 
 Existing IoT pillboxes have tried to close this gap, and most fail in the same place: the connectivity model. WiFi-dependent devices work fine in young, tech-fluent households. They fail quietly in the homes of elderly patients — who are statistically the highest-risk population — because those homes have locked WiFi routers, forgotten passwords, carrier-grade NAT, and no one around to troubleshoot a dropped connection at 7 AM. Bluetooth-to-smartphone bridges work until the phone is low on battery, out of range, or the patient ignores the pairing prompt. The result is a connected pillbox that isn't connected.
 
@@ -141,7 +143,11 @@ Retain the LiPo inside the enclosure with a strip of hook-and-loop tape (Velcro)
 
 4. **Create a Fleet per care group.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) and [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) are how Notehub groups devices for shared configuration. A natural grouping is one fleet per care coordinator or prescribing physician, so that environment variables (alert windows, sync cadence) can be tuned once and applied to all their patients' devices simultaneously.
 
-   > **Privacy Note.** For an RPM deployment, patient identifiers should never appear in Note body payloads — they travel in plaintext through any downstream route and may be stored in third-party systems. They also should not be placed in Notehub device metadata (tags, serial-number field): Note bodies and device metadata are not designed as stores for protected health information, and any PHI placed there would be outside a controlled covered system. Instead, assign only an opaque, non-PHI deployment identifier (for example, a random UUID or a clinic-assigned device code) to the [Notehub device tag](https://dev.blues.io/notehub/notehub-walkthrough/#organizing-devices-by-tag) or serial-number field, and maintain the patient-to-device mapping exclusively in your downstream covered system, keyed on the Notecard's device UID. If your organization's downstream architecture requires routing PHI through any cloud component, review Blues' contractual and compliance posture with qualified counsel before proceeding.
+   <Warning>
+   
+   **Privacy Note.** For an RPM deployment, patient identifiers should never appear in Note body payloads — they travel in plaintext through any downstream route and may be stored in third-party systems. They also should not be placed in Notehub device metadata (tags, serial-number field): Note bodies and device metadata are not designed as stores for protected health information, and any PHI placed there would be outside a controlled covered system. Instead, assign only an opaque, non-PHI deployment identifier (for example, a random UUID or a clinic-assigned device code) to the [Notehub device tag](https://dev.blues.io/notehub/notehub-walkthrough/#organizing-devices-by-tag) or serial-number field, and maintain the patient-to-device mapping exclusively in your downstream covered system, keyed on the Notecard's device UID. If your organization's downstream architecture requires routing PHI through any cloud component, review Blues' contractual and compliance posture with qualified counsel before proceeding.
+
+   </Warning>
 
 5. **Set environment variables.** Navigate to **Fleet → Environment** in Notehub. All variables below are optional; firmware defaults apply if omitted. The device pulls updates on its next inbound sync (default every 2 hours) — no reflash required.
 
