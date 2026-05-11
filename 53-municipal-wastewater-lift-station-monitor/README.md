@@ -434,7 +434,7 @@ bool ok = notecard.sendRequestWithRetry(req, 5);
 
 - Idle: ~20 µA × ~24 h ≈ **~0.5 mAh/day** (the Notecard idle plus carrier-board quiescent draw, accumulated for the ~99.5% of the day the host is gated off).
 - Host wakes: ~25 mA × 0.3 seconds × 60 wakes/hr × 24 hours ≈ 10,800 mA·s ≈ **~3 mAh/day** (10,800 mA·s ÷ 3600 s/hr).
-- Hourly outbound session: ~250 mA avg × ~10 seconds × 24 sessions/day ≈ 60,000 mA·s ≈ **~17 mAh/day** (assumes a typical LTE-M session including network registration; a clean network and queued-template summary commonly lands in the 5–15 seconds range, while marginal coverage stretches it well past 30 seconds).
+- Hourly outbound session: ~250 mA avg × ~10 seconds × 24 sessions/day ≈ 60,000 mA·s ≈ **~17 mAh/day** (assumes a typical LTE Cat-1 bis session including network registration; a clean network and queued-template summary commonly lands in the 5–15 seconds range, while marginal coverage stretches it well past 30 seconds).
 - Occasional alerts (assume 2/day): ~250 mA × ~10 seconds × 2 ≈ **~1.4 mAh/day**.
 
 **Total: roughly ~22 mAh/day in steady state, with hourly cellular sessions dominating the budget.** Weak-signal sites where the modem camps in registration can easily push this 2–3× higher. The MeanWell HDR-15-5 (85–264 VAC input, 5 VDC 3 A output) provides continuous power from the station's 120 VAC control supply, so energy budgeting is not the deployment constraint, but validating these current draws with Mojo confirms the sleep/wake architecture is working and surfaces signal-quality issues early.

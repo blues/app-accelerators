@@ -99,7 +99,7 @@ The Notecard manages its own cellular session against the supported carrier netw
 | 5 V regulated DC-DC step-down module — **24 V systems:** [Pololu D24V50F5](https://www.pololu.com/product/2851) (6–38 V input, 5 A) | 1 | Use in place of the RECOM module when the cabinet bus is 24 V nominal (float ~27–28 V, absorption up to ~29 V). The 6–38 V input range covers 24 V VRLA and LFP charger buses with ample headroom. |
 | Inline fuse holder with 1 A 32 V blade fuse (ATC/ATM automotive style or equivalent) | 1 | **Safety-critical.** Install in series on the positive-bus cable between the battery bus (+) and the DC-DC converter input. Sized for 1 A — well above the sentinel's ≤500 mA peak draw from a 12 V or 24 V bus during a cellular session, and will clear before wiring fault damage. The INA228 shunt path (battery positive to load bus) carries the full site load current and must be installed on a battery branch that is already protected by an upstream circuit breaker or fuse rated for the expected load current — see §5. |
 | u.FL to SMA bulkhead pigtail, ~150 mm (e.g. [Adafruit #851](https://www.adafruit.com/product/851)) | 1 | Routes the Notecard's cellular antenna connection from the u.FL footprint on the Notecarrier CX to an SMA bulkhead fitting in the enclosure wall. Uses RG178 coax; verify the SMA connector sex matches your antenna before ordering. |
-| LTE cellular antenna with SMA connector, panel-mount or magnetic-mount (e.g. [SparkFun CEL-16432](https://www.sparkfun.com/products/16432), 698 MHz–2.7 GHz, 2.3 dBi) | 1 | Mount on the cabinet exterior for reliable LTE-M coverage. A rubber-duck or internal antenna inside a sealed metal enclosure will not maintain consistent signal. |
+| LTE cellular antenna with SMA connector, panel-mount or magnetic-mount (e.g. [SparkFun CEL-16432](https://www.sparkfun.com/products/16432), 698 MHz–2.7 GHz, 2.3 dBi) | 1 | Mount on the cabinet exterior for reliable LTE Cat-1 bis coverage. A rubber-duck or internal antenna inside a sealed metal enclosure will not maintain consistent signal. |
 | Qwiic cable, 100 mm or 200 mm | 1 | Connects the INA228 breakout to the Notecarrier CX Qwiic port. |
 | ABS enclosure, IP54 or better (e.g. [Hammond 1591XXTSFLBK](https://www.hammfg.com/part/1591XXTSFLBK), ~123 × 83 × 61 mm) | 1 | Houses the Notecarrier CX assembly inside the cabinet. The 1591XXTSFLBK provides ample internal volume for the board stack and wiring, with a clear polycarbonate lid for visual status checks without opening. Add cable glands for the antenna pigtail, thermistor probe, shunt wires, and power leads. |
 | Thermal adhesive tape (e.g., 3M 8810) | 1 | Affixes the thermistor probe firmly to the battery case surface for accurate temperature readings. |
@@ -178,7 +178,7 @@ The Notecarrier CX charges the LiPo from the regulated 5 V supply on +VBAT. The 
 
 **Notecard:**
 
-Insert the Notecard Cell+WiFi into the Notecarrier CX M.2 slot and secure with the mounting screw. Connect the u.FL to SMA pigtail to the antenna footprint on the Notecard, route it to an SMA bulkhead fitting in the enclosure wall, and attach the external antenna on the cabinet exterior. A rubber-duck antenna inside a sealed steel cabinet will not maintain reliable LTE-M coverage.
+Insert the Notecard Cell+WiFi into the Notecarrier CX M.2 slot and secure with the mounting screw. Connect the u.FL to SMA pigtail to the antenna footprint on the Notecard, route it to an SMA bulkhead fitting in the enclosure wall, and attach the external antenna on the cabinet exterior. A rubber-duck antenna inside a sealed steel cabinet will not maintain reliable LTE Cat-1 bis coverage.
 
 **Mojo (bench validation only):**
 
@@ -358,7 +358,7 @@ notecard.sendRequest(req);
 
 ### 7.8 Key code snippet 2 — immediate power-outage alert
 
-`sync:true` tells the Notecard to wake the radio immediately instead of waiting for the next outbound window. An operator can be notified within one sample interval (120 seconds at default settings) plus cellular session-establishment time (~15–60 seconds typical on LTE-M) after a current reversal crosses the `discharge_ma` threshold, so roughly two to three minutes end-to-end from the moment mains fails to the alert landing in Notehub at default settings. Reduce `sample_interval_sec` via env var if a shorter detection window is needed.
+`sync:true` tells the Notecard to wake the radio immediately instead of waiting for the next outbound window. An operator can be notified within one sample interval (120 seconds at default settings) plus cellular session-establishment time (~15–60 seconds typical on LTE Cat-1 bis) after a current reversal crosses the `discharge_ma` threshold, so roughly two to three minutes end-to-end from the moment mains fails to the alert landing in Notehub at default settings. Reduce `sample_interval_sec` via env var if a shorter detection window is needed.
 
 ```cpp
 J *req = notecard.newRequest("note.add");
@@ -426,7 +426,7 @@ NotePayloadSaveAndSleep(&payload, g_sampleSec, NULL);
 |---|---|
 | Idle baseline (host powered off, radio off) | ~8 µA (Notecard only) |
 | Host wake, sensor read (Cygnet + INA228 + ADC) | ~15–20 mA for <1 s |
-| Cellular session, LTE-M (one queued note) | ~200–300 mA average, 15–30 s |
+| Cellular session, LTE Cat-1 bis (one queued note) | ~200–300 mA average, 15–30 s |
 
 **Whole-device power profile.** The figures above for Notecard idle and cellular are datasheet specs. On the assembled device, the idle baseline (host powered off via `card.attn`, radio idle) measured on a 5 V power rail includes the Notecard's ~8 µA plus the DC-DC converter's quiescent draw (~2 mA for RECOM R-78E5.0-1.0 or Pololu D24V50F5) plus Notecarrier CX regulator quiescent — typically **2–5 mA total at no load**. Use the trace **shape** — a 2-minute wake blip (~15–20 mA for <1 s), an hourly burst (~200–300 mA for 15–30 s), and a flat floor in between — to confirm correct sleep/wake behavior. The Mojo is spliced on the 5 V power rail and measures the entire assembled device; focus on a *flat* baseline at the expected quiescent level for your DC-DC converter rather than chasing sub-milliamp absolutes.
 
@@ -467,7 +467,7 @@ Most bring-up failures fall into a small set of categories — wiring polarity o
 | Frequent `power_outage` alerts on a site that has stable mains power. | Shunt wiring is reversed (battery on `V-`, load on `V+`), so charge current reads as negative; or `discharge_ma` threshold is too close to zero and ordinary float-current noise crosses it. | Verify shunt polarity per §5: battery (+) to `V+`, load bus (+) to `V-`. The current sign convention is documented in §7.3 — positive means charger present, negative means discharging. If polarity is correct, raise the magnitude of `discharge_ma` (for example to `-500`) via Notehub environment variable. |
 | `temp_c` reads `−9999.0` while voltage and current readings look fine. | NTC thermistor probe is open, shorted, or the 10 kΩ divider resistor is missing. | Probe A0 with a DMM at room temperature — it should sit near 1.65 V with a 10 kΩ NTC and a 10 kΩ pull-up to 3V3. Inspect the divider wiring against §5. |
 | `battery_summary.qo` fields all carry `−9999` and `samples` is `0`. | INA228 was unreachable for the entire window; the sentinel-filled summary preserves time-series continuity. | Treat this as a hard sensor fault — see the INA228 row above. The simultaneous `ina228_unreachable` alert in `battery_alert.qo` is the immediate notification. |
-| Cellular session takes more than 60 seconds, or hourly bursts run for several minutes on the Mojo trace. | Marginal LTE-M signal inside the cabinet; rubber-duck or internal antenna in a metal enclosure. | Reroute the antenna to the cabinet exterior using the SMA bulkhead pigtail described in §4. Re-test with the antenna in clear sky view. |
+| Cellular session takes more than 60 seconds, or hourly bursts run for several minutes on the Mojo trace. | Marginal LTE Cat-1 bis signal inside the cabinet; rubber-duck or internal antenna in a metal enclosure. | Reroute the antenna to the cabinet exterior using the SMA bulkhead pigtail described in §4. Re-test with the antenna in clear sky view. |
 | The sentinel itself runs flat after a few hours on the bench. | USB power is connected at the same time as the +VBAT header, preventing the Cygnet from entering its lowest-power state, or the LiPo is undersized for the chosen sample interval. | Disconnect the USB cable for the baseline measurement (see §9). Confirm the 2000 mAh LiPo is plugged into the JST connector. If the sample interval has been pushed below 30 seconds, expect proportionally higher average current. |
 
 If a symptom does not appear above, post a description (with the relevant `[sentinel]` serial output and the trailing `_session.qo` payload) on the [Blues community forum](https://discuss.blues.com).
