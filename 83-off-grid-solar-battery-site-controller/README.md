@@ -1,24 +1,31 @@
 # Off-Grid Solar + Battery Bank Monitor
 
+![Off-Grid Solar + Battery Bank Monitor banner](banner.png)
+
 <Note>
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Off-Grid%20Solar%20%2B%20Battery%20Bank%20Monitor).
 
 </Note>
 
-This project is a bank-level solar and battery monitoring solution — a Blues [battery management systems](https://blues.com/battery-management-systems/) reference design — for remote off-grid sites powered by solar arrays and battery banks. A Blues Notecarrier CX reads two Victron VE.Direct devices — a SmartShunt for battery-bank metrics and a SmartSolar MPPT charge controller for solar-side metrics, and reports battery-bank-level state of charge (SoC), daily solar harvest, load draw, battery temperature, and charge state to Notehub every four hours, with immediate alerts before the site goes dark. Connectivity is provided by a [Notecard](https://shop.blues.com/products/notecard-cellular?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) seated in the carrier's M.2 slot; two SKUs are supported with no firmware changes between them — [Notecard Cell+WiFi (NOTE-MBGLW)](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) for sites within terrestrial cellular range, and [Notecard for Skylo (NOTE-NBGLWX)](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) for sites where coverage is marginal or absent.
+This project is a bank-level solar and battery monitoring solution — a Blues [battery management systems](https://blues.com/battery-management-systems/) reference design — for remote off-grid sites powered by solar arrays and battery banks. A Blues Notecarrier CX reads two Victron VE.Direct devices — a SmartShunt for battery-bank metrics and a SmartSolar MPPT charge controller for solar-side metrics, and reports battery-bank-level state of charge (SoC), daily solar harvest, load draw, battery temperature, and charge state to Notehub every four hours, with immediate alerts before the site goes dark. Connectivity is provided by a Blues Notecard seated in the carrier's M.2 slot; two SKUs are supported with no firmware changes between them — [Notecard Cell+WiFi (NOTE-MBGLW)](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) for sites within terrestrial cellular range, and [Notecard for Skylo (NOTE-NBGLWX)](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) for fallback satellite coverage for sites where cellular coverage is marginal or absent.
 
 ## 1. Project Overview
 
-> **Interface Note.** This project reads the [Victron VE.Direct text protocol](https://www.victronenergy.com/upload/documents/VE.Direct-Protocol-3.34.pdf) — a one-wire broadcast interface that exposes battery-bank aggregates (SoC, voltage, current, temperature, and charge state) and solar-side metrics (panel voltage, power, and daily yield). These are exactly the signals needed to detect the site-uptime failure modes this design targets: persistent recharge deficit, low SoC, thermal overtemperature, and excessive load draw. Bank-level aggregates are the correct scope for a bank-level site-uptime monitor. **Cell-imbalance monitoring was explicitly evaluated during design and scoped out**: per-cell voltages and imbalance data are not broadcast on the VE.Direct wire — they travel over CAN bus and require a dedicated CAN controller and transceiver that are absent from this hardware stack. Implementing cell-level telemetry is a distinct hardware and firmware problem that belongs in a companion design rather than an extension of this project (see §10 for the full rationale and the companion-design specification).
 **The problem.** Remote sites that run on solar and battery — cell towers at the edge of coverage, environmental monitoring stations in the backcountry, off-grid cabins — share a common failure mode: a problem that started small, days ago, accumulates unnoticed until the site goes dark. A slowly degrading PV array, a load that crept up after a firmware update to on-site equipment, or a battery bank whose capacity has quietly faded with age: none of these are catastrophic on their own, but any one of them can drain a bank that the solar array is no longer sized to replenish. This design detects that condition directly: if the charge controller fails to reach a full-charge state (Float, Absorption, Equalize, or Auto Equalize) for a configurable number of consecutive days, a `harvest_deficit` alert fires before the bank is depleted — giving the operations team time to respond before the site goes dark. And because the site is, by definition, remote, a days-long recharge deficit is invisible without continuous telemetry.
+
+<Note>
+
+**Interface Note.** This project reads the [Victron VE.Direct text protocol](https://www.victronenergy.com/upload/documents/VE.Direct-Protocol-3.34.pdf) — a one-wire broadcast interface that exposes battery-bank aggregates (SoC, voltage, current, temperature, and charge state) and solar-side metrics (panel voltage, power, and daily yield). These are exactly the signals needed to detect the site-uptime failure modes this design targets: persistent recharge deficit, low SoC, thermal overtemperature, and excessive load draw. Bank-level aggregates are the correct scope for a bank-level site-uptime monitor. **Cell-imbalance monitoring was explicitly evaluated during design and scoped out**: per-cell voltages and imbalance data are not broadcast on the VE.Direct wire — they travel over CAN bus and require a dedicated CAN controller and transceiver that are absent from this hardware stack. Implementing cell-level telemetry is a distinct hardware and firmware problem that belongs in a companion design rather than an extension of this project (see §10 for the full rationale and the companion-design specification).
+
+</Note>
 
 **Why Notecard.** These sites are by definition off-grid *and* off-network. There is no building WiFi to connect to, no Ethernet jack in the enclosure, and no cellular router whose monthly bill someone else is paying. The Blues Notecard self-manages its radio session, draws microamp-range idle current between transmissions, and requires no site IT involvement to set up. Two SKUs seat in the same M.2 slot on the Notecarrier CX and run the same firmware without modification:
 
 <NewToBlues/>
 
 - **[Notecard Cell+WiFi (NOTE-MBGLW)](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/)** — LTE-M cellular with opportunistic WiFi fallback. The practical choice for bench validation and sites with adequate terrestrial coverage.
-- **[Notecard for Skylo (NOTE-NBGLWX)](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/)** — LTE-M cellular combined with [Skylo](https://www.skylo.tech/resources/geographical-coverage) Non-Terrestrial Network (NTN) satellite connectivity on a single card. The Notecard manages radio-mode selection internally; no firmware differences exist between the two SKUs. **Both antennas must be positioned outdoors with an unobstructed view of the sky**. See §4 and §4 for the mounting and enclosure-feedthrough requirements. The Notecard for Skylo is the primary production SKU for the truly remote towers, wilderness arrays, and high-altitude installations this use case targets.
+- **[Notecard for Skylo (NOTE-NBGLWX)](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/)** — LTE-M cellular combined with [Skylo](https://www.skylo.tech/) Non-Terrestrial Network (NTN) satellite connectivity on a single card. The Notecard manages radio-mode selection internally; no firmware differences exist between the two SKUs. **Both antennas must be positioned outdoors with an unobstructed view of the sky**. See §4 and §4 for the mounting and enclosure-feedthrough requirements. The Notecard for Skylo is the primary production SKU for the truly remote towers, wilderness arrays, and high-altitude installations this use case targets.
 
 **Deployment scenario.** A Notecarrier CX mounted inside the existing site enclosure or a weatherproof addon box, powered from the site's 5V regulation bus or a small DC-DC converter off the main battery bus. Two short VE.Direct cables run from the Notecarrier CX dual-row header to the SmartShunt (battery shunt, usually mounted near the battery bank negative terminal) and to the SmartSolar MPPT controller (typically mounted on the enclosure wall). No changes to the Victron equipment, no interruption to the solar system.
 
@@ -124,7 +131,11 @@ Each Victron device exposes a 4-pin JST PH 2.0 (2.0 mm pitch) port for VE.Direct
 | 3 | TX (out from device) | Device → Host | 5V logic; needs level shifting or divider |
 | 4 | +5V (from device) | Device → Host | Leave NC — host is externally powered |
 
-> **Wire color warning.** Wire colors on Victron VE.Direct cables are not standardized across product revisions and can be misleading (red may be GND, not power). Always confirm the pin assignment with a multimeter — measure DC voltage between the two outer wires to locate pin 4 (+5V) — before connecting anything to the STM32 or level shifter. The [VE.Direct Protocol Specification](https://www.victronenergy.com/upload/documents/VE.Direct-Protocol-3.34.pdf) is the authoritative reference for your specific device revision.
+<Warning>
+
+**Wire color warning.** Wire colors on Victron VE.Direct cables are not standardized across product revisions and can be misleading (red may be GND, not power). Always confirm the pin assignment with a multimeter — measure DC voltage between the two outer wires to locate pin 4 (+5V) — before connecting anything to the STM32 or level shifter. The [VE.Direct Protocol Specification](https://www.victronenergy.com/upload/documents/VE.Direct-Protocol-3.34.pdf) is the authoritative reference for your specific device revision.
+
+</Warning>
 
 The standard Victron VE.Direct cable (ASS030530200 / ASS030530300) terminates in bare wires on the host end. Connect pin 3 (TX) and pin 1 (GND); leave pins 2 and 4 unconnected or tape them off.
 
@@ -154,7 +165,11 @@ Wire the complete power chain in this order:
 4. **Mojo LOAD pin → Notecarrier CX +VBAT pin.** The Mojo passes current through and measures cumulative mAh.
 5. **Traco GND (Pin 2) / system return → Notecarrier CX GND pin.** The TSR 1's shared GND is both the input return and the output return; connect it to the Notecarrier CX GND. This is also the signal ground for the VE.Direct cable shields — connect the battery-bus return and signal ground together at one point only (at the converter or at the shunt negative terminal, not both) to avoid a ground loop through the VE.Direct cables.
 
-> **Polarity verification before first power-on.** With VIN connected but the VOUT wire to the Notecarrier CX left disconnected, apply power and measure VOUT+ (Pin 3) to GND (Pin 2). You should read 5.0 V ± 2%. If the voltage is absent or reversed, recheck the VIN polarity at Pin 1 and Pin 2 before connecting the Notecarrier CX. Off-grid battery banks can deliver thousands of amps into a reverse-polarity fault — verify before connecting.
+<Warning>
+
+**Polarity verification before first power-on.** With VIN connected but the VOUT wire to the Notecarrier CX left disconnected, apply power and measure VOUT+ (Pin 3) to GND (Pin 2). You should read 5.0 V ± 2%. If the voltage is absent or reversed, recheck the VIN polarity at Pin 1 and Pin 2 before connecting the Notecarrier CX. Off-grid battery banks can deliver thousands of amps into a reverse-polarity fault — verify before connecting.
+
+</Warning>
 
 **Bench power (USB):** During bench bring-up without the DC-DC converter, power the Notecarrier CX from USB via the +VUSB pin or USB-C port. Do not connect +VBAT and +VUSB simultaneously.
 
@@ -174,7 +189,11 @@ The NOTE-MBGLW includes a GNSS receiver, but GNSS is not used in this project �
 - Maintain gentle cable curves throughout; avoid sharp bends that kink the coax feed lines. Keep runs as short as practical to minimise insertion loss, especially on the satellite band.
 - Use only the Skylo-certified antenna supplied with the Notecard for Skylo kit on the MAIN port. Substituting a different antenna voids Skylo network certification and may result in the device being blocked from the network. See the [Blues antenna guide](https://dev.blues.io/datasheets/application-notes/antenna-guide/) for full certification and placement requirements.
 
-> **Tip:** VE.Direct cables are short (0.9 m or 1.8 m). Mount the Notecarrier CX close to the SmartShunt and MPPT to avoid signal integrity issues on long runs.
+<Tip>
+
+VE.Direct cables are short (0.9 m or 1.8 m). Mount the Notecarrier CX close to the SmartShunt and MPPT to avoid signal integrity issues on long runs.
+
+</Tip>
 
 ## 6. Notehub Setup
 
