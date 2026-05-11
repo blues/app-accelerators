@@ -15,7 +15,7 @@ Monitor refrigerator temperature, humidity, and power using a Notecard and a BME
 ## Hardware Setup
 
 1. Assemble Notecard and Notecarrier as described [here](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-a/).
-2. Keep the Notecard connected to the computer with the in-browser terminal active until you have completed [Notecard Setup](#notecard-setup).
+2. Keep the Notecard connected to the computer with the In-Browser Terminal active until you have completed [Notecard Setup](#notecard-setup).
 3. Plug one end of the Qwiic cable into one of the Notecarrier Qwiic ports and the other end into one of the Qwiic ports on the BME280 breakout board.
 4. Connect the Notecarrier to your PC via the micro USB cable.
 5. (OPTIONAL) The BME280 breakout has an LED to indicate that its powered on. This draws a significant amount of current, especially compared to the sensor itself. To maximize battery life, you can disconnect this LED by [cutting the JP1 jumper trace](https://learn.sparkfun.com/tutorials/how-to-work-with-jumper-pads-and-pcb-traces/cutting-a-trace-between-jumper-pads) (see [the schematic](https://cdn.sparkfun.com/assets/0/9/6/b/4/Qwiic_BME280_Schematic_attempt2.pdf)) on the back of the board with a hobby knife.
@@ -26,7 +26,7 @@ Sign up for a free account on [Notehub.io](https://notehub.io) and create a new 
 
 ## Notecard Setup
 
-In these steps, you will use the in-browser terminal to configure your Notecard to report environmental data and power outage events to your Notehub project.
+In these steps, you will use the In-Browser Terminal to configure your Notecard to report environmental data and power outage events to your Notehub project.
 
 ### Firmware
 
@@ -34,7 +34,7 @@ The Notecard should use [firmware version 3.5.1](https://dev.blues.io/notecard/n
 
 ### Configure Notehub Project and Connection Mode
 
-Set the ProductUID for the Notecard by pasting the command below into the in-browser terminal. Make sure to replace `com.your-company:your-product-name` with the ProductUID from your Notehub project, which can be found below your project's name in the dashboard at https://notehub.io. Also, replace the placeholder serial number (`"sn:" "fridge-location"`) with the location of your fridge (e.g. "kitchen").
+Set the ProductUID for the Notecard by pasting the command below into the In-Browser Terminal. Make sure to replace `com.your-company:your-product-name` with the ProductUID from your Notehub project, which can be found below your project's name in the dashboard at https://notehub.io. Also, replace the placeholder serial number (`"sn:" "fridge-location"`) with the location of your fridge (e.g. "kitchen").
 
 ```json
 { "req": "hub.set", "mode": "periodic", "outbound": 3, "product": "com.your-company:your-product-name", "sn": "fridge-location", "body":{"app":"nf17"} }
@@ -44,7 +44,7 @@ This app uses `periodic` mode to minimize power use so that the solution can rem
 
 ### Configure Periodic Environmental Measurements
 
-Paste this command into the in-browser terminal:
+Paste this command into the In-Browser Terminal:
 
 ```json
 { "req": "card.aux", "mode":"track" }
@@ -52,7 +52,7 @@ Paste this command into the in-browser terminal:
 
 Turning on track mode will augment the environmental data with pressure and humidity readings in addition to temperature.
 
-Next, paste this command into the in-browser terminal:
+Next, paste this command into the In-Browser Terminal:
 
 ```json
 { "req": "card.temp", "minutes": 3 }
@@ -62,7 +62,7 @@ This will cause the Notecard to push a note to the `_temp.qo` Notefile with envi
 
 ### Configure Power Outage Alerts
 
-Paste this command into the in-browser terminal:
+Paste this command into the In-Browser Terminal:
 
 ```json
 { "req": "card.voltage", "mode": "lipo", "usb": true, "alert": true, "sync": true }

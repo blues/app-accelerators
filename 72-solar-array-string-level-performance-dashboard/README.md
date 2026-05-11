@@ -186,7 +186,7 @@ No external jumper is required. The Notecarrier CX gates the Cygnet host's 3.3 V
 ## 6. Notehub Setup
 
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/solar_string_monitor/solar_string_monitor.ino` as `PRODUCT_UID`.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/solar_string_monitor/solar_string_monitor.ino` as `PRODUCT_UID`.
 2. **Claim the Notecard.** Power the unit; on first cellular session the Notecard associates with your project automatically.
 3. **Create a Fleet per site.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) group devices for shared configuration and routing. The natural unit is one fleet per installation — every device on the same site reads the same inverter model with the same register map and the same string rating. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) let you promote a device to a different fleet dynamically (e.g., a replacement unit with a different panel model) without re-flashing.
 4. **Set environment variables.** All variables below are optional; firmware defaults apply if not set. Any variable set in Notehub overrides the compile-time default on the device's next inbound sync — operators can retune thresholds and register addresses across an entire fleet without touching the firmware.

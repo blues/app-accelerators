@@ -43,7 +43,7 @@ A failing pump rarely just stops. It signals first: motor current can shift at c
 2. Set `PRODUCT_UID` in the firmware; compile and flash via `arduino-cli` (see [§8. Build and Flash](#8-build-and-flash) below).
 3. On Notehub: create project, claim Notecard, create one fleet, set `modbus_slave_id` and `modbus_baud` to match your VFD's configuration.
 4. Wire OPTA RS-485 to VFD Modbus port; confirm 120 Ω termination at each end of the bus.
-5. Power up and monitor Notehub's in-browser terminal: `card.status` should report healthy; first `vfd_summary.qo` Note appears within ~60 s.
+5. Power up and monitor Notehub's In-Browser Terminal: `card.status` should report healthy; first `vfd_summary.qo` Note appears within ~60 s.
 
 Here is a sample Note this device emits:
 
@@ -99,7 +99,7 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ## 6. Notehub Setup
 
-1. **Create a project.** Sign up at [Notehub](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/vfd_pump_monitor/vfd_pump_monitor.ino` as `PRODUCT_UID`.
+1. **Create a project.** Sign up at [Notehub](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/vfd_pump_monitor/vfd_pump_monitor.ino` as `PRODUCT_UID`.
 2. **Claim the Notecard.** Power up the panel; on first cellular session the Notecard associates with your project automatically.
 3. **Create a Fleet per plant.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) group devices for shared configuration and routing. The natural unit here is *one fleet per plant* — every pump in a plant typically has the same VFD vendor and the same register map, so fleet-level environment variables encode "this plant's pumps all run ABB drives at register 0x0103 for output frequency."
 4. **Set environment variables.** In Notehub: Projects → your project → Fleets → your fleet → Environment. Defaults below are reasonable starting points; any value set in Notehub overrides the firmware default on the device's next inbound sync. The register-address variables let one firmware image work across all four common drive vendors without recompilation.
@@ -309,7 +309,7 @@ if (g_baseline_seeded[bin] &&
 
 ## 10. Validation and Testing
 
-Expected steady-state behavior on a healthy pump: one summary Note per hour and zero event Notes. The Notecard's [`card.status`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-status) and [`hub.status`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-status) requests are useful smoke tests during commissioning — both can be issued from the Notehub in-browser terminal.
+Expected steady-state behavior on a healthy pump: one summary Note per hour and zero event Notes. The Notecard's [`card.status`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-status) and [`hub.status`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-status) requests are useful smoke tests during commissioning — both can be issued from the blues.dev In-Browser Terminal.
 
 **Modbus first-light.** Before connecting to the real drive, run the firmware against a [USB-to-RS-485 adapter](https://www.sparkfun.com/products/9822) and a software Modbus simulator (Modbus Mechanic, ModRSsim2, or equivalent) wired to the OPTA's RS-485 terminals. Verify the six register reads match what the simulator is publishing.
 
@@ -329,7 +329,7 @@ Splice the [Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_
 
 **Notecard not claiming to the project.**
 - Verify `PRODUCT_UID` in the sketch exactly matches the ProductUID on Notehub (Projects → Project Settings).
-- Confirm cellular signal: in Notehub's in-browser terminal, run `card.status` and check the `"signal"` field. Minimum -100 dBm for LTE Cat-1.
+- Confirm cellular signal: in Notehub's In-Browser Terminal, run `card.status` and check the `"signal"` field. Minimum -100 dBm for LTE Cat-1.
 - If deploying indoors or in a metal cabinet without an external antenna, the bundled rubber-duck antenna will not work — thread the external SMA antenna through a cable gland and screw it to the primary antenna port.
 
 **Modbus reads failing (firmware logs "Modbus error" or no data in summary Notes).**

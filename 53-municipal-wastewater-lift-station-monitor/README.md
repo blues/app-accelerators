@@ -174,7 +174,7 @@ The Gems RS-500-Y-PP provides a galvanically isolated SPST N.O. dry contact rate
 
 ### 6.1 Project and Device Claim
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into the firmware as `PRODUCT_UID` (in `lift_station_monitor_helpers.h`). Rebuild and flash.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into the firmware as `PRODUCT_UID` (in `lift_station_monitor_helpers.h`). Rebuild and flash.
 2. **Claim the Notecard.** Power the Notecarrier CX. On first cellular sync, the Notecard associates with your project automatically — no manual claim step required. Watch the **Devices** panel in Notehub; your Notecard appears within 60 seconds.
 
 ### 6.2 Environment Variables for Threshold Tuning

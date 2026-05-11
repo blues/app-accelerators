@@ -134,12 +134,12 @@ To compile and upload the power monitoring firmware, open the sketch at [`firmwa
 
 ### Configuring the ProductUID
 
-There are two ways to configure the ProductUID created in the Notehub setup above - either using the in-browser terminal to send a request to the Notecard, or by editing the firmware source code. For more details on what the ProductUID is and how it set it please see [this guide](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid).
+There are two ways to configure the ProductUID created in the Notehub setup above - either using the In-Browser Terminal to send a request to the Notecard, or by editing the firmware source code. For more details on what the ProductUID is and how it set it please see [this guide](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid).
 
-#### Using the In-browser terminal
+#### Using the In-Browser Terminal
 
 1. Connect the Notecarrier to your computer using a micro USB cable.
-2. Launch the in-browser terminal at [blues.dev](https://dev.blues.io/terminal/)
+2. Launch the In-Browser Terminal at [blues.dev](https://dev.blues.io/terminal/)
 3. Click the "USB Notecard" button under "Connect a Notecard".
 4. Select the Notecard to connect to and click "Connect".
 5. The terminal will display the firmware version of Notecard.
@@ -262,7 +262,7 @@ For an introduction to Twilio SMS routes, please see our [Twilio SMS Guide](http
 
 ### Testing the Route
 
-The ideal test is to use the app firmware to generate alerts. However, it's also possible to simulate an event by pasting these JSON snippets into the the in-browser terminal.
+The ideal test is to use the app firmware to generate alerts. However, it's also possible to simulate an event by pasting these JSON snippets into the the In-Browser Terminal.
 
 This is a regular power monitoring event. It does not generate an SMS alert.
 

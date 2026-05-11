@@ -17,7 +17,7 @@ Use Notecard with a mains-powered USB power brick and LiPo battery to build a gl
 
 1. Assemble Notecard, Notecarrier and LiPo battery as described in our [tutorial](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-x/).
 
-2. Keep the Notecard connected to the computer with the in-browser terminal active until you have completed [Notecard Setup](#notecard-setup).
+2. Keep the Notecard connected to the computer with the In-Browser Terminal active until you have completed [Notecard Setup](#notecard-setup).
 
 ## Notecard Firmware
 
@@ -29,11 +29,11 @@ Your notecard should be running [firmware version 4.2.1](https://dev.blues.io/no
 
 ## Notecard Setup
 
-In these steps, you will use the in-browser terminal to configure your notecard to report power outage events to your Notehub project.
+In these steps, you will use the In-Browser Terminal to configure your notecard to report power outage events to your Notehub project.
 
 ### Configure Notehub Project and Connection Mode
 
-First, we will set the serial number (name) of your notecard and the ProductUID. The ProductUID is the one corresponding to the project you created in [Cloud Setup](#cloud-setup). Replace the `sn` and `product` values with your own and paste the resulting command into the in-browser terminal.
+First, we will set the serial number (name) of your notecard and the ProductUID. The ProductUID is the one corresponding to the project you created in [Cloud Setup](#cloud-setup). Replace the `sn` and `product` values with your own and paste the resulting command into the In-Browser Terminal.
 
 ```json
 {
@@ -51,7 +51,7 @@ First, we will set the serial number (name) of your notecard and the ProductUID.
 
 ### Configure Power Outage Alerts
 
-Paste this command into the in-browser terminal
+Paste this command into the In-Browser Terminal
 
 ```json
 { "req": "card.voltage", "mode": "lipo", "usb": true, "alert": true, "sync": true }

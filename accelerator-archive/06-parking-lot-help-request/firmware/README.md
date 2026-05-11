@@ -10,11 +10,11 @@ The [second section](#transform-notehub-data-with-jsonata-for-twilio), covers a 
 
 There are two main ways to program a standalone Notecard that will not be interacting with a host microcontroller: 
 1. [The Notecard CLI](https://dev.blues.io/tools-and-sdks/notecard-cli/): a downloadable CLI designed for the Notecard.
-2. The [Notecard Playground](https://dev.blues.io/terminal/): an in-browser terminal that emulates much of the functionality of the Notecard CLI. 
+2. The [Notecard Playground](https://dev.blues.io/terminal/): an In-Browser Terminal that emulates much of the functionality of the Notecard CLI. 
 
 Both of these tools are accessible through the Blues [Developer Experience site](https://www.dev.blues.io).
 
-> **NOTE**: If you _do_ choose to use the in-browser terminal, you'll need to do so on a Chrome-based web browser like Chrome or Edge that supports the web serial API. 
+> **NOTE**: If you _do_ choose to use the In-Browser Terminal, you'll need to do so on a Chrome-based web browser like Chrome or Edge that supports the web serial API. 
 
 ![Screenshot of the in-browser Notecard Playground on dev.blues.io](./readme-notecard-playground.png)
 _The in-browser Notecard Playground available on dev.blues.io._

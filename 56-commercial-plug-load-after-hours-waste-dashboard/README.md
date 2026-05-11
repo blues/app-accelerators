@@ -354,7 +354,7 @@ NotePayloadSaveAndSleep(&payload, CFG_SAMPLE_INTERVAL_SEC, NULL);
    arduino-cli lib install "Blues Wireless Notecard"
    ```
 
-2. **Set your Notehub ProductUID.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/plug_load_monitor/plug_load_monitor_helpers.h` as `PRODUCT_UID`. (The define lives in the shared header so it is visible to both `.ino` and `.cpp` translation units.)
+2. **Set your Notehub ProductUID.** Sign up at [notehub.io](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/plug_load_monitor/plug_load_monitor_helpers.h` as `PRODUCT_UID`. (The define lives in the shared header so it is visible to both `.ino` and `.cpp` translation units.)
 
 3. **Compile and flash.** Connect the Notecarrier CX via USB and set the DIP switch to `HST` (routes USB serial to the host MCU). Flash with:
    ```bash

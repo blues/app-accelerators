@@ -120,7 +120,7 @@ Once the node names are configured, the name rather than the node ID will be use
 
 ### Testing the Route
 
-The ideal test is to use the app firmware to generate alerts. However, it's also possible to simulate an event by pasting these JSON snippets into the the in-browser terminal.
+The ideal test is to use the app firmware to generate alerts. However, it's also possible to simulate an event by pasting these JSON snippets into the the In-Browser Terminal.
 
 This is a regular air quality monitoring event. It does not generate an SMS alert.
 

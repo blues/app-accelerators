@@ -165,7 +165,7 @@ The MPRLS breakout has a 1/8 NPT threaded port on the sensor body. For field dep
 ## 6. Notehub Setup
 
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) (format: `com.your-company.your-name:rail-tracker`) and paste it into the `PRODUCT_UID` macro in `firmware/rail_car_tracker/rail_car_tracker_helpers.h`.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) (format: `com.your-company.your-name:rail-tracker`) and paste it into the `PRODUCT_UID` macro in `firmware/rail_car_tracker/rail_car_tracker_helpers.h`.
 
 2. **Claim the Notecard.** Power the assembled unit. The Notecard for Skylo attempts cellular connection on first boot and associates itself with the project automatically. The device appears in the **Devices** tab within a few minutes. If cellular coverage is unavailable at the bench, wait until an antenna is connected and the unit has sky view.
 

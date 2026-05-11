@@ -120,7 +120,7 @@ Confirm the port assignments in the [NOTE-NBGLWX datasheet](https://dev.blues.io
 
 ## 6. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) (format: `com.your-company.your-name:equipment-tracker`).
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) (format: `com.your-company.your-name:equipment-tracker`).
 
 2. **Set `PRODUCT_UID` in firmware.** Open [`equipment_hours_tracker_helpers.h`](firmware/equipment_hours_tracker/equipment_hours_tracker_helpers.h) and replace the empty string on the `#define PRODUCT_UID ""` line with your value. Alternatively, pass it as a build flag: `-DPRODUCT_UID=\"com.your-company:tracker\"`.
 

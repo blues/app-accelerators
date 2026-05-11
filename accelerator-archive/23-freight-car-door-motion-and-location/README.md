@@ -31,7 +31,7 @@ The Notecard should use [firmware version 3.5.2](https://dev.blues.io/notecard/n
 
 ## Notecard Configuration
 
-With the Notecarrier connected to your development PC, navigate to https://dev.blues.io, open the in-browser terminal and connect to the Notecard. Then enter this command in the terminal:
+With the Notecarrier connected to your development PC, navigate to https://dev.blues.io, open the In-Browser Terminal and connect to the Notecard. Then enter this command in the terminal:
 
 ```json
 { "req": "hub.set", "product" : "com.your-company:your-product-name", "sn": "a-serial-number", "body":{"app":"nf23"} }
@@ -138,7 +138,7 @@ Once the wiring is complete, test the connection as follows:
 1. bring the two parts of the switch into close proximity
 2. simulate opening and closing the door by moving one part away and then back again to make contact.
 
-You should see events posted to `door.qo` in Notehub. If you don't, you may need to perform a manual `sync` by typing `sync` into the in-browser terminal, or alternatively adding `"sync":true` to the `card.aux` command so that the Notecard syncs with Notehub when the door is opened.
+You should see events posted to `door.qo` in Notehub. If you don't, you may need to perform a manual `sync` by typing `sync` into the In-Browser Terminal, or alternatively adding `"sync":true` to the `card.aux` command so that the Notecard syncs with Notehub when the door is opened.
 
 ## Notecard CLI
 

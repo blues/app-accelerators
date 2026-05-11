@@ -133,7 +133,7 @@ The NOTE-NBGLWX also has a `GPS` u.FL port; GNSS location tracking is a recommen
 
 ## 6. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/cargo_lock/cargo_lock.ino` line 46 as `PRODUCT_UID`.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/cargo_lock/cargo_lock.ino` line 46 as `PRODUCT_UID`.
 
 2. **Claim the device.** Power the unit; on first cellular (or satellite) session the Notecard associates with your project automatically.
 

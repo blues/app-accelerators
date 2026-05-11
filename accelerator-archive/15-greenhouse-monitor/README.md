@@ -113,12 +113,12 @@ To compile and upload the app firmware, open the sketch at [`firmware/greenhouse
 
 Before uploading the app firmware, you should set the `ProductUID` to correspond to the project you created in [Notehub setup](#notehub) earlier.
 
-There are two ways to configure the `ProductUID`, either using the in-browser terminal to send a request to the Notecard, or by editing the firmware source code. For more details on what the `ProductUID` is and how it set it please see [this guide](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid).
+There are two ways to configure the `ProductUID`, either using the In-Browser Terminal to send a request to the Notecard, or by editing the firmware source code. For more details on what the `ProductUID` is and how it set it please see [this guide](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid).
 
-#### Using the In-browser terminal
+#### Using the In-Browser Terminal
 
 1. Connect the Notecarrier to your computer using a micro-USB cable.
-2. Launch the in-browser terminal at [blues.dev](https://dev.blues.io/terminal)
+2. Launch the In-Browser Terminal at [blues.dev](https://dev.blues.io/terminal)
 3. Click the "USB Notecard" button under "Connect a Notecard".
 4. Select the Notecard to connect to and click "Connect".
 5. The terminal will display the firmware version of the Notecard.

@@ -133,7 +133,7 @@ Pin summary:
 ## 6. Notehub Setup
 
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:ev-charger-monitor`. Paste it into `firmware/ev_charger_session_monitor/ev_charger_session_monitor.ino` as the value of `PRODUCT_UID`, or pass it via a build flag (`-DPRODUCT_UID=\"com.your-company:your-project\"`).
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:ev-charger-monitor`. Paste it into `firmware/ev_charger_session_monitor/ev_charger_session_monitor.ino` as the value of `PRODUCT_UID`, or pass it via a build flag (`-DPRODUCT_UID=\"com.your-company:your-project\"`).
 
 2. **Claim the Notecard.** Power the assembled unit. On first cellular connect the Notecard associates with your Notehub project automatically. The device will appear in **Devices** within a minute or two.
 

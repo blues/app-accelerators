@@ -41,7 +41,7 @@ This section will guide you through creating a reusable Notecard configuration s
 
 There are two main ways to program a standalone Notecard that will not be controlled by a host microcontroller:
 1. [The Notecard CLI](https://dev.blues.io/tools-and-sdks/notecard-cli/): a downloadable CLI designed for the Notecard.
-2. The [Notecard Playground](https://dev.blues.io/terminal): an in-browser terminal that emulates much of the functionality of the Notecard CLI.
+2. The [Notecard Playground](https://dev.blues.io/terminal): an In-Browser Terminal that emulates much of the functionality of the Notecard CLI.
 
 This guide will walk you through using the Notecard CLI, but you can also enter these configuration commands using the online REPL.
 

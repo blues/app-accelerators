@@ -134,7 +134,7 @@ See [§5](#5-wiring-and-assembly) for detailed wiring instructions.
 
 ## 6. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Once created, open the project dashboard and look for the **ProductUID** in the top-right corner (it looks like `com:yourcompany:projectname`). Copy it and paste it into `firmware/diesel_gen_monitor/diesel_gen_monitor.ino` line 39, replacing `com.your-company.your-name:diesel_gen_monitor`.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a project. Once created, open the project dashboard and look for the **ProductUID** in the top-right corner (it looks like `com:yourcompany:projectname`). Copy it and paste it into `firmware/diesel_gen_monitor/diesel_gen_monitor.ino` line 39, replacing `com.your-company.your-name:diesel_gen_monitor`.
 
 2. **Claim the Notecard.** Power the panel; on the first cellular session the Notecard auto-provisions into your project.
 

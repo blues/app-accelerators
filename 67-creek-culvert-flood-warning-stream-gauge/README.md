@@ -144,7 +144,7 @@ Mount antennas on the exterior of the enclosure lid pointing skyward. Under a br
 ## 6. Notehub Setup
 
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid). Near the top of `firmware/creek_flood_gauge/creek_flood_gauge.ino` there is a commented placeholder line: uncomment it and replace the example string with your actual ProductUID before building. The `#ifndef PRODUCT_UID` build guard immediately below will produce a compile error if you forget, preventing a reused Notecard from routing data to a previous project.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid). Near the top of `firmware/creek_flood_gauge/creek_flood_gauge.ino` there is a commented placeholder line: uncomment it and replace the example string with your actual ProductUID before building. The `#ifndef PRODUCT_UID` build guard immediately below will produce a compile error if you forget, preventing a reused Notecard from routing data to a previous project.
 
 2. **Claim the Notecard.** Power the enclosure; on the first cellular session the Notecard associates with your project automatically. The device appears in Notehub within a few minutes of first power-on.
 

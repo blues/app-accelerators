@@ -25,7 +25,7 @@ The Notecard should use [firmware version 3.5.2](https://dev.blues.io/notecard/n
 
 ## Testing
 
-With the Notecarrier connected to your development PC, navigate to https://dev.blues.io open the in-browser terminal, and connect to the Notecard. Then, enter this command in the terminal:
+With the Notecarrier connected to your development PC, navigate to https://dev.blues.io open the In-Browser Terminal, and connect to the Notecard. Then, enter this command in the terminal:
 
 ```json
 { "req": "hub.set", "product" : "com.your-company:your-product-name", "sn": "a-serial-number", "body": {"app":"nf19"} }

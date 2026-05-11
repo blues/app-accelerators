@@ -225,7 +225,7 @@ The Waveshare MCP2515 CAN Bus Module runs at 5V logic; all SPI lines must pass t
 
 ## 6. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) (it looks like `com.your-company.your-name:lift-battery`) and paste it into the `#define PRODUCT_UID ""` line in the firmware sketch.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) (it looks like `com.your-company.your-name:lift-battery`) and paste it into the `#define PRODUCT_UID ""` line in the firmware sketch.
 
 2. **Claim the Notecard.** Power the assembled unit. The Notecard associates with your project on first cellular session — no manual claim step. The device appears in the **Devices** tab within a few minutes.
 
@@ -536,7 +536,7 @@ Mojo is not deployed to the field unit; its role ends when a firmware revision p
 |---|---|---|
 | Device never appears in Notehub **Devices** tab. | `PRODUCT_UID` wrong or empty; antenna not outdoors. | Re-verify `PRODUCT_UID`. Move the unit outdoors with antenna pointed up. Confirm `_session.qo` events — none means no radio connection. |
 | `_session.qo` appears but no `battery_status.qo`. | First `report_interval_m` has not elapsed, or `summ_count` stayed zero because all sensor reads were rejected. | Check serial at 115200 baud for `[meas]` lines. Confirm INA228 is powered and `pack_v` is non-zero. |
-| `pack_v` reads ~0 V or firmware reports INA228 not found. | INA228 not found at address 0x40, or SDA/SCL not connected. | Verify Qwiic continuity. Issue `{"req":"card.status"}` in the [In-Browser terminal](https://dev.blues.io/terminal/) to confirm the Notecard is alive, then check INA228 I²C wiring. |
+| `pack_v` reads ~0 V or firmware reports INA228 not found. | INA228 not found at address 0x40, or SDA/SCL not connected. | Verify Qwiic continuity. Issue `{"req":"card.status"}` in the [In-Browser Terminal](https://dev.blues.io/terminal/) to confirm the Notecard is alive, then check INA228 I²C wiring. |
 | `pack_v` reads out of plausible range (>85 V or <10 V). | INA228 `VIN+` not connected to the pack positive terminal, or wiring reversed; or pack voltage exceeds the INA228's 85 V common-mode limit. | Confirm the `VIN+` wire reaches the pack positive with a DMM. Verify `GND` is at pack negative. For packs whose full-charge voltage may exceed 85 V, substitute a voltage-sensing front end with a higher common-mode rating (see §10). |
 | `temp_c` is `-9999.0` with otherwise valid readings. | NTC thermistor unplugged or series resistor missing. | Check continuity at A0 to the NTC junction. With a 10 kΩ NTC at room temperature, A0 should read ~1.65 V. |
 | `soc_pct` shows 0% with a full pack. | Wrong `chemistry` env var for this pack type. | Check the `chemistry` variable in Notehub. A lithium OCV table applied to a lead-acid pack reads incorrectly because the voltage ranges differ by several volts. |

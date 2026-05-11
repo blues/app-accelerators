@@ -199,7 +199,7 @@ Clamp each CT around a single secondary conductor, never around two conductors s
 
 ## 6. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) (format: `com.your-company.your-name:xfmr-monitor`) and set it as `PRODUCT_UID` in the firmware before flashing.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) (format: `com.your-company.your-name:xfmr-monitor`) and set it as `PRODUCT_UID` in the firmware before flashing.
 
 2. **Claim the device.** Power the assembled unit. On first cellular connect, the Notecard associates with your project automatically — no manual claim required. The device appears in the **Devices** tab within a minute or two.
 

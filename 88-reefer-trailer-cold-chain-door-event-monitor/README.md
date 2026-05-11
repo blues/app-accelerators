@@ -25,7 +25,7 @@ This project is a [loss prevention](https://blues.com/loss-prevention/) referenc
 
 Both failure modes have a common root: nobody can see inside the trailer while it's moving.
 
-**Scope Note.** This design uses direct temperature-probe and door-switch input signals only — no OEM reefer unit or tractor integration, no J1939 CAN, no proprietary reefer telemetry (Carrier DataLink, Thermo King DSR, etc.). It is a point-instrumentation retrofit suitable for fleets with heterogeneous reefer makes and models where a universal, non-invasive monitor is preferred.
+**Scope note.** This design uses direct temperature-probe and door-switch input signals only — no OEM reefer unit or tractor integration, no J1939 CAN, no proprietary reefer telemetry (Carrier DataLink, Thermo King DSR, etc.). It is a point-instrumentation retrofit suitable for fleets with heterogeneous reefer makes and models where a universal, non-invasive monitor is preferred.
 
 **Why Notecard for Skylo.** A trailer is mobile by definition, and its connectivity environment changes constantly. Urban routes have dense cellular coverage. Rural interstates may have significant gaps. Cross-border hauls hand off between carrier networks. Ocean-facing port staging areas can be outside terrestrial coverage entirely. A fixed cellular SIM solves the urban case but silently drops offline everywhere else — exactly when unsupervised, high-value loads are most exposed.
 

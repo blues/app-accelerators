@@ -133,7 +133,7 @@ Retain the LiPo inside the enclosure with a strip of hook-and-loop tape (Velcro)
 
 ## 6. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:pillbox`.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:pillbox`.
 
 2. **Set the ProductUID in firmware.** Open `cellular_medication_adherence_pillbox.ino` and replace the empty string on the `#define PRODUCT_UID ""` line with your value.
 

@@ -29,7 +29,7 @@ The Notecard should use [firmware version 3.3.1](https://dev.blues.io/notecard/n
 
 ## Notecard Configuration
 
-With the hardware assembled and firmware updated, it's time to configure the Notecard. First, connect the Notecarrier to your development machine with the USB A to micro USB cable. Using the in-browser terminal on [dev.blues.io](https://dev.blues.io/), connect to the Notecard and enter this command:
+With the hardware assembled and firmware updated, it's time to configure the Notecard. First, connect the Notecarrier to your development machine with the USB A to micro USB cable. Using the In-Browser Terminal on [dev.blues.io](https://dev.blues.io/), connect to the Notecard and enter this command:
 
 ### hub.set
 

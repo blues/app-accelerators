@@ -21,7 +21,7 @@ Sign up for a free account on [notehub.io](https://notehub.io) and [create a new
 
 ## Testing
 
-With the Notecarrier connected to your development PC, navigate to https://dev.blues.io open the in-browser terminal, and connect to the Notecard. Then enter the JSON commands below into the terminal.
+With the Notecarrier connected to your development PC, navigate to https://dev.blues.io open the In-Browser Terminal, and connect to the Notecard. Then enter the JSON commands below into the terminal.
 
 ### hub.set
 

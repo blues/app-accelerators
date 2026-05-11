@@ -160,7 +160,7 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ## 6. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/solar_battery_dispatcher/solar_battery_dispatcher.ino` as `PRODUCT_UID`.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/solar_battery_dispatcher/solar_battery_dispatcher.ino` as `PRODUCT_UID`.
 
 2. **Claim the Notecard.** Power the panel supply; on first cellular session the Notecard associates with your Notehub project automatically.
 

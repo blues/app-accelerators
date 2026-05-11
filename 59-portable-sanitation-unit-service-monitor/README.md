@@ -137,7 +137,7 @@ No level shifting required: the sensor operates at 3.3 V when powered from +3V3_
 ## 6. Notehub Setup
 
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/sanitation_unit_monitor/sanitation_unit_monitor.ino` as `PRODUCT_UID`.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) and paste it into `firmware/sanitation_unit_monitor/sanitation_unit_monitor.ino` as `PRODUCT_UID`.
 
 2. **Claim the Notecard.** Power the unit; on its first cellular session the Notecard associates with the project automatically. The unit appears in the Notehub device list within a few minutes.
 

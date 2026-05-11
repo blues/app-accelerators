@@ -32,7 +32,7 @@ With the motor and activity line already set up and ready, you will first connec
 This initial setup configures the Notecard to provide activity and vibration monitoring.
 
 1. Assemble the Notecard and Notecarrier as described [here](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-x/).
-2. Connect the Notecarrier to your PC with the micro USB cable. Keep the Notecard connected to the computer with the in-browser terminal active until you have completed [Notecard Setup](#notecard-setup).
+2. Connect the Notecarrier to your PC with the micro USB cable. Keep the Notecard connected to the computer with the In-Browser Terminal active until you have completed [Notecard Setup](#notecard-setup).
 
 ## Cloud Setup
 
@@ -40,7 +40,7 @@ Sign up for a free account on [Notehub.io](https://notehub.io) and create a new 
 
 ## Notecard Setup
 
-In these steps, you will use the in-browser terminal to configure your Notecard to report the motor state and motion events to your Notehub project. You may also skip these individual steps and use the [#Notecard-CLI] to configure the Notecard using a single command.
+In these steps, you will use the In-Browser Terminal to configure your Notecard to report the motor state and motion events to your Notehub project. You may also skip these individual steps and use the [#Notecard-CLI] to configure the Notecard using a single command.
 
 ### Firmware
 
@@ -48,7 +48,7 @@ The Notecard should use [firmware version 3.5.1](https://dev.blues.io/notecard/n
 
 ### Configure Notehub Project and Connection Mode
 
-Set the ProductUID for the Notecard by pasting the command below into the in-browser terminal. Make sure to replace `com.your-company:your-product-name` with the ProductUID from your Notehub project, which can be found below your project's name in the dashboard at https://notehub.io. Also, replace the placeholder serial number (`"sn":"motor-location"`) with the location or other identifier for your motor.
+Set the ProductUID for the Notecard by pasting the command below into the In-Browser Terminal. Make sure to replace `com.your-company:your-product-name` with the ProductUID from your Notehub project, which can be found below your project's name in the dashboard at https://notehub.io. Also, replace the placeholder serial number (`"sn":"motor-location"`) with the location or other identifier for your motor.
 
 ```json
 { "req": "hub.set", "mode": "periodic", "outbound": 5, "product": "com.your-company:your-product-name", "sn": "motor-location", "body":{"app":"nf20"} }
@@ -60,7 +60,7 @@ This app uses `continuous` mode with immediate sync for maximum responsiveness a
 
 This section configures the Notecard to sense when the motor is active.
 
-Activity sensing is configured using a number of distinct requests. Each request given below should be pasted into the in-browser terminal separately.
+Activity sensing is configured using a number of distinct requests. Each request given below should be pasted into the In-Browser Terminal separately.
 
 #### `card.aux - gpio mode`
 
@@ -90,7 +90,7 @@ Next we enable GPIO monitoring or control via environment variables, and sync ch
 
 ### Configure Vibration Sensing
 
-Vibration sensing is configured using a number of distinct requests. Each request given below should be pasted into the in-browser terminal separately.
+Vibration sensing is configured using a number of distinct requests. Each request given below should be pasted into the In-Browser Terminal separately.
 
 #### card.motion.mode
 

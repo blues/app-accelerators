@@ -216,7 +216,7 @@ If compilation fails with "PRODUCT_UID is not defined", you missed step 1. If up
 
 ---
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:tenant-energy-monitor`.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:tenant-energy-monitor`.
 
 2. **Set the ProductUID in firmware.** Open [`tenant_sub_meter_helpers.h`](firmware/tenant_sub_meter/tenant_sub_meter_helpers.h) and replace the empty string on the `#define PRODUCT_UID ""` line with your value.
 
@@ -397,7 +397,7 @@ return ok;
 **Template registration failure.** `defineTemplates()` uses `requestAndResponse()` and returns `false` if the Notecard returns an error. The `notecard_configured` flag is only set to 1 if both `initNotecard()` and `defineTemplates()` return `true`; a failure leaves the flag clear so the next wake automatically retries the full `initNotecard()` + `defineTemplates()` sequence. Because all note emission is gated on `notecard_configured`, no Note can be queued before the template exists — the firmware defers emission until setup completes, accumulating energy across the retry wakes without loss. If template registration is suspected to have failed after initial deployment (e.g., after a factory reset of the Notecard), the deterministic recovery procedure is:
 
 1. Wait for any pending notes to complete an outbound sync (so queued data is not lost).
-2. Issue `{"req":"card.restore","mode":"factory"}` via the [Notecard in-browser terminal](https://dev.blues.io/terminal/) or the USB serial REPL. This resets the Notecard to factory defaults and clears its stored NotePayload — including the `notecard_configured` flag.
+2. Issue `{"req":"card.restore","mode":"factory"}` via the [Notecard In-Browser Terminal](https://dev.blues.io/terminal/) or the USB serial REPL. This resets the Notecard to factory defaults and clears its stored NotePayload — including the `notecard_configured` flag.
 3. Power-cycle the device. On the next boot, `notecard_configured` is 0, so the firmware runs the full `initNotecard()` + `defineTemplates()` sequence again.
 
 > **Note:** `card.restore` with `mode:"factory"` also clears any Notes queued in the Notecard's local store. Complete step 1 before restoring if preserving in-flight data is important.
@@ -540,7 +540,7 @@ The dominant energy cost is the once-per-hour cellular session. Because the supp
 | All four channels read the same non-zero value even when unloaded. | Cross-talk or bias-node coupling issue; inadequate decoupling on shared 3.3 V supply. | Verify each of the five bias nodes (four current + one voltage) has its own dedicated 10 µF electrolytic cap to GND, placed as close as possible to the node. Check the shared `+3V3` rail for low impedance using a voltmeter under load. |
 | `t*_wh` values are implausibly large or small (off by 10%+ vs. clamp meter). | Calibration constant `rogowski_amps_per_volt` is wrong for the installed coil/integrator. | Follow the calibration procedure in [§10](#10-validation-and-testing) above. Measure a known load with a calibrated clamp meter, wait for one hourly summary, and compute the correction factor. |
 | Mojo bench trace shows continuous 15–30 mA instead of sleep pulses. | Host not sleeping — ATTN is not gating power to EN. | Confirm you are using a Notecarrier CX, which routes ATTN→EN internally. On a Notecarrier F or raw breakout board, ATTN must be wired externally to the EN pin. |
-| Cellular session bursts occur every 5 minutes instead of once per hour. | `hub.set` not persisted correctly; or Notecard reverted to defaults. | Watch serial for `[init] hub.set` on each wake. If present, the config is not sticking. Restart the Notecard: issue `{"req":"card.restore","mode":"factory"}` in the [Notecard in-browser terminal](https://dev.blues.io/terminal/), then power-cycle the device and reflash firmware. |
+| Cellular session bursts occur every 5 minutes instead of once per hour. | `hub.set` not persisted correctly; or Notecard reverted to defaults. | Watch serial for `[init] hub.set` on each wake. If present, the config is not sticking. Restart the Notecard: issue `{"req":"card.restore","mode":"factory"}` in the [Notecard In-Browser Terminal](https://dev.blues.io/terminal/), then power-cycle the device and reflash firmware. |
 
 If a problem is not on this list, visit the [Blues community forum](https://discuss.blues.com) — it's the fastest path to a second pair of eyes on a specific Notecard + sensor bring-up issue.
 
