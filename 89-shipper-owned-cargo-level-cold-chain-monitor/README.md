@@ -1,5 +1,7 @@
 # Shipper-Owned Cargo-Level Cold Chain Monitor
 
+![pallet-attached cold chain logger banner](banner.png)
+
 <Note>
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Shipper-Owned%20Cargo-Level%20Cold%20Chain%20Monitor).
