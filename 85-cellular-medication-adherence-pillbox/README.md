@@ -45,7 +45,7 @@ Existing IoT pillboxes have tried to close this gap, and most fail in the same p
 1. **Notehub** — create a [Notehub project](https://notehub.io), copy its ProductUID.
 2. **Wire the bench rig** — Notecarrier CX + Notecard MBGLW + 7 snap-action micro-switches on D5, D6, D9–D13. Full pinout in [§5](#5-wiring-and-assembly).
 3. **Edit one line** of [`firmware/cellular_medication_adherence_pillbox/cellular_medication_adherence_pillbox.ino`](firmware/cellular_medication_adherence_pillbox/cellular_medication_adherence_pillbox.ino) — search for `#define PRODUCT_UID` and set it to your project's value.
-4. **Flash** — select the Cygnet board in the Arduino IDE, hit Upload. Full instructions in [§6.1](#61-installing-and-flashing).
+4. **Flash** — select the Cygnet board in the Arduino IDE, hit Upload. Full instructions in [§7.1](#71-installing-and-flashing).
 5. **Watch** — open Notehub → your project → **Events** tab. You should see a `_session.qo` within a minute and a `pill_open.qo` each time you open a compartment.
 
 ---
@@ -181,7 +181,7 @@ Within a minute of first power-on, the **Events** tab should start populating. T
 
 - **`pill_diag.qo`** — an exceptional diagnostic Note emitted on **pending-event queue overflow**: `error: "pending_overflow"` and a `dropped` count when the 28-entry retry ring buffer fills and the oldest queued open event is evicted. A matching `error: "pending_overflow_cleared"` Note — with the total `dropped` count for the episode — is emitted when the queue subsequently drains. These Notes appear in both bench and production modes and indicate that adherence data was lost while the Notecard was unable to accept `note.add` requests. Route `pill_diag.qo` alongside `pill_open.qo` if data-integrity alerting is required.
 
-  An ATTN→EN power-gating fault (host MCU never loses power after `NotePayloadSaveAndSleep`) is **not** reported through this Notefile because any `note.add` issued in that race window is dispatched while the Notecard is already entering sleep mode and is unreliable. Detect this fault instead via the absence of the expected `_session.qo` cadence in Notehub and the bench-mode USB serial output noted in [§6.1](#61-installing-and-flashing).
+  An ATTN→EN power-gating fault (host MCU never loses power after `NotePayloadSaveAndSleep`) is **not** reported through this Notefile because any `note.add` issued in that race window is dispatched while the Notecard is already entering sleep mode and is unreliable. Detect this fault instead via the absence of the expected `_session.qo` cadence in Notehub and the bench-mode USB serial output noted in [§7.1](#71-installing-and-flashing).
 
 ---
 
@@ -193,7 +193,7 @@ The firmware is split across a main sketch and two helper files — all three li
 - **`cellular_medication_adherence_pillbox_helpers.h`** — shared constants, struct definitions, and helper function declarations.
 - **`cellular_medication_adherence_pillbox_helpers.cpp`** — helper function implementations (sensor reading, Notecard configuration, event emission, state management).
 
-### 6.1 Installing and flashing
+### 7.1 Installing and flashing
 
 **Dependencies:**
 
@@ -224,11 +224,11 @@ After upload, open the serial monitor at **115200 baud**. On first boot you shou
 
 **Bench mode vs. production mode.** `NotePayloadSaveAndSleep()` always returns to the host once it has dispatched the `card.attn` sleep command — it is the Notecard's subsequent ATTN de-assertion that actually cuts host power on a correctly wired carrier. The helper header ships with `PILLBOX_BENCH_MODE` commented out (production default). When this define is uncommented in `cellular_medication_adherence_pillbox_helpers.h`, `sleepHost()` falls back to `delay()` + `NVIC_SystemReset()` — useful for bring-up on configurations where the Notecard ATTN pin is not wired to the host EN rail. **Before deploying to a battery-powered Notecarrier CX, confirm that `PILLBOX_BENCH_MODE` remains commented out.** In production mode, if the host is still alive after the sleep command was dispatched (an ATTN→EN wiring fault), the firmware logs over USB serial if available and halts, preventing silent battery drain. The fault surfaces in Notehub as a missing `_session.qo` cadence; it is not signalled by a `pill_diag.qo` Note because any `note.add` request issued in the post-sleep race window is dispatched while the Notecard is already entering sleep mode and would not be reliably delivered.
 
-### 6.1a Bench mode critical Note
+### 7.1a Bench mode critical Note
 
 Before deploying to a battery-powered Notecarrier CX, **verify that `PILLBOX_BENCH_MODE` remains commented out** in `cellular_medication_adherence_pillbox_helpers.h`. In production mode, the Notecard ATTN pin gates the host's 3.3V rail, cutting power between polling wakes. If ATTN→EN is miswired or disconnected, the host stays alive and drains the LiPo continuously. The firmware will halt and log `[FATAL] NotePayloadSaveAndSleep returned and host did not lose power` over USB serial, preventing silent battery drain. You'll detect this in Notehub as a missing `_session.qo` cadence; never ignore consecutive gaps in session events — it signals a power-gating fault that must be corrected before patient deployment.
 
-### 6.2 Modules
+### 7.2 Modules
 
 | Responsibility | Function |
 |---|---|
@@ -241,7 +241,7 @@ Before deploying to a battery-powered Notecarrier CX, **verify that `PILLBOX_BEN
 | UTC time query for day-rollover detection | `utcDayAndHour()` |
 | State persistence and host sleep | `sleepHost()` |
 
-### 6.3 Sensor reading strategy
+### 7.3 Sensor reading strategy
 
 On each 30-second wake, `sampleCompartments()` reads all seven digital pins into a single byte bitmask. The firmware XORs this against the `prev_pin_mask` stored in `PillboxState` to compute a `newly_opened` byte — bits set in `newly_opened` represent pins that transitioned from LOW (closed) to HIGH (open) since the last wake. **Every detected rising edge generates a `pill_open.qo` event** — multiple opens of the same compartment lid in a day each produce a separate Note, allowing downstream systems to correlate opening patterns against the patient's dosing schedule. The `daily_opens` bitmask tracks which compartments were opened at all today and feeds the end-of-day summary; the `day_opens_mask` field in each `pill_open.qo` body is a running snapshot of that bitmask at the moment of the event, making each event payload self-contained. A second field, `opened_this_poll`, records which compartments were detected open in this specific wake — when multiple bits are set it is a direct downstream signal that multiple lids were opened simultaneously, consistent with a weekly tray-refill session rather than a single dose open.
 
@@ -249,7 +249,7 @@ On each 30-second wake, `sampleCompartments()` reads all seven digital pins into
 
 The maximum detection latency from "lid physically opened" to "event queued for transmission" is equal to the configured poll interval (default 30 seconds). Real-world latency from event queuing to Notehub receipt adds the Notecard's cellular session-establishment time (typically 15–60 seconds), giving an end-to-end window of typically under two minutes.
 
-### 6.4 Event payload design
+### 7.4 Event payload design
 
 `pill_open.qo` is left **untemplated** (free-form JSON). Open events are low-frequency even in the every-open model (a typical patient opens each lid once or twice per day, for a total well under 20 Notes/day), making wire overhead negligible. The untemplated format keeps each event easy to inspect in Notehub without adding unnecessary template management overhead. The `opened_this_poll` field carries the bitmask of all compartments detected open in the same polling wake as this event; when multiple bits are set it provides a downstream signal distinguishing a weekly refill session (multiple lids opened simultaneously) from a routine single-compartment dose open.
 
@@ -273,7 +273,7 @@ The maximum detection latency from "lid physically opened" to "event queued for 
 
 The `full:true` flag on the daily summary's `note.add` request preserves `opens_count: 0` even though the Note template would normally suppress zero-valued fields. Knowing that a patient opened zero compartments in a day is exactly the signal a care coordinator needs.
 
-### 6.5 Low-power strategy
+### 7.5 Low-power strategy
 
 The Cygnet STM32L4 host MCU is powered off entirely between wakes, not merely sleeping in a low-power mode, but physically de-energized by the Notecard's ATTN pin gating the Notecarrier CX's 3.3V host rail. This means every 30-second cycle consists of ~100–200 milliseconds of active host execution followed by ~29.8 seconds of zero host draw.
 
@@ -281,7 +281,7 @@ After each sample cycle, `sleepHost()` serializes the `PillboxState` struct into
 
 The Notecard itself remains powered continuously and idles at approximately 8–18 µA between cellular sessions. Cellular sessions — triggered by `sync:true` open events or the scheduled outbound timer for queued summary Notes — draw several hundred milliamps for the duration of the transmission (typically under 30 seconds) and then return to idle.
 
-### 6.6 Retry and error handling
+### 7.6 Retry and error handling
 
 - The first `hub.set` call on cold boot uses `sendRequestWithRetry(req, 5)` to handle the known cold-boot I2C race condition where the host comes up before the Notecard is ready to receive transactions.
 - `fetchEnvOverrides()` uses `requestAndResponse()` and guards against a NULL response — a failed env fetch leaves the current state values unchanged rather than crashing or zeroing thresholds.
@@ -289,7 +289,7 @@ The Notecard itself remains powered continuously and idles at approximately 8–
 - If `NotePayloadRetrieveAfterSleep()` fails or the segment is missing, the firmware treats the wake as a first boot: re-reads the initial pin state and reconfigures the Notecard. This handles the case where the LiPo died and the Notecard lost its stored payload.
 - **`emitOpenEvent()` failure and retry queue.** When a `note.add` fails after all three attempts, `enqueuePendingEvent()` stores the event (compartment index, day mask, poll mask) in a 28-entry ring buffer persisted inside `PillboxState`. On each subsequent wake, `replayPendingOpenEvents()` retries every buffered event before sampling new opens; successfully replayed records are removed and the queue is compacted. If the queue fills before Notecard connectivity is restored, the oldest entry is evicted and a `pill_diag.qo` Note is immediately sent to Notehub with `error: "pending_overflow"` and a `dropped: 1` count — giving cloud-visible data-loss visibility even while the primary note-add path is degraded. When the queue fully drains, a second `pill_diag.qo` with `error: "pending_overflow_cleared"` and the cumulative drop count closes the episode and confirms how many `pill_open.qo` events are missing. The 28-slot capacity covers four consecutive worst-case 7-compartment wakes; a sustained Notecard failure beyond that window causes adherence event loss. See [§10](#10-limitations-and-next-steps).
 
-### 6.7 Key code snippet 1 — template definition
+### 7.7 Key code snippet 1 — template definition
 
 `TUINT8` is defined in `note-c` as the integer constant `21`, which tells the Notecard to encode each templated field as a 1-byte unsigned integer (0–255). The template registers this encoding with the Notecard's on-device compression layer, so every `pill_summary.qo` Note is stored as a fixed 2-byte binary record rather than variable-length JSON. This compression keeps the on-device queue compact across a full month of data if cellular connectivity is temporarily unavailable. For downstream integrations, the Notecard automatically decompresses these records back to JSON when they reach Notehub.
 
@@ -303,7 +303,7 @@ JAddNumberToObject(body, "opens_count", TUINT8); // 0–7 count
 notecard.sendRequest(req);
 ```
 
-### 6.8 Key code snippet 2 — immediate open event
+### 7.8 Key code snippet 2 — immediate open event
 
 `sync:true` tells the Notecard not to wait for the next outbound window — this Note jumps the queue and the radio wakes immediately.
 
@@ -319,7 +319,7 @@ JAddNumberToObject(body, "opened_this_poll", 8);     // per-poll multi-open bitm
 notecard.sendRequest(req);
 ```
 
-### 6.9 Key code snippet 3 — sleep with state persistence
+### 7.9 Key code snippet 3 — sleep with state persistence
 
 `NotePayloadSaveAndSleep` serializes the state struct into Notecard flash and issues `card.attn` to cut host power. The host re-enters `setup()` from cold after `poll_sec` seconds.
 

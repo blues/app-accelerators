@@ -210,7 +210,7 @@ If compilation fails with "PRODUCT_UID is not defined", you missed step 1. If up
    arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/tenant_sub_meter/
    arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbmodem* firmware/tenant_sub_meter/
    ```
-   Full troubleshooting in [§9.1](#91-installing-and-flashing). Connect the Notecarrier CX with USB and set the DIP switch to `HST`.
+   Full troubleshooting in [§7.1](#71-installing-and-flashing). Connect the Notecarrier CX with USB and set the DIP switch to `HST`.
 5. **Watch serial** — open the serial monitor at 115200 baud. You will see Notecard configuration, then channel sample lines. After the first sleep cycle, serial goes quiet (host is powered off) for 5 minutes — that silence is expected and healthy.
 6. **Check Notehub** — open **Events** tab. A `_session.qo` appears within minutes. The first `meter_summary.qo` typically arrives in the initial session, shortly after the first sample cycle completes (within an hour).
 
@@ -266,7 +266,7 @@ Three-file implementation — all three must be present in the same sketch direc
 - [`firmware/tenant_sub_meter/tenant_sub_meter_helpers.h`](firmware/tenant_sub_meter/tenant_sub_meter_helpers.h) — shared types (`TenantState`, `PersistState`, `RuntimeConfig`, `ChannelMeasurement`), constants, fault-flag definitions, and helper function declarations.
 - [`firmware/tenant_sub_meter/tenant_sub_meter_helpers.cpp`](firmware/tenant_sub_meter/tenant_sub_meter_helpers.cpp) — implementations of all helper functions (`measureChannel`, `notecardReady`, `fetchEnvOverrides`, `initNotecard`, `defineTemplates`, `sendSummary`, and `getEpochSec`).
 
-### 9.1 Installing and flashing
+### 7.1 Installing and flashing
 
 **Dependencies:**
 
@@ -309,7 +309,7 @@ On Windows, ports are named `COM3`, `COM4`, etc.; on macOS / Linux, `/dev/cu.usb
 
 After flashing, open the serial monitor at **115200 baud**. On first power-on you will see the Notecard configuration exchange, then the first channel sample lines. After the first sleep, the serial output goes quiet for `sample_interval_sec` — that silence is expected; the host is fully powered off and will re-enter `setup()` from cold on the next wake.
 
-### 9.2 Module map
+### 7.2 Module map
 
 | Responsibility | Where |
 |---|---|
@@ -323,7 +323,7 @@ After flashing, open the serial monitor at **115200 baud**. On first power-on yo
 | State persist + host sleep | `NotePayloadSaveAndSleep()` |
 | State restore on wake (after notecardReady) | `NotePayloadRetrieveAfterSleep()` |
 
-### 9.3 Sensor reading strategy
+### 7.3 Sensor reading strategy
 
 The `measureChannel()` function captures 2000 interleaved voltage/current sample pairs from VOLTAGE_PIN (voltage transducer output) and the selected current pin (Rogowski integrator output). At the STM32L433's default 12-bit ADC rate, each `analogRead()` takes approximately 50 µs; one interleaved pair therefore takes ~100 µs, so 2000 pairs cover ~200 ms — approximately 12 full 60 Hz cycles. Voltage is sampled first within each pair, so any systematic ADC switching latency between channels is consistent across all pairs.
 
@@ -343,7 +343,7 @@ A Rogowski coil installed with reversed lead polarity produces a consistently ne
 
 **Per-channel fault bitmask.** Each call to `measureChannel()` checks four conditions per channel nibble: `FAULT_BIAS_RANGE` (0x01) when the ADC DC offset falls outside the expected 1.40–1.90 V half-rail window; `FAULT_SATURATED` (0x02) when the centered signal's RMS exceeds the RMS-equivalent of 85 % of the 1.65 V half-rail peak amplitude (≈ 0.99 V RMS at the ADC pin), indicating that the waveform is approaching ADC rail clipping; bit 2 reserved (formerly `FAULT_NO_SIGNAL` — retired because a legitimately unloaded tenant circuit is indistinguishable from a disconnected Rogowski coil by current magnitude alone; see the commissioning diagnostic note below); and `FAULT_VOLTAGE_REF` (0x08) when the shared voltage reference path is suspect (bias out of range, signal saturated, or measured line RMS below `VOLTAGE_MIN_V_RMS`). Because the voltage reference is shared, `FAULT_VOLTAGE_REF` is propagated into every active channel's fault nibble simultaneously so downstream billing can identify periods where all tenant watt calculations are compromised. Fault flags are OR'd across all sample wakes in the summary period and packed into the `fault_mask` field of `meter_summary.qo` as a 4-bit nibble per tenant channel (T1 in bits 3:0, T4 in bits 15:12). A `fault_mask` of 0 means all channels passed all checks on every sample in the period. Downstream billing systems should reject or flag any summary where `fault_mask != 0`. Low RMS current (below 0.05 A) is logged to Serial as a commissioning diagnostic only — it is never placed in `fault_mask`.
 
-### 9.4 Event payload design
+### 7.4 Event payload design
 
 `meter_summary.qo` is registered as a [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) notefile at first boot. Templates store Notes as fixed-length binary records, reducing on-wire size by 3–5× vs. free-form JSON.
 
@@ -367,13 +367,13 @@ Nine 4-byte floats: estimated interval energy (Wh), 15-minute blocked-average de
 
 To derive monthly per-tenant totals, sum `t*_wh` across all `meter_summary.qo` events for a device over the billing period using the [Notehub Event Query API](https://dev.blues.io/api-reference/notehub-api/api-introduction/), then divide by 1000 to obtain estimated kWh. This Notehub-side aggregation is the sole monthly rollup path — no device-side monthly note is generated.
 
-### 9.5 Low-power strategy
+### 7.5 Low-power strategy
 
 The panel installation is line-powered, but keeping the host asleep between samples reduces enclosure heat, reduces supply wear, and produces firmware that ports directly to battery variants without a rewrite. After each sample cycle, `NotePayloadSaveAndSleep` serializes the RAM `PersistState` struct into Notecard flash and issues a [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) request that cuts host power for `sample_interval_sec` seconds. The Notecarrier CX's ATTN→EN routing handles the physical power switch; no external relay or MOSFET is needed. The Cygnet re-enters `setup()` from cold on each wake; `NotePayloadRetrieveAfterSleep` rehydrates the struct transparently — but only after `notecardReady()` has confirmed the Notecard is ready to accept I2C requests.
 
 The Notecard sits in its own [low-power idle state](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) (~18 µA at 5 V for the Cell+WiFi variant) between cellular sessions. Summary notes queue locally and flush together in one hourly session — the radio is not touched on intermediate wakes.
 
-### 9.6 Retry and error handling
+### 7.6 Retry and error handling
 
 **Cold-boot I²C race.** On every cold boot, `notecardReady(NOTECARD_READY_TIMEOUT_SEC)` is the very first Notecard transaction — it precedes `NotePayloadRetrieveAfterSleep` and every other I2C call. `notecardReady` calls `notecard.sendRequestWithRetry(req, 10)` with a lightweight `card.version` request. Per the [note-arduino library docs](https://dev.blues.io/tools-and-sdks/firmware-libraries/arduino-library/), `sendRequestWithRetry` returns `bool` (true = acknowledged) — it does **not** return a `J*` response pointer — and blocks up to the specified timeout. This handles the race condition where the STM32L433 host comes up several hundred milliseconds before the Notecard is ready to accept I²C requests.
 
@@ -402,7 +402,7 @@ return ok;
 
 > **Note:** `card.restore` with `mode:"factory"` also clears any Notes queued in the Notecard's local store. Complete step 1 before restoring if preserving in-flight data is important.
 
-### 9.7 Key code snippet 1: template registration
+### 7.7 Key code snippet 1: template registration
 
 Only `meter_summary.qo` is registered as a binary-packed template. `14.1` is the note-c type hint for a 4-byte IEEE-754 float (TFLOAT32). `defineTemplates()` uses `requestAndResponse()` and returns a `bool`; `notecard_configured` is only latched after a successful response.
 
@@ -429,7 +429,7 @@ bool defineTemplates(void) {
 }
 ```
 
-### 9.8 Key code snippet 2: sleep with state persistence
+### 7.8 Key code snippet 2: sleep with state persistence
 
 `NotePayloadSaveAndSleep` serializes the RAM struct into Notecard flash, then triggers the ATTN-based host power cutoff. The next `setup()` call opens with `notecardReady()` — the cold-boot handshake that must be the first I2C transaction — followed by `NotePayloadRetrieveAfterSleep`, which reconstructs the struct exactly as it was left — accumulated estimated Wh, peak demand, demand-window progress, and summary epoch all intact across the power cycle.
 

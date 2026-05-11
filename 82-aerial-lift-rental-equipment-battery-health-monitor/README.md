@@ -283,7 +283,7 @@ Four files in [`firmware/lift_battery_monitor/`](firmware/lift_battery_monitor/)
 - [`lift_battery_monitor_helpers.cpp`](firmware/lift_battery_monitor/lift_battery_monitor_helpers.cpp) — all function implementations: Notecard config, sensor reads, SoC/SoH estimation, alert logic
 - [`lift_battery_monitor_helpers.h`](firmware/lift_battery_monitor/lift_battery_monitor_helpers.h) — shared types (`PersistState`, `Config`), `extern` declarations, and function prototypes
 
-### 6.1 Installing and flashing
+### 7.1 Installing and flashing
 
 **Dependencies:**
 
@@ -318,7 +318,7 @@ arduino-cli upload  -b STMicroelectronics:stm32:Blues:pnum=CYGNET \
 
 Open the serial monitor at **115200 baud** to watch `[meas]` lines during bring-up. After each sample cycle, the host sleeps for `sample_interval_s` seconds — the serial output will go quiet until the next wake. That's normal; it means `card.attn` is correctly cutting host power.
 
-### 6.2 Modules
+### 7.2 Modules
 
 | Responsibility | Where |
 |---|---|
@@ -333,7 +333,7 @@ Open the serial monitor at **115200 baud** to watch `[meas]` lines during bring-
 | Optional CAN BMS cell-group read | `pollCanBms` *(#if ENABLE_CAN_BMS)* |
 | Persistent state across sleep cycles | `PersistState` + `NotePayloadSaveAndSleep` / `NotePayloadRetrieveAfterSleep` |
 
-### 6.3 Sensor reading strategy
+### 7.3 Sensor reading strategy
 
 **INA228.** The Adafruit INA228 (0x40 default I²C address) provides a 20-bit measurement of bus voltage (up to 85 V) and, when configured for it, differential current through an external shunt wired to `VIN+`/`VIN–`. The firmware always calls `readBusVoltage()` to read pack bus voltage. In the default field build (`ENABLE_ACS758 0`, `BENCH_ONLY 0`) it also calls `readCurrent()` for current through the external field shunt; in the ACS758 alternative build (`ENABLE_ACS758 1`) `readCurrent()` is not called and pack current comes from the ACS758 Hall-effect sensor on A1 instead; in bench builds (`BENCH_ONLY 1`) `readCurrent()` returns current through the onboard 15 mΩ shunt. A single I²C transaction for bus voltage takes under 5 ms. `setShunt()` is called at startup with `DEFAULT_SHUNT_MOHM * 0.001f` and `DEFAULT_SHUNT_MAX_A` (field/external shunt path) or `0.015 Ω` / `10 A` (bench path), writing the SHUNT_CAL register to calibrate `readCurrent()` for the installed shunt.
 
@@ -341,7 +341,7 @@ Open the serial monitor at **115200 baud** to watch `[meas]` lines during bring-
 
 **CAN BMS** *(conditional).* When `ENABLE_CAN_BMS` is 1, the MCP2515 is initialized at 250 kbps (configurable), and each wake polls for pending CAN frames up to a short timeout. Frames matching `BMS_CELL_GROUP_ID` are parsed as 2-byte big-endian cell-group voltages in millivolts. A classic CAN frame carries at most 8 data bytes (DLC ≤ 8), so at most four 16-bit values fit in one frame; the placeholder parser extracts however many complete pairs the frame's DLC permits. The exact CAN ID, frame layout, and whether multi-frame messages are used are all BMS-specific. The firmware ships a placeholder; the developer must update `BMS_CELL_GROUP_ID` and `parseCellGroupFrame()` to match the actual BMS protocol. Common rental-equipment BMS vendors expose cell voltages on SAE J1939 parameter groups at 250 kbps; consult the machine's service documentation.
 
-### 6.4 Event payload design
+### 7.4 Event payload design
 
 Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefiles. Compact format (`format: "compact"`) with unique port numbers is required so Notes are compatible with satellite transmission. `battery_status.qo` carries `delete: true`, which instructs the Notecard to discard any queued summaries if the Notecard establishes a satellite NTN session (rather than sending several hours of accumulated summaries over the metered satellite link). `battery_alert.qo` has no `delete` flag — critical alerts must get through on any available transport.
 
@@ -373,20 +373,20 @@ Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-ban
 
 All five fields are always present on every alert Note. `extra_v` is `0.0` for alert types that carry no auxiliary value (`soc_low`, `can_error`); for other types it carries alert-specific context (see §8).
 
-### 6.5 Low-power strategy
+### 7.5 Low-power strategy
 
 The sidecar draws power from the machine. Even so, keeping the host genuinely asleep minimizes heat dissipation in the battery bay and ensures the monitoring device itself doesn't materially drain the pack it's monitoring. After each sample cycle, the host calls `NotePayloadSaveAndSleep`, which serializes the `PersistState` struct into Notecard flash and issues a [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) `sleep` request to cut host power for `sample_interval_s` seconds. On the next wake the MCU re-enters `setup()` from cold, and `NotePayloadRetrieveAfterSleep` rehydrates the state — SoC, SoH accumulators, alert cooldowns, and the running summary window all survive the sleep cycle.
 
 The Notecard itself idles at ~8–18 µA between cellular sessions — this is the Notecard SoM's own draw from the datasheet. The assembled device additionally draws quiescent current from the buck regulator, INA228 breakout (always-on I²C), thermistor divider, and any optional CAN hardware, so the whole-device idle figure at the 5V rail is materially higher. Use Mojo during bench validation to measure the actual assembled current rather than relying on the Notecard datasheet figure alone; see [§9](#9-validation-and-testing). Sampling runs at 5-minute intervals; transmission runs at 60-minute intervals. When `report_interval_m` is changed via Notehub, the firmware re-applies `hub.set` on the next wake so the Notecard outbound cadence stays in sync without requiring a reboot. All alerts except `can_error` bypass the transmit timer entirely via `sync: true`. `can_error` is the explicit exception — it fires on the first failed CAN poll (once the Notecard clock is set), then is suppressed for one hour after each emission; it queues for normal outbound delivery rather than triggering an immediate cellular session.
 
-### 6.6 Retry and error handling
+### 7.6 Retry and error handling
 
 - The first Notecard transaction uses `sendRequestWithRetry(req, 10)` to paper over the cold-boot I²C race documented in the note-arduino library.
 - If `readPackVI()` returns values outside the plausible range (bus voltage < 10 V or > 85 V, the INA228's common-mode hardware limit, or current outside ±200 A), or if the INA228 is not found at startup, the firmware aborts that entire sample cycle: it persists state and goes to sleep immediately, without advancing the summary accumulators, updating SoC/SoH/DoD, or evaluating any alert thresholds. `readPackTempC()` is called before `readPackVI()` so temperature has already been read, but its value is discarded when the cycle aborts — the thermistor accumulator does not advance for that wake. Alert cooldown epochs survive the abort in persisted state. If all wakes in a `report_interval_m` window abort, `summ_count` will be zero. When the report timer fires on an empty window, `sendSummary()` advances `last_summ_epoch` without emitting a Note, starting a fresh full report interval from that point. This ensures the first successful sample after a prolonged sensor fault begins a new window rather than immediately triggering an under-populated summary. When a summary is sent, all seven fields are always present; `temp_c` uses only valid (non-NaN) thermistor reads in its average and will be `-9999.0` if the thermistor produced no valid reads across the successful samples in the window.
 - Alert cooldowns (`ALERT_COOLDOWN_SEC`, default 30 minutes) prevent a slow-drifting threshold from paging the on-call every sample cycle.
 - CAN read failures (when enabled) set `can_ok: false` in the next summary. A `can_error` alert fires immediately on the first failed poll (once the Notecard clock is set); subsequent failures emit at most once per hour. CAN failures do not block the non-CAN sensors from reporting normally.
 
-### 6.7 Key code snippet 1: satellite-aware template definition
+### 7.7 Key code snippet 1: satellite-aware template definition
 
 `format: "compact"` is required for Notes to be transmittable over the Skylo NTN satellite link. The `port` is a unique integer (1–100) that lets the Notecard reference the Notefile over the air by number rather than full string. `delete: true` on the hourly summary prevents it from being routed over the metered satellite link.
 
@@ -414,7 +414,7 @@ JAddBoolToObject(body,   "can_ok",        true);
 notecard.sendRequest(req);
 ```
 
-### 6.8 Key code snippet 2: immediate-sync alert
+### 7.8 Key code snippet 2: immediate-sync alert
 
 `sync: true` wakes the Notecard's radio immediately rather than waiting for the next hourly outbound window. If cellular isn't available, the Notecard for Skylo will establish a Skylo satellite session instead.
 
@@ -432,7 +432,7 @@ JAddNumberToObject(body, "extra_v", 0.0f);  // always present; 0.0 when no aux v
 notecard.sendRequestWithRetry(req, 10);
 ```
 
-### 6.9 Key code snippet 3: sleep with state persistence
+### 7.9 Key code snippet 3: sleep with state persistence
 
 The persistent state struct is serialized to Notecard flash before the host powers down. On the next wake, `NotePayloadRetrieveAfterSleep` rehydrates it — accumulator totals, alert cooldowns, and SoH history all survive.
 
@@ -443,7 +443,7 @@ NotePayloadSaveAndSleep(&payload, cfg.sample_interval_s, NULL);
 // Execution does not return here; the Notecard cuts host power.
 ```
 
-### 6.10 Key code snippet 4: SoC interpolation from OCV lookup table
+### 7.10 Key code snippet 4: SoC interpolation from OCV lookup table
 
 Linear interpolation between table entries smooths the SoC curve. The table is selected at runtime based on the `chemistry` environment variable.
 

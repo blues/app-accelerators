@@ -88,7 +88,7 @@ Here is a sample Note this device emits:
 | Micro-USB cable (development only) | 1 | Required to flash firmware from the Arduino IDE and monitor serial output via the Feather's Micro-USB port. Remove from the patient kit before shipping. |
 | Project enclosure, ~100 × 65 × 30 mm (e.g., [Hammond 1591ETCL](https://www.hammfg.com/part/1591ETCL)) | 1 | Clear polycarbonate lid lets the care team see the power LED remotely on a telehealth video call. |
 
-**BLE patient devices — bench-validation set.** The firmware implements Bluetooth SIG standard service profiles and should work with any compliant device. The four models below are the specific devices used to validate each parser; interoperability with untested devices is not guaranteed. See §6.4 and §9 Limitations for parser scope details, especially for the Blood Pressure device.
+**BLE patient devices — bench-validation set.** The firmware implements Bluetooth SIG standard service profiles and should work with any compliant device. The four models below are the specific devices used to validate each parser; interoperability with untested devices is not guaranteed. See §7.4 and §10 Limitations for parser scope details, especially for the Blood Pressure device.
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
@@ -189,7 +189,7 @@ In the Notehub web console, navigate to **Devices** (your newly claimed hub), th
 | [`notecard_helpers.h`](firmware/post_discharge_vitals_hub/notecard_helpers.h) / [`notecard_helpers.cpp`](firmware/post_discharge_vitals_hub/notecard_helpers.cpp) | Notecard layer: `hub.set` configuration, template registration, env-var fetch, Note submission with checked alert delivery |
 | [`ble_parsers.h`](firmware/post_discharge_vitals_hub/ble_parsers.h) | Static inline GATT decoders + physiological plausibility guards |
 
-### 6.1 Installing and flashing
+### 7.1 Installing and flashing
 
 **Dependencies:**
 
@@ -221,7 +221,7 @@ arduino-cli compile \
 
 Arduino IDE users can add extra flags by creating a `platform.local.txt` file in the Adafruit nRF52 board-support-package folder and adding a line such as `compiler.cpp.extra_flags=-DALLOW_DEBUG_BUILD -DDEBUG_VITALS=1` (see the [Arduino platform customization docs](https://arduino.github.io/arduino-cli/latest/platform-specification/#platformlocaltxt)). The **Sketch → Export Compiled Binary** menu does not expose a build-flags field in the standard IDE GUI for the nRF52 board package.
 
-### 6.2 Module responsibilities
+### 7.2 Module responsibilities
 
 | Responsibility | Where |
 |---|---|
@@ -235,7 +235,7 @@ Arduino IDE users can add extra flags by creating a `platform.local.txt` file in
 | BLE characteristic byte parsing + plausibility helpers | `ble_parsers.h` — `parseSfloat`, `parseWeightKg`, `parseBpMmhg`, `parseSpO2`, `parseHeartRate`, `weightKgPlausible`, `bpPlausible`, `spo2Plausible`, `hrPlausible` |
 | Buffered reading dispatch and watchdog | `post_discharge_vitals_hub.ino` — `loop()` |
 
-### 6.3 BLE scanning and GATT reading strategy
+### 7.3 BLE scanning and GATT reading strategy
 
 The nRF52840 SoftDevice operates as a BLE Central. `bleScanCallback` fires for every advertisement packet received; the firmware calls `Bluefruit.Scanner.checkReportForService()` against each of the four target service UUIDs and connects only on a match. On connection, `bleConnectCallback` calls `service.discover(connHandle)` to identify which of the four device types just connected, then calls `char.discover()` followed by `enableIndicate()` (for weight, BP, and SpO2, which use the GATT Indication sub-procedure) or `enableNotify()` (for heart rate, which uses Notification). The SoftDevice handles GATT ATT acknowledgment automatically. When the device transmits a reading, the corresponding data callback populates a buffered struct and sets its `valid` flag; the main loop drains that buffer on the next iteration.
 
@@ -254,7 +254,7 @@ The four target service UUIDs are assigned by the Bluetooth SIG:
 | Pulse oximeter | 0x1822 | 0x2A5E | Indication |
 | Activity band | 0x180D | 0x2A37 | Notification |
 
-### 6.4 Characteristic value encoding
+### 7.4 Characteristic value encoding
 
 The four measurement characteristics use three different wire encodings — it is not uniform SFLOAT throughout the stack.
 
@@ -268,7 +268,7 @@ The four measurement characteristics use three different wire encodings — it i
 
 **Heart rate — plain uint8/uint16.** The Heart Rate Measurement characteristic (0x2A37) carries the heart rate value as a plain unsigned integer — uint8 when flags bit 0 is 0 (the common case for consumer bands), uint16 when bit 0 is 1. No SFLOAT decoding is involved.
 
-### 6.5 Event payload design
+### 7.5 Event payload design
 
 Each Notefile uses a [template](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) that stores Notes as fixed-length binary records on the Notecard rather than free-form JSON, reducing per-reading wire size by 3–5×.
 
@@ -315,7 +315,7 @@ Each Notefile uses a [template](https://dev.blues.io/notecard/notecard-walkthrou
 
 Alert types: `weight_gain`, `bp_high`, `spo2_low`, `hr_high`, `hr_low`. The Notecard's metadata envelope (timestamp and device identity) is added automatically and appears alongside the body in Notehub. Location is included only if the device has a configured location source; for a wall-powered indoor hub with no GNSS, the location field will not be present.
 
-### 6.6 Sync strategy and power
+### 7.6 Sync strategy and power
 
 **Wall-powered operation — continuous availability.** The hub is powered by USB-C (no battery), so the BLE scanner remains active 24/7. This is critical for the clinical workflow: a patient may take a reading at any time (3 AM weight check, midnight BP, etc.) and the hub must be online to capture it immediately. There is no sleep/wake cycle, no polling intervals — measurements are event-driven and go to Notehub without delay (subject to the 15-minute outbound window, or immediately if they trip a threshold).
 
@@ -325,7 +325,7 @@ Alert types: `weight_gain`, `bp_high`, `spo2_low`, `hr_high`, `hr_low`. The Note
 
 **Radio duty cycle.** The nRF52840 SoftDevice duty-cycles the BLE radio automatically: the scanner runs at a 50% duty cycle (100 milliseconds window every 200 milliseconds interval). The BLE scanner dominates the continuous baseline current draw (~5–10 mA); each cellular session dominates the short peak-current burst (~250 mA) and contributes a significant share of total energy per 15-minute sync window despite being brief (~15–30 seconds).
 
-### 6.7 Error handling
+### 7.7 Error handling
 
 - **`hub.set` with retry and response check.** `notecardConfigure()` guards against an empty `PRODUCT_UID` before sending, retries for up to 5 seconds to paper over the cold-boot I²C race, and inspects the response `err` field via `sendChecked()`. A failed or rejected configuration is logged rather than silently swallowed.
 - **Checked delivery with retry for all Notes.** Both alert Notes and routine measurement Notes use checked enqueue via `sendVitalNoteChecked()` / `sendAlertNote()`, which call `requestAndResponse()` and retry up to `ALERT_ENQUEUE_RETRIES` (3) times on I²C failure, so a transient I²C error cannot silently drop any patient reading. Routine readings call `sendVitalNoteChecked()` with `addSync=false` (normal outbound cadence applies); threshold-tripping readings call it with `addSync=true` to trigger an immediate outbound session for that measurement regardless of alert-cooldown state. The companion `vitals_alert.qo` Note is submitted immediately after via `sendAlertNote()`, also checked and retried. A final failure on a measurement Note is logged; a final failure on an alert Note additionally warns that the alert may be lost.
@@ -334,7 +334,7 @@ Alert types: `weight_gain`, `bp_high`, `spo2_low`, `hr_high`, `hr_low`. The Note
 - **GATT payload guards.** BLE callbacks check minimum `len` before dereferencing any byte. Measurement-unsuccessful sentinels (0xFFFF for weight; NaN/reserved SFLOAT for blood pressure and SpO2) return −1.0 f or NAN from the parsing helpers; callbacks discard non-positive values.
 - **Env-var validation.** `fetchEnvVars()` checks for a NULL response, a non-empty `err` field, and a non-empty string before calling `atof()`. Related threshold pairs (systolic/diastolic, hr_high/hr_low) are cross-validated for sensible ordering before being applied.
 
-### 6.8 Key code snippet 1: Notecard periodic sync with 15-minute outbound
+### 7.8 Key code snippet 1: Notecard periodic sync with 15-minute outbound
 
 `hub.set` is sent via a checked retry loop that guards the empty-`PRODUCT_UID` case, handles the cold-boot I²C race, and inspects the Notecard's response `err` field:
 
@@ -352,7 +352,7 @@ do {
 } while (!ok && (millis() - t0) < 5000UL);
 ```
 
-### 6.9 Key code snippet 2: immediate-sync alert on threshold trip
+### 7.9 Key code snippet 2: immediate-sync alert on threshold trip
 
 `sync:true` tells the Notecard to open a session immediately rather than waiting for the next scheduled outbound window — essential for a care team that needs to act on a dangerous SpO2 within minutes, not the next quarter-hour.
 
@@ -366,7 +366,7 @@ JAddNumberToObject(body, "spo2_pct", spo2_pct);
 notecard.sendRequest(req);
 ```
 
-### 6.10 Key code snippet 3: BLE service discovery and indication subscribe
+### 7.10 Key code snippet 3: BLE service discovery and indication subscribe
 
 Called from `bleConnectCallback` when a device connects. The service `discover()` call walks the connected peripheral's ATT database; on a match, `enableIndicate()` writes the CCCD (Client Characteristic Configuration Descriptor) to turn on indications.
 
@@ -379,7 +379,7 @@ if (g_bpSvc.discover(connHandle)) {
 }
 ```
 
-### 6.11 Key code snippet 4: SFLOAT decode in ble_parsers.h
+### 7.11 Key code snippet 4: SFLOAT decode in ble_parsers.h
 
 The IEEE 11073 SFLOAT type is a 16-bit packed float used for blood pressure and SpO2 fields. `parseSfloat()` sign-extends both the 4-bit exponent and the 12-bit mantissa, which is the step most BLE tutorial snippets handle correctly. The less obvious part is sentinel rejection: reserved SFLOAT values are specific **full 16-bit encodings** and must be compared against the raw value before any decoding. Checking only the masked 12-bit mantissa field would incorrectly reject valid numbers whose lower 12 bits match a sentinel pattern but whose exponent is nonzero, for example, `0x17FF` has mantissa bits `0x7FF` that match the NaN sentinel `0x07FF`, but its exponent `0x1` makes it a valid number (mantissa=2047, exponent=1, value=20470). Weight and heart rate do not use this decoder. See §9.4 for their respective encoding formats.
 
@@ -440,7 +440,7 @@ static inline float parseSfloat(uint16_t raw) {
 
 **Simulating a threshold trip.** The fastest way to test alert delivery: set `bp_systolic_high` to `100` in the Fleet environment — any normal BP reading will then trip `bp_high`. After the next inbound sync pulls the new value, take a BP measurement and confirm that both a `bp.qo` Note and a `vitals_alert.qo` Note appear in Notehub within a cellular session-establishment window (typically 15–60 s). Reset the threshold to `160` when done.
 
-**Verifying BLE connectivity.** Open the Arduino serial monitor at 115200 baud (**debug build only** — set `DEBUG_VITALS=1` and `ALLOW_DEBUG_BUILD` per §6.1; the default shipping build emits no serial output). Each scan hit, connection, and characteristic subscription prints a `[BLE]` line; each reading prints a `[VITALS]` line. If no devices appear, confirm the BLE health device is in measurement-ready state (most BLE health devices only advertise immediately after a measurement is initiated) and that it implements the standard Bluetooth SIG service UUID for its category.
+**Verifying BLE connectivity.** Open the Arduino serial monitor at 115200 baud (**debug build only** — set `DEBUG_VITALS=1` and `ALLOW_DEBUG_BUILD` per §7.1; the default shipping build emits no serial output). Each scan hit, connection, and characteristic subscription prints a `[BLE]` line; each reading prints a `[VITALS]` line. If no devices appear, confirm the BLE health device is in measurement-ready state (most BLE health devices only advertise immediately after a measurement is initiated) and that it implements the standard Bluetooth SIG service UUID for its category.
 
 **Power validation with Mojo.** Splice the [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) inline between the USB-C supply and the Notecarrier F's power input. The hub operates in two mutually exclusive states plus a recurrent burst:
 

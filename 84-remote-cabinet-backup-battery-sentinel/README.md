@@ -232,7 +232,7 @@ The firmware is split across three files in `firmware/cabinet_battery_sentinel/`
 | `cabinet_battery_sentinel_helpers.h` | All `#define` constants (including `PRODUCT_UID`), `SentinelState` struct, extern globals, function prototypes |
 | `cabinet_battery_sentinel_helpers.cpp` | All helper function implementations |
 
-### 6.1 Installing and flashing
+### 7.1 Installing and flashing
 
 **Dependencies:**
 
@@ -267,7 +267,7 @@ After upload, open the serial monitor at **115200 baud**. On each wake the firmw
 
 Then the host powers off for the sample interval and the monitor goes quiet. `INA228 FAIL` or `NTC open/shorted` messages indicate a wiring problem on those sensors. If the INA228 init fails, both INA228 readings (voltage and current) are skipped for that sample — the summary accumulates only valid samples.
 
-### 6.2 Modules
+### 7.2 Modules
 
 | Responsibility | Where |
 |---|---|
@@ -282,7 +282,7 @@ Then the host powers off for the sample interval and the monitor goes quiet. `IN
 | Immediate-sync alert emission | `sendAlert` (helpers.cpp) |
 | State persistence and host sleep | `sleepHost` → `NotePayloadSaveAndSleep` (helpers.cpp) |
 
-### 6.3 Sensor reading strategy
+### 7.3 Sensor reading strategy
 
 **INA228 (voltage and current).** The INA228 loses power while the Cygnet is sleeping, so it's re-initialised on every wake with `begin()` followed by `setShunt(0.015, 8.0)`. The calibration call programs the chip with the shunt resistance and full-scale current. Single-point reads of `readBusVoltage()`, `readShuntVoltage()`, and `readCurrent()` take well under 10 ms. Current is *signed* at the firmware level: positive values mean the charger is supplying current, negative values mean the battery is discharging. This sign convention makes `power_outage` detection trivially simple — just a threshold comparison against `g_dischargeMa`.
 
@@ -296,7 +296,7 @@ The INA228 has an internal power register, but this design does not read it; `po
 
 **Charge balance and SoC.** The INA228's hardware charge accumulator resets every time the chip powers up — which happens on every wake cycle since the Cygnet's 3.3 V rail is gated. Instead, the firmware accumulates charge in software: `chargeAh += (curr_mA / 1000) × (sample_interval_sec / 3600)` each cycle. The per-window result appears as `charge_ah` in the summary note: a small positive value during normal float, a large negative value during a power outage. `charge_ah` is a **per-window delta, not state-of-charge**. State-of-charge is maintained separately in `soc_pct`: on each wake the same current-integration delta is divided by `usable_capacity_ah` and added to the running SoC estimate, which persists across sleep cycles in Notecard flash. `soc_pct` in the summary note carries `−9999` (SUMMARY_INVALID_SENTINEL) until the operator commissions a starting SoC via `soc_pct_init`; see §6 for commissioning steps and §9 for accuracy caveats.
 
-### 6.4 Event payload design
+### 7.4 Event payload design
 
 `battery_summary.qo` is [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates), giving it a fixed wire schema and a ~3–5× smaller on-wire footprint than free-form JSON — material for a device that will send 24 notes per day for years. `battery_alert.qo` is untemplated and uses `sync:true` for immediate delivery.
 
@@ -308,13 +308,13 @@ Field semantics:
 
 Example JSON is shown in the Quickstart section above.
 
-### 6.5 Low-power strategy
+### 7.5 Low-power strategy
 
 The Cygnet is fully power-gated by [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) for the full 120-second sample interval. The host does not delay or MCU-sleep — it powers off entirely, leaving only the Notecard active at its own published ~8 µA idle current. This is a Notecard-datasheet figure; the actual current drawn from the 5 V supply during idle (as measured by Mojo on the assembled device) will be higher, because it includes the Notecard's ~8 µA plus the quiescent current of the DC-DC converter and Notecarrier CX regulators. Firmware state is serialised into Notecard flash by `NotePayloadSaveAndSleep` before the host shuts down, and deserialised by `NotePayloadRetrieveAfterSleep` on the next wake, so the rolling window accumulates correctly across hundreds of sleep cycles per day.
 
 The Notecard itself is set to `periodic` mode with `outbound:60`. Summary notes queue in the on-device flash store and ship in a single cellular session once per hour, keeping radio duty-cycle low. Alert notes with `sync:true` bypass the outbound timer and wake the radio immediately — but because alert cooldowns prevent re-firing for 30 minutes of wall-clock time (stored as remaining seconds in the persistent state and decremented by the sample interval on each wake), even a sustained fault doesn't generate continuous radio wakes — and the 30-minute window holds regardless of whether `sample_interval_sec` is tuned to 30 s or 2 min.
 
-### 6.6 Retry and error handling
+### 7.6 Retry and error handling
 
 - **Notecard configuration.** The initial `hub.set` in `notecardConfigure()` uses `sendRequestWithRetry(req, 5)` — a 5-second retry window covers the cold-boot I2C race where the STM32 comes up before the Notecard has finished initialising. `note.template` registration checks the boolean return value of `sendRequest` and logs a debug message on failure. Both the clean-boot path and the invalid-state-segment recovery path call `doFirstBoot()` so hub configuration and the Note template are never left stale after a firmware update that changes the state struct layout.
 - **Environment variable fetch.** `fetchEnvOverrides()` calls `requestAndResponse` and inspects the `err` field before reading the body; a Notecard-side error (e.g. not yet associated with Notehub) returns early rather than silently leaving stale threshold values from a corrupted response. The `hub.set` re-apply block in `setup()` only updates `state.lastSummaryMin` after `sendRequest` confirms delivery, so a transient I2C fault doesn't desynchronise the recorded cadence from the Notecard's actual setting.
@@ -325,7 +325,7 @@ The Notecard itself is set to `periodic` mode with `outbound:60`. Summary notes 
 - **Env var range clamping.** `g_sampleSec` is clamped to [30, 3600] and `g_summaryMin` to [5, 1440] so a misconfigured variable cannot produce absurd sleep intervals or an unreachable summary window. When `sample_interval_sec` changes mid-window, `windowElapsedSec` is reset so the next summary covers exactly the newly configured interval rather than an unintended hybrid duration.
 - **All six battery-condition rules and the sensor-health alert** use separate cooldown counters and fire independently. A battery that is simultaneously low-voltage and overtemperature fires both alerts; neither suppresses the other.
 
-### 6.7 Key code snippet 1 — template registration
+### 7.7 Key code snippet 1 — template registration
 
 The template registers the `battery_summary.qo` schema as a fixed-length wire record, compressing every Note to a fixed byte count for ~3–5× smaller over-the-air footprint. Format codes use the notation `<type><decimals>`:
 - `14.2` = 4-byte IEEE-754 float, encoded to 2 decimal places on the wire (e.g. `13.65` V becomes two bytes instead of the full float)
@@ -353,7 +353,7 @@ JAddNumberToObject(body, "samples",     12);
 notecard.sendRequest(req);
 ```
 
-### 6.8 Key code snippet 2 — immediate power-outage alert
+### 7.8 Key code snippet 2 — immediate power-outage alert
 
 `sync:true` tells the Notecard to wake the radio immediately instead of waiting for the next outbound window. An operator can be notified within one sample interval (120 seconds at default settings) plus cellular session-establishment time (~15–60 seconds typical on LTE-M) after a current reversal crosses the `discharge_ma` threshold, so roughly two to three minutes end-to-end from the moment mains fails to the alert landing in Notehub at default settings. Reduce `sample_interval_sec` via env var if a shorter detection window is needed.
 
@@ -369,7 +369,7 @@ JAddNumberToObject(body, "temp_c",  temp);
 notecard.sendRequest(req);
 ```
 
-### 6.9 Key code snippet 3 — sleep and state persistence
+### 7.9 Key code snippet 3 — sleep and state persistence
 
 `NotePayloadSaveAndSleep` serialises the `SentinelState` struct into Notecard flash and issues a `card.attn` sleep command. On the next wake, `NotePayloadRetrieveAfterSleep` and `NotePayloadGetSegment` restore the struct — rolling averages, window extremes, alert cooldowns, and charge balance all survive intact.
 

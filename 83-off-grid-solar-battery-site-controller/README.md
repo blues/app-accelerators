@@ -261,7 +261,7 @@ Five files:
 - [`firmware/solar_battery_controller/solar_battery_controller_notecard_helpers.h`](firmware/solar_battery_controller/solar_battery_controller_notecard_helpers.h) — `PersistState` struct, all configuration constants, and Notecard I/O declarations
 - [`firmware/solar_battery_controller/solar_battery_controller_notecard_helpers.cpp`](firmware/solar_battery_controller/solar_battery_controller_notecard_helpers.cpp) — Notecard I/O implementation (`hub.set`, templates, env vars, Note queuing)
 
-### 6.1 Installing and flashing
+### 7.1 Installing and flashing
 
 **Dependencies:**
 
@@ -291,7 +291,7 @@ arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET \
 
 After upload, open the serial monitor at **115200 baud**. On first boot you'll see the Notecard configuration log; after that, each 15-minute wake prints a one-line `[summary]` or `[alert]` entry, then goes quiet as the host re-sleeps.
 
-### 6.2 Modules
+### 7.2 Modules
 
 | Responsibility | Where |
 |---|---|
@@ -303,7 +303,7 @@ After upload, open the serial monitor at **115200 baud**. On first boot you'll s
 | Summary Note construction and emission | `sendSummary` |
 | Persistent state serialisation across sleep cycles | `PersistState` struct + `NotePayloadSaveAndSleep` / `NotePayloadRetrieveAfterSleep` |
 
-### 6.3 VE.Direct reading strategy
+### 7.3 VE.Direct reading strategy
 
 **VE.Direct protocol primer.** Victron's VE.Direct is a one-wire async text protocol at 19200 baud 8N1. The device broadcasts one frame per second — no polling, no handshake. Each frame is a series of `LABEL<tab>VALUE<CR><LF>` lines terminated by a `Checksum<tab><byte><CR><LF>` line. The checksum byte makes the sum of all bytes in the frame (including the `Checksum` line itself) equal zero modulo 256. On a healthy bus you get 3–4 complete frames in a 3-second window.
 
@@ -311,7 +311,7 @@ After upload, open the serial monitor at **115200 baud**. On first boot you'll s
 
 **Why not poll both simultaneously?** VE.Direct is a unidirectional broadcast. Both devices are always transmitting; we just listen to one at a time. Reading them sequentially adds ~6 seconds of active time per wake cycle, which is negligible against a 15-minute sleep interval.
 
-### 6.4 Event payload design
+### 7.4 Event payload design
 
 `solar_summary.qo` uses a [Note template](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) registered at first boot. Templated Notes are stored as fixed-length records on the Notecard rather than free-form JSON, reducing wire size by roughly 3–5× — meaningful on a system that will run for years on a prepaid cellular SIM. Every field in the template schema is **always present** in every Note body, using explicit sentinel values when no valid samples were collected for that metric in the window:
 
@@ -330,7 +330,7 @@ This fixed-schema approach follows established Blues reference design practice: 
 | `load_high` | load draw W | SoC % | PV power W |
 | `harvest_deficit` | avg SoC % over window | consecutive windows without Float/Absorb | today's yield kWh |
 
-### 6.5 Low-power strategy
+### 7.5 Low-power strategy
 
 The site is battery-powered; power budget matters. The host MCU spends almost all of its time completely off. After each wake cycle, `NotePayloadSaveAndSleep` serialises the `PersistState` struct to Notecard flash and issues a [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) sleep request that cuts power to the host entirely. When the ATTN timer fires 15 minutes later (default), the Notecarrier CX re-applies power, the Cygnet re-enters `setup()` from cold, and `NotePayloadRetrieveAfterSleep` restores the accumulated state. From the firmware's perspective, the sleep call looks like a single function — the Notecard does the rest.
 
@@ -338,7 +338,7 @@ The Notecard's own idle draw is ~8–18 µA between cellular sessions (per the B
 
 Sampling and transmission cadences are deliberately decoupled: the device samples every 15 minutes but only opens a cellular session every 4 hours. Alert Notes bypass this by setting `sync:true`, which tells the Notecard to open a session immediately when an alert is queued — it won't wait for the next 4-hour window.
 
-### 6.6 Retry and error handling
+### 7.6 Retry and error handling
 
 - The first Notecard transaction in `notecardFirstBoot` uses `notecard.sendRequestWithRetry(req, 5)` to survive the cold-boot I²C readiness race documented in the note-arduino library. The initial `env.get` inside `fetchEnvOverrides` is wrapped in its own 5-attempt retry loop for the same reason — a restored (non-first) boot arrives at `fetchEnvOverrides` before any prior retry has had a chance to confirm the Notecard is ready.
 - `readVEDirectFrame` enforces a 3-second per-device timeout. If a device doesn't respond (powered off, disconnected, connector fault), the function returns `false` and the corresponding fields are skipped in `accumulate` — metrics derived only from the missing device will carry `0` valid samples for that window, and `sendSummary` will emit the sentinel value (−9999 for floats, −1 for `cs`) for those fields. A complete loss of SmartShunt data for an entire window is visible as −9999 on `bat_v`, `soc_pct`, etc. in `solar_summary.qo`, making the sensor fault obvious in Notehub.
@@ -346,7 +346,7 @@ Sampling and transmission cadences are deliberately decoupled: the device sample
 - Summary send failures do not open a new window. When `note.add` for `solar_summary.qo` fails, `samples_until_summary` is left at `0` (not reset). On the next wake the firmware retries the send *before* reading new VE.Direct data, so the closed window's averages are never mixed with fresh readings. `resetAccumulators()` and the window-open only happen after a confirmed successful queue.
 - Environment variable clamp logic in `fetchEnvOverrides` rejects `sample_interval_sec` values outside 60–3600 and `report_interval_min` values outside 15–1440, preventing operator typos from making the device unreachable.
 
-### 6.7 Key code snippet 1: Note template registration
+### 7.7 Key code snippet 1: Note template registration
 
 Templates turn each summary Note into a fixed-length on-wire record. The placeholder values encode the wire type: `14.1` = 4-byte IEEE-754 float; `14` = 4-byte signed integer; `12` = 2-byte signed integer.
 
@@ -365,7 +365,7 @@ JAddNumberToObject(body, "cs",         12);
 notecard.sendRequest(req);
 ```
 
-### 6.8 Key code snippet 2: immediate-sync alert
+### 7.8 Key code snippet 2: immediate-sync alert
 
 `sync:true` tells the Notecard to bypass the next `outbound` window and open a cellular session immediately.
 
@@ -381,7 +381,7 @@ JAddNumberToObject(body, "v3",    shunt.bat_w);
 notecard.sendRequest(req);
 ```
 
-### 6.9 Key code snippet 3: sleep between samples
+### 7.9 Key code snippet 3: sleep between samples
 
 `NotePayloadSaveAndSleep` writes the state struct to Notecard flash and arms the ATTN timer to cut host power for `sample_interval_sec` seconds. The next call to `NotePayloadRetrieveAfterSleep` in the subsequent `setup()` rehydrates it.
 
@@ -393,7 +393,7 @@ NotePayloadSaveAndSleep(&desc, state.sample_interval_sec, NULL);
 delay(state.sample_interval_sec * 1000UL);
 ```
 
-### 6.10 Key code snippet 4: VE.Direct load computation
+### 7.10 Key code snippet 4: VE.Direct load computation
 
 Load draw is derived algebraically rather than measured directly:
 
