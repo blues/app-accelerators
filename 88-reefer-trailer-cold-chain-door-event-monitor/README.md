@@ -1,5 +1,7 @@
 # Reefer Trailer Cold-Chain & Door-Event Monitor
 
+![Reefer Trailer Cold-Chain & Door-Event Monitor banner](banner.png)
+
 <Note>
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Reefer%20Trailer%20Cold-Chain%20%26%20Door-Event%20Monitor).
@@ -8,7 +10,7 @@ This reference application is intended to provide inspiration and help you get s
 
 This project is a [loss prevention](https://blues.com/loss-prevention/) reference design that keeps continuous watch over refrigerated (**reefer**) trailers — catching temperature excursions before a load is spoiled and logging every door event before a pallet walks out the back. Two DS18B20 temperature probes and a magnetic door reed switch feed a Blues Notecarrier CX, which packages sensor events and hands them to a Notecard for [Skylo](https://www.skylo.tech/resources/geographical-coverage) for multi-network delivery: cellular when a tower is in range, Skylo satellite when it isn't.
 
-**What you'll have when you're done:** a weatherproof, trailer-powered monitor that samples cargo temperature every minute, queues each sample locally for Notehub delivery on the next outbound session (`trailer_log_cell.qo`, arriving in Notehub in batches, default once per hour), fires an alert on the next sample cycle (up to ~60 seconds after the event, plus network-establishment time) when a door opens or a temperature threshold is breached, and ships hourly compliance summaries to Notehub over cellular or WiFi. Per-sample logs and hourly summaries use non-NTN-compatible Notefiles; the Notecard discards their queued Notes when connecting via NTN, so they never consume the bundled satellite data budget. On periodic hub sessions over NTN — which occur when terrestrial coverage is unavailable — only pending alert Notes carry payload data over the satellite link.
+**What you'll have when you're done:** a weatherproof, trailer-powered monitor that samples cargo temperature every minute, queues each sample locally for Notehub delivery on the next outbound session (arriving in the cloud/Notehub in batches, default once per hour), fires an alert on the next sample cycle (up to ~60 seconds after the event, plus network-establishment time) when a door opens or a temperature threshold is breached, and ships hourly compliance summaries to Notehub over cellular or WiFi. Per-sample logs and hourly summaries use cellular/WiFi-only Notefiles; the Notecard discards their queued Notes when connecting via NTN, so they never consume the bundled satellite data budget. On periodic hub sessions over NTN — which occur when terrestrial coverage is unavailable — only pending alert Notes carry payload data over the satellite link.
 
 **Energy footprint:** steady-state draw from a 12 V trailer supply is roughly 30–60 mAh per 24 h (dominated by one hourly cellular session of ~15–45 seconds at ~250 mA average). NTN satellite sessions consume more per event due to longer link establishment, but alert-only delivery over satellite keeps the 10 KB data budget intact. Commissioning validates actual consumption with [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link). See [§9](#9-validation-and-testing).
 
@@ -65,7 +67,7 @@ The [Notecard for Skylo (NOTE-NBGLWX)](https://shop.blues.com/products/notecard-
    arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/reefer_cold_chain_monitor/
    arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbmodem* firmware/reefer_cold_chain_monitor/
    ```
-   See [§6.1](#61-installing-and-flashing) for full dependency list and IDE steps.
+   See [§7.1](#71-installing-and-flashing) for full dependency list and IDE steps.
 5. **Watch** — open Notehub → your project → **Events**. You should see `_session.qo` within 1 minutes, then on the next outbound window (default ~60 minutes): batch of `trailer_log_cell.qo` Notes (one per 60 seconds sample), `trailer_summary_cell.qo` (hourly), and any alerts as `trailer_alert.qo` (immediate sync).
 
 Here is a sample Note this device emits:
@@ -151,7 +153,7 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
 
 ## 6. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub). Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:reefer-monitor`.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:reefer-monitor`.
 
 2. **Set the ProductUID in firmware.** Open [`reefer_cold_chain_monitor_helpers.h`](firmware/reefer_cold_chain_monitor/reefer_cold_chain_monitor_helpers.h) and replace the empty string on the `#define PRODUCT_UID ""` line with your value.
 
@@ -213,7 +215,7 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
 
 The firmware spans three files: [`reefer_cold_chain_monitor.ino`](firmware/reefer_cold_chain_monitor/reefer_cold_chain_monitor.ino) contains `setup()`, `loop()`, and the top-level sample-cycle driver; [`reefer_cold_chain_monitor_helpers.h`](firmware/reefer_cold_chain_monitor/reefer_cold_chain_monitor_helpers.h) defines constants, `AppState`, clamp helpers, and function prototypes; and [`reefer_cold_chain_monitor_helpers.cpp`](firmware/reefer_cold_chain_monitor/reefer_cold_chain_monitor_helpers.cpp) implements sensor drivers, the door and temperature state machines, and all Notecard communication.
 
-### 6.1 Installing and flashing
+### 7.1 Installing and flashing
 
 **Dependencies:**
 
@@ -240,11 +242,11 @@ arduino-cli upload  -b STMicroelectronics:stm32:Blues:pnum=CYGNET \
 
 The exact FQBN is whatever the current `stm32duino` core ships for the Cygnet variant — the `board listall` command above is the authoritative source for your specific core version. Replace `/dev/cu.usbmodem*` with your actual port (`COMx` on Windows, `/dev/ttyACM*` on Linux). Open the serial monitor at **115200 baud** to watch `[boot]`, `[sensor]`, `[door]`, `[temp]`, `[summary]`, and `[alert]` log lines.
 
-### 6.2 Template format codes (compact encoding)
+### 7.2 Template format codes (compact encoding)
 
 The alert Notefile uses [compact format](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) — binary-encoded fields with fixed width to minimize satellite data consumption. Field types are named in the `note.template` request: `TFLOAT32` (4-byte IEEE-754), `TINT16` (2-byte signed), `TUINT32` (4-byte unsigned), `TBOOL` (boolean). These appear in the code as numeric constants: `14.1` = `TFLOAT32`, `12` = `TINT16`, `24` = `TUINT32`. The alert Notefile's compact+port encoding omits the standard JSON envelope and delivers only the declared body fields as binary records — critical for the 10 KB satellite data budget. The same format is fully supported on cellular; no special firmware handling needed.
 
-### 6.3 Modules
+### 7.3 Modules
 
 | Responsibility | Function |
 |---|---|
@@ -262,15 +264,15 @@ The alert Notefile uses [compact format](https://dev.blues.io/notecard/notecard-
 | Epoch time from Notecard RTC | `getEpochTime` |
 | State persist/restore | `NotePayloadSaveAndSleep` / `NotePayloadRetrieveAfterSleep` |
 
-### 6.4 Sensor reading strategy
+### 7.4 Sensor reading strategy
 
 **DS18B20 probes.** Both sensors share the single 1-Wire bus on A0. `probes.requestTemperatures()` issues a simultaneous conversion to both sensors and blocks ~750 milliseconds at 12-bit resolution (0.0625 °C steps). `getTempCByIndex(0)` and `getTempCByIndex(1)` return the two readings. The DallasTemperature library returns `DEVICE_DISCONNECTED_C` (−127 °C) for any probe that fails to respond; the firmware treats readings below `TEMP_INVALID + 1.0` as invalid and excludes them from summary averages without affecting the other probe's accumulation.
 
 **Door reed switch.** A simple `digitalRead(DOOR_PIN)` per sample. The Adafruit #375 is a normally-open switch; with `INPUT_PULLUP` and the switch between `A1` and `GND`, a closed door reads LOW and an open door reads HIGH. Instantaneous reads are appropriate here because a real trailer door remains in each state for seconds to minutes.
 
-### 6.5 Event payload design
+### 7.5 Event payload design
 
-Three [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefiles hold the data produced by the firmware. The alert Notefile (`trailer_alert.qo`) uses [compact format](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) with a port assignment — compact encoding omits the standard Note metadata envelope and stores only declared body fields as fixed-length binary records, which is critical for the 10 KB satellite data budget, and a port number is required for NTN (satellite) mode. Compact+port is also fully supported on cellular, so the same Notefile is delivered correctly over either transport. The cellular/WiFi-only Notefiles (`trailer_log_cell.qo` and `trailer_summary_cell.qo`) are template-backed for consistent schema enforcement but use standard JSON encoding without a port, and carry `delete:true`. Per the [Blues Satellite Best Practices](https://dev.blues.io/starnote/satellite-best-practices/) documentation, a non-NTN-compatible Notefile template (no `format` or `port`) with `delete:true` causes the Notecard to discard its queued Notes at sync time when NTN is the active transport, so these Notefiles are never transmitted over satellite and do not consume the bundled satellite data budget. (The `_cell` suffix in these Notefile names denotes terrestrial transport, they are never transmitted over NTN.)
+Three [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefiles hold the data produced by the firmware. The alert Notefile (`trailer_alert.qo`) uses compact format with a port assignment — compact encoding omits the standard Note metadata envelope and stores only declared body fields as fixed-length binary records, which is critical for the 10 KB satellite data budget, and a port number is required for NTN (satellite) mode. Compact+port is also fully supported on cellular, so the same Notefile is delivered correctly over either transport. The cellular/WiFi-only Notefiles (`trailer_log_cell.qo` and `trailer_summary_cell.qo`) are template-backed for consistent schema enforcement but use standard JSON encoding without a port, and carry `delete:true`. Per the [Blues Satellite Best Practices](https://dev.blues.io/starnote/satellite-best-practices/) documentation, a cellular/WiFi-only Notefile template (no `format` or `port`) with `delete:true` causes the Notecard to discard its queued Notes at sync time when NTN is the active transport, so these Notefiles are never transmitted over satellite and do not consume the bundled satellite data budget. (The `_cell` suffix in these Notefile names denotes terrestrial transport, they are never transmitted over NTN.)
 
 **`trailer_log_cell.qo` — per-sample, queued, cellular/WiFi only:**
 ```json
@@ -306,15 +308,15 @@ Alert type values: `door_open` (door just opened), `door_close` (door just close
 
 The `door_open_sec` field is `TUINT32` (4-byte unsigned integer) in the template, supporting door-open durations up to ~136 years. A probe that fails to respond appears as `−127` in the temperature fields of any Note type — `trailer_log_cell.qo`, `trailer_summary_cell.qo`, and `trailer_alert.qo` alike, and should be treated as a sensor-fault flag, not a real temperature. Door-event alerts (`door_open`, `door_close`, `door_open_long`) include the live probe readings sampled at the moment the alert fires, so `−127` in a door alert means the probe was genuinely unresponsive at that instant, not that temperatures were intentionally omitted. `lat` and `lon` are `TFLOAT32` fields carrying the last GNSS fix; both are `0.0` when no fix is available — treat that pair as a no-fix sentinel.
 
-### 6.6 Power and sync strategy
+### 7.6 Power and sync strategy
 
 Even though the trailer has a 12 V supply, keeping the host MCU asleep between samples dramatically reduces heat in the enclosure and makes the firmware structure port cleanly to a battery-backed variant (Scoop or otherwise). After each sample cycle the host calls `NotePayloadSaveAndSleep`, a `note-arduino` helper that serializes the in-RAM `AppState` struct into Notecard flash and issues a [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) sleep request to cut host power for `sample_interval_sec` seconds.
 
 The Notecard itself idles at ~8–18 µA between sessions. Per-sample log Notes and hourly summary Notes accumulate in the Notecard's on-device queue and flush in a single outbound session. Door and temperature alerts are enqueued and then trigger a `hub.sync` request, which bypasses the outbound timer and wakes the radio immediately using whatever network is available — cellular if in range, NTN satellite otherwise.
 
-Sampling and transmission are deliberately decoupled: sensors sample every 60 seconds, but the radio connects only once per hour (plus on-demand for alerts). The hourly session also pulls fresh environment variables on the inbound cadence (default 120 minutes). When cellular is unavailable and the Notecard uses NTN for a periodic session, `trailer_log_cell.qo` and `trailer_summary_cell.qo` Notes are discarded at sync time — their non-NTN-compatible `delete:true` templates cause the Notecard to clear those queues rather than transmit over satellite, so only pending alert Notes carry payload data over the satellite link. Session establishment overhead (Skylo protocol + housekeeping) still occurs on every NTN session regardless of alert payload.
+Sampling and transmission are deliberately decoupled: sensors sample every 60 seconds, but the radio connects only once per hour (plus on-demand for alerts). The hourly session also pulls fresh environment variables on the inbound cadence (default 120 minutes). When cellular is unavailable and the Notecard uses NTN for a periodic session, `trailer_log_cell.qo` and `trailer_summary_cell.qo` Notes are discarded at sync time — their cellular/WiFi-only `delete:true` templates cause the Notecard to clear those queues rather than transmit over satellite, so only pending alert Notes carry payload data over the satellite link. Session establishment overhead (Skylo protocol + housekeeping) still occurs on every NTN session regardless of alert payload.
 
-### 6.7 Retry and error handling
+### 7.7 Retry and error handling
 
 - The first Notecard I²C transaction (in `hubConfigure`) uses `sendRequestWithRetry(req, 10)` to absorb the cold-boot race condition documented in the note-arduino library.
 - `readTemperatures` excludes any probe returning `DEVICE_DISCONNECTED_C` from all accumulation. If both probes fail for the entire summary window, all six temperature fields in the summary carry the `−127` sentinel rather than a misleading mean-of-zero.
@@ -322,9 +324,9 @@ Sampling and transmission are deliberately decoupled: sensors sample every 60 se
 - Alert deduplication: temperature alerts are rate-limited by `alert_cooldown_sec` (default 30 minutes) so a slow-drifting probe doesn't flood the downstream on-call channel.
 - Door open-long reminder fires once per open event (`door_long_alert_sent` flag in persisted state). A door that stays open across multiple sleep cycles produces exactly one reminder, not one per sample.
 
-### 6.8 Key code snippet 1: compact template definition
+### 7.8 Key code snippet 1: compact template definition
 
-Templates registered at first boot make each Note a fixed-length binary record optimized for satellite transport. The `"compact"` format and `port` assignment on the alert Notefile satisfy NTN requirements and are also fully supported on cellular — the same file is delivered correctly over either transport. The cellular/WiFi-only Notefiles do not use compact format or a port, and carry `delete:true`: the Notecard discards queued Notes from non-NTN-compatible Notefiles when NTN is the active transport at sync time (see [Blues Satellite Best Practices](https://dev.blues.io/starnote/satellite-best-practices/)).
+Templates registered at first boot make each Note a fixed-length binary record optimized for satellite transport. The `"compact"` format and `port` assignment on the alert Notefile satisfy NTN requirements and are also fully supported on cellular — the same file is delivered correctly over either transport. The cellular/WiFi-only Notefiles do not use compact format or a port, and carry `delete:true`: the Notecard discards queued Notes from cellular/WiFi-only Notefiles when NTN is the active transport at sync time (see [Blues Satellite Best Practices](https://dev.blues.io/starnote/satellite-best-practices/)).
 
 ```cpp
 // Alert template (trailer_alert.qo) — compact + port, no delete:true
@@ -348,7 +350,7 @@ notecard.sendRequest(req);
 // Per-sample log template (trailer_log_cell.qo) — cellular/WiFi only
 req  = notecard.newRequest("note.template");
 JAddStringToObject(req, "file",   "trailer_log_cell.qo");
-JAddBoolToObject(req,   "delete", true);   // non-NTN-compatible: discarded when NTN is active transport
+JAddBoolToObject(req,   "delete", true);   // non-NTN: discarded when NTN is active transport
 body = JAddObjectToObject(req, "body");
 JAddNumberToObject(body, "t1_c",      TFLOAT32);
 JAddNumberToObject(body, "t2_c",      TFLOAT32);
@@ -358,7 +360,7 @@ notecard.sendRequest(req);
 // Hourly summary template (trailer_summary_cell.qo) — cellular/WiFi only
 req  = notecard.newRequest("note.template");
 JAddStringToObject(req, "file",   "trailer_summary_cell.qo");
-JAddBoolToObject(req,   "delete", true);   // non-NTN-compatible: discarded when NTN is active transport
+JAddBoolToObject(req,   "delete", true);   // non-NTN: discarded when NTN is active transport
 body = JAddObjectToObject(req, "body");
 JAddNumberToObject(body, "t1_c",        TFLOAT32);
 JAddNumberToObject(body, "t2_c",        TFLOAT32);
@@ -371,7 +373,7 @@ JAddBoolToObject(body,   "door_open",   TBOOL);
 notecard.sendRequest(req);
 ```
 
-### 6.9 Key code snippet 2: immediate-sync alert
+### 7.9 Key code snippet 2: immediate-sync alert
 
 The alert Notefile is enqueued without `sync:true`; after the enqueue succeeds a `hub.sync` call wakes the radio immediately. On the NOTE-NBGLWX the Notecard selects cellular if in coverage and falls back to the Skylo satellite radio otherwise — the firmware never needs to know which. `getLocation()` reads the last GNSS fix so every alert is geo-stamped at the moment it fires.
 
@@ -408,7 +410,7 @@ if (done) {
 }
 ```
 
-### 6.10 Key code snippet 3: state persistence and sleep
+### 7.10 Key code snippet 3: state persistence and sleep
 
 `NotePayloadSaveAndSleep` serializes `AppState` into Notecard flash and then issues `card.attn` to cut host power. On the next wake, `setup()` runs from cold and `NotePayloadRetrieveAfterSleep` restores the struct — door timestamps, accumulator sums, alert epochs, and all.
 
