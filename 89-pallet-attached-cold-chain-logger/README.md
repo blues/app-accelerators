@@ -462,9 +462,9 @@ The figures in the table below are from two different sources — the boundary i
 | Phase | Radio | Source | Expected |
 |---|---|---|---|
 | Host + sensors active (~5–10 seconds per wake) | n/a | Full-system estimate | 15–30 mA |
-| Notecard idle (between radio sessions) | n/a | **NOTE-NBGLWX datasheet** | < 0.1 mA total system |
-| Hourly outbound sync, small note batch | LTE-M / 2G | Full-system estimate | 150–300 mA average, 15–45 s burst |
-| Hourly outbound sync, small note batch | WiFi | Full-system estimate | 80–150 mA average, 5–20 s burst |
+| Notecard idle (between radio sessions) | n/a | NOTE-NBGLWX datasheet | < 0.1 mA total system |
+| Hourly outbound sync, small Note batch | LTE-M / 2G | Full-system estimate | 150–300 mA average, 15–45 s burst |
+| Hourly outbound sync, small Note batch | WiFi | Full-system estimate | 80–150 mA average, 5–20 s burst |
 | Satellite session (NTN) | Skylo NTN | Full-system estimate | 250–450 mA during acquisition + transfer; acquisition 1–5 min with clear sky; not available inside enclosed metal or below grade |
 
 > **Notecard datasheet figures:** authoritative idle and peak-session current for the NOTE-NBGLWX are published in the [NOTE-NBGLWX datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/). The Skylo NTN power profile differs meaningfully from standard cellular Notecards; consult the datasheet for the authoritative per-mode numbers. The table rows labeled "full-system estimate" add Cygnet host and sensor draws based on typical STM32L4 and sensor datasheet values and should be treated as order-of-magnitude guidance, not published specifications.
