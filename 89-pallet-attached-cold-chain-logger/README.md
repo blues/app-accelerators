@@ -59,8 +59,8 @@ When the state changes, a `cargo_state.qo` note is dispatched immediately via `s
 
 1. **Notehub** — create a [Notehub project](https://notehub.io), copy its ProductUID.
 2. **Wire the bench rig** — Notecarrier CX + Notecard for Skylo + MAX31865 on SPI + PT100 probe + SHT41 on I²C + VEML7700 on I²C. Full pinout in [§5](#5-wiring-and-assembly).
-3. **Edit one line** in [`firmware/cargo_cold_chain_monitor/cargo_cold_chain_monitor_helpers.h`](firmware/cargo_cold_chain_monitor/cargo_cold_chain_monitor_helpers.h) — set `PRODUCT_UID` to your project's value.
-4. **Flash** — run `arduino-cli board listall | grep -i cygnet` to confirm the FQBN for your installed STM32 core, then compile and upload. Full instructions in [§6.1](#61-installing-and-flashing).
+3. **Edit one line** in [`firmware/cargo_cold_chain_monitor/cargo_cold_chain_monitor_helpers.h`](firmware/cargo_cold_chain_monitor/cargo_cold_chain_monitor_helpers.h) — set `PRODUCT_UID` to your Notehub project's value.
+4. **Flash** — run `arduino-cli board listall | grep -i cygnet` to confirm the FQBN for your installed STM32 core, then compile and upload. Full instructions in [§7.1](#71-installing-and-flashing).
 5. **Watch** — Notehub → your project → **Events** tab. You should see `_session.qo` on first contact, `cargo_data.qo` after the first summary interval, `cargo_log.qo` entries batching with each outbound sync, `cargo_state.qo` on the first confirmed dwell or motion event, and any threshold trips as `cargo_alert.qo` within one sample interval of the triggering event.
 
 > **First event timeline:** On power-up, the device acquires time and signals contact via `_session.qo` within 1–2 minutes (cellular/WiFi) or several minutes (Skylo NTN with clear sky). The first `cargo_log.qo` entry appears one sample interval later (~5 minutes). The first `cargo_data.qo` summary appears ~60 minutes after the device obtains a valid epoch from Notehub's `card.time` API.
@@ -85,7 +85,6 @@ Here is a sample Note this device emits:
 }
 ```
 
-
 ## 4. Hardware Requirements
 
 | Part | Qty | Rationale |
@@ -98,9 +97,9 @@ Here is a sample Note this device emits:
 | [Adafruit VEML7700 Lux Sensor (#4162)](https://www.adafruit.com/product/4162) | 1 | 16-bit I²C ambient light sensor for interior cargo-bay light / door-opened detection. Mounted behind a polycarbonate lens on the **cargo-bay-facing wall** of the enclosure so it reads near-zero lux when the container or reefer is sealed and reports a significant lux reading when the cargo door is opened and light enters the compartment. A missing sensor returns `-9999` in `cargo_data.qo` and `cargo_log.qo`; the `lux` field is omitted from `cargo_alert.qo` when unavailable. |
 | [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) *(bench bring-up only)* | 0–1 | Coulomb counter inline on the VBAT rail for ground-truth energy validation. Not deployed to the field. See [§9](#9-validation-and-testing). |
 | 3.7 V Li-Po battery, 2000 mAh (e.g., [Adafruit #2011](https://www.adafruit.com/product/2011)) | 1 | Portable power for multi-week shipments. JST-PH 2-pin connector mates directly to the Notecarrier CX. See [§9](#9-validation-and-testing) for runtime estimates and [§11](#11-limitations-and-next-steps) for UN 38.3 / IATA transport compliance Notes. |
-| ABS IP67 enclosure with mounting flanges, ~115 mm × 65 mm × 40 mm ([Bud Industries PN-1322-CMB](https://www.budind.com/view/ABS+Plastic+Boxes/PN-1322-CMB), available at DigiKey / Mouser) | 1 | IP67-rated pallet-logger housing. Requires three enclosure openings: one M12 hole on the pallet-facing side wall for the PTFE vent plug (SHT41 air exchange only); one separately drilled and tapped 3/8-18 NPT hole on the same pallet-facing side wall for the PT100 probe entry; one 20 mm hole on the **cargo-bay-facing wall** for the VEML7700 polycarbonate lens window. ABS is easily machinable — the M12 hole accepts standard step or hole saws; the 3/8-18 NPT hole is drilled to the tap-drill size (approx. 9.5 mm / 3/8″) then threaded with a 3/8-18 NPT tap. |
+| ABS IP67 enclosure with mounting flanges | 1 | IP67-rated pallet-logger housing. Requires three enclosure openings: one M12 hole on the pallet-facing side wall for the PTFE vent plug (SHT41 air exchange only); one separately drilled and tapped 3/8-18 NPT hole on the same pallet-facing side wall for the PT100 probe entry; one 20 mm hole on the **cargo-bay-facing wall** for the VEML7700 polycarbonate lens window. ABS is easily machinable — the M12 hole accepts standard step or hole saws; the 3/8-18 NPT hole is drilled to the tap-drill size (approx. 9.5 mm / 3/8″) then threaded with a 3/8-18 NPT tap. |
 | Skylo NTN + cellular/WiFi antenna (**included with NOTE-NBGLWX**) | 1 | The NOTE-NBGLWX ships with its Skylo-certified multi-band flexible antenna, which attaches to the Notecard's `MAIN` u.FL port and covers both cellular (LTE-M) and Skylo NTN (S-Band / L-Band). **Use only the included antenna on the MAIN port.** Skylo certifies the NOTE-NBGLWX exclusively with the antenna provided in the kit. Mount inside the ABS enclosure with its face toward the sky. |
-| PTFE breathable membrane vent plug, M12, IP67 ([Amphenol LTW WVPL-G2](https://www.amphenol-ltw.com/product/stainless-steel-vent-plugs-series/), available at DigiKey / Mouser) | 1 | Allows the SHT41 to sample the surrounding cargo-bay air while maintaining IP67. Installs in the dedicated M12 vent hole on the pallet-facing side wall (hand-tight + one half-turn). The PT100 probe enters through its own separate 3/8-18 NPT tapped hole on the same wall. |
+| ePTFE breathable membrane vent plug, M12x1.5, metal, IP68/IP69K ([Amphenol LTW VENT-BJ005](https://amphenolltw.com/product-info/Vent/Vent.M12Metalic/VENT-BJ005), available at [DigiKey](https://www.digikey.com/en/products/detail/amphenol-ltw/VENT-BJ005/7102753)) | 1 | Allows the SHT41 to sample the surrounding cargo-bay air while maintaining the enclosure's IP67 seal. Installs in the dedicated M12 vent hole on the pallet-facing side wall (hand-tight + one half-turn). The PT100 probe enters through its own separate 3/8-18 NPT tapped hole on the same wall. |
 | PTFE thread sealant tape, ½ in width (e.g., Oatey 31403 or equivalent, available at any hardware store) | 1 roll | Seals the 3/8-18 NPT probe fitting into the tapped probe-entry hole in the pallet-facing enclosure wall. Apply 2–3 wraps to the probe's NPT threads before threading in. |
 | Clear polycarbonate disc, 20 mm diameter × 3 mm thick, with silicone RTV sealant ([McMaster-Carr 8560K171](https://www.mcmaster.com/8560K171/) or equivalent) | 1 | Optical window for the inward-facing VEML7700. Press into the 20 mm lens hole on the cargo-bay-facing wall and seal the perimeter with clear silicone RTV. |
 | STEMMA QT / Qwiic 4-pin JST-SH cable, 100 mm (e.g. [Adafruit #4210](https://www.adafruit.com/product/4210)) | 2 | Two cables required: one from the Notecarrier CX Qwiic port to any Qwiic port on the SHT41, and a second from the SHT41's pass-through Qwiic port to the VEML7700. |
@@ -162,7 +161,7 @@ Drill an M12 through-hole in the pallet-facing side panel for the PTFE vent plug
 
 2. **Set the ProductUID in firmware.** Open [`firmware/cargo_cold_chain_monitor/cargo_cold_chain_monitor_helpers.h`](firmware/cargo_cold_chain_monitor/cargo_cold_chain_monitor_helpers.h) and replace the empty string on the `#define PRODUCT_UID ""` line with your value.
 
-3. **Claim the Notecard.** Power the assembled unit. The Notecard associates itself with your Notehub project on the **first successful radio session over any available RAT** — cellular, WiFi, or Skylo NTN. The device appears in your project's **Devices** tab after that first session completes. Over cellular or WiFi in good coverage, this typically happens within a minute or two of power-on. Over Skylo NTN, first contact requires a clear, unobstructed view toward the equatorial sky; session acquisition can take several minutes to establish, and is not possible inside enclosed metal structures or below grade. If the unit powers on in a cellular dead zone and Skylo NTN is the first available RAT, allow additional time for the NTN session to acquire before expecting the device to appear in Notehub.
+3. **Claim the Notecard.** Power the assembled unit. The Notecard associates itself with your Notehub project on the **first successful radio session over any available RAT** — cellular, WiFi, or Skylo NTN. The device appears in your project's **Devices** tab after that first session completes. Over cellular or WiFi in good coverage, this typically happens within a minute or two of power-on. Over Skylo NTN, first contact requires a clear, unobstructed view toward the equatorial sky; session acquisition can take several minutes to establish, and is not possible inside enclosed metal structures or below grade. The Notecard MUST sync over cellular or WiFi once prior to NTN.
 
 > **WiFi provisioning (optional).** The Notecard for Skylo treats WiFi as its highest-priority radio when credentials are present, but credentials are **not** provisioned automatically. To provision WiFi, send a [`card.wifi`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-wifi) request to the Notecard via the in-browser Notecard terminal or the [Notecard CLI](https://dev.blues.io/tools-and-sdks/notecard-cli/):
 > ```json
@@ -260,7 +259,7 @@ Within a short time of first power-on the **Events** tab begins populating. Timi
 
 Single sketch: [`firmware/cargo_cold_chain_monitor/cargo_cold_chain_monitor.ino`](firmware/cargo_cold_chain_monitor/cargo_cold_chain_monitor.ino).
 
-### 6.1 Installing and flashing
+### 7.1 Installing and flashing
 
 **Dependencies:**
 
@@ -289,7 +288,7 @@ arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET \
 
 Open the serial monitor at **115200 baud** to watch `[cargo]` log lines. On the first cold boot you'll see Notecard configuration messages, then one `[cargo] T=X.XX C (PT100)` and `[cargo] RH=XX.X %` per wake. After the first summary interval you'll see `[cargo] summary sent — samples=N`.
 
-### 6.2 Modules
+### 7.2 Modules
 
 | Responsibility | Where in code |
 |---|---|
@@ -310,24 +309,24 @@ Open the serial monitor at **115200 baud** to watch `[cargo]` log lines. On the 
 | Persistent state across sleep cycles | `ColdChainState` struct + `NotePayloadSaveAndSleep` / `NotePayloadRetrieveAfterSleep` |
 | Epoch time for cooldowns and timestamps | `currentEpoch()` |
 
-### 6.3 Sensor reading strategy
+### 7.3 Sensor reading strategy
 
 - **MAX31865 / PT100.** `rtd.begin(MAX31865_4WIRE)` re-initializes the SPI peripheral on every wake (the device is re-powered with the host) in 4-wire mode to match the specified Omega PR-21C probe. 4-wire mode drives force current through the outer pair of leads and measures voltage across the inner pair, eliminating lead-resistance error — important for probe cable runs over 0.5 m. `rtd.temperature(MAX31865_RNOMINAL, MAX31865_RREF)` reads the RTD resistance and applies the Callendar–Van Dusen polynomial. `rtd.readFault()` checks for open-circuit (RTDINLOW), short-circuit (HIGHTHRESH), and reference-voltage faults; any non-zero fault sets `temp_c = INVALID_F` and clears the fault register so the next wake gets a fresh read. Valid temperature values are range-checked (−200 °C to +200 °C) before acceptance. The 430 Ω reference resistor on the Adafruit #3328 breakout matches the PT100 nominal range; the `MAX31865_RREF` and `MAX31865_RNOMINAL` constants in `helpers.h` must be updated if a PT1000 probe is substituted.
 - **SHT41 (humidity only).** `setPrecision(SHT4X_HIGH_PRECISION)` selects the ±1.8% RH mode. `getEvent()` returns both a temperature and a humidity struct; only the humidity channel is used — the PT100/MAX31865 is the authoritative temperature source. NaN guards are applied before accumulation.
 - **VEML7700.** Gain `VEML7700_GAIN_2` and integration time `VEML7700_IT_100MS` maximize sensitivity for the near-zero lux levels expected inside a sealed reefer or container. A missing VEML7700 returns `INVALID_F` (not 0.0) so a sensor fault is distinguishable from genuine darkness. The `light_exposure` alert and HANDLING state detection both skip when lux is `INVALID_F`.
 - **Accelerometer.** `card.motion` is called with `minutes: gSampleSec / 60` to retrieve a non-overlapping window covering exactly the elapsed sample interval. `sample_interval_sec` is always clamped to whole-minute multiples in env-var processing so the division is exact. Per-bucket motion counts are parsed in-place with `strtoul` pointer arithmetic so multi-digit counts (e.g., `"10"`) are handled correctly for any window length.
 
-### 6.4 Event payload design
+### 7.4 Event payload design
 
-**`cargo_data.qo`** — adaptive cadence, compact-templated. Notehub compact templates (registered in code at [§6.7](#67-key-code-snippet-1-compact-log-template) for `cargo_data.qo` and §6.7 for `cargo_log.qo`) reduce on-wire size from ~200 bytes (free JSON) to ~50 bytes per message, which meaningfully reduces satellite session overhead. During confirmed DWELL the effective interval is `summary_interval_min × dwell_batch_factor` (default 4 hours); during IN_TRANSIT and HANDLING the base `summary_interval_min` (default 60 minutes) applies. The `_time` field is preserved in the compact body so each record carries its own audit timestamp independent of Notehub's receive-time metadata.
+**`cargo_data.qo`** — adaptive cadence, compact-templated. Notehub compact templates (registered in code at [§7.7](#77-key-code-snippet-1-compact-log-template) for `cargo_data.qo` and §7.7 for `cargo_log.qo`) reduce on-wire size from ~200 bytes (free JSON) to ~50 bytes per message, which meaningfully reduces satellite session overhead. During confirmed DWELL the effective interval is `summary_interval_min × dwell_batch_factor` (default 4 hours); during IN_TRANSIT and HANDLING the base `summary_interval_min` (default 60 minutes) applies. The `_time` field is preserved in the compact body so each record carries its own audit timestamp independent of Notehub's receive-time metadata.
 
-**`cargo_log.qo`** — one entry per sample cycle, compact-templated on Notehub port 51 (defined at [§6.7](#67-key-code-snippet-1-compact-log-template)). Entries are queued for the regular outbound window — no extra satellite session per sample. Each entry carries `seq` (monotonic counter, incremented before every Note.add), `boot_seg` (cold-boot counter, incremented and persisted to `chain_boot.dbx` on every cold boot), and `chain_crc` (rolling hash computed per [§6.8](#68-key-code-snippet-2-integrity-chain-hash-update) over previous hash + seq + boot_seg + all sensor fields). The `_time` field is always included in each entry: the real sample epoch when valid time is available, or `0` as a documented pre-sync sentinel when the Notecard has not yet obtained time from Notehub. Writing `0` rather than omitting the field keeps the compact-template body consistent with the registered schema; downstream consumers should treat `_time == 0` as pre-sync and use Notehub's receive-time as the best available approximation for those entries. The `motion_valid` field (`1` or `0`) distinguishes a genuine zero-motion reading from a cycle where `card.motion` was unavailable — both cases store `motion = 0`, but `motion_valid = 0` signals missing data rather than confirmed stillness. The chain hash uses the stored `motion` value (which is `0` when `card.motion` is unavailable), so downstream replay is straightforward from the logged fields. A downstream verifier first groups entries by `boot_seg`, then replays the chain within each group using the algorithm at [§6.8](#68-key-code-snippet-2-integrity-chain-hash-update): `crc[n] = hash(crc[n-1], seq[n], boot_seg[n], temp[n], rh[n], lux[n], motion[n], state[n])`, starting from `crc[0]=0`. A seq gap within a group indicates a missed transmission; a chain mismatch indicates a modified or inserted record; a new `boot_seg` value marks a cold-boot boundary and starts a fresh chain from seed=0.
+**`cargo_log.qo`** — one entry per sample cycle, compact-templated on Notehub port 51 (defined at [§7.7](#77-key-code-snippet-1-compact-log-template)). Entries are queued for the regular outbound window — no extra satellite session per sample. Each entry carries `seq` (monotonic counter, incremented before every Note.add), `boot_seg` (cold-boot counter, incremented and persisted to `chain_boot.dbx` on every cold boot), and `chain_crc` (rolling hash computed per [§7.8](#78-key-code-snippet-2-integrity-chain-hash-update) over previous hash + seq + boot_seg + all sensor fields). The `_time` field is always included in each entry: the real sample epoch when valid time is available, or `0` as a documented pre-sync sentinel when the Notecard has not yet obtained time from Notehub. Writing `0` rather than omitting the field keeps the compact-template body consistent with the registered schema; downstream consumers should treat `_time == 0` as pre-sync and use Notehub's receive-time as the best available approximation for those entries. The `motion_valid` field (`1` or `0`) distinguishes a genuine zero-motion reading from a cycle where `card.motion` was unavailable — both cases store `motion = 0`, but `motion_valid = 0` signals missing data rather than confirmed stillness. The chain hash uses the stored `motion` value (which is `0` when `card.motion` is unavailable), so downstream replay is straightforward from the logged fields. A downstream verifier first groups entries by `boot_seg`, then replays the chain within each group using the algorithm at [§7.8](#78-key-code-snippet-2-integrity-chain-hash-update): `crc[n] = hash(crc[n-1], seq[n], boot_seg[n], temp[n], rh[n], lux[n], motion[n], state[n])`, starting from `crc[0]=0`. A seq gap within a group indicates a missed transmission; a chain mismatch indicates a modified or inserted record; a new `boot_seg` value marks a cold-boot boundary and starts a fresh chain from seed=0.
 
 **`cargo_state.qo`** — on any DWELL / IN_TRANSIT / HANDLING state transition, `sync:true`, free-form JSON. Two fields: `state_from` and `state_to` (string names), plus `_time` when valid epoch is available. Provides a near-real-time chain-of-custody record of when the shipment began and ended each handling and transit event.
 
 **`cargo_alert.qo`** — on threshold trip, `sync:true`, free-form JSON. Alert Notes are infrequent and not templated.
 
-### 6.5 Low-power and satellite strategy
+### 7.5 Low-power and satellite strategy
 
 The host is fully powered off between samples via `NotePayloadSaveAndSleep` / `card.attn`. The entire `ColdChainState` struct, including `seq`, `chain_crc`, `boot_seg`, `last_outbound_min`, shipment-state fields, alert cooldowns, and summary window accumulators — is serialized to Notecard flash before each sleep so all state survives planned sleep/wake cycles.
 
@@ -335,7 +334,7 @@ The host is fully powered off between samples via `NotePayloadSaveAndSleep` / `c
 
 For satellite efficiency: compact template format on `cargo_data.qo` and `cargo_log.qo` minimizes per-Note byte count; the 12-hour inbound interval (`INBOUND_INTERVAL_MIN = 720`) limits NTN inbound poll cost (~50 bytes per poll); and dwell-period batching (4× by default) extends **both** the summary generation interval and the Notecard outbound sync cadence via `applyDynamicOutbound()`, directly reducing the number of outbound NTN sessions during long warehouse stays. Alert and state-change Notes (sync:true) always trigger an immediate session regardless of the configured outbound cadence.
 
-### 6.6 Retry and error handling
+### 7.6 Retry and error handling
 
 - `hub.set` is re-issued on every warm boot (idempotent). `card.motion.mode` and both `note.template` registrations each set a flag in `ColdChainState` on success and are retried until confirmed. All three steps are reapplied when `CONFIG_VERSION` changes (SCHEMA_VERSION = 5 encodes the current template schema, including the `motion_valid` field added to `cargo_log.qo` in schema version 5).
 - Alert cooldown timestamps advance only when `note.add` is confirmed by the Notecard; a transient failure leaves the cooldown state unchanged so the next wake retries.
@@ -343,7 +342,7 @@ For satellite efficiency: compact template format on `cargo_data.qo` and `cargo_
 - State-change retry: a `cargo_state.qo` `note.add` that fails is stored in `ColdChainState.pending_state_change` / `pending_state_*` fields and retried on every subsequent wake before new state detection runs. This guarantees that no state transition is permanently lost on a transient Notecard failure. Retry is attempted in chronological order: the pending transition is sent before any new transition is stored, so chain-of-custody records arrive in sequence.
 - Summary retry: a failed `sendPendingSummary()` leaves `pending_epoch` set; the frozen snapshot is retried on every subsequent wake. If the Notecard is unreachable for a full additional summary window, the stale snapshot is discarded (logged as a warning) and replaced by the newly completed window.
 
-### 6.7 Key code snippet 1: compact log template
+### 7.7 Key code snippet 1: compact log template
 
 ```cpp
 J *req = notecard.newRequest("note.template");
@@ -364,7 +363,7 @@ JAddNumberToObject(body, "chain_crc",    TUINT32);   // integrity chain hash (pe
 ncSend(req);
 ```
 
-### 6.8 Key code snippet 2: integrity chain hash update
+### 7.8 Key code snippet 2: integrity chain hash update
 
 ```cpp
 // chainUpdate: mix previous hash with current sample fields to produce a new
@@ -390,7 +389,7 @@ static uint32_t chainUpdate(uint32_t prev, uint32_t seq, uint16_t boot_seg,
 }
 ```
 
-### 6.9 Key code snippet 3: shipment-state detection and adaptive batching
+### 7.9 Key code snippet 3: shipment-state detection and adaptive batching
 
 ```cpp
 // After sensor reads, detect state and emit state-change note if needed:
@@ -408,7 +407,7 @@ if (gState.shipment_state == SHIP_STATE_DWELL) {
 // Use effectiveSummaryMin in the intervalElapsed check below.
 ```
 
-### 6.10 Key code snippet 4: sleep with persistent state
+### 7.10 Key code snippet 4: sleep with persistent state
 
 ```cpp
 NotePayloadDesc save = {0, 0, 0};
@@ -511,7 +510,7 @@ For satellite-reliant lanes, the primary lever is `dwell_batch_factor` — it dy
 |---------|--------------|-----------|
 | **Serial monitor shows `[cargo] I2C error:...` on cold boot** | MAX31865 or Notecard I²C race on startup; transient, not persistent. | Normal on first boot. Observe a few seconds; should clear by second sample cycle. If persistent, check SPI/I²C pin connections. |
 | **Device does not appear in Notehub after 5 minutes** | No radio available; dead zone or antenna issue. | Check antenna is attached to Notecard `MAIN` u.FL port (not GPS). If cellular available, try manual sync: `card.transport` API via terminal. Skylo NTN requires clear sky — move unit outside. |
-| **Serial shows `PRODUCT_UID is not defined` pragma warning** | Firmware was not reflashed after editing `helpers.h`. | Re-run compile and upload steps in [§6.1](#61-installing-and-flashing). |
+| **Serial shows `PRODUCT_UID is not defined` pragma warning** | Firmware was not reflashed after editing `helpers.h`. | Re-run compile and upload steps in [§7.1](#71-installing-and-flashing). |
 | **`cargo_log.qo` entries show `_time=0` forever** | Device has not obtained a valid epoch from Notehub. | This is the "pre-sync sentinel" — documented behavior. After the first inbound sync, entries will carry real epoch. Check Notehub → Device → Environment to confirm inbound cadence (default 12 hours). Force immediate sync by clicking **Sync** on the device detail page. |
 | **No `cargo_alert.qo` entries despite obvious threshold breach** | Alert type already fired within the last 30 minutes; cooldown active. | This is by design — cooldowns prevent repeated alerts during sustained excursions. Check the `cargo_log.qo` per-sample entries and `cargo_data.qo` summaries instead; they show the full condition history. |
 | **Battery drains in < 7 days (cellular lanes)** | Continuous motion is preventing DWELL batching, or outbound sync is too frequent. | Check `hub.set` config in firmware logs. If device is in a vibration-heavy location, raise `transit_motion_min` threshold (env-var) to reduce false motion counts. For satellite-heavy lanes, consult [§9 battery estimates](#9-validation-and-testing). |
