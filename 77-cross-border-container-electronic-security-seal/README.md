@@ -12,7 +12,6 @@ This project is a tamper-evident electronic security seal for [supply chain trac
 
 ## 1. Project Overview
 
-
 **The problem.** An international container shipment touches dozens of parties: the shipper, the freight forwarder, the inland trucker, the port terminal, the ocean carrier, the customs broker, the destination trucker, and the consignee, and that's a short list. At each handoff, the container's physical integrity changes hands along with the paperwork, but the *proof* of that integrity does not. Seals are broken, reapplied, and sometimes falsified. Disputes over who opened a container, and when, are common and expensive. Regulators and industry standards bodies — CBP, EU customs, C-TPAT, ISO 17712 — are driving increasing audit and compliance pressure, and operators increasingly want electronic, time-stamped records that can demonstrate container integrity across every handoff. Paper logbooks and passive bolt seals cannot produce that record on demand.
 
 An electronic security seal that logs every door event, timestamps it, and transmits it to a cloud audit trail addresses the problem directly. The hard part has always been the network path: containers spend days in ports where WiFi and LTE are unreliable, weeks at sea where they are completely absent, and hours on trucks where they blink in and out of coverage. No single terrestrial network reaches the whole journey.
@@ -35,7 +34,6 @@ To be concrete about the two capabilities that make this possible: **planetary c
 
 ## 2. System Architecture
 
-
 ![System architecture: reed switch (A0) and break-wire loop (A1) → Notecarrier XI (Swan host) + Notecard Cell+WiFi + Starnote for Iridium + ATECC608A on Qwiic I²C → cellular / Iridium LEO → Notehub → routes](diagrams/01-system-architecture.svg)
 
 **Device-side responsibilities.** The Blues Swan STM32 host on the Notecarrier XI is the application MCU. It wakes every 30 seconds (configurable via environment variable) and reads two sensors: the door-state reed switch on GPIO A0 and the break-wire seal-continuity loop on GPIO A1. If either sensor has changed state since the last wake, the host signs the event payload using the ATECC608A (a hardware secure element on the shared I²C bus) and builds a `seal_event.qo` [Note](https://dev.blues.io/api-reference/glossary/#note) with `sync:true` and the ECDSA `sig` field; a companion `seal_sig_full.qo` Note carrying the full 64-byte signature is also queued for cellular delivery. A seal-wire break fires independently of door state, so a cut-and-replaced seal before door opening produces its own timestamped, signed record. Periodically — every six hours by default — the host signs and builds a `seal_heartbeat.qo` Note with the current door state, seal-wire state, battery voltage, and `sig`; the Notecard's GPS fix populates the location fields automatically via the compact template's `_lat`/`_lon` reserved fields. Audit-gap indicator Notes (chain-of-custody gap markers) are unsigned — they carry no verifiable event payload. Between wakes the host is fully powered off via [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn), drawing essentially zero current from the battery rail.
@@ -50,9 +48,7 @@ When neither satellite nor cellular is reachable — below-deck stowage, contain
 
 ---
 
-
 ## 3. Technical Summary
-
 
 **Before you start:** You'll need a Notehub account (free at [notehub.io](https://notehub.io)), the hardware from §4, Arduino IDE or `arduino-cli`, and two libraries: Blues Wireless Notecard and SparkFun ATECCX08a Arduino Library. Install via Arduino Library Manager or: `arduino-cli lib install "Blues Wireless Notecard" && arduino-cli lib install "SparkFun ATECCX08a Arduino Library"`.
 
@@ -87,13 +83,12 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-
 | Part | Qty | Rationale |
 |------|-----|-----------|
-| [Blues Swan](https://shop.blues.com/products/swan?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/feather-mcus/swan/)) | 1 | Feather-compatible STM32L4 host MCU from Blues. Plugs into the Notecarrier XI's Feather socket. Communicates with the Notecard over I²C. Programmed via the STM32 Arduino core or PlatformIO; no external programmer needed — ST-Link is built into the carrier board. |
-| Notecarrier XI | 1 | Carrier board designed for the Notecard + Starnote for Iridium combination. Provides Feather socket for Swan, M.2 slot for the Notecard, mounting for the Starnote, JST-PH LiPo battery connector, Qwiic I²C connector, and ATTN pin wiring for host power-gating during deep sleep. |
+| [Blues Swan](https://shop.blues.com/products/swan?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/feather-mcus/swan/)) | 1 | Feather-compatible STM32L4 host MCU from Blues. The Notecarrier XI has no Feather socket, so the Swan is mounted alongside the carrier and wired by hand to the Notecarrier XI's 0.1" headers — power, GND, I²C (SDA/SCL), and ATTN are all jumpered in. Communicates with the Notecard over I²C. Programmed via the Swan's onboard USB-C (ST-Link built into the Swan itself). |
+| Notecarrier XI | 1 | Carrier board designed for the Notecard + Starnote for Iridium combination. Provides M.2 slot for the Notecard, mounting for the Starnote, JST-PH LiPo battery connector, Qwiic I²C connector, and 0.1" headers exposing I²C, ATTN, GPIO, and power rails for an external host MCU. **No Feather socket** — the host MCU (Swan in this project) is wired to the headers by hand. |
 | [Notecard Cell+WiFi (NOTE-NBGLW)](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglw/)) | 1 | Global narrowband cellular (LTE-M, NB-IoT, GPRS) plus WiFi and onboard GPS/GNSS in a single M.2 module. Planetary roaming SIM included — no per-country SIM management. Includes a cellular antenna. When the Starnote for Iridium is paired on the same carrier board, the Notecard automatically falls back to Iridium when cellular is unavailable. |
-| [Starnote for Iridium](https://shop.blues.com/products/starnote?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/starnote-datasheet/starnote-for-iridium/)) | 1 | Adds Iridium LEO satellite connectivity to the Notecard. Provides pole-to-pole coverage — the Arctic Northern Sea Route, trans-Pacific, Asia-Europe, trans-Atlantic, and Antarctic routes are all reachable. Includes a single Iridium-certified u.FL antenna that handles both satellite communication and GPS/GNSS (no separate GPS antenna required). Mounts on the Notecarrier XI alongside the Notecard. **Starnote for Iridium is certified exclusively with the included antenna; substituting a different antenna results in an uncertified device that Iridium may block.** |
+| Starnote for Iridium ([datasheet](https://dev.blues.io/datasheets/starnote-datasheet/starnote-for-iridium/)) | 1 | Adds Iridium LEO satellite connectivity to the Notecard. Provides pole-to-pole coverage — the Arctic Northern Sea Route, trans-Pacific, Asia-Europe, trans-Atlantic, and Antarctic routes are all reachable. Includes a single Iridium-certified u.FL antenna that handles both satellite communication and GPS/GNSS (no separate GPS antenna required). Mounts on the Notecarrier XI alongside the Notecard. **Starnote for Iridium is certified exclusively with the included antenna; substituting a different antenna results in an uncertified device that Iridium may block.** |
 | SparkFun Qwiic ATECCX08A Breakout ([DEV-18077](https://www.sparkfun.com/products/18077)) | 1 | ATECC608A hardware secure element on a Qwiic (I²C) breakout. Holds the ECC P-256 private key used to sign every breach and seal-break event; the key is locked in the chip at provisioning and can never be read back. Connect to the Notecarrier XI Qwiic port for shared I²C at address 0x60. Requires the SparkFun_ATECCX08a_Arduino_Library and a one-time key-generation provisioning step before deployment (see [§7.2](#72-modules)). |
 | [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/mojo-datasheet/)) | 1 | Bench-only power monitor used during commissioning to measure per-session current draw and validate the power budget. Not part of the deployed assembly. See [§9](#9-validation-and-testing). |
 | Magnetic contact switch (NC reed switch) — **field deployment:** [Sentrol 2507AH-L](https://cdn11.bigcommerce.com/s-ca10qrhzok/content/documents/sentrol-2500-series-datasheet.pdf) (IP67, −40 °C to +65.5 °C, anodized aluminum, surface-mount, SPDT, use NC contacts); **bench/POC:** [Adafruit 375](https://www.adafruit.com/product/375) | 1 | Two-wire normally-closed door/window sensor; includes companion magnet. Wired NC so a cut wire or missing magnet reads as a breach — intentionally fail-safe. **The Adafruit 375 is a low-cost residential alarm-panel component rated for indoor use only; it is not suitable for the salt-spray, vibration, and wide temperature swings of a container-door deployment.** For field use specify the Sentrol 2507AH-L: it is IP67-sealed, operates to −40 °C, and uses an industrial-grade housing designed for outdoor harsh-environment mounting. |
@@ -102,24 +97,17 @@ Here is a sample Note this device emits:
 | IP65 ABS enclosure, ~100 × 70 × 45 mm | 1 | Weather-rated enclosure for door mounting; needs at least four cable gland holes: two for antenna leads (cellular and Iridium+GPS), one for the reed-switch cable, and one for the break-wire loop. |
 | Cable glands, PG9 or M16 | 4 | Weatherproof feedthroughs. One each for the cellular antenna lead, the Iridium+GPS antenna cable, reed-switch wiring, and break-wire loop. All four must be sealed to maintain the IP65 rating across the full assembly. |
 
-<Warning>
-
-**Antenna Note.** The Notecarrier XI exposes two antenna ports: one for the Notecard Cell+WiFi's cellular antenna (included with the NOTE-NBGLW) and one for the Starnote for Iridium's Iridium+GPS antenna (included with the Starnote). Both antennas **must be mounted outdoors with a clear sky view** — inside a steel container or enclosure, cellular, satellite, and GPS signals will not penetrate. Route both antenna cables through cable glands before sealing the enclosure. Do not substitute the included Starnote antenna; Iridium certifies the Starnote exclusively with the provided antenna and may block uncertified devices.
-
-</Warning>
-
 ---
 
 ## 5. Wiring and Assembly
 
-
 ![Wiring: reed switch (NC) on A0, break-wire loop on A1 → Notecarrier XI (Swan host); ATECC608A Qwiic breakout on I²C; cellular antenna on u.FL; Iridium+GPS combo antenna on Starnote u.FL; LiPo battery (Mojo inline for bench) on +VBAT](diagrams/02-wiring-assembly.svg)
 
-All host I/O lands on the Notecarrier XI headers. The Blues Swan plugs into the Feather socket; the Notecard Cell+WiFi seats in the M.2 slot; the Starnote for Iridium mounts on its dedicated connector; the Mojo (bench only) sits inline between the LiPo cell and the Notecarrier XI's battery JST port.
+All host I/O lands on the Notecarrier XI headers. The Notecard Cell+WiFi seats in the M.2 slot; the Starnote for Iridium mounts on its dedicated connector; the Blues Swan is mounted alongside the carrier and wired by hand to the Notecarrier XI headers (the XI does not have a Feather socket); the Mojo (bench only) sits inline between the LiPo cell and the Notecarrier XI's battery JST port.
 
 Pin-by-pin:
 
-- **Blues Swan → Feather socket:** seat the Swan fully into the Notecarrier XI's Feather socket. Power, I²C, and ATTN are all routed through the socket — no additional wiring to the Notecard needed.
+- **Blues Swan → Notecarrier XI headers (manual wiring):** the Notecarrier XI has no Feather socket, so the Swan is mounted next to the carrier and connected with jumper wires. Required connections to the Notecarrier XI's 0.1" headers: Swan `3V3` ↔ XI `3V3`, Swan `GND` ↔ XI `GND`, Swan `SDA` (`PB9`) ↔ XI `SDA`, Swan `SCL` (`PB8`) ↔ XI `SCL`, and the XI `ATTN` pin to a Swan GPIO (the firmware reads ATTN to wake from sleep and pulls the same signal to gate the Notecarrier's host-power MOSFET). See the [Notecarrier XI datasheet](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-xi/) for the exact header pinout and the ATTN-driven power-gating jumper.
 - **Notecard Cell+WiFi → M.2 slot:** seat the Notecard fully into the M.2 connector and secure with the retaining screw. No jumper wires needed — cellular, GPS, I²C, and power are all routed through the M.2 interface.
 - **Starnote for Iridium → Starnote connector:** mount the Starnote for Iridium on the Notecarrier XI's Starnote connector per the Notecarrier XI assembly guide. The Starnote communicates with the Notecard through the carrier board.
 - **Cellular antenna (included with NOTE-NBGLW):** connect to the Notecarrier XI's cellular antenna port. Route the cable through cable gland #1. Mount the antenna outside the enclosure with a clear sky view.
@@ -135,7 +123,7 @@ Pin-by-pin:
 
 **Assembly sequence:**
 
-1. Seat the Notecard Cell+WiFi in the M.2 slot. Mount the Starnote for Iridium on its connector per the Notecarrier XI assembly guide. Seat the Blues Swan in the Feather socket.
+1. Seat the Notecard Cell+WiFi in the M.2 slot. Mount the Starnote for Iridium on its connector per the Notecarrier XI assembly guide. Mount the Blues Swan alongside the Notecarrier XI (e.g., on the enclosure floor or a small daughter board) and wire it to the XI's 0.1" headers as described above — 3V3, GND, SDA, SCL, and ATTN. The XI has no Feather socket, so this jumper wiring is what carries power, I²C, and the ATTN sleep-gate between the two boards.
 2. Connect the included cellular antenna to the Notecarrier XI cellular antenna port. Connect the Starnote's included Iridium+GPS antenna u.FL to the Starnote's u.FL port. Seat all u.FL connectors straight down with finger pressure — do not flex or lever them sideways.
 3. Attach the ATECC608A breakout's Qwiic cable to the Notecarrier XI Qwiic port.
 4. Thread all four cables through their cable glands before tightening: the cellular antenna lead through gland #1, the Iridium+GPS antenna cable through gland #2, the reed-switch leads through gland #3, and the break-wire loop ends through gland #4. It is very difficult to retrofit cables through glands after termination — thread them first, then terminate.
@@ -156,7 +144,6 @@ Mount the enclosure on the container door latch side, approximately 150 mm from 
 ---
 
 ## 6. Notehub Setup
-
 
 1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) (e.g. `com.your-company.your-name:container-seal`) and paste it into the `PRODUCT_UID` define in `firmware/container_seal/container_seal.ino`.
 
@@ -241,7 +228,6 @@ Four Notefiles matter for this project:
 ---
 
 ## 7. Firmware Design
-
 
 Five source files:
 - [`firmware/container_seal/container_seal.ino`](firmware/container_seal/container_seal.ino) — main sketch: state management, sleep/wake cycle, GPIO reads, signing calls, scheduling logic.
@@ -530,7 +516,6 @@ for (;;) {
 
 ## 8. Data Flow
 
-
 ![Data flow: reed switch (A0) and break-wire (A1) sampled every 30 s → evaluate → ATECC608A signs event/heartbeat → seal_event.qo breach/reseal/seal-break (sync:true), seal_sig_full.qo full sig (cellular), seal_heartbeat.qo (batched), audit-gap (sync:true, unsigned) → Notehub → routes](diagrams/03-data-flow.svg)
 
 **Collected.** Every 30 seconds: door-state reed switch (A0, one `digitalRead`) and seal-wire continuity loop (A1, one `digitalRead`). Every 6 hours: GPS fix (handled autonomously by the Notecard). On state change and on heartbeat schedule: battery voltage via `card.voltage`.
@@ -548,7 +533,6 @@ for (;;) {
 ---
 
 ## 9. Validation and Testing
-
 
 **Expected cadence after deployment.** On a healthy, sealed container: one `seal_heartbeat.qo` created every 6 hours (queued locally), delivered in a batch at each 12-hour outbound sync session; zero `seal_event.qo` events; and `_session.qo` events at the outbound sync interval (cellular or satellite). The first `seal_heartbeat.qo` is created within 6 hours of first power-on but is not visible in Notehub until the next outbound sync — up to 12 hours after power-on at the default `outbound_min=720` setting. For commissioning, set `heartbeat_interval_min=15`, `outbound_min=60`, **and** `inbound_min=60` in the Fleet environment (or trigger a manual sync from the blues.dev In-Browser Terminal with `hub.sync`). **A power cycle alone does not cause the device to fetch fresh env vars** — the Notecard reads whatever env vars it already has cached; the updated values only arrive on the next inbound sync. The full worst-case path for a heartbeat to appear in Notehub after changing env vars is: (1) wait up to `inbound_min` for the device to complete an inbound sync and pull the new values (or trigger one manually with `hub.sync`); (2) wait up to `heartbeat_interval_min` for the next heartbeat to be created and queued on the Notecard; (3) wait up to `outbound_min` for the next outbound session to deliver it to Notehub. With `inbound_min=60`, `heartbeat_interval_min=15`, and `outbound_min=60`, worst-case visibility is up to 135 minutes — not a few minutes. Triggering a manual `hub.sync` from the blues.dev In-Browser Terminal skips step (1) and delivers the new env vars immediately, reducing worst-case to about 75 minutes.
 
@@ -620,7 +604,6 @@ If a problem isn't on this list, the [Blues community forum](https://discuss.blu
 
 ## 10. Limitations and Next Steps
 
-
 **Simplified for this reference design:**
 
 - **30-second poll latency.** The host wakes every 30 seconds to check the door state; a breach that opens and closes faster than 30 seconds (extremely unlikely for a container door, but theoretically possible) could be missed. On the Notecarrier XI, `ATTN` is a Notecard-driven output that power-gates the host — it is not a GPIO input and cannot be driven by an external signal such as a reed switch. A production design targeting sub-second breach capture could add an external SR latch (e.g., a 74HC00 NAND pair configured as a Set-Reset latch) powered from the always-on LiPo rail: the reed switch sets the latch on opening, and the host reads and clears it on the next scheduled wake, ensuring no transition is missed even if the door opens and closes between wakes. Alternatively, `check_interval_sec` can be reduced to shorten the detection window at the cost of higher average current. The 30-second default is a safe and practical compromise for the POC.
@@ -647,19 +630,8 @@ If a problem isn't on this list, the [Blues community forum](https://discuss.blu
 
 ## 11. Summary
 
-
 A Notecarrier XI, a Notecard Cell+WiFi, a Starnote for Iridium, a magnetic reed switch, a break-wire seal-continuity loop, and an ATECC608A hardware secure element are the components that close the tamper-evidence gap in international containerized cargo. The Blues Swan MCU wakes every 30 seconds, reads two independent sensors, signs the event payload with a hardware-rooted ECC P-256 key held inside the ATECC608A secure element that never leaves the chip, and goes back to sleep — drawing a fraction of a milliamp between samples. The Notecard sits quietly in 18 µA idle until it's time to flush Notes to Notehub, then fires up its cellular radio or hands off to the Starnote for an Iridium session, transmits, and powers back down. Breach and seal-wire events bypass the outbound schedule via `sync:true`, reaching Notehub within seconds in port or within minutes over Iridium anywhere on the globe.
 
 The result is a hardware-signed event log — every seal-wire break, door breach, re-seal, and GPS waypoint from first loading to final delivery — transmitted over whatever network is available: LTE-M in the terminal, Iridium satellite anywhere at sea including polar routes, and back to LTE-M on the inland leg. Every event and heartbeat carries an ECDSA P-256 signature derived from a 19-byte (events) or 11-byte (heartbeats) canonical payload; the full 64-byte R‖S signature travels in a companion `seal_sig_full.qo` Note delivered over cellular, while a 4-byte prefix in the compact event Note provides a lightweight tamper-correlation hint even for satellite-only legs. A cut-and-replaced seal before door opening produces its own signed, timestamped record independently of door state. No per-country SIM management, no gateway appliance, no onsite IT involvement. Just a seal assembly, a battery, and two antennas pointed at the sky.
 
 For supply-chain compliance teams and freight insurers, that log is the difference between "we believe the seal was intact" and "here is a hardware-signed, timestamped record of every transition this container experienced, where it was, and whether the ECDSA signature validates against the device's provisioned public key." The full 64-byte signatures are available in `seal_sig_full.qo` whenever a cellular connection was present; the 4-byte prefix in every compact Note provides a lightweight tamper indicator even when only the Iridium satellite record survives.
-
----
-
-## Appendix: Quickstart
-
-1. **Provision in port — required before deployment.** Create a [Notehub project](https://notehub.io), copy its ProductUID, and paste it into `firmware/container_seal/container_seal.ino` at the `PRODUCT_UID` define (around line 23). Flash the firmware before the container is loaded. **Do not seal and deploy until you see a `_session.qo` event in Notehub** — this initial Notehub session delivers the Unix time sync the firmware requires for correct heartbeat and env-var scheduling (see §6 step 2 and §7.6).
-2. **Wire the bench rig.** Notecarrier XI + Blues Swan (seated in Feather socket) + Notecard Cell+WiFi (NOTE-NBGLW, in M.2 slot; included cellular antenna connected) + Starnote for Iridium (included Iridium+GPS antenna connected) + reed switch on A0 + break-wire continuity loop on A1 + ATECC608A Qwiic breakout on I²C + LiPo battery. Full pinout and assembly steps in [§5](#5-wiring-and-assembly). Provision the ATECC608A key slot before first flash. See §7.2 for the six-step provisioning procedure.
-3. **Flash.** `arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=SWAN firmware/container_seal/container_seal.ino` then upload. Full instructions in [§7.1](#71-installing-and-flashing).
-4. **Verify.** Watch Notehub → **Events** tab. A `_session.qo` should appear within a couple of minutes. A `seal_heartbeat.qo` is created within the first 6 hours and delivered at the next outbound sync (up to 12 hours at default settings, set `outbound_min=60` in the Fleet environment to see it sooner during commissioning). Hold the reed switch magnet against the sensor, then pull it away — a `seal_event.qo` should appear almost immediately with a non-zero `sig` field if the ATECC608A is provisioned. Disconnect the break-wire loop — a second `seal_event.qo` with `seal_broken:true` should appear on the next wake cycle.
-5. **Deploy.** Mount the enclosure on the container door, route both antennas outside the steel, and seal the cargo. All further seal-wire, door-event, and GPS waypoint data flows to Notehub automatically.

@@ -83,8 +83,7 @@ Here is a sample Note this device emits:
     "i_c_rms":  88.7,
     "temp_c":   44.1,
     "extra":    62.6
-  },
-  "sync": true
+  }
 }
 ```
 
@@ -95,7 +94,7 @@ Here is a sample Note this device emits:
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with onboard Cygnet STM32L4 host — three ADC-capable analog pins for the CT channels, I²C for the temperature sensor, and ATTN-based host power control for deep sleep. No separate MCU needed. |
 | [Notecard Cell+WiFi (MBGLW)](https://shop.blues.com/products/notecard-cell-wifi?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) ([datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/)) | 1 | Cellular removes per-pole IT dependency; one SKU with a prepaid global SIM spans urban and rural feeders without carrier contracts or per-site activation. |
 | [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) *(bench / commissioning only, optional)* | 1 | Coulomb counter for bench power-budget validation. Not shipped with the pole-mount unit — stays on the bench during commissioning. Optional; use to verify the device achieves expected current draw before field deployment. See [§9](#9-validation-and-testing) for the expected current trace to look for. |
-| YHDC SCT-013-000 split-core CT, 100A / 50mA ([manufacturer product page](https://www.yhdc.com/en/product/SCT013-000/)) | 3 | Non-invasive, clip-on **current-output** CT. The 100A / 50mA variant covers residential distribution transformers up to approximately 20 kVA at 240V secondary (~83A full-load). For transformers at or above 25 kVA at 240V (~104A at full load), use a higher-range current-output CT; see the Note below. Interfaces directly with the resistor bias circuit; no integrator stage required. Widely available from Mouser and Amazon. |
+| YHDC SCT-013-000 split-core CT, 100A / 50mA | 3 | Non-invasive, clip-on **current-output** CT. The 100A / 50mA variant covers residential distribution transformers up to approximately 20 kVA at 240V secondary (~83A full-load). For transformers at or above 25 kVA at 240V (~104A at full load), use a higher-range current-output CT; see the Note below. Interfaces directly with the resistor bias circuit; no integrator stage required. Widely available from Mouser and Amazon. |
 | 22 Ω 1% resistor (burden, 1 per CT) | 3 | Converts the 50mA CT output to ~1.1V RMS at 100A — squarely within the Cygnet ADC's 0–3.3V input range after biasing. |
 | 10 kΩ 1% resistor (bias divider, 2 per CT) | 6 | Creates the Vcc/2 (~1.65V) DC bias point that centers the AC CT signal within the ADC input range. |
 | 10 µF electrolytic capacitor (1 per CT) | 3 | AC-couples the CT signal to the bias node; blocks DC from the bias network leaking back into the CT. |
@@ -147,9 +146,9 @@ Each CT channel requires a small passive network that converts the CT's AC curre
  R2 10 kΩ          ←  C 10 µF (+ plate toward ADC pin)
    │                         │
   GND                   CT+ (TRRS tip)
-                              │
+                             │
                          Rb 22 Ω   ← burden resistor
-                              │
+                             │
                     CT– (TRRS sleeve) ──── GND
 ```
 
@@ -195,15 +194,7 @@ Clamp each CT around a single secondary conductor, never around two conductors s
 
 **CT open-circuit hazard.** The SCT-013-000 is a **current-output** CT. Never disconnect the 22Ω burden resistor or unplug a CT jack while the CT is clamped on an energized conductor. An open-circuited current-output CT can develop dangerous high voltages across its terminals. Always verify the burden resistor is in-circuit before clamping the CT onto a live conductor; always remove the CT from the conductor before disturbing the burden wiring or disconnecting the 3.5mm jack.
 
-</Warning>
-
-<Warning>
-
 **Safety.** Distribution transformer secondary conductors carry lethal voltages. Installation must be performed by qualified electrical workers with appropriate PPE, following utility safety procedures and applicable codes. This firmware is read-only — it never commands any switching of the transformer or its connected loads. The CTs are non-invasive and clamp without breaking the circuit, but proximity to energized conductors remains hazardous.
-
-</Warning>
-
-<Warning>
 
 **Surge and transient protection (POC omission).** The 2A slow-blow fuse protects the IRM-10-5 supply against a sustained short but does not suppress lightning-induced transients or switching surges, which are routinely present on distribution transformer secondaries. For bench bring-up this is acceptable; for any unit intended for permanent pole-mount deployment, install a surge protective device (SPD) rated for the site's overvoltage category (Category C / lightning-level, per IEC 61643-11 or UL 1449) across Line/Neutral ahead of the fuse holder. Bond the enclosure to the pole grounding system and verify conductor routing, creepage/clearance distances, and any utility-specific installation approval requirements before energizing the tap. See [§11](#11-limitations-and-next-steps) for the full list.
 
@@ -335,7 +326,7 @@ The firmware defines several key tuning constants in `transformer_load_monitor_h
 
 One [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefile for summaries (`xfmr_summary.qo`), one untemplated Notefile for alerts (`xfmr_alert.qo`). Templates trade flexibility for efficiency: the Notecard stores fixed-length binary records internally and the wire payload is ~3–5× smaller than free-form JSON, which matters across a fleet that may transmit daily summaries for a decade.
 
-Sample alert body (phase imbalance event):
+Sample alert (phase imbalance event):
 ```json
 {
   "file": "xfmr_alert.qo",
@@ -346,8 +337,7 @@ Sample alert body (phase imbalance event):
     "i_c_rms":  88.7,
     "temp_c":   44.1,
     "extra":    62.6
-  },
-  "sync": true
+  }
 }
 ```
 The `extra` field carries alert-type-specific context: for `overload` it is the loading percentage of the worst phase; for `phase_imbalance` it is the computed imbalance percentage (max−min)/max; for `high_temp` it is the total current across all phases at the time of the alert.
@@ -554,4 +544,3 @@ Utilities have had substation instrumentation for decades and transformer instru
 Three split-core CTs clamped on the secondary leads plus one I²C temperature sensor give the device the three signals that matter most for transformer health: per-phase loading, phase imbalance, and thermal stress. Hourly summaries provide the trending data for long-range capacity planning; immediate alerts provide the operational awareness to dispatch a crew before the neighborhood loses power. Cellular provides the backhaul that makes it possible to deploy these on any pole in a service territory without site-by-site network negotiation.
 
 The Notecard Cell+WiFi is what makes the economics work for a utility fleet. One SKU, one SIM platform, and one firmware image across every transformer in a service territory — from a dense urban feeder to a rural single-wire run — is the difference between a pilot that works on paper and a program that can actually scale.
-
