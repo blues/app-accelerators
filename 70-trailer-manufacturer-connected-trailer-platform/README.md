@@ -10,27 +10,6 @@ This reference application is intended to provide inspiration and help you get s
 
 This project is a connected-trailer platform for trailer OEM integration, targeting manufacturers who want to own the cellular and satellite connectivity layer on refrigerated trailers from day one. The platform reports the operational signals a fleet operator actually checks — cargo-air temperature at two points inside the trailer, rear-door open/close events, GPS position, and (with vendor-specific decode work) reefer setpoint and tire pressure — back to the OEM's cloud continuously, including across the cellular dead zones common on long rural hauls and at intermodal rail yards. When cellular coverage is unavailable, the device falls back automatically to the [Skylo](https://blues.com/industrial-equipment-monitoring/) non-terrestrial satellite network so the cold-chain record stays continuous through coverage gaps. The hardware is a Blues [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) paired with a [Notecard for Skylo](https://shop.blues.com/products/notecard-for-skylo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) (see §4 for the BOM); the firmware ships three sensor paths fully implemented today (cargo temperature, door, GPS) and two as integration-point stubs awaiting vendor engineering — J2497 reefer telemetry and TPMS tire pressure. The implementation-status callout below summarises all five paths.
 
-<Note>
-
-**Platform sensor paths — implementation status**
-
-**Fully implemented and buildable today:**
-
-- Two NTC cargo-air thermistors with β-equation ADC conversion and window-aggregate min/max/mean statistics
-- Rear-door reed switch with open-time accumulation and distinct event counting
-- GPS asset tracking via Notecard built-in GNSS with motion-state detection and cadence switching
-- Notecard for [Skylo](https://www.skylo.tech/) (NOTE-NBGLWX) with automatic LTE-M/NB-IoT cellular → Skylo NTN satellite fallback
-- Templated binary summary Notes (`trailer_summary.qo`) and immediate-sync alert Notes (`trailer_alert.qo`)
-- Notehub environment-variable–driven threshold and sync-cadence configuration, updateable over the air
-- Dwell-capable host sleep via `NotePayloadSaveAndSleep` / `card.attn`: host draws zero current between sample cycles; the Notecard's radio-idle floor (~8–18 µA) is the only static draw during sleep
-
-**Integration-point stubs — require additional vendor engineering to activate:**
-
-- **Reefer telemetry over a serial UART (reference assumption: J2497 PLC):** The firmware reserves `Serial1` for a future reefer-telemetry source and parses a simplified POC frame through the full alert/summary pipeline. The reference design assumes a power-line-carrier link based on **SAE J2497 / PLC4TRUCKS** using a Yitran IT700 modem, but it's worth understanding upfront that J2497's dominant deployed use is trailer ABS warning-lamp telemetry, and reefer telemetry specifically over J2497 is uncommon in production. Most reefer telemetry in the field rides on **vendor-proprietary serial diagnostic ports** (Carrier Transicold DataLink over RS-232/RS-485, Thermo King Direct Smart Reefer / DSR2) or **J1939 over CAN**. The firmware UART can be re-targeted to any of those by replacing the decode function in `drainReeferUart()` — only the transport changes, not the data pipeline. Activating any path requires (a) selecting the transport, (b) the corresponding application-layer stack and reefer-OEM message mapping, and (c) field validation. The `reefer_sensor_loss` alert is gated so it does not fire on a build with no reefer-telemetry source connected. See [§10](#10-limitations-and-next-steps).
-- **TPMS tire pressure:** The firmware parses a generic POC packet format and routes pressures through the alert/summary pipeline, but production firmware must replace the parser with the chosen vendor's proprietary decode library. See [§10](#10-limitations-and-next-steps).
-
-</Note>
-
 ## 1. Project Overview
 
 **The problem.** A refrigerated trailer is a one-time sale that lasts a decade or more. Once it leaves the factory, the manufacturer's recurring revenue opportunity hinges entirely on what services they can sell over that trailer's lifetime, and the telematics layer is the obvious candidate. The trouble is that battle is already being fought on every refrigerated trailer on the road. Thermo King and Carrier, the two dominant **reefer** (refrigeration unit) OEMs, ship their own fleet connectivity built around the reefer unit's proprietary data ports. Aftermarket platform vendors layer on top of those. By the time a trailer reaches a fleet operator's yard, two or three telematics competitors are already reading its temperature and location, and they all have a head start.
@@ -42,6 +21,27 @@ A trailer OEM that wants to own the connectivity layer — rather than ceding it
 <NewToBlues/>
 
 **Deployment scenario.** A weatherproof enclosure mounted on the trailer's nose wall (the forward interior wall, adjacent to the reefer unit). The Notecard for Skylo's Skylo-certified flat-patch antenna is exterior-mounted on the trailer roof with a clear sky view; the GPS antenna is also exterior on the roof. **SAE J2497** (also marketed as **PLC4TRUCKS**) is the SAE standard for power-line communications over the existing power conductors of commercial-vehicle trailer wiring; the J2497 PLC signal rides on the **J560 pin 6 circuit** — the always-hot auxiliary/battery feed on the SAE J560 North American seven-pin trailer connector; not a stop-lamp or brake circuit. The reference build includes a documented integration point for a future J2497 coupling interface on that circuit, and the firmware scaffolding routes a POC placeholder through the data pipeline, but this is not a delivered sensor path. A practical caveat: J2497's dominant production use is trailer ABS warning-lamp telemetry, not reefer data. Most reefer-OEM telemetry in the field is delivered over vendor-proprietary serial diagnostic ports (Carrier Transicold DataLink, Thermo King DSR/DSR2) or J1939 over CAN, not over J2497. The firmware UART (`Serial1`) is the same interface either way — only the decode function changes, so the reference assumption can be re-targeted to a different transport without rearchitecting the platform. See [§10 Limitations](#10-limitations-and-next-steps) for the alternative-transport comparison and the engineering required to activate any of them. **Regional Note:** SAE J560 is the North American 7-pin standard; European trailers use ISO 1185 (7-pin) or ISO 3731 (13-pin) connectors with different pinouts — J2497 PLC is deployed on the equivalent auxiliary circuit in those standards. Two encapsulated NTC thermistors hang inside the cargo space, front and rear, providing the independent body-air readings shippers use to verify cold-chain integrity at delivery. A documented integration point for a future TPMS (**Tire Pressure Monitoring System**) gateway receiver is included; the firmware scaffolding and note-template fields for four tire positions are in place, but this is not a delivered sensor path — real tire pressure data requires the vendor-specific engineering described in [§10 Limitations](#10-limitations-and-next-steps). A magnetic reed switch on the rear door reports open/close state. The Notecarrier CX and its onboard Cygnet STM32 host run the trailer state machine; the Notecard for Skylo handles all radio management, GNSS positioning, and Notehub data delivery. Power during tractor-connected operation comes from the trailer's 12 V auxiliary/battery circuit — **J560 pin 6** (the always-hot auxiliary feed, distinct from the stop-lamp and brake circuits); during DC dwells when the tractor is disconnected, a power-priority switching circuit transfers automatically to the reefer unit's own 12 V battery — integral to every refrigerated trailer — keeping the power path alive during DC dwells. The host uses `NotePayloadSaveAndSleep` / `card.attn` to sleep at zero current between sample cycles, making multi-day DC-dwell operation within a practical reefer battery budget achievable; see [§7](#7-firmware-design) for the power architecture detail.
+
+<Note>
+
+**Platform sensor paths — implementation status**
+
+**Fully implemented and buildable today:**
+
+- Two NTC cargo-air thermistors with β-equation ADC conversion and window-aggregate min/max/mean statistics
+- Rear-door reed switch with open-time accumulation and distinct event counting
+- GPS asset tracking via Notecard built-in GNSS with motion-state detection and cadence switching
+- Notecard for Skylo (NOTE-NBGLWX) with automatic LTE-M/NB-IoT cellular → Skylo NTN satellite fallback
+- Templated binary summary Notes (`trailer_summary.qo`) and immediate-sync alert Notes (`trailer_alert.qo`)
+- Notehub environment-variable–driven threshold and sync-cadence configuration, updateable over the air
+- Dwell-capable host sleep via `NotePayloadSaveAndSleep` / `card.attn`: host draws zero current between sample cycles; the Notecard's radio-idle floor (~8–18 µA) is the only static draw during sleep
+
+**Integration-point stubs — require additional vendor engineering to activate:**
+
+- **Reefer telemetry over a serial UART (reference assumption: J2497 PLC):** The firmware reserves `Serial1` for a future reefer-telemetry source and parses a simplified POC frame through the full alert/summary pipeline. The reference design assumes a power-line-carrier link based on **SAE J2497 / PLC4TRUCKS** using a Yitran IT700 modem, but it's worth understanding upfront that J2497's dominant deployed use is trailer ABS warning-lamp telemetry, and reefer telemetry specifically over J2497 is uncommon in production. Most reefer telemetry in the field rides on **vendor-proprietary serial diagnostic ports** (Carrier Transicold DataLink over RS-232/RS-485, Thermo King Direct Smart Reefer / DSR2) or **J1939 over CAN**. The firmware UART can be re-targeted to any of those by replacing the decode function in `drainReeferUart()` — only the transport changes, not the data pipeline. Activating any path requires (a) selecting the transport, (b) the corresponding application-layer stack and reefer-OEM message mapping, and (c) field validation. The `reefer_sensor_loss` alert is gated so it does not fire on a build with no reefer-telemetry source connected. See [§10](#10-limitations-and-next-steps).
+- **TPMS tire pressure:** The firmware parses a generic POC packet format and routes pressures through the alert/summary pipeline, but production firmware must replace the parser with the chosen vendor's proprietary decode library. See [§10](#10-limitations-and-next-steps).
+
+</Note>
 
 ## 2. System Architecture
 
@@ -185,10 +185,6 @@ Mount the enclosure on the nose wall at a height that keeps all connectors above
 <Warning>
 
 **This subsection documents future integration work, not the current reference build.** `Serial1` is reserved in firmware for a reefer-telemetry source. The reference assumption is a J2497 PLC modem because it preserves the J560-only physical interface to the trailer, but the IT700 coupling board does not exist and the J2497 application stack is not licensed. Include this wiring only when those two pieces are in place.
-
-</Warning>
-
-<Warning>
 
 **Before committing to J2497, read the alternatives.** J2497 / PLC4TRUCKS is the SAE standard for trailer power-line communications, but its dominant deployed use is ABS warning-lamp telemetry. Production reefer telemetry typically rides on a vendor-proprietary serial diagnostic port (Carrier Transicold DataLink over RS-232/RS-485, Thermo King DSR/DSR2 over serial) or J1939 over CAN — both of which are mechanically simpler than building a PLC coupling board and better-documented at the protocol level. The firmware's `Serial1` channel and `drainReeferUart()` decode function are interface-agnostic: any 9600-baud serial source whose decode produces `setpoint_f` and `actual_f` values into `g_sensors` will exercise the rest of the alert/summary pipeline unchanged. See [§10 Limitations](#10-limitations-and-next-steps) for the side-by-side comparison.
 

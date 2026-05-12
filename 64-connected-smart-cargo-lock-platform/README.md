@@ -18,7 +18,7 @@ The underlying challenge isn't mechanical; modern locks are strong. The challeng
 
 **The connectivity problem.** A lock OEM faces a problem that most IoT device makers don't: the lock follows the cargo, and cargo goes everywhere. A single trailer can leave a Chicago warehouse, cross through three different mobile carrier territories, sit on a ship for eleven days, and arrive at a Rotterdam port. A lock that only works on a single carrier's network is a lock that goes silent for half the trip. The lock OEM cannot negotiate per-country roaming contracts for every market they sell into, and they cannot afford to manufacture a different SKU per geography.
 
-**Why Notecard.** The Notecard for [Skylo](https://www.skylo.tech/) (SKU: NOTE-NBGLWX) addresses all three of the lock OEM's critical needs in one module:
+**Why Notecard.** The Notecard for Skylo (SKU: NOTE-NBGLWX) addresses all three of the lock OEM's critical needs in one module:
 
 <NewToBlues/>
 

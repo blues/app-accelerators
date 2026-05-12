@@ -18,7 +18,7 @@ APU manufacturers — companies that build diesel APUs, battery-based no-idle sy
 
 The trouble is that APU OEMs are mechanical and power-electronics engineering companies. They know diesel combustion and HVAC thermodynamics; they don't maintain an embedded connectivity stack. Standing up a cellular or satellite IoT solution from scratch means negotiating SIM contracts, managing radio certifications, hiring firmware engineers for the connectivity layer, and doing all of that in dozens of countries as the product goes global. Most APU OEMs conclude this is a distraction from their core competency and ship hardware with no connectivity at all.
 
-**Why Notecard.** Long-haul trucks run continental routes through hundreds of cellular handoffs, significant rural dead zones, and conditions where no single carrier provides reliable coverage. A cellular-only solution that drops data whenever the truck rolls through a no-service corridor is useless to a manufacturer trying to build warranty and maintenance databases. The Notecard for [Skylo](https://www.skylo.tech/) solves this by combining LTE-M/NB-IoT global cellular with Skylo satellite fallback in a single M.2 module: the Notecard tries cellular first and, when no tower is reachable, uses Skylo's geostationary network to get the data out. The firmware doesn't manage the transport selection at all — the Notecard handles it transparently.
+**Why Notecard.** Long-haul trucks run continental routes through hundreds of cellular handoffs, significant rural dead zones, and conditions where no single carrier provides reliable coverage. A cellular-only solution that drops data whenever the truck rolls through a no-service corridor is useless to a manufacturer trying to build warranty and maintenance databases. The Notecard for Skylo solves this by combining LTE-M/NB-IoT global cellular with Skylo satellite fallback in a single M.2 module: the Notecard tries cellular first and, when no tower is reachable, uses Skylo's geostationary network to get the data out. The firmware doesn't manage the transport selection at all — the Notecard handles it transparently.
 
 <NewToBlues/>
 
@@ -408,9 +408,9 @@ JAddNumberToObject(body, "output_watts",   TUINT16);
 // power_valid = 1 when dc_volts/output_watts are real averages;
 // = 0 when no valid Modbus samples were collected this window
 // (dc_volts = -1.0, output_watts = 0xFFFF in that case).
-JAddNumberToObject(body, "power_valid",           TUINT8);
-JAddNumberToObject(body, "fault_count",           TUINT16);
-JAddNumberToObject(body, "last_fault",            TUINT16);
+JAddNumberToObject(body, "power_valid",    TUINT8);
+JAddNumberToObject(body, "fault_count",    TUINT16);
+JAddNumberToObject(body, "last_fault",     TUINT16);
 JAddNumberToObject(body, "controller_runtime_hr", TFLOAT32);
 JAddNumberToObject(body, "_lat",  TFLOAT32);  // auto-filled by Notecard GPS
 JAddNumberToObject(body, "_lon",  TFLOAT32);  // auto-filled by Notecard GPS
