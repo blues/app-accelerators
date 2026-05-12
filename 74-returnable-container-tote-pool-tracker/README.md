@@ -49,7 +49,6 @@ The firmware emits two Note types; Notehub automatically appends location and ro
     "battery_mv": 3851.0,
     "cycle":      14
   },
-  "sync": true,
   "where_lat":   35.9728,
   "where_lon":  -86.7653,
   "where_location": "Nashville TN USA",
