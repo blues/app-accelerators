@@ -100,7 +100,11 @@ Pin-by-pin:
 
 Mount probes inside the unit: supply thermistor ~12″ past the evaporator coil in the supply duct, return thermistor in the return plenum upstream of the filter, CT clamped on either of the hot legs feeding the compressor contactor (clamping only **one** leg is required, both will cancel), SDP810 tubes tapped across the filter frame with silicone tubing.
 
-> **Note on the CT threshold default.** `compressor_on_amps = 3.0` is calibrated for typical light-commercial single-stage RTU compressors (3-to-5-ton, single phase, drawing ~12–25 A under load). On the smallest 1.5–2-ton units the in-rush-then-steady-state current can hover near 4–5 A, so 3 A is still a safe "compressor running" floor. For larger units the threshold is conservative and you may want to raise it via the `compressor_on_amps` env var to better separate "running" from "starting transient." See [§6](#6-notehub-setup).
+<Note>
+
+**Note on the CT threshold default.** `compressor_on_amps = 3.0` is calibrated for typical light-commercial single-stage RTU compressors (3-to-5-ton, single phase, drawing ~12–25 A under load). On the smallest 1.5–2-ton units the in-rush-then-steady-state current can hover near 4–5 A, so 3 A is still a safe "compressor running" floor. For larger units the threshold is conservative and you may want to raise it via the `compressor_on_amps` env var to better separate "running" from "starting transient." See [§6](#6-notehub-setup).
+
+</Note>
 
 ## 6. Notehub Setup
 

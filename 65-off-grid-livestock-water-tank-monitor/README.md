@@ -263,7 +263,11 @@ Both Notefiles are [template-backed](https://dev.blues.io/notecard/notecard-walk
 }
 ```
 
-> **`pump_on` is a derived field, not a per-sample boolean.** Each sample contributes its RMS current reading to a running average; at summary time `sendSummary` receives that 4-hour window average as `pumpAmps` and sets `pump_on = (pumpAmps >= pump_on_amps)`. A value of `true` means *the average pump current over the summary window was at or above the running threshold*, not that the pump ran continuously, and not that it ran for any particular fraction of the window. A pump that ran briefly at the start of a 4-hour window and then stopped can produce a non-zero `pump_amps` average with `pump_on: false`; a pump that ran continuously all window will produce `pump_on: true`. Use `pump_amps` (the numeric average) for trend analysis; treat `pump_on` as a coarse summary-window classification — `true` indicates the window-average current cleared the threshold, not that the pump ran continuously or for any particular fraction of the window.
+<Note>
+
+**`pump_on` is a derived field, not a per-sample boolean.** Each sample contributes its RMS current reading to a running average; at summary time `sendSummary` receives that 4-hour window average as `pumpAmps` and sets `pump_on = (pumpAmps >= pump_on_amps)`. A value of `true` means *the average pump current over the summary window was at or above the running threshold*, not that the pump ran continuously, and not that it ran for any particular fraction of the window. A pump that ran briefly at the start of a 4-hour window and then stopped can produce a non-zero `pump_amps` average with `pump_on: false`; a pump that ran continuously all window will produce `pump_on: true`. Use `pump_amps` (the numeric average) for trend analysis; treat `pump_on` as a coarse summary-window classification — `true` indicates the window-average current cleared the threshold, not that the pump ran continuously or for any particular fraction of the window.
+
+</Note>
 
 `tank_alert.qo` (immediate, `sync:true`; compact template-encoded, port 51):
 
@@ -281,7 +285,11 @@ Both Notefiles are [template-backed](https://dev.blues.io/notecard/notecard-walk
 }
 ```
 
-> **`alert_code` is an integer type code:** `0` = `level_low`, `1` = `level_critical`, `2` = `battery_low`. The integer field keeps the compact-template payload fixed-length binary — the same requirement as the summary template for the NOTE-NBGLWX Starnote/NTN path. All five fields (including `pump_amps = 0.0` when the pump is off) are always present in compact binary encoding.
+<Note>
+
+**`alert_code` is an integer type code:** `0` = `level_low`, `1` = `level_critical`, `2` = `battery_low`. The integer field keeps the compact-template payload fixed-length binary — the same requirement as the summary template for the NOTE-NBGLWX Starnote/NTN path. All five fields (including `pump_amps = 0.0` when the pump is off) are always present in compact binary encoding.
+
+</Note>
 
 ### Low-power strategy
 

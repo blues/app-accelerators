@@ -100,7 +100,11 @@ All Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard MBGLW seats into the M.2 slot on the carrier. Mojo (bench-only) sits inline between the 5 V supply output and the Notecarrier CX `+VBAT` pad.
 
-> **Cellular antenna — critical for metal-panel deployments.** Connect the external cellular antenna's u.FL lead to the Notecard's primary antenna port and route the cable through a cable gland to **outside the metal panel cabinet or NEMA enclosure**. Steel panels and enclosures act as Faraday cages; a rubber-duck or pigtail antenna left inside a closed metal panel will not establish a reliable cellular session. This is the single most common field bring-up failure in panel-mounted deployments.
+<Warning>
+
+**Cellular antenna — critical for metal-panel deployments.** Connect the external cellular antenna's u.FL lead to the Notecard's primary antenna port and route the cable through a cable gland to **outside the metal panel cabinet or NEMA enclosure**. Steel panels and enclosures act as Faraday cages; a rubber-duck or pigtail antenna left inside a closed metal panel will not establish a reliable cellular session. This is the single most common field bring-up failure in panel-mounted deployments.
+
+</Warning>
 
 ### Power chain
 
@@ -112,7 +116,11 @@ AC/DC 5 V supply (IRM-10-5)
 
 For production deployment (no Mojo): connect the AC/DC supply 5 V output directly to Notecarrier CX `+VBAT`.
 
-> **Do not connect the supply output simultaneously to both `+VBAT` and `+VUSB/+5V` on the Notecarrier CX.** The `+VBAT` pad is the correct power input for this supply voltage and load profile; feeding two supply rails at once risks back-feeding one regulator through the other.
+<Warning>
+
+**Do not connect the supply output simultaneously to both `+VBAT` and `+VUSB/+5V` on the Notecarrier CX.** The `+VBAT` pad is the correct power input for this supply voltage and load profile; feeding two supply rails at once risks back-feeding one regulator through the other.
+
+</Warning>
 
 ### Active Miller integrator (replicate for each of the four current channels)
 
@@ -400,7 +408,11 @@ return ok;
 2. Issue `{"req":"card.restore","mode":"factory"}` via the [Notecard In-Browser Terminal](https://dev.blues.io/terminal/) or the USB serial REPL. This resets the Notecard to factory defaults and clears its stored NotePayload — including the `notecard_configured` flag.
 3. Power-cycle the device. On the next boot, `notecard_configured` is 0, so the firmware runs the full `initNotecard()` + `defineTemplates()` sequence again.
 
-> **Note:** `card.restore` with `mode:"factory"` also clears any Notes queued in the Notecard's local store. Complete step 1 before restoring if preserving in-flight data is important.
+<Note>
+
+`card.restore` with `mode:"factory"` also clears any Notes queued in the Notecard's local store. Complete step 1 before restoring if preserving in-flight data is important.
+
+</Note>
 
 ### 7.7 Key code snippet 1: template registration
 

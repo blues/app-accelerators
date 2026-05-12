@@ -97,9 +97,17 @@ The Notecard for Skylo and Notecarrier CX ship with an active SIM including 500 
 
 **Deployed energy budget (typical dry-weather day):** At the default 5-minute sample cadence with hourly summaries and 24-hour inbound polls, the device consumes approximately 40–50 mAh per day in cellular coverage (primarily the 250 mA hourly sync burst). During multi-day storms the 6600 mAh battery provides 5–8 days of reserve before solar recovery. Measure your exact deployment using Mojo (Section 8) to account for site-specific GNSS commission time and cellular versus satellite session overhead.
 
-> **Hardware deviation Note.** The project description suggests a Swan MCU. The Cygnet STM32 embedded in the Notecarrier CX is fully sufficient for this sensor mix: the MB7389 speaks 9600-baud UART and the rain gauge is a GPIO; no exotic peripheral or MCU-specific library requires a separate host board.
+<Note>
 
-> **Why Notecard for Skylo instead of Notecard Cell+WiFi.** The project description calls for Notecard Cellular + a separate Starnote add-on. The Notecard for Skylo (NOTE-NBGLWX) consolidates both into one M.2 module at a simpler BOM: one slot, one antenna pair, one firmware API surface. The satellite case for this specific application is strong enough to justify the upgrade — see Section 1.
+**Hardware deviation Note.** The project description suggests a Swan MCU. The Cygnet STM32 embedded in the Notecarrier CX is fully sufficient for this sensor mix: the MB7389 speaks 9600-baud UART and the rain gauge is a GPIO; no exotic peripheral or MCU-specific library requires a separate host board.
+
+</Note>
+
+<Note>
+
+**Why Notecard for Skylo instead of Notecard Cell+WiFi.** The project description calls for Notecard Cellular + a separate Starnote add-on. The Notecard for Skylo (NOTE-NBGLWX) consolidates both into one M.2 module at a simpler BOM: one slot, one antenna pair, one firmware API surface. The satellite case for this specific application is strong enough to justify the upgrade — see Section 1.
+
+</Note>
 
 ## 5. Wiring and Assembly
 
@@ -125,7 +133,11 @@ All host I/O connects to the [Notecarrier CX](https://dev.blues.io/datasheets/no
 
 The MB7389's serial output is TTL/CMOS UART at 9600 baud, 8N1, no flow control — logic levels are 0 V / Vcc (3.3 V when the sensor is powered from +3V3\_OUT). This is directly compatible with the Cygnet USART1 input; no level shifter is required. The Notecarrier CX's RX/TX header pins connect to the Cygnet's USART1 peripheral (`Serial1` in Arduino). The firmware reads the `Rxxxx\r` frame format (where xxxx is distance in millimeters) on every wake cycle.
 
-> **Power-cycle Note.** On Notecarrier CX, `+3V3_OUT` is part of the host 3.3V rail gated by the carrier's `EN` pin (see [Notecarrier CX v1.3 datasheet — Header Descriptions](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/#header-descriptions)): the MB7389 is unpowered during `card.attn` sleep and powers back on with the Cygnet at the start of each wake. This means the sensor is power-cycled on every sample — beneficial for energy budget, but verify that the sensor is producing valid output before the first read. In practice the I²C transactions for state recovery, `hubConfigure`, and `env.get` in `setup()` and `loop()` collectively consume well over 300 ms before `readWaterLevelMm()` is called for the first time, providing ample startup margin. The firmware's three-attempt read loop further absorbs any residual latency.
+<Note>
+
+**Power-cycle Note.** On Notecarrier CX, `+3V3_OUT` is part of the host 3.3V rail gated by the carrier's `EN` pin (see [Notecarrier CX v1.3 datasheet — Header Descriptions](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/#header-descriptions)): the MB7389 is unpowered during `card.attn` sleep and powers back on with the Cygnet at the start of each wake. This means the sensor is power-cycled on every sample — beneficial for energy budget, but verify that the sensor is producing valid output before the first read. In practice the I²C transactions for state recovery, `hubConfigure`, and `env.get` in `setup()` and `loop()` collectively consume well over 300 ms before `readWaterLevelMm()` is called for the first time, providing ample startup margin. The firmware's three-attempt read loop further absorbs any residual latency.
+
+</Note>
 
 **Rain gauge (GPIO):**
 

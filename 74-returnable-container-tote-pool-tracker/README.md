@@ -8,7 +8,11 @@ This reference application is intended to provide inspiration and help you get s
 
 This project is an [asset location tracking](https://blues.com/solutions-location-tracking/) solution for reusable container pools — plastic totes, pressurized kegs, and gas cylinders — that reports location on motion events and daily heartbeats using cellular connectivity and the [Notecard's](https://shop.blues.com/products/notecard-cellular?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) built-in accelerometer. Containers emit a motion event when they start or stop moving, and a daily confirmation when idle, all over LTE Cat-1 bis. The hardware is a [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) with a Notecard Cell+WiFi (see §4 for the BOM); operators tune heartbeat interval and motion sensitivity from Notehub without re-flashing.
 
-> **Scope.** This is a bench/POC build using a rechargeable 2 Ah LiPo — realistic service life is 12–24 months between battery swaps. For multi-year field deployments, see the Li-SOCl₂ primary-cell production path in [§11](#11-limitations-and-next-steps).
+<Note>
+
+**Scope.** This is a bench/POC build using a rechargeable 2 Ah LiPo — realistic service life is 12–24 months between battery swaps. For multi-year field deployments, see the Li-SOCl₂ primary-cell production path in [§11](#11-limitations-and-next-steps).
+
+</Note>
 
 ## 1. Project Overview
 
@@ -118,7 +122,11 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-> **Bench/POC BOM.** The components below equip the bench prototype documented here — the Notecarrier CX and its LiPo charge path are the right platform for bench validation and limited field trials. A production deployment targeting 3–5+ years between swaps requires a custom carrier board with a direct +VBAT input and a Li-SOCl₂ primary cell instead of the LiPo; see [§11](#11-limitations-and-next-steps) for that path.
+<Note>
+
+**Bench/POC BOM.** The components below equip the bench prototype documented here — the Notecarrier CX and its LiPo charge path are the right platform for bench validation and limited field trials. A production deployment targeting 3–5+ years between swaps requires a custom carrier board with a direct +VBAT input and a Li-SOCl₂ primary cell instead of the LiPo; see [§11](#11-limitations-and-next-steps) for that path.
+
+</Note>
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
@@ -167,7 +175,11 @@ No external sensors are required for this project — the Notecard's built-in ac
 
 </Warning>
 
-> **Important: ATTN pin power-gating.** The Notecarrier CX routes the Notecard's ATTN pin to the Cygnet's power-enable input, which is what allows `NotePayloadSaveAndSleep` to cut the host rail entirely between cycles — dropping the Cygnet to essentially zero current draw. If you adapt this firmware to a different carrier board, verify that the ATTN-to-host-power wiring is equivalent. Without it, the host never actually powers off and battery life suffers dramatically. See the [Attention Pin Guide](https://dev.blues.io/guides-and-tutorials/notecard-guides/attention-pin-guide/) for wiring details.
+<Warning>
+
+**Important: ATTN pin power-gating.** The Notecarrier CX routes the Notecard's ATTN pin to the Cygnet's power-enable input, which is what allows `NotePayloadSaveAndSleep` to cut the host rail entirely between cycles — dropping the Cygnet to essentially zero current draw. If you adapt this firmware to a different carrier board, verify that the ATTN-to-host-power wiring is equivalent. Without it, the host never actually powers off and battery life suffers dramatically. See the [Attention Pin Guide](https://dev.blues.io/guides-and-tutorials/notecard-guides/attention-pin-guide/) for wiring details.
+
+</Warning>
 
 ## 6. Notehub Setup
 

@@ -119,7 +119,11 @@ All Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard Cell+WiFi seats in the carrier's M.2 slot. Mojo sits inline between the 5 V supply output and the Notecarrier's `+VBAT` pad.
 
-> **Antenna placement.** The Notecard Cell+WiFi's cellular port is a u.FL connector (`MAIN`). For any installation inside or adjacent to a metal sub-panel or enclosure, connect a short u.FL-to-SMA-female bulkhead pigtail to the Notecard's `MAIN` u.FL port, thread the SMA bulkhead fitting through a cable gland in the enclosure wall, and screw the external cellular antenna onto the SMA fitting on the outside of the enclosure. A chip or flexible antenna left inside a metal enclosure will not maintain a reliable cellular link. The onboard WiFi chip antenna is similarly blocked by metalwork; if WiFi fallback matters at a given site, route a second u.FL pigtail from the Notecard's WiFi port to a second external antenna via the same cable-gland approach.
+<Warning>
+
+**Antenna placement.** The Notecard Cell+WiFi's cellular port is a u.FL connector (`MAIN`). For any installation inside or adjacent to a metal sub-panel or enclosure, connect a short u.FL-to-SMA-female bulkhead pigtail to the Notecard's `MAIN` u.FL port, thread the SMA bulkhead fitting through a cable gland in the enclosure wall, and screw the external cellular antenna onto the SMA fitting on the outside of the enclosure. A chip or flexible antenna left inside a metal enclosure will not maintain a reliable cellular link. The onboard WiFi chip antenna is similarly blocked by metalwork; if WiFi fallback matters at a given site, route a second u.FL pigtail from the Notecard's WiFi port to a second external antenna via the same cable-gland approach.
+
+</Warning>
 
 <Warning>
 

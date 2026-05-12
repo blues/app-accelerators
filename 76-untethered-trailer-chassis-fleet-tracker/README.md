@@ -83,7 +83,11 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-> **Hardware stack Note.** This design uses Notecarrier XI + Swan rather than the default Notecarrier CX/Cygnet stack because the ocean-capable Iridium path requires the dedicated Starnote connector exposed by the Notecarrier XI — the Notecarrier CX/Cygnet combination does not provide that interface and therefore cannot support Starnote for Iridium or Iridium NTN satellite fallback.
+<Note>
+
+**Hardware stack Note.** This design uses Notecarrier XI + Swan rather than the default Notecarrier CX/Cygnet stack because the ocean-capable Iridium path requires the dedicated Starnote connector exposed by the Notecarrier XI — the Notecarrier CX/Cygnet combination does not provide that interface and therefore cannot support Starnote for Iridium or Iridium NTN satellite fallback.
+
+</Note>
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
@@ -145,7 +149,11 @@ After bench bring-up is complete (see [§9](#9-validation-and-testing)), remove 
 2. **LiPo battery** → **Sunny Buddy** LIPO terminal (unchanged).
 3. **LiPo battery** → Notecarrier XI **+VBAT** screw terminal directly.
 
-> **Polarity Note.** Verify red-to-positive on every JST-PH connection before applying power. The Notecarrier XI +VBAT accepts 3.4–4.2V; exceeding 4.3V risks damage.
+<Warning>
+
+**Polarity Note.** Verify red-to-positive on every JST-PH connection before applying power. The Notecarrier XI +VBAT accepts 3.4–4.2V; exceeding 4.3V risks damage.
+
+</Warning>
 
 **Antenna routing:**
 

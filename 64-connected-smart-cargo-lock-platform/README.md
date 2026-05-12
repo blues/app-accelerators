@@ -77,7 +77,11 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-> **BLE not included.** This BOM covers cellular+satellite lock monitoring only. A BLE radio for driver-phone key authentication is intentionally omitted from this POC; see [Limitations](#11-limitations-and-next-steps) for the production path.
+<Note>
+
+**BLE not included.** This BOM covers cellular+satellite lock monitoring only. A BLE radio for driver-phone key authentication is intentionally omitted from this POC; see [Limitations](#11-limitations-and-next-steps) for the production path.
+
+</Note>
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
@@ -115,7 +119,11 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
 
 The Notecarrier CX routes the Notecard's ATTN output to the Cygnet host power enable internally — no external jumper or wiring change is needed. When `NotePayloadSaveAndSleep` runs, the Notecard drives ATTN to cut the Cygnet's supply for `SAMPLE_INTERVAL_SEC` seconds, then restores it; the host cold-boots into `setup()` on each wake. The peripheral +3V3 rail (SS461A, pull-up resistors) is gated by the same path and draws zero current during sleep.
 
-> **Bench Note.** Because ATTN controls Cygnet power natively on the Notecarrier CX, the USB port power-cycles on every sleep/wake transition. For uninterrupted serial observation during bench testing, reconnect the Arduino Serial Monitor after each wake — or attach an external 3.3 V UART adapter to the Notecarrier CX UART pins and monitor through that instead.
+<Tip>
+
+**Bench Note.** Because ATTN controls Cygnet power natively on the Notecarrier CX, the USB port power-cycles on every sleep/wake transition. For uninterrupted serial observation during bench testing, reconnect the Arduino Serial Monitor after each wake — or attach an external 3.3 V UART adapter to the Notecarrier CX UART pins and monitor through that instead.
+
+</Tip>
 
 **Sensor placement:**
 
@@ -237,7 +245,11 @@ Two template-backed Notefiles. Templates store Notes as fixed-length records rat
 }
 ```
 
-> **`motion` field sentinel.** The firmware queries `card.motion` before queuing any state-transition Note. If both I²C attempts fail (e.g., the Notecard hasn't yet started the motion accumulator after a cold boot), `motion` is set to `−1` as a fault sentinel and the transition Note is still queued so the state-change event is never silently dropped. A downstream consumer seeing `motion: −1` should treat the field as "accelerometer data unavailable for this event" rather than "zero motion detected." Any value ≥ 0 is a valid accumulator reading.
+<Note>
+
+**`motion` field sentinel.** The firmware queries `card.motion` before queuing any state-transition Note. If both I²C attempts fail (e.g., the Notecard hasn't yet started the motion accumulator after a cold boot), `motion` is set to `−1` as a fault sentinel and the transition Note is still queued so the state-change event is never silently dropped. A downstream consumer seeing `motion: −1` should treat the field as "accelerometer data unavailable for this event" rather than "zero motion detected." Any value ≥ 0 is a valid accumulator reading.
+
+</Note>
 
 Example status summary:
 
@@ -371,9 +383,13 @@ Every `SAMPLE_INTERVAL_SEC` (default 60 s), the firmware reads three sensors, ev
 
 **First-light sensor verification.** Before sealing the enclosure:
 
-> **Bench setup — `DEBUG_SERIAL` and power-cut sleep.** The firmware ships with `#define DEBUG_SERIAL` commented out; no log output appears until you uncomment that line and reflash. Note that enabling `DEBUG_SERIAL` adds up to a 3 s USB-enumeration wait on every wake, which measurably increases average power consumption — leave it commented in production builds.
->
-> Also Note that this firmware uses full host power-cut sleep via `NotePayloadSaveAndSleep`. On the Notecarrier CX, the ATTN signal is routed to the Cygnet host power enable internally (no jumper required — see [§5](#5-wiring-and-assembly)), so the USB port power-cycles on every sleep/wake transition and re-enumerates on each 60-second wake. For uninterrupted serial observation during bench testing, reconnect the Serial Monitor after each wake — or attach an external 3.3 V UART adapter to the Notecarrier CX UART pins and monitor through that instead.
+<Tip>
+
+**Bench setup — `DEBUG_SERIAL` and power-cut sleep.** The firmware ships with `#define DEBUG_SERIAL` commented out; no log output appears until you uncomment that line and reflash. Note that enabling `DEBUG_SERIAL` adds up to a 3 s USB-enumeration wait on every wake, which measurably increases average power consumption — leave it commented in production builds.
+
+Also Note that this firmware uses full host power-cut sleep via `NotePayloadSaveAndSleep`. On the Notecarrier CX, the ATTN signal is routed to the Cygnet host power enable internally (no jumper required — see [§5](#5-wiring-and-assembly)), so the USB port power-cycles on every sleep/wake transition and re-enumerates on each 60-second wake. For uninterrupted serial observation during bench testing, reconnect the Serial Monitor after each wake — or attach an external 3.3 V UART adapter to the Notecarrier CX UART pins and monitor through that instead.
+
+</Tip>
 
 1. Open the Arduino Serial Monitor at 115 200 baud. On each 60-second wake the firmware logs `[cargo_lock] shackle=1 bolt=1 motion=N phys=LOCKED rept=LOCKED new=LOCKED`. The `phys` field is the last persisted physical state; `rept` is the last state for which a transition event was successfully queued; `new` is the state derived from the current sensor read. Confirm `new` changes correctly as you manually open the shackle and retract the bolt.
 2. Tap the lock body firmly — the `motion` count should spike above background on the next wake. Adjust `tamper_threshold` in the Fleet's environment variables until normal transit vibration stays below the threshold and a firm impact exceeds it.

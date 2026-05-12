@@ -104,7 +104,11 @@ The Sunny Buddy is the sole battery charger in this design. Its `BAT` JST port c
    - **Bench with Mojo (inline power + Qwiic readback):** Sunny Buddy `LOAD` → Mojo `BAT` input → Mojo `LOAD` output → Notecarrier CX LiPo JST connector. The Mojo sits inline on the power rail and its LTC2959 coulomb counter accumulates the charge drawn from the LiPo. To read the accumulated mAh, add a second 100 mm Qwiic cable from the PMSA003I's second STEMMA QT port to the Mojo's Qwiic port, completing the daisy-chain: Notecarrier CX Qwiic → PMSA003I → Mojo. With Notecard firmware v8.1.3 or later, the Notecard auto-detects the Mojo on the shared I²C bus and periodically logs energy consumption data (including `milliamp_hours`) to `_log.qo` Notes. See the [Mojo documentation](https://dev.blues.io/datasheets/mojo-datasheet/) for details. For a one-shot bench reading, issue `{"req":"card.power"}` from the Notecard's in-browser serial terminal; the firmware in this project does not call `card.power` (see §9 for the extension path).
    - **Deployed (without Mojo):** Sunny Buddy `LOAD` → Notecarrier CX LiPo JST connector directly.
 
-> **USB-C conflict warning.** When the Sunny Buddy LOAD is wired to the Notecarrier CX LiPo JST, **do not simultaneously connect USB-C** to the Notecarrier. USB-C activates the Notecarrier's onboard LiPo charger, which would fight the Sunny Buddy for control of the battery. For USB-only bench sessions (programming, Notecard debug serial): disconnect the Sunny Buddy LOAD pigtail from the Notecarrier LiPo JST first, then connect USB-C alone.
+<Warning>
+
+**USB-C conflict warning.** When the Sunny Buddy LOAD is wired to the Notecarrier CX LiPo JST, **do not simultaneously connect USB-C** to the Notecarrier. USB-C activates the Notecarrier's onboard LiPo charger, which would fight the Sunny Buddy for control of the battery. For USB-only bench sessions (programming, Notecard debug serial): disconnect the Sunny Buddy LOAD pigtail from the Notecarrier LiPo JST first, then connect USB-C alone.
+
+</Warning>
 
 **PM sensor (Adafruit PMSA003I, I²C):**
 
@@ -118,7 +122,11 @@ The Sunny Buddy is the sole battery charger in this design. Its `BAT` JST port c
 - **OUT** → Notecarrier CX `A0` header pin (ADC input).
 - The SEN0232 is a PCB module with an **onboard microphone capsule** — there is no separate remote microphone cable. Mount the entire SEN0232 board inside the enclosure with its microphone aperture aligned directly behind the acoustic vent opening. Cut a 20–25 mm diameter hole on the most sheltered enclosure face and fit it with a **weatherproof acoustic vent plug** (PTFE-membrane type; see BOM). Position the SEN0232 so its microphone port faces the vent membrane with a gap of 2–5 mm. The PTFE membrane passes sound pressure waves while sealing against moisture; a bare port or foam packing will compromise the NEMA 4X weather rating.
 
-> **Enclosure weather rating Note.** Any opening cut for sensor airflow or sound transmission must be fitted with the IP-rated vent components listed in the BOM. Without those components, the enclosure is de-rated to at most IP54 at the sensor ports. The sintered-PE inlet/exhaust vents and the PTFE acoustic membrane vent maintain the enclosure's original weather rating at each opening.
+<Note>
+
+**Enclosure weather rating Note.** Any opening cut for sensor airflow or sound transmission must be fitted with the IP-rated vent components listed in the BOM. Without those components, the enclosure is de-rated to at most IP54 at the sensor ports. The sintered-PE inlet/exhaust vents and the PTFE acoustic membrane vent maintain the enclosure's original weather rating at each opening.
+
+</Note>
 
 **Antenna routing:**
 
@@ -128,7 +136,11 @@ The Hammond 1554CGY enclosure is ABS plastic, which is RF-transparent — cellul
 - Press the **GNSS** antenna flat against the interior of the **top face** of the enclosure (the upward-facing surface when the unit is deployed upright on a fence post or T-bar stake). The lid carries the solar panel on its exterior — the panel's glass, backing, and frame are not RF-transparent and will attenuate or detune the GNSS antenna if it is placed directly behind the panel. The top face is unobstructed and provides a clear RF path to the sky. Plug the pigtail into the MBGLW's **GPS** connector.
 - Leave the MBGLW's **WIFI** u.FL port unconnected; the WiFi radio is not used in this design.
 
-> **Metal enclosure substitution.** If you replace the ABS enclosure with a steel or aluminium alternative, the antennas must exit the box — route u.FL pigtails through IP-rated cable glands to externally mounted antennas, as metal fully blocks both cellular and GPS signals inside.
+<Note>
+
+**Metal enclosure substitution.** If you replace the ABS enclosure with a steel or aluminium alternative, the antennas must exit the box — route u.FL pigtails through IP-rated cable glands to externally mounted antennas, as metal fully blocks both cellular and GPS signals inside.
+
+</Note>
 
 ## 6. Notehub Setup
 

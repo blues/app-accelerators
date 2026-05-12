@@ -8,7 +8,11 @@ This reference application is intended to provide inspiration and help you get s
 
 This project is a [supply chain tracking](https://blues.com/solutions-supply-chain-tracking/) reference design for leased freight and tank rail cars. A solar-powered [Notecard for Skylo](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) — Blues' all-in-one cellular and satellite module — pairs with an embedded Cygnet STM32 host to monitor **car-level** conditions: location, shock/impact events, and coupler state. On TANK_CAR builds, the same device adds low-pressure vent-port fitting pressure via the Adafruit MPRLS (0–25 PSI absolute) and single-point lading temperature via a waterproof DS18B20 probe.
 
-> **POC scope.** This is a car-health and interchange-tracking foundation — it produces the location, coupler, motion, and shock telemetry stream that downstream geofencing services consume. **Not implemented here, all three documented as production next steps in [§11](#11-limitations-and-next-steps):** on-device interchange-boundary detection and EDI integration; certified DOT-111/DOT-105-class tank pressure sensing (the MPRLS is rated for vent and low-pressure fittings only); multi-point cargo temperature.
+<Note>
+
+**POC scope.** This is a car-health and interchange-tracking foundation — it produces the location, coupler, motion, and shock telemetry stream that downstream geofencing services consume. **Not implemented here, all three documented as production next steps in [§11](#11-limitations-and-next-steps):** on-device interchange-boundary detection and EDI integration; certified DOT-111/DOT-105-class tank pressure sensing (the MPRLS is rated for vent and low-pressure fittings only); multi-point cargo temperature.
+
+</Note>
 
 ## 1. Project Overview
 
@@ -262,7 +266,11 @@ The firmware compiles into two distinct profiles controlled by a single `#define
 
 In the default standard build, the MPRLS is never initialized, the `pressure_psi` field is absent from every Note template (saving satellite bytes), and the pressure alert logic is compiled out entirely — no "MPRLS not found" warnings appear on non-tank assets. Enable `TANK_CAR` only when the MPRLS sensor is physically fitted.
 
-> **Switching build profiles.** The firmware encodes the build profile into `CONFIG_VERSION` (standard = 4, TANK_CAR = 104). Toggling `#define TANK_CAR` therefore automatically invalidates the stored configuration on the Notecard and forces `defineTemplates()` to re-register the correct schema on the next wake — no manual version bump is needed. Without this coupling, flipping the flag while keeping the same `CONFIG_VERSION` would leave a stale `railcar_status.qo` template that either lacks or spuriously includes `pressure_psi` and `tank_temp_c`, causing `note.add` to reject payloads whose schema does not match the registered template.
+<Note>
+
+**Switching build profiles.** The firmware encodes the build profile into `CONFIG_VERSION` (standard = 4, TANK_CAR = 104). Toggling `#define TANK_CAR` therefore automatically invalidates the stored configuration on the Notecard and forces `defineTemplates()` to re-register the correct schema on the next wake — no manual version bump is needed. Without this coupling, flipping the flag while keeping the same `CONFIG_VERSION` would leave a stale `railcar_status.qo` template that either lacks or spuriously includes `pressure_psi` and `tank_temp_c`, causing `note.add` to reject payloads whose schema does not match the registered template.
+
+</Note>
 
 ### 7.1 Installing and flashing
 
@@ -509,7 +517,11 @@ if (!sleepOk) { /* fallback card.attn sleep */ }
 
 The table below lists per-phase reference figures drawn from the [NOTE-NBGLWX datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) and the [Notecard low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/), alongside whole-system bench estimates for this assembly. Read the two columns differently: the reference column reflects what Blues has published; the bench estimate column is a starting point to confirm with Mojo.
 
-> **No NOTE-NBGLWX-specific NTN burst-current figure is published in the Blues datasheet at time of writing.** The NTN row below uses the datasheet's general modem-active figure as a floor. Skylo NTN sessions require longer active periods than typical cellular sessions — meaning both total session energy and sustained current demand on the battery rail are higher than a same-duration cellular session. **Size your battery, wiring gauge, and Scoop buffer for peak burst current, not average current.** The Scoop's role is specifically to prevent the LiPo + solar chain from browning out the radio modem during high-current bursts; do not omit it.
+<Warning>
+
+**No NOTE-NBGLWX-specific NTN burst-current figure is published in the Blues datasheet at time of writing.** The NTN row below uses the datasheet's general modem-active figure as a floor. Skylo NTN sessions require longer active periods than typical cellular sessions — meaning both total session energy and sustained current demand on the battery rail are higher than a same-duration cellular session. **Size your battery, wiring gauge, and Scoop buffer for peak burst current, not average current.** The Scoop's role is specifically to prevent the LiPo + solar chain from browning out the radio modem during high-current bursts; do not omit it.
+
+</Warning>
 
 | Phase | Reference figure | Source | Whole-system bench estimate |
 |---|---|---|---|

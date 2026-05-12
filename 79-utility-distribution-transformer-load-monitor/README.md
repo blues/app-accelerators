@@ -8,7 +8,11 @@ This reference application is intended to provide inspiration and help you get s
 
 This project is an [energy monitoring](https://blues.com/solutions-energy-monitoring/) solution that gives utilities real-time load visibility at the pole — where transformer failures actually happen. A [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) with three split-core current transformers on the secondary terminals and an I²C temperature sensor tracks per-phase loading, detects dangerous current imbalances, and correlates load with enclosure temperature as a thermal-stress proxy — all over cellular, with no site infrastructure required.
 
-> **Implementation scope: conventional split-core CTs and enclosure-internal temperature.** This reference design uses **conventional current-output split-core CTs** (YHDC SCT-013-000, 100 A / 50 mA) rather than flexible Rogowski-type coils, and an **enclosure-internal I²C temperature sensor** (MCP9808) as a thermal-stress proxy rather than a true outdoor ambient probe or a winding-contact sensor. Both choices reduce hardware complexity for the standard residential and commercial distribution transformer installation scenario. See [§11 Limitations](#11-limitations-and-next-steps) for rationale and the production path to both alternatives.
+<Note>
+
+**Implementation scope: conventional split-core CTs and enclosure-internal temperature.** This reference design uses **conventional current-output split-core CTs** (YHDC SCT-013-000, 100 A / 50 mA) rather than flexible Rogowski-type coils, and an **enclosure-internal I²C temperature sensor** (MCP9808) as a thermal-stress proxy rather than a true outdoor ambient probe or a winding-contact sensor. Both choices reduce hardware complexity for the standard residential and commercial distribution transformer installation scenario. See [§11 Limitations](#11-limitations-and-next-steps) for rationale and the production path to both alternatives.
+
+</Note>
 
 ---
 
@@ -30,7 +34,11 @@ The power picture tells the same story. Cellular removes the site infrastructure
 
 CT installation is **non-invasive**: the split-core sensors clamp directly onto energized secondary conductors without breaking the circuit. The power supply connection is a separate matter — tapping the 120VAC secondary is live utility electrical work; depending on utility policy and local jurisdiction, this step may require a scheduled outage, a qualified hot-work procedure, or written utility approval before the tap is energized (see [§11 Limitations](#11-limitations-and-next-steps)). No invasive tap into the transformer case and no on-site network provisioning are required. A two-person crew, including an electrician qualified for live secondary work — can install and commission one unit in under an hour once all necessary work authorizations are in hand.
 
-> **Power supply scope.** This reference design assumes an accessible 120VAC secondary tap — the standard case for North American single-phase distribution transformers installed by a qualified crew. Three-phase padmount transformers, sealed primary-side enclosures, or installations where utility rules prohibit tapping the secondary require an alternate power arrangement. See [§11 Limitations](#11-limitations-and-next-steps) for the inductive harvesting alternative.
+<Note>
+
+**Power supply scope.** This reference design assumes an accessible 120VAC secondary tap — the standard case for North American single-phase distribution transformers installed by a qualified crew. Three-phase padmount transformers, sealed primary-side enclosures, or installations where utility rules prohibit tapping the secondary require an alternate power arrangement. See [§11 Limitations](#11-limitations-and-next-steps) for the inductive harvesting alternative.
+
+</Note>
 
 ---
 
@@ -109,7 +117,11 @@ Here is a sample Note this device emits:
 
 All Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
-> **CT current range Note.** The SCT-013-000 rated at 100A suits transformers up to approximately 20 kVA at 240V secondary (~83A full-load, with ~17% headroom to the CT's 100A rated output). A common 25 kVA unit draws ~104A at full load — 4% above the CT's rating; use a higher-range current-output CT for transformers at or above 25 kVA. Larger transformers (50–167 kVA) draw 200–400A and require a higher-range **current-output** CT such as the YHDC SCT-036-200 (200A/50mA); update `CT_TURNS_RATIO` and `CT_BURDEN_OHMS` in firmware accordingly. Voltage-output CTs (such as the YHDC SCT-019-200, which produces 0.333V full-scale from an internal burden) are **not** drop-in replacements — they do not interface with the external bias circuit above and require a different analog front end. See [§11 Limitations](#11-limitations-and-next-steps) for the production path.
+<Note>
+
+**CT current range Note.** The SCT-013-000 rated at 100A suits transformers up to approximately 20 kVA at 240V secondary (~83A full-load, with ~17% headroom to the CT's 100A rated output). A common 25 kVA unit draws ~104A at full load — 4% above the CT's rating; use a higher-range current-output CT for transformers at or above 25 kVA. Larger transformers (50–167 kVA) draw 200–400A and require a higher-range **current-output** CT such as the YHDC SCT-036-200 (200A/50mA); update `CT_TURNS_RATIO` and `CT_BURDEN_OHMS` in firmware accordingly. Voltage-output CTs (such as the YHDC SCT-019-200, which produces 0.333V full-scale from an internal burden) are **not** drop-in replacements — they do not interface with the external bias circuit above and require a different analog front end. See [§11 Limitations](#11-limitations-and-next-steps) for the production path.
+
+</Note>
 
 <Warning>
 
@@ -185,15 +197,23 @@ The SCT-013-000 uses a 3.5mm plug with tip = CT+ and sleeve = CT–. Wire the br
 
 Clamp each CT around a single secondary conductor, never around two conductors simultaneously, as the fields would cancel. For a single-phase (120/240V center-tap) transformer, clamp the Phase-A CT on the **X1** secondary conductor (L1 hot leg) and the Phase-B CT on the **X3** secondary conductor (L2 hot leg). **X2 is the center-tap neutral** — do not monitor X2 unless neutral current is an intentional additional metric; clamping one CT on X1 and the other on X2 would monitor one hot leg and the neutral, not the L1/L2 pair. For a three-phase transformer, clamp each CT on one secondary phase conductor. The third CT slot (A2/Phase-C) can be left unconnected for split-phase installations; the firmware defaults to `phase_count=2`, so no env var change is required. For three-phase installations, clamp the Phase-C CT on the third secondary conductor and set `phase_count=3` in Notehub before first power-on — without that setting, A2 is never sampled and any C-phase overload or imbalance contribution is invisible to the firmware.
 
-> ⚠️ **CT open-circuit hazard.** The SCT-013-000 is a **current-output** CT. Never disconnect the 22Ω burden resistor or unplug a CT jack while the CT is clamped on an energized conductor. An open-circuited current-output CT can develop dangerous high voltages across its terminals. Always verify the burden resistor is in-circuit before clamping the CT onto a live conductor; always remove the CT from the conductor before disturbing the burden wiring or disconnecting the 3.5mm jack.
->
+<Warning>
+
+**CT open-circuit hazard.** The SCT-013-000 is a **current-output** CT. Never disconnect the 22Ω burden resistor or unplug a CT jack while the CT is clamped on an energized conductor. An open-circuited current-output CT can develop dangerous high voltages across its terminals. Always verify the burden resistor is in-circuit before clamping the CT onto a live conductor; always remove the CT from the conductor before disturbing the burden wiring or disconnecting the 3.5mm jack.
+
+</Warning>
+
 <Warning>
 
 **Safety.** Distribution transformer secondary conductors carry lethal voltages. Installation must be performed by qualified electrical workers with appropriate PPE, following utility safety procedures and applicable codes. This firmware is read-only — it never commands any switching of the transformer or its connected loads. The CTs are non-invasive and clamp without breaking the circuit, but proximity to energized conductors remains hazardous.
 
 </Warning>
 
-> ⚠️ **Surge and transient protection (POC omission).** The 2A slow-blow fuse protects the IRM-10-5 supply against a sustained short but does not suppress lightning-induced transients or switching surges, which are routinely present on distribution transformer secondaries. For bench bring-up this is acceptable; for any unit intended for permanent pole-mount deployment, install a surge protective device (SPD) rated for the site's overvoltage category (Category C / lightning-level, per IEC 61643-11 or UL 1449) across Line/Neutral ahead of the fuse holder. Bond the enclosure to the pole grounding system and verify conductor routing, creepage/clearance distances, and any utility-specific installation approval requirements before energizing the tap. See [§11](#11-limitations-and-next-steps) for the full list.
+<Warning>
+
+**Surge and transient protection (POC omission).** The 2A slow-blow fuse protects the IRM-10-5 supply against a sustained short but does not suppress lightning-induced transients or switching surges, which are routinely present on distribution transformer secondaries. For bench bring-up this is acceptable; for any unit intended for permanent pole-mount deployment, install a surge protective device (SPD) rated for the site's overvoltage category (Category C / lightning-level, per IEC 61643-11 or UL 1449) across Line/Neutral ahead of the fuse holder. Bond the enclosure to the pole grounding system and verify conductor routing, creepage/clearance distances, and any utility-specific installation approval requirements before energizing the tap. See [§11](#11-limitations-and-next-steps) for the full list.
+
+</Warning>
 
 ---
 

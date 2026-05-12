@@ -100,7 +100,11 @@ All Blues hardware ships with a prepaid SIM including 500 MB of data and 10 year
 
 All host I/O lands on the [Notecarrier CX's](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard Cell+WiFi seats into the carrier's M.2 slot. The Mojo sits inline between the LiPo battery's JST-PH connector and the Notecarrier CX's `+VBAT` pin during bench power validation (see [§9](#9-validation-and-testing)).
 
-> ⚠️ **Required: tie `ATTN` to `EN` for `card.attn` host power gating.** The firmware's low-power design assumes the Notecard's `ATTN` pin de-energizes the embedded Cygnet host's 3.3 V rail between wakes. The Notecarrier CX exposes both `ATTN` (Notecard interrupt output) and `EN` (input that gates the on-board host's 3.3 V rail) on its dual 16-pin header but **does not connect them by default**. Add a short jumper wire between the `ATTN` and `EN` header pins before powering the assembly from battery — without this connection the Cygnet stays continuously powered between wakes, the MB7389 sensor (powered from `+3V3_OUT`, which is gated by the same rail) also stays continuously powered, and a 2 Ah LiPo will drain in days rather than weeks. The `HST/NC` DIP switch on the Notecarrier CX selects only which device is connected to the USB serial interface and has no effect on host power gating. Confirm the gating is working with Mojo (see [§9](#9-validation-and-testing)) before deploying.
+<Warning>
+
+**Required: tie `ATTN` to `EN` for `card.attn` host power gating.** The firmware's low-power design assumes the Notecard's `ATTN` pin de-energizes the embedded Cygnet host's 3.3 V rail between wakes. The Notecarrier CX exposes both `ATTN` (Notecard interrupt output) and `EN` (input that gates the on-board host's 3.3 V rail) on its dual 16-pin header but **does not connect them by default**. Add a short jumper wire between the `ATTN` and `EN` header pins before powering the assembly from battery — without this connection the Cygnet stays continuously powered between wakes, the MB7389 sensor (powered from `+3V3_OUT`, which is gated by the same rail) also stays continuously powered, and a 2 Ah LiPo will drain in days rather than weeks. The `HST/NC` DIP switch on the Notecarrier CX selects only which device is connected to the USB serial interface and has no effect on host power gating. Confirm the gating is working with Mojo (see [§9](#9-validation-and-testing)) before deploying.
+
+</Warning>
 
 <Warning>
 

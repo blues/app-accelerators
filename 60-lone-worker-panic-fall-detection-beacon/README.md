@@ -133,9 +133,17 @@ Here is a sample Note this device emits:
 
 All Blues hardware ships with an active SIM including 500 MB of cellular data and 10 years of service — no activation fees, no monthly commitment.
 
-> **Installer-supplied, deployment-specific item.** Belt clip or wearable mounting hardware — attaches the beacon to a worker's belt, hard-hat band, or safety vest. Select a clip rated for the enclosure weight (~300 g fully loaded). Some enclosure families include an optional clip-arm accessory; a spring-steel belt clip can be mounted to the enclosure exterior with M3 screws.
+<Note>
 
-> **Charging and power access.** No LiPo charging circuit, dock, or power-switch hardware is included in this BOM or wiring. The project runs on a bare LiPo cell until depleted. A production wearable needs a USB-C LiPo charging circuit integrated into the enclosure, plus overcharge and short-circuit protection if not already provided by the cell's built-in circuitry. See [Section 9](#11-limitations-and-next-steps) for details; adding a charging path is the expected next step for anyone moving from bench validation toward a field-deployed unit.
+**Installer-supplied, deployment-specific item.** Belt clip or wearable mounting hardware — attaches the beacon to a worker's belt, hard-hat band, or safety vest. Select a clip rated for the enclosure weight (~300 g fully loaded). Some enclosure families include an optional clip-arm accessory; a spring-steel belt clip can be mounted to the enclosure exterior with M3 screws.
+
+</Note>
+
+<Note>
+
+**Charging and power access.** No LiPo charging circuit, dock, or power-switch hardware is included in this BOM or wiring. The project runs on a bare LiPo cell until depleted. A production wearable needs a USB-C LiPo charging circuit integrated into the enclosure, plus overcharge and short-circuit protection if not already provided by the cell's built-in circuitry. See [Section 9](#11-limitations-and-next-steps) for details; adding a charging path is the expected next step for anyone moving from bench validation toward a field-deployed unit.
+
+</Note>
 
 ## 5. Wiring and Assembly
 
@@ -161,9 +169,17 @@ Pin-by-pin:
   5. **Mojo `GND` terminal** → Notecarrier CX **`GND`** header pin (completes the ground-return path; without this connection the circuit is open).
 - **Starnote JST cable** → Notecard JST port (the 6-pin cable carries UART + power between Notecard and Starnote). The Starnote (Antenna) variant has onboard Ignion antennas — no external antenna cable to route.
 
-> **Antenna placement and connector mapping.** The Blues Flexible Dual LTE/Wi-Fi and GPS/GNSS Antenna has two labeled tails: connect the LTE tail to the Notecard MBGLW `CELL` u.FL port and the GPS tail to the Notecard MBGLW `GPS` u.FL port. Peel and adhere both elements to the interior wall of the polycarbonate enclosure — polycarbonate is RF-transparent, so no external pigtail routing or bulkhead is needed. Position the GPS element on the top (sky-facing) wall for best acquisition geometry during GPS-on events. The **Starnote for Skylo (Antenna)** variant has onboard Ignion antennas; no external satellite antenna is connected or required. Mount the Starnote with its top face oriented toward the sky (inside the polycarbonate enclosure top is sufficient); in the northern hemisphere a southward orientation improves Skylo link margin. The Starnote's onboard GNSS antenna supports its own satellite link functions and is separate from the Notecard's GPS module; the Notecard `GPS` u.FL port (connected to the dual antenna's GPS tail) is the location source for all `card.location` data embedded in alert Notes.
+<Note>
 
-> **Charging is out of scope for this POC.** No charging circuit, dock, or inductive coil is wired in this build. Route the LiPo JST connector to an accessible point on the enclosure wall so the battery can be swapped or a bench charger connected without fully disassembling the unit. Do not seal the JST connector inside the enclosure with no external access path.
+**Antenna placement and connector mapping.** The Blues Flexible Dual LTE/Wi-Fi and GPS/GNSS Antenna has two labeled tails: connect the LTE tail to the Notecard MBGLW `CELL` u.FL port and the GPS tail to the Notecard MBGLW `GPS` u.FL port. Peel and adhere both elements to the interior wall of the polycarbonate enclosure — polycarbonate is RF-transparent, so no external pigtail routing or bulkhead is needed. Position the GPS element on the top (sky-facing) wall for best acquisition geometry during GPS-on events. The **Starnote for Skylo (Antenna)** variant has onboard Ignion antennas; no external satellite antenna is connected or required. Mount the Starnote with its top face oriented toward the sky (inside the polycarbonate enclosure top is sufficient); in the northern hemisphere a southward orientation improves Skylo link margin. The Starnote's onboard GNSS antenna supports its own satellite link functions and is separate from the Notecard's GPS module; the Notecard `GPS` u.FL port (connected to the dual antenna's GPS tail) is the location source for all `card.location` data embedded in alert Notes.
+
+</Note>
+
+<Note>
+
+**Charging is out of scope for this POC.** No charging circuit, dock, or inductive coil is wired in this build. Route the LiPo JST connector to an accessible point on the enclosure wall so the battery can be swapped or a bench charger connected without fully disassembling the unit. Do not seal the JST connector inside the enclosure with no external access path.
+
+</Note>
 
 The LIS3DH's SDO/SA0 pin sets the I²C address. Leave it unconnected or pulled to GND for address 0x18 (the firmware default). The DRV2605L address (0x5A) is fixed; no conflict.
 

@@ -77,7 +77,11 @@ After completing this project, you will have:
    - Look for `shot.qo` events containing `cycle`, `peak_psi`, `fill_ms`, `temp_avg_c`
    - The serial log and Notehub events are the source of truth during commissioning
 
-> **Design scope: hydraulic injection pressure — no mold modification required.** This monitor measures **hydraulic injection pressure at the injection cylinder's manifold block** using an off-the-shelf 4–20 mA strain-gauge transducer that taps a standard NPT port on the hydraulic circuit. Hydraulic pressure is the forcing function the injection unit applies; in-cavity pressure is the actual polymer pressure the mold cavity sees — the two differ by nozzle, gate, and runner losses that vary with resin, temperature, and wear. Because the measurement point is on the hydraulic circuit rather than inside the mold, this approach can be retrofitted to any hydraulic press in an afternoon without touching the mold, without accessing a sensor port, and without production interruption. It is appropriate for shot-to-shot consistency monitoring, filling and packing trend detection, and early-warning alerting. It is **not** a substitute for direct cavity pressure measurement in applications that require it — such as closed-loop pack control, or high-precision medical or optical parts where the manifold-to-cavity pressure relationship cannot be assumed stable. For those use cases a mold-mounted piezoelectric transducer with dedicated signal conditioning is required.
+<Note>
+
+**Design scope: hydraulic injection pressure — no mold modification required.** This monitor measures **hydraulic injection pressure at the injection cylinder's manifold block** using an off-the-shelf 4–20 mA strain-gauge transducer that taps a standard NPT port on the hydraulic circuit. Hydraulic pressure is the forcing function the injection unit applies; in-cavity pressure is the actual polymer pressure the mold cavity sees — the two differ by nozzle, gate, and runner losses that vary with resin, temperature, and wear. Because the measurement point is on the hydraulic circuit rather than inside the mold, this approach can be retrofitted to any hydraulic press in an afternoon without touching the mold, without accessing a sensor port, and without production interruption. It is appropriate for shot-to-shot consistency monitoring, filling and packing trend detection, and early-warning alerting. It is **not** a substitute for direct cavity pressure measurement in applications that require it — such as closed-loop pack control, or high-precision medical or optical parts where the manifold-to-cavity pressure relationship cannot be assumed stable. For those use cases a mold-mounted piezoelectric transducer with dedicated signal conditioning is required.
+
+</Note>
 
 Here is a sample Note this device emits:
 
@@ -167,7 +171,11 @@ The Notecarrier CX includes a short flexible LTE antenna connected to the Noteca
 - Attach the external SMA wideband antenna to the SMA female bulkhead on the outside of the cabinet. A magnetic-mount whip placed on the cabinet roof is a practical field solution. Keep the antenna clear of large metal objects and away from the high-voltage conductors in the upper section of the panel.
 - Do not use the included flexible antenna inside the cabinet — retain it as a bench-test spare.
 
-> **Field test before commissioning.** RF performance inside a machine cabinet varies by cabinet size, wall thickness, and nearby interference sources. After assembly, verify cloud connectivity by issuing `{"req":"hub.status"}` from the in-browser Notecard terminal or the serial debug port and confirming `connected:true` in the response before locking up the cabinet.
+<Tip>
+
+**Field test before commissioning.** RF performance inside a machine cabinet varies by cabinet size, wall thickness, and nearby interference sources. After assembly, verify cloud connectivity by issuing `{"req":"hub.status"}` from the in-browser Notecard terminal or the serial debug port and confirming `connected:true` in the response before locking up the cabinet.
+
+</Tip>
 
 **Power:**
 
@@ -260,7 +268,11 @@ Sample `shot.qo` Note body:
 }
 ```
 
-> **`cycle` is a per-boot-session shot sequence number.** `g_cycle_count` is a RAM-only variable that resets to zero on every reboot or power loss. It is not a persistent lifetime part counter. For cumulative production counting, aggregate session counts using the Notehub event timestamp as the ordering key, or implement NVM persistence as a production enhancement (see §10).
+<Note>
+
+**`cycle` is a per-boot-session shot sequence number.** `g_cycle_count` is a RAM-only variable that resets to zero on every reboot or power loss. It is not a persistent lifetime part counter. For cumulative production counting, aggregate session counts using the Notehub event timestamp as the ordering key, or implement NVM persistence as a production enhancement (see §10).
+
+</Note>
 
 Sample `shot_alert.qo` Note body (immediate sync):
 

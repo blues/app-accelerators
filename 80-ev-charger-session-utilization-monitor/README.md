@@ -100,11 +100,19 @@ All Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 </Warning>
 
-> **Panel placement.** Mounting third-party low-voltage electronics inside a mains EVSE panel is subject to the enclosure's UL/CSA listing and local electrical code. Where the panel listing or jurisdiction does not permit auxiliary equipment in the mains compartment, install the Notecarrier CX, power supply, and RS-485 transceiver module in a separately listed auxiliary enclosure mounted adjacent to the main panel. Route the RS-485 signal cable and AC supply conductors between the two enclosures through a listed conduit entry or knockout. The auxiliary-enclosure approach is the safe default for any installation where the main panel's interior cannot be confirmed suitable.
+<Warning>
+
+**Panel placement.** Mounting third-party low-voltage electronics inside a mains EVSE panel is subject to the enclosure's UL/CSA listing and local electrical code. Where the panel listing or jurisdiction does not permit auxiliary equipment in the mains compartment, install the Notecarrier CX, power supply, and RS-485 transceiver module in a separately listed auxiliary enclosure mounted adjacent to the main panel. Route the RS-485 signal cable and AC supply conductors between the two enclosures through a listed conduit entry or knockout. The auxiliary-enclosure approach is the safe default for any installation where the main panel's interior cannot be confirmed suitable.
+
+</Warning>
 
 **SDM120 meter installation.** The SDM120-Modbus is a series element: the EVSE circuit live conductor must pass through the meter's current input terminal. Break the live conductor feeding the EVSE and route it through the meter's current input terminals — line-in on the input terminal and line-out on the output terminal. **Follow the terminal labels printed on the SDM120 faceplate exactly**; designations vary by variant and firmware revision, so do not rely on a generic reference for this wiring. Connect the neutral conductor to the meter's neutral terminal — the SDM120 requires a neutral connection for its internal voltage measurement. Do **not** route the neutral through the current input. The SDM120 derives its own supply from the same line and neutral conductors feeding the EVSE; consult the datasheet for the exact supply terminal connections on your variant. This installation interrupts the EVSE circuit during wiring; follow lockout/tagout procedures and have a qualified electrician perform this work.
 
-> **Circuit ampacity.** The SDM120-Modbus is rated 45 A continuous. It is suitable for 32 A EVSE circuits (40 A breaker) and 40 A EVSE circuits (50 A breaker). For 48 A EVSE (60 A breaker) or higher, substitute the SDM120CT variant with an appropriately rated split-core CT, or the SDM230-Modbus (100 A rated). See [§10](#10-limitations-and-next-steps) for substitution guidance.
+<Note>
+
+**Circuit ampacity.** The SDM120-Modbus is rated 45 A continuous. It is suitable for 32 A EVSE circuits (40 A breaker) and 40 A EVSE circuits (50 A breaker). For 48 A EVSE (60 A breaker) or higher, substitute the SDM120CT variant with an appropriately rated split-core CT, or the SDM230-Modbus (100 A rated). See [§10](#10-limitations-and-next-steps) for substitution guidance.
+
+</Note>
 
 **RS-485 wiring.** Connect the SDM120's RS-485 terminals (**A+** and **B−**) to the corresponding **A** and **B** terminals on the SparkFun BOB-10124 breakout (via the 3.5 mm screw terminal or 0.1" header) using a twisted-pair cable (120 Ω characteristic impedance recommended). Wire the breakout to the Notecarrier CX header:
 

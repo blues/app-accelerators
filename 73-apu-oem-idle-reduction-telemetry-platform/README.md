@@ -8,7 +8,11 @@ This reference application is intended to provide inspiration and help you get s
 
 This project is a connected-APU reference platform for [asset performance optimization](https://blues.com/solutions-asset-performance-optimization/) that bridges the gap between the mechanical systems APU OEMs build and the cloud connectivity they need. An **APU** (auxiliary power unit) replaces truck-engine idling — instead of leaving a 400-hp diesel running all night to power a sleeper cab's HVAC and electronics, a diesel or battery APU handles the job on a fraction of the fuel. This design puts a [Blues Notecard for Skylo](https://shop.blues.com/products/notecard-for-skylo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) between the APU controller's RS-485 port and [Notehub](https://notehub.io), reporting fault codes, runtime, software-estimated fuel savings, and cab temperature back to the manufacturer in near-real time — even in the Wyoming high desert at 2 AM.
 
-> **Scope.** This is the *software fuel-estimation* variant: fuel figures are computed from APU runtime × configurable consumption-rate env vars, with no hardware flow meter required. For revenue-grade hardware metering, see §10 Production next steps.
+<Note>
+
+**Scope.** This is the *software fuel-estimation* variant: fuel figures are computed from APU runtime × configurable consumption-rate env vars, with no hardware flow meter required. For revenue-grade hardware metering, see §10 Production next steps.
+
+</Note>
 
 ---
 
@@ -112,7 +116,11 @@ Here is a sample Note this device emits:
 | 5 V DC/DC converter, 12–30 V input, ≥ 1 A (e.g. Pololu D24V22F5) | 1 | Steps down the APU's 12 V or 24 V bus to the 5 V the Notecarrier CX requires. **Bench/POC-only** — the Pololu D24V22F5 provides no load-dump clamping, reverse-polarity protection, or AEC-Q100 qualification. See the vehicle electrical Note below and §10 for production requirements. |
 | Sealed ABS enclosure, IP54 or better, ≥ 140 × 70 mm internal footprint (e.g., Hammond Manufacturing [1591DFLBK](https://www.hammfg.com/part/1591DFLBK) or equivalent) | 1 | Cab-mounted housing rated for –40 °C to +85 °C storage. The Notecarrier CX footprint is approximately 90 × 65 mm; add clearance for the RS-485 breakout and screw terminals alongside. The Hammond 1591DFLBK (150 × 80 × 50 mm external, IP54) is one proven fit — verify internal dimensions against your specific board layout before ordering. |
 
-> **Fuel-flow sensor: not included in this variant.** This estimation-only design computes all fuel figures in software from APU runtime × environment-variable-supplied consumption rates (`apu_fuel_rate_gph`, `idle_fuel_rate_gph`). No flow meter, pulse-counter circuit, or additional fuel-line wiring is needed. For revenue-grade metering, see §10 Production next steps.
+<Note>
+
+**Fuel-flow sensor: not included in this variant.** This estimation-only design computes all fuel figures in software from APU runtime × environment-variable-supplied consumption rates (`apu_fuel_rate_gph`, `idle_fuel_rate_gph`). No flow meter, pulse-counter circuit, or additional fuel-line wiring is needed. For revenue-grade metering, see §10 Production next steps.
+
+</Note>
 
 <Warning>
 
@@ -268,7 +276,11 @@ arduino-cli upload -b STMicroelectronics:stm32:Blues:pnum=CYGNET -p /dev/cu.usbm
 
 **Modbus APU registers.** Five holding registers are read in one transaction starting at `modbus_reg_base`. The layout expected from the APU controller is: APU status (bitmask: bit 0 = powered on, bit 1 = fault), active fault code (0 = no fault), cumulative runtime hours (×10, unsigned, decoded as `controller_runtime_hr` in hours and included in `apu_telemetry.qo`; the most recent valid value is stored in `AppState.lastControllerRuntimeHr` and persisted across sleep cycles so it is always available for the next summary even if a single Modbus read fails), DC output voltage (tenths of volt), and output watts. The firmware implements a minimal CRC-16 Modbus RTU client with configurable slave ID and baud rate — no external Modbus library required. On RS-485 half-duplex, the direction pin (`RS485_DE_PIN`) is asserted HIGH for transmit, pulled LOW immediately after the last byte flushes, and the firmware waits up to 200 milliseconds for the response frame before returning a read failure.
 
-> **Modbus addressing:** `modbus_reg_base` is the raw 0-based wire address sent in the Modbus RTU request frame — it is **not** the human-facing register number. If the APU controller's datasheet uses 1-based numbering (e.g., "Register 1 = APU status"), subtract 1: set `modbus_reg_base = 0` to address register 1, `1` for register 2, and so on. If it uses 40001-style notation, subtract 40001. The default value `1` is an illustrative map choice; always confirm the correct start address from your controller's register map before commissioning.
+<Warning>
+
+**Modbus addressing:** `modbus_reg_base` is the raw 0-based wire address sent in the Modbus RTU request frame — it is **not** the human-facing register number. If the APU controller's datasheet uses 1-based numbering (e.g., "Register 1 = APU status"), subtract 1: set `modbus_reg_base = 0` to address register 1, `1` for register 2, and so on. If it uses 40001-style notation, subtract 40001. The default value `1` is an illustrative map choice; always confirm the correct start address from your controller's register map before commissioning.
+
+</Warning>
 
 **DS18B20 temperatures.** Probe roles are assigned by operator-provisioned ROM IDs when `amb_rom_id` and `cab_rom_id` are set in Notehub fleet environment variables (see §6). On each wake the firmware parses those env-var ROM IDs and matches them against devices found on the OneWire bus — no discovery-index assumption is made and role assignment is stable regardless of OneWire bus enumeration order, which is determined by ROM address value, not physical location.
 

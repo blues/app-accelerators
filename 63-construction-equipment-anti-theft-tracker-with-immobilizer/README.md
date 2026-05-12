@@ -103,7 +103,11 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-> **12 V systems only.** This reference design — the voltage-divider ratios, relay coil rating, and all wiring guidance — is engineered for 12 V electrical systems. Most compact construction equipment (skid steers, portable generators, light towers) ships with a 12 V system, but larger machines (heavy excavators, some European platforms) use 24 V. With the 33 kΩ / 10 kΩ ignition-sense divider shown here, a 24 V ignition rail would put approximately 5.6 V on the Cygnet A2 GPIO — exceeding the 3.3 V limit, and the 12 V relay coil would overheat. **Verify your equipment's system voltage before proceeding.** Adapting to 24 V requires different divider values (e.g. 68 kΩ high-side + 10 kΩ low-side → 24 V × 10/78 ≈ 3.1 V, within the GPIO limit) and a 24 V–rated relay coil.
+<Warning>
+
+**12 V systems only.** This reference design — the voltage-divider ratios, relay coil rating, and all wiring guidance — is engineered for 12 V electrical systems. Most compact construction equipment (skid steers, portable generators, light towers) ships with a 12 V system, but larger machines (heavy excavators, some European platforms) use 24 V. With the 33 kΩ / 10 kΩ ignition-sense divider shown here, a 24 V ignition rail would put approximately 5.6 V on the Cygnet A2 GPIO — exceeding the 3.3 V limit, and the 12 V relay coil would overheat. **Verify your equipment's system voltage before proceeding.** Adapting to 24 V requires different divider values (e.g. 68 kΩ high-side + 10 kΩ low-side → 24 V × 10/78 ≈ 3.1 V, within the GPIO limit) and a 24 V–rated relay coil.
+
+</Warning>
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
@@ -125,7 +129,11 @@ Here is a sample Note this device emits:
 
 All Blues hardware ships with an active SIM including 500 MB of cellular data and 10 years of service — no activation fee, no monthly commitment.
 
-> **Important satellite Note.** Skylo's constellation sits in geostationary orbit (GEO). From the northern hemisphere, the antenna needs an unobstructed view toward the southern sky to lock onto the satellites. A metal equipment cab that blocks the southern horizon will prevent satellite connectivity. Mount the antenna on the roof of the enclosure and orient it accordingly. See the [Satellite Best Practices guide](https://dev.blues.io/starnote/satellite-best-practices/) for detailed antenna placement guidance.
+<Note>
+
+**Important satellite Note.** Skylo's constellation sits in geostationary orbit (GEO). From the northern hemisphere, the antenna needs an unobstructed view toward the southern sky to lock onto the satellites. A metal equipment cab that blocks the southern horizon will prevent satellite connectivity. Mount the antenna on the roof of the enclosure and orient it accordingly. See the [Satellite Best Practices guide](https://dev.blues.io/starnote/satellite-best-practices/) for detailed antenna placement guidance.
+
+</Note>
 
 ## 5. Wiring and Assembly
 
@@ -139,7 +147,11 @@ The Notecard for Skylo seats into the Notecarrier CX's M.2 slot. Route the **`MA
 
 The Mojo coulomb counter is a bench validation tool; see the [Mojo datasheet](https://dev.blues.io/datasheets/mojo-datasheet/) for wiring. Splice it inline on the +VBAT wire during bench testing to measure phase-by-phase current draw. Remove it before field installation (or leave it in circuit only if Qwiic telemetry is added. See §11).
 
-> **12 V systems only.** Confirm the equipment's system voltage is 12 V before connecting the ignition-sense divider or relay coil. On a 24 V machine the divider would exceed the Cygnet GPIO limit and the relay coil would overheat. See the §4 Note for 24 V adaptation guidance.
+<Warning>
+
+**12 V systems only.** Confirm the equipment's system voltage is 12 V before connecting the ignition-sense divider or relay coil. On a 24 V machine the divider would exceed the Cygnet GPIO limit and the relay coil would overheat. See the §4 Note for 24 V adaptation guidance.
+
+</Warning>
 
 **Pin-by-pin wiring:**
 
@@ -225,7 +237,11 @@ Main sketch: [`firmware/construction_equipment_anti_theft/construction_equipment
 
 **GPS.** `card.location.mode` is set to `periodic` with a motion threshold of 4 events, so the Notecard only spins up the GNSS module when the accelerometer confirms the unit is actually moving — avoiding the multi-second GNSS warm-up penalty on every stationary wake. The firmware calls `card.location` to read the most recent fix; the Notecard caches the last valid location so the call returns quickly even when GNSS is not active.
 
-> **Cached-fix latency.** Geofence and alert decisions are made on the most recently cached GNSS fix, which may not reflect the device's current position. Fix age is bounded by the GNSS acquisition cadence (`card.location.mode seconds`, default 5 minutes, tunable via `heartbeat_moving_min`). During the after-hours window the host wakes every 2 minutes but GNSS updates at 5 minutes, so two or three consecutive wakes may evaluate geofence against the same cached fix. The firmware captures the `time` field from `card.location` (the epoch of the cached fix) and computes `fix_age_s = now − fix_time` only when `card.time` returns a valid non-zero epoch. When `card.time` is unavailable, for example, on first boot before the Notecard has completed a Notehub session — `fix_age_s` is emitted as **`-1`** (sentinel: "age unknown") rather than `0`, so downstream consumers can distinguish a genuinely fresh fix from a case where the age simply cannot be determined. A value of `0` or greater is a real elapsed-seconds count. `fix_age_s` is included in every outbound Note — both `tracker.qo` heartbeats and `alert.qo` events.
+<Note>
+
+**Cached-fix latency.** Geofence and alert decisions are made on the most recently cached GNSS fix, which may not reflect the device's current position. Fix age is bounded by the GNSS acquisition cadence (`card.location.mode seconds`, default 5 minutes, tunable via `heartbeat_moving_min`). During the after-hours window the host wakes every 2 minutes but GNSS updates at 5 minutes, so two or three consecutive wakes may evaluate geofence against the same cached fix. The firmware captures the `time` field from `card.location` (the epoch of the cached fix) and computes `fix_age_s = now − fix_time` only when `card.time` returns a valid non-zero epoch. When `card.time` is unavailable, for example, on first boot before the Notecard has completed a Notehub session — `fix_age_s` is emitted as **`-1`** (sentinel: "age unknown") rather than `0`, so downstream consumers can distinguish a genuinely fresh fix from a case where the age simply cannot be determined. A value of `0` or greater is a real elapsed-seconds count. `fix_age_s` is included in every outbound Note — both `tracker.qo` heartbeats and `alert.qo` events.
+
+</Note>
 
 **Battery voltage.** `card.voltage` returns the LiPo rail voltage directly from the Notecard's internal ADC. Included in every Note for battery state-of-charge trending.
 
@@ -405,10 +421,15 @@ NotePayloadSaveAndSleep(&save, sleep_sec, NULL);
 
 **Geofence first-light test.** With the unit powered and Notehub showing the device connected, set `fence_lat` and `fence_lon` in Notehub to the device's current coordinates (visible in Notehub's device view), and set `fence_radius_m` to a small value (e.g. `20`). Wait for the env-var update to reach the device (one inbound sync cycle, default 4 minutes).
 
-> **Important:** Motion does **not** wake the host MCU. The host polls `card.motion` only when it wakes on its normal timer. During business hours, a stationary unit wakes every 60 minutes (default `heartbeat_stopped_min`) — physically moving the device will not trigger a response until the next scheduled wake. To make the test practical, do one of the following before moving the device:
-> - Run the test during the after-hours window (default 6 PM–6 AM UTC), when the host wakes every 2 minutes.
-> - Temporarily reduce `heartbeat_stopped_min` to `2` in Notehub env vars and wait for the update to be applied.
-> - Connect USB serial to observe the active `setup()` cycle and move the device immediately after a wake.
+<Tip>
+
+**Important:** Motion does **not** wake the host MCU. The host polls `card.motion` only when it wakes on its normal timer. During business hours, a stationary unit wakes every 60 minutes (default `heartbeat_stopped_min`) — physically moving the device will not trigger a response until the next scheduled wake. To make the test practical, do one of the following before moving the device:
+
+- Run the test during the after-hours window (default 6 PM–6 AM UTC), when the host wakes every 2 minutes.
+- Temporarily reduce `heartbeat_stopped_min` to `2` in Notehub env vars and wait for the update to be applied.
+- Connect USB serial to observe the active `setup()` cycle and move the device immediately after a wake.
+
+</Tip>
 
 Once the device has woken with the updated geofence and the device is moved ~25 m outside the radius, a `geofence_breach` alert should appear in the Notehub event log **after the next qualifying wake cycle that has a sufficiently fresh GNSS fix**. Because geofence decisions use the most recently cached fix from `card.location` (bounded by the `card.location.mode` periodic interval, default 5 minutes), one or two wake cycles may pass before the Notecard acquires an updated fix that places the device outside the radius and triggers the alert. The alert fires within the same `setup()` that evaluates the breach — it is not deferred, but its timing is bounded by GNSS fix freshness, not by host-wake latency alone.
 

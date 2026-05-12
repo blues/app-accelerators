@@ -400,7 +400,11 @@ NotePayloadSaveAndSleep(&payload, g_sample_interval_sec, NULL);
 
 **Alert triggers:**
 
-> **Single-string Note.** When `n_strings = 1`, comparative root-cause classification (`shading`, `soiling`, `string_fault`) is unavailable — there are no peer strings to compare against. All PR-threshold trips fire as `degraded`. This is correct, documented behaviour; see [§11 Limitations](#11-limitations-and-next-steps).
+<Note>
+
+**Single-string Note.** When `n_strings = 1`, comparative root-cause classification (`shading`, `soiling`, `string_fault`) is unavailable — there are no peer strings to compare against. All PR-threshold trips fire as `degraded`. This is correct, documented behaviour; see [§11 Limitations](#11-limitations-and-next-steps).
+
+</Note>
 
 - `shading` — string PR below threshold with operating voltage significantly lower than fleet mean but operating current near normal. Classic partial-shade signature: shadow across one or more cells reduces operating string voltage while current in the bypass-diode conduction path is less affected. Requires `n_strings ≥ 2`.
 - `soiling` — string PR below threshold with operating current significantly lower than fleet mean but voltage near normal. Uniform soiling (dust, pollen, bird droppings) reduces operating current proportionally across all cells in the string; voltage drops only slightly. Requires `n_strings ≥ 2`.
@@ -418,7 +422,11 @@ NotePayloadSaveAndSleep(&payload, g_sample_interval_sec, NULL);
 
 **Alert simulation.** The easiest way to force alerts without going to the roof: in the Fleet environment variables, set `string_stc_w` to a value four or more times higher than the actual string's STC power rating (for example, change the default `6000` to `24000`). The inflated expected-power denominator drives every configured string's computed PR well below the 80% default threshold. After the next inbound sync delivers the change (up to 120 minutes. See the Sync strategy Note in §7), all strings will fire `degraded` alerts on their next sample. Confirm that `solar_alert.qo` events appear in Notehub for each configured string. Restore `string_stc_w` to the correct rated value when done.
 
-> **Note:** Do not use `perf_thresh_pct` values above `100` for this test — the firmware clamps that variable to a maximum of `100` (effective threshold: PR < 1.00), so setting `120` produces no additional effect beyond `100`.
+<Warning>
+
+**Note:** Do not use `perf_thresh_pct` values above `100` for this test — the firmware clamps that variable to a maximum of `100` (effective threshold: PR < 1.00), so setting `120` produces no additional effect beyond `100`.
+
+</Warning>
 
 **Using Mojo to validate the power profile.** The table below separates Notecard-only figures drawn from the published datasheet from the whole-assembly behavior observed at the +VBAT pad. +VBAT measurements include the Notecarrier regulator, transceiver, and any peripheral quiescent draw in addition to the Notecard itself — they will not equal the bare-Notecard datasheet values. Use the Mojo to characterise the actual idle and burst figures for your specific stack.
 

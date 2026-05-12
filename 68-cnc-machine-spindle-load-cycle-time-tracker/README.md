@@ -381,7 +381,11 @@ arduino-cli monitor -p /dev/cu.usbmodem1234567 -c baudrate=115200
 
 Confirm: (a) idle current between syncs is in the µA range (ensures the device will run for years on field deployment), (b) per-session energy for one hourly sync is ~10–30 mAh, and (c) energy is consistent across consecutive cycles.
 
-> **Bench caveat:** When the OPTA is powered and programmed over USB-C, the USB rail keeps the Notecard in a higher-power idle state — do not expect µA idle current while USB is connected. For true field idle measurements, power from 24 VDC only (disconnect USB) and verify the conditions in [Notecard low-power design docs](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/).
+<Tip>
+
+**Bench caveat:** When the OPTA is powered and programmed over USB-C, the USB rail keeps the Notecard in a higher-power idle state — do not expect µA idle current while USB is connected. For true field idle measurements, power from 24 VDC only (disconnect USB) and verify the conditions in [Notecard low-power design docs](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/).
+
+</Tip>
 
 ## 11. Troubleshooting
 

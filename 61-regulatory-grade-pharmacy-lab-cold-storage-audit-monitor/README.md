@@ -135,7 +135,11 @@ The Adafruit MAX31865 (Product 3648) mounts inside the enclosure and connects to
 | SDO | **MOSI** (silkscreen label) | The pin labeled **MOSI** on the board is the actual master-in (MISO) line. Connect MAX31865 SDO (data out from the chip) here. |
 | CS | D10 | Software chip-select |
 
-> ⚠️ **Notecarrier CX v1.3 label swap.** The MOSI and MISO pin labels are transposed on the CX v1.3 board silkscreen (see [Notecarrier CX datasheet](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/)). The table above gives the correct physical connections. The Arduino STM32 SPI library drives the correct hardware-peripheral lines regardless of the silkscreen; the swap only affects how you run the jumper wires.
+<Warning>
+
+**Notecarrier CX v1.3 label swap.** The MOSI and MISO pin labels are transposed on the CX v1.3 board silkscreen (see [Notecarrier CX datasheet](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/)). The table above gives the correct physical connections. The Arduino STM32 SPI library drives the correct hardware-peripheral lines regardless of the silkscreen; the swap only affects how you run the jumper wires.
+
+</Warning>
 
 **PT1000 probe connection.** The Adafruit PT1000 probe (Product 3984) terminates in three bare wires. Before wiring, close the 2/3-wire solder jumper on the bottom of the MAX31865 board for 3-wire RTD mode, following the [Adafruit MAX31865 guide](https://learn.adafruit.com/adafruit-max31865-rtd-pt100-amplifier/). Connect the wires to the MAX31865 screw terminal blocks as described in that guide for a 3-wire PT1000. The firmware calls `rtdAmp.begin(MAX31865_3WIRE)` at startup to match.
 
@@ -150,7 +154,11 @@ A probe assembly has a cable-mounted sensing element, typically a stainless-stee
 
 Position the probe tip at the geometric center of the compartment, away from air vents and door seals, following CDC and USP 659 sensor placement recommendations.
 
-> ⚠️ **Do not drill or punch through the cabinet wall or door.** Cold-storage cabinets contain refrigerant lines and sealed foam insulation whose locations are not visible from the exterior. Unauthorized penetrations can sever a refrigerant line, compromise the insulation envelope, create a condensation path into the electronics, and void the equipment's safety approvals.
+<Warning>
+
+**Do not drill or punch through the cabinet wall or door.** Cold-storage cabinets contain refrigerant lines and sealed foam insulation whose locations are not visible from the exterior. Unauthorized penetrations can sever a refrigerant line, compromise the insulation envelope, create a condensation path into the electronics, and void the equipment's safety approvals.
+
+</Warning>
 
 **Bench substitute.** For firmware development and testing, the SparkFun TMP117 breakout (SEN-15805) can be connected via a 100 mm Qwiic cable to the Notecarrier CX. Using the TMP117 requires replacing `#include <Adafruit_MAX31865.h>` with `#include <SparkFun_TMP117.h>`, changing the `rtdAmp` global to a `TMP117 tempSensor` object, and replacing `readTemperatureC()` in `firmware/cold_storage_audit_monitor/cold_storage_audit_monitor_helpers.cpp` with the TMP117 `dataReady()` / `readTempC()` poll-based implementation. The TMP117 breakout mounts inside the enclosure and measures exterior ambient air only — it is not a cable-mounted probe and does not measure compartment interior temperature. Appropriate only for development and the functional validation described in [Validation and Testing](#9-validation-and-testing).
 

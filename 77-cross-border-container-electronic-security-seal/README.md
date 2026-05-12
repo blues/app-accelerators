@@ -23,7 +23,11 @@ To be concrete about the two capabilities that make this possible: **planetary c
 
 **Deployment scenario.** The seal assembly — [Notecarrier XI](https://shop.blues.com/products/notecarrier-xi?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), [Notecard Cell+WiFi](https://shop.blues.com/products/notecard-cell-wifi?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), [Starnote for Iridium](https://shop.blues.com/products/starnote?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), [Blues Swan](https://shop.blues.com/products/swan?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), ATECC608A, reed switch, break-wire continuity loop, and LiPo battery — is mounted inside a weatherproof IP65 enclosure on the container door. Two antenna leads route through waterproof cable glands to the exterior — one for the cellular antenna and one for the Iridium+GPS combo antenna, and additional cable glands pass the reed-switch wiring and the break-wire loop through the enclosure wall. The reed switch mounts in a standard surface-mount body on the door, with the companion magnet on the door frame. The break-wire is a two-conductor loop routed through the physical seal body (or locking bar hardware) so that cutting or removing the seal breaks the circuit independently of door state. When the door is closed the magnet holds the reed switch closed; when the door opens, the magnet separates and the firmware detects the state change on the next 30-second wake cycle. If the break-wire loop is cut at any time — whether the door is open or closed — the firmware detects that independently and emits a `seal_broken:true` event. Every event is signed by the ATECC608A before transmission. The assembly requires no container modification beyond the mounting points, no carrier infrastructure, and no IT involvement at any terminal along the route.
 
-> **Sky-view requirement.** Both the MAIN (cellular+satellite) and GPS antennas require a clear line of sight to the sky to function. Containers stowed in the lower tiers of a deck stack, loaded below deck on a vessel, or positioned inside a terminal shed may lose GNSS fix and satellite link for the duration of that stowage — potentially hours to days. Events are durably queued in Notecard flash during this period and transmitted in a burst when sky view is restored, but breach-alert latency and waypoint density both depend on actual antenna visibility. Plan for at-sea transmissions to be best-effort rather than guaranteed real-time.
+<Warning>
+
+**Sky-view requirement.** Both the MAIN (cellular+satellite) and GPS antennas require a clear line of sight to the sky to function. Containers stowed in the lower tiers of a deck stack, loaded below deck on a vessel, or positioned inside a terminal shed may lose GNSS fix and satellite link for the duration of that stowage — potentially hours to days. Events are durably queued in Notecard flash during this period and transmitted in a burst when sky view is restored, but breach-alert latency and waypoint density both depend on actual antenna visibility. Plan for at-sea transmissions to be best-effort rather than guaranteed real-time.
+
+</Warning>
 
 ---
 
@@ -96,7 +100,11 @@ Here is a sample Note this device emits:
 | IP65 ABS enclosure, ~100 × 70 × 45 mm | 1 | Weather-rated enclosure for door mounting; needs at least four cable gland holes: two for antenna leads (cellular and Iridium+GPS), one for the reed-switch cable, and one for the break-wire loop. |
 | Cable glands, PG9 or M16 | 4 | Weatherproof feedthroughs. One each for the cellular antenna lead, the Iridium+GPS antenna cable, reed-switch wiring, and break-wire loop. All four must be sealed to maintain the IP65 rating across the full assembly. |
 
-> **Antenna Note.** The Notecarrier XI exposes two antenna ports: one for the Notecard Cell+WiFi's cellular antenna (included with the NOTE-NBGLW) and one for the Starnote for Iridium's Iridium+GPS antenna (included with the Starnote). Both antennas **must be mounted outdoors with a clear sky view** — inside a steel container or enclosure, cellular, satellite, and GPS signals will not penetrate. Route both antenna cables through cable glands before sealing the enclosure. Do not substitute the included Starnote antenna; Iridium certifies the Starnote exclusively with the provided antenna and may block uncertified devices.
+<Warning>
+
+**Antenna Note.** The Notecarrier XI exposes two antenna ports: one for the Notecard Cell+WiFi's cellular antenna (included with the NOTE-NBGLW) and one for the Starnote for Iridium's Iridium+GPS antenna (included with the Starnote). Both antennas **must be mounted outdoors with a clear sky view** — inside a steel container or enclosure, cellular, satellite, and GPS signals will not penetrate. Route both antenna cables through cable glands before sealing the enclosure. Do not substitute the included Starnote antenna; Iridium certifies the Starnote exclusively with the provided antenna and may block uncertified devices.
+
+</Warning>
 
 ---
 
@@ -565,7 +573,11 @@ Published figures and bench estimates for this hardware at default settings:
 | GPS acquisition (first fix) | ~20–30 mA for up to 5 minutes (bench estimate — confirm with Mojo) |
 | Host fully off (card.attn sleep) | < 1 µA from host rail |
 
-> **Note on figures.** Notecard idle, cellular modem, and host-off figures are from the Blues [low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/). Host-active current, GPS acquisition current, and satellite session duration are bench estimates; use Mojo measurements during commissioning to confirm them before relying on the battery-life projection below.
+<Note>
+
+**Note on figures.** Notecard idle, cellular modem, and host-off figures are from the Blues [low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/). Host-active current, GPS acquisition current, and satellite session duration are bench estimates; use Mojo measurements during commissioning to confirm them before relying on the battery-life projection below.
+
+</Note>
 
 What a healthy Mojo trace looks like for this firmware at default settings:
 
