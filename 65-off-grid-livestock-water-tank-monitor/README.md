@@ -6,7 +6,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-This project is a solar-powered [remote monitoring](https://blues.com/solutions-remote-monitoring/) system for off-grid livestock water tanks. The system tells a rancher when a stock tank is going dry without driving the pasture roads — measuring the water level, the pump's current draw, and the solar system's own battery voltage, then reporting all three to a phone or dispatch system over cellular wherever a tower is reachable and over satellite via [Skylo](https://www.skylo.tech/faq)'s non-terrestrial network (NTN) where it isn't. The radio stays off between an immediate alert and a 4-hour summary, so the device runs indefinitely on a modest solar panel and a single battery.
+This project is a solar-powered [remote monitoring](https://blues.com/solutions-remote-monitoring/) system for off-grid livestock water tanks. The system tells a rancher when a stock tank is going dry without driving the pasture roads — measuring the water level, the pump's current draw, and the solar system's own battery voltage, then reporting all three to a phone or dispatch system over cellular wherever a tower is reachable and over satellite via [Skylo](https://www.skylo.tech/)'s non-terrestrial network (NTN) where it isn't. The radio stays off between an immediate alert and a 4-hour summary, so the device runs indefinitely on a modest solar panel and a single battery.
 
 ## What You'll Build
 

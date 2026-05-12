@@ -14,7 +14,7 @@ This project is a connected-trailer platform for trailer OEM integration, target
 > - Two NTC cargo-air thermistors with β-equation ADC conversion and window-aggregate min/max/mean statistics
 > - Rear-door reed switch with open-time accumulation and distinct event counting
 > - GPS asset tracking via Notecard built-in GNSS with motion-state detection and cadence switching
-> - Notecard for [Skylo](https://www.skylo.tech/faq) (NOTE-NBGLWX) with automatic LTE-M/NB-IoT cellular → Skylo NTN satellite fallback
+> - Notecard for [Skylo](https://www.skylo.tech/) (NOTE-NBGLWX) with automatic LTE-M/NB-IoT cellular → Skylo NTN satellite fallback
 > - Templated binary summary Notes (`trailer_summary.qo`) and immediate-sync alert Notes (`trailer_alert.qo`)
 > - Notehub environment-variable–driven threshold and sync-cadence configuration, updateable over the air
 > - Dwell-capable host sleep via `NotePayloadSaveAndSleep` / `card.attn`: host draws zero current between sample cycles; the Notecard's radio-idle floor (~8–18 µA) is the only static draw during sleep

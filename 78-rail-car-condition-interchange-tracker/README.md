@@ -17,7 +17,7 @@ This project is a [supply chain tracking](https://blues.com/solutions-supply-cha
 
 Rail car lessors operate fleets worth hundreds of millions of dollars with essentially no real-time visibility below the interchange report level. That gap drives everything from underutilized assets (a car in a yard for two weeks that nobody can locate) to safety incidents discovered only after delivery.
 
-**Why Notecard for [Skylo](https://www.skylo.tech/faq).** Rail corridors are the canonical example of connectivity infrastructure that doesn't follow population. For every mile of track through Chicago or Houston, there are fifty through Montana, the Appalachian plateau, or the Texas Panhandle where cellular coverage is thin to nonexistent. A device that relies on LTE alone will go dark for hours or days at a time in exactly the stretches where condition changes are most likely to go undetected. Rail cars have no access points to pair to — WiFi has no role in this deployment.
+**Why Notecard for [Skylo](https://www.skylo.tech/).** Rail corridors are the canonical example of connectivity infrastructure that doesn't follow population. For every mile of track through Chicago or Houston, there are fifty through Montana, the Appalachian plateau, or the Texas Panhandle where cellular coverage is thin to nonexistent. A device that relies on LTE alone will go dark for hours or days at a time in exactly the stretches where condition changes are most likely to go undetected. Rail cars have no access points to pair to — WiFi has no role in this deployment.
 
 <NewToBlues/>
 
