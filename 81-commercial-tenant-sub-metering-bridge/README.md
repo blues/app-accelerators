@@ -133,19 +133,19 @@ Rogowski coil output (bare lead)
   │
   ├── R_in (10 kΩ) ──────────────────────────► op-amp IN− (inverting)
   │                                                │
-  │                         R_f (1 MΩ)            │
+  │                         R_f (1 MΩ)             │
   │                   ┌────────────────────────────┤
   │                   │                            │
   │                   │     C_f (10 nF)            │
-  │                   └──┤├──────────────────────────┘
+  │                   └──┤├────────────────────────┘
   │
   │   op-amp IN+ (non-inverting) ──────────────── 1.65 V bias node
   │
   └── op-amp OUT ─────────────────────────────── to ADC pin (A0–A3)
 
 Bias node: +3V3 ── 100 kΩ ──┬── 100 kΩ ── GND
-                             ├── 10 µF ── GND
-                             └── op-amp IN+ of this channel
+                            ├── 10 µF ── GND
+                            └── op-amp IN+ of this channel
 ```
 
 Use one section of the MCP6004 (U1A–U1D) per channel. All four op-amps share Vdd = +3V3 and GND.
@@ -165,9 +165,9 @@ Module power and signal:
   GND  ──► GND
 
   VOUT ──► 10 µF (series AC coupling) ──┬── ADC A4
-                                         │
+                                        │
                +3V3 ── 100 kΩ ──────────┤
-                                         │
+                                        │
                 GND ── 100 kΩ ──────────┘
 ```
 
@@ -224,17 +224,13 @@ If compilation fails with "PRODUCT_UID is not defined", you missed step 1. If up
 5. **Watch serial** — open the serial monitor at 115200 baud. You will see Notecard configuration, then channel sample lines. After the first sleep cycle, serial goes quiet (host is powered off) for 5 minutes — that silence is expected and healthy.
 6. **Check Notehub** — open **Events** tab. A `_session.qo` appears within minutes. The first `meter_summary.qo` typically arrives in the initial session, shortly after the first sample cycle completes (within an hour).
 
----
+### Fleets, environment variables, and routing
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:tenant-energy-monitor`.
+Once your device is appearing in the **Devices** tab and events are flowing, configure the project for ongoing operation:
 
-2. **Set the ProductUID in firmware.** Open [`tenant_sub_meter_helpers.h`](firmware/tenant_sub_meter/tenant_sub_meter_helpers.h) and replace the empty string on the `#define PRODUCT_UID ""` line with your value.
+1. **Create a Fleet per property.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) group devices for shared configuration. The natural unit here is *one fleet per building* — every panel in the same building typically operates at the same line voltage and uses the same Rogowski coil model, so fleet-level environment variables encode "this building's panels all use these sensor calibrations." Use [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) to auto-assign devices by serial number prefix for multi-property deployments.
 
-3. **Claim the Notecard.** Power the assembled unit. On first cellular connect the Notecard associates itself with your Notehub project automatically — no manual claim step required. The device will appear in the **Devices** tab within a minute or two.
-
-4. **Create a Fleet per property.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) group devices for shared configuration. The natural unit here is *one fleet per building* — every panel in the same building typically operates at the same line voltage and uses the same Rogowski coil model, so fleet-level environment variables encode "this building's panels all use these sensor calibrations." Use [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) to auto-assign devices by serial number prefix for multi-property deployments.
-
-5. **Set environment variables.** Navigate in Notehub to **Fleet → Environment** (or **Device → Environment** for per-device overrides). Edit the table below, then save. The device pulls them on its next `inbound` sync (default: every 2 hours) — no reflash, no truck roll.
+2. **Set environment variables.** Navigate in Notehub to **Fleet → Environment** (or **Device → Environment** for per-device overrides). Edit the table below, then save. The device pulls them on its next `inbound` sync (default: every 2 hours) — no reflash, no truck roll.
 
    | Variable | Default | Purpose | When to adjust |
    |---|---|---|---|
@@ -244,7 +240,7 @@ If compilation fails with "PRODUCT_UID is not defined", you missed step 1. If up
    | `volt_scale` | `1200.0` | Voltage transducer calibration: line-voltage V RMS ÷ ADC-pin V RMS. | Default (1200.0) matches ZMPT101B at 120 V nominal. Measure line voltage with a precision AC voltmeter and trim for accuracy. |
    | `num_tenants` | `4` | Active current channels to sample (1–4). | Set to the actual number of tenants metered to skip unnecessary ADC reads. |
 
-6. **Configure routes.** Route `meter_summary.qo` to your time-series database or billing platform. This is the canonical energy record and the correct source for monthly aggregation — sum each tenant's `t*_wh` values across all hourly events over the billing period using the [Notehub Event Query API](https://dev.blues.io/api-reference/notehub-api/api-introduction/). See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for destination types.
+3. **Configure routes.** Route `meter_summary.qo` to your time-series database or billing platform. This is the canonical energy record and the correct source for monthly aggregation — sum each tenant's `t*_wh` values across all hourly events over the billing period using the [Notehub Event Query API](https://dev.blues.io/api-reference/notehub-api/api-introduction/). See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for destination types.
 
 ### What you should see in Notehub
 
