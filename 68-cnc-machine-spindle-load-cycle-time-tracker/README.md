@@ -1,5 +1,7 @@
 # CNC Machine Spindle Load & Cycle Time Tracker
 
+![CNC Machine Spindle Load & Cycle Time Tracker banner](banner.png)
+
 <Note>
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=CNC%20Machine%20Spindle%20Load%20%26%20Cycle%20Time%20Tracker).

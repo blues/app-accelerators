@@ -1,4 +1,6 @@
-# Propane / LPG Tank Fill Telemetry — 4–20 mA Float-Transmitter Variant
+# Propane / LPG Tank Fill Telemetry
+
+![Propane / LPG Tank Fill Telemetry banner](banner.png)
 
 <Note>
 

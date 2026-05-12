@@ -1,5 +1,7 @@
 # APU OEM Idle-Reduction Telemetry Platform
 
+![APU OEM Idle-Reduction Telemetry Platform banner](banner.png)
+
 <Note>
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=APU%20OEM%20Idle-Reduction%20Telemetry%20Platform).

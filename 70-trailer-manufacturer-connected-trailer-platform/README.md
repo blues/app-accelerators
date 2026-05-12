@@ -1,5 +1,7 @@
 # Connected Trailer Platform — Cargo Temperature, Door, and GPS Monitoring
 
+![Connected Trailer Platform — Cargo Temperature, Door, and GPS Monitoring banner](banner.png)
+
 <Note>
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Connected%20Trailer%20Platform%20%E2%80%94%20Cargo%20Temperature%2C%20Door%2C%20and%20GPS%20Monitoring).

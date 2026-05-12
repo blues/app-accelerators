@@ -1,5 +1,7 @@
 # Portable Sanitation Unit Service Monitor
 
+![Portable Sanitation Unit Service Monitor banner](banner.png)
+
 <Note>
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Portable%20Sanitation%20Unit%20Service%20Monitor).
@@ -9,7 +11,6 @@ This reference application is intended to provide inspiration and help you get s
 This project is a [truck roll reduction](https://blues.com/truck-roll-reduction/) project for fleets of portable sanitation units — porta-potties — that are currently serviced on fixed schedules whether they need it or not. A sealed level sensor and a [Blues Notecard Cell+WiFi](https://shop.blues.com/products/notecard-cell-wifi?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) turn each unit into a self-reporting asset: the holding tank reports its own fill level so the service provider can route a pump truck only when and where it is actually needed.
 
 ## 1. Project Overview
-
 
 **The problem.** Portable restroom companies, and the construction sites, outdoor event venues, and municipalities that rely on them — all share the same dirty secret about service scheduling: it's a guess. A unit at a lightly-attended weekend farmers market gets pumped on the same Monday-Wednesday-Friday schedule as the one chained to a pile of rebar at a hundred-person job site. The result is predictable in both directions: trucks roll to units that are a quarter full, burning fuel and driving up per-service cost; other units overflow on the busiest Saturday of the year, creating a safety hazard and an experience nobody forgets. Neither outcome is caused by a lack of data — the data is right there in the tank. What's missing is any way to read it remotely.
 
