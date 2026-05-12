@@ -8,14 +8,6 @@ This reference application is intended to provide inspiration and help you get s
 
 This project is an [energy monitoring](https://blues.com/solutions-energy-monitoring/) solution that gives utilities real-time load visibility at the pole — where transformer failures actually happen. A [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) with three split-core current transformers on the secondary terminals and an I²C temperature sensor tracks per-phase loading, detects dangerous current imbalances, and correlates load with enclosure temperature as a thermal-stress proxy — all over cellular, with no site infrastructure required.
 
-<Note>
-
-**Implementation scope: conventional split-core CTs and enclosure-internal temperature.** This reference design uses **conventional current-output split-core CTs** (YHDC SCT-013-000, 100 A / 50 mA) rather than flexible Rogowski-type coils, and an **enclosure-internal I²C temperature sensor** (MCP9808) as a thermal-stress proxy rather than a true outdoor ambient probe or a winding-contact sensor. Both choices reduce hardware complexity for the standard residential and commercial distribution transformer installation scenario. See [§11 Limitations](#11-limitations-and-next-steps) for rationale and the production path to both alternatives.
-
-</Note>
-
----
-
 ## 1. Project Overview
 
 **The problem.** A distribution transformer is the last powered device between the high-voltage grid and a customer's service entrance. Utilities typically instrument their substations carefully — real-time SCADA, demand data, fault recorders, but the transformer hanging on the pole outside a neighborhood has none of that. The utility knows what's flowing into the substation; it doesn't know what's flowing through any individual transformer until something fails.

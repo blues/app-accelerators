@@ -8,12 +8,6 @@ This reference application is intended to provide inspiration and help you get s
 
 This project is an [asset location tracking](https://blues.com/solutions-location-tracking/) solution for reusable container pools — plastic totes, pressurized kegs, and gas cylinders — that reports location on motion events and daily heartbeats using cellular connectivity and the [Notecard's](https://shop.blues.com/products/notecard-cellular?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) built-in accelerometer. Containers emit a motion event when they start or stop moving, and a daily confirmation when idle, all over LTE Cat-1 bis. The hardware is a [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) with a Notecard Cell+WiFi (see §4 for the BOM); operators tune heartbeat interval and motion sensitivity from Notehub without re-flashing.
 
-<Note>
-
-**Scope.** This is a bench/POC build using a rechargeable 2 Ah LiPo — realistic service life is 12–24 months between battery swaps. For multi-year field deployments, see the Li-SOCl₂ primary-cell production path in [§11](#11-limitations-and-next-steps).
-
-</Note>
-
 ## 1. Project Overview
 
 **The problem.** Reusable containers are the circulatory system of supply chains — plastic totes move produce from farm to distribution center, pressurized cylinders ferry gases between filling plants and customer sites, stainless kegs make the brewery-to-bar loop thousands of times before retirement. The economics only work when the containers keep circulating. But they leak out of their pools constantly: left on a loading dock past their pickup window, mislaid in a back corner of a customer warehouse, loaded onto the wrong carrier, or simply forgotten at a rail interchange for six months. Industry estimates peg pool shrinkage at anywhere from 5% to 20% annually per container type — a quiet, diffuse cost that rarely generates a single dramatic incident but steadily erodes the pool's working capacity and replacement budget.

@@ -8,14 +8,6 @@ This reference application is intended to provide inspiration and help you get s
 
 This project is a connected-APU reference platform for [asset performance optimization](https://blues.com/solutions-asset-performance-optimization/) that bridges the gap between the mechanical systems APU OEMs build and the cloud connectivity they need. An **APU** (auxiliary power unit) replaces truck-engine idling — instead of leaving a 400-hp diesel running all night to power a sleeper cab's HVAC and electronics, a diesel or battery APU handles the job on a fraction of the fuel. This design puts a [Blues Notecard for Skylo](https://shop.blues.com/products/notecard-for-skylo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) between the APU controller's RS-485 port and [Notehub](https://notehub.io), reporting fault codes, runtime, software-estimated fuel savings, and cab temperature back to the manufacturer in near-real time — even in the Wyoming high desert at 2 AM.
 
-<Note>
-
-**Scope.** This is the *software fuel-estimation* variant: fuel figures are computed from APU runtime × configurable consumption-rate env vars, with no hardware flow meter required. For revenue-grade hardware metering, see §10 Production next steps.
-
-</Note>
-
----
-
 ## 1. Project Overview
 
 **The problem.** Long-haul trucking has a massive and largely invisible fuel waste problem: engine idling. A Class 8 tractor sitting in a truck stop burns roughly 0.8–1.2 gallons per hour just to run its HVAC and electronics overnight. At that rate, a single truck running continental routes can waste 1,500–2,000 gallons a year in idle fuel alone — somewhere between $4,000 and $6,000 at typical diesel prices, and many fleets run hundreds of units. Regulators have noticed; anti-idling legislation covers major portions of the US and Canada, with fines for extended stops in many jurisdictions.

@@ -8,12 +8,6 @@ This reference application is intended to provide inspiration and help you get s
 
 This project is a [supply chain tracking](https://blues.com/solutions-supply-chain-tracking/) reference design for leased freight and tank rail cars. A solar-powered [Notecard for Skylo](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) — Blues' all-in-one cellular and satellite module — pairs with an embedded Cygnet STM32 host to monitor **car-level** conditions: location, shock/impact events, and coupler state. On TANK_CAR builds, the same device adds low-pressure vent-port fitting pressure via the Adafruit MPRLS (0–25 PSI absolute) and single-point lading temperature via a waterproof DS18B20 probe.
 
-<Note>
-
-**POC scope.** This is a car-health and interchange-tracking foundation — it produces the location, coupler, motion, and shock telemetry stream that downstream geofencing services consume. **Not implemented here, all three documented as production next steps in [§11](#11-limitations-and-next-steps):** on-device interchange-boundary detection and EDI integration; certified DOT-111/DOT-105-class tank pressure sensing (the MPRLS is rated for vent and low-pressure fittings only); multi-point cargo temperature.
-
-</Note>
-
 ## 1. Project Overview
 
 
