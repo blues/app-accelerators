@@ -18,6 +18,14 @@ The cost of this information gap is concrete. A standby generator that fails to 
 
 This project closes that gap — for active alarm state, a firmware-observed alarm chronology, and operating data. A [Blues Wireless for OPTA](https://shop.blues.com/products/wireless-for-opta?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) snapped onto an Arduino OPTA RS485 industrial **PLC** (programmable logic controller) sits on the DIN rail inside the generator panel, polls seven holding registers once per minute over the controller's Modbus port (including the active alarm bitmask), and routes alert events, an hourly alarm-history log, and hourly summaries to [Notehub](https://notehub.io) via cellular. Installation requires new RS-485 wiring to the controller's communications terminals and matching the controller's Modbus serial settings (baud rate, parity, slave address), but involves no writes to start/stop or safety circuits — the firmware is strictly read-only over Modbus. No dependency on the facility network.
 
+**Why Notecard.** The timing of this deployment is the whole point. The standby generator exists to provide power when mains power fails — which is exactly when the facility's WiFi router also goes dark. A monitoring system that relies on the building's LAN cannot report a failure-to-start at the moment that matters most. Worse, a purely LAN-dependent monitor might be relied on as evidence that everything is fine, right up until the UPS batteries run dry. Cellular with an antenna routed outside the metal generator enclosure provides a communication path that is completely independent of the facility's power and network infrastructure. The cellular path is alive precisely because it draws from the generator panel's own battery-backed DC control bus — the same battery that starts the engine.
+
+<NewToBlues/>
+
+This is the key architectural insight: a well-designed generator panel already has a battery-backed 12–24 VDC control bus whose entire job is to remain live when mains fails. The OPTA and Wireless for OPTA draw from that bus. When the transfer switch opens, when the utility fails, when every office light goes out — the monitor is already running, already on cellular, and already polling the controller at one-minute intervals for exactly the data the facility manager needs.
+
+**Deployment scenario.** A single OPTA RS485 + Wireless for OPTA mounted on the DIN rail inside the generator's main control panel, powered from the panel's existing battery-backed DC control bus, RS-485 wired to the controller's communications port, cellular antenna routed out through a cable gland. RS-485 wiring and Modbus communication-setting matching are required; beyond that, no writes to safety circuits, no OEM cooperation, and no IT involvement.
+
 ## 2. System Architecture
 
 ![System architecture: Generator Controller ↔ Modbus RTU over RS-485 ↔ OPTA RS485 + Wireless for OPTA ↔ cellular ↔ Notehub ↔ routes](diagrams/01-system-architecture.svg)
@@ -79,14 +87,6 @@ This project closes that gap — for active alarm state, a firmware-observed ala
 ```
 
 **Firmware-observed alarm chronology.** The firmware polls the controller's active alarm bitmask once per `sample_minutes` (default 1 minutes) and fires a `controller_alarm` event on first observed assertion — on a zero→non-zero transition, or immediately at the first valid poll after boot if those bits are already set. Every distinct alarm-word transition — initial assertion, any mid-nonzero change where bits are added or cleared while at least one fault remains active, and the final clearance to zero — is appended to an 8-slot on-device ring buffer (`AlarmHistoryEntry`) and flushed as `gen_alarm_log.qo` at every report boundary, giving operations teams a per-window fault-set chronology. Transient faults that assert and clear entirely between two consecutive polls can still be missed. The controller's own internal timestamped alarm log (vendor-specific multi-register reads that may cover events predating the monitor's installation) is a production extension; see [Limitations](#11-limitations-and-next-steps).
-
-**Why Notecard.** The timing of this deployment is the whole point. The standby generator exists to provide power when mains power fails — which is exactly when the facility's WiFi router also goes dark. A monitoring system that relies on the building's LAN cannot report a failure-to-start at the moment that matters most. Worse, a purely LAN-dependent monitor might be relied on as evidence that everything is fine, right up until the UPS batteries run dry. Cellular with an antenna routed outside the metal generator enclosure provides a communication path that is completely independent of the facility's power and network infrastructure. The cellular path is alive precisely because it draws from the generator panel's own battery-backed DC control bus — the same battery that starts the engine.
-
-<NewToBlues/>
-
-This is the key architectural insight: a well-designed generator panel already has a battery-backed 12–24 VDC control bus whose entire job is to remain live when mains fails. The OPTA and Wireless for OPTA draw from that bus. When the transfer switch opens, when the utility fails, when every office light goes out — the monitor is already running, already on cellular, and already polling the controller at one-minute intervals for exactly the data the facility manager needs.
-
-**Deployment scenario.** A single OPTA RS485 + Wireless for OPTA mounted on the DIN rail inside the generator's main control panel, powered from the panel's existing battery-backed DC control bus, RS-485 wired to the controller's communications port, cellular antenna routed out through a cable gland. RS-485 wiring and Modbus communication-setting matching are required; beyond that, no writes to safety circuits, no OEM cooperation, and no IT involvement.
 
 ## 4. Hardware Requirements
 
