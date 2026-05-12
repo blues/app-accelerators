@@ -8,7 +8,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-This project is a retrofit [asset location tracking](https://blues.com/solutions-location-tracking/) solution for mobile heavy equipment — excavators, generators, compactors, light towers, and any machine a rental company or OEM needs to bill by the hour and maintain on schedule. A magnetically mounted, solar-trickle-charged enclosure uses a 3-axis accelerometer to detect engine-on/off transitions via vibration signature, accumulates a persistent software hour meter, and reports location and utilization back to [Notehub](https://notehub.io) over cellular or satellite — with no wiring harness, no equipment modification, and no dependency on a job-site network. Cellular-with-[Skylo](https://www.skylo.tech/)-NTN-satellite fallback keeps the device reporting from remote pipeline corridors, open-pit mines, and wind-farm construction zones where terrestrial coverage runs thin. The hardware is a Notecarrier CX with a Notecard for Skylo and an external IMU (see §4 for the BOM).
+This project is a retrofit [asset location tracking](https://blues.com/solutions-location-tracking/) solution for mobile heavy equipment — excavators, generators, compactors, light towers, and any machine a rental company or OEM needs to bill by the hour and maintain on schedule. A magnetically mounted, solar-trickle-charged enclosure uses a 3-axis accelerometer to detect engine-on/off transitions via vibration signature, accumulates a persistent software hour meter, and reports location and utilization back to [Notehub](https://notehub.io) over cellular or satellite — with no wiring harness, no equipment modification, and no dependency on a job-site network. [Skylo](https://www.skylo.tech/)-supported satellite fallback keeps the device reporting from remote pipeline corridors, open-pit mines, and wind-farm construction zones where terrestrial coverage runs thin. The hardware is a Notecarrier CX with a Notecard for Skylo and an external IMU (see §4 for the BOM).
 
 ## 1. Project Overview
 
@@ -47,8 +47,6 @@ Vibration-based hour detection solves the retrofit problem entirely. A small enc
 5. Compile and upload (see [§7.1](#71-installing-and-flashing) for full `arduino-cli` commands with your port).
 6. Open serial monitor at **115200 baud**. You should see `[BOOT] Cold boot` or `[VIB]` log lines every 30 seconds.
 7. Power the device. Open Notehub → your project → **Events** tab. You should see `_session.qo` within ~1 minute on cellular (longer on satellite depending on sky view). Tap the enclosure to trigger vibration; state-change events appear in `equip_event.qo`.
-
-See [Appendix: Quickstart at a Glance](#appendix-quickstart-at-a-glance) for more details.
 
 Here is a sample Note this device emits:
 
@@ -430,7 +428,7 @@ notecard.sendRequest(notecard.newRequest("hub.sync"));
 
 **Tuning the classifier on your equipment.** If the classifier misfires at default thresholds (false RUNNING on transport, or failure to detect idle):
 
-1. Tap the enclosure in the three states and Note the RMS and CV values printed on the serial monitor.
+1. Tap the enclosure in the three states and note the RMS and CV values printed on the serial monitor.
 2. If **idle is triggering as RUNNING**, raise `vib_run_mg` slightly (try 18.0 or 20.0). This raises the activity floor.
 3. If **transport is triggering as RUNNING**, lower `vib_cv_max` (try 0.35 or 0.30). This tightens the "engine-like vibration" criterion.
 4. If **engine start is missed entirely**, lower `vib_run_mg` (try 12.0 or 10.0) or raise `vib_cv_max` (try 0.45).
@@ -522,17 +520,3 @@ This project puts a compact, self-powered sensor node on any piece of mobile hea
 The Notecard for Skylo is the connectivity argument that makes remote deployments viable. Open-pit mines, wind-farm construction pads, and pipeline access roads all sit well outside reliable cellular coverage — environments where a cellular-only tracker goes dark precisely when the asset is working hardest and the data is most valuable. With automatic satellite fallback built into the same M.2 module that handles LTE-M, the operator's telematics view stays complete regardless of site topology.
 
 For rental companies the data pipeline is clear: any `equip_event.qo` with `session_min > 0` — whether tagged `engine_stop` (RUNNING→IDLE) or `transport_start` (RUNNING→TRANSPORT) — is the billing record; `run_h_total` at regular intervals is the maintenance trigger; `transport_start` at 2 AM is the unauthorized-use alert. The same firmware, the same hardware, the same Notehub project, deployed across the entire fleet.
-
----
-
-## Appendix: Quickstart at a Glance
-
-For a complete step-by-step walkthrough, start at the top of this README under [Quickstart (under 10 minutes)](#3-technical-summary). Below is a summary checklist:
-
-1. **Notehub** — create a [Notehub project](https://notehub.io) and copy the ProductUID.
-2. **Wire the bench rig** — Notecarrier CX + Notecard for Skylo + Adafruit LSM6DSOX on I2C + Blues Mojo inline on the power rail (optional for first-light; useful for the power-validation workflow in [§9](#9-validation-and-testing)). Full pinout in [§5](#5-wiring-and-assembly).
-3. **Edit one line** in [`firmware/equipment_hours_tracker/equipment_hours_tracker_helpers.h`](firmware/equipment_hours_tracker/equipment_hours_tracker_helpers.h) — set `PRODUCT_UID` to your project value.
-4. **Install core** (one-time) — `arduino-cli core install STMicroelectronics:stm32 --additional-urls https://raw.githubusercontent.com/stm32duino/BoardManagerFiles/main/STM32/package_stm_index.json`
-5. **Flash** — `arduino-cli compile -b STMicroelectronics:stm32:GenL4:pnum=CYGNET firmware/equipment_hours_tracker/` then upload. Details in [§7.1](#71-installing-and-flashing).
-6. **Watch serial** — open at 115200 baud; you should see `[BOOT]` or `[VIB]` output every 30 seconds.
-7. **Watch Notehub** — open Notehub → your project → **Events**. You should see `_session.qo` within about a minute on cellular, or when NTN service is available and the MAIN antenna has adequate sky view when operating off-cellular — Skylo NTN session establishment is not pass-timed; latency varies with sky visibility and signal conditions. Tap the enclosure to trigger a vibration reading; state-change events appear in `equip_event.qo`.
