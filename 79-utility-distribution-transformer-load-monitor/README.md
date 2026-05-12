@@ -103,7 +103,7 @@ Here is a sample Note this device emits:
 | 2A 250V slow-blow fuse, 5×20 mm (e.g. Littelfuse 218002) | 1 | Protects the 120VAC tap to the IRM-10-5 supply. Required on the Line leg; install in a panel-mount or PCB fuse holder rated for 250VAC. |
 | 5×20 mm fuse holder, 250VAC rated | 1 | Mounts the slow-blow fuse on the Line conductor inside the enclosure. |
 | Cellular stub antenna *(bench / commissioning only, included with Notecarrier CX dev kit)* | 1 | Adequate for bench bring-up and indoor testing. Not suitable for permanent outdoor pole-mount deployment. |
-| Outdoor cellular antenna, 700–2700 MHz, SMA *(deployment)*, e.g., [SparkFun WRL-14987](https://www.sparkfun.com/products/14987) | 1 | Replaces the bench stub for installed units; choose a part rated for outdoor temperature range and UV exposure. See [§5](#5-wiring-and-assembly) for enclosure-dependent placement guidance. |
+| Outdoor cellular antenna, 700–2700 MHz, SMA *(deployment)*, e.g., [SparkFun CEL-16432](https://www.sparkfun.com/lte-hinged-external-antenna-698mhz-2-7ghz-sma-male.html) | 1 | Replaces the bench stub for installed units; choose a part rated for outdoor temperature range and UV exposure. See [§5](#5-wiring-and-assembly) for enclosure-dependent placement guidance. |
 | u.FL-to-SMA bulkhead pigtail, ≈100 mm, e.g., Taoglas CA-05250003 or equivalent | 1 | Routes the Notecard's u.FL antenna port to the externally-mounted SMA antenna. Required for all pole-mount deployments using the outdoor SMA antenna; also serves as the bulkhead lead through the enclosure wall for metal enclosures. |
 | NEMA 4X enclosure, ~6×4×2″ | 1 | Weatherproof housing for outdoor pole-mount. Fiberglass or polycarbonate variants are lighter than steel and don't attenuate the cellular antenna. |
 
