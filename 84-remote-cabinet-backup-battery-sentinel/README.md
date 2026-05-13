@@ -56,7 +56,7 @@ The Notecard manages its own cellular session against the supported carrier netw
    - `battery_summary.qo` appears within **60 minutes** — this is your hourly health summary (sample JSON below)
    - `battery_alert.qo` appears immediately if any alert condition trips (sample JSON below)
    
-   If you don't see `_session.qo` after 5 minutes, check your PRODUCT_UID matches your Notehub project exactly and verify cellular coverage at your location. See §9.1 troubleshooting if the Notecard never reaches Notehub.
+   If you don't see `_session.qo` after 5 minutes, check your PRODUCT_UID matches your Notehub project exactly and verify cellular coverage at your location. See §10 Troubleshooting if the Notecard never reaches Notehub.
 
    Example `battery_summary.qo` (healthy 12 V VRLA at float):
    ```json

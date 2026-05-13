@@ -439,7 +439,7 @@ With the default cadence (5-minute samples, hourly sync), a healthy trace shows 
 |---------|--------------|----------|
 | Notecard doesn't connect to cellular on first power-up. | No ProductUID set, or invalid UID. | Confirm `PRODUCT_UID` in the sketch is your real Notehub project UID (not the placeholder). Flash again and watch the USB serial monitor for error messages. |
 | No `solar_summary.qo` events appear in Notehub. | Device not claiming to project; Notecard is in wrong project. | Open the In-Browser Terminal and send `{"req":"hub.status"}` to check which project the Notecard has claimed. If it's wrong, try `{"req":"hub.set","product":"your-real-product-uid"}` to re-claim. |
-| `solar_summary.qo` events appear, but all strings report `−9999` (no data). | Modbus read failing silently. | Check `modbus_baud`, `modbus_slave_id`, `modbus_parity`, `modbus_stop_bits` match the inverter configuration. Bench-test with a Modbus simulator (§8.5 step 3). Look for a `modbus_fail` alert in Notehub. |
+| `solar_summary.qo` events appear, but all strings report `−9999` (no data). | Modbus read failing silently. | Check `modbus_baud`, `modbus_slave_id`, `modbus_parity`, `modbus_stop_bits` match the inverter configuration. Bench-test with a Modbus simulator (see §9 "Modbus first-light"). Look for a `modbus_fail` alert in Notehub. |
 | Alerts fire constantly, even on a healthy array. | `string_stc_w` is set too high, or `perf_thresh_pct` is set too low. | Verify the `string_stc_w` matches your actual string rating. The default `6000` W is for a 15×400 W example; adjust it. Simulate with inflated STC (§9) to test the alert path. |
 | No alerts even when strings are visibly shaded or soiled. | `perf_thresh_pct` is too low, or irradiance is below `irradiance_min_wm2`. | Check if `irradiance_wm2` in the summary is below your threshold (default `100` W/m²). At low light, PR evaluation is intentionally suppressed to avoid noise-driven false positives. Increase `perf_thresh_pct` via Notehub to increase sensitivity (e.g., from 80 to 75). Wait up to 120 minutes for the environment variable to sync. |
 | Idle current is 1 mA or higher (should be ~8–18 µA). | USB/VUSB is connected to Notecarrier; Mojo is not reaching its sleep call. | Disconnect USB from the Notecarrier and power through +VBAT only. Confirm the DIP switch is set to `HST` (not `NC`). Check that `NotePayloadSaveAndSleep` completes on every sample cycle. |
@@ -448,7 +448,7 @@ With the default cadence (5-minute samples, hourly sync), a healthy trace shows 
 
 ## 11. Limitations and Next Steps
 
-(Note: This is the detailed per-constraint section referenced throughout. For a quick pre-deployment checklist, see §8.5 Commissioning Checklist above.)
+(Note: This is the detailed per-constraint section referenced throughout. For commissioning steps, see §9 Validation and Testing above.)
 
 This reference design targets the moment a portfolio operator wants real per-string visibility on an array — soiling, shading, and bad-module signals delivered to an off-site dashboard within a single sample interval. A handful of details were left simple so the path from BOM to first event stays inside a single afternoon; each is documented below alongside the production hardening that closes the gap.
 

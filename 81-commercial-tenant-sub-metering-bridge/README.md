@@ -355,7 +355,7 @@ A Rogowski coil installed with reversed lead polarity produces a consistently ne
 
 **`meter_summary.qo` — emitted hourly (canonical record)**
 
-Nine 4-byte floats: estimated interval energy (Wh), 15-minute blocked-average demand (W), and a combined fault bitmask per summary period. `t*_wh` is the sum of (W_sample × sample_interval_sec / 3600) across all periodic samples in the reporting period — estimated interval energy derived from power snapshots, not a continuous integral or kVAh estimate. `t*_demand_w` is the peak 15-minute blocked-average demand observed during the summary period — the highest average watts across any completed `DEMAND_INTERVAL_SEC` (900 s) window; see §11.3. `fault_mask` packs per-channel hardware-fault flags as a 4-bit nibble per tenant (T1 in bits 3:0; see §11.3 for bit definitions); 0 means all channels clean for the entire period.
+Nine 4-byte floats: estimated interval energy (Wh), 15-minute blocked-average demand (W), and a combined fault bitmask per summary period. `t*_wh` is the sum of (W_sample × sample_interval_sec / 3600) across all periodic samples in the reporting period — estimated interval energy derived from power snapshots, not a continuous integral or kVAh estimate. `t*_demand_w` is the peak 15-minute blocked-average demand observed during the summary period — the highest average watts across any completed `DEMAND_INTERVAL_SEC` (900 s) window; see §7.3. `fault_mask` packs per-channel hardware-fault flags as a 4-bit nibble per tenant (T1 in bits 3:0; see §7.3 for bit definitions); 0 means all channels clean for the entire period.
 
 ```json
 {
@@ -502,7 +502,7 @@ If compilation fails with a `PRODUCT_UID is not defined` warning, revisit step 2
 
 **Collected.** Every `sample_interval_sec` (default 5 minutes): 2000 sequential interleaved V+I ADC sample pairs per active tenant channel. The V×I cross-product yields active power (W); RMS current (A) is computed as an intermediate value and is available to callers but is not transmitted in the current firmware. Adding per-channel RMS current to the summary Note is a straightforward future extension. See [§11](#11-limitations-and-next-steps).
 
-**Accumulated on-device.** Between summaries: per-tenant estimated Wh (sum of W_sample × sample_interval_sec / 3600); per-tenant peak 15-minute blocked-average demand W (highest completed `DEMAND_INTERVAL_SEC` window average; see §11.3); per-tenant hardware-fault flags (OR of FAULT_* bits across all wakes in the period).
+**Accumulated on-device.** Between summaries: per-tenant estimated Wh (sum of W_sample × sample_interval_sec / 3600); per-tenant peak 15-minute blocked-average demand W (highest completed `DEMAND_INTERVAL_SEC` window average; see §7.3); per-tenant hardware-fault flags (OR of FAULT_* bits across all wakes in the period).
 
 **Transmitted — hourly (canonical record).**
 `meter_summary.qo` — one Note per `summary_interval_min` (default 24 per day). Template-encoded, queued and flushed in the Notecard's periodic outbound sync. Carries `t1_wh`–`t4_wh` (estimated interval energy in Wh), `t1_demand_w`–`t4_demand_w` (peak 15-minute blocked-average demand W), and `fault_mask` (combined per-channel fault bitmask) for each tenant. Note is **not** sync:true; it batches with the periodic radio window. These Notes are the authoritative energy record and the sole input for Notehub-side monthly aggregation.
