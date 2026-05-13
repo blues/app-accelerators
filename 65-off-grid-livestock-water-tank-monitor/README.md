@@ -457,6 +457,8 @@ If the Mojo trace shows continuous multi-mA draw with no idle transitions, the h
 
 ## 11. Limitations and Next Steps
 
+This reference design is a single-tank monitor that works on a pole next to a stock tank — not a multi-tank irrigation controller, not a herd-level analytics platform, not a polar-region satellite design. The list below names the boundaries that come with that scope so a rancher or integrator can see exactly where the design ends and where production work begins.
+
 **Simplified for this reference design:**
 
 - **Satellite antenna siting is site-specific.** The NOTE-NBGLWX Skylo path requires a clear, unobstructed view of the equator-facing sky (southern sky in the northern hemisphere; northern sky in the southern hemisphere). Tank sites in valleys, near tree lines, or adjacent to structures that block the horizon toward the equator may have degraded satellite performance or no satellite link at all. Survey the site for equator-facing sky exposure before selecting this design for a satellite-dependent deployment. For sites that require Iridium coverage (polar regions, sites where Skylo GEO coverage does not reach), a different satellite module is needed.

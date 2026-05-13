@@ -1,6 +1,6 @@
 # Blues Application Accelerators
 
-Fully documented reference applications for assembling Notecard- and Notehub-powered solutions.
+Fully documented proof-of-concept reference applications for assembling Notecard- and Notehub-powered solutions.
 
 [Click here](https://dev.blues.io/example-apps/accelerators/) to browse all the accelerators.
 
