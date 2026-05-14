@@ -46,16 +46,15 @@ jobs:
             "Adafruit BME280 Library" \
             "Adafruit BusIO" \
             "Adafruit DRV2605 Library" \
-            "Adafruit MAX31865" \
+            "Adafruit MAX31865 library" \
             "Adafruit PM25 AQI Sensor" \
-            "Adafruit SHT31" \
-            "Adafruit SHT4x" \
+            "Adafruit SHT31 Library" \
+            "Adafruit SHT4x Library" \
             "Adafruit Unified Sensor" \
             "Adafruit VCNL4040" \
-            "Adafruit VEML7700" \
+            "Adafruit VEML7700 Library" \
             "HX711" \
-            "SparkFun LIS3DH Arduino Library" \
-            "SparkFun ATECC508/ATECC608 ArduinoShield"
+            "SparkFun LIS3DH Arduino Library"
 
       - name: Compile every sketch
         # ALLOW_EMPTY_PRODUCT_UID lets sketches that gate compilation on a
