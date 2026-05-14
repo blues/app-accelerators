@@ -11,7 +11,7 @@ Detect when a vehicle or other object collides with another object on a roadway.
 
 ## Notehub Setup
 
-Sign up for a free account on [notehub.io](https://notehub.io) and create a new project.
+Sign up for a free account on [notehub.io](https://notehub.io) and [create a new project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub).
 
 ## Hardware Setup
 
@@ -25,7 +25,7 @@ The Notecard should use [firmware version 3.5.2](https://dev.blues.io/notecard/n
 
 ## Testing
 
-With the Notecarrier connected to your development PC, navigate to https://dev.blues.io open the In-Browser Terminal, and connect to the Notecard. Then enter the JSON commands below into the terminal.
+With the Notecarrier connected to your development PC, navigate to https://dev.blues.io open the in-browser terminal, and connect to the Notecard. Then enter the JSON commands below into the terminal.
 
 ### hub.set
 
