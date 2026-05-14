@@ -33,6 +33,9 @@ jobs:
           arduino-cli core install arduino:mbed_opta
           arduino-cli core install adafruit:nrf52
 
+      - name: Install adafruit-nrfutil (required by adafruit:nrf52 build)
+        run: pip install --user adafruit-nrfutil
+
       - name: Install latest libraries
         run: |
           arduino-cli lib update-index
@@ -46,7 +49,10 @@ jobs:
             "Adafruit BME280 Library" \
             "Adafruit BusIO" \
             "Adafruit DRV2605 Library" \
+            "Adafruit INA228 Library" \
+            "Adafruit LSM6DS" \
             "Adafruit MAX31865 library" \
+            "Adafruit MCP9808 Library" \
             "Adafruit PM25 AQI Sensor" \
             "Adafruit SHT31 Library" \
             "Adafruit SHT4x Library" \
