@@ -69,7 +69,6 @@ Here is a sample Note this device emits:
 }
 ```
 
----
 
 ## 4. Hardware Requirements
 
@@ -493,7 +492,6 @@ NotePayloadSaveAndSleep(&out, cfg.sample_interval_sec, NULL);
 
 If compilation fails with a `PRODUCT_UID is not defined` warning, revisit step 2. If upload fails with a "board not found" error, check the DIP switch position and USB cable.
 
----
 
 
 ## 9. Data Flow

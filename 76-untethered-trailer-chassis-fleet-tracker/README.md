@@ -30,7 +30,6 @@ Third, **power is scarce**. Trailers have no reliable 12V auxiliary hookup — t
 
 **Deployment scenario.** A weatherproof IP67 enclosure mounted flat on the trailer roof, with the solar panel installed on the same roof surface. Two SMA bulkhead fittings in the enclosure lid route the cellular antenna and the Iridium+GPS combined antenna to the lid surface — no GPS patch inside is needed. For chassis installations, see [Chassis deployment variant](#chassis-deployment-variant) for chassis-specific mounting guidance. No tractor hookup. No wiring into trailer or chassis existing systems.
 
----
 
 ## 2. System Architecture
 
@@ -52,7 +51,6 @@ Once Notes leave the device, the Notecard's embedded global SIM carries them ove
 
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and other destinations. Route setup is project-specific; see the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub). This project ships no specific downstream endpoint.
 
----
 
 ## 3. Technical Summary
 
@@ -64,7 +62,6 @@ Once Notes leave the device, the Notecard's embedded global SIM carries them ove
 4. **Flash** via Arduino IDE or `arduino-cli` (see [§7.1](#71-dependencies-and-flashing)).
 5. **Watch** — open Notehub → **Events** tab. You should see a `_session.qo` within a few minutes of power-on — this confirms the first cellular session and clock sync. The firmware then queues a `trailer_heartbeat.qo` locally on the next parked-check wake (~5 minutes in). Because heartbeat Notes are **not** marked `sync:true`, they wait for the next scheduled outbound sync window rather than transmitting immediately: **~60 minutes** at a full battery (`voutbound high:60`) or **~120 minutes** at nominal charge (`voutbound normal:120`). Budget **1–2 hours from first power-on** before the first heartbeat appears in Notehub.
 
----
 
 Here is a sample Note this device emits:
 
@@ -110,7 +107,6 @@ Here is a sample Note this device emits:
 
 The cellular Notecard (e.g., NOTE-WBEX) ships with an active Blues SIM including 500 MB of data and 10 years of global cellular service — no monthly commitments, no activation fees. The Starnote for Iridium requires a separate Iridium satellite service plan and is not covered by the cellular SIM; contact [Blues](https://blues.com/contact-sales/) for current Iridium service details and activation.
 
----
 
 ## 5. Wiring and Assembly
 
@@ -169,7 +165,6 @@ The two SMA bulkhead fittings should be spaced at least 25 mm apart to minimize 
 
 The Swan communicates with the cellular Notecard over the Notecarrier XI's onboard I²C bus. The Starnote for Iridium is managed by the Notecard via the Starnote connector — no additional host wiring is required for satellite or GPS operation. During development, connect the **Swan's USB-C port** (on the Swan module itself) to a host PC; it enumerates as a CDC serial port at 115200 baud.
 
----
 
 ### Chassis deployment variant
 
@@ -183,7 +178,6 @@ An intermodal chassis has no roof — it is a flat, low steel frame sized for a 
 
 **Enclosure protection.** Chassis environments are harder than trailer roofs: road spray from below the frame is continuous, forklift tines pass close to the frame rails, and container-handling operations subject nearby hardware to impact and scuff loads. Use an IP67 enclosure with stainless fasteners throughout, protect cable entry glands with reinforced strain-relief fittings rated for abrasion and UV, and consider adding a steel guard plate over the enclosure if the mount location is within reach of forklift traffic.
 
----
 
 ## 6. Notehub Setup
 
@@ -247,7 +241,6 @@ The **Events** tab in your project shows all Note types:
 
   A downward trend in `volt` across consecutive heartbeats is an early warning that the solar panel or charge path needs attention.
 
----
 
 ## 7. Firmware Design
 
@@ -452,7 +445,6 @@ if (prev == STATE_PARKED && moving) {
 }
 ```
 
----
 
 ## 8. Data Flow
 
@@ -476,7 +468,6 @@ On **NTN/satellite**, `sync:true` marks transition events as high priority but t
 
 **Triggers and alerts.** A `trailer_event.qo` with `type:1` (departed) is the signal to close a detention clock, log an outbound scan, or trigger a "tractor has hooked" notification. A `trailer_event.qo` with `type:2` (arrived) starts the detention clock. A `trailer_heartbeat.qo` with `volt` declining below ~3.6V over consecutive reads warrants a yard check on the solar charging path.
 
----
 
 ## 9. Validation and Testing
 
@@ -524,7 +515,6 @@ Three Mojo trace signatures to recognize:
 
 For the arrival event, Note the **asymmetric detection latency**: once the tracker transitions to STATE_MOVING, it sleeps for `moving_ping_secs` (default 15 minutes) between wakes. Departure detection is bounded by `parked_check_mins` (5 minutes default), while arrival detection is bounded by `moving_ping_mins` (15 minutes default). To see a `type:2` Note after letting the unit sit still, wait up to **`moving_ping_mins` + sync time** (roughly 16–17 minutes at defaults).
 
----
 
 ## 10. Troubleshooting
 
@@ -595,7 +585,6 @@ A reference design has to draw the line somewhere, and this one draws it at the 
 - **Detention billing automation** — a Notehub route that fires a webhook into the TMS on every `trailer_event.qo` with `type:1` (departed), using the `dwell_h` field to auto-generate detention invoices for any dwell exceeding the contracted free-time allowance.
 - **Outboard DFU** — wiring the Notecard's DFU GPIO to the Swan RESET/BOOT0 pins to enable over-the-air host firmware updates across the entire fleet via Notehub.
 
----
 
 ## 12. Summary
 

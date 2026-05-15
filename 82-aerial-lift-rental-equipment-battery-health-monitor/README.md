@@ -54,7 +54,6 @@ This project is the watcher. A small monitoring device clipped to the pack reads
 
 That's it. The device is now sampling every 5 minutes, reporting hourly, and firing immediate alerts on pack fault conditions.
 
----
 
 Here is a sample Note this device emits:
 

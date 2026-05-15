@@ -34,7 +34,6 @@ CT installation is **non-invasive**: the split-core sensors clamp directly onto 
 
 </Note>
 
----
 
 ## 2. System Architecture
 
@@ -48,7 +47,6 @@ CT installation is **non-invasive**: the split-core sensors clamp directly onto 
 
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS IoT Core, Azure IoT Hub, GCP Pub/Sub, Snowflake, and other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint. Alert and summary Notefiles are deliberately separate so each can be routed independently: alerts to an outage-management or on-call system with low-latency delivery, summaries to a historian or analytics store with higher-volume, batched ingest.
 
----
 
 ## 3. Technical Summary
 
@@ -69,7 +67,6 @@ CT installation is **non-invasive**: the split-core sensors clamp directly onto 
 6. After 60 minutes you'll see `[summary] queued` on serial. Wait for the device's next outbound sync (default hourly) and check Notehub **Devices → Events** for an `xfmr_summary.qo` entry.
 7. Clamp a CT on a known 120VAC load (a lamp works well) and verify the current value in the summary matches the expected load (within ~5%).
 
----
 
 Here is a sample Note this device emits:
 
@@ -122,7 +119,6 @@ All Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 </Warning>
 
----
 
 ## 5. Wiring and Assembly
 
@@ -200,7 +196,6 @@ Clamp each CT around a single secondary conductor, never around two conductors s
 
 </Warning>
 
----
 
 ## 6. Notehub Setup
 
@@ -248,7 +243,6 @@ Clamp each CT around a single secondary conductor, never around two conductors s
   `overloads` counts **sample intervals** during which any phase exceeded the overload threshold, not distinct overload events. A single sustained overload lasting the full summary window at the default 5-minute sample rate would report `overloads: 12`. `samples` counts only intervals in which at least one phase was above the 0.5 A noise floor; `total_wakes` counts every host wake regardless of load. For time-weighted utilization analytics, multiply `loading_pct` by `samples / total_wakes` to account for idle intervals (see [§11](#11-limitations-and-next-steps)).
 - **`xfmr_alert.qo`** — emitted only on a threshold trip, transmitted immediately. The `alert` field is one of `overload`, `phase_imbalance`, or `high_temp`.
 
----
 
 ## 7. Firmware Design
 
@@ -445,7 +439,6 @@ NotePayloadSaveAndSleep(&out, cfg.sample_interval_sec, NULL);
 // Execution does not continue past here under normal operation.
 ```
 
----
 
 ## 8. Data Flow
 
@@ -466,7 +459,6 @@ Every 5 minutes (`sample_interval_sec`), the host wakes, reads the configured CT
 
 **Routed.** Both Notefiles flow through Notehub. From there, operators configure routes to send `xfmr_alert.qo` to an outage-management system or on-call paging tool and `xfmr_summary.qo` to a long-term historian for trending and transformer-life analytics.
 
----
 
 ## 9. Validation and Testing
 
@@ -494,7 +486,6 @@ A useful Mojo trace to look for:
 
 Mojo is a bench-validation and regression tool — it is not required in production. Once a firmware revision passes the trace check, deployed units don't need it.
 
----
 
 ## 10. Troubleshooting
 
@@ -507,7 +498,6 @@ Mojo is a bench-validation and regression tool — it is not required in product
 | CT readings are consistently wrong (e.g., reading 50 A when the load is 100 A) | Incorrect `CT_SCALE` constant or ADC resolution mismatch | Verify `analogReadResolution(12)` is called before any analogRead (it is, in setup()). If a different ADC resolution was selected before flashing, the scale factor is off by a factor of (new_bits / 12). Recalculate `CT_SCALE = (3.3 / 4096) × (2000 / 22)` for 12-bit resolution; see §7.3 for the formula. |
 | Mojo shows correct steady state but summary payload has temp_c = -999.0 | MCP9808 not responding | Verify I²C wiring (SDA/SCL). Check I²C address is 0x18 (default). Try the Adafruit_MCP9808 example sketch to confirm the sensor responds. |
 
----
 
 ## 11. Limitations and Next Steps
 
@@ -537,7 +527,6 @@ A pole-mount monitor that drives operational decisions about live distribution e
 - Over-the-air host firmware updates across the deployed fleet — critical when physical re-flash of hundreds of pole-mount units is impractical. [Notecard Outboard Firmware Update (ODFU)](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) provides this capability; verify the specific wiring and bootloader support for the Notecarrier CX / Cygnet combination against Blues documentation before committing to a production design.
 - Per-transformer commissioning: a one-time `rated_amps` calibration via env var at install time to account for field-measurement of the actual secondary current at known load.
 
----
 
 ## 12. Summary
 

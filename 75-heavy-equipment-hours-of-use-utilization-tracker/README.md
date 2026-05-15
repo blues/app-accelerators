@@ -22,8 +22,6 @@ Vibration-based hour detection solves the retrofit problem entirely. A small enc
 
 **Deployment scenario.** The enclosure mounts magnetically to any ferrous chassis surface — frame rail, tool-box lid, battery tray. No holes drilled, no wiring harness, no OEM cooperation. A small solar panel epoxied or bolted to the top of the enclosure trickle-charges a 2000 mAh LiPo through the Notecarrier CX's built-in solar charging circuit. The equipment can sit unused on a lot for weeks and the tracker will maintain charge; when the operator fires up the machine on a remote site, the vibration classifier detects the engine-start event and the Notecard ships the telemetry by whatever network is available.
 
----
-
 ## 2. System Architecture
 
 ![System architecture: LSM6DSOX accelerometer → Notecarrier CX with Cygnet host and NOTE-NBGLWX → cellular or Skylo NTN satellite → Notehub → billing / CMMS / alerts](diagrams/01-system-architecture.svg)
@@ -35,8 +33,6 @@ Vibration-based hour detection solves the retrofit problem entirely. A small enc
 **Notehub responsibilities.** The Notecard's embedded global SIM handles cellular and Skylo NTN satellite sessions against supported carriers worldwide, delivering events to [Notehub](https://notehub.io) over the Internet; Notehub ingests, stores, and applies project-level routes from there. The operator never touches firmware to retune the fleet — fleet-level [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) let you adjust vibration thresholds and geofence parameters from the web console without a truck roll. [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) segment devices by rental customer, equipment class, or geographic territory so routing and alerting can differ by group.
 
 **Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS IoT Core, Azure IoT Hub, GCP Pub/Sub, Snowflake, and other destinations. State-change events (`equip_event.qo`) are good candidates to route to an on-call webhook or work-order system; daily summaries (`equip_summary.qo`) suit a time-series historian or billing database. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for configuration — this project ships no specific downstream endpoint.
-
----
 
 ## 3. Technical Summary
 
@@ -80,8 +76,6 @@ Here is a sample Note this device emits:
 
 The Notecard for Skylo ships with a factory-provisioned SIM, global cellular and satellite service, 500 MB of cellular data, 10 KB of satellite data, and 10 years of connectivity included in the device price — no activation fees, no monthly minimum. This entitlement applies to the Notecard for Skylo; the Notecarrier CX and Mojo are hardware-only items with no attached connectivity service.
 
----
-
 ## 5. Wiring and Assembly
 
 ![Wiring: LSM6DSOX accelerometer on I²C; ATTN→EN jumper required for sleep gating; MAIN antenna for cellular/satellite plus GPS antenna via Notecard u.FL; solar 2 W → LiPo 2 Ah → Mojo (bench) → +VBAT](diagrams/02-wiring-assembly.svg)
@@ -103,9 +97,9 @@ Pin-by-pin:
 - **`MAIN` u.FL** — carries both LTE-M/NB-IoT/GPRS cellular and Skylo NTN satellite on a single path. Clip the u.FL end of the pigtail (Adafruit #851 or equivalent u.FL-to-SMA-female-jack cable) onto the `MAIN` u.FL port, then route the cable to a drilled or punched hole in the enclosure sidewall. Pass the pigtail's **SMA female jack** (panel-mount end) through the hole from inside, thread on the hex nut from outside to clamp it against the wall, and apply a thin bead of silicone sealant under the nut face — this is the weatherproof seal at the RF penetration. Screw the **SMA male plug** of the Skylo-certified MAIN antenna included with the NOTE-NBGLWX onto the exposed SMA female from outside the enclosure, and orient the antenna pointing upward with a clear, unobstructed sky view. Skylo NTN requires the antenna to be outdoors — do not mount under steel overhead panels or inside equipment compartments.
 - **`GPS` u.FL** — passive GNSS only; do not connect an active (bias-powered) antenna. Attach the Adafruit #2460 passive GPS patch here and position it against the inside face of the polycarbonate lid. GPS L1 signals penetrate the plastic without a cable gland.
 
-Confirm the port assignments in the [NOTE-NBGLWX datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) before connecting. The MAIN antenna is Skylo-certified as a unit with the NOTE-NBGLWX — do not substitute a different antenna or add extension cables beyond the short u.FL-to-SMA-female pigtail used to bring the MAIN port through the enclosure wall.
+The MAIN antenna is Skylo-certified as a unit with the NOTE-NBGLWX — do not substitute a different antenna or add extension cables beyond the short u.FL-to-SMA-female pigtail used to bring the MAIN port through the enclosure wall.
 
-**Mojo placement (bench only).** For Mojo bench measurements, Mojo **replaces** the normal battery feed for the duration of the test — it does not splice in alongside the LiPo. Before inserting Mojo, **disconnect the LiPo from the Notecarrier CX's LiPo JST**. With the LiPo JST unplugged, route power through the Mojo: bench supply (or the LiPo brought out through a bare lead) → Mojo `BAT` input → Mojo `LOAD` output → Notecarrier CX `VBAT` pad. Leaving the battery on the JST while also feeding `VBAT` through the Mojo creates a parallel power path that bypasses the intended measurement point and risks backfeed through the charger circuit. Also disconnect the solar panel — the solar input is a separate rail that will offset the load draw if left connected. The application firmware does not poll the Mojo — it serves as a standalone bench instrument. Read cumulative mAh and instantaneous current directly from the Mojo's Qwiic output using a separate I2C host (such as a Raspberry Pi or an Arduino running the Mojo example sketch) or from the Mojo's USB serial interface.
+**Mojo placement (bench only).** For Mojo bench measurements, Mojo **replaces** the normal battery feed for the duration of the test — it does not splice in alongside the LiPo. Before inserting Mojo, **disconnect the LiPo from the Notecarrier CX's LiPo JST**. With the LiPo JST unplugged, route power through the Mojo: bench supply (or the LiPo brought out through a bare lead) → Mojo `BAT` input → Mojo `LOAD` output → Notecarrier CX `VBAT` pad. Leaving the battery on the JST while also feeding `VBAT` through the Mojo creates a parallel power path that bypasses the intended measurement point and risks backfeed through the charger circuit. Also disconnect the solar panel — the solar input is a separate rail that will offset the load draw if left connected.
 
 **Accelerometer orientation.** The LSM6DSOX can be mounted in any orientation — the firmware computes the combined 3-axis magnitude and subtracts the 1g gravity baseline. No axis alignment is required. The one practical consideration is rigidity: mount the breakout board solidly to the enclosure interior (hot-glue or standoffs) so it vibrates with the equipment chassis rather than floating on its wires.
 
@@ -115,8 +109,6 @@ Confirm the port assignments in the [NOTE-NBGLWX datasheet](https://dev.blues.io
 - **Surface temperature.** Neodymium magnets begin to lose pull force above ~80 °C and can irreversibly demagnetize above ~150 °C. Do not mount on exhaust manifolds, muffler housings, turbocharger bodies, or any chassis surface that radiates heat from the engine bay. Frame rails, battery trays, and tool-box lids are typically within safe temperature range.
 - **Moving parts and pinch zones.** Avoid areas near pivot pins, hydraulic cylinder clevises, boom linkages, and undercarriage rails where the enclosure could be crushed or snagged during machine articulation.
 - **Washdown exposure.** The enclosure must be IP67-rated with all cable glands properly seated and the lid gasket undamaged. Pressure-washer cleaning (common on construction sites) can exceed IP67 limits if aimed directly at a gland; orient glands away from the primary washdown direction.
-
----
 
 ## 6. Notehub Setup
 
@@ -189,8 +181,6 @@ Confirm the port assignments in the [NOTE-NBGLWX datasheet](https://dev.blues.io
   }
   ```
   Key fields: `type` distinguishes geofence-exit events from routine heartbeats; `location` carries coordinates and GPS accuracy (meters); `when` is the Unix timestamp. Use the `type` and timestamp fields in a Notehub route to trigger alerts when equipment leaves the fence.
-
----
 
 ## 7. Firmware Design
 
@@ -303,7 +293,7 @@ Power efficiency matters for a solar-trickle-charged deployment. Three levers ar
 
 3. **Notecard sync decoupled from samples.** The Notecard runs in `periodic` mode with a daily outbound sync. After each state-change event Note is accepted by the Notecard, the firmware issues a separate `hub.sync` call to request prompt delivery outside the scheduled outbound window (typically 2–4 additional sessions per work day). Summaries queue and transmit in the daily outbound session. The firmware also configures an 8-hour inbound cadence (`inbound: 480`) so the Notecard checks Notehub for environment-variable updates three times per day. At default settings this produces approximately **4 radio sessions per day at minimum** (1 outbound + 3 inbound), plus an additional session per state-change event.
 
-4. **GPS fix cadence.** The firmware configures `card.location.mode` in `periodic` mode with a 900-second (15-minute) interval. Because the external LSM6DSOX handles all vibration classification, the Notecard's internal accelerometer is not needed for that role. The firmware supports disabling it with `card.motion.mode {"stop":true}` through the compile-time macro `DISABLE_NOTECARD_MOTION`, but **this option is OFF by default**. Its interaction with periodic GPS and geofencing on the NOTE-NBGLWX has not been bench-validated — if the Notecard's periodic-mode timer relies on any internal motion-subsystem wakeup path, stopping the motion subsystem could silently disrupt GPS heartbeats and geofence events, which are core features of this application. Enable `DISABLE_NOTECARD_MOTION` only after confirming that periodic GPS and geofence behavior remain intact on your target Notecard firmware. In the typical deployment case, GNSS fix attempts occur on or around the 15-minute cadence when the Notecard determines a new fix is warranted. Each fix attempt typically draws 20–50 mA for 10–60 seconds; at up to 96 attempts per day this can contribute roughly **15–30 mAh/day** to the power budget — a meaningful fraction of the total. If solar input is marginal or the device is frequently stationary, increase `GPS_PERIOD_SECONDS` to reduce GNSS power consumption.
+4. **GPS fix cadence.** The firmware configures `card.location.mode` in `periodic` mode with a 900-second (15-minute) interval. In the typical deployment case, GNSS fix attempts occur on or around the 15-minute cadence when the Notecard determines a new fix is warranted. Each fix attempt typically draws 20–50 mA for 10–60 seconds; at up to 96 attempts per day this can contribute roughly **15–30 mAh/day** to the power budget — a meaningful fraction of the total. If solar input is marginal or the device is frequently stationary, increase `GPS_PERIOD_SECONDS` to reduce GNSS power consumption.
 
 The Notecard for Skylo idles at approximately **8–18 µA @ 5V** between sessions (see the [low-power firmware design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/)). LTE-M sessions for a small queued payload run on the order of tens of seconds at ~100–300 mA peak. Satellite (Skylo NTN) sessions measured in the Blues low-power guide consume approximately **27 mAh per 12-hour period with hourly syncs** — daily sync cadence will be materially lower. Expect the bench-measured total for a device with default settings to be approximately **65–120 mAh per 24 hours** depending on network type, signal quality, state-change event frequency, and GNSS fix success rate.
 
@@ -388,10 +378,6 @@ notecard.sendRequest(req);
 notecard.sendRequest(notecard.newRequest("hub.sync"));
 ```
 
-`note.add` on a `.qo` outgoing queue Notefile is a pure append — the Notecard API does not expose a deduplication field for outgoing queue Notes. If the I²C acknowledgement is lost after the Notecard has already accepted the Note, a host retry on the next wake will create a duplicate entry in the Notecard's queue. This is an acknowledged edge case: the ring-buffer design guarantees **at-least-once delivery**, and a retransmitted duplicate is preferable to a dropped billing record. The `epoch` field — the Unix timestamp of the actual state transition, captured when the event was enqueued rather than when it was delivered — is what makes server-side deduplication tractable: key on `epoch` + `event` in your downstream route to collapse duplicates without discarding any unique transitions.
-
----
-
 ## 8. Data Flow
 
 ![Data flow: 30-s accelerometer burst → RMS + CV vibration classifier → idle/running/transport state machine → equip_event.qo (sync:true on state change) and equip_summary.qo (daily templated) → Notehub](diagrams/03-data-flow.svg)
@@ -414,8 +400,6 @@ notecard.sendRequest(notecard.newRequest("hub.sync"));
 - `transport_stop` — transit leg ended; combined with the preceding `transport_start` timestamp, gives transit duration for dispatch and mileage tracking.
 - Battery voltage below 3.5V in `equip_summary.qo` — indicates solar input is inadequate for the deployment site; suggest repositioning panel or adding capacity.
 - Absence of `equip_event.qo` for multiple days combined with `_track.qo` showing stable position — equipment may be idle on lot; candidate for redeployment or servicing.
-
----
 
 ## 9. Validation and Testing
 
@@ -462,8 +446,6 @@ If the baseline is continuously 10+ mA, the Cygnet is not sleeping — confirm t
 
 **Solar viability estimate.** Because the Mojo is on the load rail, it measures consumption only — current flowing through the Notecarrier CX's separate solar charger input is invisible to it. With the solar panel disconnected and the unit running from a known LiPo or bench supply, run the Mojo for a full 24-hour period and Note total mAh consumed. Compare that figure against the theoretical harvest for your panel size and site: a 1W panel with 4 effective sun-hours produces **4 Wh (4000 mWh) raw**; after typical derating for panel temperature and incidence angle (~80%), charger conversion efficiency (~85%), and soiling (~90%), usable harvest is roughly **2.4 Wh — approximately 480 mAh at 5V**. At default settings the GPS cadence alone adds ~15–30 mAh/day; combined with host wakes, three daily inbound check-ins, one outbound sync, and typically 2–6 event sessions on active days, expect whole-device consumption of **65–120 mAh/day**. A 1W panel with ≥3 effective sun-hours per day typically covers this on cellular; satellite sessions draw more per session, so size the panel per-site. If Mojo shows a rising deficit across repeated 24-hour tests (solar disconnected), consider a 2–5 W panel, a higher-capacity LiPo, or a longer GPS period (`GPS_PERIOD_SECONDS`). To validate actual panel and charger harvest rather than relying on the derating model, place a DC current meter inline on the solar cable itself and log it over a representative sun-exposed day.
 
----
-
 ## 10. Troubleshooting
 
 | Symptom | Likely Cause | Solution |
@@ -478,7 +460,6 @@ If the baseline is continuously 10+ mA, the Cygnet is not sleeping — confirm t
 | Duplicate `equip_event.qo` Notes in Notehub | I2C acknowledgement lost after Notecard accepted Note | This is an edge case by design (at-least-once delivery). Downstream routes should dedup by `epoch` + `event` pair (the Note's timestamp and event type are unique per transition). |
 | Arduino-cli reports "board not found" or FQBN error | Core not installed or board name wrong | Run `arduino-cli core list` to confirm STMicroelectronics:stm32 is installed. If not, run the full `core install` command from [§7.1](#71-installing-and-flashing). Verify the FQBN is `STMicroelectronics:stm32:GenL4:pnum=CYGNET` (case-sensitive). |
 
----
 
 ## 11. Limitations and Next Steps
 
@@ -498,8 +479,6 @@ This is a reference build, not a finished fleet product — a few things are del
 
 - **Geofence cannot be centered at the equator or prime meridian.** The firmware uses `geofence_lat = 0.0` and `geofence_lon = 0.0` as the "not configured" sentinel, and refuses to apply a fence if either coordinate is within ≈0.0001° of zero (the check is `fabsf(lat) > 0.0001f` and `fabsf(lon) > 0.0001f`). A deployment precisely on the equator (lat ≈ 0°) or the prime meridian (lon ≈ 0°), for example, sites in southern Ghana, the Republic of Congo, or the English Channel — cannot use the geofence feature as currently implemented. To lift this restriction, replace the 0,0 sentinel with an explicit enable flag (e.g., a `geofence_enable` environment variable set to `1`) and allow lat/lon to take any in-range value including zero.
 
-- **Satellite data budget is 10 KB.** The bundled Skylo satellite allocation is small — compact templates and a daily transmission cadence keep a single device's satellite usage well within budget, but a fleet of 100 machines transmitting once per day (averaging ~30-byte compact payload per event + 1 daily summary) still warrants per-device usage monitoring via [Notehub usage data](https://dev.blues.io/notehub/notehub-walkthrough/#configuring-your-billing-account). Contact [Blues](https://blues.com/contact-sales/) for information on additional satellite data allocation options.
-
 - **Solar panel sizing is for temperate climates.** A 1W panel + 2000 mAh LiPo provides adequate runtime in most regions with ≥3 effective sun-hours per day. At higher latitudes in winter, or when the enclosure is mounted on a shaded chassis location, a larger panel (2–5W) or a higher-capacity LiPo (5000 mAh) may be needed. The `bat_v` field in `equip_summary.qo` is the early-warning indicator — a steadily declining voltage over multiple days indicates harvest deficit.
 
 - **Mojo is not read in firmware.** The firmware does not poll the Mojo's LTC2959 coulomb counter over Qwiic. Adding a `mojo_mah` field to `equip_summary.qo` is a straightforward extension if fleet-level energy telemetry is valuable to the operator.
@@ -512,8 +491,6 @@ This is a reference build, not a finished fleet product — a few things are del
 - [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) for over-the-air firmware updates to the Cygnet host — allows threshold algorithm improvements and new features without a technician visit to each machine.
 - Tamper detection: an abrupt, very high-amplitude single-axis spike (e.g., magnet base being removed) can be distinguished from equipment vibration and flagged as a `tamper` event.
 - Multi-sensor fusion: pairing with an engine temperature sensor (NTC thermistor on the exhaust manifold) or a current clamp on the alternator output would provide a second independent confirmation of engine state, improving classifier reliability on unusual equipment types.
-
----
 
 ## 12. Summary
 

@@ -64,7 +64,6 @@ To get a working monitor up and running in ~2 hours:
    - Add routes for `solar_alert.qo` (real-time) and `solar_summary.qo` (storage/analytics).
 7. **Validate** — you should see `_session.qo` and `solar_summary.qo` Notes appearing in Notehub within 5–10 minutes (see "What you should see in Notehub" in §5).
 
----
 
 Here is a sample Note this device emits:
 
@@ -494,7 +493,6 @@ A Notecarrier CX and Notecard pair with two Victron VE.Direct devices to turn an
 
 For the truly remote sites where terrestrial cellular coverage is marginal or absent, the [Notecard for Skylo (NOTE-NBGLWX)](https://dev.blues.io/datasheets/notecard-datasheet/note-nbglwx/) slots into the same M.2 carrier with no firmware changes — the same API the Notecard Cell+WiFi uses. Deploying the Skylo variant requires mounting both antennas outdoors with an unobstructed sky view, as documented in §3 and §4. The pattern scales from a single off-grid cabin to a fleet of hundreds of remote towers, with per-fleet threshold management and per-device overrides handled entirely from Notehub.
 
----
 
 ## 10. Troubleshooting and Common Issues
 
@@ -511,7 +509,6 @@ For the truly remote sites where terrestrial cellular coverage is marginal or ab
 
 If you encounter an issue not covered above, the [Blues community forum](https://discuss.blues.com) is the fastest path to a working answer — both Blues engineers and other field deployers actively monitor it.
 
----
 
 ## 11. Limitations and Next Steps
 
@@ -535,7 +532,6 @@ This reference design intentionally stays narrow: it answers the site-uptime que
 - **Notecard Outboard DFU for fleet firmware updates.** [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) lets Notehub push a new STM32 firmware image to every device in a fleet over the air. This is essential for a device that may live on a remote tower or backcountry array for years between physical visits.
 - **Multi-phase or DC-coupled load shunting.** Sites that include AC inverter loads (Victron MultiPlus or similar) can add a Quattro or MultiPlus VE.Bus integration to capture inverter input, output, and inverter-internal alarms — a richer picture of total site load than the algebraic `pv_w - bat_w` computation used here.
 
----
 
 ## 12. Summary
 

@@ -31,7 +31,6 @@ This is the definition of a device that needs to work for everyone, including an
 
 **Device identity model.** The hub is fail-closed by default: only BLE-bonded devices (primary gate) or devices whose MAC address appears in the allow-list in `vitals_config.h` (secondary gate for stable-address devices) are connected. The primary gate uses the nRF52840 SoftDevice's IRK resolution — when a bonded device advertises with a Resolvable Private Address, the SoftDevice resolves it using the stored IRK and sets `addr_id_peer=1` in the scan report before the application layer sees it. Bond keys are written to flash automatically and loaded at every boot. During initial commissioning, build with both `ALLOW_UNENROLLED_DEVICES_FOR_DEV=1` and `ALLOW_COMMISSIONING_BUILD` (both flags required together) to allow connections to unrecognized devices so pairing can take place. After commissioning, add any public/static-address devices to `ENROLLED_DEVICES` in `vitals_config.h`, then rebuild with both flags removed. See the **Commission** step in §3 Technical Summary for the complete enrollment flow.
 
----
 
 ## 2. System Architecture
 
@@ -45,7 +44,6 @@ This is the definition of a device that needs to work for everyone, including an
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS IoT Core, Azure IoT Hub, GCP Pub/Sub, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
 
----
 
 ## 3. Technical Summary
 
@@ -73,7 +71,6 @@ Here is a sample Note this device emits:
   "prev_kg": 82.10
 }
 ```
----
 
 ## 4. Hardware Requirements
 
@@ -101,7 +98,6 @@ Here is a sample Note this device emits:
 
 The Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no per-device activation fees and no monthly cellular subscription requirement.
 
----
 
 ## 5. Wiring and Assembly
 
@@ -135,7 +131,6 @@ All connections from Feather to Notecard travel through the stacked Feather head
 
 5. **Enclosure.** The Notecarrier F (approximately 96 × 62 mm) fits in a 100 × 65 × 30 mm or larger enclosure. Drill a single pass-through for the USB-C power cable on one side and a small vent on the opposite side (the nRF52840 and Notecard generate modest heat during a cellular session). For home deployments with the adhesive antenna, no external antenna port is needed.
 
----
 
 ## 6. Notehub Setup
 
@@ -177,7 +172,6 @@ In the Notehub web console, navigate to **Devices** (your newly claimed hub), th
 - **`vitals_alert.qo`** — emitted alongside the threshold-tripping measurement Note, also with `sync:true`. Both Notes typically arrive in the same immediate cellular session (~15–60 s), or in back-to-back immediate sessions — bypassing the normal 15-minute upload timer. Check the `body` of each alert Note to see which threshold was crossed (e.g., `{"alert":"bp_high","systolic_mmhg":168,"diastolic_mmhg":98}`).
 - **`commissioning.db`** — written during a commissioning build (both `ALLOW_UNENROLLED_DEVICES_FOR_DEV=1` and `ALLOW_COMMISSIONING_BUILD` active) when the hub successfully bonds a new device. Each `bond_established` Note contains the device's `ble_addr` (colon-separated, MSB-first) and `addr_type`. Inspect these Notes after commissioning: devices with `addr_type` `0x00` (public) or `0x01` (random static) must be added to `ENROLLED_DEVICES` in `vitals_config.h` before the shipping build — see the **Commission** step in §3 Technical Summary and §10 Limitations.
 
----
 
 ## 7. Firmware Design
 
@@ -409,7 +403,6 @@ static inline float parseSfloat(uint16_t raw) {
 }
 ```
 
----
 
 ## 8. Data Flow
 
@@ -432,7 +425,6 @@ static inline float parseSfloat(uint16_t raw) {
 
 **Alert deduplication.** When a reading trips a threshold the measurement Note always carries `sync:true` and uploads immediately. The companion `vitals_alert.qo` Note is additionally rate-limited by `ALERT_COOLDOWN_MS` (5 minutes per alert type): if the same alert type fired within the last 5 minutes, the alert Note is suppressed while the measurement Note still syncs. This bounds the volume of actionable notifications the care team receives while keeping the raw data record complete.
 
----
 
 ## 9. Validation and Testing
 
@@ -469,7 +461,6 @@ A short field guide for the issues that actually arise during first bring-up and
 
 If a problem is not on this list, the [Blues community forum](https://discuss.blues.com) is the fastest place to get a second pair of eyes on a Notecard + BLE setup.
 
----
 
 ## 10. Limitations and Next Steps
 
@@ -500,7 +491,6 @@ The hub is intentionally scoped to the post-discharge window — one patient, on
 - Low-voltage notification: the Notecard's `card.voltage` response monitors the supply rail; a `voltage_low` alert can page the care coordinator if the hub is losing power or the USB supply is marginal.
 - Remotely configurable alert cooldown: expose `ALERT_COOLDOWN_MS` as a Notehub environment variable so care coordinators can tune the alert rate per patient without a reflash.
 
----
 
 ## 11. Summary
 

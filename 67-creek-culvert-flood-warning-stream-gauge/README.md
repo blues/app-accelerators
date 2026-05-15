@@ -428,7 +428,6 @@ Because the MB7389 is unpowered during ATTN sleep (Notecarrier CX's `EN` pin cut
 - Confirm the cellular/NTN antenna is mounted on the exterior of the enclosure with a clear view of the southern sky (equatorial sky from the northern hemisphere). A bridge soffit or under-deck mount blocks the Skylo link.
 - Test in a confirmed cellular-dead zone with good sky view. The Notecard's fallback is automatic; no additional configuration is needed beyond `card.transport method=cell-ntn` (set in `configureSkyloTransport`).
 
----
 
 ## 11. Limitations and Next Steps
 
@@ -463,6 +462,5 @@ This reference design optimizes for a deployable POC that proves out the trend-b
 
 For the county road department watching that one stubborn culvert, the change is concrete: instead of waiting for a single threshold trip — or worse, for a citizen call — dispatch sees the water rising fifteen minutes before it crests the crossing, and the alert lands even if the same storm has just taken out the local cell tower. A Notecarrier CX, a Notecard for Skylo, a MaxBotix MB7389, and a tipping-bucket rain gauge (a coarse rainfall-activity hint; see Section 9 for the production path to calibrated rainfall accounting) turn an unmonitored crossing into a continuous flood-warning sensor that installs in an afternoon, tunes from Notehub without a reflash, and falls back to satellite exactly when the cellular network is most likely to be dark. Scale the same firmware image and Notehub project across dozens of crossings and the rural road network gets a fleet of gauges that configure themselves from fleet-level environment variables, route alerts to the same on-call endpoint, and drop summaries into the same hydrology data store.
 
----
 
 *No pricing, lead times, or certification claims are made in this document. Verify product availability and regulatory requirements for your deployment region before procuring hardware.*

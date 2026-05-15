@@ -451,7 +451,6 @@ A Notecarrier CX and a Cell+WiFi Notecard, paired with a 20-bit precision curren
 
 For operations teams maintaining a fleet of roadside or remote-cabinet batteries, the float-current trend in `battery_summary.qo` is the early-warning signal that pays for the deployment many times over: elevated float current weeks before a battery fails a load test is the difference between a scheduled swap during a maintenance window and an emergency truck roll at 2 AM. Commission `usable_capacity_ah` and `soc_pct_init` at installation to unlock `soc_pct` trending alongside float current — two complementary leading indicators. Route `battery_alert.qo` into your existing CMMS and `battery_summary.qo` into a time-series database, and within a service season you will have a corpus of leading indicators to compare against actual failures — the foundation of a proactive battery-management program built on real field data.
 
----
 
 ## 10. Troubleshooting
 
@@ -472,7 +471,6 @@ Most bring-up failures fall into a small set of categories — wiring polarity o
 
 If a symptom does not appear above, post a description (with the relevant `[sentinel]` serial output and the trailing `_session.qo` payload) on the [Blues community forum](https://discuss.blues.com).
 
----
 
 ## 11. Limitations and Next Steps
 
@@ -499,7 +497,6 @@ This design targets one pack on one bus and the pack-level signal that catches t
 - **Deploy [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/)** so threshold recipes, OCV blends, and chemistry-specific calibrations can be pushed across the fleet without a truck roll.
 - **Add an inbound `battery_command.qi` Notefile** for fleet operators to reset SoH accumulators after a pack swap, clear alert cooldowns following a planned maintenance visit, or trigger an immediate ad-hoc sample-and-report.
 
----
 
 ## 12. Summary
 

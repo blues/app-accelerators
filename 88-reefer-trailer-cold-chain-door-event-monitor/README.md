@@ -14,7 +14,6 @@ This project is a [loss prevention](https://blues.com/loss-prevention/) referenc
 
 **Energy footprint:** steady-state draw from a 12 V trailer supply is roughly 30–60 mAh per 24 h (dominated by one hourly cellular session of ~15–45 seconds at ~250 mA average). NTN satellite sessions consume more per event due to longer link establishment, but alert-only delivery over satellite keeps the 10 KB data budget intact. Commissioning validates actual consumption with [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link). See [§9](#9-validation-and-testing).
 
----
 
 ## 1. Project Overview
 
@@ -35,7 +34,6 @@ The [Notecard for Skylo (NOTE-NBGLWX)](https://shop.blues.com/products/notecard-
 
 **Deployment scenario.** The electronics mount in a weatherproof NEMA 4X enclosure strapped or screwed to the interior trailer wall or exterior chassis rail, powered from the trailer's 12 V DC supply (or the nose-box connector if available). Two DS18B20 stainless steel probes thread through grommets into the cargo compartment — one near the front (forward air) and one near the rear return-air panel, and the reed switch mounts on the door frame with its matching magnet on the door itself.
 
----
 
 ## 2. System Architecture
 
@@ -49,7 +47,6 @@ The [Notecard for Skylo (NOTE-NBGLWX)](https://shop.blues.com/products/notecard-
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
 
----
 
 ## 3. Technical Summary
 
@@ -74,7 +71,6 @@ Here is a sample Note this device emits:
 ```json
 { "t1_c": -1.4, "t2_c": -0.8, "door_open": false }
 ```
----
 
 ## 4. Hardware Requirements
 
@@ -96,7 +92,6 @@ Here is a sample Note this device emits:
 
 All Blues hardware ships with an active SIM; no separate SIM purchase or activation is required.
 
----
 
 ## 5. Wiring and Assembly
 
@@ -149,7 +144,6 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
 
 </Warning>
 
----
 
 ## 6. Notehub Setup
 
@@ -209,7 +203,6 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
   ```
   `lat` and `lon` carry the last known GNSS fix at the moment the alert fired. Both fields are `0.0` when no fix has been acquired yet (e.g., first power-on with the GNSS antenna not yet having a clear sky view); treat `lat == 0.0 && lon == 0.0` as a no-fix sentinel in downstream analytics.
 
----
 
 ## 7. Firmware Design
 
@@ -420,7 +413,6 @@ NotePayloadAddSegment(&out, STATE_SEG_ID, &s, sizeof(s));
 NotePayloadSaveAndSleep(&out, (int)g_sampleIntervalSec, NULL);
 ```
 
----
 
 ## 8. Data Flow
 
@@ -446,7 +438,6 @@ Every 60 seconds the firmware wakes, reads both temperature probes and the door 
 - `temp_excursion` — either probe above `temp_max_c`. Subject to `alert_cooldown_sec` dedup.
 - `temp_cold` — either probe below `temp_min_c`. Subject to `alert_cooldown_sec` dedup.
 
----
 
 ## 9. Validation and Testing
 
@@ -480,13 +471,11 @@ Two anomaly patterns stand out immediately on a Mojo trace:
 
 Mojo is a **bench and commissioning tool**; production units don't require it.
 
----
 
 A Notecarrier CX and a Notecard for Skylo pair with two DS18B20 probes and a magnetic reed switch to watch the two failure modes — temperature excursion and unauthorized door access — that drive most reefer trailer cargo loss. The firmware samples every minute, queues each raw sample locally for Notehub delivery on the next outbound session (`trailer_log_cell.qo`), fires an alert on the next sample cycle (up to ~60 seconds) when any threshold trips via whatever radio is available (`trailer_alert.qo`, delivered over cellular or NTN satellite automatically), and ships a compact hourly summary (`trailer_summary_cell.qo`) for compliance and trending. The cellular + satellite multi-RAT design means the monitor stays connected as the trailer moves from an urban distribution center through rural interstates to a port staging yard — without any network configuration, SIM swapping, or carrier negotiation required.
 
 The same firmware structure is a natural starting point for pharmaceutical cold chain, cross-border intermodal containers, or any mobile insulated enclosure where a temperature log and a door audit trail have regulatory or financial weight.
 
----
 
 ## 10. Troubleshooting
 
@@ -506,7 +495,6 @@ The same firmware structure is a natural starting point for pharmaceutical cold 
 
 For anything not covered above, search or post on the [Blues community forum](https://discuss.blues.com).
 
----
 
 ## 11. Limitations and Next Steps
 
@@ -531,7 +519,6 @@ The design hits the two failure modes that account for most refrigerated cargo l
 - **Notecard Outboard DFU.** Wire [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) so threshold logic updates and bug fixes can ship over the air, including over NTN where appropriate.
 - **Compliance reporting for FSMA-Cold and HACCP.** Layer a Notehub route into a compliance archive that aggregates per-sample logs and hourly summaries into per-shipment PDF reports, suitable for FSMA Sanitary Transportation rule audits and HACCP records for food shippers, or for pharma cold-chain release decisions.
 
----
 
 ## 12. Summary
 

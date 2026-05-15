@@ -478,7 +478,6 @@ See the [MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/not
 - Verify the Notecard is entering sleep mode. On a +VBAT bench setup (no USB-C), the baseline current should be single-digit µA between samples. If the baseline is persistently > 1 mA, the ATTN pin wiring may be incorrect, or the `NotePayloadSaveAndSleep` call may not be executing. Check the ATTN pin connection from the Notecard to the Notecarrier CX enable gate.
 - On a USB-C powered deployment, the Notecard's idle current is higher than the µA bench figures (see [§9 Power validation](#9-validation-and-testing)). This is expected.
 
----
 
 ## 11. Limitations and Next Steps
 

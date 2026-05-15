@@ -10,7 +10,6 @@ This reference application is intended to provide inspiration and help you get s
 
 This project is a [remote patient monitoring](https://blues.com/remote-patient-monitoring/) device that catches missed doses before they become clinical events. A Blues Notecard Cell+WiFi riding on a Notecarrier CX wakes every 30 seconds, reads seven snap-action micro-switches inside a standard weekly pillbox, and uploads a cellular event to Notehub **each time a compartment lid is detected open during a scheduled 30-second poll** — no WiFi configuration, no smartphone, and nothing for the patient to set up.
 
----
 
 ## 1. Project Overview
 
@@ -26,7 +25,6 @@ Existing IoT pillboxes have tried to close this gap, and most fail in the same p
 
 **An important signal limitation.** The device reports compartment lid opens, not confirmed ingestion, and weekly tray-loading sessions by a caregiver or pharmacist produce events that are operationally indistinguishable from patient dose-taking opens. A full refill of the seven-day tray can set all seven bits in `daily_opens` in a single polling interval. Downstream workflow must account for this; see [§10](#10-limitations-and-next-steps) for operational mitigations.
 
----
 
 ## 2. System Architecture
 
@@ -40,7 +38,6 @@ Existing IoT pillboxes have tried to close this gap, and most fail in the same p
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
 
----
 
 ## 3. Technical Summary
 
@@ -50,7 +47,6 @@ Existing IoT pillboxes have tried to close this gap, and most fail in the same p
 4. **Flash** — select the Cygnet board in the Arduino IDE, hit Upload. Full instructions in [§7.1](#71-installing-and-flashing).
 5. **Watch** — open Notehub → your project → **Events** tab. You should see a `_session.qo` within a minute and a `pill_open.qo` each time you open a compartment.
 
----
 
 Here is a sample Note this device emits:
 
@@ -80,7 +76,6 @@ Here is a sample Note this device emits:
 
 All Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no monthly commitment.
 
----
 
 ## 5. Wiring and Assembly
 
@@ -131,7 +126,6 @@ Mount each micro-switch body inside the tray base using the switch's mounting ho
 
 Retain the LiPo inside the enclosure with a strip of hook-and-loop tape (Velcro) or a foam-padded retaining clip so the JST connector is not under mechanical strain. Orient the battery's flat face against the enclosure base and route the lead so it cannot be pinched when the enclosure lid is closed.
 
----
 
 ## 6. Notehub Setup
 
@@ -189,7 +183,6 @@ Within a minute of first power-on, the **Events** tab should start populating. T
 
   An ATTN→EN power-gating fault (host MCU never loses power after `NotePayloadSaveAndSleep`) is **not** reported through this Notefile because any `note.add` issued in that race window is dispatched while the Notecard is already entering sleep mode and is unreliable. Detect this fault instead via the absence of the expected `_session.qo` cadence in Notehub and the bench-mode USB serial output noted in [§7.1](#71-installing-and-flashing).
 
----
 
 ## 7. Firmware Design
 
@@ -335,7 +328,6 @@ NotePayloadAddSegment(&payload, STATE_SEG_ID, &state, sizeof(state));
 NotePayloadSaveAndSleep(&payload, state.poll_sec, NULL);
 ```
 
----
 
 ## 8. Data Flow
 
@@ -354,7 +346,6 @@ NotePayloadSaveAndSleep(&payload, state.poll_sec, NULL);
 - Absence of expected `pill_open.qo` by a configurable time window — the patient hasn't opened their morning compartment. This logic lives in the downstream route or dashboard, not in firmware.
 - `pill_summary.qo` with `opens_count: 0` — the patient missed all doses for the day.
 
----
 
 ## 9. Validation and Testing
 
@@ -415,7 +406,6 @@ Mojo is a **bench and commissioning tool** for this project — it is not deploy
 
 If a problem isn't on this list, the [Blues community forum](https://discuss.blues.com) is the fastest place to get a second pair of eyes on a Notecard and sensor setup.
 
----
 
 ## 10. Limitations and Next Steps
 
@@ -447,7 +437,6 @@ The design deliberately stops at "did a lid open?" — the most reliable signal 
 - [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) for over-the-air host firmware updates so new features (buzzer support, new alert rules) can be pushed to deployed devices without a pharmacy recall.
 - A scheduled inbound Notefile (`pill_reminder.qi`) that the Notecard can trigger a local buzzer or LED on, turning the device from a passive sensor into an active reminder system.
 
----
 
 ## 11. Summary
 

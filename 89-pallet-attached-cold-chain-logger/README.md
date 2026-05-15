@@ -10,7 +10,6 @@ This reference application is intended to provide inspiration and help you get s
 
 This project is a pallet-attached cold chain logger — a [supply chain tracking](https://blues.com/solutions-supply-chain-tracking/) reference design — for pharma and food shippers who cannot afford to trust the reefer unit's built-in telematics. A handful of sensors, a [Blues Notecard for Skylo](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), and a [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) give you an independent, shipper-controlled condition record that travels with the cargo — through loading docks, over-the-road transit, port staging, and customs DCs, and dispatches an alert Note when a temperature, humidity, shock, tilt, or cargo-bay-opening threshold is crossed.
 
----
 
 ## 1. Project Overview
 
@@ -32,7 +31,6 @@ This project uses the [Notecard for Skylo (NOTE-NBGLWX)](https://shop.blues.com/
 
 **Satellite connectivity is opportunistic.** Skylo NTN uses geostationary satellites and requires a clear sky view toward the equator. When the logger is mounted on the exterior top of a pallet in open-air staging, on an open vehicle deck, or in a truck trailer with a composite (non-steel) roof, satellite connectivity is available. Inside a closed steel shipping container or enclosed trailer, satellite is blocked — Notes queue in Notecard flash and flush automatically over cellular or WiFi when the pallet reaches an area with terrestrial coverage.
 
----
 
 ## 2. System Architecture
 
@@ -53,7 +51,6 @@ When the state changes, a `cargo_state.qo` note is dispatched immediately via `s
 
 **Notehub responsibilities.** Whatever the Notecard sends — over cellular, WiFi, or NTN — lands in [Notehub](https://notehub.io), where it's stored with the original on-pallet timestamp and run through project [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub). The four Notefiles (`cargo_alert.qo`, `cargo_state.qo`, `cargo_data.qo`, `cargo_log.qo`) stay separate so each stream can go to the system that wants it: alerts and state changes to the TMS or on-call channel, summaries to the cold-chain analytics platform, and the tamper-evident log entries to a compliance archive.
 
----
 
 ## 3. Technical Summary
 
@@ -65,7 +62,6 @@ When the state changes, a `cargo_state.qo` note is dispatched immediately via `s
 
 > **First event timeline:** On power-up, the device acquires time and signals contact via `_session.qo` within 1–2 minutes (cellular/WiFi) or several minutes (Skylo NTN with clear sky). The first `cargo_log.qo` entry appears one sample interval later (~5 minutes). The first `cargo_data.qo` summary appears ~60 minutes after the device obtains a valid epoch from Notehub's `card.time` API.
 
----
 
 Here is a sample Note this device emits:
 
@@ -106,7 +102,6 @@ Here is a sample Note this device emits:
 
 All Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
----
 
 ## 5. Wiring and Assembly
 
@@ -153,7 +148,6 @@ Drill an M12 through-hole in the pallet-facing side panel for the PTFE vent plug
 
 > **No external accelerometer required.** The Notecard for Skylo includes a built-in 3-axis accelerometer. Motion tracking is enabled via `card.motion.mode` with `start:true` and `sensitivity:2`; the firmware does not configure sample rate or G-range — those are managed internally by the Notecard. The `card.motion` stream provides per-bucket motion counts for shock detection and the `orientation` field for tilt detection.
 
----
 
 ## 6. Notehub Setup
 
@@ -253,7 +247,6 @@ Within a short time of first power-on the **Events** tab begins populating. Timi
   ```
   Tilt alerts add `orientation_from` and `orientation_to`. If a sensor was unavailable when the alert fired, its field is absent — an omitted field indicates a sensor fault; `-9999` is used only in `cargo_data.qo` and `cargo_log.qo`.
 
----
 
 ## 7. Firmware Design
 
@@ -416,7 +409,6 @@ NotePayloadSaveAndSleep(&save, gSampleSec, NULL);
 // Host power is cut here — execution resumes at setup() on the next wake
 ```
 
----
 
 ## 8. Data Flow
 
@@ -449,7 +441,6 @@ Every five minutes the firmware wakes, reads all sensors and the accelerometer, 
 
 Each alert type has its own 30-minute cooldown (`ALERT_COOLDOWN_SEC`). A sustained temperature excursion during a 6-hour transit generates at most 12 alerts per type — enough to document the event without flooding an on-call queue.
 
----
 
 ## 9. Validation and Testing
 
@@ -502,7 +493,6 @@ For satellite-reliant lanes, the primary lever is `dwell_batch_factor` — it dy
 - *Dwell → in-transit transition:* Leave the unit stationary for ≥ 3 sample cycles (`dwell_confirm_samples` default). Confirm `cargo_state.qo` with `state_to=dwell`. Then move the unit briskly for 2 sample cycles. Confirm `cargo_state.qo` with `state_to=in_transit`.
 - *Chain integrity:* Collect a sequence of `cargo_log.qo` entries from Notehub. Group them by `boot_seg`. Within each group, replay the chain hash from seq=1, seed=0 using the same algorithm (`chainUpdate` with `boot_seg` as a parameter) against the recorded field values. Confirm the final `chain_crc` in each group matches the last entry. A new `boot_seg` value resets the replay to seed=0.
 
----
 
 ## 10. Troubleshooting
 
@@ -517,7 +507,6 @@ For satellite-reliant lanes, the primary lever is `dwell_batch_factor` — it dy
 | **Serial monitor shows `rtd.begin()` but no temperature reading** | MAX31865 SPI initialization failed; likely pin mismatch. | Verify SPI pinout: CS=D10, CLK=D13, SDO=D12, SDI=D11. Check 3.3V supply to MAX31865 VIN. Test SPI communication via a simple Arduino `SPI.read()` sketch. |
 | **`cargo_state.qo` transitions never fire, stays in "unknown"** | Motion data unavailable from `card.motion`. | Check firmware logs for `[cargo] card.motion failed`. Confirm `card.motion.mode` was applied (see warm-boot logs). If issue persists, Notecard may require power-cycle or firmware update. |
 
----
 
 ## 11. Limitations and Next Steps
 
@@ -547,7 +536,6 @@ The logger commits to a specific scope: independent, pallet-level evidence with 
 - Add the `boot_seg` counter to `cargo_data.qo` summaries (currently present only in `cargo_log.qo`) so compliance systems can cross-reference summary records with the log's boot-segment boundaries without querying the raw log.
 - Evaluate adding a server-side keyed MAC or timestamping service on top of the `chain_crc` for deployments requiring cryptographic tamper evidence.
 
----
 
 ## 12. Summary
 
