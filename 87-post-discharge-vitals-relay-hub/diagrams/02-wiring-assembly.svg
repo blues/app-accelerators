@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 510" width="800" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <marker id="ar-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d97706"/>
+    </marker>
+    <marker id="ar-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/>
+    </marker>
+    <marker id="ar-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16a34a"/>
+    </marker>
+    <marker id="ar-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#9333ea"/>
+    </marker>
+    <marker id="ar-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+  </defs>
+  <rect width="800" height="510" fill="#ffffff"/>
+
+  <text x="400" y="34" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">Wiring &amp; Assembly</text>
+  <text x="400" y="56" text-anchor="middle" font-size="12" fill="#64748b">Feather nRF52840 seated on Notecarrier F · no external sensor wiring required</text>
+
+  <!-- Feather nRF52840 (top center) -->
+  <rect x="240" y="80" width="220" height="70" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+  <g transform="translate(251,90) scale(0.65)" fill="#581c87"><path d="M17.71 7.18C16.25 5.71 14.22 5 12 5s-4.25.71-5.71 2.18C4.84 8.63 4 10.48 4 12.5s.84 3.87 2.29 5.32L8 16.11C6.93 15.05 6.25 13.6 6.25 12c0-1.56.6-2.98 1.58-4.04l.01-.01A5.744 5.744 0 0 1 12 6.25c1.57 0 3 .64 4.04 1.67l.01.01c.99 1.06 1.6 2.48 1.6 4.04 0 1.6-.68 3.05-1.75 4.11l1.71 1.71C18.84 16.23 19.75 14.47 19.75 12.5c0-2.02-.84-3.87-2.29-5.32z"/><circle cx="12" cy="12.5" r="2.5"/></g>
+  <text x="350" y="112" text-anchor="middle" font-size="13" font-weight="700" fill="#581c87">Feather nRF52840</text>
+  <text x="350" y="132" text-anchor="middle" font-size="10" fill="#7c3aed">BLE Central · SoftDevice · USB</text>
+
+  <!-- Notecarrier F (center) -->
+  <rect x="200" y="190" width="300" height="160" rx="10" fill="#fefce8" stroke="#ca8a04" stroke-width="2"/>
+  <g transform="translate(210,200) scale(0.65)" fill="#713f12"><path d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z"/></g>
+  <text x="350" y="226" text-anchor="middle" font-size="13" font-weight="700" fill="#713f12">Notecarrier F</text>
+  <text x="350" y="246" text-anchor="middle" font-size="10" fill="#a16207">Feather hdr · M.2 · Qwiic · USB-C</text>
+
+  <!-- Pin labels on Notecarrier F -->
+  <g font-size="10" fill="#854d0e">
+    <text x="215" y="276">Feather hdr pin 6 (SDA)</text>
+    <text x="215" y="294">Feather hdr pin 7 (SCL)</text>
+    <text x="215" y="312">Feather hdr pin 2 (3V3)</text>
+    <text x="215" y="330">Feather hdr pin 1 (GND)</text>
+  </g>
+
+  <!-- Notecard MBGLW (right) -->
+  <rect x="560" y="190" width="180" height="100" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <g transform="translate(571,200) scale(0.65)" fill="#1e3a8a"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></g>
+  <text x="650" y="220" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">Notecard MBGLW</text>
+  <text x="650" y="240" text-anchor="middle" font-size="10" fill="#1e40af">M.2 Key-E slot</text>
+  <text x="650" y="258" text-anchor="middle" font-size="10" fill="#1e40af">I²C SDA / SCL / VIO / GND</text>
+  <text x="650" y="276" text-anchor="middle" font-size="10" fill="#1e40af">main power via M.2 pins</text>
+
+  <!-- Cellular antenna -->
+  <rect x="560" y="310" width="180" height="55" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="650" y="338" text-anchor="middle" font-size="12" font-weight="700" fill="#14532d">Cellular Antenna</text>
+  <text x="650" y="356" text-anchor="middle" font-size="10" fill="#166534">u.FL → adhesive flex patch</text>
+
+  <!-- Mojo bench-only (left) -->
+  <rect x="20" y="280" width="155" height="70" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="98" y="307" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">Mojo</text>
+  <text x="98" y="323" text-anchor="middle" font-size="10" fill="#9a3412">bench-only</text>
+  <text x="98" y="339" text-anchor="middle" font-size="10" fill="#9a3412">Qwiic → I²C bus</text>
+
+  <!-- Power chain (bottom) -->
+  <rect x="20" y="415" width="760" height="75" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+  <text x="40" y="438" font-size="12" font-weight="700" fill="#713f12">Power path</text>
+
+  <rect x="40" y="447" width="130" height="34" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="105" y="468" text-anchor="middle" font-size="11" fill="#713f12">5V/2A wall adapter</text>
+
+  <rect x="210" y="447" width="130" height="34" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="275" y="461" text-anchor="middle" font-size="11" fill="#713f12">Notecarrier F</text>
+  <text x="275" y="474" text-anchor="middle" font-size="10" fill="#a16207">USB-C input</text>
+
+  <rect x="380" y="447" width="150" height="34" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="455" y="461" text-anchor="middle" font-size="11" fill="#713f12">Notecard M.2 pins</text>
+  <text x="455" y="474" text-anchor="middle" font-size="10" fill="#a16207">modem / radio power</text>
+
+  <rect x="570" y="447" width="190" height="34" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="665" y="461" text-anchor="middle" font-size="11" fill="#713f12">LDO → 3V3 rail</text>
+  <text x="665" y="474" text-anchor="middle" font-size="10" fill="#a16207">Feather MCU + Notecard VIO</text>
+
+  <line x1="170" y1="464" x2="208" y2="464" stroke="#a16207" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-amber)"/>
+  <line x1="340" y1="464" x2="378" y2="464" stroke="#a16207" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-amber)"/>
+  <line x1="530" y1="464" x2="568" y2="464" stroke="#a16207" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-amber)"/>
+
+  <!-- Vertical arrow: Feather → Notecarrier F header -->
+  <line x1="350" y1="150" x2="350" y2="188" stroke="#9333ea" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-purple)"/>
+  <text x="370" y="174" font-size="10" fill="#7c3aed">2×16 Feather header</text>
+
+  <!-- Arrow: Notecarrier F → Notecard (M.2) -->
+  <line x1="500" y1="240" x2="558" y2="240" stroke="#2563eb" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-blue)"/>
+  <text x="506" y="232" font-size="10" fill="#1e40af">M.2 slot</text>
+
+  <!-- Arrow: Notecard → antenna -->
+  <line x1="650" y1="290" x2="650" y2="308" stroke="#16a34a" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-green)"/>
+  <text x="654" y="302" font-size="10" fill="#166534">u.FL</text>
+
+  <!-- Arrow: Mojo → Notecarrier F Qwiic -->
+  <line x1="175" y1="315" x2="198" y2="315" stroke="#475569" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <text x="27" y="270" font-size="10" fill="#7c2d12" font-style="italic">bench only</text>
+</svg>

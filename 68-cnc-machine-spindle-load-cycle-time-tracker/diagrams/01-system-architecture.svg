@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 380" width="800" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <marker id="ar-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+  </defs>
+  <rect width="800" height="380" fill="#ffffff"/>
+
+  <text x="400" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">System Architecture</text>
+  <text x="400" y="58" text-anchor="middle" font-size="12" fill="#64748b">CNC Spindle Load &amp; Cycle Time Tracker</text>
+
+  <!-- CNC controller (left) -->
+  <rect x="20" y="120" width="180" height="180" rx="8" fill="#e0e7ff" stroke="#4f46e5" stroke-width="1.5"/>
+  <g transform="translate(101,135) scale(0.75)" fill="#312e81"><path d="M14.51 5.66l-2.36 2.36-2.83-2.83 2.36-2.36 2.83 2.83zm5.4 6.74L9.18 1.66c-.39-.39-1.02-.39-1.41 0L1.66 7.77c-.39.39-.39 1.02 0 1.41L12.4 19.91c.39.39 1.02.39 1.41 0l6.11-6.11c.39-.38.39-1.02-.01-1.4zM13.1 17.79L3.79 8.48l5.66-5.66 9.31 9.31-5.66 5.66zM18 14l3 3-3 3v-2h-3v-2h3v-2z"/></g>
+  <text x="110" y="172" text-anchor="middle" font-size="13" font-weight="700" fill="#312e81">CNC Controller</text>
+  <line x1="40" y1="186" x2="180" y2="186" stroke="#c7d2fe"/>
+  <g font-size="11" fill="#3730a3">
+    <text x="110" y="214" text-anchor="middle">Modbus TCP server</text>
+    <text x="110" y="236" text-anchor="middle">6 holding registers</text>
+    <text x="110" y="258" text-anchor="middle">spindle · cycle · alarm</text>
+    <text x="110" y="280" text-anchor="middle">operator ID</text>
+  </g>
+
+  <!-- Edge (center) -->
+  <rect x="240" y="120" width="220" height="180" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+  <g transform="translate(341,135) scale(0.75)" fill="#713f12"><path d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z"/></g>
+  <text x="350" y="172" text-anchor="middle" font-size="13" font-weight="700" fill="#713f12">Edge enclosure</text>
+  <line x1="260" y1="186" x2="440" y2="186" stroke="#fde68a"/>
+  <g font-size="11" fill="#854d0e">
+    <text x="350" y="214" text-anchor="middle">Arduino OPTA</text>
+    <text x="350" y="236" text-anchor="middle">Wireless for OPTA</text>
+    <text x="350" y="258" text-anchor="middle">Modbus TCP client</text>
+  </g>
+  <text x="350" y="284" text-anchor="middle" font-size="10" fill="#a16207" font-style="italic">private point-to-point link</text>
+
+  <!-- Notehub -->
+  <rect x="500" y="120" width="160" height="180" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <g transform="translate(571,135) scale(0.75)" fill="#1e3a8a"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></g>
+  <text x="580" y="172" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">Notehub</text>
+  <line x1="515" y1="186" x2="645" y2="186" stroke="#bfdbfe"/>
+  <g font-size="11" fill="#1e40af">
+    <text x="580" y="214" text-anchor="middle">Storage</text>
+    <text x="580" y="236" text-anchor="middle">Routing</text>
+    <text x="580" y="258" text-anchor="middle">Env vars</text>
+  </g>
+
+  <!-- Routes -->
+  <rect x="700" y="120" width="80" height="180" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+  <g transform="translate(731,135) scale(0.75)" fill="#581c87"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7 17v-3h2v3H7zm4 0V7h2v10h-2zm4 0v-5h2v5h-2z"/></g>
+  <text x="740" y="172" text-anchor="middle" font-size="13" font-weight="700" fill="#581c87">Routes</text>
+  <line x1="710" y1="186" x2="770" y2="186" stroke="#e9d5ff"/>
+  <g font-size="11" fill="#6b21a8">
+    <text x="740" y="214" text-anchor="middle">OEE</text>
+    <text x="740" y="236" text-anchor="middle">CMMS</text>
+    <text x="740" y="258" text-anchor="middle">Paging</text>
+  </g>
+
+  <!-- Connection labels ABOVE arrows -->
+  <text x="220" y="100" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">Modbus TCP · Cat6</text>
+  <text x="480" y="100" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">cellular</text>
+  <text x="680" y="100" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">routes</text>
+
+  <!-- Arrows -->
+  <line x1="200" y1="210" x2="238" y2="210" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <line x1="460" y1="210" x2="498" y2="210" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <line x1="660" y1="210" x2="698" y2="210" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+
+  <text x="400" y="345" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">Direct point-to-point Cat6 to the CNC — no plant LAN, no IT ticket, no firewall exception.</text>
+</svg>

@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" width="800" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <marker id="ar-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+  </defs>
+  <rect width="800" height="420" fill="#ffffff"/>
+
+  <text x="400" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">System Architecture</text>
+  <text x="400" y="58" text-anchor="middle" font-size="12" fill="#64748b">Diesel Generator Monitor — read-only Modbus RTU, cellular uplink independent of facility power</text>
+
+  <!-- Generator Controller -->
+  <rect x="30" y="140" width="160" height="200" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+  <g transform="translate(101,155) scale(0.75)" fill="#14532d"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 6.43 5 4.14 7.29 3 6.43 1.43 8 2.86 9.57 1.43 11.14 2.86 12 4.29 10.43 13.86 19 5.29 17.43 6.86 19 8.43 17.43 10 19 11.57 17.43 13.14 22 17.71 20.43 16.14z"/></g>
+  <text x="110" y="192" text-anchor="middle" font-size="13" font-weight="700" fill="#14532d">Generator</text>
+  <text x="110" y="210" text-anchor="middle" font-size="13" font-weight="700" fill="#14532d">Controller</text>
+  <text x="110" y="230" text-anchor="middle" font-size="11" fill="#166534">Modbus server</text>
+  <line x1="50" y1="244" x2="170" y2="244" stroke="#bbf7d0"/>
+  <g font-size="11" fill="#166534">
+    <text x="110" y="268" text-anchor="middle">RPM · fuel · load</text>
+    <text x="110" y="288" text-anchor="middle">oil · coolant</text>
+    <text x="110" y="308" text-anchor="middle">run hours · alarm</text>
+  </g>
+
+  <!-- OPTA -->
+  <rect x="270" y="140" width="160" height="200" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+  <g transform="translate(341,155) scale(0.75)" fill="#713f12"><path d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z"/></g>
+  <text x="350" y="192" text-anchor="middle" font-size="13" font-weight="700" fill="#713f12">Arduino OPTA</text>
+  <text x="350" y="210" text-anchor="middle" font-size="11" fill="#854d0e">RS485 variant</text>
+  <text x="350" y="228" text-anchor="middle" font-size="11" fill="#854d0e">Modbus client</text>
+  <line x1="290" y1="244" x2="410" y2="244" stroke="#fde68a"/>
+  <g font-size="11" fill="#854d0e">
+    <text x="350" y="268" text-anchor="middle">RS-485 read</text>
+    <text x="350" y="288" text-anchor="middle">Rolling stats</text>
+    <text x="350" y="308" text-anchor="middle">Alert rules</text>
+  </g>
+
+  <!-- Wireless for OPTA -->
+  <rect x="510" y="140" width="160" height="200" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <g transform="translate(581,155) scale(0.75)" fill="#1e3a8a"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></g>
+  <text x="590" y="192" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">Wireless for OPTA</text>
+  <text x="590" y="210" text-anchor="middle" font-size="11" fill="#1e40af">Notecard WBNAW</text>
+  <line x1="530" y1="244" x2="650" y2="244" stroke="#bfdbfe"/>
+  <g font-size="11" fill="#1e40af">
+    <text x="590" y="268" text-anchor="middle">Cellular session</text>
+    <text x="590" y="288" text-anchor="middle">Note queue</text>
+    <text x="590" y="308" text-anchor="middle">Env vars</text>
+  </g>
+
+  <!-- Notehub -->
+  <rect x="712" y="200" width="78" height="80" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+  <g transform="translate(742,210) scale(0.75)" fill="#581c87"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></g>
+  <text x="751" y="248" text-anchor="middle" font-size="11" font-weight="700" fill="#581c87">Notehub</text>
+  <text x="751" y="266" text-anchor="middle" font-size="10" fill="#6b21a8">+ routes</text>
+
+  <!-- Connection labels -->
+  <text x="230" y="115" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">RS-485 · Modbus RTU</text>
+  <text x="470" y="115" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">I²C · via AUX</text>
+  <text x="693" y="185" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">LTE</text>
+
+  <!-- Arrows -->
+  <line x1="190" y1="240" x2="268" y2="240" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <line x1="430" y1="240" x2="508" y2="240" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <line x1="670" y1="240" x2="710" y2="240" stroke="#475569" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-gray)"/>
+
+  <text x="400" y="385" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">Powered from the generator panel's battery-backed DC bus — cellular link survives mains failure.</text>
+</svg>

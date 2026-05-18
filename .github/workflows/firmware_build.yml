@@ -1,0 +1,91 @@
+name: Firmware Build (Arduino CLI)
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Always uses the latest arduino-cli, the latest core packages, and the latest
+# library versions (no version pins). Each sketch declares its target board in
+# its own sketch.yaml (default_fqbn:) so per-board overrides travel with the
+# sketch instead of being hard-coded in this workflow.
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install latest arduino-cli
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Configure board manager URLs
+        run: |
+          arduino-cli config init --overwrite
+          arduino-cli config add board_manager.additional_urls \
+            https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json \
+            https://adafruit.github.io/arduino-board-index/package_adafruit_index.json
+          arduino-cli core update-index
+
+      - name: Install latest cores
+        run: |
+          arduino-cli core install STMicroelectronics:stm32
+          arduino-cli core install arduino:mbed_opta
+          arduino-cli core install adafruit:nrf52
+
+      - name: Install adafruit-nrfutil (required by adafruit:nrf52 build)
+        run: pip install --user adafruit-nrfutil
+
+      - name: Install latest libraries
+        run: |
+          arduino-cli lib update-index
+          arduino-cli lib install \
+            "Blues Wireless Notecard" \
+            "OneWire" \
+            "DallasTemperature" \
+            "ModbusMaster" \
+            "ArduinoModbus" \
+            "ArduinoRS485" \
+            "Adafruit BME280 Library" \
+            "Adafruit BusIO" \
+            "Adafruit DRV2605 Library" \
+            "Adafruit INA228 Library" \
+            "Adafruit LSM6DS" \
+            "Adafruit MAX31865 library" \
+            "Adafruit MCP9808 Library" \
+            "Adafruit PM25 AQI Sensor" \
+            "Adafruit SHT31 Library" \
+            "Adafruit SHT4x Library" \
+            "Adafruit Unified Sensor" \
+            "Adafruit VCNL4040" \
+            "Adafruit VEML7700 Library" \
+            "HX711" \
+            "SparkFun LIS3DH Arduino Library"
+
+      - name: Compile every sketch
+        # ALLOW_EMPTY_PRODUCT_UID lets sketches that gate compilation on a
+        # set PRODUCT_UID build with an empty UID for CI validation only.
+        # Production flashes must NOT use this flag.
+        run: |
+          set -u
+          failed=()
+          while IFS= read -r ino; do
+            sketch_dir=$(dirname "$ino")
+            echo "::group::$sketch_dir"
+            if ! arduino-cli compile --warnings none \
+                 --build-property "compiler.cpp.extra_flags=-DALLOW_EMPTY_PRODUCT_UID" \
+                 "$sketch_dir"; then
+              failed+=("$sketch_dir")
+            fi
+            echo "::endgroup::"
+          done < <(find . \
+                     -path ./accelerator-archive -prune -o \
+                     -path ./.git -prune -o \
+                     -name '*.ino' -print | sort)
+
+          if [ ${#failed[@]} -ne 0 ]; then
+            echo "::error::${#failed[@]} sketch(es) failed to compile:"
+            printf '  - %s\n' "${failed[@]}"
+            exit 1
+          fi
+          echo "All sketches compiled successfully."

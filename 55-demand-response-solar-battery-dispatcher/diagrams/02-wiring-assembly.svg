@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 540" width="800" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <marker id="ar-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="ar-brown" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#a16207"/>
+    </marker>
+    <marker id="ar-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/>
+    </marker>
+  </defs>
+  <rect width="800" height="540" fill="#ffffff"/>
+
+  <text x="400" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">Wiring &amp; Assembly</text>
+  <text x="400" y="58" text-anchor="middle" font-size="12" fill="#64748b">DIN-rail layout · RS-485 daisy-chain · 4 relay outputs · 24 VDC panel power</text>
+
+  <!-- Top row: DIN-rail devices -->
+  <!-- 24V supply -->
+  <rect x="20" y="90" width="140" height="100" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+  <g transform="translate(86,102) scale(0.65)" fill="#7c2d12"><path d="M11 21h-1l1-7H7.5c-.88 0-.33-.75-.31-.78C8.48 10.94 10.42 7.54 13.01 3h1l-1 7h3.51c.4 0 .62.19.4.66C12.97 17.55 11 21 11 21z"/></g>
+  <text x="90" y="138" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">HDR-15-24</text>
+  <text x="90" y="158" text-anchor="middle" font-size="11" fill="#9a3412">24 VDC supply</text>
+  <text x="90" y="178" text-anchor="middle" font-size="10" fill="#c2410c" font-style="italic">often in panel</text>
+
+  <!-- OPTA -->
+  <rect x="190" y="90" width="180" height="100" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+  <g transform="translate(271,102) scale(0.65)" fill="#713f12"><path d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z"/></g>
+  <text x="280" y="138" text-anchor="middle" font-size="12" font-weight="700" fill="#713f12">Arduino OPTA</text>
+  <text x="280" y="158" text-anchor="middle" font-size="11" fill="#854d0e">RS485 variant</text>
+  <text x="280" y="178" text-anchor="middle" font-size="10" fill="#a16207">+24V · GND · A · B · COM</text>
+
+  <!-- Wireless for OPTA -->
+  <rect x="400" y="90" width="190" height="100" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <g transform="translate(485,102) scale(0.65)" fill="#1e3a8a"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></g>
+  <text x="495" y="138" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">Wireless for OPTA</text>
+  <text x="495" y="158" text-anchor="middle" font-size="11" fill="#1e40af">Notecard expansion</text>
+  <text x="495" y="178" text-anchor="middle" font-size="10" fill="#1e40af">SMA × 2 · +24V shared</text>
+
+  <!-- Antennas -->
+  <rect x="620" y="90" width="160" height="100" rx="8" fill="#f8fafc" stroke="#475569" stroke-width="1.5"/>
+  <g transform="translate(691,102) scale(0.65)" fill="#0f172a"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></g>
+  <text x="700" y="138" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Antennas</text>
+  <text x="700" y="158" text-anchor="middle" font-size="11" fill="#334155">primary + diversity</text>
+  <text x="700" y="178" text-anchor="middle" font-size="10" fill="#64748b" font-style="italic">via cable glands</text>
+
+  <!-- Top-row arrows -->
+  <line x1="160" y1="140" x2="188" y2="140" stroke="#a16207" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-brown)"/>
+  <line x1="370" y1="140" x2="398" y2="140" stroke="#475569" stroke-opacity="0.55" stroke-width="2" marker-end="url(#ar-gray)"/>
+  <line x1="590" y1="140" x2="618" y2="140" stroke="#475569" stroke-opacity="0.55" stroke-width="2" marker-end="url(#ar-gray)"/>
+
+  <!-- Top-row arrow labels (above arrows, between boxes) -->
+  <text x="174" y="130" text-anchor="middle" font-size="9" fill="#a16207">+24 V</text>
+  <text x="384" y="130" text-anchor="middle" font-size="9" fill="#475569">I²C</text>
+  <text x="604" y="130" text-anchor="middle" font-size="9" fill="#475569">SMA</text>
+
+  <!-- RS-485 bus row label (well clear of any arrow path) -->
+  <text x="400" y="225" text-anchor="middle" font-size="13" font-weight="700" fill="#7f1d1d">RS-485 Modbus daisy-chain</text>
+  <text x="400" y="242" text-anchor="middle" font-size="10" fill="#991b1b" font-style="italic">120 Ω terminator at each end of the bus</text>
+
+  <!-- RS-485 bus segment -->
+  <rect x="60" y="260" width="120" height="70" rx="6" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+  <text x="120" y="284" text-anchor="middle" font-size="11" font-weight="700" fill="#854d0e">120 Ω</text>
+  <text x="120" y="304" text-anchor="middle" font-size="10" fill="#a16207">terminator</text>
+  <text x="120" y="320" text-anchor="middle" font-size="9" fill="#854d0e">(OPTA end)</text>
+
+  <rect x="220" y="260" width="160" height="70" rx="6" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="300" y="284" text-anchor="middle" font-size="12" font-weight="700" fill="#7f1d1d">OPTA</text>
+  <text x="300" y="304" text-anchor="middle" font-size="10" fill="#991b1b">A · B · COM</text>
+  <text x="300" y="320" text-anchor="middle" font-size="9" fill="#991b1b">Modbus client</text>
+
+  <rect x="420" y="260" width="140" height="70" rx="6" fill="#e0e7ff" stroke="#4f46e5" stroke-width="1.5"/>
+  <text x="490" y="284" text-anchor="middle" font-size="12" font-weight="700" fill="#312e81">Inverter</text>
+  <text x="490" y="304" text-anchor="middle" font-size="10" fill="#3730a3">slave ID 1</text>
+  <text x="490" y="320" text-anchor="middle" font-size="9" fill="#3730a3">A · B · GND</text>
+
+  <rect x="600" y="260" width="140" height="70" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="670" y="284" text-anchor="middle" font-size="12" font-weight="700" fill="#14532d">BMS</text>
+  <text x="670" y="304" text-anchor="middle" font-size="10" fill="#166534">slave ID 2</text>
+  <text x="670" y="320" text-anchor="middle" font-size="9" fill="#166534">A · B · GND · 120 Ω</text>
+
+  <!-- RS-485 bus connections -->
+  <line x1="180" y1="295" x2="220" y2="295" stroke="#dc2626" stroke-opacity="0.6" stroke-width="2"/>
+  <line x1="380" y1="295" x2="420" y2="295" stroke="#dc2626" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-red)"/>
+  <line x1="560" y1="295" x2="600" y2="295" stroke="#dc2626" stroke-opacity="0.6" stroke-width="2" marker-end="url(#ar-red)"/>
+
+  <!-- OPTA → bus down arrow (offset to avoid label) -->
+  <line x1="280" y1="190" x2="280" y2="258" stroke="#dc2626" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-red)"/>
+
+  <!-- Relay outputs section header -->
+  <text x="400" y="368" text-anchor="middle" font-size="13" font-weight="700" fill="#14532d">Relay outputs (COM + NO → dry-contact inputs)</text>
+
+  <!-- Relay 1 + 2 -->
+  <rect x="20" y="385" width="170" height="100" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="105" y="406" text-anchor="middle" font-size="11" font-weight="700" fill="#14532d">RELAY1 &amp; RELAY2</text>
+  <line x1="35" y1="416" x2="175" y2="416" stroke="#86efac"/>
+  <g font-size="10" fill="#166534">
+    <text x="105" y="436" text-anchor="middle">R1 → Inverter</text>
+    <text x="105" y="452" text-anchor="middle">grid export enable</text>
+    <text x="105" y="470" text-anchor="middle">R2 → BMS discharge</text>
+  </g>
+
+  <!-- Relay 3 + 4 -->
+  <rect x="210" y="385" width="170" height="100" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="295" y="406" text-anchor="middle" font-size="11" font-weight="700" fill="#14532d">RELAY3 &amp; RELAY4</text>
+  <line x1="225" y1="416" x2="365" y2="416" stroke="#86efac"/>
+  <g font-size="10" fill="#166534">
+    <text x="295" y="436" text-anchor="middle">R3 → BMS charge</text>
+    <text x="295" y="452" text-anchor="middle">enable</text>
+    <text x="295" y="470" text-anchor="middle">R4 → DR indicator</text>
+  </g>
+
+  <!-- Fail-safe note -->
+  <rect x="400" y="385" width="380" height="100" rx="6" fill="#fff7ed" stroke="#ea580c" stroke-width="1.2"/>
+  <text x="590" y="406" text-anchor="middle" font-size="11" font-weight="700" fill="#7c2d12">Fail-safe (de-energised state)</text>
+  <line x1="415" y1="416" x2="765" y2="416" stroke="#fed7aa"/>
+  <g font-size="10" fill="#9a3412">
+    <text x="590" y="434" text-anchor="middle">R1 open → export curtailed</text>
+    <text x="590" y="450" text-anchor="middle">R2 open → discharge blocked · R3 open → charge inhibited</text>
+    <text x="590" y="466" text-anchor="middle">R4 open → DR indicator off</text>
+    <text x="590" y="481" text-anchor="middle" font-style="italic">all relays open on power loss, reset, or startup</text>
+  </g>
+
+  <text x="400" y="510" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">Relay contacts are volt-free (dry) — wire to the field device's own dry-contact input terminals.</text>
+</svg>

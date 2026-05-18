@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 610" width="860" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <marker id="ar-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#f59e0b"/>
+    </marker>
+    <marker id="ar-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#3b82f6"/>
+    </marker>
+    <marker id="ar-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#ef4444"/>
+    </marker>
+    <marker id="ar-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#10b981"/>
+    </marker>
+    <marker id="ar-violet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#7c3aed"/>
+    </marker>
+    <marker id="ar-brown" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#a16207"/>
+    </marker>
+  </defs>
+  <rect width="860" height="610" fill="#ffffff"/>
+
+  <text x="430" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">Wiring &amp; Assembly</text>
+  <text x="430" y="58" text-anchor="middle" font-size="12" fill="#64748b">Sensor and antenna connections on the Notecarrier CX</text>
+
+  <!-- Notecarrier CX center -->
+  <rect x="320" y="90" width="220" height="320" rx="10" fill="#f1f5f9" stroke="#0f172a" stroke-width="2"/>
+  <text x="430" y="118" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Notecarrier CX</text>
+  <text x="430" y="136" text-anchor="middle" font-size="10" fill="#475569">Cygnet STM32L433 · MBGLW · Starnote</text>
+
+  <!-- CX pin dots and labels — left side -->
+  <circle cx="320" cy="185" r="4" fill="#f59e0b"/>
+  <text x="335" y="189" font-size="11" fill="#0f172a">D5 (HX711 DOUT)</text>
+  <circle cx="320" cy="210" r="4" fill="#f59e0b"/>
+  <text x="335" y="214" font-size="11" fill="#0f172a">D6 (HX711 SCK)</text>
+  <circle cx="320" cy="240" r="4" fill="#3b82f6"/>
+  <text x="335" y="244" font-size="11" fill="#0f172a">SDA</text>
+  <circle cx="320" cy="260" r="4" fill="#3b82f6"/>
+  <text x="335" y="264" font-size="11" fill="#0f172a">SCL</text>
+  <circle cx="320" cy="290" r="4" fill="#ef4444"/>
+  <text x="335" y="294" font-size="11" fill="#0f172a">A0 (mic out)</text>
+
+  <!-- CX pin dots and labels — right side -->
+  <circle cx="540" cy="185" r="4" fill="#10b981"/>
+  <text x="525" y="189" font-size="11" fill="#0f172a" text-anchor="end">+3V3_OUT</text>
+  <circle cx="540" cy="210" r="4" fill="#64748b"/>
+  <text x="525" y="214" font-size="11" fill="#0f172a" text-anchor="end">GND</text>
+  <circle cx="540" cy="240" r="4" fill="#7c3aed"/>
+  <text x="525" y="244" font-size="11" fill="#0f172a" text-anchor="end">ATTN (sleep)</text>
+
+  <!-- CX bottom pin -->
+  <circle cx="430" cy="410" r="4" fill="#d97706"/>
+  <text x="430" y="430" text-anchor="middle" font-size="11" fill="#0f172a">+VBAT</text>
+
+  <!-- Left: HX711 + Load Cell -->
+  <rect x="20" y="155" width="180" height="80" rx="8" fill="#fff7ed" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="110" y="178" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">HX711 + Load Cell</text>
+  <text x="110" y="196" text-anchor="middle" font-size="10" fill="#9a3412">VCC → +3V3_OUT · GND → GND</text>
+  <text x="110" y="213" text-anchor="middle" font-size="10" fill="#9a3412">DOUT → D5 · SCK → D6</text>
+  <text x="110" y="228" text-anchor="middle" font-size="10" fill="#9a3412">Load cell wires → HX711 E±/A±</text>
+  <line x1="200" y1="190" x2="316" y2="190" stroke="#f59e0b" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-amber)"/>
+  <line x1="200" y1="210" x2="316" y2="210" stroke="#f59e0b" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-amber)"/>
+
+  <!-- Left: SHT31-D -->
+  <rect x="20" y="255" width="180" height="75" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="110" y="277" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">SHT31-D</text>
+  <text x="110" y="293" text-anchor="middle" font-size="10" fill="#1e40af">4× jumper wires (0.1″)</text>
+  <text x="110" y="307" text-anchor="middle" font-size="10" fill="#1e40af">VIN · GND · SDA · SCL</text>
+  <text x="110" y="321" text-anchor="middle" font-size="10" fill="#1e40af">I²C addr 0x44</text>
+  <line x1="200" y1="272" x2="316" y2="248" stroke="#3b82f6" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-blue)"/>
+  <line x1="200" y1="280" x2="316" y2="262" stroke="#3b82f6" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-blue)"/>
+
+  <!-- Right: MAX9814 mic -->
+  <rect x="660" y="260" width="180" height="60" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="750" y="282" text-anchor="middle" font-size="12" font-weight="700" fill="#7f1d1d">MAX9814 Mic</text>
+  <text x="750" y="300" text-anchor="middle" font-size="10" fill="#991b1b">Vin → +3V3_OUT · GND</text>
+  <text x="750" y="313" text-anchor="middle" font-size="10" fill="#991b1b">Out → A0</text>
+  <line x1="660" y1="285" x2="544" y2="288" stroke="#ef4444" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-red)"/>
+
+  <!-- Right: Antenna -->
+  <rect x="660" y="155" width="180" height="80" rx="8" fill="#f0fdf4" stroke="#10b981" stroke-width="1.5"/>
+  <text x="750" y="177" text-anchor="middle" font-size="12" font-weight="700" fill="#064e3b">Cellular antenna</text>
+  <text x="750" y="195" text-anchor="middle" font-size="10" fill="#065f46">u.FL pigtail → Notecard</text>
+  <text x="750" y="212" text-anchor="middle" font-size="10" fill="#065f46">cellular u.FL port</text>
+  <text x="750" y="227" text-anchor="middle" font-size="10" fill="#065f46">SMA whip outside enclosure</text>
+  <line x1="660" y1="195" x2="544" y2="238" stroke="#10b981" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-green)"/>
+
+  <!-- Power chain bottom — BATT (buffer) and LOAD (device rail) are separate Sunny Buddy nodes -->
+  <rect x="20" y="490" width="820" height="96" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+  <text x="38" y="512" font-size="12" font-weight="700" fill="#713f12">Power path (LiPo buffers at BATT; device rail drawn from LOAD)</text>
+
+  <!-- Solar -->
+  <rect x="38"  y="522" width="110" height="50" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="93"  y="541" text-anchor="middle" font-size="11" fill="#713f12">Solar panel</text>
+  <text x="93"  y="557" text-anchor="middle" font-size="10" fill="#92400e">→ barrel jack</text>
+  <text x="93"  y="571" text-anchor="middle" font-size="10" fill="#92400e">IN+/IN−</text>
+
+  <!-- Sunny Buddy — central node; BATT and LOAD are separate outputs -->
+  <rect x="178" y="522" width="148" height="50" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="252" y="538" text-anchor="middle" font-size="11" fill="#713f12">Sunny Buddy (MPPT)</text>
+  <text x="252" y="553" text-anchor="middle" font-size="10" fill="#92400e">BATT ↔ LiPo JST</text>
+  <text x="252" y="567" text-anchor="middle" font-size="10" fill="#92400e">LOAD+ → device rail</text>
+
+  <!-- LiPo — connected to BATT, not in series on LOAD -->
+  <rect x="356" y="522" width="130" height="50" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="421" y="538" text-anchor="middle" font-size="11" fill="#713f12">LiPo 4 400 mAh</text>
+  <text x="421" y="553" text-anchor="middle" font-size="10" fill="#92400e">JST-PH ↔ BATT</text>
+  <text x="421" y="567" text-anchor="middle" font-size="10" fill="#92400e">(charge buffer)</text>
+
+  <!-- Mojo bench inline on LOAD rail -->
+  <rect x="510" y="522" width="138" height="50" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="579" y="538" text-anchor="middle" font-size="11" fill="#713f12">Mojo (bench only)</text>
+  <text x="579" y="553" text-anchor="middle" font-size="10" fill="#92400e">BAT ← LOAD+</text>
+  <text x="579" y="567" text-anchor="middle" font-size="10" fill="#92400e">LOAD → +VBAT</text>
+
+  <!-- Notecarrier -->
+  <rect x="672" y="522" width="156" height="50" rx="4" fill="#ffffff" stroke="#a16207"/>
+  <text x="750" y="538" text-anchor="middle" font-size="11" fill="#713f12">Notecarrier CX</text>
+  <text x="750" y="553" text-anchor="middle" font-size="10" fill="#92400e">+VBAT pad ← LOAD</text>
+  <text x="750" y="567" text-anchor="middle" font-size="10" fill="#92400e">(or Mojo LOAD, bench)</text>
+
+  <!-- Solar → Sunny Buddy -->
+  <line x1="148" y1="547" x2="176" y2="547" stroke="#a16207" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-brown)"/>
+  <!-- Sunny Buddy BATT ↔ LiPo (bidirectional) -->
+  <line x1="326" y1="547" x2="354" y2="547" stroke="#a16207" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-brown)"/>
+  <!-- Sunny Buddy LOAD+ → Mojo (dashed, separate path from BATT) -->
+  <line x1="326" y1="567" x2="508" y2="567" stroke="#a16207" stroke-opacity="0.5" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ar-brown)"/>
+  <!-- Mojo → Notecarrier -->
+  <line x1="648" y1="547" x2="670" y2="547" stroke="#a16207" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-brown)"/>
+</svg>
