@@ -16,39 +16,43 @@ This project is a retrofit [downtime prevention](https://blues.com/downtime-prev
 
 **The problem.** In HVAC, an **RTU** (rooftop unit) is a self-contained packaged HVAC system — compressor, condenser, evaporator, blower, and controls all in one box — mounted on the roof of a commercial building. It's the workhorse of light commercial cooling: the vast majority of grocery stores, restaurants, strip-mall tenants, and small warehouses are conditioned by one or more RTUs sitting above the suspended ceiling.
 
-A commercial RTU sits on a roof, cannot see building WiFi, and when it fails a grocery store or restaurant loses cooling and goes dark. The HVAC failures that cause most unplanned downtime aren't dramatic — they're gradual. A refrigerant leak slowly narrows the cooling delta-T over weeks. A tired contactor starts chattering, and the compressor short-cycles several times an hour instead of running in long, steady pulls. A neglected filter chokes airflow across the coil. None of these are invisible, but they're all easy to miss from inside the building — especially when nobody's looking. Each one is an impending failure detectable hours to days before the actual outage, *if* someone (or something) happens to be watching.
+A commercial RTU sits on a roof, cannot see building WiFi, and when it fails a grocery store or restaurant loses cooling and goes dark. The HVAC failures that cause most unplanned downtime aren't dramatic — they're gradual. A refrigerant leak slowly reduces cooling capabilities over weeks. A tired contactor starts chattering, and the compressor short-cycles several times an hour instead of running in long, steady pulls. A neglected filter chokes airflow across the coil. None of these are invisible, but they're all easy to miss from inside the building — especially when nobody's looking. Each one is an impending failure detectable hours to days before the actual outage, *if* someone (or something) happens to be watching.
 
-This project is that watcher. It's a retrofit sidecar that gets strapped to the RTU chassis on the roof, samples four sensors a minute, and pages the service technician *before* the walk-in cooler hits 50°F on a Saturday night. In Blues terms, it's a downtime-prevention device-to-cloud system: continuous remote monitoring on the edge, rule-based failure detection in firmware, and proactive-service alerts routed through Notehub to whatever on-call system the fleet owner already uses. The detection is heuristic — three scalar threshold checks, not a trained model, but it catches the impending-failure patterns HVAC technicians already look for on a service call.
+This project is that watcher. It's a retrofit sidecar that gets strapped to the RTU chassis on the roof, samples four sensors a minute, and pages the service technician *before* the walk-in cooler hits 50°F on a Saturday night. In Blues terms, it's a downtime-prevention device-to-cloud system: continuous remote monitoring on the edge, rule-based failure detection in firmware, and proactive-service alerts routed through [Blues Notehub](https://blues.com/notehub/) to whatever on-call system the fleet owner already uses. The detection includes three scalar threshold checks and catches impending-failure patterns HVAC technicians already look for on a service call.
 
 **Why Notecard.** RTUs have no line-of-sight to indoor WiFi access points, and HVAC OEMs and service companies need a single SKU that works identically in a strip mall and in a warehouse. Cellular removes the per-site IT involvement entirely — there's no network form to fill out, no AP to pair to, and no IT ticket to chase. The Notecard Cell+WiFi variant keeps WiFi as an optional fallback for the occasional site that happens to have a rooftop-accessible AP, without compromising the cellular-first deployment model.
 
 <NewToBlues/>
 
-**Deployment scenario.** A weatherproof enclosure strapped to the RTU frame, powered from 120VAC line at the RTU service disconnect (or from the 24VAC control transformer with an alternate supply. See [Limitations](#11-limitations-and-next-steps)), with four pigtails running into the unit: two thermistors (supply and return ducts), one clamp-on current transformer on the compressor hot leg, and one differential-pressure sensor with silicone tubes tapped across the filter. No RTU modification, no OEM cooperation, and no site IT coordination required.
-
 ## 2. System Architecture
 
 ![System architecture: rooftop sensors → Notecarrier CX with Cygnet host → Notecard MBGLW → cellular/WiFi → Notehub → routes](diagrams/01-system-architecture.svg)
 
-**Device-side responsibilities.** Inside the sidecar, the Cygnet STM32 host on the Notecarrier CX wakes once a minute, sweeps the four sensors, and runs the three failure-mode checks before the rooftop unit has time to make a meaningful change. When it's done, it hands the resulting Note to the Notecard over I²C and uses [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) to cut its own power until the next interval. No JSON marshaling, no AT commands, no serial buffers to babysit — the host is asleep more than 99% of the time it sits on the roof.
+**Device-side responsibilities.** Inside the sidecar, the Cygnet STM32 host on the Notecarrier CX wakes once a minute, sweeps the four sensors, and runs the three failure-mode checks before the rooftop unit has time to make a meaningful change. When it's done, it hands the resulting Note (i.e. a JSON payload) to the Notecard over I²C and uses [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) to cut its own power until the next interval. No JSON marshaling, no AT commands, no serial buffers to babysit — the host is asleep more than 99% of the time it sits on the roof.
 
-**Notecard responsibilities.** Everything the host queues up lands in the Notecard's on-device [Notes](https://dev.blues.io/api-reference/glossary/#note) store. Summary records ride out on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 minutes); any alert tagged `sync:true` skips the queue and the radio comes up immediately to ship it. The same Notecard also handles one-time GNSS site geolocation autonomously and pulls [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) on every inbound sync, which is how a fleet operator retunes thresholds across a thousand rooftops without anyone touching firmware.
+**Notecard responsibilities.** Everything the host queues up lands in the Notecard's on-device [Notes](https://dev.blues.io/api-reference/glossary/#note) store. Summary records ride out on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 minutes); any alert tagged `sync:true` skips the queue and the cellular radio comes up immediately to ship it. The same Notecard also handles one-time GNSS site geolocation autonomously and pulls [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) (i.e. cloud variables) on every inbound sync, which is how a fleet operator re-tunes thresholds across a thousand rooftops without anyone touching firmware.
 
-**Notehub responsibilities.** The Notecard's embedded global SIM gets it onto whichever carrier covers the rooftop, and from there events flow into [Notehub](https://notehub.io), which ingests them, stores every one, and applies the project's routes. Alerts and summaries land in separate [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile) on purpose — that lets you route `rtu_alert.qo` straight to an on-call paging service or CMMS (computerized maintenance management system) while `rtu_summary.qo` flows to a long-term analytics store without any filtering logic in the route itself.
+**Notehub responsibilities.** The Notecard's embedded global SIM gets it onto whichever carrier covers the rooftop, and from there events flow into [Notehub](https://notehub.io), which ingests them, stores every one, and applies the project's routes to optionally sync data to your cloud platform of choice. Alerts and summaries land in separate [Notefiles](https://dev.blues.io/api-reference/glossary/#notefile) on purpose — that lets you route `rtu_alert.qo` JSON-based Notes straight to an on-call paging service or CMMS (computerized maintenance management system) while `rtu_summary.qo` flows to a long-term analytics store without any filtering logic in the route itself.
 
-**Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project doesn't ship any specific downstream endpoint.
+**Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, Twilio, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project doesn't ship any specific downstream endpoint, but it is trivial to route data to your selected cloud endpoint.
 
 ## 3. Technical Summary
 
 If you want the fastest path from "parts on the bench" to "first event in Notehub":
 
-1. **Notehub** — create a [Notehub project](https://notehub.io), copy its ProductUID.
+1. **Notehub** — create a free [Notehub project](https://notehub.io), copy its ProductUID.
 2. **Wire the bench rig** — [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) + [Notecard MBGLW](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) + two thermistor dividers on A0/A1 + CT bias network on A2 + SDP810 on I²C. Full pinout is in [§5](#5-wiring-and-assembly).
 3. **Edit one line** of [`firmware/rtu_predictive_maintenance/rtu_predictive_maintenance.ino`](firmware/rtu_predictive_maintenance/rtu_predictive_maintenance.ino) — set `PRODUCT_UID` to your project's value (line 24).
 4. **Flash** — `arduino-cli compile -b STMicroelectronics:stm32:Cygnet` then `arduino-cli upload`. Full instructions in [§7.1](#71-installing-and-flashing).
-5. **Watch** — open Notehub → your project → **Events** tab. You should see a `_session.qo` immediately, an `rtu_summary.qo` within an hour, and any threshold trips as `rtu_alert.qo` in real time.
+5. **Watch** — open Notehub → your project → **Events** tab. You should see a `_session.qo` within minutes, an `rtu_summary.qo` within an hour, and any threshold trips as `rtu_alert.qo` in real time.
 
-The rest of this README expands each step and explains why the firmware is shaped the way it is. If you're doing a real rooftop install rather than a bench bring-up, also read [§11 Limitations](#11-limitations-and-next-steps) before you commit to a power topology.
+The rest of this document expands each step and explains why the firmware is shaped the way it is.
+
+<Warning>
+
+If you're doing a real rooftop install rather than a bench bring-up, also read [§11 Limitations](#11-limitations-and-next-steps) before you commit to a power topology.
+
+</Warning>
 
 Here is a sample Note this device emits:
 
@@ -68,9 +72,9 @@ Here is a sample Note this device emits:
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
-| [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an embedded Cygnet STM32 host — no separate MCU needed for this sensor mix. |
+| [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier board with an embedded Cygnet STM32 host — no separate MCU needed for this sensor mix. |
 | [Notecard Cell+WiFi (MBGLW)](https://shop.blues.com/products/notecard-cell-wifi?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) / [datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) | 1 | Cellular removes per-site IT involvement; WiFi fallback is available for sites that happen to have it. |
-| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) *(optional, bench-only)* | 0–1 | Coulomb counter on the power rail for ground-truth energy validation during bench bring-up. **Not required for production deployment**. See [§9](#9-validation-and-testing) and [§11](#11-limitations-and-next-steps). |
+| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) *(optional, bench-only)* | 0–1 | Coulomb counter on the power rail for ground-truth energy validation during bench bring-up. See [§9](#9-validation-and-testing) and [§11](#11-limitations-and-next-steps). |
 | 10 kΩ NTC thermistor, β=3950, waterproof duct probe | 2 | Duct-mount supply and return air temperature for cooling delta-T. |
 | 10 kΩ 1% resistor (divider series leg) | 2 | Pull-up for each thermistor divider. |
 | SCT-013-030 split-core CT, 30A / 1V AC (e.g. [SparkFun SEN-11005](https://www.sparkfun.com/products/11005)) (current-output CT; add external burden resistor for 1 V_rms scaling) | 1 | Non-invasive compressor current sensing; 30A matches single-phase light-commercial RTU compressors. |
@@ -82,7 +86,7 @@ Here is a sample Note this device emits:
 | AC/DC supply, 5V/2A output (e.g. [MeanWell IRM-03-5](https://www.meanwell.com/Upload/PDF/IRM-03/IRM-03-SPEC.PDF)) | 1 | Derives 5V DC from 120VAC line power at the RTU service disconnect for permanent grid-tied power. See [Limitations](#11-limitations-and-next-steps) for the 24VAC-input alternative. |
 | NEMA 4X enclosure, ~6×4×2″ | 1 | Rooftop-rated housing. |
 
-All Blues parts ship with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
+All Blues parts ship with an embedded SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
 ## 5. Wiring and Assembly
 
@@ -126,6 +130,12 @@ Mount probes inside the unit: supply thermistor ~12″ past the evaporator coil 
    | `summary_interval_min` | `60` | Minutes between summary Notes. Changing this also re-applies `hub.set` so the Notecard's outbound transmit cadence tracks the new value. |
 
 6. **Configure routes.** At a minimum, add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `rtu_alert.qo` (to an on-call or CMMS endpoint) and a second for `rtu_summary.qo` (to a long-term store). Separating the two Notefiles at the source means you can fan them out to different destinations at different urgencies without any filtering in the route itself.
+
+<Note>
+
+Consult the guide on [configuring a Twilio route](https://dev.blues.io/notehub/messaging-and-data-pipelines/configuring-a-twilio-route/) to set up SMS messaging.
+
+</Note>
 
 ### What you should see in Notehub
 
@@ -215,7 +225,7 @@ Example alert body:
 
 ### 7.5 Low-power strategy
 
-Even with grid-tied power available, we still keep the host asleep most of the time — less heat in the enclosure, less wear on the supply, and a firmware pattern that ports directly to battery- or solar-powered variants without a rewrite. After each sample cycle the host calls `NotePayloadSaveAndSleep`, a `note-arduino` helper that serializes the in-RAM `PersistState` struct into Notecard flash and then issues a [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) request configured to cut host power entirely for `sample_interval_sec` seconds. When ATTN re-fires, the Notecarrier re-applies host power, the MCU enters `setup()` from cold, and `NotePayloadRetrieveAfterSleep` pulls the saved struct back. From the firmware author's perspective, the sleep call looks like a single line — the Notecard does the rest.
+Even with line power available, we still keep the host asleep most of the time — less heat in the enclosure, less wear on the supply, and a firmware pattern that ports directly to battery- or solar-powered variants without a rewrite. After each sample cycle the host calls `NotePayloadSaveAndSleep`, a `note-arduino` helper that serializes the in-RAM `PersistState` struct into Notecard flash and then issues a [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) request configured to cut host power entirely for `sample_interval_sec` seconds. When ATTN re-fires, the Notecarrier re-applies host power, the MCU enters `setup()` from cold, and `NotePayloadRetrieveAfterSleep` pulls the saved struct back. From the firmware author's perspective, the sleep call looks like a single line — the Notecard does the rest.
 
 The Notecard itself sits in its own [low-power idle](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) (~8 µA @ 5V) between cellular wakes. Sample rate and transmit rate are deliberately decoupled: we sample every 60 seconds but only transmit once an hour — alerts are the only thing that bypass the transmit timer.
 
@@ -306,15 +316,13 @@ The [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) reports cumulative m
 
 Because the deployed RTU is grid-tied through the 120VAC service-disconnect supply, the absolute mAh number matters less in production than the *shape* of the trace. The bench measurement is still worth doing once per firmware revision — it's the cheapest way to catch a regression that silently keeps the host awake.
 
-Mojo is **not required for production deployment** — it's a bring-up and CI-style regression tool. Once a firmware revision passes the trace check, the deployed units don't need it.
-
 ## 10. Troubleshooting
 
 A short field guide for the things that actually go wrong on first bring-up.
 
 | Symptom | Likely cause | What to check |
 |---|---|---|
-| Device never appears in Notehub's **Devices** tab. | `PRODUCT_UID` is empty or wrong, or the cellular antenna is disconnected / indoors. | Re-verify `PRODUCT_UID` matches the Notehub project exactly. Move the unit outside or near a window. Check `_session.qo` events — none means no cellular connection. |
+| Device never appears in Notehub's **Devices** tab. | `PRODUCT_UID` is empty or wrong, or the cellular antenna is disconnected. | Re-verify `PRODUCT_UID` matches the Notehub project exactly. Move the unit outside or near a window. Check `_session.qo` events — none means no cellular connection. |
 | Device appears, `_session.qo` events arrive, but no `rtu_summary.qo` ever shows up. | All sensor reads are returning `NaN`, so `sendSummary` short-circuits via the `any_valid` guard. | Open the serial monitor at 115200 baud and watch the `[sample]` lines. Any field reading `nan` indicates an unplugged or miswired sensor. |
 | Thermistor reads pegged at one extreme. | Probe is open (reads near `+3V3`) or shorted (reads near 0 V). | The firmware returns `NaN` outside the valid divider range, so you'll see `nan` rather than misleading numbers. Check the divider wiring at A0 / A1. |
 | `compressor_amps` always 0 even with the compressor running. | CT is on the neutral leg or both hot legs (currents cancel), or the bias network is missing the 10 µF cap. | Re-clamp the CT on **one** hot leg only. Verify the A2 bias node sits at ~Vref/2 (1.65 V) at idle. |
@@ -322,7 +330,11 @@ A short field guide for the things that actually go wrong on first bring-up.
 | Alerts firing constantly on a healthy unit. | Thresholds aren't tuned for this unit yet. | Raise `delta_t_min_f` toward 14–15 °F if the supply duct runs short, and watch one `rtu_summary.qo` per hour to see what the actual operating envelope looks like. |
 | Mojo bench trace shows continuous tens of mA. | Host isn't sleeping — `card.attn` isn't gating power. | Confirm you're on a Notecarrier CX (which supports ATTN host gating); see [§9](#9-validation-and-testing) for trace shapes. |
 
+<Tip>
+
 If a problem isn't on this list, the [Blues community forum](https://discuss.blues.com) is generally the fastest place to get a second pair of eyes on a Notecard + sensor setup.
+
+</Tip>
 
 ## 11. Limitations and Next Steps
 
