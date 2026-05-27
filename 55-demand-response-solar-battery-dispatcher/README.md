@@ -519,7 +519,7 @@ Note that the OPTA itself is an always-on 24 VDC device whose steady-state draw 
 - Verify the external antenna is properly connected via SMA lead (rubber-duck antenna inside a metal cabinet will not work).
 - Check that the Wireless for OPTA is fully seated onto the OPTA's expansion port.
 - Ensure the 24 VDC power supply voltage is stable (use a multimeter at the OPTA power terminals).
-- Look for any error messages on the USB serial debug port (`115200 baud`). Issue a `card.status` from the Notehub terminal to check registration.
+- Look for any error messages on the USB serial debug port (`115200 baud`). Issue a `card.status` from the [Blues In-Browser Terminal](https://dev.blues.io/terminal/) to check registration.
 
 **Modbus polling shows -9999 (device unreachable).**
 - Verify that inverter and BMS are configured to the same baud rate, parity, and stop bits. See `modbus_baud`, `modbus_parity`, `modbus_stop_bits` in Section 5.
@@ -534,7 +534,7 @@ Note that the OPTA itself is an always-on 24 VDC device whose steady-state draw 
 - Ensure the relay output wires are connected to the correct field-device digital input terminals and that the input voltage rating matches.
 
 **Dispatch command expires too soon or TOU window doesn't transition as expected.**
-- Verify the Notecard has acquired valid UTC time from at least one Notehub sync. Call `card.time` from the Notehub terminal and confirm `time` is non-zero.
+- Verify the Notecard has acquired valid UTC time from at least one Notehub sync. Call `card.time` from the [Blues In-Browser Terminal](https://dev.blues.io/terminal/) and confirm `time` is non-zero.
 - Check that TOU window hours (`peak_start_utc`, `peak_end_utc`, etc.) are in UTC. The firmware does not perform local-time conversion.
 - Verify the corresponding environment variables are set to non-equal values (equal values disable the window).
 
