@@ -8,19 +8,19 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-This project is a [downtime prevention](https://blues.com/downtime-prevention/) reference design that turns an industrial centrifugal pump into a predictively-maintained, remotely-monitored asset by reading what the pump's existing **VFD** (variable frequency drive) already knows about itself — over **Modbus RTU**, on a real industrial **PLC** (programmable logic controller), with a cellular [Notecard](https://shop.blues.com/products/notecard-cellular?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) for the uplink.
+This project is a [downtime prevention](https://blues.com/downtime-prevention/) reference design that turns an industrial centrifugal pump into a predictively-maintained, remotely-monitored asset by reading what the pump's existing **VFD (variable frequency drive)** already knows about itself over **Modbus RTU**, on a real industrial **PLC** (programmable logic controller), with a cellular [Notecard](https://shop.blues.com/products/notecard-cellular?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) for the data uplink.
 
 ## 1. Project Overview
 
 **The problem.** Industrial centrifugal pumps almost universally run behind a VFD. Modern drives from ABB, Yaskawa, Danfoss, and Schneider all expose the pump's operating telemetry through Modbus holding registers — motor current, output frequency, output torque, drive temperature, runtime hours, active fault code, and almost nobody reads them. The VFD is sitting in the cabinet doing the work; the data is right there. What's missing is the network path off the plant floor.
 
-A failing pump rarely just stops. It signals first: motor current can shift at constant frequency as bearing drag, fouling, valve position, fluid viscosity, or impeller condition change the load on the drive. Transient electrical faults can cluster on a stressed contactor or in a cavitating hydraulic regime. Actual runtime can drift above expected duty cycle as a downstream valve fouls and the pump runs longer to do the same work. None of these telemetry shifts are *diagnostic* by themselves, but they are leading indicators a maintenance team would happily act on a week early. This project is the device that catches those anomalies and routes them out, before a tank runs dry on a Saturday night. See the [Signal limitations](#12-limitations-and-next-steps) Note for what this telemetry can and cannot conclude.
+A failing pump rarely just stops. It signals first: motor current can shift at constant frequency as bearing drag, fouling, valve position, fluid viscosity, or impeller condition change the load on the drive. Transient electrical faults can cluster on a stressed contactor or in a cavitating hydraulic regime. Actual runtime can drift above expected duty cycle as a downstream valve fouls and the pump runs longer to do the same work. *None of these telemetry shifts are diagnostic by themselves*, but they are leading indicators a maintenance team would happily act on a week early. This project is the device that catches those anomalies and routes them out, before a tank runs dry on a Saturday night. See the [Signal limitations](#12-limitations-and-next-steps) note for what this telemetry can and cannot conclude.
 
-**Why Notecard.** Pump rooms sit on isolated **OT** (operational technology) networks where corporate WiFi is off-limits for instrumentation by plant policy, and retrofitting a separate OT-friendly access point per pump is unrealistic. Cellular removes the dependency on plant LAN credentials, VLAN provisioning, site WiFi, or a local gateway. (Some sites will still require OT/security review before *any* wireless instrumentation is allowed; the device just doesn't need access to the plant network itself.) The Notecard's prepaid global cellular service means the same firmware and architecture deploys across regions — choose the matching Wireless for OPTA cellular variant for the deployment geography. WiFi remains as an opportunistic fallback for the rare site that *can* offer a rooftop AP, without compromising the cellular-first model.
+**Why Notecard.** Pump rooms sit on isolated OT (operational technology) networks where corporate WiFi is off-limits for instrumentation by plant policy, and retrofitting a separate OT-friendly access point per pump is unrealistic. Cellular removes the dependency on plant LAN credentials, VLAN provisioning, site WiFi, or a local gateway. (Some sites will still require OT/security review before *any* wireless instrumentation is allowed; the device just doesn't need access to the plant network itself.) The Notecard's bundled global cellular data and service means the same firmware and architecture deploys across regions — choose the matching [Blues Wireless for OPTA](https://shop.blues.com/products/wireless-for-opta?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) cellular variant for the deployment geography. WiFi remains as an opportunistic fallback for the rare site that *can* offer a rooftop AP, without compromising the cellular-first model.
 
 <NewToBlues/>
 
-**Why OPTA.** This is exactly the sweet spot for Wireless for OPTA: a real industrial PLC reading a real industrial Modbus device, with no PC or gateway in the middle. The Arduino OPTA is DIN-rail-mounted, 12–24 VDC powered, and programmable with both Arduino sketches and IEC 61131-3 PLC languages, so it deploys exactly the same way across plants whose IT and OT teams will never agree on a network plan. Pairing it with Blues Wireless for OPTA adds cellular and WiFi to a device that already speaks the language of the plant.
+**Why OPTA.** This is exactly the sweet spot for Wireless for OPTA: a real industrial PLC reading a real industrial Modbus device, with no PC or gateway in the middle. The [Arduino OPTA](https://www.arduino.cc/pro/hardware-arduino-opta/) is DIN-rail-mounted, 12–24 VDC powered, and programmable with both Arduino sketches and IEC 61131-3 PLC languages, so it deploys exactly the same way across plants whose IT and OT teams will never agree on a network plan. Pairing it with Blues Wireless for OPTA adds cellular and WiFi to a device that already speaks the language of the plant.
 
 **Deployment scenario.** A single OPTA + Wireless for OPTA mounted on the DIN rail next to the VFD inside the pump's electrical panel, RS-485 daisied to the drive's communication port, antenna routed out through a cable gland to a magnetic-mount whip on the cabinet roof. Line power from a 24 VDC panel supply that's already there. No PC, no gateway, no plant LAN involvement.
 
@@ -28,24 +28,24 @@ A failing pump rarely just stops. It signals first: motor current can shift at c
 
 ![System architecture: VFD ↔ Modbus RTU over RS-485 ↔ OPTA + Wireless for OPTA ↔ cellular ↔ Notehub ↔ customer cloud](diagrams/01-system-architecture.svg)
 
-**Device-side responsibilities.** Inside the pump panel, the OPTA's Cortex-M7 plays Modbus RTU **client** (master) to the VFD's **server** (slave), polling six holding registers across the onboard RS-485 transceiver once a minute. Between polls it accumulates rolling hourly statistics — mean, peak, count — in RAM and runs four anomaly-detection rules against them, deciding event-by-event whether the plant cares about what it just saw. When something is worth reporting, the host hands a JSON Note to the Notecard over I²C through Blues Wireless for OPTA's AUX connector. No modem AT commands, no session state machine, no raw socket management — the `note-arduino` library's `JAdd*` helpers build the request and the Notecard takes it from there.
+**Device-side responsibilities.** Inside the pump panel, the OPTA's Cortex-M7 plays Modbus RTU **client** (master) to the VFD's **server** (slave), polling six holding registers across the onboard RS-485 transceiver once a minute. Between polls it accumulates rolling hourly statistics — mean, peak, count — in RAM and runs four anomaly-detection rules against them, deciding event-by-event whether the plant cares about what it just saw. When something is worth reporting, the host hands a JSON [Note](https://dev.blues.io/api-reference/glossary/#note) to the Notecard over I²C through Blues Wireless for OPTA's AUX connector. No modem AT commands, no session state machine, no raw socket management — the `note-arduino` library's `JAdd*` helpers build the request and the Notecard takes it from there.
 
-**Notecard responsibilities.** The Notecard's on-device queue holds every [Note](https://dev.blues.io/api-reference/glossary/#note) the host writes, then ships them out on the [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default hourly). Anything tagged `sync:true` jumps the queue and the radio comes up immediately. The same module also pulls [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) on every inbound sync, which is what lets a maintenance lead retune thresholds — or even point the firmware at a different drive vendor's register addresses — from a browser, without anyone visiting the panel.
+**Notecard responsibilities.** The Notecard's on-device queue holds every Note the host writes, then ships them out on the [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default hourly). Anything tagged `sync:true` jumps the queue and the radio comes up immediately. The same module also pulls [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) on every inbound sync, which is what lets a maintenance lead retune thresholds — or even point the firmware at a different drive vendor's register addresses — from a browser, without anyone visiting the panel.
 
 **Notehub responsibilities.** [Notehub](https://notehub.io) is where the events land — every one ingested, every one stored, project-level [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) fanning them onward. Because every plant's VFDs may sit at different register addresses, the per-fleet [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) story is what keeps a single firmware image servicing an ABB plant in Ohio and a Yaskawa plant in São Paulo. See [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) for how to organize them by vendor or site.
 
-**Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
+**Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for more information.
 
 ## 3. Technical Summary
 
-**What you'll have when done:** An OPTA + Notecard assembly mounted in a pump panel, reading six telemetry registers from the VFD once per minute, reporting hourly summaries to [Notehub](https://notehub.io), and emitting immediate alerts when four anomaly rules trigger.
+**What you'll have when done:** An OPTA + Notecard assembly mounted in a pump panel, reading six telemetry registers from the VFD once per minute, reporting hourly summaries to Notehub, and emitting immediate alerts when four anomaly rules trigger.
 
 **Minimum steps** (60–90 minutes, assuming site access and a calibrated VFD):
 1. Install Arduino core + libraries (`Arduino Mbed OS Opta Boards`, `note-arduino`, `ArduinoModbus`, `ArduinoRS485`) via Library Manager.
 2. Set `PRODUCT_UID` in the firmware; compile and flash via `arduino-cli` (see [§8. Build and Flash](#8-build-and-flash) below).
 3. On Notehub: create project, claim Notecard, create one fleet, set `modbus_slave_id` and `modbus_baud` to match your VFD's configuration.
 4. Wire OPTA RS-485 to VFD Modbus port; confirm 120 Ω termination at each end of the bus.
-5. Power up and monitor Notehub's In-Browser Terminal: `card.status` should report healthy; first `vfd_summary.qo` Note appears within ~60 s.
+5. Power up and monitor via a serial monitor: `card.status` should report healthy; first `vfd_summary.qo` Note appears within ~60 s.
 
 Here is a sample Note this device emits:
 
@@ -67,17 +67,21 @@ Here is a sample Note this device emits:
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Arduino OPTA RS485](https://store.arduino.cc/products/opta-rs485) | 1 | Industrial PLC with onboard RS-485 transceiver, DIN-rail mount, 12–24 VDC supply. Programmable with Arduino sketches or IEC 61131-3 PLC languages. Hosts the Modbus client and edge logic. |
-| [Blues Wireless for OPTA (NA, SKU 992-00155-C)](https://shop.blues.com/products/wireless-for-opta?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Snaps onto the OPTA's expansion port; adds a [Notecard Cell+WiFi (MBNAW)](https://dev.blues.io/datasheets/notecard-datasheet/note-wbnaw/) over I²C. Cellular coverage is regional — pick the matching SKU for the deployment geography (EMEA variant: [SKU 992-00156-C](https://shop.blues.com/products/wireless-for-opta?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link)). The Notecard manages its own cellular session against supported carrier networks worldwide via its embedded global SIM. |
+| [Blues Wireless for OPTA](https://shop.blues.com/products/wireless-for-opta?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Snaps onto the OPTA's expansion port; adds a [Notecard Cell+WiFi (WBNAW)](https://dev.blues.io/datasheets/notecard-datasheet/note-wbnaw/) over I²C. Cellular coverage is regional — pick the matching SKU for the deployment geography. The Notecard manages its own cellular session against supported carrier networks worldwide via its embedded global SIM. |
 | External cellular antenna(s) w/ SMA, ~3m lead (e.g. [SparkFun CEL-16432](https://www.sparkfun.com/lte-hinged-external-antenna-698mhz-2-7ghz-sma-male.html)) | 1 required, 2 recommended | At minimum, route the **primary** cellular antenna outside any metal cabinet; rubber-duck antennas inside a steel panel will not work reliably. For best LTE Cat-1 performance also route the **diversity** antenna externally if the layout allows it. SMA bulkhead leads through cable glands keep the IP rating intact. |
-| [Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Bench-only coulomb counter for validating the Wireless-for-OPTA + Notecard subsystem energy per session during commissioning. Not deployed to the field. |
+| [Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Coulomb counter for validating the Wireless for OPTA + Notecard subsystem energy per session during commissioning. Not deployed to the field. |
 | 24 VDC DIN-rail supply, ≥10W (e.g. [MeanWell HDR-15-24](https://www.meanwell.com/Upload/PDF/HDR-15/HDR-15-SPEC.PDF)) | 1 | Powers OPTA and expansion. Most pump panels already have one — only buy if needed. |
 | 120 Ω termination resistor | 1–2 | RS-485 termination at each end of the bus. The OPTA's onboard transceiver does not include a permanent terminator. |
 | Shielded twisted pair, 22 AWG, RS-485 rated, ~1m | 1 | A → A, B → B, shield → drive ground. Length depends on the panel layout. |
 | DIN rail, ~10 cm | 1 | Mount for the OPTA + expansion. Likely already present in the panel. |
 
+<Note>
+
 The Arduino OPTA WiFi variant works equally well if WiFi/BLE on the host MCU is desired; the firmware is unchanged. The OPTA Lite that ships in the standard Wireless for OPTA bundle has **no onboard RS-485** and is not suitable for this project.
 
-The Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
+</Note>
+
+The Blues hardware ships with an active SIM bundled with 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
 
 ## 5. Wiring and Assembly
 
@@ -97,7 +101,7 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
    - OPTA `COM` (RS-485 GND) → VFD communication ground (consult the drive's manual; ABB ACS580 calls it `AGND`, Yaskawa GA500 calls it `SC`, Danfoss FC-302 calls it `Common`).
    - Place a 120 Ω resistor across A/B at *each* end of the bus. With one OPTA and one drive, that means two terminators total (one at each device).
 4. **Drive configuration.** Configure the VFD as a Modbus RTU **server** (slave); the OPTA acts as the Modbus **client** (master). Defaults the firmware ships with: slave ID `1`, baud rate `19200`, 8 data bits, no parity, 1 stop bit (`8N1`). Real drives vary — match baud, parity, stop bits, and slave address to whatever the VFD is configured for, and override the firmware's defaults via the `modbus_*` environment variables on Notehub. Common vendor parameter groups: ABB `5800–5805`, Yaskawa `H5-xx`, Danfoss `8-3x`, Schneider `Comm-1.x`.
-5. **Bench validation.** During first-light testing, splice the Mojo inline between the 24 VDC supply and the Wireless-for-OPTA power input so it can measure the *expansion + Notecard subsystem* energy per session. The OPTA itself is line-powered and not the subject of measurement.
+5. **Bench validation.** During first-light testing, splice the Mojo inline between the 24 VDC supply and the Wireless for OPTA power input so it can measure the *expansion + Notecard subsystem* energy per session. The OPTA itself is line-powered and not the subject of measurement.
 
 ## 6. Notehub Setup
 
@@ -127,7 +131,11 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
    | `drive_temp_alarm_c` | `75.0` | Drive heatsink °C above which `drive_overtemp` fires. |
    | `expected_run_hours_per_day` | `12.0` | Expected runtime per day; runtime drift > 25% above this fires `runtime_drift`. |
 
-   > **VFD register-map gotchas.** The defaults above are illustrative only. Real VFDs differ on: 0-based vs 1-based addressing conventions (Modicon "40001" notation vs raw); per-register scaling (current may be 0.1 A, 0.01 A, or % of rated); signedness (torque and temperature are often signed); 32-bit values that span two registers (runtime hours often does, with vendor-specific word order); and active-fault-code vs fault-history-log distinction. The shipped firmware reads six contiguous 16-bit registers with hardcoded scaling — production deployments need a vendor-specific firmware build with proper handling.
+   <Note>
+   
+   **VFD register-map gotchas.** The defaults above are illustrative only. Real VFDs differ on: 0-based vs 1-based addressing conventions (Modicon "40001" notation vs raw); per-register scaling (current may be 0.1 A, 0.01 A, or % of rated); signedness (torque and temperature are often signed); 32-bit values that span two registers (runtime hours often does, with vendor-specific word order); and active-fault-code vs fault-history-log distinction. The shipped firmware reads six contiguous 16-bit registers with hardcoded scaling — production deployments need a vendor-specific firmware build with proper handling.
+
+   </Note>
 
 5. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `vfd_event.qo` (alerts, low-volume, real-time delivery to a CMMS or on-call endpoint) and a second for `vfd_summary.qo` (long-term storage, batched delivery to an analytics/historian system). Splitting the two Notefiles at the source means each can be fanned out to a different destination at a different urgency without filter logic in the route.
 
@@ -161,7 +169,7 @@ Polling cadence is `sample_minutes` (default 1 minutes). For each sample, `accum
 
 ### Event payload design
 
-Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefiles. Templates give summary and alert records a stable schema, store as fixed-length records on the Notecard rather than free-form JSON, and minimize on-wire payload size — material at 24 summary Notes per day per pump over a multi-year deployment. Actual cellular data usage depends on sync cadence, signal conditions, routing behavior, and event frequency, so production deployments should validate usage with [Notehub usage data](https://dev.blues.io/notehub/notehub-walkthrough/#configuring-your-billing-account) before sizing SIM data plans.
+Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates) Notefiles. Templates give summary and alert records a stable schema, store as fixed-length records on the Notecard rather than free-form JSON, and minimize on-wire payload size — material at 24 summary Notes per day per pump over a multi-year deployment. Actual cellular data usage depends on sync cadence, signal conditions, routing behavior, and event frequency, so production deployments should validate usage with [Notehub usage data](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design/#viewing-usage-data-on-notehub).
 
 `vfd_summary.qo` (hourly):
 
@@ -311,7 +319,7 @@ if (g_baseline_seeded[bin] &&
 
 ## 10. Validation and Testing
 
-Expected steady-state behavior on a healthy pump: one summary Note per hour and zero event Notes. The Notecard's [`card.status`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-status) and [`hub.status`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-status) requests are useful smoke tests during commissioning — both can be issued from the blues.dev In-Browser Terminal.
+Expected steady-state behavior on a healthy pump: one summary Note per hour and zero event Notes. The Notecard's [`card.status`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-status) and [`hub.status`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-status) requests are useful smoke tests during commissioning.
 
 **Modbus first-light.** Before connecting to the real drive, run the firmware against a [USB-to-RS-485 adapter](https://www.sparkfun.com/products/9822) and a software Modbus simulator (Modbus Mechanic, ModRSsim2, or equivalent) wired to the OPTA's RS-485 terminals. Verify the six register reads match what the simulator is publishing.
 
@@ -323,7 +331,7 @@ Expected steady-state behavior on a healthy pump: one summary Note per hour and 
 | Modem active (cellular session) | ~250 mA average, with ≤2 A bursts during GSM transmit |
 | WiFi active (when WiFi fallback engaged) | ~80 mA average |
 
-Splice the [Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) inline on the Wireless-for-OPTA power input and confirm: (a) idle current is in the published µA range between syncs, (b) per-session energy lands in the few-mAh range for an hourly outbound sync, and (c) total energy per day is consistent across runs. Note that this measurement is the **whole expansion subsystem** — Notecard plus the expansion's onboard regulators and I²C glue, not the Notecard alone, unless you physically isolate the Notecard's `VMODEM_P` rail. Also Note that the Notecard's lowest-power state requires `VUSB` not present and `AUX_EN` not held high; see the [Notecard low-power-design docs](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) for the gating conditions.
+Splice the [Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) inline on the Wireless for OPTA power input and confirm: (a) idle current is in the published µA range between syncs, (b) per-session energy lands in the few-mAh range for an hourly outbound sync, and (c) total energy per day is consistent across runs. Note that this measurement is the **whole expansion subsystem** — Notecard plus the expansion's onboard regulators and I²C glue, not the Notecard alone, unless you physically isolate the Notecard's `VMODEM_P` rail. Also Note that the Notecard's lowest-power state requires `VUSB` not present and `AUX_EN` not held high; see the [Notecard low-power-design docs](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) for the gating conditions.
 
 **Fault simulation.** Easiest path: drop `current_alarm_factor` to 1.0 in the Fleet's environment variables — the next `inbound` sync will pull the new value, the next hourly summary will trip `load_anomaly`, and the event will land in Notehub within a session-establishment window.
 
@@ -331,7 +339,7 @@ Splice the [Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_
 
 **Notecard not claiming to the project.**
 - Verify `PRODUCT_UID` in the sketch exactly matches the ProductUID on Notehub (Projects → Project Settings).
-- Confirm cellular signal: in Notehub's In-Browser Terminal, run `card.status` and check the `"signal"` field. Minimum -100 dBm for LTE Cat-1.
+- Confirm cellular signal: in the Blues In-Browser Terminal, run `card.status` and check the `"signal"` field. Minimum -100 dBm for LTE Cat-1.
 - If deploying indoors or in a metal cabinet without an external antenna, the bundled rubber-duck antenna will not work — thread the external SMA antenna through a cable gland and screw it to the primary antenna port.
 
 **Modbus reads failing (firmware logs "Modbus error" or no data in summary Notes).**
