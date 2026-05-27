@@ -97,7 +97,7 @@ Here is a sample Note this device emits:
 | [Arduino OPTA RS485](https://store.arduino.cc/products/opta-rs485) | 1 | Industrial PLC with onboard RS-485 transceiver, DIN-rail mount, 12–24 VDC supply, and four relay outputs. Required for the RS-485 interface; the OPTA Lite has no RS-485 and is not suitable. |
 | [Blues Wireless for OPTA (NA, SKU 992-00155-C)](https://shop.blues.com/products/wireless-for-opta?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Snaps onto the OPTA's expansion port; adds a Notecard Cell+WiFi ([NOTE-WBNAW](https://dev.blues.io/datasheets/notecard-datasheet/note-wbnaw/)) over I²C. For EMEA deployments use [SKU 992-00156-C](https://shop.blues.com/products/wireless-for-opta?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link). |
 | External cellular antenna(s) with SMA, ~3 m lead (e.g. [SparkFun CEL-16432](https://www.sparkfun.com/lte-hinged-external-antenna-698mhz-2-7ghz-sma-male.html)) | 1 primary, 1 diversity recommended | Metal equipment cabinets kill rubber-duck antennas. Route at least the primary antenna outside through a cable gland; the diversity antenna improves LTE Cat-1 performance in marginal-signal sites. |
-| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Bench-only coulomb counter for validating the Wireless-for-OPTA + Notecard subsystem energy per session during commissioning. Not deployed to the field. |
+| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Bench-only coulomb counter for validating the Wireless for OPTA + Notecard subsystem energy per session during commissioning. Not deployed to the field. |
 | 24 VDC DIN-rail supply, ≥15 W (e.g. [MeanWell HDR-15-24](https://www.meanwell.com/Upload/PDF/HDR-15/HDR-15-SPEC.PDF)) | 1 | Powers OPTA and expansion. Most solar equipment cabinets already have one; buy only if the cabinet doesn't. |
 | 120 Ω, ¼ W resistor | 2 | RS-485 line termination at each physical end of the Modbus bus. The OPTA's transceiver has no permanent terminator; floating the bus line causes spurious framing errors. |
 | Shielded twisted pair, 22 AWG, RS-485 rated | 1–3 m | A → A, B → B, shield → drive ground. Use a daisy-chain topology (not a star), shield and ground the cable per the inverter and BMS vendor installation guides, and terminate at both physical ends of the bus. Consult each vendor's documentation for maximum recommended bus length at your chosen baud rate. |
@@ -158,7 +158,7 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ### Bench power validation
 
-6. **Mojo placement.** During commissioning, splice the [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) inline between the 24 VDC supply and the Wireless-for-OPTA power input to measure the expansion + Notecard subsystem energy per cellular session. See [Section 9](#9-validation-and-testing) for the expected figures.
+6. **Mojo placement.** During commissioning, splice the [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) inline between the 24 VDC supply and the Wireless for OPTA power input to measure the expansion + Notecard subsystem energy per cellular session. See [Section 9](#9-validation-and-testing) for the expected figures.
 
 ## 6. Notehub Setup
 
@@ -519,7 +519,7 @@ Note that the OPTA itself is an always-on 24 VDC device whose steady-state draw 
 - Verify the external antenna is properly connected via SMA lead (rubber-duck antenna inside a metal cabinet will not work).
 - Check that the Wireless for OPTA is fully seated onto the OPTA's expansion port.
 - Ensure the 24 VDC power supply voltage is stable (use a multimeter at the OPTA power terminals).
-- Look for any error messages on the USB serial debug port (`115200 baud`). Issue a `card.status` from the Notehub terminal to check registration.
+- Look for any error messages on the USB serial debug port (`115200 baud`). Issue a `card.status` from the [Blues In-Browser Terminal](https://dev.blues.io/terminal/) to check registration.
 
 **Modbus polling shows -9999 (device unreachable).**
 - Verify that inverter and BMS are configured to the same baud rate, parity, and stop bits. See `modbus_baud`, `modbus_parity`, `modbus_stop_bits` in Section 5.
@@ -534,7 +534,7 @@ Note that the OPTA itself is an always-on 24 VDC device whose steady-state draw 
 - Ensure the relay output wires are connected to the correct field-device digital input terminals and that the input voltage rating matches.
 
 **Dispatch command expires too soon or TOU window doesn't transition as expected.**
-- Verify the Notecard has acquired valid UTC time from at least one Notehub sync. Call `card.time` from the Notehub terminal and confirm `time` is non-zero.
+- Verify the Notecard has acquired valid UTC time from at least one Notehub sync. Call `card.time` from the [Blues In-Browser Terminal](https://dev.blues.io/terminal/) and confirm `time` is non-zero.
 - Check that TOU window hours (`peak_start_utc`, `peak_end_utc`, etc.) are in UTC. The firmware does not perform local-time conversion.
 - Verify the corresponding environment variables are set to non-equal values (equal values disable the window).
 
