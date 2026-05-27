@@ -97,7 +97,7 @@ Here is a sample Note this device emits:
 | [Arduino OPTA RS485](https://store.arduino.cc/products/opta-rs485) | 1 | Industrial PLC with onboard RS-485 transceiver, DIN-rail mount, 12–24 VDC supply, and four relay outputs. Required for the RS-485 interface; the OPTA Lite has no RS-485 and is not suitable. |
 | [Blues Wireless for OPTA (NA, SKU 992-00155-C)](https://shop.blues.com/products/wireless-for-opta?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Snaps onto the OPTA's expansion port; adds a Notecard Cell+WiFi ([NOTE-WBNAW](https://dev.blues.io/datasheets/notecard-datasheet/note-wbnaw/)) over I²C. For EMEA deployments use [SKU 992-00156-C](https://shop.blues.com/products/wireless-for-opta?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link). |
 | External cellular antenna(s) with SMA, ~3 m lead (e.g. [SparkFun CEL-16432](https://www.sparkfun.com/lte-hinged-external-antenna-698mhz-2-7ghz-sma-male.html)) | 1 primary, 1 diversity recommended | Metal equipment cabinets kill rubber-duck antennas. Route at least the primary antenna outside through a cable gland; the diversity antenna improves LTE Cat-1 performance in marginal-signal sites. |
-| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Bench-only coulomb counter for validating the Wireless-for-OPTA + Notecard subsystem energy per session during commissioning. Not deployed to the field. |
+| [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Bench-only coulomb counter for validating the Wireless for OPTA + Notecard subsystem energy per session during commissioning. Not deployed to the field. |
 | 24 VDC DIN-rail supply, ≥15 W (e.g. [MeanWell HDR-15-24](https://www.meanwell.com/Upload/PDF/HDR-15/HDR-15-SPEC.PDF)) | 1 | Powers OPTA and expansion. Most solar equipment cabinets already have one; buy only if the cabinet doesn't. |
 | 120 Ω, ¼ W resistor | 2 | RS-485 line termination at each physical end of the Modbus bus. The OPTA's transceiver has no permanent terminator; floating the bus line causes spurious framing errors. |
 | Shielded twisted pair, 22 AWG, RS-485 rated | 1–3 m | A → A, B → B, shield → drive ground. Use a daisy-chain topology (not a star), shield and ground the cable per the inverter and BMS vendor installation guides, and terminate at both physical ends of the bus. Consult each vendor's documentation for maximum recommended bus length at your chosen baud rate. |
@@ -158,7 +158,7 @@ The Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ### Bench power validation
 
-6. **Mojo placement.** During commissioning, splice the [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) inline between the 24 VDC supply and the Wireless-for-OPTA power input to measure the expansion + Notecard subsystem energy per cellular session. See [Section 9](#9-validation-and-testing) for the expected figures.
+6. **Mojo placement.** During commissioning, splice the [Mojo](https://dev.blues.io/datasheets/mojo-datasheet/) inline between the 24 VDC supply and the Wireless for OPTA power input to measure the expansion + Notecard subsystem energy per cellular session. See [Section 9](#9-validation-and-testing) for the expected figures.
 
 ## 6. Notehub Setup
 
