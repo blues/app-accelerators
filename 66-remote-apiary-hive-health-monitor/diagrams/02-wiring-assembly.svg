@@ -27,7 +27,8 @@
   <!-- Notecarrier CX center -->
   <rect x="320" y="90" width="220" height="320" rx="10" fill="#f1f5f9" stroke="#0f172a" stroke-width="2"/>
   <text x="430" y="118" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Notecarrier CX</text>
-  <text x="430" y="136" text-anchor="middle" font-size="10" fill="#475569">Cygnet STM32L433 · MBGLW · Starnote</text>
+  <text x="430" y="134" text-anchor="middle" font-size="10" fill="#475569">Cygnet STM32L433 · Notecard for Skylo</text>
+  <text x="430" y="147" text-anchor="middle" font-size="10" fill="#475569">(cellular · WiFi · satellite)</text>
 
   <!-- CX pin dots and labels — left side -->
   <circle cx="320" cy="185" r="4" fill="#f59e0b"/>

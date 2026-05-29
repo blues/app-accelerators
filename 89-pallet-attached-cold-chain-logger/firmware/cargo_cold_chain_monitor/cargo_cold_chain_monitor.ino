@@ -176,6 +176,7 @@ void setup() {
         if (gState.config_version != CONFIG_VERSION) {
             Serial.println("[cargo] config version mismatch — forcing Notecard reconfiguration");
             gState.hub_configured       = false;
+            gState.transport_configured = false;
             gState.motion_configured    = false;
             gState.templates_registered = false;
             gState.config_version       = CONFIG_VERSION;

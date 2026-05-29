@@ -3,6 +3,9 @@
  *
  * Hardware: Blues Notecarrier CX (Cygnet STM32L4) + Notecard for Skylo
  *           (NOTE-NBGLWX) + Adafruit LSM6DSOX accelerometer (I2C, #4517)
+ *           Connectivity uses automatic WiFi→cellular→Skylo-satellite (NTN)
+ *           fallback so assets stay reportable beyond terrestrial coverage
+ *           (enabled in notecardConfigure() via card.transport "wifi-cell-ntn").
  *
  * On each 30-second wake the host: restores persisted state, fetches env vars,
  * samples accelerometer for 2 s at 104 Hz, classifies vibration as IDLE /

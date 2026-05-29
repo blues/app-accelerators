@@ -34,7 +34,7 @@
 // ── Alert type codes (tank_alert.qo body field "alert_code") ─────────────────
 // Integer codes instead of strings keep the compact-template payload
 // fixed-length binary — the same requirement as the summary template for the
-// NOTE-NBGLWX Starnote/NTN satellite path.  The "alert_code" template field
+// NOTE-NBGLWX Skylo NTN satellite path.  The "alert_code" template field
 // uses type hint 12, which encodes as a 2-byte signed integer (int16_t,
 // range −32 768 to +32 767); values 0–2 fit trivially within that range.
 // All fields are always present in compact binary encoding, so pump_amps = 0.0

@@ -114,6 +114,20 @@ bool notecardConfigure(void) {
         return false;
     }
 
+    // Transport: enable WiFi→cellular→Skylo-satellite (NTN) automatic fallback.
+    // NTN is OFF by default on the Notecard for Skylo (NOTE-NBGLWX) — the factory
+    // transport never reaches the satellite radio, so without this request the
+    // device would silently lose connectivity beyond terrestrial coverage instead
+    // of falling back to satellite.  "wifi-cell-ntn" lets the Notecard prefer
+    // WiFi, fall back to cellular, then to Skylo NTN, with no firmware branching.
+    // Note: Skylo requires at least one non-NTN (cellular/WiFi) sync first to
+    // associate with Notehub and register templates before NTN can be used; the
+    // cold-boot hub.set above triggers that initial terrestrial sync.  The setting
+    // persists in the Notecard's own flash, so issuing it once at cold boot suffices.
+    req = notecard.newRequest("card.transport");
+    JAddStringToObject(req, "method", "wifi-cell-ntn");
+    if (!checkedRequest(req)) return false;
+
     // Periodic GPS: acquire a fix every GPS_PERIOD_SECONDS (15 min).
     req = notecard.newRequest("card.location.mode");
     JAddStringToObject(req, "mode",    "periodic");

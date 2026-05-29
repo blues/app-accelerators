@@ -514,7 +514,7 @@ The logger commits to a specific scope: independent, pallet-level evidence with 
 
 **Remaining design boundaries:**
 
-- **Skylo satellite is opportunistic, not available inside enclosed metal structures.** Skylo uses geostationary (GEO) satellites; the antenna needs a clear view of the southern sky (northern hemisphere). Notes queue in flash and flush via cellular or WiFi when coverage resumes — enclosed-transit segments become store-and-forward gaps, not data loss. For routes where enclosed-transit exceeds the available battery reserve, Starnote for Iridium (LEO constellation, global coverage even inside container terminals) is an alternative or supplement.
+- **Skylo satellite is opportunistic, not available inside enclosed metal structures.** Skylo uses geostationary (GEO) satellites; the antenna needs a clear view of the southern sky (northern hemisphere). Notes queue in flash and flush via cellular or WiFi when coverage resumes — enclosed-transit segments become store-and-forward gaps, not data loss. For routes where enclosed-transit exceeds the available battery reserve, a Starnote for Iridium — paired with a companion Notecard on a Notecarrier XI (a Starnote is a satellite add-on and does not operate standalone) — adds Iridium LEO coverage (global, even inside container terminals) as an alternative or supplement.
 
 - **Shock detection is heuristic.** The `shock_detected` alert fires on accumulated motion-event count per interval, not on a calibrated peak-G threshold. For fragile biologics or fragile cargo requiring documented peak-G evidence, add a dedicated calibrated shock recorder alongside this device.
 

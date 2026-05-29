@@ -4,10 +4,12 @@
 
   Contains:
     notecardConfigure() — hub.set (daily outbound / weekly inbound),
-                          accelerometer disable; called once on first boot.
+                          card.transport (wifi-cell-ntn) for automatic
+                          cellular→Skylo satellite failover, accelerometer
+                          disable; called once on first boot.
     defineTemplates()   — registers compact Note templates for
                           hive_summary.qo (port 10) and hive_alert.qo
-                          (port 11); required for Starnote NTN operation.
+                          (port 11); required for Skylo NTN operation.
     fetchEnvOverrides() — pulls operator thresholds from Notehub env vars,
                           applies individual range clamps, then validates the
                           temp_low_c / temp_high_c pair together before storing.
@@ -97,6 +99,26 @@ bool notecardConfigure(bool freshBoot, const char *productUID) {
         return false;
     }
 
+    // Transport selection for the Notecard for Skylo (NOTE-NBGLWX).
+    // The board carries WiFi, cellular, and Skylo satellite (NTN) radios, but
+    // satellite fallback is NOT enabled by default — the factory transport is
+    // "wifi-cell" (WiFi preferred, cellular fallback, no NTN). Set "wifi-cell-ntn"
+    // so the Notecard prefers WiFi where an apiary AP is reachable, falls back to
+    // cellular (the primary at most orchard/meadow sites), and finally to Skylo
+    // satellite where there is no terrestrial coverage — automatic failover with
+    // no firmware branching. The Notecard persists this setting in its own flash,
+    // so issuing it once on first boot is sufficient.
+    //
+    // Note: Skylo requires at least one non-NTN (cellular or WiFi) sync to
+    // associate with Notehub and register templates before NTN can be used. In
+    // "periodic" mode the cold-boot hub.set above triggers that first sync over
+    // cellular/WiFi, so commission each unit where it has terrestrial coverage
+    // even if it will routinely operate over satellite. Non-critical at the
+    // transport level; a failure here is retried on the next cold boot.
+    req = notecard.newRequest("card.transport");
+    JAddStringToObject(req, "method", "wifi-cell-ntn");
+    notecard.sendRequest(req);
+
     // Disable accelerometer — reduces idle interrupt noise on Mojo power trace.
     // Non-critical; failure does not prevent Notecard from operating normally.
     req = notecard.newRequest("card.motion.mode");
@@ -104,14 +126,14 @@ bool notecardConfigure(bool freshBoot, const char *productUID) {
     notecard.sendRequest(req);
 
     // This design does not configure or use device location — no
-    // card.location.mode call is issued.  The Starnote's integrated GPS
+    // card.location.mode call is issued.  The Notecard for Skylo's GPS/GNSS
     // receiver is used internally by the satellite stack for timing and
     // ephemeris only; location data is not read or transmitted by the host.
     return true;
 }
 
 // ===========================================================================
-// defineTemplates — compact templates required for Starnote NTN operation
+// defineTemplates — compact templates required for Skylo NTN operation
 // Returns true only if both templates registered without a Notecard error.
 // ===========================================================================
 bool defineTemplates(void) {

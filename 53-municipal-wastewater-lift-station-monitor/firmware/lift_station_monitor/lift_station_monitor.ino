@@ -17,7 +17,9 @@
 
   Hardware:
     - Notecarrier CX (Cygnet STM32L433 host)
-    - Notecard Cell+WiFi MBGLW (M.2 slot)
+    - Notecard for Skylo NOTE-NBGLWX (M.2 slot) — cellular + WiFi + Skylo
+      satellite (NTN) on one board; card.transport selects cellular-primary
+      with automatic satellite fallback (see notecardConfigure()).
     - 4-20 mA submersible level transducer  → A0 (150 Ω shunt to GND)
     - SCT-013-030 split-core CT, pump 1     → A1 (bias circuit)
     - SCT-013-030 split-core CT, pump 2     → A2 (bias circuit)

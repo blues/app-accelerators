@@ -280,6 +280,22 @@ static void notecardConfigure(void) {
         }
     }
 
+    // Enable the Skylo satellite (NTN) transport. NTN is OFF by default on the
+    // Notecard for Skylo (NOTE-NBGLWX) — the factory transport never engages the
+    // satellite radio. Setting "wifi-cell-ntn" enables automatic WiFi → cellular
+    // → Skylo-satellite fallback with no firmware branching: the Notecard prefers
+    // WiFi, falls back to cellular, and finally to Skylo NTN at sites beyond
+    // terrestrial coverage. Skylo requires at least one non-NTN (cellular/WiFi)
+    // sync first to associate with Notehub and register templates before NTN can
+    // be used; in periodic mode the cold-boot hub.set above triggers that initial
+    // sync. This setting persists in the Notecard's own flash, so issuing it once
+    // at cold boot is sufficient.
+    req = notecard.newRequest("card.transport");
+    if (req) {
+        JAddStringToObject(req, "method", "wifi-cell-ntn");
+        notecard.sendRequestWithRetry(req, 10);
+    }
+
     // Disable the onboard accelerometer to eliminate interrupt noise on bench
     // power-trace measurements. Non-critical if this fails; idempotent.
     req = notecard.newRequest("card.motion.mode");
@@ -315,7 +331,7 @@ static bool reapplyHubSet(void) {
 // =============================================================================
 // Register compact binary templates for both Notefiles.
 // "compact" format and an explicit port number are both required for
-// NOTE-NBGLWX Starnote/NTN satellite operation; they are compatible with the
+// NOTE-NBGLWX Skylo NTN satellite operation; they are compatible with the
 // cellular path too, so one template definition per Notefile covers both
 // transports. Type hints use literal numeric values (14.1 → float32,
 // 12 → int16 (2-byte signed, −32 768..+32 767), true → boolean) matching
@@ -339,8 +355,8 @@ static void defineTemplates(void) {
     J *req = notecard.newRequest("note.template");
     if (!req) return;
     JAddStringToObject(req, "file",   NOTEFILE_SUMMARY);
-    JAddNumberToObject(req, "port",   50);        // required for Starnote/NTN
-    JAddStringToObject(req, "format", "compact"); // required for Starnote/NTN
+    JAddNumberToObject(req, "port",   50);        // required for Skylo NTN
+    JAddStringToObject(req, "format", "compact"); // required for Skylo NTN
     J *body = JAddObjectToObject(req, "body");
     if (!body) { JDelete(req); return; }
     JAddNumberToObject(body, "_time",       14);   // Unix timestamp (Notecard auto-fills)
@@ -356,8 +372,8 @@ static void defineTemplates(void) {
     req = notecard.newRequest("note.template");
     if (!req) return;
     JAddStringToObject(req, "file",   NOTEFILE_ALERT);
-    JAddNumberToObject(req, "port",   51);        // required for Starnote/NTN
-    JAddStringToObject(req, "format", "compact"); // required for Starnote/NTN
+    JAddNumberToObject(req, "port",   51);        // required for Skylo NTN
+    JAddStringToObject(req, "format", "compact"); // required for Skylo NTN
     body = JAddObjectToObject(req, "body");
     if (!body) { JDelete(req); return; }
     JAddNumberToObject(body, "_time",      14);   // Unix timestamp (Notecard auto-fills)

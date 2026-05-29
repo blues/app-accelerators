@@ -303,7 +303,7 @@ void evaluateAlerts(float levelPct, float pumpAmps,
 // =============================================================================
 // Emit an immediate alert Note with sync:true to bypass the outbound interval.
 // Uses the compact template registered for tank_alert.qo (port 51, "compact"
-// format) so the Note is satellite-safe on the NOTE-NBGLWX Starnote/NTN path.
+// format) so the Note is satellite-safe on the NOTE-NBGLWX Skylo NTN path.
 // alertCode is an integer (ALERT_CODE_*) stored in the "alert_code" field;
 // fixed-length binary encoding means pump_amps = 0.0 (pump off at alert time)
 // is transmitted faithfully — compact encoding has no omitempty-style drop

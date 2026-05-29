@@ -54,8 +54,9 @@
 //
 // CONFIG_VERSION is stored in gState.config_version at configuration time
 // and compared against the compiled value on every warm boot.  A mismatch
-// clears hub_configured, motion_configured, and templates_registered so
-// hub.set, card.motion.mode, and note.template are fully reapplied.
+// clears hub_configured, transport_configured, motion_configured, and
+// templates_registered so hub.set, card.transport, card.motion.mode, and
+// note.template are fully reapplied.
 //
 // Note: CONFIG_VERSION does NOT encode PRODUCT_UID.  hub.set is re-issued
 // on every warm boot (see setup()) so a reflash with a new PRODUCT_UID
@@ -188,6 +189,7 @@ struct ColdChainState {
 
     // ── Configuration-retry flags ────────────────────────────────────────────
     bool     hub_configured;
+    bool     transport_configured;
     bool     motion_configured;
     bool     templates_registered;
     uint32_t config_version;

@@ -3,11 +3,12 @@
 // Propane / LPG Tank Fill Telemetry — 4–20 mA Float-Transmitter Variant
 //
 // Host:      Blues Notecarrier CX (onboard Cygnet STM32 host)
-// Notecard:  Blues Notecard Cell+WiFi (MBGLW); at sites with no cellular
-//            coverage, add a Starnote for Skylo connected to the Notecard's
-//            6-pin JST port for automatic NTN satellite fallback — no firmware
-//            changes required; the Notecard routes queued notes over satellite
-//            when cellular is unavailable
+// Notecard:  Notecard for Skylo (NOTE-NBGLWX) — a single M.2 module carrying
+//            cellular (LTE-M / NB-IoT / GPRS), WiFi, and Skylo satellite (NTN)
+//            radios with automatic failover. At sites with no cellular coverage
+//            the same board falls back to Skylo satellite automatically — no
+//            second device and no firmware changes; the Notecard routes queued
+//            notes over satellite when cellular and WiFi are unavailable
 // Sensors:   4-20 mA LP gauge-port level transmitter (float type, e.g. Rochester
 //            Sensors M6300-LP + R6315-12) → 120 Ω shunt → A0
 //            DS18B20 waterproof temperature probe (OneWire) → D2
@@ -51,8 +52,8 @@
 //   - Each wake: sample sensors, update consumption EWMA, evaluate thresholds.
 //   - When REPORT_INTERVAL_HR has elapsed, queue one tank_status.qo note.
 //   - Alerts (low_fill, high_consumption, sensor_fault) are sent sync:true.
-//   - Between wakes the host is cut entirely; Notecard idles at ~18 µA
-//     (NOTE-MBGLW Notecard Cell+WiFi published idle figure).
+//   - Between wakes the host is cut entirely; the Notecard for Skylo idles
+//     at ~8 µA (NOTE-NBGLWX published idle figure).
 //
 // Sensor math, fill-level calculation, and consumption tracking live in
 // propane_tank_telemetry_helpers.h (included below).
@@ -172,6 +173,29 @@ static void hubConfigure() {
   } else {
 #ifdef usbSerial
     usbSerial.println("[hub.set] failed — will retry on next wake");
+#endif
+  }
+
+  // Transport selection for the Notecard for Skylo (NOTE-NBGLWX).
+  // The board carries WiFi, cellular, and Skylo satellite (NTN) radios, but
+  // satellite fallback is NOT enabled by default — the factory transport does
+  // not include NTN. Set "wifi-cell-ntn" so the Notecard prefers WiFi where an
+  // AP is reachable, falls back to cellular (the de-facto primary at most tank
+  // sites), and finally to Skylo satellite at remote sites beyond terrestrial
+  // coverage — automatic cellular→satellite failover with no firmware
+  // branching. The Notecard persists this setting in its own flash, so issuing
+  // it once on cold boot is sufficient.
+  //
+  // Note: Skylo requires at least one initial non-NTN (cellular or WiFi) sync
+  // to associate with Notehub and register Notefile templates before NTN can be
+  // used. In "periodic" mode the cold-boot hub.set above triggers that first
+  // sync over cellular/WiFi, so commission each unit where it has terrestrial
+  // coverage even if it will routinely operate over satellite.
+  J *t = notecard.newRequest("card.transport");
+  JAddStringToObject(t, "method", "wifi-cell-ntn");
+  if (!notecard.sendRequestWithRetry(t, 10)) {
+#ifdef usbSerial
+    usbSerial.println("[card.transport] wifi-cell-ntn failed — will retry on next cold boot");
 #endif
   }
 }
