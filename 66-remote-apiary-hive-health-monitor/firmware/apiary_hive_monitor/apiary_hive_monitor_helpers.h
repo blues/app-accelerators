@@ -10,8 +10,8 @@
 
   Hardware context:
     - Notecarrier CX (onboard Cygnet STM32L433 host MCU)
-    - Notecard Cell+WiFi (MBGLW) in M.2 slot
-    - Starnote for Skylo via 6-pin JST NTN cable
+    - Notecard for Skylo (NOTE-NBGLWX) in M.2 slot — cellular + WiFi +
+      Skylo satellite (NTN) on one board
     - SparkFun HX711 (SEN-13879) + Zemic H8C single-ended shear-beam load cell
     - Adafruit SHT31-D (#2857) via 0.1″ jumper wires on SDA/SCL
     - Adafruit MAX9814 (#1713) analog microphone on A0
@@ -87,7 +87,7 @@ extern Adafruit_SHT31 sht31;
 // Returns true on success; false if a critical step fails (retry next wake).
 bool notecardConfigure(bool freshBoot, const char *productUID);
 
-// Register compact Note templates compatible with Starnote NTN.
+// Register compact Note templates compatible with Skylo NTN.
 // Returns true only if both templates registered without error.
 bool defineTemplates(void);
 

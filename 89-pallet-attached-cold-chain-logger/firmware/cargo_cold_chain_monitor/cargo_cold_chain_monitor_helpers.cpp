@@ -89,6 +89,33 @@ void notecardConfigure() {
     }
     if (rsp) notecard.deleteResponse(rsp);
 
+    // card.transport — enable the automatic WiFi → cellular → Skylo satellite
+    // (NTN) fallback that the README promises.  NTN is OFF by default on the
+    // Notecard for Skylo (NOTE-NBGLWX): the factory transport never reaches the
+    // satellite radio, so without this request queued alerts would sit in flash
+    // forever once the pallet leaves terrestrial coverage.  "wifi-cell-ntn"
+    // prefers WiFi where a provisioned AP is reachable (a connected DC), falls
+    // back to cellular over road and rail, and finally to Skylo NTN where
+    // neither is available and the antenna has sky exposure — with no firmware
+    // branching.
+    //
+    // An initial non-NTN (cellular or WiFi) sync is required first so the device
+    // can associate with Notehub and register templates before NTN is usable;
+    // the cold-boot hub.set above triggers that first terrestrial sync, so
+    // commission each unit where it has cellular/WiFi coverage.  The Notecard
+    // persists this setting in its own flash, so issuing it once per cold boot
+    // is sufficient.
+    if (!gState.transport_configured) {
+        req = notecard.newRequest("card.transport");
+        JAddStringToObject(req, "method", "wifi-cell-ntn");
+        if (ncSend(req)) {
+            gState.transport_configured = true;
+            Serial.println("[cargo] card.transport configured (wifi-cell-ntn)");
+        } else {
+            Serial.println("[cargo] card.transport failed — will retry on next wake");
+        }
+    }
+
     if (!gState.motion_configured) {
         req = notecard.newRequest("card.motion.mode");
         JAddBoolToObject(req,   "start",       true);

@@ -11,6 +11,9 @@
 //   - Inbound immobilize command delivered via Notehub (immobilize.qi)
 //   - Relay assertion on next key-on when immobilize command is staged
 //   - Compact note templates compatible with Notecard for Skylo satellite uplink
+//   - Automatic WiFi → cellular → Skylo-satellite (NTN) failover, enabled at
+//     boot via card.transport "wifi-cell-ntn" so equipment stays reachable
+//     beyond terrestrial coverage (NTN is off by default and must be turned on)
 //   - Deep sleep via NotePayloadSaveAndSleep between wake cycles
 //
 // Hardware:

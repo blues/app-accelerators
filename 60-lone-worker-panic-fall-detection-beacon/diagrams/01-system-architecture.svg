@@ -26,11 +26,12 @@
   <text x="340" y="172" text-anchor="middle" font-size="13" font-weight="700" fill="#713f12">Edge enclosure</text>
   <line x1="260" y1="186" x2="420" y2="186" stroke="#fde68a"/>
   <g font-size="11" fill="#854d0e">
-    <text x="340" y="216" text-anchor="middle">Notecarrier CX</text>
-    <text x="340" y="238" text-anchor="middle">Cygnet STM32L433</text>
-    <text x="340" y="260" text-anchor="middle">MBGLW + Starnote</text>
+    <text x="340" y="214" text-anchor="middle">Notecarrier CX</text>
+    <text x="340" y="234" text-anchor="middle">Cygnet STM32L433</text>
+    <text x="340" y="254" text-anchor="middle">Notecard for Skylo</text>
   </g>
-  <text x="340" y="284" text-anchor="middle" font-size="10" fill="#a16207" font-style="italic">fall + panic detect</text>
+  <text x="340" y="270" text-anchor="middle" font-size="9.5" fill="#a16207">cellular · WiFi · satellite</text>
+  <text x="340" y="288" text-anchor="middle" font-size="10" fill="#a16207" font-style="italic">fall + panic detect</text>
 
   <!-- Notehub -->
   <rect x="490" y="120" width="170" height="180" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>

@@ -19,26 +19,26 @@
   <rect width="800" height="540" fill="#ffffff"/>
 
   <text x="400" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">Wiring &amp; Assembly</text>
-  <text x="400" y="58" text-anchor="middle" font-size="12" fill="#64748b">I²C peripherals · panic GPIO · dual flex antenna · Starnote satellite</text>
+  <text x="400" y="58" text-anchor="middle" font-size="12" fill="#64748b">I²C peripherals · panic GPIO · Notecard for Skylo MAIN + GPS u.FL antennas</text>
 
   <!-- Notecarrier CX center -->
   <rect x="320" y="100" width="160" height="280" rx="10" fill="#f1f5f9" stroke="#0f172a" stroke-width="2"/>
   <g transform="translate(391,115) scale(0.75)" fill="#0f172a"><path d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z"/></g>
   <text x="400" y="152" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Notecarrier CX</text>
-  <text x="400" y="170" text-anchor="middle" font-size="10" fill="#475569">+ Cygnet · MBGLW</text>
+  <text x="400" y="170" text-anchor="middle" font-size="10" fill="#475569">+ Cygnet · Notecard for Skylo</text>
 
   <g font-size="11" fill="#0f172a">
     <text x="335" y="204">SDA/SCL</text>
     <text x="335" y="284">D9</text>
-    <text x="465" y="204" text-anchor="end">u.FL</text>
-    <text x="465" y="284" text-anchor="end">JST</text>
+    <text x="465" y="204" text-anchor="end">MAIN</text>
+    <text x="465" y="284" text-anchor="end">GPS</text>
     <text x="400" y="358" text-anchor="middle">+VBAT</text>
   </g>
   <g>
     <circle cx="320" cy="200" r="4" fill="#f59e0b"/>
     <circle cx="320" cy="280" r="4" fill="#dc2626"/>
     <circle cx="480" cy="200" r="4" fill="#3b82f6"/>
-    <circle cx="480" cy="280" r="4" fill="#9333ea"/>
+    <circle cx="480" cy="280" r="4" fill="#3b82f6"/>
     <circle cx="400" cy="380" r="4" fill="#0ea5e9"/>
   </g>
 
@@ -54,23 +54,24 @@
   <text x="135" y="278" text-anchor="middle" font-size="12" font-weight="700" fill="#7f1d1d">Panic button</text>
   <text x="135" y="298" text-anchor="middle" font-size="10" fill="#991b1b">D9 · INPUT_PULLUP</text>
 
-  <!-- Top-right: Dual flex antenna -->
+  <!-- Top-right: MAIN antenna (Skylo-certified — carries cellular + satellite) -->
   <rect x="580" y="170" width="180" height="60" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
   <g transform="translate(596,184) scale(0.55)" fill="#1e3a8a"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></g>
-  <text x="675" y="198" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">Dual flex antenna</text>
-  <text x="675" y="218" text-anchor="middle" font-size="10" fill="#1e40af">CELL + GPS u.FL</text>
+  <text x="675" y="195" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">MAIN antenna</text>
+  <text x="675" y="213" text-anchor="middle" font-size="9.5" fill="#1e40af">Skylo-certified u.FL</text>
+  <text x="675" y="226" text-anchor="middle" font-size="9.5" fill="#1e40af">cellular + satellite</text>
 
-  <!-- Bottom-right: Starnote (satellite — body + solar wings + antennas) -->
-  <rect x="580" y="250" width="180" height="60" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
-  <g transform="translate(596,264) scale(0.55)" fill="#581c87"><path d="M3 10h5v4H3z M9 6h6v12H9z M16 10h5v4h-5z M11 3h2v3h-2z M11 18h2v3h-2z"/></g>
-  <text x="675" y="278" text-anchor="middle" font-size="12" font-weight="700" fill="#581c87">Starnote (Skylo)</text>
-  <text x="675" y="298" text-anchor="middle" font-size="10" fill="#6b21a8">satellite via JST</text>
+  <!-- Bottom-right: GPS/GNSS antenna -->
+  <rect x="580" y="250" width="180" height="60" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+  <g transform="translate(596,264) scale(0.55)" fill="#1e3a8a"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></g>
+  <text x="675" y="278" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">GPS antenna</text>
+  <text x="675" y="298" text-anchor="middle" font-size="10" fill="#1e40af">passive GNSS u.FL</text>
 
   <!-- Translucent connection lines -->
   <line x1="220" y1="200" x2="316" y2="200" stroke="#f59e0b" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-amber)"/>
   <line x1="220" y1="280" x2="316" y2="280" stroke="#dc2626" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-red)"/>
   <line x1="580" y1="200" x2="484" y2="200" stroke="#3b82f6" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-blue)"/>
-  <line x1="580" y1="280" x2="484" y2="280" stroke="#9333ea" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-purple)"/>
+  <line x1="580" y1="280" x2="484" y2="280" stroke="#3b82f6" stroke-opacity="0.5" stroke-width="2" marker-end="url(#ar-blue)"/>
 
   <!-- Power chain bottom -->
   <rect x="40" y="430" width="720" height="80" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>

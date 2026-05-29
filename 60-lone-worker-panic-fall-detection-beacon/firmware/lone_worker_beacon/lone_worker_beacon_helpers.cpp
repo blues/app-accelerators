@@ -34,9 +34,10 @@ static uint32_t clampU32(const char *name, double v, uint32_t lo, uint32_t hi,
 }
 
 // ─── Notecard Configuration ───────────────────────────────────────────────
-// Retries hub.set up to 5 times to handle the cold-boot I²C race. Returns
-// true only when the Notecard acknowledges without error. Failure latches
-// g_setupFault in the caller.
+// Retries hub.set up to 5 times to handle the cold-boot I²C race, then issues
+// a one-time card.transport selection so the Notecard for Skylo enables Skylo
+// satellite (NTN) fallback. Returns true only when hub.set acknowledges without
+// error. Failure latches g_setupFault in the caller.
 //
 // mode: "periodic" with outbound: 1440 (daily flush) and inbound: 120 (2-hour
 // env-var refresh). All emergency notes use sync:true, which bypasses the
@@ -53,17 +54,44 @@ bool notecardConfigure()
         J *rsp = notecard.requestAndResponse(req);
         bool ok = (rsp != NULL && !notecard.responseError(rsp));
         if (rsp) notecard.deleteResponse(rsp);
-        if (ok) return true;
+        if (ok) break;
         DEBUG_PRINT("[CFG] hub.set attempt "); DEBUG_PRINT(attempt + 1);
         DEBUG_PRINTLN(" failed — retrying.");
         delay(500);
+        if (attempt == 4) {
+            DEBUG_PRINTLN("[FAULT] hub.set failed after 5 attempts.");
+            return false;
+        }
     }
-    DEBUG_PRINTLN("[FAULT] hub.set failed after 5 attempts.");
-    return false;
+
+    // Transport selection for the Notecard for Skylo (NOTE-NBGLWX).
+    // The board carries WiFi, cellular, and Skylo satellite (NTN) radios, but
+    // satellite fallback is NOT enabled by default — the factory transport is
+    // "wifi-cell" (WiFi preferred, cellular fallback, no NTN). Set "wifi-cell-ntn"
+    // so the Notecard prefers WiFi where an AP is reachable, falls back to
+    // cellular (the de-facto primary for a roaming worker), and finally to Skylo
+    // satellite when every terrestrial network is unavailable — automatic
+    // failover with no firmware branching. The Notecard persists this setting in
+    // its own flash, so issuing it once on cold boot is sufficient.
+    //
+    // Note: Skylo requires at least one non-NTN (cellular or WiFi) sync to
+    // associate with Notehub and register templates before NTN can be used.
+    // Commission each beacon where it has terrestrial coverage even if it will
+    // routinely operate over satellite (see defineTemplates first-light note).
+    {
+        J *req = notecard.newRequest("card.transport");
+        if (req) {
+            JAddStringToObject(req, "method", "wifi-cell-ntn");
+            if (!notecard.sendRequestWithRetry(req, 10)) {
+                DEBUG_PRINTLN("[CFG] card.transport (wifi-cell-ntn) failed; will retry on next cold boot.");
+            }
+        }
+    }
+    return true;
 }
 
 // ─── Notefile Templates ───────────────────────────────────────────────────
-// compact + port are REQUIRED for Starnote NTN transport. _lat/_lon instruct
+// compact + port are REQUIRED for Skylo NTN (satellite) transport. _lat/_lon instruct
 // the Notecard to embed its cached GPS fix at note.add time — the firmware
 // never passes coordinates in the note body.
 //
@@ -161,7 +189,7 @@ void fetchEnvVars()
     if (body != NULL) {
         const char *wid = JGetString(body, "worker_id");
         // Hard-clamp to WORKER_ID_MAX chars. An oversized worker_id bloats
-        // every Starnote compact packet; strncpy truncates silently so the
+        // every Skylo NTN compact packet; strncpy truncates silently so the
         // device remains functional even if a mis-configured env var is set.
         if (wid && strlen(wid) > 0) {
             strncpy(g_workerId, wid, WORKER_ID_MAX);

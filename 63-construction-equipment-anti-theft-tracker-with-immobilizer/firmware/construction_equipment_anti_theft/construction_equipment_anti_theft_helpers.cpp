@@ -81,6 +81,27 @@ bool ensureConfigured(Notecard &nc, const char *product_uid, AppState &s)
         if (nc.sendRequestWithRetry(req, 5)) {
             s.cfg_hub_ok = true;
             LOGLN("[APP] hub.set confirmed.");
+
+            // ── Transport selection for the Notecard for Skylo (NOTE-NBGLWX) ──
+            // The board carries WiFi, cellular, and Skylo satellite (NTN) radios,
+            // but satellite fallback is NOT enabled by default — NTN must be
+            // explicitly turned on with card.transport. "wifi-cell-ntn" makes the
+            // Notecard prefer WiFi, fall back to cellular, and finally fall back to
+            // Skylo satellite when no terrestrial coverage exists — automatic
+            // failover with no firmware branching. The Notecard persists this in
+            // its own flash, so issuing it once (gated here by cfg_hub_ok, set only
+            // after a successful hub.set) is sufficient.
+            //
+            // Note: Skylo requires at least one non-NTN (cellular or WiFi) sync to
+            // associate with Notehub and register templates before NTN can be used.
+            // Commission each unit where it has terrestrial coverage even if it will
+            // routinely operate over satellite, so that first sync can complete.
+            J *tr = nc.newRequest("card.transport");
+            JAddStringToObject(tr, "method", "wifi-cell-ntn");
+            if (!sendRequestChecked(nc, tr)) {
+                LOGLN("[APP] WARN: card.transport (wifi-cell-ntn) failed — "
+                      "satellite fallback may be unavailable until reapplied.");
+            }
         } else {
             LOGLN("[APP] ERROR: hub.set failed — will retry next wake. "
                   "Notes will not reach Notehub until this succeeds.");

@@ -11,7 +11,7 @@
   <rect width="800" height="480" fill="#ffffff"/>
 
   <text x="400" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">System Architecture</text>
-  <text x="400" y="58" text-anchor="middle" font-size="12" fill="#64748b">Propane / LPG Tank Fill Telemetry — cellular or satellite</text>
+  <text x="400" y="58" text-anchor="middle" font-size="12" fill="#64748b">Propane / LPG Tank Fill Telemetry — cellular + satellite on one module</text>
 
   <!-- Tank (rounded rectangle, propane horizontal cylinder) -->
   <rect x="30" y="180" width="220" height="100" rx="50" fill="url(#propane)" stroke="#92400e" stroke-width="2"/>
@@ -40,8 +40,8 @@
   <g transform="translate(651,115) scale(0.75)" fill="#1e3a8a"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></g>
   <text x="660" y="152" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">Connectivity</text>
   <line x1="560" y1="166" x2="760" y2="166" stroke="#bfdbfe"/>
-  <text x="660" y="190" text-anchor="middle" font-size="11" fill="#1e40af">A · MBGLW (cellular)</text>
-  <text x="660" y="210" text-anchor="middle" font-size="11" fill="#7e22ce">B · Starnote (satellite)</text>
+  <text x="660" y="190" text-anchor="middle" font-size="11" font-weight="700" fill="#1e40af">Notecard for Skylo</text>
+  <text x="660" y="210" text-anchor="middle" font-size="11" fill="#7e22ce">cellular · WiFi · satellite</text>
 
   <!-- Notehub -->
   <rect x="540" y="240" width="240" height="100" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>

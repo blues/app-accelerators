@@ -3,8 +3,8 @@
  *
  * Detects falls (two-stage: free-fall then impact), monitors a panic button
  * with 30 ms debounce and hold-to-confirm, drives a haptic motor for
- * acknowledgment, and transmits alerts via Notecard — falling back to Starnote
- * satellite when cellular coverage is absent.
+ * acknowledgment, and transmits alerts via a Notecard for Skylo — falling back
+ * to Skylo satellite (NTN) when cellular coverage is absent.
  *
  * ── Two-note alert flow ───────────────────────────────────────────────────
  * On fall or panic:
@@ -43,8 +43,11 @@
  *
  * Hardware:
  *   Notecarrier CX (Cygnet STM32L433 host)
- *   Notecard Cell+WiFi (MBGLW)               — primary cellular/WiFi transport
- *   Starnote for Skylo                        — satellite failover
+ *   Notecard for Skylo (NOTE-NBGLWX)         — cellular + WiFi + Skylo
+ *                                              satellite (NTN) on one M.2 board;
+ *                                              card.transport selects cellular
+ *                                              with automatic satellite fallback
+ *                                              (see notecardConfigure()).
  *   SparkFun LIS3DH breakout (SEN-13963)     — 3-axis accelerometer
  *   Adafruit DRV2605L breakout (#2305)       — haptic motor driver
  *   Adafruit Vibrating Mini Motor Disc (#1201) — haptic actuator
@@ -77,7 +80,7 @@ uint32_t g_fallWindowMs  = DEFAULT_FALL_WINDOW_MS;
 uint32_t g_freefallMinMs = DEFAULT_FREEFALL_MIN_MS;
 uint32_t g_panicHoldMs   = DEFAULT_PANIC_HOLD_MS;
 // Fixed-size buffer (WORKER_ID_MAX chars + null) avoids Arduino String heap
-// churn and prevents an oversized env-var from bloating Starnote packets.
+// churn and prevents an oversized env-var from bloating Skylo NTN packets.
 char     g_workerId[WORKER_ID_MAX + 1] = "worker-001";
 
 // ── Application state ─────────────────────────────────────────────────────
@@ -170,7 +173,7 @@ void setup()
 
     // Configure Notecard and register compact templates. Both must succeed for
     // the device to be considered healthy — template failure means notes may
-    // fall back to JSON instead of compact binary, breaking Starnote transport.
+    // fall back to JSON instead of compact binary, breaking Skylo NTN transport.
     bool cfgOk = notecardConfigure();
     bool tplOk = defineTemplates();
     g_setupFault = (!cfgOk || !tplOk);

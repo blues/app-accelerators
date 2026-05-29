@@ -1,8 +1,8 @@
 /***************************************************************************
   apiary_hive_monitor.ino — Remote Apiary Hive Health Monitor
 
-  Blues Notecarrier CX (Cygnet STM32L433) + Notecard Cell+WiFi + Starnote
-  for Skylo. Reads hive weight (HX711 + load cell), brood-box temperature
+  Blues Notecarrier CX (Cygnet STM32L433) + Notecard for Skylo
+  (NOTE-NBGLWX). Reads hive weight (HX711 + load cell), brood-box temperature
   and humidity (SHT31-D), and acoustic features (ZCR, RMS, peak) from an
   analog microphone — no raw audio is buffered or transmitted.
   Pushes compact-template daily summaries plus immediate alerts for weight
@@ -10,8 +10,9 @@
 
   Hardware:
     - Notecarrier CX (onboard Cygnet STM32L433 host MCU)
-    - Notecard Cell+WiFi (MBGLW) in M.2 slot
-    - Starnote for Skylo via 6-pin JST NTN cable to Notecard
+    - Notecard for Skylo (NOTE-NBGLWX) in M.2 slot — cellular + WiFi +
+      Skylo satellite (NTN) on one board; card.transport selects WiFi/
+      cellular-primary with automatic satellite fallback (notecardConfigure())
     - SparkFun HX711 Load Cell Amplifier (SEN-13879)  →  D5 / D6
     - Zemic H8C 100 kg single-ended shear-beam load cell (Wheatstone bridge) → HX711
     - Adafruit SHT31-D Temperature & Humidity Sensor (#2857)  → SDA / SCL
@@ -134,7 +135,7 @@ void setup() {
 
     // ---- Abort cycle if boot config is incomplete -----------------------
     // Compact templates (hive_summary.qo / hive_alert.qo) must be registered
-    // before any note.add so that Starnote compact-payload encoding is
+    // before any note.add so that Skylo NTN compact-payload encoding is
     // guaranteed.  If notecardConfigure() or defineTemplates() failed this
     // wake, persist state and sleep immediately — no env fetch, no sensor
     // reads, no note emission.  first_boot stays true so the next wake

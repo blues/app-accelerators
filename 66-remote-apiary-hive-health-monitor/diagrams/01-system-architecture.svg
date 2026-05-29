@@ -31,25 +31,18 @@
     <text x="105" y="267" text-anchor="middle">(acoustic ZCR)</text>
   </g>
 
-  <!-- Edge enclosure — Notecarrier + Notecard only; Starnote is external -->
+  <!-- Edge enclosure — Notecarrier + single Notecard for Skylo -->
   <rect x="240" y="100" width="200" height="200" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
   <text x="340" y="130" text-anchor="middle" font-size="13" font-weight="700" fill="#713f12">Edge enclosure</text>
   <line x1="258" y1="142" x2="422" y2="142" stroke="#fde68a"/>
   <g font-size="11" fill="#854d0e">
     <text x="340" y="168" text-anchor="middle">Notecarrier CX</text>
-    <text x="340" y="188" text-anchor="middle">Cygnet STM32L433</text>
-    <text x="340" y="214" text-anchor="middle">Notecard Cell+WiFi</text>
-    <text x="340" y="232" text-anchor="middle">(MBGLW)</text>
+    <text x="340" y="186" text-anchor="middle">Cygnet STM32L433</text>
+    <text x="340" y="212" text-anchor="middle">Notecard for Skylo</text>
+    <text x="340" y="230" text-anchor="middle">(NOTE-NBGLWX)</text>
+    <text x="340" y="252" text-anchor="middle" font-size="10" fill="#a16207">cellular · WiFi · satellite</text>
   </g>
-  <text x="340" y="274" text-anchor="middle" font-size="10" fill="#a16207" font-style="italic">samples · rules · sleep</text>
-
-  <!-- Starnote — external mount, shown outside the Edge enclosure box -->
-  <!-- Connecting line: bottom of Edge enclosure to top of Starnote box -->
-  <line x1="340" y1="300" x2="340" y2="314" stroke="#16a34a" stroke-width="1.5" marker-end="url(#ar-green)"/>
-  <text x="356" y="309" font-size="9" fill="#15803d" font-style="italic">6-pin JST NTN cable</text>
-  <rect x="255" y="315" width="170" height="46" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5 3"/>
-  <text x="340" y="334" text-anchor="middle" font-size="12" font-weight="700" fill="#166534">Starnote for Skylo</text>
-  <text x="340" y="352" text-anchor="middle" font-size="10" fill="#15803d">(ext. mount · NTN satellite)</text>
+  <text x="340" y="280" text-anchor="middle" font-size="10" fill="#a16207" font-style="italic">samples · rules · sleep</text>
 
   <!-- Notehub -->
   <rect x="490" y="100" width="170" height="200" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>

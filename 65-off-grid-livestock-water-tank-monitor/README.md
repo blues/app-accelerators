@@ -246,7 +246,7 @@ The implementation spans three files in the [`firmware/livestock_water_tank_moni
 
 ### Event payload design
 
-Both Notefiles are [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates), storing Notes as fixed-length binary records instead of free-form JSON. Compact binary encoding reduces per-Note wire size by roughly 3–5× and, critically, is required for the NOTE-NBGLWX Starnote/NTN satellite path — both templates are registered with `"format": "compact"` and an explicit port number so either Notefile can transit via satellite or cellular using the identical `note.add` call. Over a multi-year deployment generating 6 summary Notes per day, that compression also meaningfully extends the useful life of the 500 MB prepaid data budget. Alert Notes carry `sync:true` to request an immediate radio wake; fixed-length binary encoding means `pump_amps = 0.0` (pump off at alert time) is transmitted faithfully — there is no omitempty-style drop for zero-valued numeric fields in compact encoding.
+Both Notefiles are [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates), storing Notes as fixed-length binary records instead of free-form JSON. Compact binary encoding reduces per-Note wire size by roughly 3–5× and, critically, is required for the NOTE-NBGLWX Skylo NTN satellite path — both templates are registered with `"format": "compact"` and an explicit port number so either Notefile can transit via satellite or cellular using the identical `note.add` call. Over a multi-year deployment generating 6 summary Notes per day, that compression also meaningfully extends the useful life of the 500 MB prepaid data budget. Alert Notes carry `sync:true` to request an immediate radio wake; fixed-length binary encoding means `pump_amps = 0.0` (pump off at alert time) is transmitted faithfully — there is no omitempty-style drop for zero-valued numeric fields in compact encoding.
 
 `tank_status.qo` (periodic, every `summary_interval_min`; compact template-encoded, port 50):
 
@@ -289,7 +289,7 @@ Both Notefiles are [template-backed](https://dev.blues.io/notecard/notecard-walk
 
 <Note>
 
-**`alert_code` is an integer type code:** `0` = `level_low`, `1` = `level_critical`, `2` = `battery_low`. The integer field keeps the compact-template payload fixed-length binary — the same requirement as the summary template for the NOTE-NBGLWX Starnote/NTN path. All five fields (including `pump_amps = 0.0` when the pump is off) are always present in compact binary encoding.
+**`alert_code` is an integer type code:** `0` = `level_low`, `1` = `level_critical`, `2` = `battery_low`. The integer field keeps the compact-template payload fixed-length binary — the same requirement as the summary template for the NOTE-NBGLWX Skylo NTN path. All five fields (including `pump_amps = 0.0` when the pump is off) are always present in compact binary encoding.
 
 </Note>
 
@@ -313,7 +313,7 @@ When the firmware detects battery voltage below 12.0V (moderately discharged), i
 
 ### Key code snippet 1 — template registration
 
-The template uses `"compact"` format and an explicit `port` — both required for the NOTE-NBGLWX Starnote/NTN satellite path. Type hints are literal numeric values representing field types:
+The template uses `"compact"` format and an explicit `port` — both required for the NOTE-NBGLWX Skylo NTN satellite path. Type hints are literal numeric values representing field types:
 - `14.1` = 32-bit float (e.g., `level_pct`, `pump_amps`, `battery_v`)
 - `12` = 2-byte signed integer / int16_t (e.g., `alerts` field, range −32,768 to +32,767)
 - `true` = boolean field (e.g., `pump_on`)
@@ -324,8 +324,8 @@ Template-backed Notes reduce per-event wire size by ~4× and are required for sa
 ```cpp
 J *req = notecard.newRequest("note.template");
 JAddStringToObject(req, "file",   NOTEFILE_SUMMARY);
-JAddNumberToObject(req, "port",   50);        // required for Starnote/NTN
-JAddStringToObject(req, "format", "compact"); // required for Starnote/NTN
+JAddNumberToObject(req, "port",   50);        // required for Skylo NTN
+JAddStringToObject(req, "format", "compact"); // required for Skylo NTN
 J *body = JAddObjectToObject(req, "body");
 JAddNumberToObject(body, "_time",       14);   // Unix timestamp (Notecard auto-fills)
 JAddNumberToObject(body, "level_pct",   14.1); // float32
@@ -341,7 +341,7 @@ if (notecard.sendRequest(req)) {
 
 ### Key code snippet 2 — immediate alert with sync
 
-The alert Note uses the compact template registered for `tank_alert.qo` (port 51, `"compact"` format), so it travels over the NOTE-NBGLWX Starnote/NTN satellite path when cellular is unavailable — the identical `note.add` call works over either transport. `sync:true` tells the Notecard to wake the radio immediately rather than waiting for the next scheduled outbound window. The `alert_code` integer (0 = `level_low`, 1 = `level_critical`, 2 = `battery_low`) keeps the body fixed-length binary as required by the compact template; all fields, including `pump_amps = 0.0`, are always present.
+The alert Note uses the compact template registered for `tank_alert.qo` (port 51, `"compact"` format), so it travels over the NOTE-NBGLWX Skylo NTN satellite path when cellular is unavailable — the identical `note.add` call works over either transport. `sync:true` tells the Notecard to wake the radio immediately rather than waiting for the next scheduled outbound window. The `alert_code` integer (0 = `level_low`, 1 = `level_critical`, 2 = `battery_low`) keeps the body fixed-length binary as required by the compact template; all fields, including `pump_amps = 0.0`, are always present.
 
 ```cpp
 if (!g.templatesInstalled) return false;  // template required for satellite path

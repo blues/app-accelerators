@@ -100,7 +100,7 @@ struct AlertQueueEntry {
 
 // ── Worker ID ─────────────────────────────────────────────────────────────
 // Hard maximum for worker_id (chars, excluding null terminator). A fixed-size
-// char buffer prevents oversized identifiers from bloating Starnote compact
+// char buffer prevents oversized identifiers from bloating Skylo NTN compact
 // packets. Values longer than WORKER_ID_MAX are silently truncated in
 // fetchEnvVars(). Document this limit in the Notehub env-var README section.
 #define WORKER_ID_MAX  24
