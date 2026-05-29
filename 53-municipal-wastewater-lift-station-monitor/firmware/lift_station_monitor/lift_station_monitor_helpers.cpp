@@ -69,10 +69,10 @@ float clampF(double v, float minv, float maxv, float fallback) {
 }
 
 // ---------------------------------------------------------------------------
-// notecardConfigure — cold-boot hub.set (periodic mode) and accelerometer
-// disable. PRODUCT_UID is included here and in applyHubSetIfChanged() so that
-// any successful hub.set, regardless of call site, binds the device to the
-// intended Notehub project.
+// notecardConfigure — cold-boot hub.set (periodic mode), transport selection,
+// and accelerometer disable. PRODUCT_UID is included here and in
+// applyHubSetIfChanged() so that any successful hub.set, regardless of call
+// site, binds the device to the intended Notehub project.
 // ---------------------------------------------------------------------------
 void notecardConfigure(void) {
     J *req = notecard.newRequest("hub.set");
@@ -84,6 +84,27 @@ void notecardConfigure(void) {
     // before the Notecard's I²C listener is fully initialized.
     if (!notecard.sendRequestWithRetry(req, 10)) {
         Serial.println("[CONFIG] hub.set (cold boot) failed; applyHubSetIfChanged() will retry.");
+    }
+
+    // Transport selection for the Notecard for Skylo (NOTE-NBGLWX).
+    // The board carries WiFi, cellular, and Skylo satellite (NTN) radios, but
+    // satellite fallback is NOT enabled by default — the factory transport is
+    // "wifi-cell" (WiFi preferred, cellular fallback, no NTN). Set "wifi-cell-ntn"
+    // so the Notecard prefers WiFi where an AP is reachable, falls back to
+    // cellular (the de-facto primary at most stations), and finally to Skylo
+    // satellite at stations beyond terrestrial coverage — automatic failover
+    // with no firmware branching. The Notecard persists this setting in its own
+    // flash, so issuing it once on cold boot is sufficient.
+    //
+    // Note: Skylo requires at least one non-NTN (cellular or WiFi) sync to
+    // associate with Notehub and register templates before NTN can be used.
+    // In "periodic" mode the cold-boot hub.set above triggers that first sync
+    // over cellular/WiFi, so commission each unit where it has terrestrial
+    // coverage even if it will routinely operate over satellite.
+    req = notecard.newRequest("card.transport");
+    JAddStringToObject(req, "method", "wifi-cell-ntn");
+    if (!notecard.sendRequestWithRetry(req, 10)) {
+        Serial.println("[CONFIG] card.transport (wifi-cell-ntn) failed; will retry on next cold boot.");
     }
 
     // Disable the onboard accelerometer to keep scope traces clean during
@@ -104,7 +125,8 @@ bool defineTemplates(void) {
 
     // lift_alert.qo: immediate-sync alert notes (low volume, real-time).
     // format:"compact" produces a fixed-width binary encoding that keeps
-    // each Note well within Starnote for Skylo's 256-byte payload ceiling.
+    // each Note well within the 256-byte payload ceiling enforced when the
+    // Notecard for Skylo is transmitting over the satellite (NTN) link.
     // level_pct may carry LEVEL_INVALID_SENTINEL (-9999) when the level sensor
     // is faulted; the 4-byte float field accommodates any float value.
     J *req = notecard.newRequest("note.template");
@@ -123,7 +145,7 @@ bool defineTemplates(void) {
     }
 
     // lift_summary.qo: hourly aggregates (batched outbound sync).
-    // format:"compact" keeps the note within the 256-byte satellite ceiling.
+    // format:"compact" keeps the note within the 256-byte NTN (satellite) ceiling.
     // level_pct and level_avg_pct may carry LEVEL_INVALID_SENTINEL; the 4-byte
     // float field accommodates any float value. level_faults counts samples in
     // the window where the level sensor returned an out-of-range ADC value
