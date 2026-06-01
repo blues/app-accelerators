@@ -8,7 +8,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-This project is a cellular-connected [energy savings](https://blues.com/energy-savings/) monitor that clips non-invasive **CT** (current transformer) clamps onto branch circuits in a commercial sub-panel, samples RMS current once a minute, and transmits hourly per-circuit profiles to [Notehub](https://notehub.io) — giving energy consultants a view into which circuits are burning money at 2 AM, without ever touching the building's corporate network.
+This project is a cellular-connected [energy savings](https://blues.com/energy-savings/) monitor that clips non-invasive CT (current transformer) clamps onto branch circuits in a commercial sub-panel, samples RMS current once a minute, and transmits hourly per-circuit profiles to the Blues cloud service, Notehub — giving energy consultants a view into which circuits are burning money at 2 AM, without ever touching the building's corporate network.
 
 ## 1. Project Overview
 
@@ -17,7 +17,7 @@ This project is a cellular-connected [energy savings](https://blues.com/energy-s
 
 An **ESCO** (Energy Service Company) or independent energy consultant is usually the right party to find and quantify this waste. They're hired specifically to audit the building and identify savings opportunities that the building owner can't see on their own. The problem is that ESCOs often can't deploy anything. Corporate IT departments view unmanaged IoT devices on the production WiFi as a security risk, and getting a new device approved and connected can take weeks or months. By the time the network form is processed, the consulting engagement has moved on, or the engagement's momentum has stalled. The ESCO ends up estimating plug loads from utility bills and walkthrough surveys instead of measuring them directly.
 
-**Why Notecard.** Cellular sidesteps the IT approval loop entirely. The Notecard Cell+WiFi connects to the public cellular network, not the building LAN, and needs no credentials, no VLAN, no firewall exception, and no IT ticket. Practically, this means the energy consultant shows up, clips CT clamps around four branch-circuit hot legs, and powers up the device — sampling starts on the very first 60-second wake. The first `circuit_summary.qo` Note lands in Notehub on the next hourly outbound sync, so expect to see data within the first hour of installation. For faster commissioning visibility, set `report_interval_min=5` in Notehub before first power-up — env vars pre-provisioned in Notehub are delivered to the Notecard's local cache on the first successful cellular sync, and the firmware applies them on the next host wake after that sync. If the device is already powered and running, the firmware configures `inbound:360` (6-hour cadence), so a value changed in Notehub after boot will not reach the device for up to 6 hours. Notehub-terminal commands face the same constraint — they are queued for the Notecard's next scheduled inbound window and cannot wake a sleeping periodic device on demand. To push a change right away on an already-running device, connect a USB cable on-site, flip the Notecarrier CX DIP switch to `NC` (routes USB serial directly to the Notecard), and issue `{"req":"hub.sync"}` over the serial connection to trigger an immediate bidirectional session. There's no network form to fill out, and no dependency on whoever manages the building's IT infrastructure. This is the deployment model cellular-first IoT was designed for: getting sensors into places where a normal network connection would take longer to provision than the entire project.
+**Why Notecard.** Cellular sidesteps the IT approval loop entirely. The Notecard Cell+WiFi connects to the public cellular network, not the building LAN, and needs no credentials, no VLAN, no firewall exception, and no IT ticket. Practically, this means the energy consultant shows up, clips CT clamps around four branch-circuit hot legs, and powers up the device — sampling starts on the very first 60-second wake. The first `circuit_summary.qo` Note (effectively a JSON payload) lands in Notehub on the next hourly outbound sync, so expect to see data within the first hour of installation. For faster commissioning visibility, set `report_interval_min=5` in Notehub before first power-up — env vars pre-provisioned in Notehub are delivered to the Notecard's local cache on the first successful cellular sync, and the firmware applies them on the next host wake after that sync. If the device is already powered and running, the firmware configures `inbound:360` (6-hour cadence), so a value changed in Notehub after boot will not reach the device for up to 6 hours. Notehub-terminal commands face the same constraint — they are queued for the Notecard's next scheduled inbound window and cannot wake a sleeping periodic device on demand. There's no network form to fill out, and no dependency on whoever manages the building's IT infrastructure. This is the deployment model cellular-first IoT was designed for: getting sensors into places where a normal network connection would take longer to provision than the entire project.
 
 <NewToBlues/>
 
@@ -27,22 +27,21 @@ The Notecard Cell+WiFi variant also retains WiFi as a fallback, so a site that d
 
 ## 2. System Architecture
 
-
 ![System architecture: 4 CT clamps on branch circuits → Notecarrier CX with Cygnet host and Notecard MBGLW → cellular/WiFi → Notehub → ESCO dashboard / time-series DB / alerts](diagrams/01-system-architecture.svg)
 
 **Device-side responsibilities.** Inside the enclosure next to the sub-panel, the Cygnet STM32L433 host on the Notecarrier CX wakes once a minute via [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn), reads RMS current on each installed CT channel (A0–A3), and rolls the readings into per-circuit mean, peak, and active-minute accumulators. Once a reporting window closes, it hands a `circuit_summary.qo` Note to the Notecard, serializes its state into Notecard flash via `NotePayloadSaveAndSleep`, and cuts its own power rail until the next wake. The host is asleep more than 99% of the day.
 
-**Notecard responsibilities.** Whatever the host queues, the Notecard holds in its on-device [Note](https://dev.blues.io/api-reference/glossary/#note) queue until the [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 minutes) opens a cellular session and flushes everything in one go. WiFi is available as an opportunistic fallback for sites that happen to allow it. The same module pulls [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) on every inbound sync — channel count, sampling cadence, idle thresholds, and (if enabled) business-hours configuration are all field-tunable without a reflash.
+**Notecard responsibilities.** Whatever the host queues, the Notecard holds in its on-device [Note](https://dev.blues.io/api-reference/glossary/#note) queue until the [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 minutes) opens a cellular session and flushes everything in one go. WiFi is available as an opportunistic fallback for sites that happen to allow it. The same module pulls [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) on every inbound sync — channel count, sampling cadence, idle thresholds, and (if enabled) business-hours configuration are all field-tunable without a firmware update.
 
-**Notehub responsibilities.** The embedded global SIM lands events in [Notehub](https://notehub.io), which ingests them, stores every one, and applies the project's routes. The hourly `circuit_summary.qo` records flow downstream to whatever time-series database or analytics platform the ESCO's dashboard lives on. A single firmware image services every building in the engagement; [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) carry the per-site differences — time zone, business hours, CT model — without per-site firmware variants.
+**Notehub responsibilities.** The embedded global SIM lands events in [Blues Notehub](https://notehub.io), which ingests them, stores every one, and applies the project's routes. The hourly `circuit_summary.qo` records flow downstream to whatever time-series database or analytics platform the ESCO's dashboard lives on. A single firmware image services every building in the engagement; [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) carry the per-site differences — time zone, business hours, CT model — without per-site firmware variants.
 
-**Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub). The natural downstream for `circuit_summary.qo` is a time-series database or analytics platform where load-profile classification and dashboarding live — these are project-specific downstream integrations outside the scope of this reference design.
+**Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub). The natural downstream for `circuit_summary.qo` is a time-series database or analytics platform where load-profile classification and dashboarding live (these are project-specific downstream integrations outside the scope of this reference design).
 
 ## 3. Technical Summary
 
-
 After completing this README and deploying the firmware, you will have:
-- A Notecarrier CX running the plug-load monitor sketch, sampling four branch circuits at 60-second intervals.
+
+- A Notecarrier CX with an integrated STM32 host running the plug-load monitor sketch, sampling four branch circuits at 60-second intervals.
 - One hourly `circuit_summary.qo` Note per device arriving in Notehub, carrying per-circuit mean RMS amps, peak RMS amps, and active-minutes (sample JSON below).
 - Optional: after-hours `circuit_alert.qo` Notes (real-time, `sync:true`) if you uncomment `PLUG_LOAD_ALERTS` in the firmware.
 - Environment variables editable in the Notehub Fleet UI (no firmware re-flash) to adjust thresholds and timing on running devices.
@@ -97,7 +96,6 @@ Here is a sample Note this device emits:
 
 ## 4. Hardware Requirements
 
-
 | Part | Qty | Rationale |
 |------|-----|-----------|
 | [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an embedded Cygnet STM32L433 host — no separate MCU required. Exposes six analog inputs (A0–A5) on its dual 16-pin headers, four of which are used for CT channels. |
@@ -116,7 +114,6 @@ All Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ## 5. Wiring and Assembly
 
-
 ![Wiring: 4 SCT-013 CT clamps to A0–A3 with shared 10 kΩ/10 kΩ + 10 µF bias node; external SMA antenna; 120 VAC → IRM-10-5 (5 V) → Mojo → +VBAT power chain](diagrams/02-wiring-assembly.svg)
 
 All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard Cell+WiFi seats in the carrier's M.2 slot. Mojo sits inline between the 5 V supply output and the Notecarrier's `+VBAT` pad.
@@ -124,10 +121,6 @@ All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notec
 <Warning>
 
 **Antenna placement.** The Notecard Cell+WiFi's cellular port is a u.FL connector (`MAIN`). For any installation inside or adjacent to a metal sub-panel or enclosure, connect a short u.FL-to-SMA-female bulkhead pigtail to the Notecard's `MAIN` u.FL port, thread the SMA bulkhead fitting through a cable gland in the enclosure wall, and screw the external cellular antenna onto the SMA fitting on the outside of the enclosure. A chip or flexible antenna left inside a metal enclosure will not maintain a reliable cellular link. The onboard WiFi chip antenna is similarly blocked by metalwork; if WiFi fallback matters at a given site, route a second u.FL pigtail from the Notecard's WiFi port to a second external antenna via the same cable-gland approach.
-
-</Warning>
-
-<Warning>
 
 **Safety.** Sub-panels contain hazardous voltages. CT installation must be performed by a qualified person following site lockout/tagout procedures and applicable electrical codes. The CT clamps themselves are non-invasive and do not require breaking or de-energizing the circuit being monitored. The AC/DC supply wiring *does* require connection to live conductors — always de-energize the panel before making line-voltage connections.
 
@@ -158,10 +151,9 @@ Set the Notecarrier CX DIP switch to `HST` to route USB Serial to the onboard Cy
 
 ## 6. Notehub Setup
 
+1. **Create a project.** Follow the [Notecard quickstart](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub) if not already done.
 
-1. **Create a project.** Follow [Notehub quickstart](https://dev.blues.io/quickstart/notecard-quickstart/notecard-and-notecarrier-pi/#set-up-notehub) if not already done.
-
-2. **Claim the Notecard and create a Fleet.** Power the enclosure. On first cellular session, the Notecard associates with your project automatically. Create a [Fleet](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) per building site (one fleet = one sub-panel deployment location). [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) allow per-site environment variables without maintaining per-device firmware variants.
+2. **Claim the Notecard and create a Fleet.** On first cellular session, the Notecard associates with your project automatically. Create a [Fleet](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) per building site (one fleet = one sub-panel deployment location). [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) allow per-site environment variables without maintaining per-device firmware variants.
 
 3. **Pre-provision environment variables (commissioning best practice).** Navigate to **Projects → [Your Project] → Fleets → [Your Fleet] → Environment** and add any non-default variables *before powering up the device for the first time*. This way they are delivered to the Notecard's local cache on the first successful cellular sync. All variables below are optional; firmware defaults are shown.
 
@@ -188,7 +180,6 @@ Set the Notecarrier CX DIP switch to `HST` to route USB Serial to the onboard Cy
 4. **Configure data routes (Projects → Data & Routing).** Add a [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `circuit_summary.qo` (batched hourly records, forward to a time-series database or analytics platform for load-profile classification). If building with `PLUG_LOAD_ALERTS` enabled, add a second route for `circuit_alert.qo` — low-volume, time-sensitive records forwarded to an email, Slack, or CMMS destination.
 
 ## 7. Firmware Design
-
 
 Three files in `firmware/`:
 
@@ -254,23 +245,27 @@ Two [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-ban
 
 Here all three ch4 fields carry `-9999.0` (the `INVALID_SENTINEL`) because `circuit_count` is set to `3` for this deployment — only three CT clamps are installed. When `n_arms[ch] == 0` (no valid samples taken for that channel during the window), the firmware emits `INVALID_SENTINEL` for `chN_mean`, `chN_peak`, **and** `chN_act_min`. Downstream consumers must treat any field equal to `-9999.0` as "no data" rather than as a zero-amp or zero-minute reading.
 
-`act_min` is derived from thresholded one-minute snapshots, not from continuous waveform occupancy measurement: each sample whose RMS current meets or exceeds `idle_threshold_amps` contributes `sample_interval_sec` seconds (default 60 seconds) to the active total, which is then divided by 60 at emit time. A circuit that is active for only part of a sample interval scores identically to one active for the whole interval.
+`act_min` is derived from one-minute snapshots, not from continuous waveform occupancy measurement: each sample whose RMS current meets or exceeds `idle_threshold_amps` contributes `sample_interval_sec` seconds (default 60 seconds) to the active total, which is then divided by 60 at emit time. A circuit that is active for only part of a sample interval scores identically to one active for the whole interval.
 
-> **`circuit_alert.qo` (immediate, `sync:true`) — requires `PLUG_LOAD_ALERTS`:** When the alert extension is enabled by defining `PLUG_LOAD_ALERTS` in `plug_load_monitor_helpers.h`, the firmware also emits a second Notefile for real-time notification. The template registration, `sendAlert()` function, `notecardEpoch()`, `isAfterHours()`, and the alert-gating block in `runSampleCycle()` are all gated on `#ifdef PLUG_LOAD_ALERTS` in `plug_load_monitor_helpers.cpp`. The core summary stream is identical whether or not the alert extension is compiled in.
->
-> ```json
-> {
->   "file": "circuit_alert.qo",
->   "body": {
->     "circuit": 3,
->     "arms": 12.7,
->     "alert_type": "after_hours_load",
->     "hour_local": 2
->   }
-> }
-> ```
->
-> The `hour_local` field carries the firmware's local-time computation (UTC plus `tz_offset_hours`) so the alert is immediately human-readable in Notehub without knowing the site's time zone configuration.
+<Note>
+
+**`circuit_alert.qo` (immediate, `sync:true`) — requires `PLUG_LOAD_ALERTS`:** When the alert extension is enabled by defining `PLUG_LOAD_ALERTS` in `plug_load_monitor_helpers.h`, the firmware also emits a second Notefile for real-time notification. The template registration, `sendAlert()` function, `notecardEpoch()`, `isAfterHours()`, and the alert-gating block in `runSampleCycle()` are all gated on `#ifdef PLUG_LOAD_ALERTS` in `plug_load_monitor_helpers.cpp`. The core summary stream is identical whether or not the alert extension is compiled in.
+
+```json
+{
+  "file": "circuit_alert.qo",
+  "body": {
+    "circuit": 3,
+    "arms": 12.7,
+    "alert_type": "after_hours_load",
+    "hour_local": 2
+  }
+}
+```
+
+The `hour_local` field carries the firmware's local-time computation (UTC plus `tz_offset_hours`) so the alert is immediately human-readable in Notehub without knowing the site's time zone configuration.
+
+</Note>
 
 ### Low-power strategy
 
@@ -282,12 +277,21 @@ Running the host asleep between samples also keeps the design portable: the same
 
 ### Retry and error handling
 
-- The first `hub.set` call uses `sendRequestWithRetry(req, 10)` with a 10-second window. This covers the cold-boot I²C race condition documented in the `note-arduino` library where the host comes up before the Notecard's I²C peripheral is ready.
-- `readChannelAmpsRMS` clamps its return value to zero if the computed value is negative (a defensive guard; the sqrt-based computation will not naturally produce a negative result under normal ADC conditions). A CT that is plugged in but clamped around a conductor carrying near-zero current reads near zero — the CT output shorts tip to sleeve at the bias potential, so the bias-subtracted RMS is genuinely small. By contrast, a CT cable that is *unplugged* leaves the analog input floating: with no drive path to the bias node, the pin can pick up arbitrary levels through stray 60 Hz capacitive coupling from the panel environment and produce large or erratic ADC readings, not a predictable near-zero floor. There is no explicit per-channel fault-detection mechanism in this firmware; open-input and zero-load conditions are not distinguished.
-- The `INVALID_SENTINEL` (`-9999.0`) value in summary Notes is emitted only when `n_arms[ch] == 0` at summary time. In practice, every configured channel receives a read on every wake cycle, so this guard is rarely reached; its primary purpose is to protect the `safeAvg` helper against a logic fault where a channel is skipped entirely. Downstream consumers should not treat it as a per-sample sensor-fault indicator.
-- `fetchEnvOverrides` makes up to two attempts (an initial request and one retry after a 250 milliseconds pause) to absorb transient Notecard I²C hiccups at wake. On success, the effective configuration is captured into `AppState.saved_cfg` and persisted alongside the accumulator state in the `NotePayloadSaveAndSleep` payload. On subsequent wakes the saved configuration is restored from `saved_cfg` *before* `fetchEnvOverrides` is called, so a transient I²C failure retains the last known-good values rather than silently reverting to compile-time defaults for that cycle. On cold boot, `env.get` returns an empty body because the Notecard's local cache is not yet populated — the device runs on compile-time defaults for that first wake. Env vars pre-provisioned in Notehub before power-up reach the Notecard's local cache during the first successful cellular sync; `fetchEnvOverrides` picks them up on the next host wake after that sync, and if `report_interval_min` changed, `hubConfigure` re-applies the new outbound cadence immediately. Note that `hubConfigure` sets `inbound:360`, meaning the Notecard pulls fresh env vars from Notehub only every 6 hours. An env var changed in Notehub while the device is already running will not appear on the device until that next inbound sync fires — it does not take effect on the next 60-second host wake. To push a change sooner, connect a USB cable on-site, flip the Notecarrier CX DIP switch to `NC`, and issue `{"req":"hub.sync"}` directly over the serial connection — Notehub-terminal commands are subject to the same `inbound:360` delivery window and cannot trigger an immediate sync on a sleeping periodic device.
-- `defineTemplates` is called unconditionally at every boot — `note.template` is idempotent, so re-issuing it on an intact Notecard is a no-op. Re-issuing after a Notecard factory reset or card replacement restores the fixed-schema binary encoding before any `note.add` calls reach the Notecard, eliminating the window where Notes could be queued against a missing template. Template-confirmation flags are tracked **per Notefile** (`g_summary_template_applied`, and `g_alert_template_applied` in `PLUG_LOAD_ALERTS` builds): a transient I²C failure registering one template does not gate emission on the other Notefile. Both flags are non-persisted per-boot variables; they are not stored in `AppState` because a host-side boolean cannot reliably reflect Notecard state across a card reset or swap.
-- Per-channel alert cooldowns (`alert_last_unix[]`) are persisted across sleep cycles in the `AppState` payload, so a circuit that fires an alert at 23:55 cannot fire again until `alert_cooldown_min` has elapsed regardless of how many sleep boundaries fall in between.
+The firmware's resilience comes from a handful of deliberate choices, each guarding against a specific failure mode that shows up in real field deployments. They are worth understanding together, because they interlock.
+
+**Surviving the cold-boot I²C race.** The first `hub.set` call uses `sendRequestWithRetry(req, 10)` with a 10-second window. This covers the cold-boot I²C race condition documented in the `note-arduino` library, where the host comes up before the Notecard's I²C peripheral is ready. Without the retry window, the very first request after power-up could fail simply because the host won the boot race.
+
+**Distinguishing a zero-load circuit from a sensor fault — and why this design does not.** `readChannelAmpsRMS` clamps its return value to zero if the computed value is negative (a defensive guard; the sqrt-based computation will not naturally produce a negative result under normal ADC conditions). It is important to understand what a near-zero reading does and does not tell you. **A CT that is plugged in but clamped around a conductor carrying near-zero current reads near zero** — the CT output shorts tip to sleeve at the bias potential, so the bias-subtracted RMS is genuinely small. **By contrast, a CT cable that is *unplugged* leaves the analog input floating:** with no drive path to the bias node, the pin can pick up arbitrary levels through stray 60 Hz capacitive coupling from the panel environment and produce large or erratic ADC readings, *not* a predictable near-zero floor. Crucially, **there is no explicit per-channel fault-detection mechanism in this firmware**; open-input and zero-load conditions are not distinguished. Treat that as a known limitation rather than a guarantee that every channel is healthy.
+
+**The `INVALID_SENTINEL` value is not a sensor-fault flag.** The `INVALID_SENTINEL` (`-9999.0`) value in summary Notes is emitted only when `n_arms[ch] == 0` at summary time. In practice, every configured channel receives a read on every wake cycle, so this guard is rarely reached; its primary purpose is to protect the `safeAvg` helper against a logic fault where a channel is skipped entirely. **Downstream consumers should not treat it as a per-sample sensor-fault indicator.**
+
+**Retaining last-known-good configuration through transient I²C failures.** `fetchEnvOverrides` makes up to two attempts — an initial request and one retry after a 250-millisecond pause — to absorb transient Notecard I²C hiccups at wake. On success, the effective configuration is captured into `AppState.saved_cfg` and persisted alongside the accumulator state in the `NotePayloadSaveAndSleep` payload. On subsequent wakes the saved configuration is restored from `saved_cfg` *before* `fetchEnvOverrides` is called, so **a transient I²C failure retains the last known-good values rather than silently reverting to compile-time defaults for that cycle.** On cold boot, `env.get` returns an empty body because the Notecard's local cache is not yet populated — the device runs on compile-time defaults for that first wake.
+
+There is an important timing consequence here. Env vars pre-provisioned in Notehub before power-up reach the Notecard's local cache during the first successful cellular sync; `fetchEnvOverrides` picks them up on the next host wake after that sync, and if `report_interval_min` changed, `hubConfigure` re-applies the new outbound cadence immediately. But note that **`hubConfigure` sets `inbound:360`, meaning the Notecard pulls fresh env vars from Notehub only every 6 hours.** An env var changed in Notehub while the device is already running will *not* appear on the device until that next inbound sync fires — it does not take effect on the next 60-second host wake. To push a change sooner, connect a USB cable on-site, flip the Notecarrier CX DIP switch to `NC`, and issue `{"req":"hub.sync"}` directly over the serial connection. Be aware that **Notehub-terminal commands are subject to the same `inbound:360` delivery window and cannot trigger an immediate sync on a sleeping periodic device.**
+
+**Idempotent template definition survives card resets and swaps.** `defineTemplates` is called unconditionally at every boot — `note.template` is idempotent, so re-issuing it on an intact Notecard is a no-op. Re-issuing after a Notecard factory reset or card replacement restores the fixed-schema binary encoding *before* any `note.add` calls reach the Notecard, eliminating the window where Notes could be queued against a missing template. Template-confirmation flags are tracked **per Notefile** (`g_summary_template_applied`, and `g_alert_template_applied` in `PLUG_LOAD_ALERTS` builds), so a transient I²C failure registering one template does not gate emission on the other Notefile. Both flags are non-persisted per-boot variables; they are deliberately *not* stored in `AppState`, because a host-side boolean cannot reliably reflect Notecard state across a card reset or swap.
+
+**Alert cooldowns persist across sleep.** Per-channel alert cooldowns (`alert_last_unix[]`) are persisted across sleep cycles in the `AppState` payload, so **a circuit that fires an alert at 23:55 cannot fire again until `alert_cooldown_min` has elapsed** — regardless of how many sleep boundaries fall in between.
 
 ### Key code snippet 1: template definition
 
@@ -353,7 +357,6 @@ NotePayloadSaveAndSleep(&payload, CFG_SAMPLE_INTERVAL_SEC, NULL);
 
 ## 8. Build and Flash
 
-
 1. **Install the Arduino STM32 core and Notecard library:**
    ```bash
    arduino-cli core install STMicroelectronics:stm32
@@ -372,7 +375,6 @@ NotePayloadSaveAndSleep(&payload, CFG_SAMPLE_INTERVAL_SEC, NULL);
 
 ## 9. Data Flow
 
-
 ![Data flow: 60s sample of 4 CT channels (RMS amps, two-pass ADC) → window stats and optional after_hours_load rule → circuit_alert.qo (sync:true, optional build) and circuit_summary.qo (hourly templated) → Notehub routes](diagrams/03-data-flow.svg)
 
 Every 60 seconds the host wakes, reads all active CT channels, and checks whether the hourly summary window has elapsed.
@@ -385,7 +387,6 @@ Every 60 seconds the host wakes, reads all active CT channels, and checks whethe
 - **Downstream classification.** A downstream classifier uses the rolling `circuit_summary.qo` stream to assign each circuit a sustained load profile — always-on, scheduled, or occupied-hours — based on how `act_min` and `mean` vary across the time-of-day distribution over the deployment period. Classification and dashboarding are project-specific integrations outside the scope of this reference design.
 
 ## 10. Validation and Testing
-
 
 **Expected steady-state cadence.** In a correctly-behaving deployment, one `circuit_summary.qo` Note arrives in Notehub per hour per device. In a `PLUG_LOAD_ALERTS` build, the `circuit_alert.qo` file should be quiet during business hours; after-hours activity depends entirely on what the building's circuits are actually doing — an always-on server room generates a steady non-zero mean across all hours, while a circuit powering desktop workstations should trend toward zero after business hours. In the default build, `circuit_alert.qo` is never created.
 
@@ -404,7 +405,6 @@ Every 60 seconds the host wakes, reads all active CT channels, and checks whethe
 Splice the [Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) inline between the AC/DC supply output and the Notecarrier CX `+VBAT` pad. A healthy power trace should show: brief active pulses every 60 seconds (host awake and sampling, typically 1–3 seconds each) followed by a quiet low-current floor, then a longer, higher-current session once per hour when the Notecard transmits. If the trace shows no quiet floor between active phases — the current stays continuously elevated with no periodic drop — the host is likely not sleeping; the most common cause is `card.attn` not reaching the host EN pin correctly. If the current shows continuous high draw at all times, `hub.set` may still be in `continuous` mode from a prior bench session; with the Notecarrier CX DIP switch in `NC` mode, issue `{"req":"hub.set","mode":"periodic","outbound":60,"inbound":360}` directly over the USB serial connection to correct it.
 
 ## 11. Troubleshooting
-
 
 **No Notehub activity after first power-up (no claims, no Notes in Notehub, no LED activity on Notecard).**
 - Confirm the external cellular antenna is screwed onto the SMA bulkhead on the enclosure exterior (not inside the metal panel). A chip or flexible antenna inside metalwork will not obtain a cellular lock.
@@ -431,24 +431,39 @@ Splice the [Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_
 
 This design is built around a single deployment idea: a consultant clipping CT clamps onto branch circuits and leaving the device for a few weeks. The simplifications below are scope choices that match that engagement model — places where a longer-term install, a billing-grade meter, or a richer alerting layer would want to extend it.
 
-**Simplified for this proof-of-concept:**
+### Simplified for this Proof-of-Concept
 
-- **Single-phase hot leg only.** Each CT clamp monitors one hot leg. A 240 V split-phase circuit (e.g., a large appliance or HVAC unit) requires two CTs and a current sum in firmware. Three-phase circuits need three CTs per circuit and are not supported in this design.
-- **No actual wattage.** Without a voltage measurement, the firmware reports amps, not watts. True power (W) = V × A × power factor. Any wattage or kWh figure derived from amps alone requires site-specific voltage and power-factor assumptions; without direct measurement these estimates can be substantially wrong for mixed commercial plug loads, where power factor varies widely by device type. Treat amp-only energy calculations as rough order-of-magnitude indicators, not billable measurements. Adding true-power measurement requires an isolated voltage reference — via a low-ratio isolation transformer feeding the MCU ADC, or a dedicated energy-metering analog front end (AFE) with built-in isolation — along with phase-aligned sampling of voltage and current waveforms and power-factor computation. A resistive voltage divider from mains to the MCU ADC is not a safe path: it lacks the isolation required to protect the circuit and the installer from line voltage. One isolated voltage reference per phase is typically sufficient for all circuits on that phase, but the voltage and current samples must be time-synchronized for the power-factor computation to be accurate.
-- **Up to four circuits.** The Notecarrier CX has six analog inputs (A0–A5); this design uses four (A0–A3). `MAX_CHANNELS` is hard-coded to `4`, and `circuit_count` is clamped to 1–4 in firmware; the `note.template` body and `sendSummary` field list define fields only for `ch1`–`ch4`. Extending to six circuits is a **firmware change**, not just a hardware change: the pin map, `MAX_CHANNELS` constant, state arrays (`sum_arms`, `peak_arms`, `n_arms`, `active_samples`, `alert_last_unix`), `note.template` body fields, `sendSummary` field list, and any downstream schema or dashboard that assumes four channels would all require updating. Two more CT + breakout pairs complete the hardware side.
-- **Classifier is a downstream integration.** Building a deployable cloud function (e.g., AWS Lambda, Google Cloud Functions), connecting it to a time-series database, and wiring it to a dashboard is a project-specific integration step outside the scope of this reference design. The firmware correctly produces the `circuit_summary.qo` inputs that a classifier needs. When `PLUG_LOAD_ALERTS` is enabled: until a classifier is deployed and an allowlist of legitimately always-on circuits is established, `circuit_alert.qo` will fire for any circuit exceeding `after_hours_threshold_amps` at night, including server rooms, 24/7 signage, and other intentional always-on loads — expect false-positive alerts during the initial deployment period.
-- **Business-hours detection uses simple hour-of-day (`PLUG_LOAD_ALERTS` only).** When the alert extension is enabled, after-hours detection is based on hour of day only; it does not account for weekends, holidays, or shift patterns. A more sophisticated implementation would pull a site calendar from an environment variable or a Notehub inbound Note. Additionally, `tz_offset_hours` only supports whole-hour UTC offsets (stored as `int8_t`); sites in half-hour or 45-minute UTC-offset zones will have their business-hours windows evaluated incorrectly.
-- **Mojo is bench equipment.** The firmware does not read the Mojo's LTC2959 coulomb counter over the Qwiic bus during normal operation. Adding a `mojo_mah` field to the summary Note is a straightforward extension for deployments where fleet-level energy budgeting is valuable.
-- **No explicit open-CT or stuck-channel detection.** The firmware does not distinguish between two distinct conditions: (a) a CT that is plugged in and clamped around a conductor carrying near-zero current, which legitimately reads near zero; and (b) a CT cable that is unplugged or an input channel that is otherwise open-circuit. An unplugged CT leaves the analog input floating — the sleeve's bias path is only present when the CT cable is seated in the TRRS jack — which means the floating pin can produce arbitrary, noisy ADC values driven by stray 60 Hz capacitive pickup, not a reliable near-zero floor. Without a defined pull from the analog input to the bias node (e.g. a weak bleed resistor across the TRRS tip-to-sleeve terminals on the breakout), open inputs are indistinguishable in firmware from genuine low-current readings. Production firmware should add open-channel detection, for example, a hardware pull to bias on the analog input side, or software checks for implausibly constant or erratic readings across many cycles, so operators can distinguish a sensor fault from a genuinely unloaded circuit.
-- **SCT-013-030 accuracy is ±3% at rated current** per the datasheet, with reduced accuracy at low currents (below ~5% of full scale = 1.5 A for a 30 A clamp). Sub-1 A readings are indicative only.
+The following are scope choices, not oversights. Each one trades a capability that a longer-term install would want against the simplicity that makes a few-week consulting engagement practical to deploy.
 
-**Production next steps:**
+**Single-phase hot leg only.** Each CT clamp monitors one hot leg. A 240 V split-phase circuit — a large appliance or an HVAC unit, for example — requires two CTs and a current sum in firmware, and **three-phase circuits need three CTs per circuit and are not supported in this design.**
 
-- **True-power measurement.** Add per-phase voltage sensing via an isolated voltage transformer or a dedicated energy-metering analog front end (AFE) with built-in isolation, not a direct resistive divider from mains to the MCU ADC, which lacks the isolation needed for safe mains-connected measurement. Implement phase-aligned voltage and current sampling plus a cos(φ) power-factor computation for actual watts and kWh. One isolated voltage reference per phase is typically sufficient for all circuits on that phase; the key requirement is that voltage and current samples are time-synchronized so the power-factor term is meaningful.
-- **Extended CT range.** For sub-panels with 60 A or 100 A feeder circuits, substitute the SCT-013-060 (60 A / 1 V) or SCT-013-100 (100 A / 1 V) and update `ct_full_scale_amps` via env var — no firmware change required.
-- **Weekend and holiday awareness.** Pass a site calendar or day-of-week bitmask as an environment variable so the `PLUG_LOAD_ALERTS` business-hours check respects Saturdays and Sundays.
-- **Over-the-air firmware updates.** Wire the Cygnet's BOOT/RESET pins to Notecard ATTN for [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/), enabling remote firmware pushes across the entire fleet without truck rolls.
-- **Per-circuit calibration offset.** Store a small per-circuit zero-current offset in the env vars (measured at commissioning with the circuit breaker open) to subtract the noise floor from each channel's reading.
+**No actual wattage.** Without a voltage measurement, the firmware reports **amps, not watts.** True power (W) = V × A × power factor, so any wattage or kWh figure derived from amps alone requires site-specific voltage and power-factor assumptions. Without direct measurement these estimates can be substantially wrong for mixed commercial plug loads, where power factor varies widely by device type — so **treat amp-only energy calculations as rough order-of-magnitude indicators, not billable measurements.** Adding true-power measurement requires an isolated voltage reference (via a low-ratio isolation transformer feeding the MCU ADC, or a dedicated energy-metering analog front end (AFE) with built-in isolation), along with phase-aligned sampling of voltage and current waveforms and power-factor computation. **A resistive voltage divider from mains to the MCU ADC is not a safe path:** it lacks the isolation required to protect the circuit and the installer from line voltage. One isolated voltage reference per phase is typically sufficient for all circuits on that phase, but the voltage and current samples must be time-synchronized for the power-factor computation to be accurate.
+
+**Up to four circuits.** The Notecarrier CX has six analog inputs (A0–A5); this design uses four (A0–A3). `MAX_CHANNELS` is hard-coded to `4`, `circuit_count` is clamped to 1–4 in firmware, and the `note.template` body and `sendSummary` field list define fields only for `ch1`–`ch4`. The important caveat here is that **extending to six circuits is a firmware change, not just a hardware change:** the pin map, `MAX_CHANNELS` constant, state arrays (`sum_arms`, `peak_arms`, `n_arms`, `active_samples`, `alert_last_unix`), `note.template` body fields, `sendSummary` field list, and any downstream schema or dashboard that assumes four channels would all require updating. Two more CT + breakout pairs complete the hardware side.
+
+**Classifier is a downstream integration.** Building a deployable cloud function (AWS Lambda, Google Cloud Functions, or similar), connecting it to a time-series database, and wiring it to a dashboard is a project-specific integration step **outside the scope of this reference design.** The firmware correctly produces the `circuit_summary.qo` inputs that a classifier needs. One consequence is worth flagging when `PLUG_LOAD_ALERTS` is enabled: until a classifier is deployed and an allowlist of legitimately always-on circuits is established, `circuit_alert.qo` will fire for *any* circuit exceeding `after_hours_threshold_amps` at night — including server rooms, 24/7 signage, and other intentional always-on loads. **Expect false-positive alerts during the initial deployment period.**
+
+**Business-hours detection uses simple hour-of-day (`PLUG_LOAD_ALERTS` only).** When the alert extension is enabled, after-hours detection is based on hour of day only; **it does not account for weekends, holidays, or shift patterns.** A more sophisticated implementation would pull a site calendar from an environment variable or a Notehub inbound Note. Note also that **`tz_offset_hours` only supports whole-hour UTC offsets** (stored as `int8_t`); sites in half-hour or 45-minute UTC-offset zones will have their business-hours windows evaluated incorrectly.
+
+**Mojo is bench equipment.** The firmware does not read the Mojo's LTC2959 coulomb counter over the Qwiic bus during normal operation. Adding a `mojo_mah` field to the summary Note is a straightforward extension for deployments where fleet-level energy budgeting is valuable.
+
+**No explicit open-CT or stuck-channel detection.** The firmware does not distinguish between two distinct conditions: **(a)** a CT that is plugged in and clamped around a conductor carrying near-zero current, which legitimately reads near zero; and **(b)** a CT cable that is unplugged or an input channel that is otherwise open-circuit. An unplugged CT leaves the analog input floating — the sleeve's bias path is only present when the CT cable is seated in the TRRS jack — which means the floating pin can produce arbitrary, noisy ADC values driven by stray 60 Hz capacitive pickup, *not* a reliable near-zero floor. Without a defined pull from the analog input to the bias node (for example, a weak bleed resistor across the TRRS tip-to-sleeve terminals on the breakout), open inputs are indistinguishable in firmware from genuine low-current readings. **Production firmware should add open-channel detection** — a hardware pull to bias on the analog input side, or software checks for implausibly constant or erratic readings across many cycles — so operators can distinguish a sensor fault from a genuinely unloaded circuit.
+
+**Sensor accuracy.** The **SCT-013-030 is rated ±3% at rated current** per the datasheet, with reduced accuracy at low currents (below ~5% of full scale, or 1.5 A for a 30 A clamp). **Sub-1 A readings are indicative only.**
+
+### Production Next Steps
+
+Moving from this proof-of-concept toward a hardened, longer-lived deployment means closing the gaps above. The following are the highest-value extensions, roughly in order of effort and impact.
+
+**True-power measurement** is the biggest step up in capability. Add per-phase voltage sensing via an isolated voltage transformer or a dedicated energy-metering analog front end (AFE) with built-in isolation — **not** a direct resistive divider from mains to the MCU ADC, which lacks the isolation needed for safe mains-connected measurement. From there, implement phase-aligned voltage and current sampling plus a cos(φ) power-factor computation to report actual watts and kWh. One isolated voltage reference per phase is typically sufficient for all circuits on that phase; **the key requirement is that voltage and current samples are time-synchronized** so the power-factor term is meaningful.
+
+**Extended CT range** is the easiest win. For sub-panels with 60 A or 100 A feeder circuits, substitute the SCT-013-060 (60 A / 1 V) or SCT-013-100 (100 A / 1 V) and update `ct_full_scale_amps` via env var — **no firmware change required.**
+
+**Weekend and holiday awareness** sharpens the alerting layer. Pass a site calendar or day-of-week bitmask as an environment variable so the `PLUG_LOAD_ALERTS` business-hours check respects Saturdays, Sundays, and holidays rather than treating every night as identical.
+
+**Over-the-air firmware updates** remove the need for truck rolls. Wire the Cygnet's BOOT/RESET pins to Notecard ATTN for [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/), enabling remote firmware pushes across the entire fleet without revisiting each site.
+
+**Per-circuit calibration offset** tightens accuracy at the low end. Store a small per-circuit zero-current offset in the env vars — measured at commissioning with the circuit breaker open — to subtract each channel's individual noise floor from its reading.
 
 ## 13. Summary
 
