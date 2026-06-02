@@ -30,7 +30,7 @@ In a multi-tenant building, the WiFi access points are almost always under tenan
 2. Invisible to tenants — the tenant cannot see or intercept it
 3. Operationally simple — no IT setup, no passwords, no tenant cooperation
 
-A cellular Notecard meets all three criteria. It's a SIM-bearing module that calls home to Notehub over the cellular network — a connection the tenant has no access to and no visibility into, exactly the same way the building's alarm system uses its own GSM dialout. There is no form to fill out, no AP to pair to, and no IT ticket to raise with any tenant. The data channel is as landlord-owned as the panel itself.
+A cellular Notecard meets all three criteria. It's a SIM-bearing module that calls home to the [Blues Notehub](https://blues.com/notehub/) cloud service over the cellular network — a connection the tenant has no access to and no visibility into, exactly the same way the building's alarm system uses its own GSM dialout. There is no form to fill out, no AP to pair to, and no IT ticket to raise with any tenant. The data channel is as landlord-owned as the panel itself.
 
 This is not a niche edge case. Billing disputes are among the most contentious issues in commercial tenancy, and the architecture matters: a meter whose data travels over the tenant's network is a meter whose readings a clever tenant can plausibly dispute. A cellular Notecard is the only architecture that eliminates that dispute by design.
 

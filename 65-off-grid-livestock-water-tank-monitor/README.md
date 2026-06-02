@@ -14,7 +14,7 @@ This project is a solar-powered [remote monitoring](https://blues.com/solutions-
 
 After following this guide, you will have a solar-powered off-grid tank monitor that:
 - **Samples tank level, pump current, and battery voltage** every 15 minutes via analog sensors wired to a Notecarrier CX
-- **Alerts the rancher immediately** (via Notehub routes to SMS/push/webhook) when the tank drops below 20% full (alert) or 10% full (critical)
+- **Alerts the rancher immediately** (via the [Blues Notehub](https://blues.com/notehub/) cloud service, with routes to SMS/push/webhook) when the tank drops below 20% full (alert) or 10% full (critical)
 - **Reports system health** (battery voltage, pump current) every 4 hours to a time-series database for trend analysis
 - **Falls back to satellite** (Skylo NTN) when cellular is unavailable, with the identical firmware handling both transports
 - **Runs for weeks on solar** even during cloudy stretches, thanks to an adaptive sleep strategy that extends the sample interval when the battery is low

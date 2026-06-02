@@ -8,7 +8,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-This project is a [truck-roll reduction](https://blues.com/truck-roll-reduction/) device for pumping providers who service **commercial grease interceptors**. A waterproof ultrasonic distance sensor installed in the access cover reports fill level over cellular every 15 minutes; when the level reaches a threshold, an alert dispatches immediately to [Notehub](https://notehub.io). Trucks are routed on actual condition, not a fixed calendar.
+This project is a [truck-roll reduction](https://blues.com/truck-roll-reduction/) device for pumping providers who service **commercial grease interceptors**. A waterproof ultrasonic distance sensor installed in the access cover reports fill level over cellular every 15 minutes; when the level reaches a threshold, an alert dispatches immediately to the [Blues Notehub](https://blues.com/notehub/) cloud service. Trucks are routed on actual condition, not a fixed calendar.
 
 **What you'll have at the end:** A weatherproof wall-mounted enclosure with a Notecarrier CX + Notecard Cell+WiFi that samples a DFRobot ultrasonic sensor every 15 minutes, publishes daily summaries and threshold alerts to Notehub, and lets you tune alert thresholds and sample intervals via fleet-level environment variables without re-flashing.
 

@@ -10,7 +10,7 @@ This reference application is intended to provide inspiration and help you get s
 
 This project is a solar-trickle-charged, tractor-independent GPS and motion tracker for [asset location tracking](https://blues.com/solutions-location-tracking/) on freight trailers and intermodal chassis. The device delivers cellular-first telemetry with truly global Iridium LEO satellite fallback — keeping the trailer or chassis visible across trans-oceanic container routes and polar corridors where geostationary satellite networks have no coverage at all. The hardware is a Blues Notecarrier XI with a Swan host, a cellular Notecard, and a Starnote for Iridium (see §4 for the BOM).
 
-The unit mounts on the trailer roof or chassis frame, runs a parked/moving state machine entirely on-device, and delivers departure, arrival, and position Notes to [Notehub](https://notehub.io) over cellular with automatic Iridium satellite fallback — no tractor hookup, no site IT, and no dependence on terrestrial coverage.
+The unit mounts on the trailer roof or chassis frame, runs a parked/moving state machine entirely on-device, and delivers departure, arrival, and position Notes to the [Blues Notehub](https://blues.com/notehub/) cloud service over cellular with automatic Iridium satellite fallback — no tractor hookup, no site IT, and no dependence on terrestrial coverage.
 
 ## 1. Project Overview
 

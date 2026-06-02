@@ -15,7 +15,7 @@ This project is a shot-level process monitor for plastic [injection molding](htt
 After completing this project, you will have:
 - A compact DIN-rail enclosure mounted in the machine's electrical cabinet
 - Hydraulic injection pressure and mold temperature collected continuously at the edge
-- Five shot-level metrics (`peak_psi`, `fill_ms`, `pack_psi`, `temp_avg_c`, cooling-rate slope) in Notehub's `shot.qo` Notefile — one event per shot (or per N shots, configurable)
+- Five shot-level metrics (`peak_psi`, `fill_ms`, `pack_psi`, `temp_avg_c`, cooling-rate slope) in the [Blues Notehub](https://blues.com/notehub/) cloud service's `shot.qo` Notefile — one event per shot (or per N shots, configurable)
 - Real-time alerts routed to your CMMS, webhook, or quality system whenever any metric exceeds configurable thresholds
 - No modification to the machine, no touching the mold, no plant-network involvement — 100% cellular
 - Commissioning takes ~50–100 shots to establish baseline thresholds; thereafter the system runs autonomously

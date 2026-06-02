@@ -8,7 +8,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-This project is a [remote patient monitoring](https://blues.com/remote-patient-monitoring/) hub for 30–60-day post-discharge recovery programs. A Blues Notecard Cell+WiFi paired with an nRF52840 host that has native Bluetooth Low Energy scans for a patient's BLE-enabled medical devices — weight scale, blood pressure cuff, pulse oximeter, and activity band — relays each completed reading to Notehub over cellular, and immediately syncs readings that exceed configurable clinical thresholds so the care team is alerted without waiting for the next scheduled upload. No WiFi required, no app to configure, no network credentials to enter. Plug it in and it works.
+This project is a [remote patient monitoring](https://blues.com/remote-patient-monitoring/) hub for 30–60-day post-discharge recovery programs. A Blues Notecard Cell+WiFi paired with an nRF52840 host that has native Bluetooth Low Energy scans for a patient's BLE-enabled medical devices — weight scale, blood pressure cuff, pulse oximeter, and activity band — relays each completed reading to the [Blues Notehub](https://blues.com/notehub/) cloud service over cellular, and immediately syncs readings that exceed configurable clinical thresholds so the care team is alerted without waiting for the next scheduled upload. No WiFi required, no app to configure, no network credentials to enter. Plug it in and it works.
 
 ## 1. Project Overview
 
