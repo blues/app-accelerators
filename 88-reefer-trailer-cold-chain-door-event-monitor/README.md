@@ -500,24 +500,39 @@ For anything not covered above, search or post on the [Blues community forum](ht
 
 The design hits the two failure modes that account for most refrigerated cargo loss — excursion and unauthorized door access — using direct sensor input and no OEM reefer integration, so it works across heterogeneous fleets. Humidity, multi-zone mapping, J1939 telemetry, and geofence logic are deliberate scope choices to be added where a deployment warrants them.
 
-**Simplified for the POC:**
+### Simplified for the POC
 
-- **Two probes only.** A 53 foot trailer can stratify several degrees from front to rear and from floor to ceiling. This design fixes one DS18B20 near the forward evaporator and one near the rear return-air panel, which is enough to catch reefer failure and gross excursions but is not a full thermal map of the cargo zone.
-- **No humidity or dew-point sensor.** Some loads (leafy greens, certain pharmaceuticals, paper goods) are humidity-sensitive in addition to temperature-sensitive. The current Notes carry temperature only.
-- **Coarse probe placement guidance.** Section 5 specifies forward and rear positions, but does not prescribe an evaporator-vs-cargo-zone placement scheme calibrated to a particular load type or trailer geometry. Operators are expected to refine probe placement during their first commissioning runs.
-- **Reed switch is binary, not multi-state.** The Adafruit #375 reports open or closed only. It cannot distinguish a door cracked an inch from a door swung wide, and it has no concept of which door (left or right) was actuated on a split-rear configuration.
-- **No driver or dispatcher app integration.** Alerts are routed from Notehub to whatever downstream destination is configured; this project does not ship a mobile app for the driver or a dashboard for dispatch.
-- **No reefer ECU integration.** The design is intentionally OEM-agnostic, so it cannot read setpoint, defrost cycle, refrigerant pressure, fuel level, or alarm codes from the reefer controller itself. Operators see cargo-zone temperature, not reefer health.
-- **Single 12 V feed assumption.** The wiring assumes a standard trailer accessory circuit. Battery-only installations or installations that need to survive a fully parked trailer for days would benefit from a different power architecture, including an upstream regulator with lower quiescent draw.
+The simplifications below are deliberate scope choices — each marks a place where a real fleet deployment will want to add another sensor, finer placement guidance, or an OEM integration once the basic excursion-and-door monitor is proven in the field.
 
-**Production next steps:**
+**Two probes only.** A 53 foot trailer can stratify several degrees from front to rear and from floor to ceiling. This design fixes one DS18B20 near the forward evaporator and one near the rear return-air panel, which is enough to catch reefer failure and gross excursions but is **not a full thermal map of the cargo zone**.
 
-- **Add humidity (and dew point) sensing.** Wire an [SHT41](https://www.adafruit.com/product/5776) on the Qwiic bus and add `rh_pct` and `dewpoint_c` fields to the per-sample, summary, and alert Notes. The compact alert template can absorb the additional fields without breaking the satellite data budget.
-- **Multi-zone temperature mapping.** Move from two probes to four or six DS18B20s on the same 1-Wire bus (the library and template can scale), and emit per-zone min, mean, and max in the hourly summary. Helpful for high-value loads where a hot spot in one corner of the trailer is the early warning.
-- **Reefer ECU integration.** For fleets with homogeneous reefer fleets, add a J1939 or CAN tap so setpoint, defrost, fuel level, and alarm codes ride along with the cargo-zone telemetry. Pair with the existing Notes rather than replacing them.
-- **Geofence-aware alerting.** Use the `lat` and `lon` fields already on every alert to suppress door-open events at known authorized stops (yard, customer DC, fuel network) and elevate door events at unexpected locations. This logic is best run in Notehub or downstream rather than on-device.
-- **Notecard Outboard DFU.** Wire [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) so threshold logic updates and bug fixes can ship over the air, including over NTN where appropriate.
-- **Compliance reporting for FSMA-Cold and HACCP.** Layer a Notehub route into a compliance archive that aggregates per-sample logs and hourly summaries into per-shipment PDF reports, suitable for FSMA Sanitary Transportation rule audits and HACCP records for food shippers, or for pharma cold-chain release decisions.
+**No humidity or dew-point sensor.** Some loads — leafy greens, certain pharmaceuticals, paper goods — are humidity-sensitive in addition to temperature-sensitive, but the current Notes carry temperature only.
+
+**Coarse probe placement guidance.** Section 5 specifies forward and rear positions, but does not prescribe an evaporator-vs-cargo-zone placement scheme calibrated to a particular load type or trailer geometry. Operators are expected to refine probe placement during their first commissioning runs.
+
+**Reed switch is binary, not multi-state.** The Adafruit #375 reports open or closed only. It cannot distinguish a door cracked an inch from a door swung wide, and it has no concept of which door (left or right) was actuated on a split-rear configuration.
+
+**No driver or dispatcher app integration.** Alerts are routed from Notehub to whatever downstream destination is configured; this project does not ship a mobile app for the driver or a dashboard for dispatch.
+
+**No reefer ECU integration.** The design is intentionally OEM-agnostic, so it cannot read setpoint, defrost cycle, refrigerant pressure, fuel level, or alarm codes from the reefer controller itself. Operators see cargo-zone temperature, not reefer health.
+
+**Single 12 V feed assumption.** The wiring assumes a standard trailer accessory circuit. Battery-only installations or installations that need to survive a fully parked trailer for days would benefit from a different power architecture, including an upstream regulator with lower quiescent draw.
+
+### Production Next Steps
+
+Once the basic monitor is running across a real fleet, the following extensions are the natural progression — roughly from the most immediately useful to the most integration-dependent.
+
+**Add humidity (and dew point) sensing** by wiring an [SHT41](https://www.adafruit.com/product/5776) on the Qwiic bus and adding `rh_pct` and `dewpoint_c` fields to the per-sample, summary, and alert Notes. The compact alert template can absorb the additional fields without breaking the satellite data budget.
+
+**Multi-zone temperature mapping** moves from two probes to four or six DS18B20s on the same 1-Wire bus (the library and template can scale), emitting per-zone min, mean, and max in the hourly summary. This is helpful for high-value loads where a hot spot in one corner of the trailer is the early warning.
+
+**Reefer ECU integration** adds a J1939 or CAN tap for fleets with homogeneous reefer fleets, so setpoint, defrost, fuel level, and alarm codes ride along with the cargo-zone telemetry. Pair it with the existing Notes rather than replacing them.
+
+**Geofence-aware alerting** uses the `lat` and `lon` fields already on every alert to suppress door-open events at known authorized stops (yard, customer DC, fuel network) and elevate door events at unexpected locations. This logic is best run in Notehub or downstream rather than on-device.
+
+**Notecard Outboard DFU** wires [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) so threshold logic updates and bug fixes can ship over the air, including over NTN where appropriate.
+
+**Compliance reporting for FSMA-Cold and HACCP** layers a Notehub route into a compliance archive that aggregates per-sample logs and hourly summaries into per-shipment PDF reports, suitable for FSMA Sanitary Transportation rule audits and HACCP records for food shippers, or for pharma cold-chain release decisions.
 
 
 ## 12. Summary

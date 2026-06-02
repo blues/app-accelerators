@@ -514,23 +514,37 @@ If you encounter an issue not covered above, the [Blues community forum](https:/
 
 This reference design intentionally stays narrow: it answers the site-uptime question — "is this off-grid site healthy enough that I don't need to send a truck?" — and leaves the harder problems (cell-level diagnostics, MPPT control, multi-bank aggregation) to companion designs where they belong.
 
-**Simplified for the POC:**
+### Simplified for the POC
 
-- **Read-only over VE.Direct.** The firmware listens to the broadcast text protocol but never writes a command back to either Victron device. Setting parameters on the SmartShunt or MPPT (battery capacity, absorption voltage, equalization schedule) is done with the Victron VictronConnect app at commissioning, not from Notehub. Adding write support would mean tracking the proprietary VE.Direct HEX framing on top of the text protocol covered here.
-- **Single battery bank, single MPPT.** The reference design assumes one SmartShunt watching one battery bank and one SmartSolar MPPT watching one solar array. Sites with parallel banks or multiple charge controllers require either a Victron Cerbo GX (which aggregates over Victron's CAN bus) or a firmware extension that opens additional VE.Direct serial ports on the Cygnet host.
-- **No MPPT control.** The firmware reports what the MPPT is doing but cannot command a different absorption voltage, force a manual equalize, or disable charging. Remote control of the charge algorithm is a different problem class with safety implications and is intentionally out of scope.
-- **Bank-level signal scope only.** Per-cell voltages and cell imbalance are not exposed on the VE.Direct wire — they travel over CAN bus and require dedicated hardware, as called out in §1. This design targets the bank-level uptime failure modes and explicitly defers cell-level telemetry to a companion design.
-- **Sensor selection is fixed at the firmware level.** The two VE.Direct ports are hard-coded to a SmartShunt on Serial1 and an MPPT on the SoftwareSerial pin. Swapping in a different VE.Direct device family (such as a Phoenix inverter) requires extending the parser to recognise its label set.
-- **No local sample history.** The host accumulates the current summary window in the persistent state struct between sleeps, but a power interruption that drains the Notecard backup capacitor clears the in-progress accumulator. Long-term storage lives in Notehub, not on the device.
+The simplifications below are deliberate scope choices — each marks where this site-uptime monitor stops and a companion design or firmware extension picks up.
 
-**Production next steps:**
+**Read-only over VE.Direct.** The firmware listens to the broadcast text protocol but never writes a command back to either Victron device. Setting parameters on the SmartShunt or MPPT (battery capacity, absorption voltage, equalization schedule) is done with the Victron VictronConnect app at commissioning, not from Notehub. Adding write support would mean tracking the proprietary VE.Direct HEX framing on top of the text protocol covered here.
 
-- **Multi-bank support.** Open additional SoftwareSerial ports on free Cygnet GPIO pins and parse a second SmartShunt and MPPT pair, adding a per-bank index to each Note so downstream analytics can attribute readings correctly.
-- **Alarm output relays.** Drive a Cygnet GPIO to a small SSR or low-side switch, so a `harvest_deficit` or `soc_low` alert can trigger a local audible or visual indicator at the site for technicians on the ground.
-- **Weather-data overlay.** Route `solar_summary.qo` events into a server-side process that joins each window's `yield_kwh` against a weather feed (cloud cover, GHI) for the site coordinates. A real recharge-deficit problem looks very different from a stretch of cloudy weather, and the overlay separates the two automatically.
-- **BLE-based field provisioning.** A Bluetooth provisioning page on the Notecarrier CX would let a technician set the site identifier, fixed GPS coordinates, and initial thresholds from a phone in the field, with no laptop or USB cable required. The Notecard supports BLE on supported SKUs.
-- **Notecard Outboard DFU for fleet firmware updates.** [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) lets Notehub push a new STM32 firmware image to every device in a fleet over the air. This is essential for a device that may live on a remote tower or backcountry array for years between physical visits.
-- **Multi-phase or DC-coupled load shunting.** Sites that include AC inverter loads (Victron MultiPlus or similar) can add a Quattro or MultiPlus VE.Bus integration to capture inverter input, output, and inverter-internal alarms — a richer picture of total site load than the algebraic `pv_w - bat_w` computation used here.
+**Single battery bank, single MPPT.** The reference design assumes one SmartShunt watching one battery bank and one SmartSolar MPPT watching one solar array. Sites with parallel banks or multiple charge controllers require either a Victron Cerbo GX (which aggregates over Victron's CAN bus) or a firmware extension that opens additional VE.Direct serial ports on the Cygnet host.
+
+**No MPPT control.** The firmware reports what the MPPT is doing but cannot command a different absorption voltage, force a manual equalize, or disable charging. Remote control of the charge algorithm is a different problem class with safety implications and is intentionally out of scope.
+
+**Bank-level signal scope only.** Per-cell voltages and cell imbalance are not exposed on the VE.Direct wire — they travel over CAN bus and require dedicated hardware, as called out in §1. This design targets the bank-level uptime failure modes and explicitly defers cell-level telemetry to a companion design.
+
+**Sensor selection is fixed at the firmware level.** The two VE.Direct ports are hard-coded to a SmartShunt on Serial1 and an MPPT on the SoftwareSerial pin. Swapping in a different VE.Direct device family (such as a Phoenix inverter) requires extending the parser to recognise its label set.
+
+**No local sample history.** The host accumulates the current summary window in the persistent state struct between sleeps, but a power interruption that drains the Notecard backup capacitor clears the in-progress accumulator. Long-term storage lives in Notehub, not on the device.
+
+### Production Next Steps
+
+Taking this monitor toward a production fleet rollout means scaling to multi-bank sites, adding local alerting and field provisioning, and supporting over-the-air updates for devices that may go years between physical visits. The following extensions are the natural progression.
+
+**Multi-bank support.** Open additional SoftwareSerial ports on free Cygnet GPIO pins and parse a second SmartShunt and MPPT pair, adding a per-bank index to each Note so downstream analytics can attribute readings correctly.
+
+**Alarm output relays.** Drive a Cygnet GPIO to a small SSR or low-side switch, so a `harvest_deficit` or `soc_low` alert can trigger a local audible or visual indicator at the site for technicians on the ground.
+
+**Weather-data overlay.** Route `solar_summary.qo` events into a server-side process that joins each window's `yield_kwh` against a weather feed (cloud cover, GHI) for the site coordinates. A real recharge-deficit problem looks very different from a stretch of cloudy weather, and the overlay separates the two automatically.
+
+**BLE-based field provisioning.** A Bluetooth provisioning page on the Notecarrier CX would let a technician set the site identifier, fixed GPS coordinates, and initial thresholds from a phone in the field, with no laptop or USB cable required. The Notecard supports BLE on supported SKUs.
+
+**Notecard Outboard DFU for fleet firmware updates.** [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) lets Notehub push a new STM32 firmware image to every device in a fleet over the air. This is essential for a device that may live on a remote tower or backcountry array for years between physical visits.
+
+**Multi-phase or DC-coupled load shunting.** Sites that include AC inverter loads (Victron MultiPlus or similar) can add a Quattro or MultiPlus VE.Bus integration to capture inverter input, output, and inverter-internal alarms — a richer picture of total site load than the algebraic `pv_w - bat_w` computation used here.
 
 
 ## 12. Summary

@@ -694,9 +694,11 @@ The Notecard idle figure is the only Blues-published power specification for the
 
 This reference platform delivers the three sensor paths a trailer OEM can stand up against real hardware on day one — cargo-air temperature, door, and GPS — plus firmware scaffolding for the two paths whose engineering work is genuinely outside the scope of a reference design. The list below is the honest accounting of what's still in front of any OEM that wants to ship this as a commercial product, framed by transport and protocol choice rather than apologized for.
 
-**Outside this reference build's scope:**
+### Outside This Reference Build's Scope
 
-- **Reefer telemetry transport: pick one of three, then implement.** The firmware reserves `Serial1` for a reefer-telemetry source and ships with a simplified POC decode in `drainReeferUart()`. The reference assumption is J2497 PLC, but in practice three transports are realistic, and the choice changes the engineering effort substantially. The firmware's `note.add` pipeline is identical for all three; only the decode function in `drainReeferUart()` and the upstream physical interface differ.
+The items below are the honest accounting of what's still in front of any OEM that wants to ship this as a commercial product — framed by transport and protocol choice rather than apologized for.
+
+**Reefer telemetry transport: pick one of three, then implement.** The firmware reserves `Serial1` for a reefer-telemetry source and ships with a simplified POC decode in `drainReeferUart()`. The reference assumption is J2497 PLC, but in practice three transports are realistic, and the choice changes the engineering effort substantially. The firmware's `note.add` pipeline is identical for all three; only the decode function in `drainReeferUart()` and the upstream physical interface differ.
 
   | Transport | Physical interface | Pros | Cons | Engineering required |
   |---|---|---|---|---|
@@ -705,23 +707,40 @@ This reference platform delivers the three sensor paths a trailer OEM can stand 
   | **J1939 over CAN** | CAN bus on the reefer unit (where exposed) | Standardized PGN-based message structure; richer telemetry (fault codes, run hours, fuel) than serial diagnostics; same bus standard widely used elsewhere on the vehicle | Requires a host with an accessible CAN controller (the STM32L433 in this build does not break out CAN on the Notecarrier CX headers. See the dedicated J1939/CAN limitation below); automotive-qualified CAN transceiver; J1939 PGN decode | Confirm host CAN pin availability or change host; add AEC-Q100 transceiver (e.g., TJA1051T/3/1J); implement J1939 PGN decode for the reefer's message set |
 
   For a first prototype against an actual reefer unit, the **vendor-proprietary serial** path is the lowest-risk first milestone — it lands on the same `Serial1` UART the reference build already exercises, and most modern reefers (Thermo King SLXe, Carrier X4 7700) expose it. The J2497 path is a credible long-term option if power-line carrier is a strategic constraint (no chassis-side connector, multi-OEM unification on a single physical interface), but expect to fund a multi-quarter effort across coupling-board hardware, stack licensing, and OEM message mapping before producing any real data.
-- **TPMS protocol is vendor-specific.** The firmware models four tire positions with a simplified generic packet format. Commercial trailer TPMS systems (PressurePro, Doran 360, Continental VDO, TST 507) each use proprietary 315/433 MHz message structures with different tire ID encoding, pressure scaling, and checksum algorithms. Production firmware needs to implement the chosen vendor's message decode library.
-- **Four tire positions are tracked.** A 53-foot refrigerated trailer typically runs 10 or more tires on dual rear axles; the POC supports only four positions. Expanding to the full tire set requires a larger TPMS position array and a wider Note template.
-- **GPS-position-delta state detection is approximate.** Comparing GPS positions at 5-minute intervals can be ambiguous in poor-sky conditions or during slow dock maneuvering. A production implementation should combine GPS position delta with the Notecard's built-in accelerometer (`card.motion.mode`) for reliable motion detection that doesn't depend on GNSS fix quality.
-- **No J1939/CAN integration.** Modern reefer units expose richer telemetry — fault codes, fuel consumption, run hours, setpoint history — over J1939 CAN, not just temperature. Adding CAN to this platform requires more than a transceiver: (a) confirm that the STM32L433's CAN peripheral pins (CAN_TX/CAN_RX) are accessible on the Notecarrier CX/Cygnet headers — if not, a board redesign or an alternate host with CAN pins broken out is required; (b) once a host with accessible CAN pins is established, add an automotive-qualified CAN transceiver (e.g., TJA1051T/3/1J, AEC-Q100-qualified) between the host CAN controller and the J1939 bus; and (c) implement J1939 PGN (**Parameter Group Number**, the J1939 message identifier) decode in firmware (e.g., using an mcp_can-style library or a raw CAN driver targeting the host's bxCAN peripheral). A transceiver alone is not sufficient without a host that exposes a compatible CAN controller.
-- **Skylo NTN satellite latency.** Satellite session establishment can take several minutes on initial power-up, and the Skylo NTN network imposes message-size and throughput constraints smaller than typical cellular sessions. Alert Notes sent via satellite will arrive in Notehub with higher latency than cellular. Plan monitoring workflows accordingly; Notecard for Skylo prefers cellular and falls back to satellite automatically, so this latency applies only in genuine coverage gaps.
-- **No host over-the-air firmware update.** [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) requires SWD/BOOT pin access that is not exposed through the Notecarrier CX headers in this standard configuration. Production boards should route BOOT and NRST signals through a DFU header to enable fleet-wide host firmware updates without a service visit.
-- **Mojo is bench tooling.** The firmware does not read the Mojo's LTC2959 coulomb counter over Qwiic. Adding a cumulative-mAh field to the summary Note is a straightforward extension that enables fleet-level power telemetry for DC dwell energy auditing.
 
-**Production next steps:**
-- Full J2497 integration: (1) coupling board hardware (IT700, Bourns bus-coupling transformer, bus protection), (2) J2497 application-layer protocol stack from Microchip/Yitran or equivalent, (3) reefer-OEM message mapping per target reefer model under an integration agreement, and (4) field validation on target reefer-unit hardware to confirm J560 bus data availability.
-- Vendor-specific TPMS decode libraries covering all tire positions on the OEM's chosen sensor brand.
-- J1939 CAN interface: verify CAN_TX/CAN_RX pin accessibility on the Notecarrier CX/Cygnet (or redesign to a host with CAN pins exposed), add an AEC-Q100 automotive CAN transceiver (e.g., TJA1051T/3/1J), and implement J1939 PGN decode — for comprehensive reefer-unit telemetry (fault codes, fuel, hours).
-- Accelerometer-augmented (`card.motion.mode`) motion detection for reliable parked/transit classification.
-- Full 10-tire TPMS coverage for 53-foot dual-rear-axle configuration.
-- USDA and FDA FSMA-compliant temperature logging: cryptographically signed records with chain-of-custody audit trail.
-- Host ODFU wiring for fleet-wide firmware updates from Notehub without a truck roll.
-- Humidity and CO₂ sensors for high-value perishable loads (fresh produce, pharmaceutical).
+**TPMS protocol is vendor-specific.** The firmware models four tire positions with a simplified generic packet format. Commercial trailer TPMS systems (PressurePro, Doran 360, Continental VDO, TST 507) each use proprietary 315/433 MHz message structures with different tire ID encoding, pressure scaling, and checksum algorithms, so production firmware needs to implement the chosen vendor's message decode library.
+
+**Four tire positions are tracked.** A 53-foot refrigerated trailer typically runs 10 or more tires on dual rear axles, but the POC supports only four positions. Expanding to the full tire set requires a larger TPMS position array and a wider Note template.
+
+**GPS-position-delta state detection is approximate.** Comparing GPS positions at 5-minute intervals can be ambiguous in poor-sky conditions or during slow dock maneuvering. A production implementation should combine GPS position delta with the Notecard's built-in accelerometer (`card.motion.mode`) for reliable motion detection that doesn't depend on GNSS fix quality.
+
+**No J1939/CAN integration.** Modern reefer units expose richer telemetry — fault codes, fuel consumption, run hours, setpoint history — over J1939 CAN, not just temperature. Adding CAN to this platform requires more than a transceiver: (a) confirm that the STM32L433's CAN peripheral pins (CAN_TX/CAN_RX) are accessible on the Notecarrier CX/Cygnet headers — if not, a board redesign or an alternate host with CAN pins broken out is required; (b) once a host with accessible CAN pins is established, add an automotive-qualified CAN transceiver (e.g., TJA1051T/3/1J, AEC-Q100-qualified) between the host CAN controller and the J1939 bus; and (c) implement J1939 PGN (**Parameter Group Number**, the J1939 message identifier) decode in firmware (e.g., using an mcp_can-style library or a raw CAN driver targeting the host's bxCAN peripheral). **A transceiver alone is not sufficient without a host that exposes a compatible CAN controller.**
+
+**Skylo NTN satellite latency.** Satellite session establishment can take several minutes on initial power-up, and the Skylo NTN network imposes message-size and throughput constraints smaller than typical cellular sessions, so **alert Notes sent via satellite will arrive in Notehub with higher latency than cellular.** Plan monitoring workflows accordingly; Notecard for Skylo prefers cellular and falls back to satellite automatically, so this latency applies only in genuine coverage gaps.
+
+**No host over-the-air firmware update.** [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) requires SWD/BOOT pin access that is not exposed through the Notecarrier CX headers in this standard configuration. Production boards should route BOOT and NRST signals through a DFU header to enable fleet-wide host firmware updates without a service visit.
+
+**Mojo is bench tooling.** The firmware does not read the Mojo's LTC2959 coulomb counter over Qwiic. Adding a cumulative-mAh field to the summary Note is a straightforward extension that enables fleet-level power telemetry for DC dwell energy auditing.
+
+### Production Next Steps
+
+Once the three day-one sensor paths are running against real hardware, the following extensions carry the platform toward a shippable commercial product.
+
+**Full J2497 integration** comprises (1) coupling board hardware (IT700, Bourns bus-coupling transformer, bus protection), (2) a J2497 application-layer protocol stack from Microchip/Yitran or equivalent, (3) reefer-OEM message mapping per target reefer model under an integration agreement, and (4) field validation on target reefer-unit hardware to confirm J560 bus data availability.
+
+**Vendor-specific TPMS decode libraries** cover all tire positions on the OEM's chosen sensor brand.
+
+**A J1939 CAN interface** requires verifying CAN_TX/CAN_RX pin accessibility on the Notecarrier CX/Cygnet (or redesigning to a host with CAN pins exposed), adding an AEC-Q100 automotive CAN transceiver (e.g., TJA1051T/3/1J), and implementing J1939 PGN decode — for comprehensive reefer-unit telemetry (fault codes, fuel, hours).
+
+**Accelerometer-augmented motion detection** (`card.motion.mode`) provides reliable parked/transit classification.
+
+**Full 10-tire TPMS coverage** supports the 53-foot dual-rear-axle configuration.
+
+**USDA and FDA FSMA-compliant temperature logging** adds cryptographically signed records with a chain-of-custody audit trail.
+
+**Host ODFU wiring** enables fleet-wide firmware updates from Notehub without a truck roll.
+
+**Humidity and CO₂ sensors** serve high-value perishable loads (fresh produce, pharmaceutical).
 
 ## 11. Summary
 

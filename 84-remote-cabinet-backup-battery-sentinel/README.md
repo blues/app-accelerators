@@ -476,26 +476,43 @@ If a symptom does not appear above, post a description (with the relevant `[sent
 
 This design targets one pack on one bus and the pack-level signal that catches the most common cabinet failure modes. Cell-level diagnostics, multi-bus shelters, and full state-of-health modeling are deliberate scope choices left to companion designs — the goal here is to get the simplest defensible cabinet sentinel into the field, then layer on richer telemetry where the site warrants it.
 
-**Simplified for the POC:**
+### Simplified for the POC
 
-- **Single pack, single bus.** The firmware monitors one pack on one positive-referenced DC bus. Cabinets with a primary bank and a parallel reserve, or multi-bus telecom shelters with separate −48 V plant and 12 V auxiliary loads, need one sentinel per bus or a multi-channel front end.
-- **One INA228 with a single shunt.** The default 15 mΩ onboard shunt covers up to roughly 8 A continuous. Higher-current installations require an external busbar shunt (see §4 and §5); the firmware exposes `INA228_SHUNT_OHMS` and `INA228_MAX_CURRENT_A` for that case but does not auto-detect.
-- **Pack-level signals only — no cell-level visibility.** Per-cell voltage and per-cell imbalance detection are out of scope. Float-current trending identifies that the string as a whole is degrading, not which cell is failing.
-- **No state-of-health (SoH) modeling.** SoC is tracked by coulomb counting against a commissioned `usable_capacity_ah`, but the firmware does not estimate capacity fade over time. Re-commissioning `usable_capacity_ah` after a measured discharge cycle is a manual step.
-- **No temperature compensation on voltage thresholds.** VRLA float voltage drifts with battery temperature (typically −3 to −5 mV per cell per °C). The fixed `volt_min_v` and `volt_max_v` thresholds do not adjust automatically; in a cabinet that swings 30 °C across seasons, set thresholds with margin or split the fleet by climate zone.
-- **One thermistor on the case surface.** A single surface probe near the geometric center of the pack flags gross thermal events but cannot distinguish a hot cell from charger-induced bulk heating, and it cannot resolve internal cell temperature.
-- **OCV-based SoC is approximate, especially under load.** Coulomb counting against the nameplate capacity is the only state estimator; the firmware does not blend in OCV at rest, does not detect a full-charge event automatically, and will drift between manual recalibrations.
-- **No inbound command channel.** Operators tune behavior via Notehub environment variables — there is no `battery_command.qi` for fleet-triggered actions such as "clear alert cooldowns" or "reset SoC after a pack swap."
+The simplifications below are deliberate scope choices — each is a place where a production deployment will reach for another channel, another sensor, or a richer state estimator once a specific site demands it.
 
-**Production next steps:**
+**Single pack, single bus.** The firmware monitors one pack on one positive-referenced DC bus. Cabinets with a primary bank and a parallel reserve, or multi-bus telecom shelters with separate −48 V plant and 12 V auxiliary loads, need one sentinel per bus or a multi-channel front end.
 
-- **Add a temperature probe on the pack interior or terminal post** for a more accurate read of the chemistry's thermal state, and apply temperature compensation to the float-voltage thresholds and to the coulomb-counting charge efficiency factor.
-- **Blend OCV at rest with coulomb counting** for a self-correcting SoC estimate that recovers from drift after a long quiescent period, and add an automatic full-charge detector to re-anchor SoC to 100 percent without operator intervention.
-- **Layer in cell-level monitoring** via a dedicated cell-monitor IC (TI BQ76940 or equivalent), CAN, or Bluetooth into a pack-resident BMS. A cell-level channel transforms the float-current signal from a string-level aggregate into a per-cell diagnostic.
-- **Integrate with the site's existing BMS** when one is present: many telecom-grade VRLA strings ship with a CAN or RS-485 BMS that already exposes per-cell voltages and SoH. Adding a CAN front end and a vendor-specific frame parser turns this design into a redundant cellular uplink for that BMS rather than a parallel measurement.
-- **Aggregate across a fleet** in a downstream time-series store. Float-current trends per cabinet, ranked against the fleet median, surface the outlier cabinets weeks before any one of them trips an absolute threshold.
-- **Deploy [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/)** so threshold recipes, OCV blends, and chemistry-specific calibrations can be pushed across the fleet without a truck roll.
-- **Add an inbound `battery_command.qi` Notefile** for fleet operators to reset SoH accumulators after a pack swap, clear alert cooldowns following a planned maintenance visit, or trigger an immediate ad-hoc sample-and-report.
+**One INA228 with a single shunt.** The default 15 mΩ onboard shunt covers up to roughly 8 A continuous. Higher-current installations require an external busbar shunt (see §4 and §5); the firmware exposes `INA228_SHUNT_OHMS` and `INA228_MAX_CURRENT_A` for that case but does not auto-detect.
+
+**Pack-level signals only — no cell-level visibility.** Per-cell voltage and per-cell imbalance detection are out of scope. Float-current trending identifies that the string as a whole is degrading, not which cell is failing.
+
+**No state-of-health (SoH) modeling.** SoC is tracked by coulomb counting against a commissioned `usable_capacity_ah`, but the firmware does not estimate capacity fade over time. Re-commissioning `usable_capacity_ah` after a measured discharge cycle is a manual step.
+
+**No temperature compensation on voltage thresholds.** VRLA float voltage drifts with battery temperature (typically −3 to −5 mV per cell per °C). The fixed `volt_min_v` and `volt_max_v` thresholds do not adjust automatically; in a cabinet that swings 30 °C across seasons, set thresholds with margin or split the fleet by climate zone.
+
+**One thermistor on the case surface.** A single surface probe near the geometric center of the pack flags gross thermal events but cannot distinguish a hot cell from charger-induced bulk heating, and it cannot resolve internal cell temperature.
+
+**OCV-based SoC is approximate, especially under load.** Coulomb counting against the nameplate capacity is the only state estimator; the firmware does not blend in OCV at rest, does not detect a full-charge event automatically, and will drift between manual recalibrations.
+
+**No inbound command channel.** Operators tune behavior via Notehub environment variables — there is no `battery_command.qi` for fleet-triggered actions such as "clear alert cooldowns" or "reset SoC after a pack swap."
+
+### Production Next Steps
+
+Once a real cabinet fleet is running the basic sentinel, the following extensions are the natural progression — roughly from the most immediately useful to the most integration-dependent.
+
+**Add a temperature probe on the pack interior or terminal post** for a more accurate read of the chemistry's thermal state, and apply temperature compensation to the float-voltage thresholds and to the coulomb-counting charge efficiency factor.
+
+**Blend OCV at rest with coulomb counting** for a self-correcting SoC estimate that recovers from drift after a long quiescent period, and add an automatic full-charge detector to re-anchor SoC to 100 percent without operator intervention.
+
+**Layer in cell-level monitoring** via a dedicated cell-monitor IC (TI BQ76940 or equivalent), CAN, or Bluetooth into a pack-resident BMS. A cell-level channel transforms the float-current signal from a string-level aggregate into a per-cell diagnostic.
+
+**Integrate with the site's existing BMS** when one is present: many telecom-grade VRLA strings ship with a CAN or RS-485 BMS that already exposes per-cell voltages and SoH. Adding a CAN front end and a vendor-specific frame parser turns this design into a redundant cellular uplink for that BMS rather than a parallel measurement.
+
+**Aggregate across a fleet** in a downstream time-series store. Float-current trends per cabinet, ranked against the fleet median, surface the outlier cabinets weeks before any one of them trips an absolute threshold.
+
+**Deploy [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/)** so threshold recipes, OCV blends, and chemistry-specific calibrations can be pushed across the fleet without a truck roll.
+
+**Add an inbound `battery_command.qi` Notefile** for fleet operators to reset SoH accumulators after a pack swap, clear alert cooldowns following a planned maintenance visit, or trigger an immediate ad-hoc sample-and-report.
 
 
 ## 12. Summary

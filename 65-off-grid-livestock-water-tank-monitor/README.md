@@ -459,23 +459,39 @@ If the Mojo trace shows continuous multi-mA draw with no idle transitions, the h
 
 This reference design is a single-tank monitor that works on a pole next to a stock tank — not a multi-tank irrigation controller, not a herd-level analytics platform, not a polar-region satellite design. The list below names the boundaries that come with that scope so a rancher or integrator can see exactly where the design ends and where production work begins.
 
-**Simplified for this reference design:**
+### Simplified for this reference design
 
-- **Satellite antenna siting is site-specific.** The NOTE-NBGLWX Skylo path requires a clear, unobstructed view of the equator-facing sky (southern sky in the northern hemisphere; northern sky in the southern hemisphere). Tank sites in valleys, near tree lines, or adjacent to structures that block the horizon toward the equator may have degraded satellite performance or no satellite link at all. Survey the site for equator-facing sky exposure before selecting this design for a satellite-dependent deployment. For sites that require Iridium coverage (polar regions, sites where Skylo GEO coverage does not reach), a different satellite module is needed.
-- **Satellite data budget.** A deployment that is frequently on the satellite path should monitor satellite data consumption in the Notehub usage dashboard. Consult the [Blues pricing page](https://blues.com/pricing/) for current satellite data allotments and applicable usage terms.
-- **Manual calibration.** `tank_depth_mm` and `sensor_min_mm` must be measured and entered in Notehub per installation. A production design would include a commissioning sequence that auto-measures and stores these values during the first fill cycle.
-- **Single-phase current sensing.** The CT clamps around one conductor. Three-phase deep-well pump motors (common in high-volume agricultural wells) need three CTs and a firmware change to sum the three RMS values.
-- **No pump fault-to-start detection.** The firmware detects when the pump IS running (current above threshold) but cannot determine whether the pump SHOULD be running. Adding a float-switch digital input on a Cygnet GPIO would enable a "pump failed to start" alert pattern — float says the tank needs water but no pump current is detected.
-- **No local sample history.** The Notecard queues Notes for multi-day transmission if both cellular and satellite are unavailable, but the firmware keeps only the current summary window in RAM. A device reset (lightning strike, power interruption) clears the in-progress accumulator and loses the partial window's data.
-- **Mojo is bench-validation equipment.** The firmware does not read the Mojo's LTC2959 coulomb counter over I²C at runtime; `alerts` is the only meta-field in the summary. Adding a `mojo_mah` field for fleet-level power telemetry is a straightforward extension.
+Each of the simplifications below is a deliberate scope choice — a place where a production rancher or integrator will want to add a sensor, a calibration step, or an integration once the basic single-tank monitor is proven in the field.
 
-**Production next steps:**
-- Float-switch input on a digital GPIO for "pump should be running but isn't" detection.
-- Over-the-air firmware updates via [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) — critical for a device that lives in a pasture for years between physical access.
-- Three-phase CT support (A1, A4, A5 for three CTs; A3 is occupied by the battery-divider PMOS enable; firmware sums three RMS values into a single `pump_amps` field).
-- Per-device commissioning wizard: a "first-boot setup mode" that guides the installer through measuring and storing calibration values before entering normal operation.
-- `env.get` with the `time` argument to fetch environment variables only when they have changed since the last sync, reducing I²C overhead on each wake.
-- Satellite data usage monitoring: a Notehub route or environment variable feedback loop that alerts operators when satellite data consumption approaches the plan's included allotment.
+**Satellite antenna siting is site-specific.** The NOTE-NBGLWX Skylo path requires a clear, unobstructed view of the equator-facing sky (southern sky in the northern hemisphere; northern sky in the southern hemisphere). Tank sites in valleys, near tree lines, or adjacent to structures that block the horizon toward the equator may have degraded satellite performance or **no satellite link at all**. Survey the site for equator-facing sky exposure before selecting this design for a satellite-dependent deployment. For sites that require Iridium coverage (polar regions, sites where Skylo GEO coverage does not reach), a different satellite module is needed.
+
+**Satellite data budget** deserves attention on any deployment that is frequently on the satellite path: monitor satellite data consumption in the Notehub usage dashboard, and consult the [Blues pricing page](https://blues.com/pricing/) for current satellite data allotments and applicable usage terms.
+
+**Manual calibration** is required at commissioning. `tank_depth_mm` and `sensor_min_mm` must be measured and entered in Notehub per installation. A production design would include a commissioning sequence that auto-measures and stores these values during the first fill cycle.
+
+**Single-phase current sensing** is all the CT provides, since it clamps around one conductor. Three-phase deep-well pump motors (common in high-volume agricultural wells) need three CTs and a firmware change to sum the three RMS values.
+
+**No pump fault-to-start detection.** The firmware detects when the pump *is* running (current above threshold) but cannot determine whether the pump *should* be running. Adding a float-switch digital input on a Cygnet GPIO would enable a "pump failed to start" alert pattern — float says the tank needs water but no pump current is detected.
+
+**No local sample history.** The Notecard queues Notes for multi-day transmission if both cellular and satellite are unavailable, but the firmware keeps only the current summary window in RAM. A device reset (lightning strike, power interruption) clears the in-progress accumulator and loses the partial window's data.
+
+**Mojo is bench-validation equipment.** The firmware does not read the Mojo's LTC2959 coulomb counter over I²C at runtime; `alerts` is the only meta-field in the summary. Adding a `mojo_mah` field for fleet-level power telemetry is a straightforward extension.
+
+### Production Next Steps
+
+Once a rancher is running the basic tank monitor, the following extensions are the natural progression — from the most immediately useful detection improvements toward the deeper fleet-management integrations.
+
+**Float-switch input on a digital GPIO** adds "pump should be running but isn't" detection, closing the gap left by current-only sensing.
+
+**Over-the-air firmware updates** via [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) are critical for a device that lives in a pasture for years between physical access.
+
+**Three-phase CT support** brings high-volume wells into scope: A1, A4, A5 for three CTs (A3 is occupied by the battery-divider PMOS enable), with firmware summing three RMS values into a single `pump_amps` field.
+
+**A per-device commissioning wizard** — a "first-boot setup mode" — would guide the installer through measuring and storing calibration values before entering normal operation.
+
+**`env.get` with the `time` argument** fetches environment variables only when they have changed since the last sync, reducing I²C overhead on each wake.
+
+**Satellite data usage monitoring** — a Notehub route or environment variable feedback loop — would alert operators when satellite data consumption approaches the plan's included allotment.
 
 ## 12. Summary
 
