@@ -32,7 +32,7 @@ A failing pump rarely just stops. It signals first: motor current can shift at c
 
 **Notecard responsibilities.** The Notecard's on-device queue holds every Note the host writes, then ships them out on the [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default hourly). Anything tagged `sync:true` jumps the queue and the radio comes up immediately. The same module also pulls [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) on every inbound sync, which is what lets a maintenance lead retune thresholds — or even point the firmware at a different drive vendor's register addresses — from a browser, without anyone visiting the panel.
 
-**Notehub responsibilities.** [Notehub](https://notehub.io) is where the events land — every one ingested, every one stored, project-level [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) fanning them onward. Because every plant's VFDs may sit at different register addresses, the per-fleet [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) story is what keeps a single firmware image servicing an ABB plant in Ohio and a Yaskawa plant in São Paulo. See [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) for how to organize them by vendor or site.
+**Notehub responsibilities.** [Blues Notehub](https://blues.com/notehub/) is where the events land — every one ingested, every one stored, project-level [routes](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) fanning them onward. Because every plant's VFDs may sit at different register addresses, the per-fleet [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) story is what keeps a single firmware image servicing an ABB plant in Ohio and a Yaskawa plant in São Paulo. See [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) for how to organize them by vendor or site.
 
 **Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for more information.
 
@@ -368,22 +368,37 @@ A reference design that drops into thousands of different drive configurations h
 
 **Signal limitations.** VFD telemetry is valuable but it is not equivalent to full pump instrumentation. Current, torque, speed, temperature, and active fault codes can identify abnormal *patterns*, but they cannot conclusively distinguish between worn impeller, clogged suction strainer, closed discharge valve, cavitation, bearing drag, increased fluid viscosity, debris, or process changes — without supporting context such as suction/discharge pressure, flow, vibration, or known duty cycle. Treat every alert this firmware emits as an *early maintenance indicator*, not a diagnosis.
 
-**Simplified for this reference design:**
+### Simplified for this reference design
 
-- **Vendor-specific register addresses, scaling, signedness, word counts.** Defaults are illustrative for a fictional contiguous map. Each VFD vendor publishes its own Modbus map; commissioning a real plant means looking up the actual addresses, scaling factors (e.g. current may be 0.1 A, 0.01 A, or % of rated), signedness (torque/temperature often signed), word counts (runtime hours often a 32-bit value across two registers with vendor-specific word order), and addressing convention (0-based wire-level vs 1-based / Modicon "40001" notation). The shipped firmware reads six contiguous 16-bit registers with hardcoded scaling — production builds need vendor-specific firmware (one build per `vfd_profile`).
-- **Active fault code only, not fault history log.** The firmware reads the active-fault register once per cycle. A vendor-specific fault-log readout (typically a multi-register block with circular-buffer semantics) is a future enhancement.
-- **Single drive per OPTA.** The firmware reads one slave ID. A pump room with N drives needs either N OPTAs, or firmware extension to round-robin across slave IDs on the same RS-485 bus.
-- **Heuristic thresholds.** Four threshold-based rules catch common load-anomaly, transient-fault, runtime-drift, and overtemp patterns. They will *not* catch every failure mode, and they will sometimes fire on benign conditions (e.g. a seasonally hotter ambient, a deliberate process change). Production deployments should commission thresholds per pump after a baseline period.
-- **No Modbus writes.** The firmware reads only. Writing setpoints to the drive (start/stop, speed reference, etc.) is intentionally out of scope — that's a different safety conversation involving E-stop wiring, lockout/tagout, and functional safety certification.
-- **No host firmware updates wired up.** [Notecard Outboard Firmware Update](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) is supported on STM32H7 (the OPTA's MCU family) but requires AUX wiring that Blues Wireless for OPTA does not currently break out. For now, host firmware updates are local-only via USB-C.
+Beyond the signal limitation above, the firmware draws a deliberate scope boundary in a few places. Each of these is a place a real fleet deployment will extend the design rather than a defect.
 
-**Production next steps:**
-- Vendor-specific `vfd_profile` builds: ABB ACS580, Yaskawa GA500, Danfoss FC-302, Schneider ATV — each with the correct register addresses, scaling, signedness, and word handling baked in.
-- Per-pump baseline learning — store rolling 30-day current-vs-frequency tables in flash and trigger `load_anomaly` against the *learned* curve, not a static factor.
-- Fault history log readout (vendor-specific, typically multi-register with timestamp).
-- Multi-drive support via round-robin polling and per-slave-ID summaries.
-- Add a `vfd_command.qi` inbound Notefile for service-tech-initiated diagnostic dumps.
-- Wire ODFU to the OPTA's BOOT/RESET pins for over-the-air host updates.
+**Vendor-specific register addresses, scaling, signedness, and word counts.** Defaults are illustrative for a fictional contiguous map. Each VFD vendor publishes its own Modbus map, so commissioning a real plant means looking up the actual addresses, scaling factors (current may be 0.1 A, 0.01 A, or % of rated), signedness (torque and temperature are often signed), word counts (runtime hours are often a 32-bit value across two registers with vendor-specific word order), and addressing convention (0-based wire-level vs. 1-based / Modicon "40001" notation). The shipped firmware reads six contiguous 16-bit registers with hardcoded scaling — **production builds need vendor-specific firmware, one build per `vfd_profile`.**
+
+**Active fault code only, not fault history log.** The firmware reads the active-fault register once per cycle. A vendor-specific fault-log readout — typically a multi-register block with circular-buffer semantics — is a future enhancement.
+
+**Single drive per OPTA.** The firmware reads one slave ID. A pump room with N drives needs either N OPTAs or a firmware extension to round-robin across slave IDs on the same RS-485 bus.
+
+**Heuristic thresholds.** Four threshold-based rules catch common load-anomaly, transient-fault, runtime-drift, and overtemp patterns. They will *not* catch every failure mode, and they will sometimes fire on benign conditions such as a seasonally hotter ambient or a deliberate process change. Production deployments should commission thresholds per pump after a baseline period.
+
+**No Modbus writes.** The firmware reads only. Writing setpoints to the drive (start/stop, speed reference, and the like) is intentionally out of scope — that's a different safety conversation involving E-stop wiring, lockout/tagout, and functional safety certification.
+
+**No host firmware updates wired up.** [Notecard Outboard Firmware Update](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) is supported on STM32H7 (the OPTA's MCU family) but requires AUX wiring that Blues Wireless for OPTA does not currently break out. For now, **host firmware updates are local-only via USB-C.**
+
+### Production Next Steps
+
+When a real fleet starts deploying, the scope choices above become the roadmap — roughly in order from the most immediately useful to the most infrastructure-dependent.
+
+**Vendor-specific `vfd_profile` builds** are the first need: ABB ACS580, Yaskawa GA500, Danfoss FC-302, Schneider ATV — each with the correct register addresses, scaling, signedness, and word handling baked in.
+
+**Per-pump baseline learning** sharpens detection considerably. Storing rolling 30-day current-vs-frequency tables in flash lets the firmware trigger `load_anomaly` against the *learned* curve rather than a static factor.
+
+**Fault history log readout** — vendor-specific and typically multi-register with timestamps — captures the events leading up to a trip, not just the active fault.
+
+**Multi-drive support** via round-robin polling and per-slave-ID summaries lets a single OPTA service an entire pump room.
+
+**A `vfd_command.qi` inbound Notefile** would allow service-tech-initiated diagnostic dumps on demand.
+
+**Wiring ODFU to the OPTA's BOOT/RESET pins** is the longest-horizon item, enabling over-the-air host updates across the fleet once the hardware path is available.
 
 ## 13. Summary
 

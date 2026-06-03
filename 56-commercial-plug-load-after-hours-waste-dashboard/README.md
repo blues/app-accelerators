@@ -8,7 +8,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-This project is a cellular-connected [energy savings](https://blues.com/energy-savings/) monitor that clips non-invasive CT (current transformer) clamps onto branch circuits in a commercial sub-panel, samples RMS current once a minute, and transmits hourly per-circuit profiles to the Blues cloud service, Notehub — giving energy consultants a view into which circuits are burning money at 2 AM, without ever touching the building's corporate network.
+This project is a cellular-connected [energy savings](https://blues.com/energy-savings/) monitor that clips non-invasive CT (current transformer) clamps onto branch circuits in a commercial sub-panel, samples RMS current once a minute, and transmits hourly per-circuit profiles to the [Blues Notehub](https://blues.com/notehub/) cloud service — giving energy consultants a view into which circuits are burning money at 2 AM, without ever touching the building's corporate network.
 
 ## 1. Project Overview
 

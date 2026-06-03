@@ -30,7 +30,7 @@ In a multi-tenant building, the WiFi access points are almost always under tenan
 2. Invisible to tenants — the tenant cannot see or intercept it
 3. Operationally simple — no IT setup, no passwords, no tenant cooperation
 
-A cellular Notecard meets all three criteria. It's a SIM-bearing module that calls home to Notehub over the cellular network — a connection the tenant has no access to and no visibility into, exactly the same way the building's alarm system uses its own GSM dialout. There is no form to fill out, no AP to pair to, and no IT ticket to raise with any tenant. The data channel is as landlord-owned as the panel itself.
+A cellular Notecard meets all three criteria. It's a SIM-bearing module that calls home to the [Blues Notehub](https://blues.com/notehub/) cloud service over the cellular network — a connection the tenant has no access to and no visibility into, exactly the same way the building's alarm system uses its own GSM dialout. There is no form to fill out, no AP to pair to, and no IT ticket to raise with any tenant. The data channel is as landlord-owned as the panel itself.
 
 This is not a niche edge case. Billing disputes are among the most contentious issues in commercial tenancy, and the architecture matters: a meter whose data travels over the tenant's network is a meter whose readings a clever tenant can plausibly dispute. A cellular Notecard is the only architecture that eliminates that dispute by design.
 
@@ -556,6 +556,10 @@ If a problem is not on this list, visit the [Blues community forum](https://disc
 
 This is a reference design for proportional tenant allocation, not a certified utility sub-meter — and that distinction is deliberate. The list below makes explicit where the design's measurement model, the agency-listing of the bench-grade voltage transducer, and the single-phase assumption draw the line, then points at the production paths for the cases that need more.
 
+### Simplified for this Proof-of-Concept
+
+The simplifications below are deliberate scope choices — each marks where the measurement model, the bench-grade voltage transducer, or the single-phase assumption draws the line for a proportional allocation bridge rather than a certified meter.
+
 **Allocation-grade estimation, not certified metering.** This design measures estimated interval energy by taking one ~200 milliseconds active-power snapshot per `sample_interval_sec` and multiplying it by the full interval duration. The firmware does not continuously integrate power between wakes. This approach is accurate for constant or slowly-varying loads but may over- or under-state energy on bursting or cycling loads. For internal bill-back between tenants in the same building it is an appropriate allocation method. It is **not** suitable for applications where accuracy is subject to regulatory oversight, for example, utility-tariff sub-metering subject to accuracy standards — without replacing the measurement front end with a dedicated simultaneous-sampling energy-metering IC or a certified pulse-output sub-meter interface.
 
 **Single-phase voltage reference shared across all channels.** The voltage transducer provides one voltage waveform used as the reference for all four current channels. This is accurate when all tenant circuits derive from the same phase leg of the building supply — common in small commercial buildings with a single-phase 120 V service. In a split-phase (120/240 V) building where tenants may be on different legs, or in a three-phase building where tenant feeds come from different phases, the phase relationship between the shared voltage reference and a tenant's actual line voltage introduces a power-factor error in the real-power calculation. For buildings with known multi-phase distribution, a dedicated voltage sensor per phase (and per-phase V×I pairs in the firmware) is required for accurate real-power metering across all tenants.
@@ -574,9 +578,13 @@ This is a reference design for proportional tenant allocation, not a certified u
 
 **Mojo is bench equipment.** The firmware does not read the Mojo's coulomb-counter register over Qwiic. Adding a runtime mAh field to the summary Note is a straightforward extension if fleet-level power telemetry is valuable.
 
-**Production next steps:**
-- Per-channel calibration workflow: at commissioning, capture a reference reading alongside a calibrated clamp meter to establish the correct `rogowski_amps_per_volt` for each installed coil, then push the trimmed value as a per-device environment variable in Notehub.
-- **Production voltage sensing (future revision).** The ZMPT101B module used in this design is bench/prototype only — it is not agency-listed for permanent installation inside a commercial panel enclosure. Before deploying to a live panel, replace it with an agency-listed isolated AC voltage transducer. Two substitution paths are available depending on the device chosen:
+### Production Next Steps
+
+Taking the bridge toward a production rollout means calibrating each installed coil, replacing the bench-grade voltage front end with an agency-listed transducer, and wiring the hourly stream into a billing platform. The following extensions are the natural progression.
+
+**Per-channel calibration workflow** comes first: at commissioning, capture a reference reading alongside a calibrated clamp meter to establish the correct `rogowski_amps_per_volt` for each installed coil, then push the trimmed value as a per-device environment variable in Notehub.
+
+**Production voltage sensing (future revision).** The ZMPT101B module used in this design is bench/prototype only — it is **not agency-listed** for permanent installation inside a commercial panel enclosure. Before deploying to a live panel, replace it with an agency-listed isolated AC voltage transducer. Two substitution paths are available depending on the device chosen:
 
   **(a) AC waveform output** (e.g., a Yokogawa or Verivolt panel-mount PT with a 0–3 V AC output): wiring-only drop-in. The existing `measureChannel()` waveform-RMS algorithm works unchanged. Retain the 10 µF series AC-coupling capacitor and the 100 kΩ / 100 kΩ half-rail bias divider on A4 exactly as wired for the ZMPT101B. Calibrate `volt_scale` to the new transducer's rated output sensitivity (line V RMS ÷ ADC-pin V RMS at rated input). This is the simplest production upgrade path.
 
@@ -586,10 +594,14 @@ This is a reference design for proportional tenant allocation, not a certified u
   - *150 Ω ±0.1% precision burden resistor* — wire from ADC A4 to GND. This converts the 4–20 mA loop current to 0.60–3.00 V DC, staying within the Cygnet's 3.3 V ADC limit. Remove the 10 µF AC-coupling capacitor and the 100 kΩ / 100 kΩ half-rail bias divider from A4; the signal is DC and needs neither AC coupling nor a bias network.
   - *Loop wiring*: connect the 24 V supply (+) → transducer VIN; transducer IOUT → burden resistor (+) → ADC A4; burden resistor (−) → GND → 24 V supply (−). Verify transducer polarity against the device datasheet.
   - *Firmware adaptation*: `measureChannel()` must be updated to replace the 2000-sample AC waveform loop with a single DC ADC read, compute instantaneous line voltage as `(adc_v - 0.60) / (3.00 - 0.60) × V_rated_full_scale` (where 0.60 V corresponds to 4 mA and 3.00 V to 20 mA), and pass that DC voltage value through the power and fault checks in place of `v_rms_adc`. The voltage-path bias and saturation checks must also be adapted — DC offset is no longer meaningful on A4, and the plausibility check should compare the derived line-voltage value directly against `VOLTAGE_MIN_V_RMS`. Implement the 4–20 mA path as a `#define`-gated alternative to the existing waveform path so both options can be compiled and bench-tested without modifying the core algorithm.
-- Per-phase voltage sensing: for buildings with multi-phase distribution, replace the single voltage transducer with one per phase and extend the firmware to pair each current channel with its corresponding phase voltage.
-- Implement [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) so firmware can be updated across the entire fleet without a truck roll to each panel.
-- Integrate with a billing platform: configure a Notehub HTTP route that POSTs each `meter_summary.qo` to the analytics and billing database. Configure the downstream system to reject or quarantine any `meter_summary.qo` where `fault_mask != 0` and fall back to manual estimation for the affected period. Monthly totals are derived by querying the [Notehub Event Query API](https://dev.blues.io/api-reference/notehub-api/api-introduction/) and summing `t*_wh` for each device over the billing period.
-- Commissioning baseline: on first installation, record the ADC DC offset for each channel with all loads off and store the values in Notehub device metadata. The downstream system can compare `fault_mask` flags against these baselines to distinguish genuine zero-load readings from sensor faults.
+
+**Per-phase voltage sensing** extends the design to buildings with multi-phase distribution: replace the single voltage transducer with one per phase and extend the firmware to pair each current channel with its corresponding phase voltage.
+
+**Notecard Outboard DFU** lets [firmware be updated](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) across the entire fleet without a truck roll to each panel.
+
+**Integrate with a billing platform** by configuring a Notehub HTTP route that POSTs each `meter_summary.qo` to the analytics and billing database. Configure the downstream system to reject or quarantine any `meter_summary.qo` where `fault_mask != 0` and fall back to manual estimation for the affected period. Monthly totals are derived by querying the [Notehub Event Query API](https://dev.blues.io/api-reference/notehub-api/api-introduction/) and summing `t*_wh` for each device over the billing period.
+
+**Capture a commissioning baseline** on first installation by recording the ADC DC offset for each channel with all loads off and storing the values in Notehub device metadata. The downstream system can compare `fault_mask` flags against these baselines to distinguish genuine zero-load readings from sensor faults.
 
 ## 12. Summary
 

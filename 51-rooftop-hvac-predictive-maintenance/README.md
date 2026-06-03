@@ -340,22 +340,39 @@ If a problem isn't on this list, the [Blues community forum](https://discuss.blu
 
 This pack is deliberately a starting point — small, retrofittable, and aimed at the failure modes a single technician already knows how to recognize. A handful of things are out of scope on purpose, and a longer list of extensions makes sense once the basic detector is paying for itself.
 
-**Simplified for the POC:**
-- Detection is rule-based — three scalar threshold checks, not a trained model. That catches the impending-failure patterns HVAC technicians already recognize on a service call, but it isn't the anomaly-detection or drift-analysis that a more sophisticated predictive-maintenance platform would layer on top.
-- CT readings are single-phase only. Three-phase commercial RTUs need three CTs and a firmware change to sum them.
-- The SDP810 CRC byte is read and discarded rather than verified — a communication-layer fault on the I²C bus won't be caught.
-- Compressor-start detection is sampled, not interrupt-driven: transitions that occur and finish entirely inside one `sample_interval_sec` window won't be counted. The 60-second default is well below normal RTU cycle times, but a badly-misbehaving contactor could in principle cycle faster than the sampler sees.
-- No local storage of historical samples — the Notecard does its own multi-day Note queue, but the sketch itself keeps only the current summary window in RAM plus a 16-slot ring buffer of recent compressor starts.
-- The 120VAC power path assumes the installer can tap the RTU service disconnect. Installations that can only offer the 24VAC control-transformer rail need a 24VAC-input supply instead (e.g. a Functional Devices PSH40A or a Mornsun LH05-23B05R3); the downstream 5V wiring is unchanged. A Scoop / solar variant is a reasonable addition for units where neither rail is practical.
-- Mojo is bench-validation equipment in this POC — the firmware does not read its LTC2959 coulomb counter over the Qwiic bus. Adding a runtime mAh field to the summary is a straightforward extension if fleet-level power telemetry is valuable.
+### Simplified for the POC
 
-**Production next steps:**
-- Three-phase CT support (or 208/240V split-phase) for larger units — a second and third CT on A3/A4 plus an RMS sum in firmware.
-- Add a duct-static-pressure sensor on the supply side to distinguish "clogged filter" from "blocked coil." The two look similar from the return side alone, but a clogged coil shows rising static on *both* sides while a clogged filter only rises on the return.
-- CRC check on all SDP810 I²C reads — the bytes are already there in the frame, the firmware just ignores them today.
-- Field-upgradeable firmware via [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) so a service company can push a threshold recipe or a new failure-mode detector to the entire fleet without a truck roll.
-- Per-unit commissioning: probe-offset correction via an environment variable. Thermistors drift a few degrees with duct placement, and calibrating once at install time is strictly better than living with the noise.
-- Weather-input overlay: correlate delta-T against outside-air temperature (via a Notehub environment variable sourced from a weather API route, or a dedicated outdoor-air probe) so refrigerant-loss detection isn't falsely triggered during mild-weather startup cycles, when delta-T naturally runs low before the coil saturates.
+The following are scope choices, not oversights — each trades a capability a fuller platform would want against the simplicity that makes this pack retrofittable by a single technician.
+
+**Detection is rule-based.** The firmware runs three scalar threshold checks, not a trained model. That catches the impending-failure patterns HVAC technicians already recognize on a service call, but it isn't the anomaly-detection or drift-analysis that a more sophisticated predictive-maintenance platform would layer on top.
+
+**CT readings are single-phase only.** Three-phase commercial RTUs need three CTs and a firmware change to sum them.
+
+**The SDP810 CRC byte is read and discarded rather than verified**, which means a communication-layer fault on the I²C bus won't be caught.
+
+**Compressor-start detection is sampled, not interrupt-driven.** Transitions that occur and finish entirely inside one `sample_interval_sec` window won't be counted. The 60-second default is well below normal RTU cycle times, but a badly-misbehaving contactor could in principle cycle faster than the sampler sees.
+
+**No local storage of historical samples.** The Notecard does its own multi-day Note queue, but the sketch itself keeps only the current summary window in RAM plus a 16-slot ring buffer of recent compressor starts.
+
+**The 120VAC power path assumes the installer can tap the RTU service disconnect.** Installations that can only offer the 24VAC control-transformer rail need a 24VAC-input supply instead (for example, a Functional Devices PSH40A or a Mornsun LH05-23B05R3); the downstream 5V wiring is unchanged. A Scoop / solar variant is a reasonable addition for units where neither rail is practical.
+
+**Mojo is bench-validation equipment in this POC.** The firmware does not read its LTC2959 coulomb counter over the Qwiic bus. Adding a runtime mAh field to the summary is a straightforward extension if fleet-level power telemetry is valuable.
+
+### Production Next Steps
+
+Once the basic detector is paying for itself, a handful of extensions make sense — roughly from the most immediately useful to the most infrastructure-dependent.
+
+**Three-phase CT support** (or 208/240V split-phase) brings larger units into scope: a second and third CT on A3/A4 plus an RMS sum in firmware.
+
+**A duct-static-pressure sensor on the supply side** would distinguish "clogged filter" from "blocked coil." The two look similar from the return side alone, but a clogged coil shows rising static on *both* sides while a clogged filter only rises on the return.
+
+**A CRC check on all SDP810 I²C reads** is low-hanging fruit — the bytes are already there in the frame, the firmware just ignores them today.
+
+**Field-upgradeable firmware via [Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/)** would let a service company push a threshold recipe or a new failure-mode detector to the entire fleet without a truck roll.
+
+**Per-unit commissioning** via a probe-offset correction environment variable tightens accuracy: thermistors drift a few degrees with duct placement, and calibrating once at install time is strictly better than living with the noise.
+
+**A weather-input overlay** correlates delta-T against outside-air temperature — via a Notehub environment variable sourced from a weather API route, or a dedicated outdoor-air probe — so refrigerant-loss detection isn't falsely triggered during mild-weather startup cycles, when delta-T naturally runs low before the coil saturates.
 
 ## 12. Summary
 
