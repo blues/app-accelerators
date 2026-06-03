@@ -130,7 +130,7 @@ This BOM targets a **positive-referenced DC bus** — the INA228 high-side sensi
 
 </Warning>
 
-All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header and Qwiic connector. The Notecard Cell+WiFi seats into the M.2 slot.
+All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-7/) dual 16-pin header and Qwiic connector. The Notecard Cell+WiFi seats into the M.2 slot.
 
 **Cabinet bus to Notecarrier CX power chain:**
 
@@ -142,7 +142,7 @@ DC-DC module output (5 V regulated) → Notecarrier CX +VBAT header pin
 Cabinet battery bus (–) / cabinet ground → Notecarrier CX GND header pin
 ```
 
-Mount the DC-DC module inside the enclosure and verify its input-voltage range covers your cabinet supply before wiring. The Notecarrier CX's USB-C connector is an equivalent 5 V power entry point if a USB-C cable is more convenient than the header pin for your enclosure layout. See the [Notecarrier CX datasheet](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) for +VBAT and GND pin locations on the dual 16-pin header.
+Mount the DC-DC module inside the enclosure and verify its input-voltage range covers your cabinet supply before wiring. The Notecarrier CX's USB-C connector is an equivalent 5 V power entry point if a USB-C cable is more convenient than the header pin for your enclosure layout. See the [Notecarrier CX datasheet](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-7/) for +VBAT and GND pin locations on the dual 16-pin header.
 
 The 2000 mAh LiPo on the JST connector is charged from the regulated 5 V supply whenever the cabinet bus is present. During a normal mains outage the sentinel continues drawing power from the cabinet battery via the DC-DC converter — the LiPo does not take over yet. This is intentional: the sentinel is riding on the battery it monitors, directly observing the discharge as it happens. The LiPo becomes the primary power source only after the monitored battery is deeply depleted, the bus voltage drops below the DC-DC converter's minimum input threshold, or the battery is disconnected — extending the reporting tail beyond the battery's own capacity. If the design requirement is full electrical independence from the monitored battery from the moment mains fails, an isolated power supply fed from a separate source is needed instead.
 

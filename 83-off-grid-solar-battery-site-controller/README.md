@@ -111,7 +111,7 @@ All Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ![Wiring: SmartShunt on UART1, SmartSolar MPPT on UART2 (both VE.Direct); MAIN antenna for cellular or satellite; site 5 V bus → DC-DC step-down → Mojo (bench) → +VBAT](diagrams/02-wiring-assembly.svg)
 
-All host I/O uses the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual-row 16-pin header. The Notecard (Cell+WiFi or Skylo. See §4) seats into the carrier's M.2 slot. The Mojo sits inline on the +VBAT power rail for bench bring-up and commissioning. VE.Direct TX-to-MCU level shifting is handled by a simple 10 kΩ/20 kΩ resistor divider on each RX line — this is the only documented and validated interface for this project; active level-shifter boards with bidirectional MOSFETs are not recommended for this unidirectional UART application.
+All host I/O uses the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-7/) dual-row 16-pin header. The Notecard (Cell+WiFi or Skylo. See §4) seats into the carrier's M.2 slot. The Mojo sits inline on the +VBAT power rail for bench bring-up and commissioning. VE.Direct TX-to-MCU level shifting is handled by a simple 10 kΩ/20 kΩ resistor divider on each RX line — this is the only documented and validated interface for this project; active level-shifter boards with bidirectional MOSFETs are not recommended for this unidirectional UART application.
 
 <Warning>
 

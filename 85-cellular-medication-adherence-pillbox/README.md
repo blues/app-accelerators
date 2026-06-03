@@ -81,7 +81,7 @@ All Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ![Wiring and assembly](diagrams/02-wiring-assembly.svg)
 
-The Notecard Cell+WiFi (NOTE-MBGLW) seats into the Notecarrier CX's M.2 connector and is powered from the same VBAT rail. All host I/O lands on the [Notecarrier CX dual 16-pin header](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/).
+The Notecard Cell+WiFi (NOTE-MBGLW) seats into the Notecarrier CX's M.2 connector and is powered from the same VBAT rail. All host I/O lands on the [Notecarrier CX dual 16-pin header](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-7/).
 
 **Micro-switch wiring — all 7 compartments are wired identically:**
 

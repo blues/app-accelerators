@@ -142,7 +142,7 @@ All Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 </Warning>
 
-All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard Cell+WiFi seats into the carrier's M.2 slot. **An external antenna is mandatory in a metal walk-in box or steel mechanical-room cabinet** — a Notecard antenna inside a metal enclosure cannot radiate reliably. Route a short u.FL-to-SMA pigtail from the Notecard's u.FL port through a cable gland in the NEMA 4X enclosure wall and attach it to the panel-mount SMA whip antenna on the exterior. The Mojo sits inline between the 5V supply and the Notecarrier's +VBAT pad for bench validation.
+All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-7/) dual 16-pin header. The Notecard Cell+WiFi seats into the carrier's M.2 slot. **An external antenna is mandatory in a metal walk-in box or steel mechanical-room cabinet** — a Notecard antenna inside a metal enclosure cannot radiate reliably. Route a short u.FL-to-SMA pigtail from the Notecard's u.FL port through a cable gland in the NEMA 4X enclosure wall and attach it to the panel-mount SMA whip antenna on the exterior. The Mojo sits inline between the 5V supply and the Notecarrier's +VBAT pad for bench validation.
 
 Pin-by-pin connections:
 
