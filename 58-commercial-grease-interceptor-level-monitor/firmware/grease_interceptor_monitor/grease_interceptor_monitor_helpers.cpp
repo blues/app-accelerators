@@ -123,6 +123,48 @@ uint32_t getEpochTime(void) {
 }
 
 // ===========================================================================
+// Read accumulated energy from the Mojo coulomb counter via card.power.
+//
+// The Blues Mojo is wired inline on the +VBAT rail and connected to the
+// Notecarrier CX Qwiic port. Notecard firmware v8.1.3+ auto-detects the Mojo
+// (an Analog Devices LTC2959 coulomb counter) over I2C and exposes its data
+// through card.power. The LTC2959 integrates charge continuously in hardware,
+// so an on-demand read returns the cumulative mAh consumed since the last
+// reset — no logging cadence needs to be configured.
+//
+// Returns the cumulative milliamp-hours, or -1.0 if the Notecard returns an
+// error (e.g. no Mojo attached or Notecard firmware too old). The caller
+// treats a negative result as "reading unavailable" and does not reset the
+// counter, so that window's energy rolls into the next window rather than
+// being discarded.
+// ===========================================================================
+float readPowerMah(void) {
+    J *rsp = notecard.requestAndResponse(notecard.newRequest("card.power"));
+    if (!notecardResponseOk(rsp)) {
+        notecard.deleteResponse(rsp);
+        return -1.0f;
+    }
+    float mah = (float)JGetNumber(rsp, "milliamp_hours");
+    notecard.deleteResponse(rsp);
+    return mah;
+}
+
+// ===========================================================================
+// Reset the Mojo coulomb counter back to zero so the next summary window
+// measures only the energy consumed during that window. Called only after a
+// summary note is confirmed delivered AND the preceding read succeeded.
+// A failure here is non-fatal: it is logged, and the next window simply
+// reports the accumulated total since the last successful reset.
+// ===========================================================================
+void resetPowerCounter(void) {
+    J *req = notecard.newRequest("card.power");
+    JAddBoolToObject(req, "reset", true);
+    J *rsp = notecard.requestAndResponse(req);
+    notecardResponseOk(rsp);  // logs on failure; non-fatal
+    notecard.deleteResponse(rsp);
+}
+
+// ===========================================================================
 // Validate a Notecard response: non-NULL and no err field present.
 // Logs the Notecard error string when debug output is enabled.
 // notecard.deleteResponse() must still be called by the caller.
@@ -155,11 +197,15 @@ bool notecardResponseOk(J *rsp) {
 // be zero. Notecard templates default to omitempty at Notehub serialization,
 // stripping any field whose value is 0/false/null/"". Without "full":true a
 // freshly pumped-out interceptor (0 % fill) would have fill_pct_avg,
-// fill_pct_peak, and fill_pct_now all silently dropped from the Notehub body
-// — only valid_samples would appear, leaving the consumer unable to
-// distinguish "0 % fill" from "field never sent".
+// fill_pct_peak, fill_pct_now, and power_mah all silently dropped from the
+// Notehub body — only valid_samples would appear, leaving the consumer unable
+// to distinguish "0 % fill" / "0 mAh" from "field never sent".
+//
+// power_mah carries the energy consumed during this window, read from the
+// Mojo coulomb counter via card.power. A negative value (-1.0) signals that
+// the Mojo reading was unavailable for this window.
 // ===========================================================================
-bool sendSummary(const State &state) {
+bool sendSummary(const State &state, float power_mah) {
     float avg = state.fill_pct_sum / (float)state.valid_samples;
 
     J *req = notecard.newRequest("note.add");
@@ -175,6 +221,7 @@ bool sendSummary(const State &state) {
     // reach this point, so we can include it unconditionally.
     JAddNumberToObject(body, "fill_pct_now", state.fill_pct_last_valid);
     JAddNumberToObject(body, "valid_samples", state.valid_samples);
+    JAddNumberToObject(body, "power_mah", power_mah);
     J *rsp = notecard.requestAndResponse(req);
     bool ok = notecardResponseOk(rsp);
     notecard.deleteResponse(rsp);
