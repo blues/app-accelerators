@@ -255,12 +255,22 @@ void setup() {
 
     if (report_due) {
         if (state.valid_samples > 0) {
-            if (sendSummary(state)) {
+            // Read the energy consumed this window from the Mojo coulomb counter
+            // (via card.power) before building the summary. Returns -1.0 if the
+            // Mojo reading is unavailable; that sentinel is carried in the note.
+            float power_mah = readPowerMah();
+            if (sendSummary(state, power_mah)) {
                 // Reset window accumulators only after confirmed delivery so a
                 // failed send retries on the next wake with the full window intact.
                 state.fill_pct_sum      = 0.0f;
                 state.valid_samples     = 0;
                 state.fill_pct_peak     = 0.0f;
+                // Zero the Mojo counter so the next window starts fresh, but only
+                // when this window's reading was valid — a transient card.power
+                // failure rolls the energy into the next window instead of losing it.
+                if (power_mah >= 0.0f) {
+                    resetPowerCounter();
+                }
                 state.last_report_epoch = (now > 0) ? now : 1;  // 1 = fired; time not yet known
             }
         } else if (state.last_report_epoch > 0 && now > 0) {
@@ -359,6 +369,7 @@ static bool defineTemplates(void) {
     JAddNumberToObject(body, "fill_pct_peak", TFLOAT32);
     JAddNumberToObject(body, "fill_pct_now",  TFLOAT32);
     JAddNumberToObject(body, "valid_samples", TUINT32);   // 4-byte unsigned integer
+    JAddNumberToObject(body, "power_mah",     TFLOAT32);  // mAh consumed this window (Mojo)
     J *rsp = notecard.requestAndResponse(req);
     bool ok = notecardResponseOk(rsp);
     notecard.deleteResponse(rsp);

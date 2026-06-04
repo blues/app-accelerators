@@ -116,7 +116,7 @@ All Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ![Wiring: 4 SCT-013 CT clamps to A0–A3 with shared 10 kΩ/10 kΩ + 10 µF bias node; external SMA antenna; 120 VAC → IRM-10-5 (5 V) → Mojo → +VBAT power chain](diagrams/02-wiring-assembly.svg)
 
-All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard Cell+WiFi seats in the carrier's M.2 slot. Mojo sits inline between the 5 V supply output and the Notecarrier's `+VBAT` pad.
+All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-7/) dual 16-pin header. The Notecard Cell+WiFi seats in the carrier's M.2 slot. Mojo sits inline between the 5 V supply output and the Notecarrier's `+VBAT` pad.
 
 <Warning>
 
