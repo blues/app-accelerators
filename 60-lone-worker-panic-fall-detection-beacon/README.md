@@ -567,7 +567,7 @@ The simplifications below are scope choices, not surprises — each names someth
 
 **Skylo NTN requires an initial non-NTN sync.** The Skylo satellite (NTN) path is not available until Notecard for Skylo has completed at least one successful cellular or WiFi session to associate with Notehub and register the Notefile templates. A device that ships directly into a no-cellular zone will be unable to send via satellite until it has found cellular (or WiFi) coverage at least once. Pre-provisioning during QA on a cellular-capable bench is the standard mitigation.
 
-**Satellite payload budget.** The Notecard for Skylo bundle includes 10 KB of Skylo satellite data, and the Skylo NTN link enforces a hard 256-byte maximum per Note. The compact alert template is well under that ceiling; frequent triggering in a no-cellular environment will consume the bundle faster. Monitor satellite usage via [Notehub billing/usage data](https://dev.blues.io/notehub/notehub-walkthrough/#configuring-your-billing-account).
+**Satellite payload budget.** The Notecard for Skylo bundle includes 10 KB of Skylo satellite data, and the Skylo NTN link enforces a hard 256-byte maximum per Note. The compact alert template is well under that ceiling; frequent triggering in a no-cellular environment will consume the bundle faster.
 
 **Single I²C bus for all peripherals.** The LIS3DH and DRV2605L share the bus with the internal Notecard connection. A severe I²C lockup (e.g., a partially-completed transaction interrupted by a reset) could block all communication. A production design should include bus-error recovery and a hardware watchdog.
 
