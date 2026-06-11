@@ -133,13 +133,13 @@ The Adafruit MAX31865 (Product 3648) mounts inside the enclosure and connects to
 | Vin | +3V3_OUT | 3.3 V supply |
 | GND | GND | Common ground |
 | CLK | SCK | SPI clock |
-| SDI | **MISO** (silkscreen label) | On Notecarrier CX v1.3 the MOSI and MISO silkscreen labels are swapped — the pin labeled **MISO** on the board is the actual master-out (MOSI) line. Connect MAX31865 SDI (data in to the chip) here. |
+| SDI | **MISO** (silkscreen label) | On Notecarrier CX the MOSI and MISO silkscreen labels are swapped — the pin labeled **MISO** on the board is the actual master-out (MOSI) line. Connect MAX31865 SDI (data in to the chip) here. |
 | SDO | **MOSI** (silkscreen label) | The pin labeled **MOSI** on the board is the actual master-in (MISO) line. Connect MAX31865 SDO (data out from the chip) here. |
 | CS | D10 | Software chip-select |
 
 <Warning>
 
-**Notecarrier CX v1.3 label swap.** The MOSI and MISO pin labels are transposed on the CX v1.3 board silkscreen (see [Notecarrier CX datasheet](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/)). The table above gives the correct physical connections. The Arduino STM32 SPI library drives the correct hardware-peripheral lines regardless of the silkscreen; the swap only affects how you run the jumper wires.
+**Notecarrier CX label swap.** The MOSI and MISO pin labels are transposed on the CX board silkscreen (see [Notecarrier CX datasheet](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-7/)). The table above gives the correct physical connections. The Arduino STM32 SPI library drives the correct hardware-peripheral lines regardless of the silkscreen; the swap only affects how you run the jumper wires.
 
 </Warning>
 
@@ -461,7 +461,7 @@ See the [MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/not
 - Open the Notehub **Project → Devices** tab and look for the device serial number; if it appears in the device list but shows no Events, check the cellular signal at that location (weak signal can delay first registration).
 
 **Temperature readings are −9999 or missing.**
-- The MAX31865 amplifier or PT1000 probe has a fault. Verify SPI wiring: CLK, SDI (MISO label on CX), SDO (MOSI label on CX), CS (D10), +3.3V, GND. Note the [Notecarrier CX v1.3 label swap](#rtd-temperature-amplifier-max31865) — the silkscreen labels MOSI and MISO are reversed; use the pin table in §5, not the labels.
+- The MAX31865 amplifier or PT1000 probe has a fault. Verify SPI wiring: CLK, SDI (MISO label on CX), SDO (MOSI label on CX), CS (D10), +3.3V, GND. Note the [Notecarrier CX label swap](#rtd-temperature-amplifier-max31865) — the silkscreen labels MOSI and MISO are reversed; use the pin table in §5, not the labels.
 - If using a bench TMP117 instead, confirm the Qwiic cable is connected and that you have swapped the library from MAX31865 to SparkFun_TMP117 (see [§4](#4-hardware-requirements)).
 - Open the Notehub **Project → Terminal** tab, select your device, and run `card.status` to check if the Notecard is reporting a fault condition.
 

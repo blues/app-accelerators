@@ -147,7 +147,7 @@ Notecard for Skylo ships with an active global SIM including 500 MB of cellular 
 
 ![Wiring: LIS3DH + DRV2605L on shared I²C; panic button to D9 INPUT_PULLUP; Notecard for Skylo MAIN (cellular+satellite) + GPS u.FL antennas; LiPo 3.7 V → Mojo → +VBAT](diagrams/02-wiring-assembly.svg)
 
-The whole stack — Notecarrier CX, Notecard for Skylo, accelerometer, haptic driver, and panic button — has to fit inside a belt-clip enclosure that a worker will forget they're wearing. Every host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin headers; Notecard for Skylo seats into the M.2 slot and talks to the Cygnet host over the carrier's internal I²C. Because cellular, WiFi, and Skylo satellite all live on that one module, there is no companion satellite device to wire in — only the two u.FL antennas described below. The Mojo sits inline between the LiPo JST connector and the Notecarrier CX `+VBAT` pad during bench validation.
+The whole stack — Notecarrier CX, Notecard for Skylo, accelerometer, haptic driver, and panic button — has to fit inside a belt-clip enclosure that a worker will forget they're wearing. Every host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-7/) dual 16-pin headers; Notecard for Skylo seats into the M.2 slot and talks to the Cygnet host over the carrier's internal I²C. Because cellular, WiFi, and Skylo satellite all live on that one module, there is no companion satellite device to wire in — only the two u.FL antennas described below. The Mojo sits inline between the LiPo JST connector and the Notecarrier CX `+VBAT` pad during bench validation.
 
 All I²C peripherals (LIS3DH and DRV2605L) share the SDA/SCL bus exposed on the Notecarrier CX headers. On-board pull-ups are provided by the carrier; no external resistors are needed for the I²C lines.
 
@@ -559,7 +559,7 @@ The simplifications below are scope choices, not surprises — each names someth
 
 **Skylo NTN requires an initial non-NTN sync.** The Skylo satellite (NTN) path is not available until Notecard for Skylo has completed at least one successful cellular or WiFi session to associate with Notehub and register the Notefile templates. A device that ships directly into a no-cellular zone will be unable to send via satellite until it has found cellular (or WiFi) coverage at least once. Pre-provisioning during QA on a cellular-capable bench is the standard mitigation.
 
-**Satellite payload budget.** The Notecard for Skylo bundle includes 10 KB of Skylo satellite data, and the Skylo NTN link enforces a hard 256-byte maximum per Note. The compact alert template is well under that ceiling; frequent triggering in a no-cellular environment will consume the bundle faster. Monitor satellite usage via [Notehub billing/usage data](https://dev.blues.io/notehub/notehub-walkthrough/#configuring-your-billing-account).
+**Satellite payload budget.** The Notecard for Skylo bundle includes 10 KB of Skylo satellite data, and the Skylo NTN link enforces a hard 256-byte maximum per Note. The compact alert template is well under that ceiling; frequent triggering in a no-cellular environment will consume the bundle faster.
 
 **Single I²C bus for all peripherals.** The LIS3DH and DRV2605L share the bus with the internal Notecard connection. A severe I²C lockup (e.g., a partially-completed transaction interrupted by a reset) could block all communication. A production design should include bus-error recovery and a hardware watchdog.
 

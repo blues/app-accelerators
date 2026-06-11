@@ -92,7 +92,7 @@ All Blues parts ship with an embedded SIM including 500 MB of data and 10 years 
 
 ![Wiring diagram: thermistor dividers on A0/A1, CT bias circuit on A2, SDP810 on I²C, power chain from 120 VAC → 5 V supply → Mojo → +VBAT](diagrams/02-wiring-assembly.svg)
 
-All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard Cell+WiFi (MBGLW) seats into the carrier's M.2 slot; cellular, GNSS, and WiFi antennas are u.FL leads to roof-mounted externals. The Mojo sits inline between the 5V supply and the Notecarrier's +VBAT pad, and reports cumulative mAh to the Notecard over its [Qwiic](https://www.sparkfun.com/qwiic) connector.
+All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-7/) dual 16-pin header. The Notecard Cell+WiFi (MBGLW) seats into the carrier's M.2 slot; cellular, GNSS, and WiFi antennas are u.FL leads to roof-mounted externals. The Mojo sits inline between the 5V supply and the Notecarrier's +VBAT pad, and reports cumulative mAh to the Notecard over its [Qwiic](https://www.sparkfun.com/qwiic) connector.
 
 Pin-by-pin:
 

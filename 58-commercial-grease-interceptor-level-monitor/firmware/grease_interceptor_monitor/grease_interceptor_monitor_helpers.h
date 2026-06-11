@@ -84,6 +84,10 @@ float    readDistanceMm(void);
 float    medianOf(float *arr, int n);
 float    distanceToFillPct(float distance_mm, float depth_mm);
 uint32_t getEpochTime(void);
+float    readPowerMah(void);      // mAh consumed since last reset, via card.power
+                                  // (Notecard auto-detects the Mojo/LTC2959 over
+                                  // Qwiic); returns -1.0 if the reading is unavailable
+void     resetPowerCounter(void); // zero the Mojo coulomb counter for the next window
 bool     notecardResponseOk(J *rsp);
-bool     sendSummary(const State &state);
+bool     sendSummary(const State &state, float power_mah);
 bool     sendAlert(float fill_pct, float threshold_pct);

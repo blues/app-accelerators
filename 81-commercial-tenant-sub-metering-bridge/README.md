@@ -99,7 +99,7 @@ All Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ![Wiring: 4 Rogowski coils on A0–A3, ZMPT101B voltage on A4, MCP6004 op-amp integrator; cellular antenna via u.FL; 120 VAC → 5 V supply → Mojo (bench) → +VBAT](diagrams/02-wiring-assembly.svg)
 
-All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard MBGLW seats into the M.2 slot on the carrier. Mojo (bench-only) sits inline between the 5 V supply output and the Notecarrier CX `+VBAT` pad.
+All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-7/) dual 16-pin header. The Notecard MBGLW seats into the M.2 slot on the carrier. Mojo (bench-only) sits inline between the 5 V supply output and the Notecarrier CX `+VBAT` pad.
 
 <Warning>
 

@@ -124,7 +124,7 @@ All Blues parts ship with an active SIM including 500 MB of data and 10 years of
 
 ![Wiring: 4–20 mA pressure transducer to A0 (with 150 Ω shunt); MAX31855K thermocouple on SPI with CS=D10; external SMA antenna via u.FL pigtail; 24 VDC → SD-25B-5 → Mojo → +VBAT](diagrams/02-wiring-assembly.svg)
 
-Inside the DIN-rail enclosure everything funnels back to the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) and its dual 16-pin header. The Notecard Cell+WiFi (MBGLW) seats into the carrier's M.2 slot, and the rest of the cabinet wiring — the 4–20 mA pressure loop, the SPI thermocouple breakout, and the 5 V step-down from the machine's 24 VDC rail — all comes back to that header. During bench validation, the Mojo sits inline between the 5 V supply output and the Notecarrier's `+VUSB` pad and connects to the **Notecarrier CX's Qwiic connector** so the Notecard can read the Mojo's LTC2959 coulomb counter over the shared I²C bus. The Mojo is bench-validation equipment — it does not go to the field.
+Inside the DIN-rail enclosure everything funnels back to the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-7/) and its dual 16-pin header. The Notecard Cell+WiFi (MBGLW) seats into the carrier's M.2 slot, and the rest of the cabinet wiring — the 4–20 mA pressure loop, the SPI thermocouple breakout, and the 5 V step-down from the machine's 24 VDC rail — all comes back to that header. During bench validation, the Mojo sits inline between the 5 V supply output and the Notecarrier's `+VUSB` pad and connects to the **Notecarrier CX's Qwiic connector** so the Notecard can read the Mojo's LTC2959 coulomb counter over the shared I²C bus. The Mojo is bench-validation equipment — it does not go to the field.
 
 <Warning>
 
@@ -152,7 +152,7 @@ Inside the DIN-rail enclosure everything funnels back to the [Notecarrier CX](ht
 - MAX31855K breakout `SCK` → `SCK` on the Notecarrier CX header.
 - MAX31855K breakout `DO` (MISO) → `MISO` on the Notecarrier CX header.
 
-  > **Notecarrier CX v1.3 label errata.** The MOSI and MISO silkscreen labels are swapped on v1.3 hardware. If SPI reads return garbage, swap the MOSI/MISO connections and retry. See the [Notecarrier CX v1.3 datasheet](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) for the authoritative pin table.
+  > **Notecarrier CX label errata.** The MOSI and MISO silkscreen labels are swapped on v1.3 hardware. If SPI reads return garbage, swap the MOSI/MISO connections and retry. See the [Notecarrier CX datasheet](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-7/) for the authoritative pin table.
 
 - MAX31855K breakout `CS` → `D10` on the Notecarrier CX header (any digital I/O works; D10 is the firmware default).
 - MAX31855K breakout `TC+` and `TC-` → corresponding positive and negative wires of the K-type thermocouple probe. **Polarity Note:** ANSI/US K-type convention uses yellow for the positive lead; IEC 60584-3 uses green for K-type positive. Consult your probe's lead color or connector marking — do not assume from a generalized color table.

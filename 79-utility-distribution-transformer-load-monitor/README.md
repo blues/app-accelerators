@@ -124,7 +124,7 @@ All Blues hardware ships with an active SIM including 500 MB of data and 10 year
 
 ![Wiring diagram: CT bias circuits (22 Ω burden + 10 kΩ divider + 10 µF cap) on A0/A1/A2; MCP9808 on I²C; 120 VAC → slow-blow fuse → IRM-10-5 → Mojo (bench) → +VBAT; outdoor SMA antenna via u.FL pigtail](diagrams/02-wiring-assembly.svg)
 
-All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. The Notecard Cell+WiFi (MBGLW) seats into the carrier's M.2 slot. The Mojo, if used for bench validation, sits inline between the 5V supply and the Notecarrier's +VBAT pad; connect its Qwiic cable to any available Qwiic port on the Notecarrier so it can log charge to the Notecard. The transformer firmware does not poll the Mojo — its coulomb-count readings appear as separate Notecard events in Notehub and are a bench commissioning tool only; the Mojo is not installed in the deployed unit.
+All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-7/) dual 16-pin header. The Notecard Cell+WiFi (MBGLW) seats into the carrier's M.2 slot. The Mojo, if used for bench validation, sits inline between the 5V supply and the Notecarrier's +VBAT pad; connect its Qwiic cable to any available Qwiic port on the Notecarrier so it can log charge to the Notecard. The transformer firmware does not poll the Mojo — its coulomb-count readings appear as separate Notecard events in Notehub and are a bench commissioning tool only; the Mojo is not installed in the deployed unit.
 
 ### Bias circuit (build once per CT channel, identical for A, B, and C)
 

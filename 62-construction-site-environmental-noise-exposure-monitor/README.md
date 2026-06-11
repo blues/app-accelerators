@@ -94,7 +94,7 @@ All Blues parts ship with an active SIM including 500 MB of data and 10 years of
 
 ![Wiring diagram: PMSA003I on Qwiic, SEN0232 on A0 and V+, power path from solar panel to Sunny Buddy MPPT with LiPo at BAT port, Sunny Buddy LOAD through Mojo to Notecarrier CX LiPo JST system input](diagrams/02-wiring-assembly.svg)
 
-The whole enclosure has to survive being bolted to a fence post in the rain and operate on whatever sun the site gives it, so the build is small: a Notecarrier CX with the Notecard Cell+WiFi (MBGLW) in its M.2 slot, two sensors on opposite ends of the I²C and analog buses, and a solar power chain on the back. Every host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin headers. The MBGLW exposes three u.FL connectors — **MAIN** (cellular), **GPS** (GNSS), and **WIFI**; MAIN and GPS each take an antenna in this design, and WIFI stays unconnected because cellular is the sole wireless path. See antenna routing below.
+The whole enclosure has to survive being bolted to a fence post in the rain and operate on whatever sun the site gives it, so the build is small: a Notecarrier CX with the Notecard Cell+WiFi (MBGLW) in its M.2 slot, two sensors on opposite ends of the I²C and analog buses, and a solar power chain on the back. Every host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-7/) dual 16-pin headers. The MBGLW exposes three u.FL connectors — **MAIN** (cellular), **GPS** (GNSS), and **WIFI**; MAIN and GPS each take an antenna in this design, and WIFI stays unconnected because cellular is the sole wireless path. See antenna routing below.
 
 **Power chain (solar → LiPo → Notecarrier):**
 

@@ -128,7 +128,7 @@ Do not work on wiring connected to the PV array, combiner, or AC supply without 
 
 </Warning>
 
-Inside the NEMA 4X enclosure, everything ties back to the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) and its dual 16-pin header. The Notecard Cell+WiFi seats into the M.2 slot and talks to the Cygnet host over the on-board I²C bus, so no wiring is needed between them. During bench validation, the Mojo sits inline between the 5V supply and the Notecarrier's +VBAT pad as a power monitor, with a Qwiic cable running from one of the Mojo's Qwiic ports to the Notecarrier CX Qwiic connector — that gives the Notecard a data path to read Mojo's coulomb counter. See the Mojo subsection below and [§9](#9-validation-and-testing) for the bench readout procedure.
+Inside the NEMA 4X enclosure, everything ties back to the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-7/) and its dual 16-pin header. The Notecard Cell+WiFi seats into the M.2 slot and talks to the Cygnet host over the on-board I²C bus, so no wiring is needed between them. During bench validation, the Mojo sits inline between the 5V supply and the Notecarrier's +VBAT pad as a power monitor, with a Qwiic cable running from one of the Mojo's Qwiic ports to the Notecarrier CX Qwiic connector — that gives the Notecard a data path to read Mojo's coulomb counter. See the Mojo subsection below and [§9](#9-validation-and-testing) for the bench readout procedure.
 
 **RS-485 transceiver (SparkFun BOB-10124 → Modbus combiner):**
 

@@ -96,7 +96,7 @@ All Blues hardware ships with an active SIM and no activation fees or monthly co
 
 ![Wiring: INA228 on I²C, NTC thermistor on ADC, optional ACS758 on A1 or CAN BMS on SPI; MAIN antenna for cellular + Skylo NTN; 12 V pack aux → buck regulator → Mojo (bench) → +VBAT](diagrams/02-wiring-assembly.svg)
 
-All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) dual 16-pin header. Notecard for Skylo seats in the carrier's M.2 slot. The Mojo sits inline between the 5V supply output and the Notecarrier's VBAT+ pad during bench validation.
+All host I/O lands on the [Notecarrier CX](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-7/) dual 16-pin header. Notecard for Skylo seats in the carrier's M.2 slot. The Mojo sits inline between the 5V supply output and the Notecarrier's VBAT+ pad during bench validation.
 
 <Warning>
 
@@ -188,7 +188,7 @@ In bench builds where pack current stays below 10 A, the INA228 can simultaneous
 
 `readCurrent()` is valid in this configuration because the 15 mΩ shunt bridges `VIN+` and `VIN–`. `setShunt()` is called with the onboard shunt values (`0.015 Ω`, `10 A`) when `BENCH_ONLY 1`; no register change is needed for bench testing.
 
-> **Note on the Notecarrier CX v1.3 errata.** The v1.3 board silkscreen has the `MOSI` and `MISO` labels swapped on the dual 16-pin header. When wiring the CAN module's SPI, verify pin function in the [Notecarrier CX datasheet](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-3/) rather than trusting the header labels.
+> **Note on the Notecarrier CX errata.** The v1.3 board silkscreen has the `MOSI` and `MISO` labels swapped on the dual 16-pin header. When wiring the CAN module's SPI, verify pin function in the [Notecarrier CX datasheet](https://dev.blues.io/datasheets/notecarrier-datasheet/notecarrier-cx-v1-7/) rather than trusting the header labels.
 
 **Thermistor (A0):**
 - Notecarrier CX **+3V3** → 10 kΩ 1% series resistor → Notecarrier CX **A0**
