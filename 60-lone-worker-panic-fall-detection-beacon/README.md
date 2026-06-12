@@ -575,7 +575,7 @@ The forward-looking work that turns this into a deployable wearable follows, rou
 
 **LIS3DH hardware free-fall and shock detection** configured via the `INT1_CFG`, `INT1_THS`, and `INT1_DURATION` registers offloads Stage 1 detection entirely to the accelerometer silicon.
 
-**A cancel-alert flow** gives the worker a way out of a false alarm: a post-panic confirmation cancel within N seconds, routed as a `cancel` event on `beacon_alert.qo` carrying the same `event_id` as the alert being cancelled.
+**A cancel-alert flow** gives the worker a way out of a false alarm: a post-panic confirmation cancel within N seconds, routed as a `cancel` event on `beacon_alert.qo` carrying the same `event_id` as the alert being canceled.
 
 **Worker check-in acknowledgment** closes the loop back to the worker: a dispatcher can send a Notehub [Signal](https://dev.blues.io/api-reference/glossary/#signal) back to the device, triggering a distinctive haptic pattern so the worker knows their alert was received.
 

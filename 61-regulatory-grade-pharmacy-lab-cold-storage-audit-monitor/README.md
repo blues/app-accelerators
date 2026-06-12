@@ -270,7 +270,7 @@ Dependencies:
 | UTC epoch from Notecard RTC | `getEpochTime` | `_helpers.cpp` |
 | Per-sample reading Note | `sendReading` | `_helpers.cpp` |
 | Immediate-sync alert Note | `sendAlert` | `_helpers.cpp` |
-| State serialisation and host power-down | `goToSleep` | `_helpers.cpp` |
+| State serialization and host power-down | `goToSleep` | `_helpers.cpp` |
 
 ### Sensor reading strategy
 

@@ -12,7 +12,7 @@ This project is a [downtime prevention](https://blues.com/downtime-prevention/) 
 
 ## 1. Project Overview
 
-**The problem.** Industrial centrifugal pumps almost universally run behind a VFD. Modern drives from ABB, Yaskawa, Danfoss, and Schneider all expose the pump's operating telemetry through Modbus holding registers — motor current, output frequency, output torque, drive temperature, runtime hours, active fault code, and almost nobody reads them. The VFD is sitting in the cabinet doing the work; the data is right there. What's missing is the network path off the plant floor.
+**The problem.** Industrial centrifugal pumps almost universally run behind a VFD. Modern drives from ABB, Yaskawa, Danfoss, and Schneider all expose the pump's operating telemetry through Modbus holding registers — motor current, output frequency, output torque, drive temperature, runtime hours, active fault code. Almost nobody reads them. The VFD is sitting in the cabinet doing the work; the data is right there. What's missing is the network path off the plant floor.
 
 A failing pump rarely just stops. It signals first: motor current can shift at constant frequency as bearing drag, fouling, valve position, fluid viscosity, or impeller condition change the load on the drive. Transient electrical faults can cluster on a stressed contactor or in a cavitating hydraulic regime. Actual runtime can drift above expected duty cycle as a downstream valve fouls and the pump runs longer to do the same work. *None of these telemetry shifts are diagnostic by themselves*, but they are leading indicators a maintenance team would happily act on a week early. This project is the device that catches those anomalies and routes them out, before a tank runs dry on a Saturday night. See the [Signal limitations](#12-limitations-and-next-steps) note for what this telemetry can and cannot conclude.
 
@@ -165,7 +165,7 @@ Dependencies:
 
 Six holding registers are pulled in a single Modbus transaction (`requestFrom` with `HOLDING_REGISTERS`, quantity 6, starting address taken from `reg_freq`). Reading all six in one transaction is roughly 8× cheaper in time and bus utilization than six individual reads. The firmware assumes the six registers are contiguous; on drives where they aren't, override `reg_*` variables individually and the firmware falls back to per-register reads.
 
-Polling cadence is `sample_minutes` (default 1 minutes). For each sample, `accumulate` updates the rolling hourly windows for current, frequency, torque, and drive temperature — separately tracking samples taken while the pump is *running* (frequency > 1 Hz) versus *stopped*, since a hot drive at 0 Hz is a different signal than a hot drive under load.
+Polling cadence is `sample_minutes` (default 1 minute). For each sample, `accumulate` updates the rolling hourly windows for current, frequency, torque, and drive temperature — separately tracking samples taken while the pump is *running* (frequency > 1 Hz) versus *stopped*, since a hot drive at 0 Hz is a different signal than a hot drive under load.
 
 ### Event payload design
 
@@ -226,7 +226,7 @@ The OPTA + expansion is line-powered (24 VDC), so MCU sleep is not the goal — 
 ### Retry and error handling
 
 - The first `hub.set` uses `notecard.sendRequestWithRetry()` with a 5-second window — there is a known cold-boot race condition where the host comes up before the Notecard is ready to receive I²C transactions.
-- Modbus reads are retried up to 3× per cycle on `lastError() != 0`. If all three fail, the firmware skips that sample (no NaN ever appears in any payload, JSON has no valid `NaN` literal and templated Notes validate field types) and emits a separate `modbus_unreachable` event Note. The event is rate-limited to once per hour to avoid alarm fatigue when the drive itself is powered off for service.
+- Modbus reads are retried up to 3× per cycle on `lastError() != 0`. If all three fail, the firmware skips that sample (no NaN ever appears in any payload: JSON has no valid `NaN` literal, and templated Notes validate field types) and emits a separate `modbus_unreachable` event Note. The event is rate-limited to once per hour to avoid alarm fatigue when the drive itself is powered off for service.
 - Notecard requests use `notecard.requestAndResponse()` and check both `NULL` return and the `err` field on the response object before trusting the data.
 
 ### Key code snippets
