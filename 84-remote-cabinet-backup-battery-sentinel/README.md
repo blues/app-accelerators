@@ -18,7 +18,7 @@ The failure signal that *does* show up early is float current. A healthy VRLA ba
 
 This project instruments it. A precision bidirectional current monitor sits in series with the battery's positive terminal, measuring float current with milliamp resolution. When the charger current reverses and the battery starts discharging — because mains power failed — the Notecard fires an immediate alert. When float current climbs steadily over weeks, the hourly summary captures the trend for a downstream analytics system to act on.
 
-**Chemistry scope.** The float-current capacity-degradation signal is a VRLA mechanism. LFP batteries do not sulfate, and elevated float current on an LFP pack indicates a charger or BMS configuration fault rather than cell-level degradation. LFP installations still benefit fully from four of the six battery-condition alert modes this design provides — power-outage detection (current reversal), pack voltage bounds checking, surface temperature alerting, and low-SoC threshold tripping, but float-current trending as a capacity-health proxy does not apply to LFP without chemistry-specific calibration. See §7 for per-alert chemistry guidance and §9 for LFP threshold commissioning Notes.
+**Chemistry scope.** The float-current capacity-degradation signal is a VRLA mechanism. LFP batteries do not sulfate, and elevated float current on an LFP pack indicates a charger or BMS configuration fault rather than cell-level degradation. LFP installations still benefit fully from four of the six battery-condition alert modes this design provides: power-outage detection (current reversal), pack voltage bounds checking, surface temperature alerting, and low-SoC threshold tripping. Float-current trending as a capacity-health proxy, however, does not apply to LFP without chemistry-specific calibration. See §7 for per-alert chemistry guidance and §9 for LFP threshold commissioning Notes.
 
 **Why Notecard.** The Notecard's independence from site infrastructure is the fundamental feature here. A traffic-cabinet controller, a roadside LoRaWAN gateway, or a roadside remote terminal unit all have their own modems and radios, but those are exactly the devices the backup battery is supposed to keep running during a mains failure. You cannot use the site's LTE modem to report that the site's LTE modem just went down because the backup battery was dead.
 
@@ -34,17 +34,17 @@ The Notecard manages its own cellular session against the supported carrier netw
 
 **Device-side responsibilities.** Every two minutes the Cygnet STM32L433 host on the Notecarrier CX wakes for a few seconds, samples the battery, decides whether anything has gone wrong, and goes back to sleep. In those seconds it reads pack voltage and bidirectional current from the INA228 over Qwiic, picks up surface temperature from the NTC thermistor on A0, and evaluates six battery-condition rules plus one sensor-health check. Any tripped rule becomes an alert [Note](https://dev.blues.io/api-reference/glossary/#note) marked `sync:true` for immediate delivery. Window statistics accumulate in a state struct that `NotePayloadSaveAndSleep` writes into Notecard flash before [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) cuts host power entirely between samples. Window-average power (`voltAvg × currAvg`) is derived at summary time, not sampled per-read from the INA228 power register.
 
-**Notecard responsibilities.** The Notecard owns the radio so the host never has to. It manages its own cellular session against supported carrier networks worldwide via the embedded global SIM, queues Notes in on-device storage, opens a session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 minutes), and short-circuits that cadence whenever a `sync:true` alert lands — those go out immediately. On the inbound side it pulls down [environment variable](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) updates from the [Blues Notehub](https://blues.com/notehub/) cloud service, so the field operator can retune any threshold or either cadence without reflashing.
+**Notecard responsibilities.** The Notecard owns the radio so the host never has to. It manages its own cellular session against supported carrier networks worldwide via the embedded global SIM, queues Notes in on-device storage, opens a session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 minutes), and short-circuits that cadence whenever a `sync:true` alert lands; those go out immediately. On the inbound side it pulls down [environment variable](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) updates from the [Blues Notehub](https://blues.com/notehub/) cloud service, so the field operator can retune any threshold or either cadence without reflashing.
 
 **Notehub responsibilities.** Everything that leaves the cabinet lands in [Notehub](https://notehub.io), which ingests and stores each event and runs the project's routes. The two Notefiles — `battery_summary.qo` for periodic telemetry and `battery_alert.qo` for threshold trips — stay deliberately separate so a route can fan summaries into a long-term analytics store while pushing alerts straight to whoever is on call.
 
-**Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
+**Routing to the cloud (high level only).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub); this project ships no specific downstream endpoint.
 
 ## 3. Technical Summary
 
-1. **Notehub** — create a [Notehub project](https://notehub.io) and copy the ProductUID.
-2. **Wire the bench rig** — Notecarrier CX + Notecard MBGLW + INA228 on Qwiic + NTC divider on A0 + LiPo on JST. Full pinout in [§5](#5-wiring-and-assembly).
-3. **Edit one line** — set `PRODUCT_UID` in [`firmware/cabinet_battery_sentinel/cabinet_battery_sentinel_helpers.h`](firmware/cabinet_battery_sentinel/cabinet_battery_sentinel_helpers.h).
+1. **Notehub:** create a [Notehub project](https://notehub.io) and copy the ProductUID.
+2. **Wire the bench rig:** Notecarrier CX + Notecard MBGLW + INA228 on Qwiic + NTC divider on A0 + LiPo on JST. Full pinout in [§5](#5-wiring-and-assembly).
+3. **Edit one line:** set `PRODUCT_UID` in [`firmware/cabinet_battery_sentinel/cabinet_battery_sentinel_helpers.h`](firmware/cabinet_battery_sentinel/cabinet_battery_sentinel_helpers.h).
 4. **Flash via CLI:**
    ```bash
    arduino-cli compile -b STMicroelectronics:stm32:Blues:pnum=CYGNET firmware/cabinet_battery_sentinel/
@@ -52,8 +52,8 @@ The Notecard manages its own cellular session against the supported carrier netw
    ```
    Or use Arduino IDE (Tools → Board → Cygnet; Upload).
 5. **Watch for success** — open Notehub → **Events** tab. You know it's working when:
-   - `_session.qo` appears within **2–3 minutes** — this confirms the Notecard reached Notehub over cellular
-   - `battery_summary.qo` appears within **60 minutes** — this is your hourly health summary (sample JSON below)
+   - `_session.qo` appears within **2–3 minutes**; this confirms the Notecard reached Notehub over cellular
+   - `battery_summary.qo` appears within **60 minutes**; this is your hourly health summary (sample JSON below)
    - `battery_alert.qo` appears immediately if any alert condition trips (sample JSON below)
    
    If you don't see `_session.qo` after 5 minutes, check your PRODUCT_UID matches your Notehub project exactly and verify cellular coverage at your location. See §10 Troubleshooting if the Notecard never reaches Notehub.
@@ -104,7 +104,7 @@ The Notecard manages its own cellular session against the supported carrier netw
 | ABS enclosure, IP54 or better (e.g. [Hammond 1591XXTSFLBK](https://www.hammfg.com/part/1591XXTSFLBK), ~123 × 83 × 61 mm) | 1 | Houses the Notecarrier CX assembly inside the cabinet. The 1591XXTSFLBK provides ample internal volume for the board stack and wiring, with a clear polycarbonate lid for visual status checks without opening. Add cable glands for the antenna pigtail, thermistor probe, shunt wires, and power leads. |
 | Thermal adhesive tape (e.g., 3M 8810) | 1 | Affixes the thermistor probe firmly to the battery case surface for accurate temperature readings. |
 
-All Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no activation fees, no monthly commitment.
+All Blues hardware ships with an active SIM including 500 MB of data and 10 years of service: no activation fees, no monthly commitment.
 
 ### Safety and Installation Requirements (Read Before Wiring)
 
@@ -148,7 +148,7 @@ The 2000 mAh LiPo on the JST connector is charged from the regulated 5 V supply 
 
 **INA228 battery power path (high-side current sensing):**
 
-The INA228 measures the current flowing in or out of the battery by sitting in series with the battery's positive terminal — this topology is called high-side sensing.
+The INA228 measures the current flowing in or out of the battery by sitting in series with the battery's positive terminal; this topology is called high-side sensing.
 
 - **Battery (+) terminal** → **INA228 `V+` pad** (connects to the shunt IN+ input)
 - **INA228 `V–` pad** → cabinet load bus (+)
@@ -191,7 +191,7 @@ Remove Mojo from the power path for production deployment; see §9.
 
 ## 6. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:cabinet-battery-sentinel`.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid); it looks like `com.your-company.your-name:cabinet-battery-sentinel`.
 
 2. **Set the ProductUID in firmware.** Open [`cabinet_battery_sentinel_helpers.h`](firmware/cabinet_battery_sentinel/cabinet_battery_sentinel_helpers.h) and replace the empty string on the `#define PRODUCT_UID ""` line with your value.
 
@@ -212,9 +212,9 @@ Remove Mojo from the power path for production deployment; see §9.
    | `discharge_ma` | `-200` | Current (mA) below which `power_outage` fires. −200 mA provides a clear margin above float-current noise while catching any sustained discharge within a single sample. |
    | `usable_capacity_ah` | `100` | Battery bank usable capacity (Ah) used for coulomb-counting SoC. Set this to the battery's nameplate capacity (or measured usable capacity from a full-discharge cycle). Required for meaningful `soc_pct` values — the firmware uses the default 100 Ah until overridden. For a 200 Ah bank set to `200`. |
    | `soc_low_pct` | `20` | SoC (%) below which `soc_low` fires. |
-   | `soc_pct_init` | *(unset)* | Initial SoC (%) to apply the **first time** this value is seen after a known-full charge. Set once after confirming the battery is fully charged (charger holding float voltage and current at minimum); the firmware tracks SoC from that baseline. To recalibrate: change the value to the new known SoC — the firmware detects the change and re-initialises on the next inbound sync. Leave unset (or set to `−1`) to defer commissioning; `soc_pct` in summary notes will carry `−9999` until a value is applied. |
+   | `soc_pct_init` | *(unset)* | Initial SoC (%) to apply the **first time** this value is seen after a known-full charge. Set once after confirming the battery is fully charged (charger holding float voltage and current at minimum); the firmware tracks SoC from that baseline. To recalibrate: change the value to the new known SoC — the firmware detects the change and re-initializes on the next inbound sync. Leave unset (or set to `−1`) to defer commissioning; `soc_pct` in summary notes will carry `−9999` until a value is applied. |
 
-6. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) targeting `battery_alert.qo` — this is your real-time channel to an on-call queue, CMMS ticket, or alerting platform. Add a second route for `battery_summary.qo` to a time-series analytics store where float-current trends can be visualized over weeks and months. The two Notefiles are separate by design so they can be fanned to different destinations with different urgencies and retention policies.
+6. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) targeting `battery_alert.qo`; this is your real-time channel to an on-call queue, CMMS ticket, or alerting platform. Add a second route for `battery_summary.qo` to a time-series analytics store where float-current trends can be visualized over weeks and months. The two Notefiles are separate by design so they can be fanned to different destinations with different urgencies and retention policies.
 
 ### Expected events in Notehub
 
@@ -240,9 +240,9 @@ The firmware is split across three files in `firmware/cabinet_battery_sentinel/`
 **Dependencies:**
 
 - **Arduino core for STM32** — install via the Arduino Boards Manager (add the index URL `https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json` under **File → Preferences → Additional Boards Manager URLs**). Select **Blues Cygnet** as the board (canonical FQBN: `STMicroelectronics:stm32:Blues:pnum=CYGNET`).
-- **`Blues Wireless Notecard`** (note-arduino) — install via the Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard"`). Check [note-arduino releases](https://github.com/blues/note-arduino/releases) and use the latest stable version.
-- **`Adafruit INA228`** — install via the Arduino Library Manager (`arduino-cli lib install "Adafruit INA228"`).
-- **`Adafruit BusIO`** — required dependency of the INA228 library; install via Library Manager.
+- **`Blues Wireless Notecard`** (note-arduino): install via the Arduino Library Manager (`arduino-cli lib install "Blues Wireless Notecard"`). Check [note-arduino releases](https://github.com/blues/note-arduino/releases) and use the latest stable version.
+- **`Adafruit INA228`**: install via the Arduino Library Manager (`arduino-cli lib install "Adafruit INA228"`).
+- **`Adafruit BusIO`**: required dependency of the INA228 library; install via Library Manager.
 
 **Before compiling**, open `cabinet_battery_sentinel_helpers.h` and replace the empty string on the `#define PRODUCT_UID ""` line with your Notehub ProjectUID. All three source files in the sketch folder are compiled together automatically by the Arduino build system.
 
@@ -268,7 +268,7 @@ After upload, open the serial monitor at **115200 baud**. On each wake the firmw
 [sentinel] temp=24.3C
 ```
 
-Then the host powers off for the sample interval and the monitor goes quiet. `INA228 FAIL` or `NTC open/shorted` messages indicate a wiring problem on those sensors. If the INA228 init fails, both INA228 readings (voltage and current) are skipped for that sample — the summary accumulates only valid samples.
+Then the host powers off for the sample interval and the monitor goes quiet. `INA228 FAIL` or `NTC open/shorted` messages indicate a wiring problem on those sensors. If the INA228 init fails, both INA228 readings (voltage and current) are skipped for that sample; the summary accumulates only valid samples.
 
 ### 7.2 Modules
 
@@ -287,25 +287,25 @@ Then the host powers off for the sample interval and the monitor goes quiet. `IN
 
 ### 7.3 Sensor reading strategy
 
-**INA228 (voltage and current).** The INA228 loses power while the Cygnet is sleeping, so it's re-initialised on every wake with `begin()` followed by `setShunt(0.015, 8.0)`. The calibration call programs the chip with the shunt resistance and full-scale current. Single-point reads of `readBusVoltage()`, `readShuntVoltage()`, and `readCurrent()` take well under 10 ms. Current is *signed* at the firmware level: positive values mean the charger is supplying current, negative values mean the battery is discharging. This sign convention makes `power_outage` detection trivially simple — just a threshold comparison against `g_dischargeMa`.
+**INA228 (voltage and current).** The INA228 loses power while the Cygnet is sleeping, so it's re-initialized on every wake with `begin()` followed by `setShunt(0.015, 8.0)`. The calibration call programs the chip with the shunt resistance and full-scale current. Single-point reads of `readBusVoltage()`, `readShuntVoltage()`, and `readCurrent()` take well under 10 ms. Current is *signed* at the firmware level: positive values mean the charger is supplying current, negative values mean the battery is discharging. This sign convention makes `power_outage` detection trivially simple: just a threshold comparison against `g_dischargeMa`.
 
 **Battery-terminal voltage.** With Battery(+) wired to INA228 V+ and the load/charger bus wired to V−, `readBusVoltage()` returns the voltage at V− (load side of the shunt), not the battery terminal. `readBatteryVoltage()` adds the shunt voltage to recover the true battery-terminal voltage: `V_terminal = V_bus + readShuntVoltage() / 1000`. The correction is ≤ 7.5 mV at float currents up to 500 mA (negligible) and reaches ~48 mV at 3.2 A discharge — material for voltage-alert accuracy and for the `volt_v` time series used in float-voltage trending.
 
 **Current sign note.** The INA228 is wired with Battery(+) on V+ and the load bus on V−, so the chip internally reports *positive* raw current during discharge (battery→load direction). `readBatteryCurrent()` negates the raw `readCurrent()` result before returning it, so all downstream comparisons, accumulations, and alert thresholds use the intuitive convention (positive = charger present, negative = outage). The documented wiring in §4 and the semantic descriptions throughout this README all refer to the post-negation value.
 
-The INA228 has an internal power register, but this design does not read it; `power_mw` in the summary note is derived as `voltAvg × currAvg` in `sendSummary()` — a window-average approximation, not a per-sample hardware measurement.
+The INA228 has an internal power register, but this design does not read it; `power_mw` in the summary note is derived as `voltAvg × currAvg` in `sendSummary()`, a window-average approximation, not a per-sample hardware measurement.
 
 **NTC thermistor.** A 16-sample average of 12-bit ADC readings (`analogReadResolution(12)` on the Cygnet) reduces noise before applying the β-equation: `T = 1 / (1/T₀ + (1/β) × ln(R/R₀))`. ADC readings within 50 mV of the supply rails (indicating an open or shorted probe) return `NAN` and are excluded from the temperature accumulator. A bad temperature reading never silently biases the summary averages, and — because voltage, current, and temperature each maintain their own independent sum and valid-sample count — a failed thermistor probe never suppresses voltage or current accumulation, alert evaluation, or the `power_outage` detection path.
 
-**Charge balance and SoC.** The INA228's hardware charge accumulator resets every time the chip powers up — which happens on every wake cycle since the Cygnet's 3.3 V rail is gated. Instead, the firmware accumulates charge in software: `chargeAh += (curr_mA / 1000) × (sample_interval_sec / 3600)` each cycle. The per-window result appears as `charge_ah` in the summary note: a small positive value during normal float, a large negative value during a power outage. `charge_ah` is a **per-window delta, not state-of-charge**. State-of-charge is maintained separately in `soc_pct`: on each wake the same current-integration delta is divided by `usable_capacity_ah` and added to the running SoC estimate, which persists across sleep cycles in Notecard flash. `soc_pct` in the summary note carries `−9999` (SUMMARY_INVALID_SENTINEL) until the operator commissions a starting SoC via `soc_pct_init`; see §6 for commissioning steps and §9 for accuracy caveats.
+**Charge balance and SoC.** The INA228's hardware charge accumulator resets every time the chip powers up, which happens on every wake cycle since the Cygnet's 3.3 V rail is gated. Instead, the firmware accumulates charge in software: `chargeAh += (curr_mA / 1000) × (sample_interval_sec / 3600)` each cycle. The per-window result appears as `charge_ah` in the summary note: a small positive value during normal float, a large negative value during a power outage. `charge_ah` is a **per-window delta, not state-of-charge**. State-of-charge is maintained separately in `soc_pct`: on each wake the same current-integration delta is divided by `usable_capacity_ah` and added to the running SoC estimate, which persists across sleep cycles in Notecard flash. `soc_pct` in the summary note carries `−9999` (SUMMARY_INVALID_SENTINEL) until the operator commissions a starting SoC via `soc_pct_init`; see §6 for commissioning steps and §9 for accuracy caveats.
 
 ### 7.4 Event payload design
 
-`battery_summary.qo` is [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates), giving it a fixed wire schema and a ~3–5× smaller on-wire footprint than free-form JSON — material for a device that will send 24 notes per day for years. `battery_alert.qo` is untemplated and uses `sync:true` for immediate delivery.
+`battery_summary.qo` is [template-backed](https://dev.blues.io/notecard/notecard-walkthrough/low-bandwidth-design#working-with-note-templates), giving it a fixed wire schema and a ~3–5× smaller on-wire footprint than free-form JSON, material for a device that will send 24 notes per day for years. `battery_alert.qo` is untemplated and uses `sync:true` for immediate delivery.
 
 Field semantics:
-- `power_mw` is derived as `voltAvg × currAvg` — a window-average approximation, not a per-sample hardware read from the INA228 power register.
-- `charge_ah` is the **net coulombs** delivered to or drawn from the battery during the window — a per-window delta only, not running state-of-charge.
+- `power_mw` is derived as `voltAvg × currAvg`: a window-average approximation, not a per-sample hardware read from the INA228 power register.
+- `charge_ah` is the **net coulombs** delivered to or drawn from the battery during the window: a per-window delta only, not running state-of-charge.
 - `soc_pct` is the **running state-of-charge estimate** maintained across windows by integrating current against the commissioned `usable_capacity_ah` baseline; `−9999` means not yet commissioned.
 - `curr_min_ma` tracks the most-negative (deepest discharge) current seen in the window; `0.0` means no discharge occurred; a negative value (e.g., `−3200.0`) means the battery was actively discharging at 3.2 A into the load.
 
@@ -313,17 +313,17 @@ Example JSON is shown in the Quickstart section above.
 
 ### 7.5 Low-power strategy
 
-The Cygnet is fully power-gated by [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) for the full 120-second sample interval. The host does not delay or MCU-sleep — it powers off entirely, leaving only the Notecard active at its own published ~8 µA idle current. This is a Notecard-datasheet figure; the actual current drawn from the 5 V supply during idle (as measured by Mojo on the assembled device) will be higher, because it includes the Notecard's ~8 µA plus the quiescent current of the DC-DC converter and Notecarrier CX regulators. Firmware state is serialised into Notecard flash by `NotePayloadSaveAndSleep` before the host shuts down, and deserialised by `NotePayloadRetrieveAfterSleep` on the next wake, so the rolling window accumulates correctly across hundreds of sleep cycles per day.
+The Cygnet is fully power-gated by [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) for the full 120-second sample interval. The host does not delay or MCU-sleep; it powers off entirely, leaving only the Notecard active at its own published ~8 µA idle current. This is a Notecard-datasheet figure; the actual current drawn from the 5 V supply during idle (as measured by Mojo on the assembled device) will be higher, because it includes the Notecard's ~8 µA plus the quiescent current of the DC-DC converter and Notecarrier CX regulators. Firmware state is serialized into Notecard flash by `NotePayloadSaveAndSleep` before the host shuts down, and deserialized by `NotePayloadRetrieveAfterSleep` on the next wake, so the rolling window accumulates correctly across hundreds of sleep cycles per day.
 
-The Notecard itself is set to `periodic` mode with `outbound:60`. Summary notes queue in the on-device flash store and ship in a single cellular session once per hour, keeping radio duty-cycle low. Alert notes with `sync:true` bypass the outbound timer and wake the radio immediately — but because alert cooldowns prevent re-firing for 30 minutes of wall-clock time (stored as remaining seconds in the persistent state and decremented by the sample interval on each wake), even a sustained fault doesn't generate continuous radio wakes — and the 30-minute window holds regardless of whether `sample_interval_sec` is tuned to 30 s or 2 min.
+The Notecard itself is set to `periodic` mode with `outbound:60`. Summary notes queue in the on-device flash store and ship in a single cellular session once per hour, keeping radio duty-cycle low. Alert notes with `sync:true` bypass the outbound timer and wake the radio immediately. But because alert cooldowns prevent re-firing for 30 minutes of wall-clock time (stored as remaining seconds in the persistent state and decremented by the sample interval on each wake), even a sustained fault doesn't generate continuous radio wakes, and the 30-minute window holds regardless of whether `sample_interval_sec` is tuned to 30 s or 2 min.
 
 ### 7.6 Retry and error handling
 
-- **Notecard configuration.** The initial `hub.set` in `notecardConfigure()` uses `sendRequestWithRetry(req, 5)` — a 5-second retry window covers the cold-boot I2C race where the STM32 comes up before the Notecard has finished initialising. `note.template` registration checks the boolean return value of `sendRequest` and logs a debug message on failure. Both the clean-boot path and the invalid-state-segment recovery path call `doFirstBoot()` so hub configuration and the Note template are never left stale after a firmware update that changes the state struct layout.
-- **Environment variable fetch.** `fetchEnvOverrides()` calls `requestAndResponse` and inspects the `err` field before reading the body; a Notecard-side error (e.g. not yet associated with Notehub) returns early rather than silently leaving stale threshold values from a corrupted response. The `hub.set` re-apply block in `setup()` only updates `state.lastSummaryMin` after `sendRequest` confirms delivery, so a transient I2C fault doesn't desynchronise the recorded cadence from the Notecard's actual setting.
+- **Notecard configuration.** The initial `hub.set` in `notecardConfigure()` uses `sendRequestWithRetry(req, 5)`: a 5-second retry window covers the cold-boot I2C race where the STM32 comes up before the Notecard has finished initializing. `note.template` registration checks the boolean return value of `sendRequest` and logs a debug message on failure. Both the clean-boot path and the invalid-state-segment recovery path call `doFirstBoot()` so hub configuration and the Note template are never left stale after a firmware update that changes the state struct layout.
+- **Environment variable fetch.** `fetchEnvOverrides()` calls `requestAndResponse` and inspects the `err` field before reading the body; a Notecard-side error (e.g. not yet associated with Notehub) returns early rather than silently leaving stale threshold values from a corrupted response. The `hub.set` re-apply block in `setup()` only updates `state.lastSummaryMin` after `sendRequest` confirms delivery, so a transient I2C fault doesn't desynchronize the recorded cadence from the Notecard's actual setting.
 - **INA228 fault.** `initINA228()` returns `false` on I2C NACK. Both INA228 readings (voltage and current) are set to `NAN`, excluded from their respective metric accumulators, and skipped in alert evaluation — the firmware continues to sleep rather than hanging on a sensor fault. Temperature accumulation and the `temp_high` alert continue independently. A persistent INA228 failure is surfaced remotely: when `initINA228()` returns `false` and the `coolInaFaultSec` cooldown has expired, an `ina228_unreachable` alert is emitted to `battery_alert.qo` (rate-limited to once per 30 minutes so a sustained hardware fault does not flood the notefile). When the INA228 is unreachable for an entire summary window, `sendSummary()` still emits the note — all INA228 fields carry `SUMMARY_INVALID_SENTINEL` and `samples` is 0 — so Notehub shows a visible fault window rather than a silent gap.
 - **NTC fault.** ADC readings within 50 mV of the supply rails return `NAN` and are excluded from temperature accumulation. When only the thermistor is faulted (INA228 data is still valid), the summary is emitted normally with `SUMMARY_INVALID_SENTINEL` (−9999) in the `temp_c` and `temp_max_c` fields so downstream analytics can distinguish "sensor failed" from a true near-zero reading. When the INA228 is also unreachable for the entire window, `sendSummary()` still emits — all INA228 fields carry `SUMMARY_INVALID_SENTINEL` and `samples` is 0; the `ina228_unreachable` alert provides the immediate notification while the sentinel-filled summary preserves time-series continuity.
-- **Note delivery.** `sendSummary()` and `sendAlert()` each retry `note.add` up to three times with a 500 ms delay between attempts. `sendSummary()` returns a boolean; metric accumulators and the window elapsed timer are only reset after a confirmed successful delivery — a transient Notecard I2C fault preserves the window data so the next wake retries with the data intact rather than losing the window silently.
+- **Note delivery.** `sendSummary()` and `sendAlert()` each retry `note.add` up to three times with a 500 ms delay between attempts. `sendSummary()` returns a boolean; metric accumulators and the window elapsed timer are only reset after a confirmed successful delivery; a transient Notecard I2C fault preserves the window data so the next wake retries with the data intact rather than losing the window silently.
 - **Alert gating.** `float_voltage_low`, `float_voltage_high`, and `float_current_high` are suppressed during active battery discharge (`curr < discharge_ma`) to prevent misleading float-fault alerts during legitimate power-outage events. `float_current_high` is additionally suppressed for 30 minutes after the last discharge sample (the `postDischargeSec` settling window in the state struct) so normal bulk-recharge current following an outage recovery is not misclassified as elevated float current.
 - **Env var range clamping.** `g_sampleSec` is clamped to [30, 3600] and `g_summaryMin` to [5, 1440] so a misconfigured variable cannot produce absurd sleep intervals or an unreachable summary window. When `sample_interval_sec` changes mid-window, `windowElapsedSec` is reset so the next summary covers exactly the newly configured interval rather than an unintended hybrid duration.
 - **All six battery-condition rules and the sensor-health alert** use separate cooldown counters and fire independently. A battery that is simultaneously low-voltage and overtemperature fires both alerts; neither suppresses the other.
@@ -374,7 +374,7 @@ notecard.sendRequest(req);
 
 ### 7.9 Key code snippet 3 — sleep and state persistence
 
-`NotePayloadSaveAndSleep` serialises the `SentinelState` struct into Notecard flash and issues a `card.attn` sleep command. On the next wake, `NotePayloadRetrieveAfterSleep` and `NotePayloadGetSegment` restore the struct — rolling averages, window extremes, alert cooldowns, and charge balance all survive intact.
+`NotePayloadSaveAndSleep` serializes the `SentinelState` struct into Notecard flash and issues a `card.attn` sleep command. On the next wake, `NotePayloadRetrieveAfterSleep` and `NotePayloadGetSegment` restore the struct: rolling averages, window extremes, alert cooldowns, and charge balance all survive intact.
 
 ```cpp
 NotePayloadDesc payload = {0, 0, 0};
@@ -416,9 +416,9 @@ NotePayloadSaveAndSleep(&payload, g_sampleSec, NULL);
 
 ## 9. Validation and Testing
 
-**Expected steady-state behavior.** A healthy backup battery generates approximately one `battery_summary.qo` per hour and zero `battery_alert.qo` events. The `_session.qo` session events confirm cellular connectivity is healthy. Expect a brief flurry of `battery_alert.qo` events during the first few days while thresholds are tuned to the specific battery and charger on site — watch one week of hourly summaries before treating the baseline as calibrated.
+**Expected steady-state behavior.** A healthy backup battery generates approximately one `battery_summary.qo` per hour and zero `battery_alert.qo` events. The `_session.qo` session events confirm cellular connectivity is healthy. Expect a brief flurry of `battery_alert.qo` events during the first few days while thresholds are tuned to the specific battery and charger on site; watch one week of hourly summaries before treating the baseline as calibrated.
 
-**Simulating a power outage.** During bench bring-up the simplest test is to temporarily lower `discharge_ma` to `−5.0` via a Notehub environment variable. On the next inbound sync the Notecard pulls the new value; on the next sample, any measurement more negative than −5 mA fires `power_outage`. Restore the threshold after the test. Alternatively, physically disconnect the charger while monitoring the bench rig — the first sample after current reverses will emit an alert.
+**Simulating a power outage.** During bench bring-up the simplest test is to temporarily lower `discharge_ma` to `−5.0` via a Notehub environment variable. On the next inbound sync the Notecard pulls the new value; on the next sample, any measurement more negative than −5 mA fires `power_outage`. Restore the threshold after the test. Alternatively, physically disconnect the charger while monitoring the bench rig; the first sample after current reverses will emit an alert.
 
 **Using Mojo to validate power behavior.** The Notecard's published datasheet current figures — see the [low-power design guide](https://dev.blues.io/notecard/notecard-walkthrough/low-power-firmware-design/) for authoritative numbers across SKUs and modes:
 
@@ -444,7 +444,7 @@ Use the Mojo to measure whole-device energy over a full 24-hour cycle on your sp
 - **Hourly bursts exceeding 60 seconds:** the radio is struggling on weak signal. Move the cellular antenna or improve antenna routing out of the cabinet.
 - **No blips, no bursts:** the Notecard is not reaching Notehub. Check `PRODUCT_UID` matches the Notehub project exactly and verify cellular coverage at the installation site.
 
-Mojo is not required in deployed hardware — it is a bench bring-up and regression tool. Once a firmware version passes the trace check, deployed units don't need it.
+Mojo is not required in deployed hardware; it is a bench bring-up and regression tool. Once a firmware version passes the trace check, deployed units don't need it.
 
 
 A Notecarrier CX and a Cell+WiFi Notecard, paired with a 20-bit precision current monitor and a surface thermistor, turn a passive backup battery into a continuously-monitored asset that reports float conditions every two minutes, tracks state-of-charge via coulomb counting, trends float current over months as an early indicator of VRLA capacity degradation, and pages an operator within one sample interval of the site going dark. The same hardware and firmware run on 12 V roadside cabinet batteries and 24 V industrial UPS banks. The cellular uplink is independent of every piece of equipment the battery protects — which is the whole point. When the cabinet's own LTE radio shuts down because the mains failed and the battery turned out to be half-sulfated and incapable of holding the load, the sentinel is still running — riding on that failing battery through the DC-DC converter, capturing the discharge curve as the voltage collapses, and then switching to the onboard LiPo for the final reporting tail as the bus drops out.
