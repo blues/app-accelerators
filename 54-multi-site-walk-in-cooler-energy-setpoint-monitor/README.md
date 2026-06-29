@@ -8,7 +8,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-This project is a cellular [energy savings](https://blues.com/energy-savings/) reference design that gives corporate operations teams a live view into the temperature, compressor runtime, and door behavior of every walk-in cooler in their fleet — without touching a single franchisee or operator's WiFi network.
+This project is a cellular [energy savings](https://blues.com/energy-savings/) reference design that gives corporate operations teams a live view into the temperature, compressor runtime, and door behavior of every walk-in cooler in their fleet, without touching a single franchisee or operator's WiFi network.
 
 ## 1. Project Overview
 
@@ -154,7 +154,7 @@ Pin-by-pin connections:
 - **SDA / SCL** → Notecard I²C (Notecarrier CX routes these to the M.2 slot internally; no external wiring needed).
 - **+VBAT** → Mojo `LOAD` output (bench use only); Mojo `BAT` input ← 5V DC output of the MeanWell IRM-10-5 (or equivalent 5V/2A AC/DC supply), which is wired to the AC service conductors in the NEMA 4X enclosure.
 
-**CT installation Note.** The SCT-013-030 is a split-core clamp; open the clamp, pass it over *one* hot leg of the compressor's circuit (not both, clamping both legs cancels the magnetic fields and you'll read zero). Route the TRRS lead back to the NEMA 4X enclosure through a cable gland. The compressor circuit is line-voltage; installation must be performed by a qualified electrician following applicable codes and lockout/tagout procedures. The CT itself is entirely non-contact and electrically isolated once clamped.
+**CT installation Note.** The SCT-013-030 is a split-core clamp; open the clamp, pass it over *one* hot leg of the compressor's circuit (not both; clamping both legs cancels the magnetic fields and you'll read zero). Route the TRRS lead back to the NEMA 4X enclosure through a cable gland. The compressor circuit is line-voltage; installation must be performed by a qualified electrician following applicable codes and lockout/tagout procedures. The CT itself is entirely non-contact and electrically isolated once clamped.
 
 **DS18B20 placement.** For accurate air temperature monitoring, position the stainless probe tip in open box air at mid-box height or along the return-air path, away from both the evaporator fan discharge and the door. This location gives the most representative reading of box air temperature, which is a useful proxy for stored-product conditions but is not a direct product core-temperature measurement. Avoid the evaporator fan discharge — it is the coldest zone in the box and reads several degrees below true representative air temperature; placing the probe there biases temperature-to-target deviation calculations low and will delay `temp_high` alerts. Avoid the door zone, which sees warm infiltration air on every open cycle. Keep the probe away from direct coil contact for the same reason.
 
@@ -425,4 +425,4 @@ Once the basic fleet visibility is established, the following extensions are the
 
 ## 12. Summary
 
-The corporate energy team that used to stall at the 50-store pilot now has a fleet-wide view: compressor apparent kWh per window, door-open seconds, temperature drift against a setpoint they configure from a browser. One cellular SKU, three sensors, and a field tech who never has to ask anyone for a WiFi password — and the outlier box running double the compressor-hours of its peers shows up on a dashboard instead of in next month's utility bill.
+The corporate energy team that used to stall at the 50-store pilot now has a fleet-wide view: compressor apparent kWh per window, door-open seconds, temperature drift against a setpoint they configure from a browser. One cellular SKU, three sensors, and a field tech who never has to ask anyone for a WiFi password. And the outlier box running double the compressor-hours of its peers shows up on a dashboard instead of in next month's utility bill.
