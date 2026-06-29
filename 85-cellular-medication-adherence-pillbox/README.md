@@ -8,7 +8,7 @@ This reference application is intended to provide inspiration and help you get s
 
 </Note>
 
-This project is a [remote patient monitoring](https://blues.com/remote-patient-monitoring/) device that catches missed doses before they become clinical events. A Blues Notecard Cell+WiFi riding on a Notecarrier CX wakes every 30 seconds, reads seven snap-action micro-switches inside a standard weekly pillbox, and uploads a cellular event to the [Blues Notehub](https://blues.com/notehub/) cloud service **each time a compartment lid is detected open during a scheduled 30-second poll** — no WiFi configuration, no smartphone, and nothing for the patient to set up.
+This project is a [remote patient monitoring](https://blues.com/remote-patient-monitoring/) device that catches missed doses before they become clinical events. A Blues Notecard Cell+WiFi riding on a Notecarrier CX wakes every 30 seconds, reads seven snap-action micro-switches inside a standard weekly pillbox, and uploads a cellular event to the [Blues Notehub](https://blues.com/notehub/) cloud service **each time a compartment lid is detected open during a scheduled 30-second poll**: no WiFi configuration, no smartphone, and nothing for the patient to set up.
 
 
 ## 1. Project Overview
@@ -32,19 +32,19 @@ Existing IoT pillboxes have tried to close this gap, and most fail in the same p
 
 **Device-side responsibilities.** On the patient's nightstand the box looks asleep, and almost always is. Every 30 seconds the Cygnet STM32 host on the Notecarrier CX wakes for a fraction of a second, reads seven compartment GPIO pins, and compares them to the snapshot from the previous wake. A rising edge — a lid that was closed and is now open — turns into a `pill_open.qo` [Note](https://dev.blues.io/api-reference/glossary/#note) marked `sync:true`, telling the Notecard to push it out the door right now instead of holding it for the next scheduled outbound window. The previous pin values, the daily bitmask, and the current UTC day all survive each sleep cycle through `NotePayloadSaveAndSleep` / `NotePayloadRetrieveAfterSleep`, so no external EEPROM or flash chip is needed.
 
-**Notecard responsibilities.** The Notecard Cell+WiFi (NOTE-MBGLW) handles everything network-related the patient should never have to think about. It queues Notes locally, manages its cellular (or opportunistic WiFi) session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `periodic` outbound cadence, and flushes any `sync:true` Note immediately the moment it sees one. On the inbound side it pulls [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) down from Notehub, so a care coordinator can retune the poll interval, the daily summary hour, or either sync cadence without sending new firmware. Between sessions it idles at roughly 8–18 µA — effectively invisible on the LiPo budget.
+**Notecard responsibilities.** The Notecard Cell+WiFi (NOTE-MBGLW) handles everything network-related the patient should never have to think about. It queues Notes locally, manages its cellular (or opportunistic WiFi) session on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `periodic` outbound cadence, and flushes any `sync:true` Note immediately the moment it sees one. On the inbound side it pulls [environment variables](https://dev.blues.io/guides-and-tutorials/notecard-guides/understanding-environment-variables/) down from Notehub, so a care coordinator can retune the poll interval, the daily summary hour, or either sync cadence without sending new firmware. Between sessions it idles at roughly 8–18 µA, effectively invisible on the LiPo budget.
 
 **Notehub responsibilities.** Every event that leaves the box lands in [Notehub](https://notehub.io), which ingests, stores, and applies project routes. `pill_open.qo` events arrive in near-real time for the clinician's queue; `pill_summary.qo` Notes accumulate for adherence trends and reporting. [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) group devices by care coordinator, practice, or patient tier, so per-fleet environment variables apply across a whole cohort at once.
 
-**Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) — this project ships no specific downstream endpoint.
+**Routing to the cloud (high level).** Notehub supports HTTP, MQTT, AWS, Azure, GCP, Snowflake, and several other destinations; route setup is project-specific. See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub); this project ships no specific downstream endpoint.
 
 
 ## 3. Technical Summary
 
-1. **Notehub** — create a [Notehub project](https://notehub.io), copy its ProductUID.
-2. **Wire the bench rig** — Notecarrier CX + Notecard MBGLW + 7 snap-action micro-switches on D5, D6, D9–D13. Full pinout in [§5](#5-wiring-and-assembly).
-3. **Edit one line** of [`firmware/cellular_medication_adherence_pillbox/cellular_medication_adherence_pillbox.ino`](firmware/cellular_medication_adherence_pillbox/cellular_medication_adherence_pillbox.ino) — search for `#define PRODUCT_UID` and set it to your project's value.
-4. **Flash** — select the Cygnet board in the Arduino IDE, hit Upload. Full instructions in [§7.1](#71-installing-and-flashing).
+1. **Notehub:** create a [Notehub project](https://notehub.io), copy its ProductUID.
+2. **Wire the bench rig:** Notecarrier CX + Notecard MBGLW + 7 snap-action micro-switches on D5, D6, D9–D13. Full pinout in [§5](#5-wiring-and-assembly).
+3. **Edit one line** of [`firmware/cellular_medication_adherence_pillbox/cellular_medication_adherence_pillbox.ino`](firmware/cellular_medication_adherence_pillbox/cellular_medication_adherence_pillbox.ino): search for `#define PRODUCT_UID` and set it to your project's value.
+4. **Flash:** select the Cygnet board in the Arduino IDE, hit Upload. Full instructions in [§7.1](#71-installing-and-flashing).
 5. **Watch** — open Notehub → your project → **Events** tab. You should see a `_session.qo` within a minute and a `pill_open.qo` each time you open a compartment.
 
 
@@ -65,16 +65,16 @@ Here is a sample Note this device emits:
 
 | Part | Qty | Rationale |
 |------|-----|-----------|
-| [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an embedded Cygnet STM32L4 host — no separate MCU needed. Exposes 7 digital I/O pins (D5, D6, D9–D13) exactly matching the 7-day compartment count. |
+| [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Integrated carrier with an embedded Cygnet STM32L4 host; no separate MCU needed. Exposes 7 digital I/O pins (D5, D6, D9–D13) exactly matching the 7-day compartment count. |
 | [Notecard Cell+WiFi (NOTE-MBGLW)](https://shop.blues.com/products/notecard-cell-wifi?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Cellular with WiFi fallback. See the [NOTE-MBGLW datasheet](https://dev.blues.io/datasheets/notecard-datasheet/note-mbglw/) for radio and power specifications. Cellular removes all patient-side network configuration; cellular-first is the deployment model that serves the target demographic. |
 | [Blues Mojo](https://shop.blues.com/products/mojo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) | 1 | Coulomb counter for bench-validation of sleep/wake power budget before patient deployment. Not required in production. See [§9](#9-validation-and-testing). |
 | [Adafruit #819 Micro Switch w/Roller Lever](https://www.adafruit.com/product/819), ×7 | 7 | One switch per compartment lid. Mounts in the pillbox base with the roller lever engaging the closed lid. Wire C to the digital pin and NO to GND; leave NC unconnected. The Cygnet's internal pull-up holds the pin HIGH when the lid is open; the closed lid depresses the lever and pulls the pin LOW. |
-| Cellular and WiFi u.FL antenna leads (included with NOTE-MBGLW) | 1 set | Both the cellular and WiFi u.FL flex-antenna leads ship inside the NOTE-MBGLW retail box — no separate antenna purchase is required for an indoor pillbox installation. Attach each lead to the matching u.FL connector on the Notecard face and route flat inside the enclosure away from the LiPo. See §4. |
+| Cellular and WiFi u.FL antenna leads (included with NOTE-MBGLW) | 1 set | Both the cellular and WiFi u.FL flex-antenna leads ship inside the NOTE-MBGLW retail box; no separate antenna purchase is required for an indoor pillbox installation. Attach each lead to the matching u.FL connector on the Notecard face and route flat inside the enclosure away from the LiPo. See §4. |
 | [Adafruit #328 Lithium Ion Polymer Battery](https://www.adafruit.com/product/328), 3.7 V 2500 mAh, JST-PH connector | 1 | Direct plug-in to the Notecarrier CX LIPO JST connector. At the expected power budget (~5–15 mAh/day), a 2500 mAh cell provides multi-month autonomy between charges. |
-| [EZY DOSE Contoured Weekly Pill Planner](https://shop.apothecaryproducts.com/products/ezy-dose-contoured-weekly-pill-planner) (Apothecary Products, part #67790) | 1 | Patient-facing medication organizer — seven compartments with clear lids, one per day of the week. Available at pharmacies and medical supply retailers under the EZY DOSE brand. |
+| [EZY DOSE Contoured Weekly Pill Planner](https://shop.apothecaryproducts.com/products/ezy-dose-contoured-weekly-pill-planner) (Apothecary Products, part #67790) | 1 | Patient-facing medication organizer: seven compartments with clear lids, one per day of the week. Available at pharmacies and medical supply retailers under the EZY DOSE brand. |
 | [Hammond 1591SSBK ABS project enclosure](https://www.hammfg.com/part/1591SSBK), 110 × 82 × 44 mm | 1 | Electronics housing for the Notecarrier CX and LiPo. Mounts as a sidecar alongside or beneath the pill organizer; only the micro-switch wiring leads penetrate the pill tray body. |
 
-All Blues hardware ships with an active SIM including 500 MB of data and 10 years of service — no monthly commitment.
+All Blues hardware ships with an active SIM including 500 MB of data and 10 years of service: no monthly commitment.
 
 
 ## 5. Wiring and Assembly
@@ -110,7 +110,7 @@ Mount each switch flush in the pill tray base directly beneath the path of the l
 
 **LiPo battery:**
 
-Connect the LiPo's JST-PH plug directly into the Notecarrier CX's onboard LIPO connector. For bench bring-up with Mojo, splice the Mojo inline between the LiPo and the +VBAT header pin instead of using the LIPO JST connector — this lets Mojo measure the entire current draw of the Notecarrier, Notecard, and sensors together.
+Connect the LiPo's JST-PH plug directly into the Notecarrier CX's onboard LIPO connector. For bench bring-up with Mojo, splice the Mojo inline between the LiPo and the +VBAT header pin instead of using the LIPO JST connector; this lets Mojo measure the entire current draw of the Notecarrier, Notecard, and sensors together.
 
 **Antennas:**
 
@@ -129,17 +129,17 @@ Retain the LiPo inside the enclosure with a strip of hook-and-loop tape (Velcro)
 
 ## 6. Notehub Setup
 
-1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid) — it looks like `com.your-company.your-name:pillbox`.
+1. **Create a project.** Sign up at [notehub.io](https://notehub.io) and create a project. Copy the [ProductUID](https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid); it looks like `com.your-company.your-name:pillbox`.
 
 2. **Set the ProductUID in firmware.** Open `cellular_medication_adherence_pillbox.ino` and replace the empty string on the `#define PRODUCT_UID ""` line with your value.
 
-3. **Claim the Notecard.** Power the assembled unit. On first cellular connection the Notecard associates itself with your Notehub project automatically — no manual claim step required. The device will appear in your project's **Devices** tab within a minute or two.
+3. **Claim the Notecard.** Power the assembled unit. On first cellular connection the Notecard associates itself with your Notehub project automatically; no manual claim step required. The device will appear in your project's **Devices** tab within a minute or two.
 
 4. **Create a Fleet per care group.** [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) and [Smart Fleets](https://dev.blues.io/notehub/notehub-walkthrough/#using-smart-fleet-rules) are how Notehub groups devices for shared configuration. A natural grouping is one fleet per care coordinator or prescribing physician, so that environment variables (alert windows, sync cadence) can be tuned once and applied to all their patients' devices simultaneously.
 
    <Warning>
    
-   **Privacy Note.** For an RPM deployment, patient identifiers should never appear in Note body payloads — they travel in plaintext through any downstream route and may be stored in third-party systems. They also should not be placed in Notehub device metadata (tags, serial-number field): Note bodies and device metadata are not designed as stores for protected health information, and any PHI placed there would be outside a controlled covered system. Instead, assign only an opaque, non-PHI deployment identifier (for example, a random UUID or a clinic-assigned device code) to the [Notehub device tag](https://dev.blues.io/notehub/notehub-walkthrough/#organizing-devices-by-tag) or serial-number field, and maintain the patient-to-device mapping exclusively in your downstream covered system, keyed on the Notecard's device UID. If your organization's downstream architecture requires routing PHI through any cloud component, review Blues' contractual and compliance posture with qualified counsel before proceeding.
+   **Privacy Note.** For an RPM deployment, patient identifiers should never appear in Note body payloads; they travel in plaintext through any downstream route and may be stored in third-party systems. They also should not be placed in Notehub device metadata (tags, serial-number field): Note bodies and device metadata are not designed as stores for protected health information, and any PHI placed there would be outside a controlled covered system. Instead, assign only an opaque, non-PHI deployment identifier (for example, a random UUID or a clinic-assigned device code) to the [Notehub device tag](https://dev.blues.io/notehub/notehub-walkthrough/#organizing-devices-by-tag) or serial-number field, and maintain the patient-to-device mapping exclusively in your downstream covered system, keyed on the Notecard's device UID. If your organization's downstream architecture requires routing PHI through any cloud component, review Blues' contractual and compliance posture with qualified counsel before proceeding.
 
    </Warning>
 
@@ -149,7 +149,7 @@ Retain the LiPo inside the enclosure with a strip of hook-and-loop tape (Velcro)
    |---|---|---|
    | `poll_interval_sec` | `30` | Seconds between host wakes for compartment polling. Lower values reduce open-detection latency; minimum enforced at 15. |
    | `summary_hour_utc` | `0` | UTC hour (0–23) on the day following each UTC day's end at or after which the previous day's adherence summary is queued for transmission. `0` means the summary is queued as soon as midnight UTC passes; set to match the care coordinator's morning review time (e.g., `7` for 7 AM UTC). |
-   | `outbound_min` | `720` | Minutes between Notecard outbound syncs. Immediate open events are never delayed by this value — they use `sync:true`. Changing this value triggers an automatic `hub.set` reapply. |
+   | `outbound_min` | `720` | Minutes between Notecard outbound syncs. Immediate open events are never delayed by this value; they use `sync:true`. Changing this value triggers an automatic `hub.set` reapply. |
    | `inbound_min` | `120` | Minutes between Notecard inbound syncs (environment variable fetch cadence). Changing this value triggers an automatic `hub.set` reapply. |
 
 6. **Configure routes.** Add one [route](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for `pill_open.qo` (to a real-time alert endpoint, SMS, email, nurse-call system, or care-coordination platform) and a second for `pill_summary.qo` (to a long-term analytics store or dashboard). Separating the two Notefiles at the source means the real-time alert path has no dependency on the analytics path.
@@ -186,11 +186,11 @@ Within a minute of first power-on, the **Events** tab should start populating. T
 
 ## 7. Firmware Design
 
-The firmware is split across a main sketch and two helper files — all three live in [`firmware/cellular_medication_adherence_pillbox/`](firmware/cellular_medication_adherence_pillbox/):
+The firmware is split across a main sketch and two helper files, all three living in [`firmware/cellular_medication_adherence_pillbox/`](firmware/cellular_medication_adherence_pillbox/):
 
-- **[`cellular_medication_adherence_pillbox.ino`](firmware/cellular_medication_adherence_pillbox/cellular_medication_adherence_pillbox.ino)** — `setup()` entry point and main application logic.
-- **`cellular_medication_adherence_pillbox_helpers.h`** — shared constants, struct definitions, and helper function declarations.
-- **`cellular_medication_adherence_pillbox_helpers.cpp`** — helper function implementations (sensor reading, Notecard configuration, event emission, state management).
+- **[`cellular_medication_adherence_pillbox.ino`](firmware/cellular_medication_adherence_pillbox/cellular_medication_adherence_pillbox.ino):** `setup()` entry point and main application logic.
+- **`cellular_medication_adherence_pillbox_helpers.h`:** shared constants, struct definitions, and helper function declarations.
+- **`cellular_medication_adherence_pillbox_helpers.cpp`:** helper function implementations (sensor reading, Notecard configuration, event emission, state management).
 
 ### 7.1 Installing and flashing
 
@@ -244,7 +244,7 @@ Before deploying to a battery-powered Notecarrier CX, **verify that `PILLBOX_BEN
 
 On each 30-second wake, `sampleCompartments()` reads all seven digital pins into a single byte bitmask. The firmware XORs this against the `prev_pin_mask` stored in `PillboxState` to compute a `newly_opened` byte — bits set in `newly_opened` represent pins that transitioned from LOW (closed) to HIGH (open) since the last wake. **Every detected rising edge generates a `pill_open.qo` event** — multiple opens of the same compartment lid in a day each produce a separate Note, allowing downstream systems to correlate opening patterns against the patient's dosing schedule. The `daily_opens` bitmask tracks which compartments were opened at all today and feeds the end-of-day summary; the `day_opens_mask` field in each `pill_open.qo` body is a running snapshot of that bitmask at the moment of the event, making each event payload self-contained. A second field, `opened_this_poll`, records which compartments were detected open in this specific wake — when multiple bits are set it is a direct downstream signal that multiple lids were opened simultaneously, consistent with a weekly tray-refill session rather than a single dose open.
 
-**Important polling limitation.** Because the firmware compares pin state at discrete 30-second boundaries, a lid that is opened and fully re-closed within a single 30-second interval between wakes produces no rising edge and generates no event. That open is silently missed and is not counted in `daily_opens`. For the typical adherence use case this is not a concern — a patient opening a compartment to take a pill holds it open for several seconds to several minutes, well beyond the polling resolution. However, any brief mechanical disturbance that resolves before the next wake will go undetected. The minimum configurable poll interval is 15 seconds (`poll_interval_sec` environment variable, firmware-enforced floor). If guaranteed sub-second open detection is required, the design would need interrupt-driven GPIO or a latch-based circuit that captures and holds the open state until the next poll.
+**Important polling limitation.** Because the firmware compares pin state at discrete 30-second boundaries, a lid that is opened and fully re-closed within a single 30-second interval between wakes produces no rising edge and generates no event. That open is silently missed and is not counted in `daily_opens`. For the typical adherence use case this is not a concern: a patient opening a compartment to take a pill holds it open for several seconds to several minutes, well beyond the polling resolution. However, any brief mechanical disturbance that resolves before the next wake will go undetected. The minimum configurable poll interval is 15 seconds (`poll_interval_sec` environment variable, firmware-enforced floor). If guaranteed sub-second open detection is required, the design would need interrupt-driven GPIO or a latch-based circuit that captures and holds the open state until the next poll.
 
 The maximum detection latency from "lid physically opened" to "event queued for transmission" is equal to the configured poll interval (default 30 seconds). Real-world latency from event queuing to Notehub receipt adds the Notecard's cellular session-establishment time (typically 15–60 seconds), giving an end-to-end window of typically under two minutes.
 
@@ -283,7 +283,7 @@ The Notecard itself remains powered continuously and idles at approximately 8–
 ### 7.6 Retry and error handling
 
 - The first `hub.set` call on cold boot uses `sendRequestWithRetry(req, 5)` to handle the known cold-boot I2C race condition where the host comes up before the Notecard is ready to receive transactions.
-- `fetchEnvOverrides()` uses `requestAndResponse()` and guards against a NULL response — a failed env fetch leaves the current state values unchanged rather than crashing or zeroing thresholds.
+- `fetchEnvOverrides()` uses `requestAndResponse()` and guards against a NULL response; a failed env fetch leaves the current state values unchanged rather than crashing or zeroing thresholds.
 - If `utcDayAndHour()` returns 0 (Notecard hasn't yet synced to get a valid time), the day-rollover branch is skipped entirely. Any opens that occurred before time-sync remain in `daily_opens` and are associated with the first valid UTC day once time becomes available; they are only moved into `prev_day_opens` at the first actual day rollover, at which point they feed the subsequent end-of-day summary.
 - If `NotePayloadRetrieveAfterSleep()` fails or the segment is missing, the firmware treats the wake as a first boot: re-reads the initial pin state and reconfigures the Notecard. This handles the case where the LiPo died and the Notecard lost its stored payload.
 - **`emitOpenEvent()` failure and retry queue.** When a `note.add` fails after all three attempts, `enqueuePendingEvent()` stores the event (compartment index, day mask, poll mask) in a 28-entry ring buffer persisted inside `PillboxState`. On each subsequent wake, `replayPendingOpenEvents()` retries every buffered event before sampling new opens; successfully replayed records are removed and the queue is compacted. If the queue fills before Notecard connectivity is restored, the oldest entry is evicted and a `pill_diag.qo` Note is immediately sent to Notehub with `error: "pending_overflow"` and a `dropped: 1` count — giving cloud-visible data-loss visibility even while the primary note-add path is degraded. When the queue fully drains, a second `pill_diag.qo` with `error: "pending_overflow_cleared"` and the cumulative drop count closes the episode and confirms how many `pill_open.qo` events are missing. The 28-slot capacity covers four consecutive worst-case 7-compartment wakes; a sustained Notecard failure beyond that window causes adherence event loss. See [§10](#10-limitations-and-next-steps).
@@ -304,7 +304,7 @@ notecard.sendRequest(req);
 
 ### 7.8 Key code snippet 2 — immediate open event
 
-`sync:true` tells the Notecard not to wait for the next outbound window — this Note jumps the queue and the radio wakes immediately.
+`sync:true` tells the Notecard not to wait for the next outbound window; this Note jumps the queue and the radio wakes immediately.
 
 ```cpp
 J *req  = notecard.newRequest("note.add");
@@ -333,7 +333,7 @@ NotePayloadSaveAndSleep(&payload, state.poll_sec, NULL);
 
 ![Data flow](diagrams/03-data-flow.svg)
 
-**Collected.** Every 30 seconds: a 7-bit bitmask of compartment lid states, compared against the previous sample. The firmware does not transmit on every wake — only on a state transition.
+**Collected.** Every 30 seconds: a 7-bit bitmask of compartment lid states, compared against the previous sample. The firmware does not transmit on every wake, only on a state transition.
 
 **Transmitted.**
 - `pill_open.qo` — one Note per detected lid-open event (lid must be open when the 30-second poll fires), immediate (`sync:true`). Contains the compartment number (1–7), its day label, the running daily bitmask of all compartments opened so far today (`day_opens_mask`), and a per-poll bitmask of all compartments detected open in this specific wake (`opened_this_poll`). Multiple bits set in `opened_this_poll` indicate a likely refill session. Multiple opens of the same compartment each generate a separate Note, provided each open is present at a poll boundary.
@@ -343,8 +343,8 @@ NotePayloadSaveAndSleep(&payload, state.poll_sec, NULL);
 
 **Alerts trigger on.**
 - Any `pill_open.qo` event — a compartment was opened. Route this to whatever real-time channel the care coordinator uses. Note that weekly tray-refill sessions produce events identical to patient dose-taking opens; see [§10](#10-limitations-and-next-steps) for how to distinguish them operationally.
-- Absence of expected `pill_open.qo` by a configurable time window — the patient hasn't opened their morning compartment. This logic lives in the downstream route or dashboard, not in firmware.
-- `pill_summary.qo` with `opens_count: 0` — the patient missed all doses for the day.
+- Absence of expected `pill_open.qo` by a configurable time window: the patient hasn't opened their morning compartment. This logic lives in the downstream route or dashboard, not in firmware.
+- `pill_summary.qo` with `opens_count: 0`: the patient missed all doses for the day.
 
 
 ## 9. Validation and Testing
@@ -357,7 +357,7 @@ NotePayloadSaveAndSleep(&payload, state.poll_sec, NULL);
 2. **Simulate a lid open.** Release the actuator (or open the lid) and leave it released until the next poll fires. The pin rises to HIGH, creating the LOW→HIGH transition the firmware detects as a lid-open event. The serial monitor should print `[open] compartment=N (DAY) day_mask=0bXXXXXXX`.
 3. **Verify in Notehub.** Confirm the corresponding `pill_open.qo` event appears in the **Events** tab within roughly two minutes (up to 30-second poll latency + cellular session establishment).
 
-If the actuator is pressed and released before the next poll fires, no event is generated — both transitions resolve within the same interval and the firmware observes no net change. This is expected behavior, not a fault.
+If the actuator is pressed and released before the next poll fires, no event is generated; both transitions resolve within the same interval and the firmware observes no net change. This is expected behavior, not a fault.
 
 **Quick continuity check (no Notehub required).** Use a multimeter on the pin header or watch serial output while manually pressing and releasing the switch actuator: pressing it should pull the pin to ~0 V; releasing it should let the pin float to ~3.3 V (internal pull-up active). If the result is reversed, check for these common causes: wrong header pin, NO and NC terminals swapped, missing ground connection, actuator not engaging the lid properly, or internal pull-up not active — verify against the wiring table in §4.
 
@@ -380,7 +380,7 @@ The daily summary is queued on the first wake after UTC midnight (or after the c
 | Cellular session — open-event sync (`sync:true`, ~2–3 per day) | ~250 mA average, ~20–30 seconds per session |
 | Cellular session — scheduled outbound sync (every 12 h) | ~250 mA average, ~15–20 seconds per session |
 
-At 30-second polling with the default 12-hour outbound sync and roughly 2–3 open events per day triggering immediate syncs, the modeled daily energy total is on the order of **5–15 mAh/day** — treat this as an estimated starting point until confirmed with a bench trace.
+At 30-second polling with the default 12-hour outbound sync and roughly 2–3 open events per day triggering immediate syncs, the modeled daily energy total is on the order of **5–15 mAh/day**; treat this as an estimated starting point until confirmed with a bench trace.
 
 **Quick runway estimate:** With a 2500 mAh LiPo and 5–15 mAh/day, expect 5–15 months of continuous operation between charges (165–500 days). In a real patient deployment with variable cellular signal and temperature swings, always validate with a 24-hour Mojo trace before setting a charge schedule. Poor cellular signal or frequent refill sessions will increase daily consumption.
 
@@ -388,7 +388,7 @@ A good Mojo trace on this device looks like: an essentially flat near-zero basel
 
 With a 2500 mAh LiPo and an estimated 5–15 mAh/day, modeled runtime is roughly 165–500 days between charges. Actual runtime will vary with cellular signal strength, session frequency, and temperature; confirm with bench data before committing to a deployment charge schedule.
 
-Mojo is a **bench and commissioning tool** for this project — it is not deployed to the patient's home. Once a firmware revision passes the trace check, the deployed units run on LiPo without it.
+Mojo is a **bench and commissioning tool** for this project; it is not deployed to the patient's home. Once a firmware revision passes the trace check, the deployed units run on LiPo without it.
 
 ### Troubleshooting
 
@@ -409,13 +409,13 @@ If a problem isn't on this list, the [Blues community forum](https://discuss.blu
 
 ## 10. Limitations and Next Steps
 
-The design deliberately stops at "did a lid open?" — the most reliable signal that survives the realities of an elderly patient's home network, a caregiver's weekly refill routine, and a Bluetooth-fatigued smartphone. Confirmed ingestion, AM/PM trays, and local reminder UX are real product features, but they belong in a follow-on design rather than diluting the cellular-first sensor this POC is proving out.
+The design deliberately stops at "did a lid open?", the most reliable signal that survives the realities of an elderly patient's home network, a caregiver's weekly refill routine, and a Bluetooth-fatigued smartphone. Confirmed ingestion, AM/PM trays, and local reminder UX are real product features, but they belong in a follow-on design rather than diluting the cellular-first sensor this POC is proving out.
 
 ### Simplified for the POC
 
-The simplifications below are deliberate scope choices — each is a place where a production deployment will add a sensor, a downstream workflow, or a tighter data-handling control once a real RPM program starts running it. **This is a proof-of-concept reference design, not a medical device.**
+The simplifications below are deliberate scope choices: each is a place where a production deployment will add a sensor, a downstream workflow, or a tighter data-handling control once a real RPM program starts running it. **This is a proof-of-concept reference design, not a medical device.**
 
-**Cannot confirm a dose was actually taken.** The device reports each detected compartment lid open, but it cannot distinguish "opened and took the pill" from "opened and closed without taking it." Confirming a dose requires a weight sensor on the tray or patient self-report — both are straightforward extensions but add hardware or UX complexity outside the scope of this POC.
+**Cannot confirm a dose was actually taken.** The device reports each detected compartment lid open, but it cannot distinguish "opened and took the pill" from "opened and closed without taking it." Confirming a dose requires a weight sensor on the tray or patient self-report; both are straightforward extensions but add hardware or UX complexity outside the scope of this POC.
 
 **Caregiver and pharmacist refill sessions are indistinguishable from patient dose-taking opens.** When the weekly tray is loaded — whether by the patient, a caregiver, or a pharmacist — opening each compartment lid to place pills generates `pill_open.qo` events and sets bitmask bits that are identical to genuine dose-taking opens. A single loading session can set all seven bits in `daily_opens` and produce up to seven events within one or two polling intervals, **creating a false picture of perfect adherence for that day.** This is a more active distortion than the dose-confirmation limitation above: it inflates the adherence record rather than leaving it ambiguous. Downstream systems and clinical workflows must account for this in at least one of the following ways:
   - **Fill outside the monitored window.** If the tray is loaded at a predictable time (e.g., Sunday evening before the monitoring week begins), configure downstream routes to flag or suppress clustered multi-lid opens during that window.
@@ -424,7 +424,7 @@ The simplifications below are deliberate scope choices — each is a place where
 
 **Brief opens between polls are missed.** The firmware detects lid-open events by comparing pin state at each poll boundary (default every 30 seconds). A lid that is opened and fully re-closed within a single poll interval generates no event and is not counted in the daily summary. For the intended use case — a patient opening a compartment to take a pill — the lid will naturally remain open long enough to be detected. Caregiver testing, brief accidental knocks, or other sub-30-second interactions will not be recorded. Reducing `poll_interval_sec` to the firmware-enforced minimum of 15 seconds halves the exposure window; interrupt-driven or latch-based hardware would eliminate it entirely.
 
-**Pending retry queue has a finite depth.** If the Notecard is unable to accept `note.add` requests across more than four consecutive worst-case polling wakes (28 buffered events), the oldest queued dose-open records are evicted and **permanently lost.** The device emits a `pill_diag.qo` Note with `error: "pending_overflow"` and a `dropped` count when overflow first occurs, and a matching `error: "pending_overflow_cleared"` Note when the queue drains — providing cloud-visible evidence of data loss. A Notecard outage long enough to exhaust the buffer is uncommon on a battery-backed Notecard Cell+WiFi, but in the worst case downstream adherence calculations will undercount dose-opens for the affected interval without an explicit correction signal. Route `pill_diag.qo` to your alert channel alongside `pill_open.qo` so these episodes are not missed.
+**Pending retry queue has a finite depth.** If the Notecard is unable to accept `note.add` requests across more than four consecutive worst-case polling wakes (28 buffered events), the oldest queued dose-open records are evicted and **permanently lost.** The device emits a `pill_diag.qo` Note with `error: "pending_overflow"` and a `dropped` count when overflow first occurs, and a matching `error: "pending_overflow_cleared"` Note when the queue drains, providing cloud-visible evidence of data loss. A Notecard outage long enough to exhaust the buffer is uncommon on a battery-backed Notecard Cell+WiFi, but in the worst case downstream adherence calculations will undercount dose-opens for the affected interval without an explicit correction signal. Route `pill_diag.qo` to your alert channel alongside `pill_open.qo` so these episodes are not missed.
 
 **7-compartment design only.** The Notecarrier CX exposes exactly seven digital I/O pins (D5, D6, D9–D13), which maps cleanly to a standard 7-day tray. A 14-compartment tray (AM/PM per day) would require an I2C GPIO expander such as the MCP23017, adding one part and a library dependency.
 
@@ -438,7 +438,7 @@ The simplifications below are deliberate scope choices — each is a place where
 
 **Pre-time-sync opens carry no calendar date.** On first boot, the device may accumulate opens before the Notecard acquires valid UTC time. Those opens remain in `daily_opens` and are associated with the first valid UTC day once time becomes available, then move into `prev_day_opens` at the next actual day rollover to feed the subsequent summary, with the correct bitmask. However, the summary's timestamp reflects when it was sent, not the (unknown) calendar day when the lids were opened. If accurate calendar-day attribution of pre-sync opens is required, wait for a `_session.qo` event in Notehub (confirming time-sync) before placing the device with the patient.
 
-**Firmware state holds only one pending day's summary data.** The `PillboxState` struct contains a single `prev_day_opens` slot. If two consecutive UTC-day boundaries pass while a pending summary has not yet been emitted, for example, because the device is powered off spanning an entire day, or because total power loss causes `NotePayloadRetrieveAfterSleep` to fail on the next boot — the slot is overwritten and the earlier day's adherence data is unrecoverable. Note that a lack of cellular connectivity alone does *not* cause this: the Notecard stores queued Notes locally in its on-device flash and delivers them automatically once connectivity is restored. The risk is power loss before `emitDailySummary()` executes. Size the LiPo for the intended deployment duration to minimize exposure.
+**Firmware state holds only one pending day's summary data.** The `PillboxState` struct contains a single `prev_day_opens` slot. If two consecutive UTC-day boundaries pass while a pending summary has not yet been emitted (for example, because the device is powered off spanning an entire day, or because total power loss causes `NotePayloadRetrieveAfterSleep` to fail on the next boot), the slot is overwritten and the earlier day's adherence data is unrecoverable. Note that a lack of cellular connectivity alone does *not* cause this: the Notecard stores queued Notes locally in its on-device flash and delivers them automatically once connectivity is restored. The risk is power loss before `emitDailySummary()` executes. Size the LiPo for the intended deployment duration to minimize exposure.
 
 **Patient identity must stay out of Note payloads and Notehub metadata.** Note bodies are stored and routed as plaintext through Notehub and any downstream systems. Notehub device metadata (tags, serial-number field) is not designed as a covered system for protected health information. For an RPM deployment, **never embed a patient name, MRN, date of birth, or any other PHI in a Note body or in Notehub device metadata.** Assign only an opaque, non-PHI deployment identifier (for example, a random UUID or clinic-assigned device code) to the Notehub device tag or serial-number field. Maintain the mapping from device UID to patient record exclusively in your downstream covered system. If your deployment architecture requires routing PHI through any cloud component, engage qualified counsel to review the complete data path before go-live.
 
@@ -450,7 +450,7 @@ Once a real RPM program is running the basic monitor, the following extensions a
 
 **Opaque deployment-ID assignment** (a random UUID or clinic-assigned device code) in the Notehub device tag or serial-number field so downstream routes can correlate events to the correct caregiver via a patient-record lookup in the downstream covered system, keyed on device UID.
 
-**Voltage-variable sync behavior** via `hub.set` `voutbound` — automatically extend the outbound cadence as the LiPo voltage drops, maximizing runtime without manual intervention.
+**Voltage-variable sync behavior** via `hub.set` `voutbound`, automatically extending the outbound cadence as the LiPo voltage drops, maximizing runtime without manual intervention.
 
 **[Notecard Outboard DFU](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/)** for over-the-air host firmware updates so new features (buzzer support, new alert rules) can be pushed to deployed devices without a pharmacy recall.
 
