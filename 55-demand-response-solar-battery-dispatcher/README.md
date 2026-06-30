@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Demand-Response%20Solar%20%2B%20Battery%20Dispatcher).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/solar_battery_dispatcher/](firmware/solar_battery_dispatcher/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is an [energy savings](https://blues.com/energy-savings/) reference design that gives a commercial solar + battery installation an independent cellular control channel, so the asset owner can dispatch the battery to discharge during expensive peak-rate hours, charge during cheap overnight hours, and curtail grid export when the utility calls a demand-response (DR) event, without depending on the building's IT network or a vendor's proprietary cloud portal. The device reads live operating state from the inverter and the battery's management system (BMS) over the industrial bus they already share, and signals each one to enter the right mode at the right time, driven by a schedule or by live commands routed through the [Blues Notehub](https://blues.com/notehub/) cloud service.

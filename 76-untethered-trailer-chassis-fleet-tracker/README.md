@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Untethered%20Trailer%20%26%20Chassis%20Fleet%20Tracker).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/trailer_fleet_tracker_starnote/](firmware/trailer_fleet_tracker_starnote/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a solar-trickle-charged, tractor-independent GPS and motion tracker for [asset location tracking](https://blues.com/solutions-location-tracking/) on freight trailers and intermodal chassis. The device delivers cellular-first telemetry with truly global Iridium LEO satellite fallback, keeping the trailer or chassis visible across trans-oceanic container routes and polar corridors where geostationary satellite networks have no coverage at all. The hardware is a Blues Notecarrier XI with a Swan host, a cellular Notecard, and a Starnote for Iridium (see §4 for the BOM).

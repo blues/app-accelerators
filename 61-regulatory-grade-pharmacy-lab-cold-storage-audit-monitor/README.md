@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Pharmacy%2FLab%20Cold-Storage%20Audit%20Monitor).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/cold_storage_audit_monitor/](firmware/cold_storage_audit_monitor/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a [safety assurance](https://blues.com/safety-assurance/) reference design that gives pharmacies, clinical laboratories, and vaccine depots a continuous, automatically-timestamped temperature record for every refrigerator and freezer in their compliance scope, delivered over a cellular data path that bypasses the facility's regulated network entirely. Immediate alerts fire the moment the temperature strays outside its configured range or a door is left open too long.

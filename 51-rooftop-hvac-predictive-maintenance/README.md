@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Rooftop%20HVAC%20Unit%20Predictive%20Maintenance%20Pack).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/rtu_predictive_maintenance/](firmware/rtu_predictive_maintenance/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a retrofit [downtime prevention](https://blues.com/downtime-prevention/) pack for commercial rooftop HVAC units. A handful of inexpensive sensors and a Blues [Notecard Cell+WiFi](https://shop.blues.com/products/notecard-cellular?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) turn an ordinary rooftop unit into a remotely-monitored, predictively-maintained asset — catching refrigerant loss, short-cycling, and clogged filters *before* the unit fails and a tenant loses cooling.

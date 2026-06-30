@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Hydromechanical%20%28HGI%29%20and%20Batch-Collection%20Grease%20Interceptor%20Level%20Monitor).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/grease_interceptor_monitor/](firmware/grease_interceptor_monitor/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a [truck-roll reduction](https://blues.com/truck-roll-reduction/) device for pumping providers who service **commercial grease interceptors**. A waterproof ultrasonic distance sensor installed in the access cover reports fill level over cellular every 15 minutes; when the level reaches a threshold, an alert dispatches immediately to the [Blues Notehub](https://blues.com/notehub/) cloud service. Trucks are routed on actual condition, not a fixed calendar.

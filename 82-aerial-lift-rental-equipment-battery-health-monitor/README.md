@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Aerial%20Lift%20%2F%20Rental%20Equipment%20Battery%20Health%20Monitor).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/lift_battery_monitor/](firmware/lift_battery_monitor/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a [battery management systems](https://blues.com/battery-management-systems/) reference design that turns the electric battery pack on a rental scissor lift, boom lift, or telehandler into a continuously-monitored asset, surfacing state of charge, depth of discharge, rolling state of health, and thermal status to the rental company's fleet management platform, over cellular with satellite fallback, wherever the lift happens to be sitting.

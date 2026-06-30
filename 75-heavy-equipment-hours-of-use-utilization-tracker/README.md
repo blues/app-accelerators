@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Heavy%20Equipment%20Hours-of-Use%20%26%20Utilization%20Tracker).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/equipment_hours_tracker/](firmware/equipment_hours_tracker/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a retrofit [asset location tracking](https://blues.com/solutions-location-tracking/) solution for mobile heavy equipment — excavators, generators, compactors, light towers, and any machine a rental company or OEM needs to bill by the hour and maintain on schedule. A magnetically mounted, solar-trickle-charged enclosure uses a 3-axis accelerometer to detect engine-on/off transitions via vibration signature, accumulates a persistent software hour meter, and reports location and utilization back to the [Blues Notehub](https://blues.com/notehub/) cloud service over cellular or satellite, with no wiring harness, no equipment modification, and no dependency on a job-site network. [Skylo](https://www.skylo.tech/)-supported satellite fallback keeps the device reporting from remote pipeline corridors, open-pit mines, and wind-farm construction zones where terrestrial coverage runs thin. The hardware is a Notecarrier CX with a Notecard for Skylo and an external IMU (see §4 for the BOM).

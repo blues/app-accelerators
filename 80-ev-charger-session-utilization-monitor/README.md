@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Level%202%20EV%20Charger%20Session%20%26%20Utilization%20Monitor).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/ev_charger_session_monitor/](firmware/ev_charger_session_monitor/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a cellular [energy monitoring](https://blues.com/solutions-energy-monitoring/) retrofit for Level 2 EV chargers: for fleet managers, facilities teams, and charging-network operators who need to know how their installed chargers are actually being used. The design clamps a DIN-rail energy meter onto each charger's AC feed and reports three streams to the [Blues Notehub](https://blues.com/notehub/) cloud service over cellular: per-session metered kWh and peak power, hourly utilization and availability, and mains-offline alerts. Energy is measured by a hardware-metered instrument; charger availability is tracked from the meter's V_rms register — when mains voltage is absent the circuit is definitively offline. No modification to the charger hardware, no OCPP enrollment, no site IT involvement required. The hardware is a Notecarrier CX with a Notecard Cell+WiFi and an EASTRON SDM120-Modbus energy meter (see §4 for the BOM). See [§10](#10-limitations-and-next-steps) for design boundaries and production expansion paths.

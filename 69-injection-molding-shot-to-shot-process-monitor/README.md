@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Injection%20Molding%20Hydraulic%20Injection%20Pressure%20Monitor).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/injection_molding_shot_monitor/](firmware/injection_molding_shot_monitor/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a shot-level process monitor for plastic [injection molding](https://blues.com/industrial-equipment-monitoring/) machines. The device captures the two signals that drive part quality on every shot (hydraulic injection pressure and mold temperature) and reduces each shot to a handful of summary metrics a process engineer would want to see (peak pressure, fill time, pack pressure, average mold temperature, shot sequence number), then pushes them to the cloud over cellular. Because the connectivity sits outside the plant's OT network, no IT or network ticket is required at the customer site. The hardware is a Blues Notecarrier CX paired with a [Notecard Cell+WiFi](https://shop.blues.com/products/notecard-cell-wifi?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link).

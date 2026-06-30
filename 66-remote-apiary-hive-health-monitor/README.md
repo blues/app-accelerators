@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Remote%20Apiary%20Hive%20Health%20Monitor).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/apiary_hive_monitor/](firmware/apiary_hive_monitor/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a solar-powered hive monitor that turns each hive into a [remotely-monitored asset](https://blues.com/solutions-remote-monitoring/) — tracking hive weight and brood-box climate every 15 minutes, capturing a brief acoustic snapshot of the colony once per day, and reporting it all without grid power and without a truck roll every time the data looks wrong. A single [Notecard for Skylo](https://shop.blues.com/products/notecard-for-skylo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) carries cellular, WiFi, and Skylo satellite radios on one module and fails over between them automatically, so the same hardware and firmware reach the [Blues Notehub](https://blues.com/notehub/) cloud service from an orchard with cell coverage or a meadow beyond any tower.

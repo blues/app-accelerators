@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Cellular%20Medication%20Adherence%20Pillbox).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/cellular_medication_adherence_pillbox/](firmware/cellular_medication_adherence_pillbox/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a [remote patient monitoring](https://blues.com/remote-patient-monitoring/) device that catches missed doses before they become clinical events. A Blues Notecard Cell+WiFi riding on a Notecarrier CX wakes every 30 seconds, reads seven snap-action micro-switches inside a standard weekly pillbox, and uploads a cellular event to the [Blues Notehub](https://blues.com/notehub/) cloud service **each time a compartment lid is detected open during a scheduled 30-second poll**: no WiFi configuration, no smartphone, and nothing for the patient to set up.

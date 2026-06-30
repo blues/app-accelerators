@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Rail%20Car%20Condition%20%26%20Interchange%20Tracker).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/rail_car_tracker/](firmware/rail_car_tracker/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a [supply chain tracking](https://blues.com/solutions-supply-chain-tracking/) reference design for leased freight and tank rail cars. A solar-powered [Notecard for Skylo](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), Blues' all-in-one cellular and satellite module, pairs with an embedded Cygnet STM32 host to monitor **car-level** conditions: location, shock/impact events, and coupler state. On TANK_CAR builds, the same device adds low-pressure vent-port fitting pressure via the Adafruit MPRLS (0–25 PSI absolute) and single-point lading temperature via a waterproof DS18B20 probe.

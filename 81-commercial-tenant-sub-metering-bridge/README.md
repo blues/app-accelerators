@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Commercial%20Tenant%20Energy%20Monitoring%20Bridge).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/tenant_sub_meter/](firmware/tenant_sub_meter/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a cellular [energy monitoring](https://blues.com/solutions-energy-monitoring/) retrofit for multi-tenant commercial buildings. Four Rogowski coil sensors with per-channel active integrator circuits on a panel, a Blues Notecard Cell+WiFi, and a Notecarrier CX with its onboard Cygnet host, and a landlord gains per-tenant estimated interval energy (Wh), 15-minute blocked-average demand (W), and a per-channel fault bitmask every hour, on a data channel the tenants can neither see nor interfere with, without running a single network cable through the building.

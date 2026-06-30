@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Propane%20%2F%20LPG%20Tank%20Fill%20Telemetry%20%E2%80%94%204%E2%80%9320%20mA%20Float-Transmitter%20Variant).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/propane_tank_telemetry/](firmware/propane_tank_telemetry/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a [truck roll reduction](https://blues.com/truck-roll-reduction/) reference design that gives propane dealers per-tank fill telemetry across their entire delivery territory, replacing fixed-schedule routes with demand-driven dispatch and projecting days-until-empty for every tank in the fleet. A level sensor at the tank's existing gauge port and a temperature probe on the tank shell turn each tank into a self-reporting asset; a single [Notecard for Skylo](https://shop.blues.com/products/notecard-for-skylo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) (one module carrying cellular, WiFi, and Skylo satellite radios that fails over between them automatically) carries the data from the tank three minutes outside town just as readily as from the remote mountain cabin beyond any cell tower. One SKU and one firmware image cover every site type in the territory.

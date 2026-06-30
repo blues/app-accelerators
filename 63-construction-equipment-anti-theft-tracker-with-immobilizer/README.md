@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Construction%20Equipment%20Anti-Theft%20Tracker%20with%20Immobilizer).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/construction_equipment_anti_theft/](firmware/construction_equipment_anti_theft/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a [loss prevention](https://blues.com/loss-prevention/) reference design for construction equipment fleets. The system turns any skid steer, light tower, portable compressor, or generator into a hardened asset that reports its own location continuously, fires alerts on geofence breach and after-hours motion, and accepts a remotely-staged ignition immobilizer command. It runs on a self-contained cellular-plus-satellite link with a small solar-trickled battery, requiring no job-site WiFi or IT coordination.

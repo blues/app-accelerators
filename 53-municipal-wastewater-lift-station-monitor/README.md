@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Municipal%20Wastewater%20Lift%20Station%20Monitor).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/lift_station_monitor/](firmware/lift_station_monitor/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a [downtime prevention](https://blues.com/downtime-prevention/) retrofit for municipal wastewater lift stations that catches pump failures, discharge obstructions, and high-water conditions before they become a sanitary overflow. A handful of sensors and a single [Notecard for Skylo](https://shop.blues.com/products/notecard-for-skylo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) — one module that carries cellular, WiFi, and Skylo satellite radios and fails over between them automatically — transform a sealed concrete vault into a remotely-monitored station that delivers alerts to the on-call crew within minutes, not hours after a manual site visit. One SKU and one firmware image cover the entire fleet, from the station three blocks from city hall to the one at the edge of the service territory beyond any cell tower.

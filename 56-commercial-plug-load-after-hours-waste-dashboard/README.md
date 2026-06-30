@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Commercial%20Plug-Load%20%26%20After-Hours%20Waste%20Dashboard).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/plug_load_monitor/](firmware/plug_load_monitor/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a cellular-connected [energy savings](https://blues.com/energy-savings/) monitor that clips non-invasive CT (current transformer) clamps onto branch circuits in a commercial sub-panel, samples RMS current once a minute, and transmits hourly per-circuit profiles to the [Blues Notehub](https://blues.com/notehub/) cloud service, giving energy consultants a view into which circuits are burning money at 2 AM without ever touching the building's corporate network.
