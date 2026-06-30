@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Lone%20Worker%20Panic%20%26%20Fall%20Detection%20Safety%20Beacon).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/lone_worker_beacon/](firmware/lone_worker_beacon/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a wearable [safety assurance](https://blues.com/safety-assurance/) device for utility linemen, oilfield pumpers, field service technicians, and solo contractors. A single [Notecard for Skylo](https://shop.blues.com/products/notecard-for-skylo?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) carries cellular, WiFi, and Skylo NTN satellite radios on one module and fails over between them automatically. It turns a belt-clip enclosure into a cellular-first, satellite-backed distress beacon — detecting falls and accepting an explicit panic-button press — that can reach a dispatcher from the middle of nowhere, exactly where lone-worker incidents happen.

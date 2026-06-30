@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Utility%20Distribution%20Transformer%20Load%20Monitor).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/transformer_load_monitor/](firmware/transformer_load_monitor/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is an [energy monitoring](https://blues.com/solutions-energy-monitoring/) solution that gives utilities real-time load visibility at the pole — where transformer failures actually happen. A [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) with three split-core current transformers on the secondary terminals and an I²C temperature sensor tracks per-phase loading, detects dangerous current imbalances, and correlates load with enclosure temperature as a thermal-stress proxy, all over cellular, with no site infrastructure required.

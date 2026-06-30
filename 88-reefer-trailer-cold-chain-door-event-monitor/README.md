@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Reefer%20Trailer%20Cold-Chain%20%26%20Door-Event%20Monitor).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/reefer_cold_chain_monitor/](firmware/reefer_cold_chain_monitor/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a [loss prevention](https://blues.com/loss-prevention/) reference design that keeps continuous watch over refrigerated (**reefer**) trailers, catching temperature excursions before a load is spoiled and logging every door event before a pallet walks out the back. Two DS18B20 temperature probes and a magnetic door reed switch feed a Blues Notecarrier CX, which packages sensor events and hands them to a Notecard for [Skylo](https://www.skylo.tech/resources/geographical-coverage) for multi-network delivery: cellular when a tower is in range, Skylo satellite when it isn't.

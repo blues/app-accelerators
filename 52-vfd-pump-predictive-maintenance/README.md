@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=VFD-Driven%20Pump%20Predictive%20Maintenance%20via%20Modbus).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/vfd_pump_monitor/](firmware/vfd_pump_monitor/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a [downtime prevention](https://blues.com/downtime-prevention/) reference design that turns an industrial centrifugal pump into a predictively-maintained, remotely-monitored asset by reading what the pump's existing **VFD (variable frequency drive)** already knows about itself over **Modbus RTU**, on a real industrial **PLC** (programmable logic controller), with a cellular [Notecard](https://shop.blues.com/products/notecard-cellular?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) for the data uplink.

@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Post-Discharge%20Vitals%20Relay%20Hub).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/post_discharge_vitals_hub/](firmware/post_discharge_vitals_hub/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a [remote patient monitoring](https://blues.com/remote-patient-monitoring/) hub for 30–60-day post-discharge recovery programs. A Blues Notecard Cell+WiFi paired with an nRF52840 host that has native Bluetooth Low Energy scans for a patient's BLE-enabled medical devices (weight scale, blood pressure cuff, pulse oximeter, and activity band), relays each completed reading to the [Blues Notehub](https://blues.com/notehub/) cloud service over cellular, and immediately syncs readings that exceed configurable clinical thresholds so the care team is alerted without waiting for the next scheduled upload. No WiFi required, no app to configure, no network credentials to enter. Plug it in and it works.

@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Off-Grid%20Livestock%20Water%20Tank%20Monitor).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/livestock_water_tank_monitor/](firmware/livestock_water_tank_monitor/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a solar-powered [remote monitoring](https://blues.com/solutions-remote-monitoring/) system for off-grid livestock water tanks. It tells a rancher when a stock tank is going dry — without anyone driving the pasture roads to check. The device measures the water level, the pump's current draw, and the solar system's own battery voltage, then reports all three to a phone or dispatch system over cellular wherever a tower is reachable and over satellite via [Skylo](https://www.skylo.tech/)'s non-terrestrial network (NTN) where it isn't. The radio stays off between an immediate alert and a 4-hour summary, so the device runs indefinitely on a modest solar panel and a single battery.

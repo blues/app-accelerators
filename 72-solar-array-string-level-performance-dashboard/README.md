@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Solar%20Array%20String-Level%20Performance%20Dashboard).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/solar_string_monitor/](firmware/solar_string_monitor/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is an [asset performance optimization](https://blues.com/solutions-asset-performance-optimization/) reference design that turns a solar array into a per-string, continuously-monitored asset. It catches soiling, shading, and bad modules from wherever the array happens to be, without WiFi, without site IT involvement, and without touching the existing inverter.

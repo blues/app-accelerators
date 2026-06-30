@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=CNC%20Machine%20Spindle%20Load%20%26%20Cycle%20Time%20Tracker).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/cnc_spindle_tracker/](firmware/cnc_spindle_tracker/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is an [industrial equipment monitoring](https://blues.com/industrial-equipment-monitoring/) reference design for machine-tool OEMs who want continuous visibility into how their installed base is actually being used. The device sits on the customer's CNC machine and reports the operational signals an OEM cares about: how hard the spindle is working, how many cycles ran each hour, how often the machine sits idle, which operator is logged in, and what alarm codes the controller raises. All of it travels back to the OEM's cloud over cellular, without ever touching the customer's plant network. Routine telemetry batches into hourly summaries; alarms and operator-ID changes arrive immediately. The hardware is an Arduino OPTA RS485 with a Blues Wireless for OPTA cellular expansion (see §4 for the BOM); the data source is any CNC controller that exposes telemetry over **Modbus TCP**.

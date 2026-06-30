@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Shipper-Owned%20Cargo-Level%20Cold%20Chain%20Monitor).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/cargo_cold_chain_monitor/](firmware/cargo_cold_chain_monitor/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is a pallet-attached cold chain logger, a [supply chain tracking](https://blues.com/solutions-supply-chain-tracking/) reference design, for pharma and food shippers who cannot afford to trust the reefer unit's built-in telematics. A handful of sensors, a [Blues Notecard for Skylo](https://shop.blues.com/products/notecard?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link), and a [Notecarrier CX](https://shop.blues.com/products/notecarrier-cx?utm_source=dev-blues&utm_medium=web&utm_campaign=store-link) give you an independent, shipper-controlled condition record that travels with the cargo — through loading docks, over-the-road transit, port staging, and customs DCs, and dispatches an alert Note when a temperature, humidity, shock, tilt, or cargo-bay-opening threshold is crossed.

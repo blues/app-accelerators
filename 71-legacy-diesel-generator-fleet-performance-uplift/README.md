@@ -6,6 +6,8 @@
 
 This reference application is intended to provide inspiration and help you get started quickly. It uses specific hardware choices that may not match your own implementation. Focus on the sections most relevant to your use case. If you'd like to discuss your project and whether it's a good fit for Blues, [feel free to reach out](https://blues.com/landing-pages/accelerators-contact-us/?accelerator=Legacy%20Diesel%20Generator%20Fleet%20Performance%20Uplift).
 
+**Building with an AI assistant?** Point it at this accelerator's firmware — [firmware/diesel_gen_monitor/](firmware/diesel_gen_monitor/) — so it can learn how the device works and help you adapt it to your hardware.
+
 </Note>
 
 This project is an [asset performance optimization](https://blues.com/solutions-asset-performance-optimization/) retrofit for operators of standby diesel generators at hospitals, data centers, and industrial sites. The device sits on the DIN rail inside the generator panel, reads the controller's existing Modbus port, and reports run hours, fault codes, fuel level, coolant temperature, oil pressure, and load to the cloud over cellular — with immediate alerts on faults, coolant overtemp, low oil pressure, low fuel, and lost communication. Crucially, it draws from the panel's battery-backed DC control bus and uses an external antenna routed outside the metal enclosure, so the monitoring path stays alive when mains and facility WiFi go dark, which is exactly when a standby generator either starts successfully or doesn't. The hardware is an Arduino OPTA RS485 with a Blues Wireless for OPTA cellular expansion (see §3 for the BOM); the wiring is strictly read-only, with no writes to start/stop or safety circuits.
