@@ -373,7 +373,7 @@ You'll use `server.py` as the Modbus server and the Swan as the Modbus client.
 
 To quickly exercise all the supported Modbus functions, you can run the [`test.py`](./test.py) Python script.
 
-1. Set up Programmatic API Access on your Notehub project by following [this documentation](https://dev.blues.io/api-reference/notehub-api/api-introduction/#authentication-with-oauth-bearer-tokens). You now have a client ID and secret.
+1. Set up Programmatic API Access on your Notehub project by following [this documentation](https://dev.blues.io/api-reference/notehub-api/#authentication-with-oauth-bearer-tokens). You now have a client ID and secret.
 1. Go to your Notehub project's Devices tab, double-click your device in the list, and copy down the Device UID.
 1. Go to your Notehub project's Settings tab and copy down the Project UID.
 1. You now have all the information you need to run `test.py`:

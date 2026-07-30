@@ -46,7 +46,7 @@ This is not a niche edge case. Billing disputes are among the most contentious i
 
 **Notecard responsibilities.** The Notecard is the cellular muscle and the sleep gate. It queues [Notes](https://dev.blues.io/api-reference/glossary/#note) locally, wakes the cellular radio on the configured [`hub.set`](https://dev.blues.io/api-reference/notecard-api/hub-requests/#hub-set) `outbound` cadence (default 60 min), and flushes the entire queue to Notehub in a single cellular session. Environment-variable changes pushed from Notehub come back on its `inbound` cadence (default 120 min), and [`card.attn`](https://dev.blues.io/api-reference/notecard-api/card-requests/#card-attn) sleep mode cuts host power between samples so the Cygnet draws essentially zero current from the supply between wakeups.
 
-**Notehub responsibilities.** Once Notes arrive at [Notehub](https://notehub.io) over the Notecard's embedded global SIM, they're stored durably and routed downstream. Notehub is also the **sole monthly aggregation path**: a billing or property-management platform sums each tenant's `t*_wh` values across all hourly `meter_summary.qo` events for a device over any billing period using the [Notehub Event Query API](https://dev.blues.io/api-reference/notehub-api/api-introduction/). The device never emits a month-end Note and never tries to compute a billing total; the hourly event stream in Notehub is the complete, authoritative record.
+**Notehub responsibilities.** Once Notes arrive at [Notehub](https://notehub.io) over the Notecard's embedded global SIM, they're stored durably and routed downstream. Notehub is also the **sole monthly aggregation path**: a billing or property-management platform sums each tenant's `t*_wh` values across all hourly `meter_summary.qo` events for a device over any billing period using the [Notehub Event Query API](https://dev.blues.io/api-reference/notehub-api/). The device never emits a month-end Note and never tries to compute a billing total; the hourly event stream in Notehub is the complete, authoritative record.
 
 [Fleets](https://dev.blues.io/guides-and-tutorials/fleet-admin-guide/) group devices per property so a property manager with multiple buildings can push sensor calibration settings per-building without touching individual devices. A Notehub HTTP or MQTT route can forward each `meter_summary.qo` Note directly to the property-management or billing platform as it arrives.
 
@@ -241,7 +241,7 @@ Once your device is appearing in the **Devices** tab and events are flowing, con
    | `volt_scale` | `1200.0` | Voltage transducer calibration: line-voltage V RMS ÷ ADC-pin V RMS. | Default (1200.0) matches ZMPT101B at 120 V nominal. Measure line voltage with a precision AC voltmeter and trim for accuracy. |
    | `num_tenants` | `4` | Active current channels to sample (1–4). | Set to the actual number of tenants metered to skip unnecessary ADC reads. |
 
-3. **Configure routes.** Route `meter_summary.qo` to your time-series database or billing platform. This is the canonical energy record and the correct source for monthly aggregation — sum each tenant's `t*_wh` values across all hourly events over the billing period using the [Notehub Event Query API](https://dev.blues.io/api-reference/notehub-api/api-introduction/). See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for destination types.
+3. **Configure routes.** Route `meter_summary.qo` to your time-series database or billing platform. This is the canonical energy record and the correct source for monthly aggregation — sum each tenant's `t*_wh` values across all hourly events over the billing period using the [Notehub Event Query API](https://dev.blues.io/api-reference/notehub-api/). See the [Notehub routing docs](https://dev.blues.io/notehub/notehub-walkthrough/#routing-data-with-notehub) for destination types.
 
 ### What you should see in Notehub
 
@@ -372,7 +372,7 @@ Nine 4-byte floats: estimated interval energy (Wh), 15-minute blocked-average de
 }
 ```
 
-To derive monthly per-tenant totals, sum `t*_wh` across all `meter_summary.qo` events for a device over the billing period using the [Notehub Event Query API](https://dev.blues.io/api-reference/notehub-api/api-introduction/), then divide by 1000 to obtain estimated kWh. This Notehub-side aggregation is the sole monthly rollup path; no device-side monthly note is generated.
+To derive monthly per-tenant totals, sum `t*_wh` across all `meter_summary.qo` events for a device over the billing period using the [Notehub Event Query API](https://dev.blues.io/api-reference/notehub-api/), then divide by 1000 to obtain estimated kWh. This Notehub-side aggregation is the sole monthly rollup path; no device-side monthly note is generated.
 
 ### 7.5 Low-power strategy
 
@@ -505,7 +505,7 @@ If compilation fails with a `PRODUCT_UID is not defined` warning, revisit step 2
 **Transmitted — hourly (canonical record).**
 `meter_summary.qo`: one Note per `summary_interval_min` (default 24 per day). Template-encoded, queued and flushed in the Notecard's periodic outbound sync. Carries `t1_wh`–`t4_wh` (estimated interval energy in Wh), `t1_demand_w`–`t4_demand_w` (peak 15-minute blocked-average demand W), and `fault_mask` (combined per-channel fault bitmask) for each tenant. Note is **not** sync:true; it batches with the periodic radio window. These Notes are the authoritative energy record and the sole input for Notehub-side monthly aggregation.
 
-**Routed.** Notes flow through Notehub to whatever downstream the project routes specify. A typical deployment routes `meter_summary.qo` to a time-series database as the primary billing and analytics record. Monthly per-tenant totals are derived by summing `t*_wh` across the billing period's hourly events in Notehub — either via the [Event Query API](https://dev.blues.io/api-reference/notehub-api/api-introduction/) or a downstream aggregation pipeline. Notehub stores every Note durably; no device-side aggregate is needed to reconstruct any monthly total.
+**Routed.** Notes flow through Notehub to whatever downstream the project routes specify. A typical deployment routes `meter_summary.qo` to a time-series database as the primary billing and analytics record. Monthly per-tenant totals are derived by summing `t*_wh` across the billing period's hourly events in Notehub — either via the [Event Query API](https://dev.blues.io/api-reference/notehub-api/) or a downstream aggregation pipeline. Notehub stores every Note durably; no device-side aggregate is needed to reconstruct any monthly total.
 
 ## 10. Validation and Testing
 
@@ -599,7 +599,7 @@ Taking the bridge toward a production rollout means calibrating each installed c
 
 **Notecard Outboard DFU** lets [firmware be updated](https://dev.blues.io/notehub/host-firmware-updates/notecard-outboard-firmware-update/) across the entire fleet without a truck roll to each panel.
 
-**Integrate with a billing platform** by configuring a Notehub HTTP route that POSTs each `meter_summary.qo` to the analytics and billing database. Configure the downstream system to reject or quarantine any `meter_summary.qo` where `fault_mask != 0` and fall back to manual estimation for the affected period. Monthly totals are derived by querying the [Notehub Event Query API](https://dev.blues.io/api-reference/notehub-api/api-introduction/) and summing `t*_wh` for each device over the billing period.
+**Integrate with a billing platform** by configuring a Notehub HTTP route that POSTs each `meter_summary.qo` to the analytics and billing database. Configure the downstream system to reject or quarantine any `meter_summary.qo` where `fault_mask != 0` and fall back to manual estimation for the affected period. Monthly totals are derived by querying the [Notehub Event Query API](https://dev.blues.io/api-reference/notehub-api/) and summing `t*_wh` for each device over the billing period.
 
 **Capture a commissioning baseline** on first installation by recording the ADC DC offset for each channel with all loads off and storing the values in Notehub device metadata. The downstream system can compare `fault_mask` flags against these baselines to distinguish genuine zero-load readings from sensor faults.
 
