@@ -50,6 +50,7 @@ jobs:
             "Adafruit BusIO" \
             "Adafruit DRV2605 Library" \
             "Adafruit INA228 Library" \
+            "Adafruit LIS3DH" \
             "Adafruit LSM6DS" \
             "Adafruit MAX31865 library" \
             "Adafruit MCP9808 Library" \
@@ -59,8 +60,7 @@ jobs:
             "Adafruit Unified Sensor" \
             "Adafruit VCNL4040" \
             "Adafruit VEML7700 Library" \
-            "HX711" \
-            "SparkFun LIS3DH Arduino Library"
+            "HX711"
 
       - name: Compile every sketch
         # ALLOW_EMPTY_PRODUCT_UID lets sketches that gate compilation on a

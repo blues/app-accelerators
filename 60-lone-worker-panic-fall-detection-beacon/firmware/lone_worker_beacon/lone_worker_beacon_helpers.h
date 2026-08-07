@@ -20,7 +20,7 @@
 
 #include <Arduino.h>
 #include <Notecard.h>
-#include <SparkFunLIS3DH.h>
+#include <Adafruit_LIS3DH.h>
 #include <Adafruit_DRV2605.h>
 #include <math.h>
 #include <string.h>
@@ -112,10 +112,13 @@ struct AlertQueueEntry {
 // (80 ms) is reliably observed regardless of the outer loop's ~10 Hz cadence.
 #define ACCEL_SAMPLES_PER_LOOP  10     // inner samples per outer iteration
 #define ACCEL_SAMPLE_MS         10     // ms between inner samples (LIS3DH at 100 Hz ODR)
+#define ACCEL_I2C_ADDR          0x18   // SDO/SA0 pulled low → 0x18 (0x19 if high)
 
-// Runtime health: if totalG is near-zero (all-axis zero = I2C fault) or
-// implausibly high (above the ±4 g full-scale range plus headroom), the read
-// is considered bad. ACCEL_FAIL_THRESHOLD consecutive bad reads trigger a
+// Runtime health: if totalG is near-zero (all axes reading zero, which a
+// working LIS3DH will not do at rest under gravity) or implausibly high (above
+// the ±4 g full-scale range plus headroom), the read is considered bad. See the
+// note in pollFallDetection() on why a plausible sample is not proof of a
+// healthy I2C bus. ACCEL_FAIL_THRESHOLD consecutive bad reads trigger a
 // reinitialization attempt; after ACCEL_REINIT_MAX failed reinits the fault
 // is latched and fall detection is disabled permanently until power-cycle.
 #define ACCEL_FAIL_THRESHOLD    5      // consecutive bad reads before reinit
@@ -154,7 +157,7 @@ struct AlertQueueEntry {
 
 // ── Shared objects (defined in lone_worker_beacon.ino) ────────────────────
 extern Notecard          notecard;
-extern LIS3DH            accel;
+extern Adafruit_LIS3DH   accel;
 extern Adafruit_DRV2605  haptic;
 
 // ── Runtime config (defined in lone_worker_beacon.ino) ────────────────────

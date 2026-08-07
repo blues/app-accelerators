@@ -231,14 +231,26 @@ void fetchEnvVars()
 // ─── Sensor Initialization ────────────────────────────────────────────────
 bool initAccel()
 {
-    accel.settings.adcEnabled      = 0;
-    accel.settings.tempEnabled     = 0;
-    accel.settings.accelSampleRate = 100;  // ODR 100 Hz; matches ACCEL_SAMPLE_MS
-    accel.settings.accelRange      = 4;    // ±4 g; headroom for impacts
-    accel.settings.xAccelEnabled   = 1;
-    accel.settings.yAccelEnabled   = 1;
-    accel.settings.zAccelEnabled   = 1;
-    return (accel.begin() == IMU_SUCCESS);
+    // Adafruit_LIS3DH::begin() probes WHO_AM_I (returns false if the part does
+    // not answer on ACCEL_I2C_ADDR), enables all three axes, and leaves the
+    // device in high-resolution 12-bit mode with BDU set so multi-byte reads
+    // are coherent. It does NOT default to the rate or range this project
+    // needs — 400 Hz and ±2 g — so both are set explicitly below.
+    if (!accel.begin(ACCEL_I2C_ADDR)) return false;
+
+    accel.setRange(LIS3DH_RANGE_4_G);           // ±4 g; headroom for impacts
+    accel.setDataRate(LIS3DH_DATARATE_100_HZ);  // ODR 100 Hz; matches ACCEL_SAMPLE_MS
+
+    // begin() also writes TEMPCFG = 0x80, which powers up the auxiliary ADC.
+    // Neither the ADC inputs nor the temperature sensor are used here and this
+    // is a battery-powered beacon, so clear the register to switch both off —
+    // the equivalent of adcEnabled/tempEnabled = 0 under the previous driver.
+    // (begin() additionally routes DRDY to INT1; that pin is unconnected in
+    // this build, so the extra interrupt line is harmless.)
+    Wire.beginTransmission(ACCEL_I2C_ADDR);
+    Wire.write(LIS3DH_REG_TEMPCFG);
+    Wire.write(0x00);
+    return (Wire.endTransmission() == 0);
 }
 
 bool initHaptic()
@@ -261,9 +273,10 @@ bool initHaptic()
 // Impact window uses start-time + elapsed comparison (wraparound-safe).
 bool pollFallDetection()
 {
-    float ax = accel.readFloatAccelX();
-    float ay = accel.readFloatAccelY();
-    float az = accel.readFloatAccelZ();
+    accel.read();                 // refreshes x_g / y_g / z_g, already in g
+    float ax = accel.x_g;
+    float ay = accel.y_g;
+    float az = accel.z_g;
     float totalG = sqrtf(ax*ax + ay*ay + az*az);
     uint32_t now = millis();
 
@@ -271,6 +284,13 @@ bool pollFallDetection()
     // All-zero vector: LIS3DH typically measures ~1 g at rest due to gravity;
     // an all-zero result indicates an I2C fault or sensor hang.
     // totalG > ACCEL_PLAUSIBLE_G_MAX: physically impossible on a ±4 g device.
+    //
+    // Note: Adafruit_LIS3DH::read() returns void and ignores the underlying
+    // bus status, so a failed I2C transfer leaves whatever was in its local
+    // buffer rather than reliably zeroing the axes. The magnitude bound below
+    // catches most such reads, and any that slip through are caught by
+    // tryReinitAccel(), which re-probes WHO_AM_I via begin(). Do not treat a
+    // plausible-looking sample as proof the bus is healthy.
     bool readingBad = (fabsf(ax) < 0.001f && fabsf(ay) < 0.001f &&
                        fabsf(az) < 0.001f) || (totalG > ACCEL_PLAUSIBLE_G_MAX);
     if (readingBad) {

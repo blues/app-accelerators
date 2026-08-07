@@ -55,9 +55,10 @@
  *
  * Dependencies:
  *   Blues Wireless Notecard (note-arduino)
- *   SparkFun LIS3DH Arduino Library        v1.0.3+
+ *   Adafruit LIS3DH Library                v1.3.0+
  *   Adafruit DRV2605 Library               v1.2.3+
- *   Adafruit BusIO (DRV2605 dependency)    v1.15+
+ *   Adafruit Unified Sensor (LIS3DH dep)   v1.1.14+
+ *   Adafruit BusIO (DRV2605/LIS3DH dep)    v1.15+
  */
 
 #include <Wire.h>
@@ -70,7 +71,7 @@
 
 // ── Objects ───────────────────────────────────────────────────────────────
 Notecard          notecard;
-LIS3DH            accel(I2C_MODE, 0x18);  // SDO pulled low → address 0x18
+Adafruit_LIS3DH   accel;                  // I2C address passed to begin() in initAccel()
 Adafruit_DRV2605  haptic;
 
 // ── Runtime config (shadows env vars; refreshed every ENV_FETCH_INTERVAL_MS)
