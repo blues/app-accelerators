@@ -4,17 +4,43 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Weekly canary for the no-pins policy described below: an upstream core or
+  # library release can break these builds with no commit here at all. Pushes
+  # already catch that, but they cluster -- the longest gap between runs over
+  # 2026-05..2026-08 was 30 days, and 2 of 38 gaps exceeded a week. Monday
+  # 06:17 UTC; the odd minute dodges the top-of-hour scheduling crush.
+  #
+  # NOTE: GitHub disables cron triggers in public repos after 60 days with no
+  # repository activity (it emails an admin first). If the canary goes quiet,
+  # check that before assuming the schedule is wrong.
+  schedule:
+    - cron: "17 6 * * 1"
+  # Manual re-run, so you can retest after an upstream fix without pushing.
+  workflow_dispatch:
 
 # Always uses the latest arduino-cli, the latest core packages, and the latest
 # library versions (no version pins). Each sketch declares its target board in
 # its own sketch.yaml (default_fqbn:) so per-board overrides travel with the
 # sketch instead of being hard-coded in this workflow.
 
+# All this workflow does is check out the tree and compile it.
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Backstop against a hung job; the default is GitHub's 6h. Measured p50
+    # 12.5 min / max 13.2 min across 39 runs (2026-05..2026-08), so 30 min is
+    # ~2.4x the norm and still clears a slow core download or a cold rebuild.
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      # v7 runs on Node 24; v4 was three majors behind and was being forced off
+      # the deprecated Node 20 on every run. Note this only fixes half of that
+      # warning: arduino/setup-arduino-cli@v2 below is also node20, v2.0.0 is
+      # its newest tag, and its default branch is still node20 -- so there is
+      # no upstream fix for that one yet.
+      - uses: actions/checkout@v7
 
       - name: Install latest arduino-cli
         uses: arduino/setup-arduino-cli@v2
@@ -68,8 +94,29 @@ jobs:
         # Production flashes must NOT use this flag.
         run: |
           set -u
-          failed=()
+
+          # Collect the list first so the count can be sanity-checked. This used
+          # to pipe find straight into the loop, which meant that if the
+          # expression ever stopped matching -- a renamed accelerator-archive, a
+          # change to the */firmware/** layout -- the loop body never ran,
+          # `failed` stayed empty, and the step printed "All sketches compiled
+          # successfully" and exited 0. A green check that compiled nothing.
+          sketches=()
           while IFS= read -r ino; do
+            sketches+=("$ino")
+          done < <(find . \
+                     -path ./accelerator-archive -prune -o \
+                     -path ./.git -prune -o \
+                     -name '*.ino' -print | sort)
+
+          echo "Discovered ${#sketches[@]} sketch(es)."
+          if [ ${#sketches[@]} -eq 0 ]; then
+            echo "::error::Found no .ino files. The find expression or the repo layout changed."
+            exit 1
+          fi
+
+          failed=()
+          for ino in "${sketches[@]}"; do
             sketch_dir=$(dirname "$ino")
             echo "::group::$sketch_dir"
             if ! arduino-cli compile --warnings none \
@@ -78,14 +125,11 @@ jobs:
               failed+=("$sketch_dir")
             fi
             echo "::endgroup::"
-          done < <(find . \
-                     -path ./accelerator-archive -prune -o \
-                     -path ./.git -prune -o \
-                     -name '*.ino' -print | sort)
+          done
 
           if [ ${#failed[@]} -ne 0 ]; then
-            echo "::error::${#failed[@]} sketch(es) failed to compile:"
+            echo "::error::${#failed[@]} of ${#sketches[@]} sketch(es) failed to compile:"
             printf '  - %s\n' "${failed[@]}"
             exit 1
           fi
-          echo "All sketches compiled successfully."
+          echo "All ${#sketches[@]} sketches compiled successfully."
