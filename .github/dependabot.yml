@@ -1,0 +1,30 @@
+version: 2
+
+updates:
+  # Keeps the `uses:` pins in .github/workflows/ current. Without this, action
+  # versions drift silently and invisibly: actions/checkout sat three majors
+  # behind (v4 while v7 was current) until it was bumped by hand, which is also
+  # why every run was logging the "Node.js 20 is deprecated" warning.
+  #
+  # Floating major tags (e.g. `@v7`) already pick up minors and patches on their
+  # own, so in practice these PRs are major bumps -- infrequent, and each one
+  # genuinely worth a human look before merging.
+  #
+  # Scoped to github-actions only. Several accelerators (and the archive) carry
+  # their own package.json, but those are reference samples that nothing builds
+  # in CI, so watching them would generate PR noise with no signal.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(actions)"
+    groups:
+      # One PR for the low-risk bumps; majors still arrive individually so each
+      # can be reviewed and reverted on its own.
+      actions-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
