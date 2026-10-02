@@ -3,7 +3,7 @@
  *
  * Hydromechanical (HGI) and Batch-Collection Grease Interceptor Level Monitor
  *
- * Blues Notecarrier CX (onboard Cygnet STM32L433 host MCU) +
+ * Blues Notecarrier CX (onboard STM32L433 host MCU) +
  * Notecard Cell+WiFi (MBGLW) +
  * DFRobot A02YYUW IP67 Waterproof Ultrasonic Sensor (SEN0311)
  *
@@ -17,6 +17,18 @@
  * immediate alert when fill level crosses a configurable threshold. All
  * tuning parameters are adjustable via Notehub environment variables without
  * re-flashing firmware.
+ *
+ * Host sleep: between samples the host sleeps in STM32 STOP2 (~1-2 µA, RAM
+ * retained) and is woken by the Notecard's ATTN pin after sample_interval_sec
+ * seconds (card.attn "sleep"). Execution resumes in place, so application
+ * state simply lives in RAM. Wiring: jumper the Notecarrier CX ATTN pin to D5
+ * (both on the same 16-pin header). Leave EN unconnected — on the CX it
+ * enables the shared 3.3 V VIO rail, so driving it from ATTN would brown out
+ * the board rather than sleep the host. See cx_sleep.h.
+ *
+ * Build: Tools > USB support (if available) > None (usb=none). With the USB
+ * CDC stack enabled and no USB host attached, the host cannot stay in STOP2.
+ * Debug output goes to the ST-LINK virtual COM port on the CX debug jack.
  *
  * NOTE: This design is scoped to HGI / batch-collection geometries. On
  * conventional constant-level interceptors (fixed outlet weir), the liquid
@@ -35,6 +47,7 @@
 
 #include <Notecard.h>
 #include "grease_interceptor_monitor_helpers.h"
+#include "cx_sleep.h"
 
 // ---------------------------------------------------------------------------
 // Product UID — paste yours from Notehub
@@ -66,15 +79,20 @@
 #define ALERT_COOLDOWN_SEC            3600    // 1 h minimum between alerts
 
 // ---------------------------------------------------------------------------
-// State segment ID stored inside Notecard during host sleep.
-// Four characters, unique to this project.
-// ---------------------------------------------------------------------------
-static const char STATE_SEG_ID[] = "GRIM";  // Grease Interceptor Monitor
-
-// ---------------------------------------------------------------------------
 // Globals
 // ---------------------------------------------------------------------------
 Notecard notecard;
+
+// Debug output: LPUART1 on the CX debug jack, which an ST-LINK V3 exposes as
+// a virtual COM port. (USB CDC must be disabled for STOP2 to work; see
+// cx_sleep.h.) The usbSerial macro in the helpers header aliases this.
+Uart dbgSerial(PIN_VCP_RX, PIN_VCP_TX);
+
+// Application state and operator config. Both live in RAM; STOP2 retains
+// SRAM, so they survive every sleep/wake cycle and are reset only by a power
+// cycle or reset (which re-runs setup()).
+static State  state;
+static Config cfg;
 
 // ---------------------------------------------------------------------------
 // Forward declarations (Notecard-configuration and env-var helpers)
@@ -84,13 +102,13 @@ static bool defineTemplates(void);
 static void fetchEnvOverrides(Config &cfg, State &state);
 
 // ===========================================================================
-// setup() — re-runs on every wake from NotePayloadSaveAndSleep
+// setup() — runs once at power-up. The host resumes in place after each
+// STOP2 sleep, so one-time initialization lives here and every per-wake
+// step lives in loop().
 // ===========================================================================
 void setup() {
 #ifdef usbSerial
     usbSerial.begin(115200);
-    const uint32_t t0 = millis();
-    while (!usbSerial && millis() - t0 < 3000) {}
 #endif
 
     // Sensor UART: A02YYUW TX wire → Notecarrier CX RX header pin (Serial1).
@@ -103,64 +121,57 @@ void setup() {
     notecard.setDebugOutputStream(usbSerial);
 #endif
 
-    // -----------------------------------------------------------------------
-    // Recover state from the Notecard's wake-up payload, or cold-boot init
-    // -----------------------------------------------------------------------
-    NotePayloadDesc payload;
-    bool recovered = NotePayloadRetrieveAfterSleep(&payload);
+    // Zero all state, set sentinels, and seed cfg with compile-time defaults.
+    // fetchEnvOverrides() then overwrites individual fields on each wake when
+    // env.get succeeds and the value passes range validation.
+    memset(&state, 0, sizeof(state));
+    state.fill_pct_last_valid = -1.0f;  // sentinel: no valid reading yet
+    cfg = Config{
+        DEFAULT_INTERCEPTOR_DEPTH_MM,
+        DEFAULT_ALERT_THRESHOLD_PCT,
+        DEFAULT_SAMPLE_INTERVAL_SEC,
+        DEFAULT_REPORT_INTERVAL_MIN
+    };
 
-    State state = {};
-
-    if (recovered) {
-        recovered &= NotePayloadGetSegment(&payload, STATE_SEG_ID,
-                                           &state, sizeof(state));
-        NotePayloadFree(&payload);
+    // One-time Notecard configuration. On a transient power-up I2C failure
+    // the flags stay false and loop() retries on the next wake rather than
+    // silently skipping.
+    if (notecardConfigure()) {
+        state.notecard_configured  = true;
+        // Only record the applied cadence after hub.set is confirmed so
+        // fetchEnvOverrides does not treat a failed first attempt as "already
+        // applied" and miss the retry.
+        state.applied_outbound_min = HUB_OUTBOUND_MIN;
+    }
+    if (defineTemplates()) {
+        state.templates_defined = true;
     }
 
-    if (!recovered) {
-        // Cold boot: zero all state, set sentinels, and seed cfg with
-        // compile-time defaults.  On every subsequent wake, cfg is initialized
-        // from the persisted state.cfg copy instead (see below).
-        memset(&state, 0, sizeof(state));
-        state.fill_pct_last_valid = -1.0f;  // sentinel: no valid reading yet
-        state.cfg = Config{
-            DEFAULT_INTERCEPTOR_DEPTH_MM,
-            DEFAULT_ALERT_THRESHOLD_PCT,
-            DEFAULT_SAMPLE_INTERVAL_SEC,
-            DEFAULT_REPORT_INTERVAL_MIN
-        };
-    }
+    // Arm the ATTN wake: the Notecard raises ATTN (D5) to end each sleep.
+    cxSleepBegin();
+}
 
-    // Initialize cfg from the persisted copy so a transient env.get failure
-    // retains the last operator-applied values rather than reverting to
-    // compile-time defaults.  fetchEnvOverrides() then overwrites individual
-    // fields only when env.get succeeds and the value passes range validation.
-    Config cfg = state.cfg;
-
+// ===========================================================================
+// loop() — one sample cycle, then sleep in STOP2 until the Notecard raises
+// ATTN sample_interval_sec later.
+// ===========================================================================
+void loop() {
     // Retry Notecard configuration on every wake until both calls succeed.
-    // On a transient first-boot I2C failure the flags stay false so the next
-    // wake re-enters the block and tries again rather than silently skipping.
-    if (!recovered || !state.notecard_configured) {
+    if (!state.notecard_configured) {
         if (notecardConfigure()) {
             state.notecard_configured  = true;
-            // Only record the applied cadence after hub.set is confirmed so
-            // fetchEnvOverrides does not treat a failed first-boot as "already
-            // applied" and miss the retry.
             state.applied_outbound_min = HUB_OUTBOUND_MIN;
         }
     }
-    if (!recovered || !state.templates_defined) {
+    if (!state.templates_defined) {
         if (defineTemplates()) {
             state.templates_defined = true;
         }
     }
 
     // Fetch current env-var values; only fields that parse cleanly and pass
-    // range validation are updated in cfg (others retain state.cfg values).
+    // range validation are updated in cfg (others retain their current values).
     fetchEnvOverrides(cfg, state);
-    // Persist the (possibly updated) config back into state so it survives
-    // the upcoming sleep and initializes cfg correctly on the next wake.
-    state.cfg = cfg;
 
     // -----------------------------------------------------------------------
     // Sample the sensor: take NUM_READINGS and keep the median
@@ -184,8 +195,8 @@ void setup() {
 #ifdef usbSerial
         // Commissioning aid: print raw distance so a tech can compare against
         // a tape measure without waiting for a full summary note to appear in
-        // Notehub. Connect via USB-C with the CX DIP switch set to HST and
-        // open a serial monitor at 115200 baud.
+        // Notehub. Connect an ST-LINK to the CX debug jack and open a serial
+        // monitor on its virtual COM port at 115200 baud.
         usbSerial.print("[DBG] median distance mm: ");
         usbSerial.println(median_dist);
 #endif
@@ -202,7 +213,7 @@ void setup() {
 
     // Normalize pre-sync sentinels on first valid clock tick.
     //
-    // When a cold-boot alert or summary fires before card.time is available,
+    // When a power-up alert or summary fires before card.time is available,
     // the corresponding epoch field is stored as 1 (0 = never fired,
     // 1 = fired once before sync). As soon as card.time returns a real
     // timestamp (now > 0), the raw expression (now - 1) evaluates to roughly
@@ -243,7 +254,7 @@ void setup() {
     // -----------------------------------------------------------------------
     // Daily summary — emits once per report_interval_min window.
     //
-    // Same sentinel strategy as alerts: allow the first cold-boot summary
+    // Same sentinel strategy as alerts: allow the first power-up summary
     // (last_report_epoch == 0) then block repeated reports while the Notecard
     // clock is unsynced by storing 1 instead of 0 after that first fire.
     // Normal interval-based cadence resumes once now > 0.
@@ -281,7 +292,7 @@ void setup() {
             // summary would carry valid_samples=1 covering only one reading
             // instead of a representative window. Operators see the gap by
             // the absence of a summary for that window. The
-            // state.last_report_epoch > 0 guard preserves the cold-boot
+            // state.last_report_epoch > 0 guard preserves the power-up
             // behaviour of firing the very first summary as soon as a valid
             // sample is available, even if that takes several wake cycles.
             state.last_report_epoch = now;
@@ -289,30 +300,21 @@ void setup() {
     }
 
     // -----------------------------------------------------------------------
-    // Save state and sleep; the Notecard will power the host back on after
-    // sample_interval_sec seconds via its ATTN pin.
+    // Sleep in STOP2 until the Notecard raises ATTN sample_interval_sec
+    // seconds from now. Execution resumes here; state and cfg stay in RAM.
     // -----------------------------------------------------------------------
-    NotePayloadDesc new_payload = {0, 0, 0};
-    NotePayloadAddSegment(&new_payload, STATE_SEG_ID, &state, sizeof(state));
-    if (!NotePayloadSaveAndSleep(&new_payload, cfg.sample_interval_sec, NULL)) {
 #ifdef usbSerial
-        usbSerial.println("[ERR] NotePayloadSaveAndSleep failed — ATTN pin may not be wired "
-                          "or Notecard ATTN mode not enabled. Restarting in 15 s.");
+    if (!cxSleepUntilAttn(notecard, cfg.sample_interval_sec, NULL, &usbSerial)) {
+#else
+    if (!cxSleepUntilAttn(notecard, cfg.sample_interval_sec)) {
 #endif
-        // Actually restart so the device doesn't strand itself awake forever.
-        // NVIC_SystemReset() is the standard ARM Cortex-M mechanism; it is
-        // available on the Cygnet (STM32L433) via CMSIS without extra headers.
-        delay(15000);
-        NVIC_SystemReset();
+        // The Notecard didn't take the sleep request, or ATTN never went low
+        // (check the ATTN -> D5 jumper). Keep the sample cadence and try again.
+#ifdef usbSerial
+        usbSerial.println("[WRN] ATTN sleep failed — waiting out the interval awake");
+#endif
+        delay(cfg.sample_interval_sec * 1000UL);
     }
-}
-
-// ===========================================================================
-// loop() — not used in this sleep pattern
-// ===========================================================================
-void loop() {
-    // All logic lives in setup(). The sleep pattern means the MCU is
-    // powered off by the Notecard; setup() re-runs on every wake.
 }
 
 // ===========================================================================
@@ -323,7 +325,7 @@ void loop() {
 // non-critical (accelerometer stays active; device still functions normally).
 // ===========================================================================
 static bool notecardConfigure(void) {
-    // sendRequestWithRetry on the first transaction to handle the cold-boot
+    // sendRequestWithRetry on the first transaction to handle the power-up
     // race condition where the host comes up before the Notecard is ready.
     J *req = notecard.newRequest("hub.set");
     JAddStringToObject(req, "product",  PRODUCT_UID);
@@ -384,11 +386,11 @@ static bool defineTemplates(void) {
 
 // ===========================================================================
 // Environment variable fetch — runs on every wake.
-// cfg arrives pre-seeded from state.cfg (the persisted copy), so only the
-// fields that env.get returns, parse successfully as numbers, and pass range
-// validation are updated; all others retain the last successfully applied
-// operator values.  A complete env.get transport/API failure leaves cfg
-// unchanged and returns early.
+// cfg holds the last applied values (it lives in RAM across sleeps), so only
+// the fields that env.get returns, parse successfully as numbers, and pass
+// range validation are updated; all others retain the last successfully
+// applied operator values.  A complete env.get transport/API failure leaves
+// cfg unchanged and returns early.
 //
 // Notehub environment variables are string-backed.  The env.get response body
 // delivers each value as a JSON string, not a number, so JGetNumber returns 0
@@ -413,7 +415,7 @@ static void fetchEnvOverrides(Config &cfg, State &state) {
 
     J *rsp = notecard.requestAndResponse(req);
     if (!notecardResponseOk(rsp)) {
-        // I2C failure or Notecard API error — keep current cfg defaults and
+        // I2C failure or Notecard API error — keep current cfg values and
         // retry on the next wake rather than silently treating errors as
         // 'no overrides configured'.
         notecard.deleteResponse(rsp);
@@ -427,7 +429,7 @@ static void fetchEnvOverrides(Config &cfg, State &state) {
         // strtoul, and verify the entire token was consumed (end != s &&
         // *end == '\0') before applying.  Each value is also clamped to a
         // safe operating range [low, high] — values outside that range are
-        // silently left at their persisted default, preventing bad Notehub
+        // silently left at their current value, preventing bad Notehub
         // inputs from causing overflow, impossible sleep durations, or
         // divide-by-zero.
         const char *s;
@@ -451,7 +453,8 @@ static void fetchEnvOverrides(Config &cfg, State &state) {
             }
         }
 
-        // Upper bound of 86400 s (24 h) prevents absurd sleep durations.
+        // Upper bound of 86400 s (24 h) prevents absurd sleep durations and
+        // keeps the fallback delay() product (seconds × 1000 ms) within uint32_t.
         s = JGetString(body, "sample_interval_sec");
         if (s && *s) {
             uv = strtoul(s, &end, 10);
@@ -474,7 +477,7 @@ static void fetchEnvOverrides(Config &cfg, State &state) {
 
     // Keep the Notecard's outbound cadence in sync with report_interval_min.
     // cfg.report_interval_min reflects the operator's current env-var setting
-    // when env.get succeeded, or the previously persisted value when it failed.
+    // when env.get succeeded, or the previously applied value when it failed.
     // In both cases the comparison is safe: a transient env.get failure leaves
     // both sides equal, suppressing a spurious hub.set; a genuine operator
     // change triggers hub.set exactly once.

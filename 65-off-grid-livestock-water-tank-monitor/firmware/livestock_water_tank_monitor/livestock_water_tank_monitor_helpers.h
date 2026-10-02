@@ -16,8 +16,9 @@
 #define PIN_BATTERY         A2   // 47kΩ/10kΩ divider tap from 12V solar bus (switched)
 // BSS84 PMOS high-side switch enable (via MMBT3904 NPN level shifter).
 // Drive HIGH to enable the divider for a sample; drive LOW when done.
-// A 100 kΩ gate pullup to battery+ holds the PMOS off whenever the host MCU
-// is unpowered, so A2 sits at GND through the low-side 10 kΩ during sleep
+// A 100 kΩ gate pullup to battery+ holds the PMOS off whenever this pin is
+// undriven or LOW (including while the host sleeps in STOP2, which retains
+// GPIO state), so A2 sits at GND through the low-side 10 kΩ during sleep
 // and no leakage path reaches the A2 input-protection diode.
 #define PIN_BATT_EN         A3   // active HIGH → PMOS on → divider active
 
@@ -139,7 +140,9 @@
 #define ENV_COOLDOWN_SEC_MIN        60u
 #define ENV_COOLDOWN_SEC_MAX     86400u
 
-// ── Persisted application state (saved to Notecard flash across sleeps) ───────
+// ── Application state ─────────────────────────────────────────────────────────
+// Lives in RAM. STOP2 retains SRAM, so this survives every sleep/wake cycle;
+// it is reset only by a power cycle or reset, which also re-runs setup().
 struct GlobalState {
     uint32_t lastSummaryEpoch;              // Unix time of last summary Note (0 = window not yet started)
     uint32_t lastAlertEpoch[NUM_ALERTS];    // Unix time of last alert per type
@@ -168,13 +171,13 @@ struct GlobalState {
     // while the battery is persistently low — the opposite of low-power behavior.
     bool     batteryLowActive;
     // templatesInstalled: set true after note.template registration succeeds.
-    // Checked on each restored wake so a cold-boot failure is retried.
+    // Checked on each wake so a cold-boot failure is retried.
     bool     templatesInstalled;
     uint32_t appliedSummaryIntervalMin;     // outbound value last issued to hub.set
     // ── Cached last-known-good Notehub env-var values ─────────────────────────
-    // Persisted across card.attn sleeps so that a transient env.get failure
+    // Held across sleep/wake cycles so that a transient env.get failure
     // never reverts thresholds or cadence to compile-time defaults for that
-    // wake cycle.  Initialised to compile-time defaults on cold boot; updated
+    // wake cycle.  Initialised to compile-time defaults in setup(); updated
     // on every wake where fetchEnvOverrides() returns true.
     uint32_t envTankDepthMm;
     uint32_t envSensorMinMm;

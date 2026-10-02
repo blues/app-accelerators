@@ -1,1 +1,1 @@
-default_fqbn: STMicroelectronics:stm32:Blues:pnum=SWAN_R5
+default_fqbn: STMicroelectronics:stm32:GenU5:pnum=SWAN_R5,usb=none

@@ -43,7 +43,7 @@
 // ---------------------------------------------------------------------------
 // MAX31865 RTD amplifier — SPI interface for PT100 NIST-traceable probe
 // ---------------------------------------------------------------------------
-#define MAX31865_CS_PIN    10       // Chip-select GPIO (Cygnet D10)
+#define MAX31865_CS_PIN    10       // Chip-select GPIO (Notecarrier CX header D10)
 #define MAX31865_RREF      430.0f  // Reference resistor on Adafruit #3328 for PT100 (ohms)
 #define MAX31865_RNOMINAL  100.0f  // PT100 nominal resistance at 0 °C (ohms)
 
@@ -52,16 +52,16 @@
 // Automatically changes when OUTBOUND_INTERVAL_MIN, INBOUND_INTERVAL_MIN,
 // or SCHEMA_VERSION changes.
 //
-// CONFIG_VERSION is stored in gState.config_version at configuration time
-// and compared against the compiled value on every warm boot.  A mismatch
-// clears hub_configured, transport_configured, motion_configured, and
-// templates_registered so hub.set, card.transport, card.motion.mode, and
-// note.template are fully reapplied.
+// CONFIG_VERSION is recorded in gState.config_version at configuration
+// time.  ColdChainState lives in RAM and is zeroed by every reset, so a
+// reflash always re-runs setup() and reapplies hub.set, card.transport,
+// card.motion.mode, and note.template from scratch — no version comparison
+// is needed at runtime; the value is kept for diagnostics.
 //
-// Note: CONFIG_VERSION does NOT encode PRODUCT_UID.  hub.set is re-issued
-// on every warm boot (see setup()) so a reflash with a new PRODUCT_UID
-// targets the correct Notehub project immediately, without requiring a
-// SCHEMA_VERSION bump.
+// Note: CONFIG_VERSION does NOT encode PRODUCT_UID.  hub.set is issued in
+// setup() on every power-up, so a reflash with a new PRODUCT_UID targets the
+// correct Notehub project immediately, without requiring a SCHEMA_VERSION
+// bump.
 //
 // Bump SCHEMA_VERSION manually whenever the note.template field list or
 // field types change.  SCHEMA_VERSION must remain < 100.
@@ -133,13 +133,10 @@
 #define ORIENT_MAX  32    // max chars for orientation string (e.g. "face-up")
 
 // ---------------------------------------------------------------------------
-// Persistent state — serialized to Notecard flash across sleep cycles.
-// Segment ID "COL5" — bump this string whenever the struct layout changes
-// so old payloads force a clean cold-boot re-initialization rather than
-// being deserialized into a mismatched struct.
+// Application state.  Lives in RAM: the host sleeps in STM32 STOP2 between
+// samples, which retains SRAM, so this struct survives every sleep/wake cycle
+// and is reset only by a power cycle or reset (which re-runs setup()).
 // ---------------------------------------------------------------------------
-#define STATE_SEG  "COL6"
-
 struct ColdChainState {
     // ── Live rolling aggregates — reset after each summary window closes ──────
     float    temp_sum;
@@ -229,9 +226,9 @@ struct ColdChainState {
 
     // ── Boot segment counter ─────────────────────────────────────────────────
     // boot_seg: monotonically incremented on every cold boot (planned reset or
-    //   uncontrolled power loss).  Persisted to the Notecard sleep payload for
-    //   planned-sleep resilience AND to the local Notecard notefile
-    //   chain_boot.dbx for cold-boot resilience (power-loss safe).
+    //   uncontrolled power loss).  Retained in RAM across STOP2 sleep cycles
+    //   AND persisted to the local Notecard notefile chain_boot.dbx for
+    //   cold-boot resilience (power-loss safe).
     //   Included in every cargo_log.qo entry so downstream verifiers can split
     //   chain verification at boot-segment boundaries.  seq and chain_crc reset
     //   to 0 at the start of each new boot_seg; each segment's chain is
@@ -256,6 +253,10 @@ struct ColdChainState {
 // ---------------------------------------------------------------------------
 // Extern declarations for globals defined in the .ino
 // ---------------------------------------------------------------------------
+// Debug output: the LPUART on the Notecarrier CX debug jack (ST-LINK virtual
+// COM port).  USB CDC must stay disabled for the host to sleep in STOP2, so
+// Serial is not used.
+extern Uart               debugSerial;
 extern Notecard           notecard;
 extern Adafruit_MAX31865  rtd;
 extern Adafruit_SHT4x     sht4x;

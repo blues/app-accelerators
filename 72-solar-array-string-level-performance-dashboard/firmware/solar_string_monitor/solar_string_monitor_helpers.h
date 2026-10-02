@@ -27,6 +27,8 @@ struct StringAccum {
 
 #define MAX_STRINGS 4
 
+// Application state. Lives in RAM; STOP2 retains SRAM, so it survives every
+// sleep/wake cycle and is reset only by a power cycle (which re-runs setup()).
 struct AppState {
     uint32_t    sample_count;
     uint32_t    last_alert_sample[MAX_STRINGS];
@@ -41,7 +43,7 @@ struct AppState {
     float       mod_temp_sum;
     uint16_t    n_env;               // irradiance sample cycles in current window
     uint16_t    n_temp_valid;        // valid-temperature sample cycles in current window
-    // Persistent rate-limiting and sync-cadence tracking (survive sleep cycles)
+    // Rate-limiting and sync-cadence tracking (held across sleep cycles)
     uint32_t    last_err_sample;         // sample_count when last modbus_fail was emitted
     uint32_t    last_temp_fault_sample;  // sample_count when last temp_probe_fault was emitted
     uint32_t    last_hub_outbound;       // outbound interval used in the most recent hub.set
@@ -68,6 +70,7 @@ extern float    g_pyranometer_sensitivity;
 
 extern AppState    g_state;
 extern Notecard    notecard;
+extern Uart        debugSerial;   // LPUART on the CX debug jack; defined in .ino
 extern ModbusMaster modbus;
 extern DallasTemperature tempSensor;
 

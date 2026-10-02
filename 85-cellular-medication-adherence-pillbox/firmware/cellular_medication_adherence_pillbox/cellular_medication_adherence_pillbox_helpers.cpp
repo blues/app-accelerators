@@ -6,9 +6,12 @@
  */
 
 #include "cellular_medication_adherence_pillbox_helpers.h"
+#include "cx_sleep.h"
 
 // ── Compartment pin assignments (Notecarrier CX dual 16-pin header) ──────────
 // Compartments 0–6 (SUN–SAT) mapped to the seven available digital GPIO pins.
+// Because all seven D pins are taken, the Notecard's ATTN wake line uses A0
+// as a digital input instead (CX_ATTN_PIN, defined in the .ino).
 static const uint8_t kCompartmentPin[NUM_COMPARTMENTS] = {
     D5, D6, D9, D10, D11, D12, D13
 };
@@ -24,7 +27,8 @@ static const char * const kDayLabel[NUM_COMPARTMENTS] = {
 // Micro-switch NO terminal is connected to GND; the lid depresses the actuator
 // when closed, connecting COM to NO and pulling the pin LOW. The internal
 // pull-up holds the pin HIGH when the actuator is released (lid open).
-// Call once per wake before the first sampleCompartments().
+// Call once from setup() before the first sampleCompartments(); the pin
+// configuration is retained through STOP2.
 // ════════════════════════════════════════════════════════════════════════════
 void setupPins() {
     for (uint8_t i = 0; i < NUM_COMPARTMENTS; i++) {
@@ -461,56 +465,32 @@ uint32_t utcDayAndHour(uint32_t *hour_out) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// sleepHost — persist state to the Notecard and gate host power off
+// sleepHost — sleep the host in STOP2 until the Notecard raises ATTN
 //
-// NotePayloadSaveAndSleep serializes PillboxState into Notecard flash and
-// issues a card.attn sleep command (cmd, no response). The function returns
-// once the command is dispatched — it is the Notecard's subsequent
-// ATTN -> EN de-assertion that actually cuts host power on a correctly wired
-// Notecarrier CX. Blues' own Example7_PowerControl uses the same idiom and
-// follows the call with delay()/halt scaffolding for the same reason.
+// cxSleepUntilAttn() (cx_sleep.h) sends a card.attn "sleep" request for
+// poll_sec seconds, waits for the Notecard to pull ATTN low, and puts the
+// STM32 host into STOP2. When the interval elapses the Notecard raises ATTN;
+// the rising edge on CX_ATTN_PIN (A0 — jumpered to ATTN) wakes the host and
+// execution resumes in loop(). SRAM is retained, so PillboxState needs no
+// serialization to the Notecard.
 //
-// PILLBOX_BENCH_MODE (defined in helpers.h): if the ATTN pin is not wired to
-// EN, the host stays powered after the call returns. sleepHost() falls back
-// to delay() + NVIC_SystemReset() so bring-up can proceed without full
-// power-gating hardware in place.
-//
-// Production (PILLBOX_BENCH_MODE undefined): the host should be cut off by
-// ATTN -> EN within milliseconds of the call returning. If it isn't (a
-// wiring fault on the Notecarrier CX) the firmware logs over USB if
-// available and halts. We deliberately do NOT attempt a Notehub diagnostic
-// here — the Notecard has just been told to enter sleep mode and may have
-// already de-asserted ATTN, so any further note.add request is racing the
-// power cut and is unreliable. The fault surfaces in Notehub through the
-// absence of _session.qo events combined with the bench debug output.
+// If the Notecard does not accept the request (e.g. still booting after a
+// cold start) or ATTN never goes low (jumper missing), the host waits out
+// one poll interval awake so the polling cadence is preserved, and tries
+// again on the next loop() pass.
 // ════════════════════════════════════════════════════════════════════════════
 void sleepHost(PillboxState &s) {
-    NotePayloadDesc payload = {0, 0, 0};
-    NotePayloadAddSegment(&payload, STATE_SEG_ID, &s, sizeof(s));
-    NotePayloadSaveAndSleep(&payload, s.poll_sec, NULL);
-
-    // Returning from NotePayloadSaveAndSleep is expected: the call dispatches
-    // the sleep command and returns. On a correctly wired Notecarrier CX the
-    // host loses power within a few milliseconds, before any of the code
-    // below executes.
-
-#ifdef PILLBOX_BENCH_MODE
-    // Bench fallback: ATTN->EN is not wired on this test configuration. Wait
-    // one poll interval so the Notecard's ATTN timer fires (making the saved
-    // payload available on reboot), then soft-reset to re-enter setup().
-    delay(s.poll_sec * 1000UL);
-    NVIC_SystemReset();
-#else
-    // Production: if the host is still alive after the sleep command was
-    // dispatched, ATTN -> EN power gating is not working. Halt rather than
-    // spin so the fault is visible in any bench monitoring (continuous high
-    // baseline on Mojo, no _session.qo cadence in Notehub) and so the LiPo
-    // is not silently drained by a free-running busy-wait.
 #ifdef usbSerial
-    usbSerial.println("[FATAL] NotePayloadSaveAndSleep returned and host did not "
-                      "lose power — ATTN->EN power-gating fault. Check ATTN/EN "
-                      "wiring on the Notecarrier CX. Halting.");
+    Stream *log = &usbSerial;
+#else
+    Stream *log = NULL;
 #endif
-    while (true) { delay(1000); }
+    if (!cxSleepUntilAttn(notecard, s.poll_sec, NULL, log)) {
+        // Notecard not ready, or ATTN never went low (check the ATTN -> A0
+        // jumper). Keep the poll cadence and try again next cycle.
+#ifdef usbSerial
+        usbSerial.println("[sleep] ATTN sleep failed — waiting out the poll interval awake");
 #endif
+        delay(s.poll_sec * 1000UL);
+    }
 }

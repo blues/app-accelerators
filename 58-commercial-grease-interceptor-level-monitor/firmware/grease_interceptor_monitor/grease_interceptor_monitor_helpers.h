@@ -16,15 +16,21 @@
 #include <Notecard.h>
 
 // ---------------------------------------------------------------------------
-// Debug output (comment out this line to silence Serial in production)
+// Debug output (comment out the #define to silence logging in production).
+// The firmware is built with USB CDC disabled (usb=none) so the host can
+// sleep, so `Serial` is not a USB port here. Logging goes to dbgSerial, the
+// LPUART on the Notecarrier CX debug jack, which an ST-LINK V3 exposes as a
+// virtual COM port. dbgSerial is defined in grease_interceptor_monitor.ino.
 // ---------------------------------------------------------------------------
-#define usbSerial Serial
+extern Uart dbgSerial;
+#define usbSerial dbgSerial
 
 // ---------------------------------------------------------------------------
-// Operator-tunable config — persisted inside State across sleep cycles.
-// Seeded from compile-time defaults on cold boot; initialized from State on
-// every subsequent wake so a transient env.get failure retains the last
-// operator-applied values instead of silently reverting to defaults.
+// Operator-tunable config. Lives in RAM alongside State; STOP2 retains SRAM,
+// so it survives every sleep/wake cycle. Seeded from compile-time defaults
+// at power-up, then updated by fetchEnvOverrides() on every wake — a
+// transient env.get failure leaves it untouched, so the last operator-applied
+// values are retained instead of silently reverting to defaults.
 // All fields can be overridden via Notehub environment variables.
 // ---------------------------------------------------------------------------
 struct Config {
@@ -46,7 +52,9 @@ struct Config {
 #define NUM_READINGS          5  // readings per sample; median is used
 
 // ---------------------------------------------------------------------------
-// State — persisted across sleep cycles via NotePayloadSaveAndSleep.
+// State — application state. Lives in RAM; STOP2 retains SRAM, so it survives
+// every sleep/wake cycle and is reset only by a power cycle or reset (which
+// re-runs setup()).
 //
 // Epoch sentinel values:
 //   0  — event never fired (initial cold-boot value)
@@ -66,14 +74,10 @@ struct State {
     uint32_t last_report_epoch;    // epoch of last summary note sent
     uint32_t applied_outbound_min; // last hub.set outbound value applied;
                                    // re-issued when report_interval_min changes
-    bool     notecard_configured;  // true once hub.set has been confirmed on first boot;
+    bool     notecard_configured;  // true once hub.set has been confirmed at power-up;
                                    // retried every wake until success
-    bool     templates_defined;    // true once note.template has been confirmed on first
-                                   // boot; retried every wake until success
-    Config   cfg;                  // active operator config; seeded from compile-time
-                                   // defaults on cold boot, updated by fetchEnvOverrides()
-                                   // on each wake, and persisted here so a transient
-                                   // env.get failure retains the last applied values
+    bool     templates_defined;    // true once note.template has been confirmed at
+                                   // power-up; retried every wake until success
 };
 
 // ---------------------------------------------------------------------------

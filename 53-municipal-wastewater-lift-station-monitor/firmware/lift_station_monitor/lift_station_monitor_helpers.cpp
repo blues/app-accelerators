@@ -83,7 +83,7 @@ void notecardConfigure(void) {
     // sendRequestWithRetry handles the cold-boot race where the host comes up
     // before the Notecard's I²C listener is fully initialized.
     if (!notecard.sendRequestWithRetry(req, 10)) {
-        Serial.println("[CONFIG] hub.set (cold boot) failed; applyHubSetIfChanged() will retry.");
+        debugSerial.println("[CONFIG] hub.set (cold boot) failed; applyHubSetIfChanged() will retry.");
     }
 
     // Transport selection for the Notecard for Skylo (NOTE-NBGLWX).
@@ -104,7 +104,7 @@ void notecardConfigure(void) {
     req = notecard.newRequest("card.transport");
     JAddStringToObject(req, "method", "wifi-cell-ntn");
     if (!notecard.sendRequestWithRetry(req, 10)) {
-        Serial.println("[CONFIG] card.transport (wifi-cell-ntn) failed; will retry on next cold boot.");
+        debugSerial.println("[CONFIG] card.transport (wifi-cell-ntn) failed; will retry on next cold boot.");
     }
 
     // Disable the onboard accelerometer to keep scope traces clean during
@@ -140,7 +140,7 @@ bool defineTemplates(void) {
     JAddNumberToObject(body, "pump2_amps", TTYPE_FLOAT);
     JAddBoolToObject(body,   "float_sw",   TTYPE_BOOL);
     if (!notecard.sendRequestWithRetry(req, 10)) {
-        Serial.println("[CONFIG] note.template (alert) failed");
+        debugSerial.println("[CONFIG] note.template (alert) failed");
         ok = false;
     }
 
@@ -171,7 +171,7 @@ bool defineTemplates(void) {
     JAddNumberToObject(body, "ct1_faults",     TTYPE_INT16);
     JAddNumberToObject(body, "ct2_faults",     TTYPE_INT16);
     if (!notecard.sendRequestWithRetry(req, 10)) {
-        Serial.println("[CONFIG] note.template (summary) failed");
+        debugSerial.println("[CONFIG] note.template (summary) failed");
         ok = false;
     }
 
@@ -288,13 +288,13 @@ void applyHubSetIfChanged(void) {
     if (notecard.sendRequest(req)) {
         g_state.applied_outbound_min = g_summary_interval_min;
         g_state.applied_inbound_min  = g_inbound_interval_min;
-        Serial.print("[CONFIG] hub.set outbound=");
-        Serial.print(g_summary_interval_min);
-        Serial.print(" inbound=");
-        Serial.print(g_inbound_interval_min);
-        Serial.println(" min");
+        debugSerial.print("[CONFIG] hub.set outbound=");
+        debugSerial.print(g_summary_interval_min);
+        debugSerial.print(" inbound=");
+        debugSerial.print(g_inbound_interval_min);
+        debugSerial.println(" min");
     } else {
-        Serial.println("[CONFIG] hub.set failed; will retry next wake.");
+        debugSerial.println("[CONFIG] hub.set failed; will retry next wake.");
     }
 }
 

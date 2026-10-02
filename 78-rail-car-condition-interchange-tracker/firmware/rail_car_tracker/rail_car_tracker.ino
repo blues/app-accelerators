@@ -10,8 +10,22 @@
       Enable both TANK_CAR sensors by uncommenting #define TANK_CAR in
       rail_car_tracker_helpers.h
 
-  Runs entirely on the Notecarrier CX's onboard Cygnet STM32L433 MCU.
-  Sleeps between samples using card.attn host-power gating.
+  Runs entirely on the Notecarrier CX's onboard STM32L433 host. Between
+  samples the host sleeps in STM32 STOP2 (~1–2 µA, RAM retained) and is woken
+  by the Notecard's ATTN pin at the end of a card.attn "sleep" (see
+  cx_sleep.h). Execution resumes in place, so application state simply lives
+  in RAM — nothing is persisted to the Notecard.
+
+  Wiring for sleep: jumper the Notecarrier CX ATTN pin to D9 (both on the
+  same 16-pin header). D5 is taken by the coupler reed switch and D6 by the
+  DS18B20, so this sketch sets CX_ATTN_PIN to D9 below. Leave EN
+  unconnected — on the CX it enables the shared 3.3 V VIO rail, so ATTN→EN
+  browns out the whole board instead of sleeping the host.
+
+  Build: Tools > USB support (if available) > None (usb=none). With the USB
+  CDC stack enabled and no USB host attached, the USB wakeup interrupt exits
+  STOP2 immediately. Debug output goes to the LPUART on the CX debug jack,
+  which an ST-LINK V3 exposes as a virtual COM port (debugSerial below).
 
   All Notecard interactions, sensor reads, and note emission live in
   rail_car_tracker_helpers.cpp. This file contains only setup/loop
@@ -25,9 +39,14 @@
 #include <Wire.h>
 #include "rail_car_tracker_helpers.h"
 
+// ATTN is jumpered to D9 on this build (D5 = reed switch, D6 = DS18B20).
+#define CX_ATTN_PIN D9
+#include "cx_sleep.h"
+
 // ── Global object definitions ─────────────────────────────────────────────────
 // Declared extern in rail_car_tracker_helpers.h; defined here once.
 Notecard        notecard;
+Uart            debugSerial(PIN_VCP_RX, PIN_VCP_TX);
 #ifdef TANK_CAR
 Adafruit_MPRLS    mprls;
 // OneWire and DallasTemperature must be declared in dependency order:
@@ -35,74 +54,138 @@ Adafruit_MPRLS    mprls;
 OneWire           oneWireBus(PIN_TANK_TEMP);
 DallasTemperature tankTempSensor(&oneWireBus);
 #endif
-PersistState    state;
+AppState        state;
 
-// sampleMin published by setup() so loop() uses the same interval for sleep.
+// sampleMin published by the env-var fetch so goToSleep() uses the same
+// interval for the card.attn sleep.
 static uint32_t g_sampleMin = SAMPLE_INTERVAL_MIN_DEFAULT;
 
-// True only after setup() has successfully run NotePayloadRetrieveAfterSleep so
-// that `state` reflects either the previously persisted payload or a known
-// fresh-boot zero. While false, loop() must NOT call NotePayloadSaveAndSleep:
-// `state` is in its BSS-zero post-reset representation, and writing those zeros
-// to Notecard flash would clobber the real persisted state (latches,
-// accumulators, configVersion) that survived the prior sleep cycle.
-static bool     g_persistStateValid = false;
+// True for the first pass through loop() after power-up. Edge-triggered
+// alerts (coupler, pressure drop, motion change) have no previous reading to
+// compare against on that pass, and the commissioning summary is sent then.
+static bool     g_firstWake = true;
 
+// One-time configuration / sensor-init results. Anything that failed at
+// power-up is retried at the top of each wake.
+static bool     g_hubSetOk = false;
+static bool     g_adxlOk   = false;
+#ifdef TANK_CAR
+static bool     g_mprlsOk  = false;
+static bool     g_ds18Ok   = false;
+#endif
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sleep in STOP2 until the Notecard raises ATTN g_sampleMin minutes from now.
+// ─────────────────────────────────────────────────────────────────────────────
+static void goToSleep() {
+    uint32_t sleepSec = g_sampleMin * 60U;
+    if (!cxSleepUntilAttn(notecard, sleepSec, NULL, &debugSerial)) {
+        // The Notecard didn't take the sleep request, or ATTN never went low
+        // (check the ATTN -> D9 jumper). Keep the sample cadence and retry.
+        debugSerial.println("[warn] ATTN sleep failed — waiting out the interval awake");
+        delay(sleepSec * 1000UL);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sensor bring-up. Each call is idempotent; loop() retries any that failed.
+// ─────────────────────────────────────────────────────────────────────────────
+static void initSensors() {
+    if (!g_adxlOk) {
+        g_adxlOk = adxl345Begin();
+        if (!g_adxlOk) debugSerial.println("[warn] ADXL345 not found");
+    }
+#ifdef TANK_CAR
+    if (!g_mprlsOk) {
+        g_mprlsOk = mprls.begin();
+        if (!g_mprlsOk) debugSerial.println("[warn] MPRLS not found");
+    }
+    if (!g_ds18Ok) {
+        // DS18B20 initialization: getDeviceCount() scans the OneWire bus for
+        // responsive devices. setResolution(12) gives 0.0625 °C resolution at the
+        // cost of ~750 ms per conversion; setWaitForConversion(true) makes
+        // requestTemperatures() block until the conversion is complete so the
+        // caller does not need separate timing logic.
+        tankTempSensor.begin();
+        g_ds18Ok = (tankTempSensor.getDeviceCount() > 0);
+        if (g_ds18Ok) {
+            tankTempSensor.setResolution(12);
+            tankTempSensor.setWaitForConversion(true);
+        } else {
+            debugSerial.println("[warn] DS18B20 not found — check OneWire probe on D6");
+        }
+    }
+#endif
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// setup() — runs once at power-up. The host resumes in place after each STOP2
+// sleep, so one-time Notecard configuration lives here and every per-wake step
+// lives in loop().
 // ─────────────────────────────────────────────────────────────────────────────
 void setup() {
     debugSerial.begin(115200);
     Wire.begin();
-
-    // ── Runtime guard: catch empty PRODUCT_UID before wasting a sync session ──
-    if (PRODUCT_UID[0] == '\0') {
-        debugSerial.println("[fatal] PRODUCT_UID is empty — set it in the sketch before flashing.");
-        while (true) { delay(60000); }
-    }
 
     notecard.begin();
 #ifndef NOTE_C_LOW_MEM
     notecard.setDebugOutputStream(debugSerial);
 #endif
 
-    // ── Per-boot Notecard readiness ping ─────────────────────────────────────
+    // Known-zero state: latches, accumulators, configVersion all start fresh.
+    // STOP2 retains RAM, so from here on `state` carries across every wake.
+    memset(&state, 0, sizeof(state));
+
+    // ── Runtime guard: catch empty PRODUCT_UID before wasting a sync session ──
+    // loop() checks this on every wake and sleeps without talking to the
+    // Notecard until the sketch is reflashed with a ProductUID.
+    if (PRODUCT_UID[0] == '\0') {
+        debugSerial.println("[error] PRODUCT_UID is empty — set it in the sketch before flashing.");
+    }
+
+    // ── Power-up Notecard readiness ping ──────────────────────────────────────
     // Retries card.version for up to 10 s to let the Notecard I²C stack
-    // settle before any real request. Abort the entire cycle on failure;
-    // loop() will see g_persistStateValid == false, skip the save (so the
-    // existing persisted PersistState in Notecard flash is preserved intact),
-    // and fall through to the card.attn / WFI sleep fallback so the host does
-    // not spin indefinitely if the Notecard is unresponsive this wake.
-    if (!notecardReady()) {
-        debugSerial.println("[error] Notecard not ready — aborting cycle; will retry next wake");
+    // settle before any real request. On failure the one-time configuration
+    // below is skipped; loop() retries it on the next wake.
+    if (notecardReady()) {
+        // hub.set is idempotent; applying it at power-up ensures a PRODUCT_UID
+        // change in the firmware sketch takes effect immediately without
+        // requiring CONFIG_VERSION to be bumped. Failure is non-fatal — the
+        // Notecard retains its previous hub.set configuration so notes
+        // continue to queue and sync — and it is retried on the next wake.
+        g_hubSetOk = configureNotecard();
+        if (!g_hubSetOk) {
+            debugSerial.println("[warn] hub.set failed — Notecard retains previous configuration");
+        }
+    } else {
+        debugSerial.println("[error] Notecard not ready — configuration deferred to next wake");
+    }
+
+    initSensors();
+
+    // Arm the ATTN wake: the Notecard raises ATTN (D9) to end each sleep.
+    cxSleepBegin();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// loop() — one sample cycle, then sleep until the Notecard raises ATTN.
+// ─────────────────────────────────────────────────────────────────────────────
+void loop() {
+    bool firstWake = g_firstWake;
+    g_firstWake = false;
+
+    if (PRODUCT_UID[0] == '\0') {
+        debugSerial.println("[error] PRODUCT_UID is empty — sleeping; set it in the sketch before flashing.");
+        goToSleep();
         return;
     }
 
-    // ── Restore state persisted from the previous sleep cycle ─────────────────
-    // Zero the struct before the restore call so any fields added in a newer
-    // firmware build that are absent from an older stored payload default to
-    // 0/false rather than reading uninitialized bytes. NotePayloadGetSegment
-    // then overlays the saved values up to the stored segment size.
-    // A dedicated restore descriptor is used; the save descriptor in loop() is
-    // freshly initialised to avoid carrying forward stale segment state.
-    memset(&state, 0, sizeof(state));
-    NotePayloadDesc restorePayload;
-    bool wakeFromSleep = NotePayloadRetrieveAfterSleep(&restorePayload);
-    if (wakeFromSleep) {
-        wakeFromSleep &= NotePayloadGetSegment(&restorePayload, STATE_SEG_ID,
-                                               &state, sizeof(state));
-        NotePayloadFree(&restorePayload);
-    }
-    // From this point on `state` is in a known-consistent representation
-    // (either the restored payload or a clean zero-init for the first boot),
-    // so it is safe for loop() to write it back to Notecard flash on sleep.
-    g_persistStateValid = true;
-
-    // ── hub.set: always applied at each boot ──────────────────────────────────
-    // hub.set is idempotent; re-issuing it every boot ensures a PRODUCT_UID
-    // change in the firmware sketch takes effect immediately without requiring
-    // CONFIG_VERSION to be bumped. Failure is non-fatal — the Notecard retains
-    // its previous hub.set configuration so notes continue to queue and sync.
-    if (!configureNotecard()) {
-        debugSerial.println("[warn] hub.set failed — Notecard retains previous configuration");
+    // ── Retry one-time configuration that did not complete at power-up ────────
+    if (!g_hubSetOk) {
+        g_hubSetOk = configureNotecard();
+        if (!g_hubSetOk) {
+            debugSerial.println("[warn] hub.set failed — Notecard retains previous configuration");
+        }
     }
 
     // ── Templates and GPS/motion: applied once per CONFIG_VERSION ─────────────
@@ -122,7 +205,8 @@ void setup() {
             debugSerial.println(")");
         } else {
             debugSerial.println("[init] config incomplete — will retry next wake");
-            return; // skip all note emission; loop() saves state and sleeps
+            goToSleep(); // skip all note emission this wake
+            return;
         }
     }
 
@@ -166,43 +250,24 @@ void setup() {
                       pressMaxPsi, pressDropPsi, tankTempMinC, tankTempMaxC);
     g_sampleMin = sampleMin;
 
-    // ── Initialize sensors ────────────────────────────────────────────────────
-    bool adxlOk = adxl345Begin();
-    if (!adxlOk) debugSerial.println("[warn] ADXL345 not found");
-#ifdef TANK_CAR
-    bool mprlsOk = mprls.begin();
-    if (!mprlsOk) debugSerial.println("[warn] MPRLS not found");
-
-    // DS18B20 initialization: getDeviceCount() scans the OneWire bus for
-    // responsive devices. setResolution(12) gives 0.0625 °C resolution at the
-    // cost of ~750 ms per conversion; setWaitForConversion(true) makes
-    // requestTemperatures() block until the conversion is complete so the
-    // caller does not need separate timing logic.
-    tankTempSensor.begin();
-    bool ds18Ok = (tankTempSensor.getDeviceCount() > 0);
-    if (ds18Ok) {
-        tankTempSensor.setResolution(12);
-        tankTempSensor.setWaitForConversion(true);
-    } else {
-        debugSerial.println("[warn] DS18B20 not found — check OneWire probe on D6");
-    }
-#endif
+    // ── Retry any sensor that was not found at power-up ───────────────────────
+    initSensors();
 
     // ── Read sensors ──────────────────────────────────────────────────────────
     bool  coupled   = readCouplerState();
     // readPeakShockG() returns NAN when every I²C read in the burst fails.
-    float peakG     = adxlOk ? readPeakShockG() : NAN;
+    float peakG     = g_adxlOk ? readPeakShockG() : NAN;
 
 #ifdef TANK_CAR
     // Adafruit MPRLS readPressure() returns hPa (absolute); divide by 68.948
     // to convert to PSI absolute to match the MPRLS 0–25 PSI sensor range.
-    float pressurePsi = mprlsOk ? (mprls.readPressure() / 68.948f) : NAN;
+    float pressurePsi = g_mprlsOk ? (mprls.readPressure() / 68.948f) : NAN;
 
     // DS18B20: requestTemperatures() blocks ~750 ms in 12-bit mode.
     // getTempCByIndex(0) returns DEVICE_DISCONNECTED_C (-127.0 °C) on fault;
     // treat any value below -100 °C as an error and return NAN.
     float tankTempC = NAN;
-    if (ds18Ok) {
+    if (g_ds18Ok) {
         tankTempSensor.requestTemperatures();
         float t = tankTempSensor.getTempCByIndex(0);
         tankTempC = (t > -100.0f) ? t : NAN;
@@ -235,7 +300,7 @@ void setup() {
         }
     }
 
-    // ── Accumulate into persistent state ──────────────────────────────────────
+    // ── Accumulate into application state ─────────────────────────────────────
     // peakShockG: track highest valid G in the window (ignore NAN from failed bursts).
     if (!isnan(peakG) && peakG > state.peakShockG) state.peakShockG = peakG;
     // shockWindowCount: counts sample *windows* whose peak exceeded the threshold,
@@ -246,9 +311,8 @@ void setup() {
     state.elapsedMin += sampleMin;
     // shockCooldownRemMin: monotonic countdown (minutes) that gates shock alerts
     // without requiring absolute time from card.time or GPS sync. Cap at
-    // shockCoolMin before decrementing so any legacy epoch value that may be
-    // stored in this field from older firmware is clamped to a sane range within
-    // one wake cycle, then decrements normally from that point forward.
+    // shockCoolMin before decrementing so a runtime reduction of the cooldown
+    // env var takes effect within one wake cycle, then decrement normally.
     if (state.shockCooldownRemMin > shockCoolMin) state.shockCooldownRemMin = shockCoolMin;
     state.shockCooldownRemMin = (state.shockCooldownRemMin > sampleMin)
                                 ? state.shockCooldownRemMin - sampleMin : 0;
@@ -273,7 +337,7 @@ void setup() {
     // Only fire on edges; the 15-minute sample interval provides natural debounce
     // against rail-yard bump transients shorter than one sample window.
     // lastCouplerState is advanced only after a successful alert to allow retry.
-    if (wakeFromSleep && (coupled != state.lastCouplerState)) {
+    if (!firstWake && (coupled != state.lastCouplerState)) {
         if (sendAlert(coupled ? "coupled" : "decoupled", coupled ? 1.0f : 0.0f)) {
             syncNeeded = true;
             state.lastCouplerState = coupled;
@@ -283,7 +347,7 @@ void setup() {
         // On failure: lastCouplerState stays at the old value so the edge is
         // re-detected and the alert is retried on the next wake.
     } else {
-        // No state change (or first boot): refresh the latch to the current reading.
+        // No state change (or first wake): refresh the latch to the current reading.
         state.lastCouplerState = coupled;
     }
 
@@ -304,7 +368,7 @@ void setup() {
             state.lastPressHigh = false; // condition cleared: re-arm
         }
 
-        if (wakeFromSleep && state.lastPressureValid &&
+        if (!firstWake && state.lastPressureValid &&
             (state.lastPressurePsi - pressurePsi) > pressDropPsi) {
             if (sendAlert("pressure_drop", state.lastPressurePsi - pressurePsi)) {
                 syncNeeded = true;
@@ -368,7 +432,7 @@ void setup() {
     // note send, so transient Notecard failures are automatically retried on
     // the next wake without losing the triggering event.
     state.locationElapsedMin += sampleMin;
-    bool motionEdge  = wakeFromSleep && (moving != state.lastMovingState);
+    bool motionEdge  = !firstWake && (moving != state.lastMovingState);
     bool locationDue = moving && (state.locationElapsedMin >= locationIntervalMin);
 
     if (motionEdge || locationDue) {
@@ -396,12 +460,12 @@ void setup() {
     // On failure the window is preserved intact and the summary is retried
     // on the next wake.
     bool timeForSummary = (state.elapsedMin >= reportMin);
-    if (timeForSummary || !wakeFromSleep) {
+    if (timeForSummary || firstWake) {
         if (sendSummary(pressurePsi, tankTempC, coupled, moving)) {
             state.peakShockG       = 0.0f;
             state.shockWindowCount = 0;
             state.elapsedMin       = 0;
-            if (!wakeFromSleep) {
+            if (firstWake) {
                 // Commissioning summary: request an immediate outbound sync so
                 // the first railcar_status.qo note is visible in Notehub during
                 // bench setup, without waiting for the next scheduled outbound window.
@@ -416,7 +480,7 @@ void setup() {
     // ── Single sync for alerts, location events, or commissioning summary ─────
     // Coalesce all alerts behind one hub.sync instead of triggering a separate
     // sync session per note.add, which wastes battery and satellite overhead.
-    // syncNeeded is also set on the first-boot summary so the commissioning note
+    // syncNeeded is also set on the first-wake summary so the commissioning note
     // is uploaded immediately rather than waiting for the next scheduled outbound
     // window, matching the documented quickstart bench behavior.
     if (syncNeeded) {
@@ -433,88 +497,8 @@ void setup() {
         }
     }
 
-    // Return to loop() which saves state and issues NotePayloadSaveAndSleep.
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-void loop() {
-    // ── Persist state and sleep until next sample ─────────────────────────────
-    // A freshly initialised descriptor is used (not reused from setup's restore
-    // path) so no stale segment definitions are carried forward.
-    //
-    // NotePayloadSaveAndSleep is retried up to three times before declaring
-    // failure. A transient I²C glitch must not cause state loss: dropping the
-    // persisted PersistState after alerts were queued in setup() would reset
-    // shockCooldownRemMin to zero, skew summary window counters, and allow
-    // duplicate edge-triggered alerts on the next wake.
-    //
-    // When g_persistStateValid is false, setup() returned before
-    // NotePayloadRetrieveAfterSleep completed (e.g. notecardReady() failed)
-    // and `state` is still BSS-zero. Saving that to Notecard flash would
-    // overwrite the real persisted state from the prior sleep cycle, so the
-    // save/segment step is skipped entirely and we fall straight through to
-    // the card.attn sleep fallback below — which sleeps the host without
-    // touching the saved payload.
-    bool segOk   = false;
-    bool sleepOk = false;
-    NotePayloadDesc savePayload = {0, 0, 0};
-    if (g_persistStateValid) {
-        segOk = NotePayloadAddSegment(&savePayload, STATE_SEG_ID,
-                                      &state, sizeof(state));
-        if (segOk) {
-            for (uint8_t attempt = 0; attempt < 3 && !sleepOk; attempt++) {
-                if (attempt > 0) {
-                    debugSerial.print("[warn] NotePayload save/sleep retry ");
-                    debugSerial.println(attempt);
-                    delay(500);
-                }
-                sleepOk = NotePayloadSaveAndSleep(&savePayload, g_sampleMin * 60U, NULL);
-            }
-        }
-    } else {
-        debugSerial.println("[warn] state not restored this cycle — skipping persist save to protect Notecard flash");
-    }
-
-    if (!sleepOk) {
-        // Either NotePayloadSaveAndSleep failed for this cycle, or the save
-        // was deliberately skipped because state had not been restored. In
-        // the failed-save case, state is not persisted for this cycle: shock
-        // cooldown resets to zero on the next wake, accumulated summary
-        // counters may skew, and edge-triggered alerts already queued this
-        // wake could be re-queued on the next wake. Fall back to card.attn
-        // sleep to avoid leaving the host fully awake for the entire sample
-        // interval (tens of mA on a solar device).
-        debugSerial.println("[info] issuing card.attn sleep fallback (no persist save this cycle)");
-        bool attnOk = false;
-        for (uint8_t attempt = 0; attempt < 3 && !attnOk; attempt++) {
-            if (attempt > 0) delay(500);
-            J *req = notecard.newRequest("card.attn");
-            if (req != NULL) {
-                JAddStringToObject(req, "mode",    "sleep");
-                JAddNumberToObject(req, "seconds", (double)(g_sampleMin * 60U));
-                J *rsp = notecard.requestAndResponse(req);
-                if (rsp != NULL) {
-                    const char *err = JGetString(rsp, "err");
-                    attnOk = (err == NULL || *err == '\0');
-                    notecard.deleteResponse(rsp);
-                }
-            }
-        }
-        if (!attnOk) {
-            // Notecard unresponsive: the ATTN line cannot cut host power.
-            // Park the CPU in ARM WFI (Wait-For-Interrupt) between SysTick
-            // interrupts, drawing ~1–2 mA instead of ~10 mA in active run mode.
-            // (__WFI is a CMSIS intrinsic available on all Cortex-M targets.)
-            debugSerial.println("[error] card.attn failed — entering WFI fail-safe sleep");
-            uint32_t deadlineMs = millis() + (g_sampleMin * 60UL * 1000UL);
-            while ((int32_t)(deadlineMs - millis()) > 0) {
-                __WFI();
-            }
-            return; // skip bench-testing delay; loop() re-runs to retry next cycle
-        }
-    }
-
-    // card.attn cuts host power; this line is reached only when the
-    // Notecarrier CX is not gating host power via ATTN (e.g. bench testing).
-    delay(g_sampleMin * 60UL * 1000UL);
+    // ── Sleep until the next sample ───────────────────────────────────────────
+    // The host enters STOP2 with `state` intact in RAM; the Notecard raises
+    // ATTN sampleMin minutes from now and execution resumes at the top of loop().
+    goToSleep();
 }

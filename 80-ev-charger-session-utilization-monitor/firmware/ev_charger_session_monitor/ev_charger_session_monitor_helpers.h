@@ -46,26 +46,6 @@
 #define DEFAULT_VOLTAGE_PRESENT_V   85.0f    // V_rms floor; below = mains absent
 #define DEFAULT_ALERT_OFFLINE_MIN   240      // minutes of mains absence before alert fires
 
-// ── Payload segment ID and layout magic ──────────────────────────────────────
-#define STATE_SEG_ID            "EVCS"
-// Bump STATE_MAGIC whenever the State struct layout changes so that existing
-// persisted payloads are rejected and a cold boot re-initialises cleanly.
-// Revision history:
-//   0x45564353 ('E','V','C','S') — original CT-only layout
-//   0x45564354 ('E','V','C','T') — added notecard_configured / template_defined flags
-//   0x45564355 ('E','V','C','U') — added hub_cadence_dirty; pending-session fields
-//   0x45564356 ('E','V','C','V') — energy-meter redesign: replaced CT ADC fields with
-//                                   SDM120 Modbus fields; session energy from meter delta;
-//                                   added window_available_sec; removed CT accumulators
-//   0x45564357 ('E','V','C','W') — added window_elapsed_sec (wall-clock availability
-//                                   denominator) and last_valid_import_kwh (safe kWh
-//                                   closing baseline); sample_coverage_pct in template
-//   0x45564358 ('E','V','C','X') — added window_kwh_baseline_set: defers window_start_kwh
-//                                   anchoring until the first valid meter read after window
-//                                   open or summary reset; prevents inflated total_kwh when
-//                                   the first time-synced wake had an invalid meter poll
-#define STATE_MAGIC             0x45564358u
-
 // ── Meter reading returned by pollMeter() ────────────────────────────────────
 struct MeterReading {
     float voltage_v;      // V_rms (0.0 if invalid)
@@ -74,15 +54,13 @@ struct MeterReading {
     bool  valid;          // false if any Modbus read failed this wake
 };
 
-// ── Persistent state across sleep cycles ─────────────────────────────────────
-// Serialised into Notecard flash via NotePayloadSaveAndSleep(); recovered after
-// card.attn wakes the host.  All session and window state lives here so it
-// survives the host being fully powered down between samples.
+// ── Application state ─────────────────────────────────────────────────────────
+// Lives in RAM.  STOP2 retains SRAM, so this survives every sleep/wake cycle;
+// it is reset only by a power cycle or reset, which also re-runs setup().
+// All session and window state lives here.
 struct State {
-    uint32_t magic;                        // must equal STATE_MAGIC; mismatch → cold boot
-
     // ── Notecard initialisation flags ───────────────────────────────────────
-    // Each flag starts false on cold boot and is set true only after the
+    // Each flag starts false at power-up and is set true only after the
     // corresponding Notecard request returns without error, so a transient
     // I²C failure on a prior wake triggers an automatic retry on the next.
     // hub_cadence_dirty is set before a hub.set attempt and cleared only on
@@ -146,7 +124,7 @@ struct State {
     uint32_t env_last_modified;            // last env.get "time" stamp; avoids
                                            // re-reading unchanged vars every wake
 
-    // ── Runtime config (mirrors env vars; persisted across reboots) ─────────
+    // ── Runtime config (mirrors env vars; cached across wakes) ──────────────
     uint32_t sample_interval_sec;
     uint32_t report_interval_min;
     float    session_threshold_w;          // W; session opens when active power exceeds this
@@ -160,6 +138,10 @@ struct State {
 // ── Globals defined in ev_charger_session_monitor.ino ────────────────────────
 extern Notecard notecard;
 extern State    state;
+// Debug output: the LPUART on the Notecarrier CX debug jack (ST-LINK virtual
+// COM port).  USB CDC is disabled so the host can sleep in STOP2, so Serial is
+// not available.  Serial1 (D0/D1) is reserved for the RS-485 link.
+extern Uart     debugSerial;
 
 // ── Helper-function declarations ──────────────────────────────────────────────
 void     initModbus();

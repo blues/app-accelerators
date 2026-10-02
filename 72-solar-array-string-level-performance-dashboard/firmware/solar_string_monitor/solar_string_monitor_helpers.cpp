@@ -69,13 +69,13 @@ bool defineTemplates() {
 
         J *rsp = notecard.requestAndResponse(req);
         if (!rsp) {
-            Serial.print(F("[app] note.template (summary) — no Notecard response (attempt "));
-            Serial.print(attempt + 1); Serial.println(F(")"));
+            debugSerial.print(F("[app] note.template (summary) — no Notecard response (attempt "));
+            debugSerial.print(attempt + 1); debugSerial.println(F(")"));
             continue; // retry
         }
         const char *err = JGetString(rsp, "err");
         if (err && *err) {
-            Serial.print(F("[app] note.template (summary) err: ")); Serial.println(err);
+            debugSerial.print(F("[app] note.template (summary) err: ")); debugSerial.println(err);
             notecard.deleteResponse(rsp);
             return false; // schema error — retrying will not help
         }
@@ -105,13 +105,13 @@ bool defineTemplates() {
 
         J *rsp = notecard.requestAndResponse(req);
         if (!rsp) {
-            Serial.print(F("[app] note.template (alert) — no Notecard response (attempt "));
-            Serial.print(attempt + 1); Serial.println(F(")"));
+            debugSerial.print(F("[app] note.template (alert) — no Notecard response (attempt "));
+            debugSerial.print(attempt + 1); debugSerial.println(F(")"));
             continue; // retry
         }
         const char *err = JGetString(rsp, "err");
         if (err && *err) {
-            Serial.print(F("[app] note.template (alert) err: ")); Serial.println(err);
+            debugSerial.print(F("[app] note.template (alert) err: ")); debugSerial.println(err);
             notecard.deleteResponse(rsp);
             return false; // schema error — retrying will not help
         }
@@ -163,12 +163,12 @@ void fetchEnvVars() {
 
     J *rsp = notecard.requestAndResponse(req);
     if (!rsp) {
-        Serial.println(F("[app] WARN: env.get — no Notecard response; using existing config"));
+        debugSerial.println(F("[app] WARN: env.get — no Notecard response; using existing config"));
         return;
     }
     const char *env_err = JGetString(rsp, "err");
     if (env_err && *env_err) {
-        Serial.print(F("[app] env.get err: ")); Serial.println(env_err);
+        debugSerial.print(F("[app] env.get err: ")); debugSerial.println(env_err);
         notecard.deleteResponse(rsp);
         return; // leave existing config values in place; do not apply stale/partial overrides
     }
@@ -258,11 +258,11 @@ float readModuleTemp(float irr_wm2) {
     tempSensor.requestTemperatures();
     float t = tempSensor.getTempCByIndex(0);
     if (t == DEVICE_DISCONNECTED_C || t < -40.0f || t > 110.0f) {
-        Serial.println(F("[app] WARN: DS18B20 invalid reading — sensor fault"));
+        debugSerial.println(F("[app] WARN: DS18B20 invalid reading — sensor fault"));
         // Rate-limit the Notehub-visible alert to once per report window so a
         // persistently disconnected probe does not flood the alert Notefile.
-        // last_temp_fault_sample lives in g_state (Notecard flash) so it
-        // survives sleep-cycle power cuts — a static local would reset on wake.
+        // last_temp_fault_sample lives in g_state alongside the rest of the
+        // window state (RAM is retained through the host's STOP2 sleep).
         uint32_t rpt_sec = g_report_interval_min * 60UL;
         uint32_t wlen    = (rpt_sec + g_sample_interval_sec - 1UL) / g_sample_interval_sec;
         if (wlen < 1) wlen = 1;
@@ -286,7 +286,7 @@ float readModuleTemp(float irr_wm2) {
             if (rsp) {
                 const char *err = JGetString(rsp, "err");
                 if (err && *err) {
-                    Serial.print(F("[app] Alert (temp_probe_fault) err: ")); Serial.println(err);
+                    debugSerial.print(F("[app] Alert (temp_probe_fault) err: ")); debugSerial.println(err);
                 } else {
                     // Only advance the rate-limit cursor after the note is accepted.
                     g_state.last_temp_fault_sample = g_state.sample_count;
@@ -318,15 +318,15 @@ bool readStrings(float v_out[], float a_out[], uint8_t count, float irr, float m
         result = modbus.readHoldingRegisters(g_reg_base, (uint16_t)(count * 2));
 
     if (result != modbus.ku8MBSuccess) {
-        Serial.print(F("[app] Modbus fail 0x")); Serial.println(result, HEX);
+        debugSerial.print(F("[app] Modbus fail 0x")); debugSerial.println(result, HEX);
         // Rate-limit error note to once per report window.
-        // last_err_sample lives in g_state (Notecard flash) so it survives
-        // sleep-cycle power cuts — a static local would reset on every wake.
+        // last_err_sample lives in g_state alongside the rest of the window
+        // state (RAM is retained through the host's STOP2 sleep).
         uint32_t rpt_sec = g_report_interval_min * 60UL;
         uint32_t wlen = (rpt_sec + g_sample_interval_sec - 1UL) / g_sample_interval_sec;
         if (wlen < 1) wlen = 1;
         uint32_t cur_win  = g_state.sample_count / wlen;
-        uint32_t last_win = g_state.last_err_sample / wlen; // 0xFFFFFFFF/wlen on cold boot
+        uint32_t last_win = g_state.last_err_sample / wlen; // 0xFFFFFFFF/wlen at power-up
         if (cur_win != last_win) {
             J *req = notecard.newRequest("note.add");
             JAddStringToObject(req, "file", ALERT_NOTEFILE);
@@ -348,7 +348,7 @@ bool readStrings(float v_out[], float a_out[], uint8_t count, float irr, float m
             if (rsp) {
                 const char *err = JGetString(rsp, "err");
                 if (err && *err) {
-                    Serial.print(F("[app] Alert (modbus_fail) err: ")); Serial.println(err);
+                    debugSerial.print(F("[app] Alert (modbus_fail) err: ")); debugSerial.println(err);
                 } else {
                     // Only advance the rate-limit cursor after the note is accepted.
                     g_state.last_err_sample = g_state.sample_count;
@@ -421,8 +421,8 @@ void accumulateWindow(float v[], float a[], float irr, float mod_temp) {
 // of the comparative conditions can trigger; reason stays "degraded".
 //
 // Cooldown: re-alert is suppressed for g_alert_cooldown_sec wall-clock seconds
-// (default 30 min) after each fire.  Cooldown state persists in g_state
-// (Notecard flash) and survives sleep-cycle power cuts.
+// (default 30 min) after each fire.  Cooldown state is held in g_state, which
+// stays in RAM through the host's STOP2 sleep.
 //
 // alert_active[] is a last-known-state indicator.  Above the irradiance
 // threshold it is updated only when Modbus polling succeeds (evaluateAndAlert
@@ -553,17 +553,17 @@ bool sendSummary(void) {
     JAddNumberToObject(b, "n_samples",   n_win);
     J *rsp = notecard.requestAndResponse(req);
     if (!rsp) {
-        Serial.println(F("[app] Summary: no response from Notecard — will retry next window"));
+        debugSerial.println(F("[app] Summary: no response from Notecard — will retry next window"));
         return false;
     }
     const char *err = JGetString(rsp, "err");
     if (err && *err) {
-        Serial.print(F("[app] Summary err: ")); Serial.println(err);
+        debugSerial.print(F("[app] Summary err: ")); debugSerial.println(err);
         notecard.deleteResponse(rsp);
         return false;
     }
     notecard.deleteResponse(rsp);
-    Serial.println(F("[app] Summary queued"));
+    debugSerial.println(F("[app] Summary queued"));
     return true;
 }
 
@@ -589,19 +589,19 @@ bool sendAlert(uint8_t str_id, const char *reason,
     JAddNumberToObject(b, "mod_temp_c",     mod_temp);
     J *rsp = notecard.requestAndResponse(req);
     if (!rsp) {
-        Serial.println(F("[app] Alert: no response from Notecard"));
+        debugSerial.println(F("[app] Alert: no response from Notecard"));
         return false;
     }
     const char *err = JGetString(rsp, "err");
     if (err && *err) {
-        Serial.print(F("[app] Alert err: ")); Serial.println(err);
+        debugSerial.print(F("[app] Alert err: ")); debugSerial.println(err);
         notecard.deleteResponse(rsp);
         return false;
     }
     notecard.deleteResponse(rsp);
-    Serial.print(F("[app] Alert str")); Serial.print(str_id);
-    Serial.print(F(" ")); Serial.print(reason);
-    Serial.print(F(" PR=")); Serial.println(pr, 3);
+    debugSerial.print(F("[app] Alert str")); debugSerial.print(str_id);
+    debugSerial.print(F(" ")); debugSerial.print(reason);
+    debugSerial.print(F(" PR=")); debugSerial.println(pr, 3);
     return true;
 }
 

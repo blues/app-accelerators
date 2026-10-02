@@ -50,7 +50,9 @@
 // (inside pollCanBms / parseCellGroupFrame).  They live here so both
 // translation units see identical values.
 #if ENABLE_CAN_BMS
-#define PIN_CAN_CS          5            // SPI CS for MCP2515 — Notecarrier CX D5 (see README §4)
+#define PIN_CAN_CS          5            // SPI CS for MCP2515 — Notecarrier CX D5 (see README §4).
+                                         // D5 is taken by this CS, so the ATTN wake jumper uses D6
+                                         // (CX_ATTN_PIN in lift_battery_monitor.ino).
 #define BMS_CELL_COUNT      8            // array capacity for decoded cell-group voltages;
                                          // a single classic CAN frame (DLC ≤ 8 bytes) holds
                                          // at most four 16-bit values — BMS_CELL_COUNT may

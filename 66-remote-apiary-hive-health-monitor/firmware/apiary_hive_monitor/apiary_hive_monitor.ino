@@ -1,15 +1,26 @@
 /***************************************************************************
   apiary_hive_monitor.ino — Remote Apiary Hive Health Monitor
 
-  Blues Notecarrier CX (Cygnet STM32L433) + Notecard for Skylo
+  Blues Notecarrier CX (STM32L433 host) + Notecard for Skylo
   (NOTE-NBGLWX). Reads hive weight (HX711 + load cell), brood-box temperature
   and humidity (SHT31-D), and acoustic features (ZCR, RMS, peak) from an
   analog microphone — no raw audio is buffered or transmitted.
   Pushes compact-template daily summaries plus immediate alerts for weight
   loss, temperature excursion, and hive-tone anomaly.
 
+  Sleep: between samples the host sits in STM32 STOP2 (~1-2 µA, RAM
+  retained) and is woken by the Notecard's ATTN pin — card.attn "sleep"
+  holds ATTN low for the sample interval and raises it when the next sample
+  is due. D5 and D6 are taken by the HX711, so jumper the Notecarrier CX
+  ATTN pin to D9 (same 16-pin header); leave EN unconnected. See cx_sleep.h
+  for the rationale and wiring.
+
+  Build: Tools > USB support (if available) > None (usb=none). With the USB
+  CDC stack enabled and no USB host attached the host cannot stay in STOP2.
+  Debug output goes to the LPUART on the CX debug jack (ST-LINK VCP).
+
   Hardware:
-    - Notecarrier CX (onboard Cygnet STM32L433 host MCU)
+    - Notecarrier CX (onboard STM32L433 host MCU)
     - Notecard for Skylo (NOTE-NBGLWX) in M.2 slot — cellular + WiFi +
       Skylo satellite (NTN) on one board; card.transport selects WiFi/
       cellular-primary with automatic satellite fallback (notecardConfigure())
@@ -17,11 +28,13 @@
     - Zemic H8C 100 kg single-ended shear-beam load cell (Wheatstone bridge) → HX711
     - Adafruit SHT31-D Temperature & Humidity Sensor (#2857)  → SDA / SCL
     - Adafruit MAX9814 Electret Microphone Amplifier (#1713)  → A0
+    - ATTN → D9 jumper — Notecard wakes the host from STOP2
     - SparkFun Sunny Buddy MPPT Solar Charger (PRT-12885)
     - Blues Mojo inline on +VBAT (bench power validation)
 
   Libraries (install via Arduino Library Manager):
     - "Blues Wireless Notecard"  (note-arduino)
+    - "STM32duino Low Power"     (+ its dependency "STM32duino RTC")
     - "HX711 Arduino Library"    by Bogdan Necula & Lukas Bachschwell
     - "Adafruit SHT31 Library"   by Adafruit
 
@@ -35,6 +48,10 @@
 #include <HX711.h>
 #include <Adafruit_SHT31.h>
 #include "apiary_hive_monitor_helpers.h"
+
+// D5 is the HX711 data line, so the ATTN jumper lands on D9 instead.
+#define CX_ATTN_PIN D9
+#include "cx_sleep.h"
 
 // ---------------------------------------------------------------------------
 // Product UID — replace with your Notehub ProductUID before flashing.
@@ -58,6 +75,7 @@
 // ---------------------------------------------------------------------------
 #define PIN_HX711_DOUT  D5    // HX711 serial data output
 #define PIN_HX711_SCK   D6    // HX711 clock / power-down control
+// CX_ATTN_PIN (D9) above: Notecard ATTN jumpered here to wake the host.
 
 // A0 for the MAX9814 microphone is referenced in apiary_hive_monitor_helpers.cpp
 
@@ -76,80 +94,107 @@
 // One alert per condition per hour maximum
 #define ALERT_COOLDOWN_MIN            60
 
-// Notecard state payload segment tag
-static const char STATE_SEG_ID[] = "HIVE";
-
 // ---------------------------------------------------------------------------
 // Global sensor and Notecard objects (also referenced by helpers.cpp via extern)
 // ---------------------------------------------------------------------------
 Notecard        notecard;
 HX711           scale;
 Adafruit_SHT31  sht31;
+#ifdef DEBUG_SERIAL
+Uart            debugSerial(PIN_VCP_RX, PIN_VCP_TX);
+#endif
+
+// Application state. Lives in RAM: STOP2 retains SRAM, so it survives every
+// sleep/wake cycle and is reset only by a power cycle (which re-runs setup()).
+static HiveState st;
+
+// Sleep the host until the Notecard raises ATTN; fall back to waiting awake
+// for the same interval if the sleep request fails or ATTN never goes low.
+static void sleepUntilAttn(uint32_t seconds) {
+#ifdef DEBUG_SERIAL
+    Stream *log = &debugSerial;
+#else
+    Stream *log = NULL;
+#endif
+    if (!cxSleepUntilAttn(notecard, seconds, NULL, log)) {
+        // The Notecard didn't take the sleep request, or ATTN never went low
+        // (check the ATTN -> D9 jumper). Keep the sample cadence and retry.
+#ifdef DEBUG_SERIAL
+        debugSerial.println("[APP] ATTN sleep failed — waiting out the interval awake");
+#endif
+        delay(seconds * 1000UL);
+    }
+}
 
 // ===========================================================================
-// setup() — full application runs here each wake cycle; loop() is unreachable
+// setup() — runs once at power-up: Notecard configuration, template
+// registration, sensor init, and arming the ATTN wake. The host resumes in
+// place after each STOP2 sleep, so every per-wake step lives in loop().
 // ===========================================================================
 void setup() {
-    // Serial and Notecard debug output are gated on DEBUG_SERIAL (defined in
+    // Debug output is gated on DEBUG_SERIAL (defined in
     // apiary_hive_monitor_helpers.h).  Leave the flag undefined for deployed
     // hardware to avoid the wake-time overhead and UART idle draw.
 #ifdef DEBUG_SERIAL
-    Serial.begin(115200);
-    notecard.setDebugOutputStream(Serial);
+    debugSerial.begin(115200);
+    notecard.setDebugOutputStream(debugSerial);
 #endif
 
     Wire.begin();
     notecard.begin();  // I2C to Notecard; Notecarrier CX has onboard pull-ups
 
-    // ---- Restore persisted state from the previous sleep cycle -----------
-    NotePayloadDesc payload;
-    HiveState st;
-    bool restored = NotePayloadRetrieveAfterSleep(&payload);
-    if (restored) {
-        restored &= NotePayloadGetSegment(&payload, STATE_SEG_ID, &st, sizeof(st));
-        NotePayloadFree(&payload);
-    }
-    if (!restored) {
-        memset(&st, 0, sizeof(st));
-        st.first_boot      = true;
-        st.weight_first_kg = -1.0f;  // sentinel: no reading yet this window
-        st.weight_last_kg  = -1.0f;
-    }
+    memset(&st, 0, sizeof(st));
+    st.first_boot      = true;
+    st.weight_first_kg = -1.0f;  // sentinel: no reading yet this window
+    st.weight_last_kg  = -1.0f;
 
-    // ---- One-time Notecard configuration on true cold boot ---------------
+    // ---- One-time Notecard configuration ---------------------------------
     // Both steps must succeed before clearing first_boot; a transient I²C
-    // or Notecard-side error leaves first_boot = true so setup retries next wake
-    // rather than permanently skipping configuration.
-    bool configOk = notecardConfigure(st.first_boot, PRODUCT_UID);
-    if (st.first_boot) {
-        if (configOk && defineTemplates()) {
-            st.first_boot = false;
-            // Seed stored_outbound_min with the default so the cadence
-            // re-alignment block below does not issue a redundant hub.set
-            // on this same wake (notecardConfigure already set outbound to
-            // DEFAULT_REPORT_INTERVAL_HR * 60 minutes).
-            st.stored_outbound_min = (uint16_t)(DEFAULT_REPORT_INTERVAL_HR * 60u);
-        }
-        // If any step failed, leave first_boot = true; retry next wake.
+    // or Notecard-side error leaves first_boot = true so loop() retries on
+    // the next wake rather than permanently skipping configuration.
+    if (notecardConfigure(true, PRODUCT_UID) && defineTemplates()) {
+        st.first_boot = false;
+        // Seed stored_outbound_min with the default so the cadence
+        // re-alignment block in loop() does not issue a redundant hub.set
+        // on the first wake (notecardConfigure already set outbound to
+        // DEFAULT_REPORT_INTERVAL_HR * 60 minutes).
+        st.stored_outbound_min = (uint16_t)(DEFAULT_REPORT_INTERVAL_HR * 60u);
     }
 
-    // ---- Abort cycle if boot config is incomplete -----------------------
+    // ---- Initialise sensors ----------------------------------------------
+    scale.begin(PIN_HX711_DOUT, PIN_HX711_SCK);
+
+    if (!sht31.begin(0x44)) {  // 0x44 is SHT31-D default I2C address
+#ifdef DEBUG_SERIAL
+        debugSerial.println("[APP] SHT31-D not found — check wiring");
+#endif
+    }
+
+    // Wake from STOP2 on the ATTN rising edge (ATTN jumpered to D9).
+    cxSleepBegin();
+}
+
+// ===========================================================================
+// loop() — one sample/wake cycle, then sleep until the Notecard raises ATTN
+// ===========================================================================
+void loop() {
+    // ---- Retry boot configuration if it did not complete -----------------
     // Compact templates (hive_summary.qo / hive_alert.qo) must be registered
     // before any note.add so that Skylo NTN compact-payload encoding is
-    // guaranteed.  If notecardConfigure() or defineTemplates() failed this
-    // wake, persist state and sleep immediately — no env fetch, no sensor
-    // reads, no note emission.  first_boot stays true so the next wake
-    // retries configuration automatically.
+    // guaranteed.  If notecardConfigure() or defineTemplates() has not yet
+    // succeeded, retry now; if it still fails, sleep immediately — no env
+    // fetch, no sensor reads, no note emission — and try again next wake.
     if (st.first_boot) {
+        if (notecardConfigure(true, PRODUCT_UID) && defineTemplates()) {
+            st.first_boot = false;
+            st.stored_outbound_min = (uint16_t)(DEFAULT_REPORT_INTERVAL_HR * 60u);
+        } else {
 #ifdef DEBUG_SERIAL
-        Serial.println("[APP] Boot config incomplete — sleeping to retry");
+            debugSerial.println("[APP] Boot config incomplete — sleeping to retry");
 #endif
-        NotePayloadDesc retryPayload = {0, 0, 0};
-        NotePayloadAddSegment(&retryPayload, STATE_SEG_ID, &st, sizeof(st));
-        NotePayloadSaveAndSleep(&retryPayload,
-                                (uint32_t)DEFAULT_SAMPLE_INTERVAL_MIN * 60u, NULL);
-        delay((uint32_t)DEFAULT_SAMPLE_INTERVAL_MIN * 60000UL);
-        return;
+            sleepUntilAttn((uint32_t)DEFAULT_SAMPLE_INTERVAL_MIN * 60u);
+            return;
+        }
     }
 
     // ---- Fetch env var overrides from Notehub ----------------------------
@@ -172,7 +217,7 @@ void setup() {
     // resetSeen transitions from false (0/absent) to true ("1") — never when the
     // value is unchanged from the previous wake.
     //
-    // last_reset_token persists the last-acted value across sleep cycles:
+    // last_reset_token carries the last-acted value across sleep cycles:
     //   0 → reset_state was absent or "0" on the last wake
     //   1 → reset_state was "1" on the last wake (reset already fired)
     //
@@ -201,12 +246,12 @@ void setup() {
         st.sample_count        = 0;
         st.last_report_epoch   = 0;
 #ifdef DEBUG_SERIAL
-        Serial.println("[APP] reset_state=1 (0→1 transition): summary window cleared; time anchor will re-establish on next card.time");
+        debugSerial.println("[APP] reset_state=1 (0→1 transition): summary window cleared; time anchor will re-establish on next card.time");
 #endif
     }
 
     // ---- Re-align Notecard outbound cadence if report_interval_hr changed
-    // hub.set is sent on first boot in notecardConfigure(); after that,
+    // hub.set is sent at power-up in notecardConfigure(); after that,
     // env var changes to report_interval_hr must be reflected here so the
     // Notecard's outbound sync timer stays aligned with the summary cadence.
     // stored_outbound_min is only updated when the Notecard confirms the request
@@ -226,15 +271,6 @@ void setup() {
             }
             notecard.deleteResponse(syncRsp);
         }
-    }
-
-    // ---- Initialise sensors ----------------------------------------------
-    scale.begin(PIN_HX711_DOUT, PIN_HX711_SCK);
-
-    if (!sht31.begin(0x44)) {  // 0x44 is SHT31-D default I2C address
-#ifdef DEBUG_SERIAL
-        Serial.println("[APP] SHT31-D not found — check wiring");
-#endif
     }
 
     // ---- Read all sensors ------------------------------------------------
@@ -366,7 +402,7 @@ void setup() {
         audioValid = readAudioFeatures(zcr_mean, rms_mean, peak_mean);
 #ifdef DEBUG_SERIAL
         if (!audioValid)
-            Serial.println("[APP] Audio invalid — mic disconnected, ADC railed, or near-zero variance");
+            debugSerial.println("[APP] Audio invalid — mic disconnected, ADC railed, or near-zero variance");
 #endif
     }
 
@@ -433,17 +469,8 @@ void setup() {
         }
     }
 
-    // ---- Persist state and sleep until next sample window ----------------
-    NotePayloadDesc sleepPayload = {0, 0, 0};
-    NotePayloadAddSegment(&sleepPayload, STATE_SEG_ID, &st, sizeof(st));
-    NotePayloadSaveAndSleep(&sleepPayload, (uint32_t)sampleMin * 60u, NULL);
-
-    // Fallback only if ATTN pin is not wired (e.g., bare USB bench test)
-#ifdef DEBUG_SERIAL
-    Serial.println("[APP] card.attn not wired — using delay() fallback");
-#endif
-    delay((uint32_t)sampleMin * 60000UL);
+    // ---- Sleep until the next sample window ------------------------------
+    // State stays in RAM; execution resumes at the top of loop() when the
+    // Notecard raises ATTN sampleMin minutes from now.
+    sleepUntilAttn((uint32_t)sampleMin * 60u);
 }
-
-// loop() is unreachable when NotePayloadSaveAndSleep cuts host power
-void loop() {}

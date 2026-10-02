@@ -3,8 +3,9 @@
 //
 // Tracks reusable totes, kegs, and gas cylinders across the supply chain
 // using the Notecard's built-in accelerometer for motion detection and
-// cell-tower and WiFi AP triangulation for power-efficient location. The Cygnet MCU
-// is fully powered off between wake cycles via the ATTN pin. This POC build uses a
+// cell-tower and WiFi AP triangulation for power-efficient location. The
+// Notecarrier CX's STM32 host sleeps in STOP2 between wake cycles and is woken
+// by the Notecard's ATTN pin (see cx_sleep.h). This POC build uses a
 // rechargeable LiPo battery; realistic service life is 12–24 months (see README §9
 // for the Li-SOCl₂ primary-cell path that extends deployments to 3–5+ years).
 //
@@ -21,6 +22,10 @@
 // where_location) to every event — no GPS hardware or firmware code needed.
 //
 // Hardware: Blues Notecarrier CX + Notecard Cell+WiFi (MBGLW) + LiPo battery (POC build).
+//           Jumper the Notecarrier CX ATTN pin to D5 (same 16-pin header); leave EN
+//           unconnected.
+// Build:    Tools > USB support (if available) > None (usb=none). With the USB CDC
+//           stack enabled and no USB host attached the host cannot stay in STOP2.
 
 // ---------------------------------------------------------------------------
 // Product UID — replace with your Notehub project's ProductUID before flashing.
@@ -39,16 +44,26 @@
 #endif
 
 // Debug output is controlled by #define DEBUG in tote_pool_tracker_helpers.h.
-// Uncomment it there to enable Serial logging and Notecard I²C trace output
-// in both this sketch and the helper .cpp translation unit.
+// Uncomment it there to enable logging and Notecard I²C trace output in both
+// this sketch and the helper .cpp translation unit. Output goes to the LPUART
+// on the Notecarrier CX debug jack, which an ST-LINK V3 exposes as a virtual
+// COM port (USB CDC must stay disabled for the host to sleep).
 
 #include "tote_pool_tracker_helpers.h"
+#include "cx_sleep.h"
 
 // ---------------------------------------------------------------------------
 // Globals — definitions; extern declarations live in tote_pool_tracker_helpers.h
 // ---------------------------------------------------------------------------
 ToteState  g_state;
 Notecard   notecard;
+#ifdef DEBUG
+Uart       debugSerial(PIN_VCP_RX, PIN_VCP_TX);
+#endif
+
+// True for the first pass through loop() after power-up; drives the boot
+// heartbeat and deadline anchoring (what the old cold-boot path did).
+static bool g_first_wake = true;
 
 uint32_t   g_heartbeat_hours   = DEFAULT_HEARTBEAT_HOURS;
 float      g_low_battery_mv    = (float)DEFAULT_LOW_BATTERY_MV;
@@ -56,59 +71,40 @@ uint32_t   g_motion_threshold  = DEFAULT_MOTION_THRESHOLD;
 uint32_t   g_motion_bucket_sec = DEFAULT_MOTION_BUCKET_SEC;
 
 // ===========================================================================
-// setup() — called on every wake (cold boot or ATTN-triggered resume)
+// setup() — runs once at power-up. The host resumes in place after each
+// STOP2 sleep, so one-time Notecard configuration lives here and every
+// per-wake step lives in loop().
 // ===========================================================================
 void setup() {
-    // Serial and Notecard debug output are gated behind DEBUG so field builds
-    // don't pay the ~1 mA UART penalty.
+    // Debug output is gated behind DEBUG so field builds don't pay the ~1 mA
+    // UART penalty.
 #ifdef DEBUG
-    Serial.begin(115200);
+    debugSerial.begin(115200);
 #endif
 
     // Initialize Notecard over I²C (the Notecarrier CX exposes SDA/SCL
     // through its M.2 interface — no additional wiring required).
     notecard.begin();
 #ifdef DEBUG
-    notecard.setDebugOutputStream(Serial);
+    notecard.setDebugOutputStream(debugSerial);
 #endif
 
-    // -----------------------------------------------------------------------
-    // Determine whether this is a cold boot or a resume from ATTN sleep.
-    // NotePayloadRetrieveAfterSleep returns true and populates the descriptor
-    // when the Notecard holds a payload from the previous NotePayloadSaveAndSleep
-    // call. A false return means first power-on or a full reset.
-    // -----------------------------------------------------------------------
-    NotePayloadDesc payload;
-    bool restored = NotePayloadRetrieveAfterSleep(&payload);
-    if (restored) {
-        bool ok = NotePayloadGetSegment(&payload, STATE_SEG_ID,
-                                        &g_state, sizeof(g_state));
-        NotePayloadFree(&payload);
-        if (!ok) {
-            // Payload present but our segment was missing or a different size
-            // (e.g. after a firmware upgrade that changed ToteState) — treat
-            // as first boot to avoid acting on stale/corrupt state.
-            restored = false;
-        } else {
-            // Restore last-known desired env values from persisted state so
-            // that a transient env.get failure this wake cannot silently
-            // revert fleet tuning back to compile-time defaults. On a
-            // successful env.get, fetchEnvOverrides() reseeds from defaults
-            // and applies only the keys actually returned, so a removed key
-            // correctly reverts to the firmware default on the same wake.
-            g_heartbeat_hours   = g_state.desired_heartbeat_hours;
-            g_low_battery_mv    = g_state.desired_low_battery_mv;
-            g_motion_threshold  = g_state.desired_motion_threshold;
-            g_motion_bucket_sec = g_state.desired_motion_bucket_sec;
-        }
-    }
+    // Zero state and run one-time Notecard configuration.
+    memset(&g_state, 0, sizeof(g_state));
+    notecardConfigure(PRODUCT_UID);
+    defineTemplates();
 
-    if (!restored) {
-        // First boot: zero state and run one-time Notecard configuration.
-        memset(&g_state, 0, sizeof(g_state));
-        notecardConfigure(PRODUCT_UID);
-        defineTemplates();
-    }
+    // Arm the ATTN wake: the Notecard raises ATTN (D5) to end each sleep.
+    cxSleepBegin();
+}
+
+// ===========================================================================
+// loop() — one wake cycle, then sleep until the Notecard raises ATTN
+// (motion-state change or heartbeat timer, whichever comes first).
+// ===========================================================================
+void loop() {
+    bool first_wake = g_first_wake;
+    g_first_wake = false;
 
     // -----------------------------------------------------------------------
     // Fetch environment variable overrides on every wake. On first boot the
@@ -209,7 +205,7 @@ void setup() {
     //
     // Four mutually-exclusive branches, in priority order:
     //
-    //  1. !restored       — cold boot: emit boot heartbeat, anchor deadline.
+    //  1. first_wake      — power-up: emit boot heartbeat, anchor deadline.
     //  2. pending != NONE — retry wake: resend the note that failed last time;
     //                       then re-evaluate the current motion state against
     //                       the pending note's own motion baseline so a single
@@ -226,9 +222,9 @@ void setup() {
     // -----------------------------------------------------------------------
     bool wake_send_ok = true;
 
-    if (!restored) {
+    if (first_wake) {
         // ------------------------------------------------------------------
-        // Branch 1: first boot
+        // Branch 1: first wake after power-up
         // ------------------------------------------------------------------
         wake_send_ok = sendHeartbeat(REASON_BOOT, now_moving, battery_mv);
         if (now_epoch > 0) {
@@ -393,17 +389,7 @@ void setup() {
         g_state.failed_send_count++;
     }
 
-    // Persist updated motion state and sleep until the next event.
+    // Remember the motion state and sleep until the next event.
     g_state.was_moving = now_moving;
     enterSleep(now_epoch);
-}
-
-// ===========================================================================
-// loop() — intentionally empty
-// The entire application runs in setup(). NotePayloadSaveAndSleep cuts host
-// power via the ATTN pin, so loop() is never reached in normal operation.
-// The delay here is a fallback for bench testing without ATTN power-gating.
-// ===========================================================================
-void loop() {
-    delay(30000);
 }

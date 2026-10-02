@@ -2,10 +2,10 @@
  * cellular_medication_adherence_pillbox.ino
  *
  * Monitors a 7-day pillbox via normally-open snap-action micro-switches wired
- * to the Notecarrier CX's D5, D6, and D9–D13 digital GPIO pins (onboard Cygnet
- * STM32L4 host).
+ * to the Notecarrier CX's D5, D6, and D9–D13 digital GPIO pins (onboard
+ * STM32L433 host).
  *
- * Each time the device wakes (every 30 seconds by default), it reads all seven
+ * Each time the host wakes (every 30 seconds by default), it reads all seven
  * compartment pins and detects newly-opened lids by comparing pin state against
  * the previous wake. Every detected rising edge generates a pill_open.qo Note —
  * multiple opens of the same compartment in a day each produce a separate Note.
@@ -17,13 +17,25 @@
  * midnight UTC). The summary records the bitmask and count of compartments
  * opened during the preceding UTC day.
  *
- * State (previous pin values, daily bitmask, UTC day) is persisted across
- * sleep cycles by NotePayloadSaveAndSleep / NotePayloadRetrieveAfterSleep —
- * no external EEPROM or flash writes needed.
+ * Between polls the host sleeps in STM32 STOP2 (~1-2 µA, RAM retained) and is
+ * woken by the Notecard's ATTN pin (card.attn "sleep"); see cx_sleep.h.
+ * Because execution resumes in place, state (previous pin values, daily
+ * bitmask, UTC day, retry queue) simply lives in RAM — no external EEPROM,
+ * flash writes, or Notecard payload storage needed.
+ *
+ * Wiring for sleep: jumper the Notecarrier CX ATTN pin to A0. All seven
+ * digital header pins (D5, D6, D9–D13) are used by the compartment switches,
+ * so A0 serves as the ATTN wake input (it is an ordinary GPIO on the STM32).
+ * Leave EN unconnected: on the CX it enables the shared 3.3 V VIO rail, so
+ * driving it from ATTN browns out the whole board instead of sleeping the host.
+ *
+ * Build: Tools > USB support (if available) > None (usb=none). With the USB
+ * CDC stack enabled and no USB host attached the host cannot stay in STOP2.
+ * Debug output goes to the ST-LINK virtual COM port on the CX debug jack.
  *
  * Hardware: Notecarrier CX + Notecard Cell+WiFi (NOTE-MBGLW) + Blues Mojo
- * Host MCU: Cygnet STM32L4 (onboard, Notecarrier CX)
- * Library:  Blues Wireless Notecard (note-arduino)
+ * Host MCU: STM32L433 (onboard, Notecarrier CX)
+ * Library:  Blues Wireless Notecard (note-arduino), STM32duino Low Power
  *
  * Helper functions, struct definitions, pin/notefile constants, and the
  * usbSerial debug toggle live in:
@@ -35,6 +47,11 @@
 
 #include <Notecard.h>
 #include "cellular_medication_adherence_pillbox_helpers.h"
+
+// All seven D pins are compartment inputs, so ATTN is jumpered to A0 instead
+// of the usual D5. Must be defined before cx_sleep.h is included.
+#define CX_ATTN_PIN A0
+#include "cx_sleep.h"
 
 // ── Product UID ──────────────────────────────────────────────────────────────
 // Replace "" with your Notehub project ProductUID before flashing, e.g.:
@@ -48,11 +65,23 @@
 // functions can use it without a separate parameter.
 Notecard notecard;
 
+// Debug output: LPUART1 on the CX debug jack, which an ST-LINK exposes as a
+// virtual COM port. (USB CDC must be disabled for STOP2 to work; see
+// cx_sleep.h.) Referenced through the usbSerial macro in the helpers header.
+#ifdef usbSerial
+Uart dbgSerial(PIN_VCP_RX, PIN_VCP_TX);
+#endif
+
+// Application state. Lives in RAM; STOP2 retains it across every sleep/wake
+// cycle, so it is initialized once in setup() and never serialized.
+static PillboxState state;
+
 // ════════════════════════════════════════════════════════════════════════════
 // setup()
 //
-// Entered fresh on every wake — first power-on and each ATTN re-power after
-// NotePayloadSaveAndSleep. All application logic lives here.
+// Runs once at power-up: serial, pins, Notecard bring-up, state init, and
+// the one-time ATTN wake arming. Everything that must run on every poll
+// lives in loop().
 // ════════════════════════════════════════════════════════════════════════════
 void setup() {
 #ifdef usbSerial
@@ -69,85 +98,50 @@ void setup() {
     // ── PRODUCT_UID guard ─────────────────────────────────────────────────
     // An empty PRODUCT_UID produces a build that appears to run normally but
     // never associates with Notehub — easy to misdiagnose as a radio or
-    // connectivity issue. Halt unconditionally here so the misconfiguration
-    // is immediately obvious in both debug and production builds.
+    // connectivity issue. Make the misconfiguration obvious at boot in both
+    // debug and production builds; the firmware still runs so the bench rig
+    // can be exercised, but nothing will reach Notehub.
     if (!PRODUCT_UID[0]) {
 #ifdef usbSerial
         usbSerial.println(
-            "\n*** FATAL: PRODUCT_UID is empty ***\n"
+            "\n*** PRODUCT_UID is empty ***\n"
             "The Notecard will not associate with any Notehub project.\n"
             "Set PRODUCT_UID in cellular_medication_adherence_pillbox.ino\n"
-            "and reflash. Halting.");
+            "and reflash.");
 #endif
-        while (true) { delay(2000); } // unconditional halt — not gated on usbSerial
     }
 
     // ── Notecard readiness probe ──────────────────────────────────────────
     // On a cold power-on the host MCU may come up before the Notecard has
     // finished its own startup sequence. sendRequestWithRetry() polls with
     // back-off until the Notecard acknowledges a benign card.version request,
-    // establishing that the I²C bus is live before the payload restore below.
-    //
-    // Without this guard a cold-boot I²C race causes
-    // NotePayloadRetrieveAfterSleep() to return false, and the wake is
-    // misclassified as first_boot — wiping prev_pin_mask, daily_opens, the
-    // pending retry queue, and any not-yet-emitted summary state. Transient
-    // bus unavailability must be distinguished from a genuine absence of a
-    // saved payload. If the probe succeeds, a subsequent false from
-    // NotePayloadRetrieveAfterSleep is a real cold boot; if it fails after
-    // all retries, setup() resets rather than proceeding into payload restore
-    // where state loss is certain.
+    // establishing that the I²C bus is live before the configuration calls
+    // in loop(). If it still fails, loop() retries hub.set/templates on every
+    // wake anyway, so this is informational.
     {
         J *req = notecard.newRequest("card.version");
         bool ready = req && notecard.sendRequestWithRetry(req, 5);
         if (!ready) {
-            // Notecard did not respond after all retry attempts. Proceeding
-            // into NotePayloadRetrieveAfterSleep() on a non-responsive I²C
-            // bus would make the transient startup race indistinguishable from
-            // a genuine cold boot, wiping all persistent state. Short-sleep
-            // and soft-reset so the Cygnet retries after the Notecard has had
-            // more time to finish its startup sequence.
 #ifdef usbSerial
-            usbSerial.println("[init] card.version probe failed — resetting in 5 s");
+            usbSerial.println("[init] card.version probe failed — continuing; config retried each wake");
 #endif
-            delay(5000);
-            NVIC_SystemReset();
         }
     }
 
-    // ── Recover persistent state from the Notecard ────────────────────────
-    NotePayloadDesc payload = {0, 0, 0};
-    bool resumed = NotePayloadRetrieveAfterSleep(&payload);
+    // ── Initialize application state ──────────────────────────────────────
+    memset(&state, 0, sizeof(state));
+    state.poll_sec     = DEFAULT_POLL_SEC;
+    state.summary_hour = DEFAULT_SUMMARY_HOUR;
+    state.outbound_min = DEFAULT_OUTBOUND_MIN;
+    state.inbound_min  = DEFAULT_INBOUND_MIN;
 
-    PillboxState state;
-    bool first_boot = !resumed;
+    // Snapshot current pin state so the first poll doesn't false-trigger
+    // events for compartments already open at power-on.
+    state.prev_pin_mask = sampleCompartments();
 
-    if (resumed) {
-        bool ok = NotePayloadGetSegment(&payload, STATE_SEG_ID,
-                                        &state, sizeof(state));
-        NotePayloadFree(&payload);
-        // Treat a missing segment or stale version as first boot so that a
-        // firmware update with a changed struct layout never restores misaligned
-        // data and produces confusing behaviour.
-        if (!ok || state.version != PILLBOX_STATE_VERSION) {
-            first_boot = true;
-        }
-    }
-
-    if (first_boot) {
-        memset(&state, 0, sizeof(state));
-        state.version      = PILLBOX_STATE_VERSION;
-        state.poll_sec     = DEFAULT_POLL_SEC;
-        state.summary_hour = DEFAULT_SUMMARY_HOUR;
-        state.outbound_min = DEFAULT_OUTBOUND_MIN;
-        state.inbound_min  = DEFAULT_INBOUND_MIN;
-
-        // Snapshot current pin state so the first sample loop doesn't
-        // false-trigger events for compartments already open at power-on.
-        state.prev_pin_mask = sampleCompartments();
-
-        // Disable the onboard accelerometer for cleaner power traces during
-        // bench bring-up with Mojo. Has no effect on medication-adherence logic.
+    // Disable the onboard accelerometer for cleaner power traces during
+    // bench bring-up with Mojo. Has no effect on medication-adherence logic.
+    {
         J *req = notecard.newRequest("card.motion.mode");
         if (req) {
             JAddBoolToObject(req, "stop", true);
@@ -163,6 +157,17 @@ void setup() {
         }
     }
 
+    // Arm the ATTN wake: the Notecard raises ATTN (A0) to end each sleep.
+    cxSleepBegin();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// loop()
+//
+// One poll cycle, then sleep in STOP2 until the Notecard raises ATTN
+// poll_sec later. The host resumes here with all state intact.
+// ════════════════════════════════════════════════════════════════════════════
+void loop() {
     // ── Notecard configuration (applied every wake; all calls are idempotent) ─
     // hub.set and note.template re-applied unconditionally so a transient I2C
     // failure on any prior wake cannot leave the device permanently
@@ -232,7 +237,7 @@ void setup() {
     for (uint8_t i = 0; i < NUM_COMPARTMENTS; i++) {
         if (newly_opened & (1u << i)) {
             if (!emitOpenEvent(i, post_poll_mask, newly_opened)) {
-                // note.add failed after all retries — persist this event in
+                // note.add failed after all retries — keep this event in
                 // the ring buffer so it can be replayed on the next wake with
                 // its original context intact.
                 enqueuePendingEvent(state, i, post_poll_mask, newly_opened);
@@ -242,11 +247,6 @@ void setup() {
 
     state.prev_pin_mask = cur_mask;
 
-    // ── Sleep until next poll ─────────────────────────────────────────────
+    // ── Sleep until next poll (STOP2 until the Notecard raises ATTN) ──────
     sleepHost(state);
 }
-
-// loop() is intentionally empty.
-// All logic runs in setup(), which re-enters each time the Notecard's ATTN
-// pin re-powers the host MCU after NotePayloadSaveAndSleep.
-void loop() {}

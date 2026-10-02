@@ -9,7 +9,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-// -------- ADC constants (Cygnet STM32L4 12-bit ADC @ 3.3 V ref) --------
+// -------- ADC constants (STM32L433 12-bit ADC @ 3.3 V ref) --------
 static const float    ADC_VREF_V     = 3.30f;
 static const uint16_t ADC_COUNTS     = 4095;
 static const float    SHUNT_OHM      = 120.0f;  // 4 mA → 0.48 V, 20 mA → 2.40 V; 24 mA fault → 2.88 V (within 3.3 V ADC range)

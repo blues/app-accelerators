@@ -12,6 +12,10 @@
 #include <Arduino.h>
 #include <Notecard.h>
 
+// Debug output: LPUART on the Notecarrier CX debug jack (ST-LINK V3 virtual COM
+// port).  USB CDC is disabled so the host can sleep in STOP2; see cx_sleep.h.
+extern Uart dbgSerial;   // defined in tenant_sub_meter.ino
+
 // ─── Product UID ──────────────────────────────────────────────────────────────
 #ifndef PRODUCT_UID
 #define PRODUCT_UID ""   // set to your Notehub ProductUID before flashing
@@ -50,7 +54,7 @@ static const uint32_t INBOUND_MINUTES = 120;  // pull env var changes every 2 hr
 static const uint32_t DEMAND_INTERVAL_SEC = 900;  // 15-minute demand window
 
 // ─── Cold-boot readiness timeout ─────────────────────────────────────────────
-// Passed to notecardReady(); limits the I2C handshake on power-on.
+// Passed to notecardReady() in setup(); limits the I2C handshake on power-on.
 static const uint32_t NOTECARD_READY_TIMEOUT_SEC = 10;
 
 // ─── Notefile names ──────────────────────────────────────────────────────────
@@ -86,7 +90,7 @@ static const uint8_t VOLTAGE_PIN = A4;  // voltage transducer output (ZMPT101B o
 // Bit 2 of each nibble (0x04) is reserved.  FAULT_NO_SIGNAL (formerly 0x04) has been
 // retired from fault_mask: low RMS current is indistinguishable from a legitimately
 // unloaded tenant, and treating it as a hard fault quarantines valid zero-usage
-// intervals.  The threshold check is kept as a commissioning-only Serial diagnostic
+// intervals.  The threshold check is kept as a commissioning-only debug-serial diagnostic
 // in measureChannel(); it never sets m.fault.
 static const uint8_t FAULT_BIAS_RANGE  = 0x01;
 static const uint8_t FAULT_SATURATED   = 0x02;
@@ -143,43 +147,16 @@ struct TenantState {
                                   // maintains 8-byte alignment of both uint64_t fields in array.
 };
 
-// ─── Full persistent state (survives card.attn sleep via Notecard payload) ───
+// ─── Application state ───────────────────────────────────────────────────────
 //
-// ABI / layout note
-// -----------------
-// Field order must not change between firmware versions.  New fields appended
-// at the END are backward-compatible: NotePayloadGetSegment zero-fills tail
-// bytes when restoring a smaller (older) payload, which is the correct initial
-// state for any new field.
+// Lives in RAM.  The host sleeps in STM32 STOP2 between samples, which retains
+// SRAM, so this struct survives every sleep/wake cycle without being serialized
+// anywhere.  It is zeroed in setup() and reset only by a power cycle or reset
+// (which re-runs setup()).
 //
-// SMT2 → SMT3: TenantState gained fault_accum (uint8_t) and _pad[3] (explicit
-// padding), growing sizeof(TenantState) from 12 to 16 bytes.  The
-// meter_summary.qo template was updated to rename t*_peak_w → t*_peak_snapshot_w
-// and add a fault_mask field.
-//
-// SMT3 → SMT4: TenantState replaced peak_snapshot_cw (uint32_t) with
-// demand_window_mwh (uint64_t), demand_window_sec (uint32_t), and
-// peak_demand_cw (uint32_t), growing sizeof(TenantState) from 16 to 32 bytes.
-// The meter_summary.qo template was updated to rename t*_peak_snapshot_w →
-// t*_demand_w (now a true DEMAND_INTERVAL_SEC blocked-average demand reading).
-// FAULT_NO_SIGNAL was retired from fault_mask (bit 2 reserved; bit 3 is now
-// FAULT_VOLTAGE_REF).
-//
-// SMT4 → SMT5 (this revision): PersistState shed all on-device monthly energy
-// tracking — monthly_mwh[], unanchored_mwh[], monthly_start_epoch,
-// pending_bill_valid, pending_bill_from_epoch, pending_bill_to_epoch, _pad2, and
-// pending_bill_mwh[] — significantly reducing sizeof(PersistState).  Monthly
-// energy aggregation is now handled purely Notehub-side by summing hourly
-// meter_summary.qo events via the Notehub Event Query API.  The segment ID bump
-// forces a clean zero-initialised struct on upgrade (handled automatically by
-// NotePayloadGetSegment when the stored segment ID does not match).
-//
-// SMT1 → SMT2: TenantState and monthly_mwh widened from uint32_t to uint64_t;
-// pending_bill_* fields added.
-//
-// SMT1 was the initial release ("SMTR" in the very first sketch; renamed SMT1
-// for clarity).
-struct PersistState {
+// Field order is free to change between firmware versions: nothing is stored
+// on the Notecard, so there is no stored layout to stay compatible with.
+struct AppState {
     TenantState tenant[4];
     uint32_t    last_summary_epoch;  // epoch when the last hourly summary note was sent
     uint32_t    last_sample_epoch;   // epoch of the most recent completed sample cycle;
@@ -210,7 +187,7 @@ struct ChannelMeasurement {
 
 // ─── Globals defined in tenant_sub_meter.ino ─────────────────────────────────
 extern Notecard      notecard;
-extern PersistState  state;
+extern AppState      state;
 extern RuntimeConfig cfg;
 
 // ─── Helper function declarations ────────────────────────────────────────────

@@ -20,7 +20,7 @@
 
 // Globals defined in solar_battery_controller.ino
 extern Notecard     notecard;
-extern PersistState state;
+extern AppState state;
 extern uint32_t     desired_outbound_min;
 extern uint32_t     desired_inbound_min;
 
@@ -51,21 +51,21 @@ static float envF32(J *body, const char *key, float lo, float hi, float cur) {
 }
 
 // ---------------------------------------------------------------------------
-// notecardFirstBoot — one-time hardware init on a clean (non-restored) boot:
+// notecardFirstBoot — one-time hardware init at power-up (from setup()):
 // disables the onboard accelerometer to reduce idle draw.
 //
 // Uses sendRequestWithRetry to survive the cold-boot I2C readiness race that
 // can cause the first transaction after notecard.begin() to be dropped.
 //
 // hub.set is NOT called here.  It is handled by applyHubSetIfChanged() on
-// every boot so that cadence is authoritative for the current firmware and
-// env-var settings even after a firmware update or stale persisted state.
+// every wake so that cadence is authoritative for the current firmware and
+// env-var settings even after a firmware update.
 // ---------------------------------------------------------------------------
 void notecardFirstBoot() {
     J *req = notecard.newRequest("card.motion.mode");
     if (req) JAddBoolToObject(req, "stop", true);
     if (!notecard.sendRequestWithRetry(req, 5)) {
-        Serial.println(F("[warn] card.motion.mode failed after retries"));
+        dbgSerial.println(F("[warn] card.motion.mode failed after retries"));
     }
 }
 
@@ -77,9 +77,8 @@ void notecardFirstBoot() {
 //
 // Returns true when the template is confirmed registered.  The caller should
 // store the result in state.templates_confirmed and call this function again
-// on the next wake until it returns true, so a transient failure at first
-// boot or a shape change after a firmware update (which bumps STATE_VERSION
-// and clears the flag) is always recovered automatically.
+// on the next wake until it returns true, so a transient failure at power-up
+// is always recovered automatically.
 // ---------------------------------------------------------------------------
 bool defineTemplates() {
     bool registered = false;
@@ -109,13 +108,13 @@ bool defineTemplates() {
         }
     }
     if (!registered) {
-        Serial.println(F("[warn] note.template solar_summary.qo failed after retries"));
+        dbgSerial.println(F("[warn] note.template solar_summary.qo failed after retries"));
     }
     return registered;
 }
 
 // ---------------------------------------------------------------------------
-// applyHubSetIfChanged — issues hub.set on every boot when PRODUCT_UID is
+// applyHubSetIfChanged — issues hub.set on every wake when PRODUCT_UID is
 // configured so that a firmware reflash with a different UID immediately
 // corrects the Notecard's Notehub association, regardless of whether the
 // sync cadence changed.  Keying hub.set replay solely on cadence would allow
@@ -149,18 +148,18 @@ void applyHubSetIfChanged(const char *product_uid) {
 
         J *rsp = notecard.requestAndResponse(req);
         if (!rsp) {
-            Serial.print(F("[warn] hub.set attempt "));
-            Serial.print(attempt + 1);
-            Serial.println(F(": no response"));
+            dbgSerial.print(F("[warn] hub.set attempt "));
+            dbgSerial.print(attempt + 1);
+            dbgSerial.println(F(": no response"));
             continue;
         }
         const char *err = JGetString(rsp, "err");
         bool ok = (!err || !*err);
         if (!ok) {
-            Serial.print(F("[warn] hub.set attempt "));
-            Serial.print(attempt + 1);
-            Serial.print(F(" error: "));
-            Serial.println(err);  // log before deleteResponse
+            dbgSerial.print(F("[warn] hub.set attempt "));
+            dbgSerial.print(attempt + 1);
+            dbgSerial.print(F(" error: "));
+            dbgSerial.println(err);  // log before deleteResponse
         }
         notecard.deleteResponse(rsp);
         if (ok) {
@@ -169,7 +168,7 @@ void applyHubSetIfChanged(const char *product_uid) {
             return;
         }
     }
-    Serial.println(F("[error] hub.set failed after 5 attempts — "
+    dbgSerial.println(F("[error] hub.set failed after 5 attempts — "
                      "sync cadence may be incorrect"));
 }
 
@@ -303,26 +302,26 @@ bool sendAlert(const char *alert, float v1, float v2, float v3) {
 
         J *rsp = notecard.requestAndResponse(req);
         if (!rsp) {
-            Serial.print(F("[warn] note.add alert attempt "));
-            Serial.print(attempt + 1);
-            Serial.println(F(": no response"));
+            dbgSerial.print(F("[warn] note.add alert attempt "));
+            dbgSerial.print(attempt + 1);
+            dbgSerial.println(F(": no response"));
             continue;
         }
         const char *err = JGetString(rsp, "err");
         bool ok = (!err || !*err);
         if (!ok) {
-            Serial.print(F("[warn] note.add alert attempt "));
-            Serial.print(attempt + 1);
-            Serial.print(F(" error: "));
-            Serial.println(err);  // log before deleteResponse
+            dbgSerial.print(F("[warn] note.add alert attempt "));
+            dbgSerial.print(attempt + 1);
+            dbgSerial.print(F(" error: "));
+            dbgSerial.println(err);  // log before deleteResponse
         }
         notecard.deleteResponse(rsp);
         if (ok) {
-            Serial.print(F("[alert] ")); Serial.println(alert);
+            dbgSerial.print(F("[alert] ")); dbgSerial.println(alert);
             return true;
         }
     }
-    Serial.print(F("[error] note.add failed for alert: ")); Serial.println(alert);
+    dbgSerial.print(F("[error] note.add failed for alert: ")); dbgSerial.println(alert);
     return false;
 }
 
@@ -352,13 +351,13 @@ bool sendSummary() {
     // Skip if neither device provided any samples this window.
     bool any_valid = (state.bat_v_cnt > 0.0f || state.pv_w_cnt > 0.0f);
     if (!any_valid) {
-        Serial.println(F("[warn] sendSummary: no valid samples in window — skipping"));
+        dbgSerial.println(F("[warn] sendSummary: no valid samples in window — skipping"));
         return true;  // treated as success so callers open a new window
     }
 
     J *req = notecard.newRequest("note.add");
     if (!req) {
-        Serial.println(F("[warn] note.add: failed to allocate request for solar_summary.qo"));
+        dbgSerial.println(F("[warn] note.add: failed to allocate request for solar_summary.qo"));
         return false;
     }
     JAddStringToObject(req, "file", "solar_summary.qo");
@@ -400,18 +399,18 @@ bool sendSummary() {
 
     J *rsp = notecard.requestAndResponse(req);
     if (!rsp) {
-        Serial.println(F("[warn] note.add solar_summary.qo: no response"));
+        dbgSerial.println(F("[warn] note.add solar_summary.qo: no response"));
         return false;
     }
     const char *err = JGetString(rsp, "err");
     bool ok = (!err || !*err);
     if (!ok) {
-        Serial.print(F("[warn] note.add solar_summary.qo error: "));
-        Serial.println(err);  // log before deleteResponse
+        dbgSerial.print(F("[warn] note.add solar_summary.qo error: "));
+        dbgSerial.println(err);  // log before deleteResponse
     }
     notecard.deleteResponse(rsp);
     if (ok) {
-        Serial.println(F("[summary] sent"));
+        dbgSerial.println(F("[summary] sent"));
     }
     return ok;
 }

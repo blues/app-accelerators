@@ -2,7 +2,7 @@
 //
 // Propane / LPG Tank Fill Telemetry — 4–20 mA Float-Transmitter Variant
 //
-// Host:      Blues Notecarrier CX (onboard Cygnet STM32 host)
+// Host:      Blues Notecarrier CX (onboard STM32L433 host)
 // Notecard:  Notecard for Skylo (NOTE-NBGLWX) — a single M.2 module carrying
 //            cellular (LTE-M / NB-IoT / GPRS), WiFi, and Skylo satellite (NTN)
 //            radios with automatic failover. At sites with no cellular coverage
@@ -48,12 +48,19 @@
 //     seasonal demand analytics. NOT an input to the fill calculation.
 //
 // Runtime cadence:
-//   - Host wakes every SAMPLE_INTERVAL_MIN via card.attn.
+//   - Host sleeps in STM32 STOP2 between samples and is woken every
+//     SAMPLE_INTERVAL_MIN by the Notecard's ATTN pin (card.attn "sleep").
 //   - Each wake: sample sensors, update consumption EWMA, evaluate thresholds.
 //   - When REPORT_INTERVAL_HR has elapsed, queue one tank_status.qo note.
 //   - Alerts (low_fill, high_consumption, sensor_fault) are sent sync:true.
-//   - Between wakes the host is cut entirely; the Notecard for Skylo idles
+//   - While asleep the host draws ~1-2 µA and the Notecard for Skylo idles
 //     at ~8 µA (NOTE-NBGLWX published idle figure).
+//
+// Wiring for sleep: jumper the Notecarrier CX ATTN pin to D5 (both on the
+// same 16-pin header). Leave EN unconnected. See cx_sleep.h.
+//
+// Build: Tools > USB support (if available) > None. Debug output goes to the
+// ST-LINK virtual COM port on the CX debug jack (see dbgSerial below).
 //
 // Sensor math, fill-level calculation, and consumption tracking live in
 // propane_tank_telemetry_helpers.h (included below).
@@ -65,13 +72,18 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include "propane_tank_telemetry_helpers.h"
+#include "cx_sleep.h"
 
 #ifndef PRODUCT_UID
 #define PRODUCT_UID "" // "com.my-company.my-name:propane-tank-telemetry"
 #pragma message "PRODUCT_UID not set. Claim one in Notehub, then define it here."
 #endif
 
-#define usbSerial Serial
+// Debug output: LPUART1 on the CX debug jack, which an ST-LINK V3 exposes as
+// a virtual COM port. (USB CDC must be disabled for STOP2 to work; see
+// cx_sleep.h.) Comment out to silence logging.
+Uart dbgSerial(PIN_VCP_RX, PIN_VCP_TX);
+#define usbSerial dbgSerial
 
 // -------- Pin assignments (Notecarrier CX headers) --------
 static const uint8_t PIN_TRANSMITTER = A0;   // 4-20 mA via 120 Ω shunt
@@ -88,12 +100,10 @@ static uint32_t REPORT_INTERVAL_HR    = 24;
 static uint32_t ALERT_COOLDOWN_HR     = 4;       // min hours between repeated alerts of same type
 static uint8_t CONSUMPTION_ALERT_STREAK = 3;  // consecutive above-threshold wakes before high_consumption fires; overridable via consumption_alert_streak env var
 
-// -------- State preserved across deep-sleep cycles --------
-// NotePayloadSaveAndSleep serializes this struct to Notecard flash before
-// cutting host power. NotePayloadRetrieveAfterSleep rehydrates it at the
-// top of the next setup(). Field order matters for ABI compatibility —
-// add new fields at the end only.
-struct PersistState {
+// -------- Application state --------
+// Lives in RAM. STOP2 retains SRAM, so this survives every sleep/wake cycle;
+// it is reset only by a power cycle or reset, which also re-runs setup().
+struct AppState {
   // Summary window state (reset after each summary note).
   // last_fill_* hold the most-recent valid reading so the daily note carries
   // current tank state rather than a 24-hour average. n_fill is a has-data flag
@@ -118,8 +128,6 @@ struct PersistState {
 
   uint32_t cycles;
 
-  // Fields added after initial release — must remain at the end for ABI stability.
-  // A size mismatch on first boot after a firmware upgrade causes a clean cold-start.
   bool    templates_defined;        // true once both note.template calls succeed
   uint8_t high_consumption_streak;  // consecutive wakes with gpd > CONSUMPTION_ALERT_GPD
 
@@ -139,8 +147,7 @@ struct PersistState {
   float   min_fill_pct;   // lowest fill_pct seen in this reporting window (NAN = none yet)
 };
 
-static const char STATE_SEG_ID[] = "PLPG";
-static PersistState state;
+static AppState state;
 
 // -------- Peripheral objects --------
 Notecard        notecard;
@@ -365,7 +372,7 @@ static bool fetchEnvOverrides() {
 
     // sample_interval_min: 1–1440.  Lower bound prevents a tight host wake loop
     // that drains the battery and spams the Notecard over I2C.  Upper bound of
-    // 1440 (once per day) keeps the bench-mode delay() product (interval × 60 s
+    // 1440 (once per day) keeps the fallback delay() product (interval × 60 s
     // × 1000 ms) well within uint32_t and ensures at least one sample per
     // report window when report_interval_hr == 24.
     v = JGetString(body, "sample_interval_min");
@@ -733,21 +740,14 @@ static void runSampleCycle() {
 
 // -------- Setup / loop --------
 //
-// Deep-sleep pattern: the Notecard brings the host back up every
-// SAMPLE_INTERVAL_MIN via card.attn. setup() restores state and runs
-// initialization; loop() performs one sample cycle, saves state to Notecard
-// flash, and issues the sleep command. State survives the power cut via
-// NotePayloadSaveAndSleep / NotePayloadRetrieveAfterSleep.
-//
-// Bench/USB mode: when card.attn does not physically gate VBAT, loop() returns
-// from NotePayloadSaveAndSleep without cutting power, waits out the interval in
-// delay(), then runs again — sampling correctly on every iteration with no
-// special-case code.
+// setup() runs once: it configures the Notecard and the sensors and arms the
+// ATTN wake. loop() performs one sample cycle and then sleeps the host in
+// STOP2 until the Notecard raises ATTN SAMPLE_INTERVAL_MIN later. Because the
+// host resumes in place, all state simply lives in RAM.
 
 void setup() {
 #ifdef usbSerial
   usbSerial.begin(115200);
-  for (uint32_t t0 = millis(); !usbSerial && (millis() - t0) < 3000; ) {}
 #endif
 
   analogReadResolution(12);
@@ -760,46 +760,27 @@ void setup() {
   tempSensor.begin();
   tempSensor.setResolution(12);  // 12-bit: 0.0625 °C resolution, 750 ms conversion
 
-  // Rehydrate state from Notecard flash. On first boot, restored == false and
-  // the else branch runs full Notecard configuration.
-  NotePayloadDesc payload;
-  bool restored = NotePayloadRetrieveAfterSleep(&payload);
-  if (restored) {
-    restored &= NotePayloadGetSegment(&payload, STATE_SEG_ID, &state, sizeof(state));
-    NotePayloadFree(&payload);
-  }
-
-  if (!restored) {
-    memset(&state, 0, sizeof(state));
-    state.min_fill_pct = NAN;  // memset zeros floats to 0.0; NAN must be set explicitly
-    hubConfigure();
-    // Quiet the onboard accelerometer to prevent motion-interrupt wakes from
-    // corrupting Mojo power traces during bench validation.
-    J *req = notecard.newRequest("card.motion.mode");
-    JAddBoolToObject(req, "stop", true);
-    if (!notecard.sendRequest(req)) {
+  memset(&state, 0, sizeof(state));
+  state.min_fill_pct = NAN;  // memset zeros floats to 0.0; NAN must be set explicitly
+  hubConfigure();
+  // Quiet the onboard accelerometer to prevent motion-interrupt wakes from
+  // corrupting Mojo power traces during bench validation.
+  J *req = notecard.newRequest("card.motion.mode");
+  JAddBoolToObject(req, "stop", true);
+  if (!notecard.sendRequest(req)) {
 #ifdef usbSerial
-      usbSerial.println("[card.motion.mode] stop failed");
+    usbSerial.println("[card.motion.mode] stop failed");
 #endif
-    }
   }
 
-  // runSampleCycle() and state.cycles++ are called from loop() so the sample
-  // path runs on every iteration — both after a hardware power-cycle (deep-sleep
-  // mode) and after the bench delay() fallback (USB-powered mode).
-  //
-  // Per-wake configuration (template retry, env-var refresh, summary-window
-  // seed) is also in loop() rather than setup() so bench/USB mode (where
-  // setup() runs only once at boot) picks up Notehub env-var changes, retries
-  // failed template/hub.set calls, and seeds the summary-window anchor on
-  // every iteration — matching deep-sleep field behavior where setup() re-runs
-  // on every wake.
+  // Wake from STOP2 on the ATTN rising edge.
+  cxSleepBegin();
 }
 
-// Per-wake configuration: idempotent calls that must run on every wake in both
-// deep-sleep and bench modes. Lives in loop() rather than setup() so bench/USB
-// mode (which only enters setup() once at boot) does not get permanently stuck
-// on stale env vars, untemplatized notes, or an unseeded summary window.
+// Per-wake configuration: idempotent calls that run at the top of every sample
+// cycle so the device picks up Notehub env-var changes, retries failed
+// template/hub.set calls, and seeds the summary-window anchor once time is
+// available.
 static void perWakeConfigure() {
   // Define note templates on every wake until both succeed. note.template is
   // idempotent on the Notecard, so repeating it is safe. Without this retry
@@ -833,22 +814,23 @@ static void perWakeConfigure() {
 }
 
 void loop() {
-  // Sample sensors and evaluate thresholds, then serialize state to Notecard
-  // flash and cut host power for SAMPLE_INTERVAL_MIN × 60 s.
-  //
-  // Deep-sleep mode (VBAT gated by card.attn): NotePayloadSaveAndSleep cuts
-  // host power; setup() runs again on the next ATTN wake for the next sample.
-  //
-  // Bench/USB mode (no VBAT gating): NotePayloadSaveAndSleep returns without
-  // cutting power; delay() waits out the interval; loop() runs again and
-  // performs the next sample — identical cadence to deep-sleep mode.
+  // Sample sensors and evaluate thresholds, then sleep until the Notecard
+  // raises ATTN SAMPLE_INTERVAL_MIN × 60 s from now.
   perWakeConfigure();
   runSampleCycle();
   state.cycles++;
 
-  NotePayloadDesc payload = {0, 0, 0};
-  NotePayloadAddSegment(&payload, STATE_SEG_ID, &state, sizeof(state));
-  NotePayloadSaveAndSleep(&payload, (uint32_t)SAMPLE_INTERVAL_MIN * 60UL, NULL);
-
-  delay((uint32_t)SAMPLE_INTERVAL_MIN * 60UL * 1000UL);  // bench fallback: wait, then loop again
+  uint32_t sleep_sec = (uint32_t)SAMPLE_INTERVAL_MIN * 60UL;
+#ifdef usbSerial
+  if (!cxSleepUntilAttn(notecard, sleep_sec, NULL, &usbSerial)) {
+#else
+  if (!cxSleepUntilAttn(notecard, sleep_sec)) {
+#endif
+    // The Notecard didn't take the sleep request, or ATTN never went low
+    // (check the ATTN -> D5 jumper). Keep the sample cadence and try again.
+#ifdef usbSerial
+    usbSerial.println("[sleep] ATTN sleep failed — waiting out the interval awake");
+#endif
+    delay(sleep_sec * 1000UL);
+  }
 }

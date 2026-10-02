@@ -10,10 +10,10 @@
 
 #include "cabinet_battery_sentinel_helpers.h"
 
-// ─── Full initialisation — clean boot and invalid-segment recovery ────────────
-// Called from both the true first-power-on path and the "state segment layout
-// changed" recovery path so Notecard configuration, template registration, and
-// window state are always consistent after either event.
+// ─── Full initialisation at power-up ─────────────────────────────────────────
+// Called once from setup() so Notecard configuration, template registration,
+// and window state start out consistent.  Anything that fails here is retried
+// from the sketch's per-wake cycle until confirmed.
 void doFirstBoot(void) {
     memset(&state, 0, sizeof(state));
     state.voltMin     = VOLT_MIN_INIT;
@@ -22,8 +22,8 @@ void doFirstBoot(void) {
     state.socPct      = DEFAULT_SOC_PCT_INIT;  // -1.0 = not yet commissioned
     state.lastSocInit = -1.0f;                 // no soc_pct_init has been applied yet
     // g_sampleSec and g_summaryMin are at compile-time defaults here;
-    // fetchEnvOverrides() runs immediately after in setup() and hub.set is
-    // re-applied if the operator has changed either value in Notehub.
+    // fetchEnvOverrides() runs on the first wake and hub.set is re-applied if
+    // the operator has changed either value in Notehub.
     notecardConfigure();
     state.lastSummaryMin = g_summaryMin;
     state.lastSampleSec  = g_sampleSec;
@@ -176,9 +176,10 @@ void fetchEnvOverrides(void) {
     if (g_socLowPct >= 100.0f) g_socLowPct = 99.0f;
 }
 
-// ─── INA228 initialisation (runs every wake) ─────────────────────────────────
-// The Cygnet's power rail is cut during sleep, which also powers off the INA228.
-// Re-initialise the chip on every wake — its internal registers reset at POR.
+// ─── INA228 initialisation ───────────────────────────────────────────────────
+// Runs once at power-up.  The Qwiic rail stays powered while the host sleeps in
+// STOP2, so the INA228 keeps its calibration; the sketch retries only if this
+// failed (e.g. the breakout was not yet connected).
 bool initINA228(void) {
     if (!ina228.begin(INA228_I2C_ADDR, &Wire)) {
         notecard.logDebug("INA228: begin() failed — check Qwiic wiring and address.\n");
@@ -366,18 +367,4 @@ bool sendAlert(const char *alertType, float volt, float curr, float temp) {
         notecard.logDebug("note.add (alert) failed after 3 attempts\n");
     }
     return sent;
-}
-
-// ─── Serialise state and cut host power until the next sample interval ───────
-void sleepHost(void) {
-    NotePayloadDesc payload = {0, 0, 0};
-    NotePayloadAddSegment(&payload, STATE_SEG_ID, &state, sizeof(state));
-    // NotePayloadSaveAndSleep writes the payload to Notecard flash, then issues
-    // card.attn in "sleep" mode.  The ATTN pin cuts Cygnet power for g_sampleSec
-    // seconds; the Notecard idles at ~8 µA in the meantime.
-    NotePayloadSaveAndSleep(&payload, g_sampleSec, NULL);
-
-    // Should not reach here.  If we do, ATTN is not switching the host power
-    // rail — verify the Notecarrier CX is being used (not a bare Notecarrier X).
-    delay(15000);
 }

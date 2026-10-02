@@ -17,15 +17,19 @@
 // ─── Debug serial ────────────────────────────────────────────────────────────
 // Define DEBUG_SERIAL as 1 before including this header (or via compiler -D
 // flag) to enable serial debug output and Notecard debug streaming.
-// Leave undefined (defaults to 0) for production builds: Serial.begin() is
-// skipped entirely, eliminating the blocking USB-enumeration wait on every wake
-// and removing the associated current draw from the solar/LiPo budget.
+// Leave undefined (defaults to 0) for production builds: the debug UART is
+// never started, removing its current draw from the solar/LiPo budget.
+// The firmware is built with USB CDC disabled (usb=none) so the host can sleep
+// in STOP2, so `Serial` is not a USB port here: debugSerial is the LPUART on
+// the Notecarrier CX debug jack, which an ST-LINK V3 exposes as a virtual COM
+// port.  debugSerial is defined in construction_equipment_anti_theft.ino.
 #ifndef DEBUG_SERIAL
 #define DEBUG_SERIAL 0
 #endif
 #if DEBUG_SERIAL
-#  define LOG(x)    Serial.print(x)
-#  define LOGLN(x)  Serial.println(x)
+extern Uart debugSerial;
+#  define LOG(x)    debugSerial.print(x)
+#  define LOGLN(x)  debugSerial.println(x)
 #else
 #  define LOG(x)    ((void)0)
 #  define LOGLN(x)  ((void)0)
@@ -65,8 +69,8 @@ static inline bool alertDue(uint32_t eff_time, uint32_t last_ts, uint32_t cooldo
     return elapsed(eff_time, last_ts, cooldown_s);
 }
 
-// ─── Pin assignments (Notecarrier CX / Cygnet STM32) ─────────────────────────
-// Relay driver: Cygnet GPIO → BSS138 MOSFET gate → relay coil → 12 V.
+// ─── Pin assignments (Notecarrier CX STM32L433 host) ─────────────────────────
+// Relay driver: host GPIO → BSS138 MOSFET gate → relay coil → 12 V.
 // BSS138 selected for R_DS(on) ≤ 3.5 Ω at V_GS = 2.5 V (Nexperia datasheet).
 // 10 kΩ gate-to-source pulldown keeps MOSFET off when GPIO is high-impedance.
 #define PIN_RELAY_DRIVER    A1
@@ -74,14 +78,16 @@ static inline bool alertDue(uint32_t eff_time, uint32_t last_ts, uint32_t cooldo
 // Divider output: 12V × 10/(33+10) ≈ 2.79V at A2 (HIGH = ignition ON).
 // NOTE: bare voltage divider — POC front end only; add TVS and RC filtering for production.
 #define PIN_IGNITION_SENSE  A2
+// Notecard ATTN → D5 jumper on the Notecarrier CX header wakes the host from
+// STOP2 (CX_ATTN_PIN default in cx_sleep.h).  Leave the CX EN pin unconnected.
 
 // ─── Notefiles ───────────────────────────────────────────────────────────────
 #define TRACKER_NOTEFILE   "tracker.qo"
 #define ALERT_NOTEFILE     "alert.qo"
 #define COMMAND_NOTEFILE   "immobilize.qi"
 // fence.db persists the commissioned home-fence coordinates in Notecard flash.
-// This is independent of the NotePayload sleep state so a power-loss/reconnect
-// during a theft event cannot silently re-home the fence to the thief's location.
+// AppState lives only in host RAM, so this is what lets a power-loss/reconnect
+// during a theft event avoid silently re-homing the fence to the thief's location.
 #define FENCE_NOTEFILE     "fence.db"
 
 // Compact template port numbers — required for Notecard for Skylo satellite path.
@@ -107,7 +113,10 @@ static inline bool alertDue(uint32_t eff_time, uint32_t last_ts, uint32_t cooldo
 #define INBOUND_MIN                4
 #define DEFAULT_FENCE_RADIUS_M   200.0f
 
-// ─── Persisted application state (survives sleep via NotePayload) ─────────────
+// ─── Application state ───────────────────────────────────────────────────────
+// Lives in RAM.  STOP2 retains SRAM, so this survives every sleep/wake cycle and
+// is reset only by a power cycle or reset (which re-runs setup()).  The fence
+// is additionally persisted in fence.db on the Notecard (see above).
 struct AppState {
     bool    immobilize_pending;      // Relay staged; waiting for next key-on
     bool    immobilized;             // Relay currently asserted (ignition cut)
@@ -118,9 +127,9 @@ struct AppState {
     // GPS auto-anchor is gated on this flag so a transient I2C read failure on
     // boot cannot silently re-home the geofence to a thief's current location.
     bool    fence_confirmed_absent;
-    // Notecard configuration success flags — persisted so ensureConfigured() can
+    // Notecard configuration success flags — kept so ensureConfigured() can
     // retry exactly the steps that have not yet been confirmed on subsequent wakes.
-    // All start false (cold boot memset) and are set true when the corresponding
+    // All start false (power-up memset) and are set true when the corresponding
     // Notecard request succeeds.  ensureConfigured() skips already-confirmed steps.
     bool    cfg_hub_ok;       // hub.set (product UID + mode) accepted
     bool    cfg_gps_ok;       // card.location.mode accepted
@@ -128,7 +137,7 @@ struct AppState {
     bool    cfg_templates_ok; // both compact note.templates registered
     // Wake-context flags from the previous wake cycle.  Used as a proxy for the
     // current state when applying Notecard cadence before fresh sensor reads are
-    // available.  Updated at the end of each wake.  Default false (cold boot
+    // available.  Updated at the end of each wake.  Default false (power-up
     // memset) → stationary/daytime — a safe conservative starting point.
     bool    last_moving;     // Motion state on previous wake
     bool    last_afterhrs;   // After-hours state on previous wake
@@ -163,8 +172,6 @@ struct AppState {
     uint32_t last_cmd_failed_alert_s;   // Epoch of last cmd_retrieve_failed alert
 };
 
-extern const char kStateSegID[];
-
 // ─── Function declarations ────────────────────────────────────────────────────
 // Notecard configuration and note emission
 // ensureConfigured: idempotent Notecard setup — safe to call on every wake.
@@ -172,7 +179,7 @@ extern const char kStateSegID[];
 // and re-applies only the steps that have not yet been confirmed.  Returns true
 // when all four steps are confirmed; false when one or more are still pending
 // (they will be retried on the next wake automatically).  This makes the device
-// self-healing: a hub.set or template failure on cold boot does not leave it
+// self-healing: a hub.set or template failure at power-up does not leave it
 // permanently misconfigured — it recovers without a full power cycle.
 // Inbound cadence is set from s.inbound_s (default INBOUND_MIN * 60, tunable
 // via the `inbound_min` Notehub fleet env var) so commands arrive promptly

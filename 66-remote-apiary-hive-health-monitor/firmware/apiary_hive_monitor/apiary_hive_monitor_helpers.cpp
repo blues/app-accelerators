@@ -6,7 +6,7 @@
     notecardConfigure() — hub.set (daily outbound / weekly inbound),
                           card.transport (wifi-cell-ntn) for automatic
                           cellular→Skylo satellite failover, accelerometer
-                          disable; called once on first boot.
+                          disable; called at power-up (retried until it succeeds).
     defineTemplates()   — registers compact Note templates for
                           hive_summary.qo (port 10) and hive_alert.qo
                           (port 11); required for Skylo NTN operation.
@@ -114,7 +114,7 @@ bool notecardConfigure(bool freshBoot, const char *productUID) {
     // "periodic" mode the cold-boot hub.set above triggers that first sync over
     // cellular/WiFi, so commission each unit where it has terrestrial coverage
     // even if it will routinely operate over satellite. Non-critical at the
-    // transport level; a failure here is retried on the next cold boot.
+    // transport level; a failure here is retried on the next power-up.
     req = notecard.newRequest("card.transport");
     JAddStringToObject(req, "method", "wifi-cell-ntn");
     notecard.sendRequest(req);
@@ -233,11 +233,11 @@ void fetchEnvOverrides(uint16_t &sampleMin, uint16_t &reportHr,
             tempHigh = newTempHigh;
         } else {
 #ifdef DEBUG_SERIAL
-            Serial.print("[APP] env: temp band inverted (low=");
-            Serial.print(newTempLow);
-            Serial.print(", high=");
-            Serial.print(newTempHigh);
-            Serial.println(") — keeping compile-time defaults");
+            debugSerial.print("[APP] env: temp band inverted (low=");
+            debugSerial.print(newTempLow);
+            debugSerial.print(", high=");
+            debugSerial.print(newTempHigh);
+            debugSerial.println(") — keeping compile-time defaults");
 #endif
             // tempLow / tempHigh unchanged; caller's defaults remain in effect.
         }
@@ -278,7 +278,7 @@ float readWeightKg(float calibration) {
 
     if (!scale.is_ready()) {
 #ifdef DEBUG_SERIAL
-        Serial.println("[APP] HX711 timeout");
+        debugSerial.println("[APP] HX711 timeout");
 #endif
         scale.power_down();
         return -1.0f;
@@ -298,7 +298,7 @@ bool readTempHumidity(float &temp_c, float &humidity_pct) {
     humidity_pct = sht31.readHumidity();
     if (isnan(temp_c) || isnan(humidity_pct)) {
 #ifdef DEBUG_SERIAL
-        Serial.println("[APP] SHT31-D read failed");
+        debugSerial.println("[APP] SHT31-D read failed");
 #endif
         return false;
     }
@@ -420,9 +420,9 @@ bool readAudioFeatures(float &zcr_mean, float &rms_mean, float &peak_mean) {
     int good_windows = AUDIO_NUM_WINDOWS - bad_windows;
     if (good_windows < AUDIO_MIN_GOOD_WINDOWS) {
 #ifdef DEBUG_SERIAL
-        Serial.print("[APP] Audio rejected: only ");
-        Serial.print(good_windows);
-        Serial.println(" of 12 windows passed DC/clip check");
+        debugSerial.print("[APP] Audio rejected: only ");
+        debugSerial.print(good_windows);
+        debugSerial.println(" of 12 windows passed DC/clip check");
 #endif
         zcr_mean = 0.0f; rms_mean = 0.0f; peak_mean = 0.0f;
         return false;
@@ -437,9 +437,9 @@ bool readAudioFeatures(float &zcr_mean, float &rms_mean, float &peak_mean) {
     // clip checks passed (e.g., A0 pulled to a stable mid-rail supply).
     if (rms_mean < AUDIO_RMS_MIN) {
 #ifdef DEBUG_SERIAL
-        Serial.print("[APP] Audio rejected: RMS ");
-        Serial.print(rms_mean, 6);
-        Serial.println(" below minimum — mic dead or shorted?");
+        debugSerial.print("[APP] Audio rejected: RMS ");
+        debugSerial.print(rms_mean, 6);
+        debugSerial.println(" below minimum — mic dead or shorted?");
 #endif
         zcr_mean = 0.0f; rms_mean = 0.0f; peak_mean = 0.0f;
         return false;
@@ -487,12 +487,12 @@ bool sendAlert(const char *alertType, float value1, float value2) {
             bool ok = (!err || !*err);
 #ifdef DEBUG_SERIAL
             if (!ok) {
-                Serial.print("[APP] Alert note.add failed (attempt ");
-                Serial.print(attempt + 1);
-                Serial.print("): ");
-                Serial.println(err);
+                debugSerial.print("[APP] Alert note.add failed (attempt ");
+                debugSerial.print(attempt + 1);
+                debugSerial.print("): ");
+                debugSerial.println(err);
             } else {
-                Serial.print("[APP] Alert sent: "); Serial.println(alertType);
+                debugSerial.print("[APP] Alert sent: "); debugSerial.println(alertType);
             }
 #endif
             notecard.deleteResponse(rsp);
@@ -552,15 +552,15 @@ bool sendSummary(const HiveState &st) {
             bool ok = (!err || !*err);
 #ifdef DEBUG_SERIAL
             if (!ok) {
-                Serial.print("[APP] Summary note.add failed (attempt ");
-                Serial.print(attempt + 1);
-                Serial.print("): ");
-                Serial.println(err);
+                debugSerial.print("[APP] Summary note.add failed (attempt ");
+                debugSerial.print(attempt + 1);
+                debugSerial.print("): ");
+                debugSerial.println(err);
             } else {
-                Serial.print("[APP] Summary sent — samples: "); Serial.print(st.sample_count);
-                Serial.print("  zcr_avg: ");  Serial.print(safeAvg(st.zcr_sum,  st.audio_sample_count));
-                Serial.print("  rms_avg: ");  Serial.print(safeAvg(st.rms_sum,  st.audio_sample_count), 4);
-                Serial.print("  peak_avg: "); Serial.println(safeAvg(st.peak_sum, st.audio_sample_count), 4);
+                debugSerial.print("[APP] Summary sent — samples: "); debugSerial.print(st.sample_count);
+                debugSerial.print("  zcr_avg: ");  debugSerial.print(safeAvg(st.zcr_sum,  st.audio_sample_count));
+                debugSerial.print("  rms_avg: ");  debugSerial.print(safeAvg(st.rms_sum,  st.audio_sample_count), 4);
+                debugSerial.print("  peak_avg: "); debugSerial.println(safeAvg(st.peak_sum, st.audio_sample_count), 4);
             }
 #endif
             notecard.deleteResponse(rsp);

@@ -11,21 +11,34 @@
     6. Flags underperformers with a root-cause hypothesis (shading / soiling /
        string fault) and fires an immediate sync:true alert Note
     7. Accumulates window averages and emits a summary Note every hour
-    8. Sleeps until the next sample interval via NotePayloadSaveAndSleep / card.attn
+    8. Sleeps in STM32 STOP2 until the Notecard's ATTN pin wakes it for the
+       next sample interval (card.attn "sleep"; see cx_sleep.h)
+
+  Sleep wiring: jumper the Notecarrier CX ATTN pin to D6 (same 16-pin header).
+  D5 carries the DS18B20 and D9 the RS-485 direction pin, so CX_ATTN_PIN is
+  defined as D6 below before cx_sleep.h is included. Leave EN unconnected —
+  on the CX it enables the shared 3.3 V VIO rail, and driving it from ATTN
+  browns out the whole board.
+
+  Build: Tools > USB support (if available) > None (usb=none). With the USB
+  CDC stack enabled and no USB host attached the host cannot stay in STOP2.
+  Debug output goes to the LPUART on the CX debug jack (ST-LINK VCP).
 
   Data-path helpers live in solar_string_monitor_helpers.{h,cpp}.
 
   Hardware
   --------
-  - Blues Notecarrier CX  (onboard Cygnet STM32L433 host MCU)
+  - Blues Notecarrier CX  (onboard STM32L433 host MCU)
   - Blues Notecard Cell+WiFi MBGLW  (M.2 slot)
   - SparkFun RS-485 Transceiver Breakout BOB-10124 → UART TX/RX/D9
   - Apogee SP-110-SS pyranometer (0–400 mV analog) → A0
   - Adafruit waterproof DS18B20 (Product 381) → D5 (1-Wire)
+  - ATTN → D6 jumper — Notecard wakes the host from STOP2
 
   Dependencies (install via Arduino Library Manager)
   --------------------------------------------------
   - Blues Wireless Notecard
+  - STM32duino Low Power (+ its dependency STM32duino RTC)
   - ModbusMaster  (4-20-ma/ModbusMaster)
   - OneWire
   - DallasTemperature
@@ -41,11 +54,22 @@
 #include <ModbusMaster.h>
 #include "solar_string_monitor_helpers.h"
 
+// D5 is the DS18B20 data line and D9 the RS-485 DE/RE pin, so the ATTN
+// jumper lands on D6.
+#define CX_ATTN_PIN D6
+#include "cx_sleep.h"
+
 // ---------------------------------------------------------------------------
-// Debug build flag — uncomment to enable the USB-CDC ready wait in setup().
-// Leave undefined for production: the wait adds up to 3 s of awake time on
-// every 5-minute wake cycle, materially hurting the low-power profile and
-// distorting Mojo/scope measurements.
+// Debug output — LPUART1 on the Notecarrier CX debug jack, which an ST-LINK V3
+// exposes as a virtual COM port. USB CDC is disabled in this build (usb=none)
+// so the host can sleep; Serial is therefore not USB and is not used here.
+// ---------------------------------------------------------------------------
+Uart debugSerial(PIN_VCP_RX, PIN_VCP_TX);
+
+// ---------------------------------------------------------------------------
+// Debug build flag — uncomment to enable verbose Notecard request/response
+// logging on debugSerial. Leave undefined for production: it adds measurable
+// awake time on every 5-minute wake cycle and distorts Mojo/scope measurements.
 // ---------------------------------------------------------------------------
 // #define DEBUG_SERIAL
 
@@ -62,6 +86,7 @@
 // ---------------------------------------------------------------------------
 #define PIN_RS485_DE_RE  9  // DE and /RE tied together on SparkFun BOB-10124
 #define PIN_ONE_WIRE     5  // DS18B20 data line (4.7 kΩ pull-up to 3V3)
+// CX_ATTN_PIN (D6) above: Notecard ATTN jumpered here to wake the host.
 // Pyranometer is on A0 — no define needed; referenced as A0 in helpers.cpp
 
 // ---------------------------------------------------------------------------
@@ -121,11 +146,10 @@ uint32_t g_alert_cooldown_sec   = DEFAULT_ALERT_COOLDOWN_SEC;
 float    g_pyranometer_sensitivity = DEFAULT_PYRANOMETER_MV_PER_WM2;
 
 // ---------------------------------------------------------------------------
-// Persistent application state — survives sleep via NotePayloadSaveAndSleep
+// Application state — lives in RAM. STOP2 retains SRAM, so it survives every
+// sleep/wake cycle and is reset only by a power cycle (which re-runs setup()).
 // ---------------------------------------------------------------------------
 AppState g_state;
-static bool g_first_boot = true;
-static const char kSeg[] = "ST"; // segment ID for Notecard payload store
 
 // ---------------------------------------------------------------------------
 // Peripheral objects (extern-declared in helpers.h so helpers can use them)
@@ -143,17 +167,26 @@ ModbusMaster    modbus;
 static void preTransmission()  { digitalWrite(PIN_RS485_DE_RE, HIGH); }
 static void postTransmission() { digitalWrite(PIN_RS485_DE_RE, LOW);  }
 
+// ---------------------------------------------------------------------------
+// Sleep the host in STOP2 until the Notecard raises ATTN; fall back to waiting
+// awake for the same interval if the sleep request fails or ATTN never goes low.
+// ---------------------------------------------------------------------------
+static void goToSleep(uint32_t seconds) {
+    if (!cxSleepUntilAttn(notecard, seconds, NULL, &debugSerial)) {
+        // The Notecard didn't take the sleep request, or ATTN never went low
+        // (check the ATTN -> D6 jumper). Keep the sample cadence and retry.
+        debugSerial.println(F("[app] ATTN sleep failed — waiting out the interval awake"));
+        delay(seconds * 1000UL);
+    }
+}
+
 // ===========================================================================
-// setup() — runs on both cold boot and each wake from card.attn sleep
+// setup() — runs once at power-up: one-time Notecard configuration, sensor
+// init, and arming the ATTN wake. The host resumes in place after each STOP2
+// sleep, so every per-wake step lives in loop().
 // ===========================================================================
 void setup() {
-    delay(250); // let supply rails settle after ATTN-driven power restore
-
-    Serial.begin(115200);
-#ifdef DEBUG_SERIAL
-    // Wait up to 3 s for a USB-CDC console — development / bench use only.
-    for (uint32_t t = millis(); !Serial && millis() - t < 3000;) {}
-#endif
+    debugSerial.begin(115200);
 
     pinMode(PIN_RS485_DE_RE, OUTPUT);
     digitalWrite(PIN_RS485_DE_RE, LOW); // idle in receive
@@ -168,81 +201,84 @@ void setup() {
     // Verbose Notecard request/response logging — bench use only.
     // Enabling this in production adds measurable awake time on every wake
     // cycle and will distort Mojo/scope measurements during power validation.
-    notecard.setDebugOutputStream(Serial);
+    notecard.setDebugOutputStream(debugSerial);
 #endif
 
-    // Try to recover persisted state from the Notecard's flash.
-    // If successful this is a wake-from-sleep, not a cold boot.
-    NotePayloadDesc payload;
-    bool recovered = NotePayloadRetrieveAfterSleep(&payload);
-    if (recovered) {
-        recovered &= NotePayloadGetSegment(&payload, kSeg,
-                                           &g_state, sizeof(g_state));
-        NotePayloadFree(&payload);
-    }
-    g_first_boot = !recovered;
+    debugSerial.println(F("[app] Power-up — init Notecard"));
+    memset(&g_state, 0, sizeof(g_state));
+    // 0xFFFFFFFF ensures the first Modbus or temp-probe failure always fires
+    // an alert (0/wlen != 0xFFFFFFFF/wlen for any realistic wlen value).
+    g_state.last_err_sample        = 0xFFFFFFFFUL;
+    g_state.last_temp_fault_sample = 0xFFFFFFFFUL;
 
-    if (g_first_boot) {
-        Serial.println(F("[app] Cold boot — init Notecard"));
-        memset(&g_state, 0, sizeof(g_state));
-        // 0xFFFFFFFF ensures the first Modbus or temp-probe failure always fires
-        // an alert (0/wlen != 0xFFFFFFFF/wlen for any realistic wlen value).
-        g_state.last_err_sample        = 0xFFFFFFFFUL;
-        g_state.last_temp_fault_sample = 0xFFFFFFFFUL;
-
-        // hub.set: periodic mode, outbound hourly, inbound every 2 h.
-        J *req = notecard.newRequest("hub.set");
-        JAddStringToObject(req, "product", PRODUCT_UID);
-        JAddStringToObject(req, "mode",    "periodic");
-        JAddNumberToObject(req, "outbound", (int)g_report_interval_min);
-        JAddNumberToObject(req, "inbound",  120);
-        // sendRequestWithRetry addresses the cold-boot I2C readiness race
-        // (retries for up to 5 s before giving up).  Check the bool return:
-        // only record the outbound cadence when the Notecard confirms success.
-        // On failure, last_hub_outbound stays at 0, so the post-fetchEnvVars
-        // hub.set block below sees a mismatch on the very next wake and
-        // re-attempts provisioning — no device is silently left unconfigured.
-        if (!notecard.sendRequestWithRetry(req, 5)) {
-            Serial.println(F("[app] hub.set (cold-boot) failed; will retry on next wake"));
-            // g_state.last_hub_outbound remains 0 — triggers retry path below
-        } else {
-            g_state.last_hub_outbound = g_report_interval_min;
-            Serial.println(F("[app] hub.set applied"));
-        }
-
-        // Disable the Notecard's accelerometer to eliminate the interrupt
-        // blips it adds to power traces during Mojo/scope measurements.
-        req = notecard.newRequest("card.motion.mode");
-        JAddBoolToObject(req, "stop", true);
-        notecard.sendRequest(req);
-
-        // Enforce cellular-only operation by clearing any previously stored
-        // WiFi credentials (card.wifi with ssid:"-" / password:"-" erases
-        // both).  This prevents a reused or previously provisioned MBGLW
-        // Notecard from silently falling back to WiFi — a metal NEMA 4X
-        // enclosure attenuates WiFi signals in any case, but the explicit
-        // clear makes cellular-only behaviour a firmware guarantee rather
-        // than an assumption about the device's prior provisioning state.
-        req = notecard.newRequest("card.wifi");
-        JAddStringToObject(req, "ssid",     "-");
-        JAddStringToObject(req, "password", "-");
-        notecard.sendRequest(req);
-
+    // hub.set: periodic mode, outbound hourly, inbound every 2 h.
+    J *req = notecard.newRequest("hub.set");
+    JAddStringToObject(req, "product", PRODUCT_UID);
+    JAddStringToObject(req, "mode",    "periodic");
+    JAddNumberToObject(req, "outbound", (int)g_report_interval_min);
+    JAddNumberToObject(req, "inbound",  120);
+    // sendRequestWithRetry addresses the cold-boot I2C readiness race
+    // (retries for up to 5 s before giving up).  Check the bool return:
+    // only record the outbound cadence when the Notecard confirms success.
+    // On failure, last_hub_outbound stays at 0, so the post-fetchEnvVars
+    // hub.set block in loop() sees a mismatch on the very first wake and
+    // re-attempts provisioning — no device is silently left unconfigured.
+    if (!notecard.sendRequestWithRetry(req, 5)) {
+        debugSerial.println(F("[app] hub.set (power-up) failed; will retry on next wake"));
+        // g_state.last_hub_outbound remains 0 — triggers retry path in loop()
+    } else {
+        g_state.last_hub_outbound = g_report_interval_min;
+        debugSerial.println(F("[app] hub.set applied"));
     }
 
+    // Disable the Notecard's accelerometer to eliminate the interrupt
+    // blips it adds to power traces during Mojo/scope measurements.
+    req = notecard.newRequest("card.motion.mode");
+    JAddBoolToObject(req, "stop", true);
+    notecard.sendRequest(req);
+
+    // Enforce cellular-only operation by clearing any previously stored
+    // WiFi credentials (card.wifi with ssid:"-" / password:"-" erases
+    // both).  This prevents a reused or previously provisioned MBGLW
+    // Notecard from silently falling back to WiFi — a metal NEMA 4X
+    // enclosure attenuates WiFi signals in any case, but the explicit
+    // clear makes cellular-only behaviour a firmware guarantee rather
+    // than an assumption about the device's prior provisioning state.
+    req = notecard.newRequest("card.wifi");
+    JAddStringToObject(req, "ssid",     "-");
+    JAddStringToObject(req, "password", "-");
+    notecard.sendRequest(req);
+
+    // First attempt at template registration; loop() retries until it sticks.
+    if (defineTemplates()) {
+        g_state.templates_ok = true;
+        debugSerial.println(F("[app] Templates registered"));
+    }
+
+    tempSensor.begin();
+    tempSensor.setResolution(11); // 11-bit: 375 ms conversion, 0.125 °C steps
+
+    // Wake from STOP2 on the ATTN rising edge (ATTN jumpered to D6).
+    cxSleepBegin();
+}
+
+// ===========================================================================
+// loop() — one complete sample cycle per wake; ends with goToSleep()
+// ===========================================================================
+void loop() {
     // Template registration is a must-succeed initialization step: template-backed
     // notes are a core data-efficiency feature (3–5× bandwidth reduction), and
     // untemplated notes would silently undermine that goal for the device's lifetime.
     //
-    // templates_ok is persisted in AppState (Notecard flash via NotePayloadSaveAndSleep)
-    // so a failure on cold boot or any earlier wake is retried here on every subsequent
-    // wake until both note.template calls are confirmed by the Notecard.
+    // templates_ok lives in AppState so a failure at power-up or any earlier wake
+    // is retried here on every subsequent wake until both note.template calls
+    // are confirmed by the Notecard.
     if (!g_state.templates_ok) {
         if (defineTemplates()) {
             g_state.templates_ok = true;
-            Serial.println(F("[app] Templates registered"));
+            debugSerial.println(F("[app] Templates registered"));
         } else {
-            Serial.println(F("[app] WARN: Template registration incomplete — will retry on next wake"));
+            debugSerial.println(F("[app] WARN: Template registration incomplete — will retry on next wake"));
         }
     }
 
@@ -253,7 +289,7 @@ void setup() {
     // Keep the Notecard outbound sync cadence aligned with the summary cadence.
     // If report_interval_min was changed via a Notehub env-var update, re-issue
     // hub.set so notes actually arrive at the new interval instead of remaining
-    // stuck at the interval configured on the previous cold boot.
+    // stuck at the interval configured at power-up.
     if (g_report_interval_min != g_state.last_hub_outbound) {
         J *req = notecard.newRequest("hub.set");
         JAddStringToObject(req, "product", PRODUCT_UID);
@@ -262,21 +298,21 @@ void setup() {
         JAddNumberToObject(req, "inbound",  120);
         J *rsp = notecard.requestAndResponse(req);
         if (!rsp) {
-            Serial.println(F("[app] WARN: hub.set (runtime) — no Notecard response"));
+            debugSerial.println(F("[app] WARN: hub.set (runtime) — no Notecard response"));
         } else {
             const char *hub_err = JGetString(rsp, "err");
             if (hub_err && *hub_err) {
-                Serial.print(F("[app] hub.set err: ")); Serial.println(hub_err);
+                debugSerial.print(F("[app] hub.set err: ")); debugSerial.println(hub_err);
             } else {
                 g_state.last_hub_outbound = g_report_interval_min;
-                Serial.print(F("[app] hub.set outbound updated to "));
-                Serial.println(g_report_interval_min);
+                debugSerial.print(F("[app] hub.set outbound updated to "));
+                debugSerial.println(g_report_interval_min);
             }
             notecard.deleteResponse(rsp);
         }
     }
 
-    // Re-init peripherals after every wake using potentially-updated config.
+    // Re-init the Modbus UART on every wake using potentially-updated config.
     // serialConfigFromEnv() translates g_modbus_parity / g_modbus_stop_bits
     // into the HardwareSerial SERIAL_8xx constant so framing changes pushed
     // via Notehub env vars take effect on the next wake without re-flashing.
@@ -285,25 +321,14 @@ void setup() {
     modbus.preTransmission(preTransmission);
     modbus.postTransmission(postTransmission);
 
-    tempSensor.begin();
-    tempSensor.setResolution(11); // 11-bit: 375 ms conversion, 0.125 °C steps
-}
-
-// ===========================================================================
-// loop() — one complete sample cycle per wake; ends with goToSleep()
-// ===========================================================================
-void loop() {
     // Template registration is a hard precondition for note emission.  If
-    // templates_ok is still false after setup()'s attempt, go straight back
-    // to sleep without touching any sensors or Notefiles.  setup() will retry
-    // defineTemplates() on the next wake; keeping sample_count unchanged means
-    // the window boundaries stay correct when templates eventually succeed.
+    // templates_ok is still false after the attempt above, go straight back
+    // to sleep without touching any sensors or Notefiles; keeping sample_count
+    // unchanged means the window boundaries stay correct when templates
+    // eventually succeed.
     if (!g_state.templates_ok) {
-        Serial.println(F("[app] Templates not confirmed — skipping sample cycle"));
-        NotePayloadDesc payload = {0, 0, 0};
-        NotePayloadAddSegment(&payload, kSeg, &g_state, sizeof(g_state));
-        NotePayloadSaveAndSleep(&payload, g_sample_interval_sec, NULL);
-        delay(g_sample_interval_sec * 1000UL); // bench fallback
+        debugSerial.println(F("[app] Templates not confirmed — skipping sample cycle"));
+        goToSleep(g_sample_interval_sec);
         return;
     }
 
@@ -370,13 +395,7 @@ void loop() {
         }
     }
 
-    // Persist state and sleep. NotePayloadSaveAndSleep serialises g_state into
-    // Notecard flash and then issues card.attn, which causes the Notecarrier CX
-    // to cut the Cygnet's 3.3 V rail for g_sample_interval_sec seconds.
-    // The fallback delay() runs only on bench setups where the CX sleep path
-    // is not in effect (e.g. USB-powered with no +VBAT rail).
-    NotePayloadDesc payload = {0, 0, 0};
-    NotePayloadAddSegment(&payload, kSeg, &g_state, sizeof(g_state));
-    NotePayloadSaveAndSleep(&payload, g_sample_interval_sec, NULL);
-    delay(g_sample_interval_sec * 1000UL); // fallback — should not be reached
+    // Sleep until the Notecard raises ATTN g_sample_interval_sec seconds from
+    // now. Execution resumes at the top of loop(); g_state stays in RAM.
+    goToSleep(g_sample_interval_sec);
 }

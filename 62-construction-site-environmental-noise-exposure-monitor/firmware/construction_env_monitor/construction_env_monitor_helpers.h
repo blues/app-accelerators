@@ -24,8 +24,13 @@
 #endif
 
 // ── Debug serial ──────────────────────────────────────────────────────────────
-// Comment out the line below to disable USB-serial debug output in the field.
-#define DEBUG_SERIAL Serial
+// Comment out the #define below to disable debug output in the field.  The
+// firmware is built with USB CDC disabled (usb=none) so the host can sleep in
+// STOP2, so `Serial` is not a USB port here: dbgSerial is the LPUART on the
+// Notecarrier CX debug jack, which an ST-LINK V3 exposes as a virtual COM
+// port.  dbgSerial is defined in construction_env_monitor.ino.
+extern Uart dbgSerial;
+#define DEBUG_SERIAL dbgSerial
 
 // ── Notefiles ─────────────────────────────────────────────────────────────────
 #define NOTEFILE_SUMMARY  "env_summary.qo"
@@ -40,7 +45,7 @@
 // 130 dB) is calibrated at 5 V; apply 'db_cal_offset' to zero-trim against a
 // reference meter at commissioning time.
 #define ADC_REF_VOLTAGE   3.3f
-#define ADC_RESOLUTION    4096.0f   // 12-bit on Cygnet STM32
+#define ADC_RESOLUTION    4096.0f   // 12-bit on the STM32L433 host
 #define SEN0232_V_LOW     0.6f      // volts corresponding to SEN0232_DB_LOW
 #define SEN0232_V_HIGH    2.6f      // volts corresponding to SEN0232_DB_HIGH
 #define SEN0232_DB_LOW    30.0f     // dB(A) at minimum output voltage
@@ -64,12 +69,9 @@
 #define DEFAULT_DB_A_ALERT            85.0f  // heuristic starting point; not a regulatory determination
 #define DEFAULT_GPS_INTERVAL_SEC    14400    // 4 hours (static site rarely moves)
 
-// ── Persistent state segment ID ───────────────────────────────────────────────
-// 'static' gives each TU its own copy; the string is 5 bytes so the duplication
-// is inconsequential and simpler than an extern/definition pair.
-static const char STATE_SEG_ID[] = "SITE";
-
-// ── Persistent state struct (serialised to Notecard flash between sleeps) ─────
+// ── Application state ─────────────────────────────────────────────────────────
+// Lives in RAM.  STOP2 retains SRAM, so this survives every sleep/wake cycle
+// and is reset only by a power cycle or reset (which also re-runs setup()).
 struct AppState {
     // Sample-window accumulators; reset after each successfully queued summary.
     uint32_t sampleCount;      // total wake cycles in window (denominator for dB avg)
@@ -111,7 +113,7 @@ struct AppState {
     // fix whose timestamp is newer than gpsBootSeenTime, confirming the GNSS
     // has acquired a fresh fix at this site.  Both fields are zeroed by
     // memset() on a fresh power-on, so the confirmation resets on every
-    // power cycle; it is preserved across ATTN sleep/wake cycles so the
+    // power cycle; they stay in RAM across STOP2 sleep/wake cycles so the
     // device does not re-confirm on every sample wake once settled at a site.
     //
     // Every outbound note body includes a 'location_valid' boolean mirroring
@@ -130,7 +132,7 @@ struct AppState {
     // current env-var-derived values, so Notehub operators can tune
     // outbound sync and GPS acquisition cadence without re-flashing.
     //
-    // Both lastReportMin and lastGpsSec are initialised to 0 on first boot
+    // Both lastReportMin and lastGpsSec are initialised to 0 at power-up
     // so applyCardConfig() sends hub.set and card.location.mode
     // unconditionally on the first wake and retries on any subsequent wake
     // where a previous attempt failed — ensuring cadence config is always
@@ -163,6 +165,6 @@ float    readSoundLevelDb(void);
 bool     sendSummary(void);
 bool     sendAlert(const char *type, float value, float threshold);
 void     runOneSampleCycle(void);
-void     saveStateAndSleep(uint32_t sleepSec);
+void     sleepUntilAttn(uint32_t sleepSec);
 float    clampF(float v, float lo, float hi);
 uint32_t clampU(uint32_t v, uint32_t lo, uint32_t hi);

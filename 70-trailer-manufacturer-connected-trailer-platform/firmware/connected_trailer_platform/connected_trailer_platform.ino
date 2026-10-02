@@ -1,6 +1,6 @@
 /***************************************************************************
   connected_trailer_platform.ino — Blues Connected Trailer Platform
-  Notecarrier CX (Cygnet STM32L433) + Notecard for Skylo (NOTE-NBGLWX)
+  Notecarrier CX (STM32L433 host) + Notecard for Skylo (NOTE-NBGLWX)
 
   Three sensor paths are fully implemented: cargo-air temperature via two NTC
   thermistors (A0/A1), rear-door state via a reed switch (D9), and GPS asset
@@ -12,41 +12,58 @@
   drives the Notehub sync cadence.
 
   Power model — dwell-capable host sleep:
-    The Notecard for Skylo controls host power via the ATTN line on the
-    Notecarrier CX. After each sample cycle the host serialises PersistState
-    into the Notecard and calls NotePayloadSaveAndSleep(), which issues
-    card.attn and then cuts host power. The Notecard wakes the host after
-    sampleIntervalSec seconds by pulsing ATTN; setup() re-runs on every
-    wakeup. During the sleep interval the host draws zero current — only the
-    Notecard's radio-idle floor (~8–18 µA per Blues documentation) remains.
+    Between sample cycles the host sits in STM32 STOP2 (~1-2 µA, RAM
+    retained) and is woken by the Notecard's ATTN pin. After each sample
+    cycle loop() calls cxSleepUntilAttn() (cx_sleep.h), which issues
+    card.attn "sleep" for sampleIntervalSec seconds, waits for ATTN to go
+    low, and enters STOP2. When the interval elapses the Notecard raises
+    ATTN; the rising edge on the jumpered host pin wakes the host and
+    execution resumes in place. setup() runs once per power-up. During the
+    sleep interval only the Notecard's radio-idle floor (~8–18 µA per Blues
+    documentation) plus the host's STOP2 current remains.
+
+    Wiring: jumper the Notecarrier CX ATTN pin to D10 (same 16-pin header).
+    D5/D6 carry the TPMS SoftwareSerial and D9 the door reed switch, so
+    CX_ATTN_PIN is defined as D10 below before cx_sleep.h is included. Leave
+    EN unconnected — on the CX it enables the shared 3.3 V VIO rail, and
+    driving it from ATTN browns out the whole board.
+
+    Build: Tools > USB support (if available) > None (usb=none). With the USB
+    CDC stack enabled and no USB host attached the host cannot stay in
+    STOP2. Debug output goes to the LPUART on the CX debug jack (ST-LINK).
+
+    Door edges also wake the host:
+      The reed-switch interrupt on PIN_DOOR is an EXTI line, and EXTI edges
+      exit STOP2. A door transition therefore wakes the host early; loop()
+      runs a sample cycle immediately (capturing the new door state) and
+      then re-arms the ATTN sleep for a full sampleIntervalSec.
 
     UART acquisition during wakes:
-      Both UART peripherals are offline while the host is powered off. On
-      each wakeup Serial1 (J2497) and tpmsSerial (TPMS) are re-initialised
-      in setup(), and both channels are drained for WAKE_UART_DRAIN_MS (250
-      ms) before the sample cycle begins. Additional drains run between every
-      blocking Notecard I2C call within the sample cycle. The built-in 64-byte
-      STM32 hardware ring buffer on Serial1 captures bytes arriving during
+      Both UART peripherals are stopped while the host is in STOP2 (their
+      clocks are gated, so frames arriving between wakes are lost). On each
+      wake both channels are drained for WAKE_UART_DRAIN_MS (250 ms) before
+      the sample cycle begins. Additional drains run between every blocking
+      Notecard I2C call within the sample cycle. The built-in 64-byte STM32
+      hardware ring buffer on Serial1 captures bytes arriving during
       blocking I2C calls; loss is possible only if a Notecard response takes
       longer than ~67 ms (64 bytes × ~1 ms/byte at 9600 baud). SoftwareSerial
       for TPMS requires the CPU to be active; its drain window is limited to
       the host-awake period.
 
-    State persistence across wakes:
-      PersistState (g_ps) is serialised into the Notecard's _storage.qo at
-      sleep time via NotePayloadAddSegment / NotePayloadSaveAndSleep, and
-      restored via NotePayloadRetrieveAfterSleep on wakeup. It carries all
-      inter-sample context: temperature accumulators, alert cooldown epochs,
-      door state, TPMS last-known pressures (tpmsPsiLast[]), summary window
-      start epoch (summaryWindowStartEpoch), the J2497 commissioning gate
-      (j2497Commissioned), the reefer frame-received flag (reeferFrameSeen),
-      and the current hub.set outbound cadence.
+    State across wakes:
+      PersistState (g_ps) lives in RAM; STOP2 retains SRAM, so it survives
+      every sleep/wake cycle without being serialised anywhere. It carries
+      all inter-sample context: temperature accumulators, alert cooldown
+      epochs, door state, TPMS last-known pressures (tpmsPsiLast[]), summary
+      window start epoch (summaryWindowStartEpoch), the J2497 commissioning
+      gate (j2497Commissioned), the reefer frame-received flag
+      (reeferFrameSeen), and the current hub.set outbound cadence.
 
-    Fallback (no ATTN host-power control):
-      If ATTN is not wired for host power control (e.g., during bench
-      commissioning without the ATTN connection), NotePayloadSaveAndSleep()
-      returns without cutting power and loop() falls through to a delay()
-      that mimics the sample cadence. The host draws continuous active
+    Fallback (ATTN not reaching the host):
+      If the ATTN -> D10 jumper is missing, or the Notecard does not accept
+      the card.attn request (e.g. still booting after a cold start),
+      cxSleepUntilAttn() returns false and loop() falls through to a delay()
+      that keeps the sample cadence. The host draws continuous active
       current in this mode (~5–15 mA); it is not suitable for extended
       DC-dwell operation.
 
@@ -70,9 +87,16 @@
 
 #include "trailer_sensors.h"
 
-// Define usbSerial to enable USB debug output and the Notecard debug stream.
-// Comment out in production builds to eliminate the Serial wait penalty.
-#define usbSerial Serial
+// D5/D6 (TPMS) and D9 (door) are taken, so the ATTN jumper lands on D10.
+#define CX_ATTN_PIN D10
+#include "cx_sleep.h"
+
+// Debug output: LPUART1 on the CX debug jack, which an ST-LINK V3 exposes as
+// a virtual COM port. (USB CDC must be disabled for STOP2 to work; see
+// cx_sleep.h.) Comment out the #define usbSerial line in production builds
+// to silence logging and the Notecard debug stream.
+Uart dbgSerial(PIN_VCP_RX, PIN_VCP_TX);
+#define usbSerial dbgSerial
 
 // =========================================================================
 // Global instances — declared extern in trailer_sensors.h
@@ -82,13 +106,12 @@ Notecard       notecard;
 SoftwareSerial tpmsSerial(PIN_TPMS_RX, PIN_TPMS_TX);
 Config         g_cfg;           // reset to compiled defaults at the start of
                                 // each fetchEnvOverrides() call; not persisted
-Sensors        g_sensors;       // freshly initialised (−9999 sentinels) each
-                                // wakeup; restored from g_ps.tpmsPsiLast[] in
-                                // setup() before the sample cycle
-PersistState   g_ps;            // serialised to Notecard at sleep, restored at
-                                // wakeup via NotePayload API
+Sensors        g_sensors;       // current-cycle snapshot; lives in RAM across
+                                // STOP2 sleeps like everything else
+PersistState   g_ps;            // application state; retained in SRAM through
+                                // STOP2, reset only by a power cycle
 // g_reeferFrameReceived removed: reefer frame freshness is now tracked by the
-// persisted g_ps.reeferFrameSeen field so it survives host-off sleep intervals.
+// g_ps.reeferFrameSeen field so it survives the sleep interval.
 
 static const char *kAlertNames[ALERT_COUNT] = {
     "reefer_temp_high", "reefer_temp_low",
@@ -97,7 +120,8 @@ static const char *kAlertNames[ALERT_COUNT] = {
 };
 
 // Session-scoped millis() fallbacks for alert cooldown and door-transit timer.
-// These reset to 0 on every wakeup (millis() is 0 after host power-on).
+// millis() does not advance while the host is in STOP2, so these are reset to
+// 0 at the top of every loop() pass to keep their per-wake-session meaning.
 // They enforce cooldowns only within the current wake session and are used
 // only when nowEpoch == 0 (Notecard has not yet acquired a time lock).
 // The epoch-based values in g_ps (lastAlertEpoch[], doorOpenTransitStartEpoch)
@@ -225,8 +249,7 @@ static bool sendRequestWithRetry(J *(*factory)(), int maxAttempts) {
     return false;
 }
 
-// First-boot Notecard configuration. Called once in the !restored branch
-// of setup(). hub.set is issued with up to 10 retries to survive the cold-boot
+// One-time Notecard configuration. Called once from setup(). hub.set is issued with up to 10 retries to survive the cold-boot
 // I2C-readiness race on Notecarrier CX. note.template and card.location.mode
 // are attempted once; if they fail they will succeed on a subsequent power
 // cycle once the Notecard I2C bus is stable.
@@ -347,8 +370,9 @@ static void updateTrailerState(uint32_t nowEpoch) {
 // Returns true when the cooldown window has elapsed and it is safe to fire
 // this alert type again. Epoch-based cooldown is the primary path once time
 // is synced; millis()-based monotonic fallback applies only before time lock.
-// The millis() fallback resets to 0 on every wakeup (host power-on); it
-// enforces cooldown only within the current wake session. The epoch-based
+// The millis() fallback is reset to 0 at the top of every wake (millis() does
+// not advance in STOP2); it enforces cooldown only within the current wake
+// session. The epoch-based
 // g_ps.lastAlertEpoch[] persists across wakes and is the reliable source.
 static bool alertCooldownOk(uint8_t idx, uint32_t nowEpoch) {
     if (nowEpoch != 0) {
@@ -540,7 +564,7 @@ static void sendSummary(uint32_t nowEpoch) {
 // Perform one complete sense → accumulate → alert → summarize pass.
 //
 // Precondition: drainReeferUart() and drainTpmsUart() have already run during
-// the WAKE_UART_DRAIN_MS window in setup() and have latched the most recent
+// the WAKE_UART_DRAIN_MS window in loop() and have latched the most recent
 // valid frames into g_sensors. Thermistors and door state are read here;
 // the reads are fast (no buffering needed) and the sample-time value is the
 // correct input for statistics accumulation and threshold evaluation.
@@ -572,7 +596,7 @@ static void runSampleCycle(uint32_t nowEpoch) {
 
     // Summary window boundary: epoch-based when time is synced, sample-count
     // fallback otherwise. The epoch boundary persists correctly across wakes
-    // because g_ps.summaryWindowStartEpoch is part of PersistState. The sample-
+    // because g_ps.summaryWindowStartEpoch stays in RAM through STOP2. The sample-
     // count fallback fires when the expected number of samples per window have
     // accumulated without a valid epoch, preventing a stuck window on devices
     // that never acquire a time lock before the first summary is due.
@@ -602,18 +626,15 @@ static void runSampleCycle(uint32_t nowEpoch) {
 // Arduino entry points
 // =========================================================================
 
-// setup() runs on every wakeup (whether fresh power-on or ATTN-gated resume).
-// It restores PersistState from the Notecard's sleep payload when available,
-// runs the full one-time Notecard initialisation on fresh boot only, fetches
-// env-var overrides, drains both UART channels for WAKE_UART_DRAIN_MS, and
-// then runs one complete sample cycle. loop() saves state and sleeps.
+// setup() runs once at power-up: it initialises the peripherals, zeroes
+// PersistState, runs the one-time Notecard configuration, attaches the door
+// interrupt, and arms the ATTN wake. The host resumes in place after each
+// STOP2 sleep, so every per-wake step lives in loop().
 void setup() {
 #ifdef usbSerial
     usbSerial.begin(115200);
-    for (uint32_t t0 = millis(); !usbSerial && (millis() - t0) < 3000; ) {}
 #endif
 
-    // Initialise hardware on every wakeup (peripherals are re-powered each time).
     Serial1.begin(REEFER_BAUD);
     tpmsSerial.begin(TPMS_BAUD);
     pinMode(PIN_DOOR, INPUT_PULLUP);
@@ -624,37 +645,39 @@ void setup() {
     notecard.setDebugOutputStream(usbSerial);
 #endif
 
-    // Attempt to restore PersistState from the Notecard sleep payload.
-    // NotePayloadRetrieveAfterSleep() returns true when a valid payload exists
-    // (normal wake from NotePayloadSaveAndSleep). !restored means either first
-    // power-on, payload corruption, or no prior NotePayloadSaveAndSleep call.
-    NotePayloadDesc payload = {};
-    bool restored = NotePayloadRetrieveAfterSleep(&payload);
-    if (restored) {
-        restored &= NotePayloadGetSegment(&payload, STATE_SEG_ID,
-                                          &g_ps, sizeof(g_ps));
-        NotePayloadFree(&payload);
-    }
-
-    if (!restored) {
-        // Fresh boot: zero-initialise state and configure the Notecard.
-        memset(&g_ps, 0, sizeof(g_ps));
-        g_ps.trailerState  = STATE_PARKED;
-        g_ps.reeferSetLast = -9999.0f;
-        g_ps.reeferAccum.reset();
-        g_ps.airT1Accum.reset();
-        g_ps.airT2Accum.reset();
-        for (int i = 0; i < NUM_TPMS_POS; i++)
-            g_ps.tpmsPsiLast[i] = -9999.0f;
-        // g_ps.j2497Commissioned = false (memset)
-        // g_ps.summaryWindowStartEpoch = 0 (memset; seeded below after epoch)
-        // g_ps.lastAlertEpoch[] = {0} (memset; "never sent" on first wake)
-        notecardInit();
-    }
+    // Zero-initialise state and configure the Notecard.
+    memset(&g_ps, 0, sizeof(g_ps));
+    g_ps.trailerState  = STATE_PARKED;
+    g_ps.reeferSetLast = -9999.0f;
+    g_ps.reeferAccum.reset();
+    g_ps.airT1Accum.reset();
+    g_ps.airT2Accum.reset();
+    for (int i = 0; i < NUM_TPMS_POS; i++)
+        g_ps.tpmsPsiLast[i] = -9999.0f;
+    // g_ps.j2497Commissioned = false (memset)
+    // g_ps.summaryWindowStartEpoch = 0 (memset; seeded in loop() after epoch)
+    // g_ps.lastAlertEpoch[] = {0} (memset; "never sent" on first wake)
+    notecardInit();
 #ifdef usbSerial
-    usbSerial.println(restored ? "[boot] state restored from sleep payload"
-                               : "[boot] fresh start — Notecard configured");
+    usbSerial.println("[boot] fresh start — Notecard configured");
 #endif
+
+    // Attach the door interrupt once. Note that this EXTI line also wakes the
+    // host from STOP2, so a door edge runs a sample cycle early.
+    setupDoorInterrupt();
+
+    // Wake from STOP2 on the ATTN rising edge (ATTN jumpered to D10).
+    cxSleepBegin();
+}
+
+// loop() runs once per wake: fetches env-var overrides, drains both UART
+// channels for WAKE_UART_DRAIN_MS, runs one complete sample cycle, drains a
+// final time, and then sleeps the host in STOP2 until the Notecard raises
+// ATTN (or a door edge wakes it early).
+void loop() {
+    // millis() does not advance in STOP2; keep these per-wake-session.
+    memset(g_lastAlertMs, 0, sizeof(g_lastAlertMs));
+    g_doorOpenTransitStartMs = 0;
 
     // Fetch env overrides on every wake to apply any OTA configuration changes
     // that arrived while the host was sleeping (Notehub pushes env vars on the
@@ -662,25 +685,11 @@ void setup() {
     // awake when they arrive).
     fetchEnvOverrides();
 
-    // Attach the door interrupt on every wakeup — required after hardware
-    // re-initialisation, not just at fresh boot.
-    setupDoorInterrupt();
-
-    // Restore last-known TPMS pressures from PersistState into g_sensors.
-    // g_sensors.tpmsPsi[] is freshly initialised to −9999 on each wakeup (the
-    // global is re-constructed after host power-on). Without this restoration,
-    // sendSummary() would report −9999 for any TPMS position that did not send
-    // a new frame in the current drain window, even if it reported in a prior
-    // wake during the same summary window. Positions that reported a fresh frame
-    // in the drain window below will overwrite these restored values correctly.
-    for (int i = 0; i < NUM_TPMS_POS; i++)
-        g_sensors.tpmsPsi[i] = g_ps.tpmsPsiLast[i];
-
-    // Post-wakeup UART drain window. Both UART peripherals were offline while
-    // the host was powered down; this window captures frames arriving in the
-    // first WAKE_UART_DRAIN_MS milliseconds after Serial1 and tpmsSerial are
-    // re-initialised. Additional drains run between Notecard I2C calls inside
-    // runSampleCycle() to recover bytes arriving during blocking transactions.
+    // Post-wake UART drain window. Both UART peripherals were stopped while
+    // the host was in STOP2; this window captures frames arriving in the first
+    // WAKE_UART_DRAIN_MS milliseconds after wake. Additional drains run between
+    // Notecard I2C calls inside runSampleCycle() to recover bytes arriving
+    // during blocking transactions.
     {
         uint32_t drainUntil = millis() + WAKE_UART_DRAIN_MS;
         while (millis() < drainUntil) {
@@ -698,36 +707,28 @@ void setup() {
         g_ps.summaryWindowStartEpoch = nowEpoch;
 
     runSampleCycle(nowEpoch);
-}
 
-// loop() runs once per wakeup: drains both UART channels a final time,
-// serialises PersistState into the Notecard, and calls NotePayloadSaveAndSleep()
-// to schedule the next wakeup and cut host power. If ATTN is not wired for
-// host power control (bench commissioning without the ATTN jumper), the function
-// returns and the delay() fallback mimics the sample cadence without true sleep.
-void loop() {
     // Final drain before sleeping: captures any bytes that arrived during or
     // after runSampleCycle(). These frames update g_sensors and g_ps (including
-    // tpmsPsiLast[]) so the most current values are serialised in the payload.
+    // tpmsPsiLast[]) so the most current values are in place for the next wake.
     drainReeferUart();
     drainTpmsUart();
 
-    // Serialise PersistState and sleep. NotePayloadSaveAndSleep() issues
-    // card.attn with mode=sleep and sleepSeconds=sampleIntervalSec, saves the
-    // payload to the Notecard's _storage.qo notefile, and then signals the
-    // Notecarrier CX to cut host power via ATTN. The Notecard wakes the host
-    // after sampleIntervalSec seconds; setup() re-runs on the next wakeup.
-    // Only g_ps is serialised — g_cfg is re-derived from env vars each wake.
-    NotePayloadDesc payload = {};
-    NotePayloadAddSegment(&payload, STATE_SEG_ID, &g_ps, sizeof(g_ps));
-    NotePayloadSaveAndSleep(&payload, g_cfg.sampleIntervalSec, NULL);
-
-    // Reached only if host power is not being cut via ATTN. The delay() mimics
-    // the sample cadence but the host remains fully powered throughout, drawing
-    // continuous active current (~5–15 mA). Not suitable for extended DC-dwell
-    // operation; use only during bench commissioning without the ATTN connection.
+    // Sleep until the Notecard raises ATTN sampleIntervalSec seconds from now.
+    // Execution resumes at the top of loop(); g_ps and g_sensors stay in RAM.
+    // g_cfg is re-derived from env vars each wake.
 #ifdef usbSerial
-    usbSerial.println("[sleep] ATTN not cutting host power — using delay fallback");
+    if (!cxSleepUntilAttn(notecard, g_cfg.sampleIntervalSec, NULL, &usbSerial)) {
+#else
+    if (!cxSleepUntilAttn(notecard, g_cfg.sampleIntervalSec)) {
 #endif
-    delay(g_cfg.sampleIntervalSec * 1000UL);
+        // The Notecard didn't take the sleep request, or ATTN never went low
+        // (check the ATTN -> D10 jumper). The delay() keeps the sample cadence
+        // but the host remains fully awake, drawing continuous active current
+        // (~5–15 mA). Not suitable for extended DC-dwell operation.
+#ifdef usbSerial
+        usbSerial.println("[sleep] ATTN sleep failed — waiting out the interval awake");
+#endif
+        delay(g_cfg.sampleIntervalSec * 1000UL);
+    }
 }

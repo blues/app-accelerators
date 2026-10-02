@@ -2,7 +2,7 @@
   rail_car_tracker_helpers.h — Declarations for Rail Car Condition &
   Interchange Tracker
 
-  Contains all compile-time constants, the PersistState struct definition,
+  Contains all compile-time constants, the AppState struct definition,
   extern declarations for globals shared between the .ino and the .cpp, and
   prototypes for every helper function implemented in
   rail_car_tracker_helpers.cpp.
@@ -42,11 +42,16 @@
 #endif
 
 // ── Debug serial ─────────────────────────────────────────────────────────────
-#define debugSerial Serial
+// The LPUART on the Notecarrier CX debug jack (ST-LINK virtual COM port),
+// defined in rail_car_tracker.ino. USB CDC is disabled so the host can sleep
+// in STOP2, so Serial is not available.
+extern Uart debugSerial;
 
 // ── Pin assignments (Notecarrier CX dual 16-pin header) ──────────────────────
 #define PIN_COUPLER    D5    // Reed switch (NO contacts): LOW = coupled, HIGH = open
 #define PIN_TANK_TEMP  D6    // DS18B20 one-wire data line (TANK_CAR builds only)
+// D9 is the ATTN wake input (jumpered from the Notecard's ATTN pin); see
+// CX_ATTN_PIN in rail_car_tracker.ino and cx_sleep.h.
 
 // ── I2C device addresses ──────────────────────────────────────────────────────
 #define ADXL345_ADDR   0x53  // ADXL345: SDO pin low (default on most breakouts)
@@ -77,14 +82,8 @@
 #define FILE_ALERT     "railcar_alert.qo"     // edge-triggered alert notes
 #define FILE_LOCATION  "railcar_location.qo"  // dedicated position stream
 
-// ── NotePayload segment ID ────────────────────────────────────────────────────
-// 4-character tag (NP_SEGTYPE_LEN) identifying the PersistState segment within
-// the Notecard-flash payload. The note-c API requires `const char[4]`, not an
-// integer.
-#define STATE_SEG_ID  "RAIL"
-
 // ── Configuration schema version ─────────────────────────────────────────────
-// Stored in PersistState.configVersion. CONFIG_VERSION encodes both the schema
+// Stored in AppState.configVersion. CONFIG_VERSION encodes both the schema
 // revision and the build profile so that:
 //
 //   • A schema change (new template fields or GPS/motion parameters) requires
@@ -99,8 +98,8 @@
 //     causing note.add to reject payloads whose schema does not match the
 //     registered template.
 //
-// hub.set (PRODUCT_UID, sync policy) is applied unconditionally every boot and
-// does NOT require a CONFIG_VERSION bump to take effect.
+// hub.set (PRODUCT_UID, sync policy) is applied at every power-up and does NOT
+// require a CONFIG_VERSION bump to take effect.
 //
 //   Standard (non-TANK_CAR) builds : CONFIG_VERSION = 4
 //   TANK_CAR builds                : CONFIG_VERSION = 104
@@ -112,8 +111,9 @@
 #define CONFIG_VERSION  CONFIG_VERSION_BASE
 #endif
 
-// ── State struct persisted across sleep cycles ────────────────────────────────
-// Stored in Notecard flash by NotePayloadSaveAndSleep; restored on each wake.
+// ── Application state ─────────────────────────────────────────────────────────
+// Lives in RAM. STOP2 retains SRAM, so this survives every sleep/wake cycle; it
+// is reset only by a power cycle or reset, which also re-runs setup().
 //
 // Alert-delivery latches (lastCouplerState, lastEncTempLow, lastEncTempHigh,
 // lastPressHigh) are only advanced when the corresponding sendAlert() call
@@ -121,20 +121,17 @@
 // "not yet sent" state so the alert is retried next wake. The shock cooldown
 // (shockCooldownRemMin) is reset only on a successful alert send.
 //
-// configVersion is compared to CONFIG_VERSION on each boot; a mismatch causes
-// note.template and GPS/motion config to be reapplied. hub.set runs
-// unconditionally every boot (see CONFIG_VERSION comment above).
+// configVersion is compared to CONFIG_VERSION on each wake; a mismatch causes
+// note.template and GPS/motion config to be reapplied. hub.set runs at every
+// power-up (see CONFIG_VERSION comment above).
 //
-// New fields must be appended at the end of the struct. NotePayloadGetSegment
-// fills the struct with the stored bytes and leaves any bytes beyond the stored
-// size untouched. setup() zeroes the struct before the restore call so extra
-// fields added in a newer build safely default to 0/false.
+// setup() zeroes the struct at power-up so every field starts at 0/false.
 typedef struct {
     float    peakShockG;          // highest G reading since the last summary
     uint16_t shockWindowCount;    // count of sample windows where peak G >= threshold
                                   //   (NOT a count of individual impacts — see §6.3)
     bool     lastCouplerState;    // coupler state on the last wake that successfully
-                                  //   sent a coupler alert (first-boot: initial state)
+                                  //   sent a coupler alert (first wake: initial state)
     float    lastPressurePsi;     // pressure reading on the previous wake (drop detection)
     bool     lastPressureValid;   // true only when lastPressurePsi holds a valid reading
     uint32_t elapsedMin;          // minutes elapsed since last summary; stable across
@@ -162,7 +159,7 @@ typedef struct {
     bool     lastTankTempHigh;    // true: cargo temp above tank_temp_max_c AND alert sent;
                                   //   cleared when temp drops below threshold to re-arm.
                                   //   Unused (always false) in non-TANK_CAR builds.
-} PersistState;
+} AppState;
 
 // ── Shared globals (defined in rail_car_tracker.ino) ─────────────────────────
 extern Notecard        notecard;
@@ -171,7 +168,7 @@ extern Adafruit_MPRLS    mprls;
 extern OneWire           oneWireBus;
 extern DallasTemperature tankTempSensor;
 #endif
-extern PersistState    state;
+extern AppState        state;
 
 // ── Function prototypes ───────────────────────────────────────────────────────
 bool  notecardReady();

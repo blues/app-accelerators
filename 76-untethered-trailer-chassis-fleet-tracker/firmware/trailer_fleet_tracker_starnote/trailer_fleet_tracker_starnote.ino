@@ -3,11 +3,11 @@
                                        (Ocean-Capable — Notecard Cellular +
                                         Starnote for Iridium LEO)
 
-  Runs on Notecarrier XI (Swan STM32U5 host in Feather slot) with a cellular
-  Notecard (e.g., NOTE-WBEX) in the M.2 slot and a Starnote for Iridium
-  module in the Notecarrier XI Starnote connector.  The Notecard provides
-  LTE-M/NB-IoT cellular connectivity and the built-in accelerometer; the
-  Starnote for Iridium adds globally continuous satellite fallback and
+  Runs on a Blues Swan (STM32U5) wired by hand to a Notecarrier XI, with a
+  cellular Notecard (e.g., NOTE-WBEX) in the XI's M.2 slot and a Starnote for
+  Iridium module in the Notecarrier XI Starnote connector.  The Notecard
+  provides LTE-M/NB-IoT cellular connectivity and the built-in accelerometer;
+  the Starnote for Iridium adds globally continuous satellite fallback and
   combined GPS/GNSS via its single Iridium-certified antenna.
 
   COVERAGE SCOPE — GLOBAL (pole-to-pole).  Iridium LEO provides uninterrupted
@@ -18,8 +18,8 @@
   defined NTN footprint, a NOTE-NBGLWX on a Notecarrier CX is an alternative
   hardware path — see README §9 for notes on that option.
 
-  On every wake-from-sleep the sketch:
-    1. Restores the persisted AppState from Notecard flash.
+  On every wake the sketch:
+    1. Retries Notecard configuration if a prior attempt did not complete.
     2. Queries the Notecard accelerometer for moving / stopped status.
     3. Detects PARKED→MOVING (departed) and MOVING→PARKED (arrived) transitions.
     4. On a transition, enqueues an event note and drains the pending FIFO;
@@ -28,16 +28,25 @@
        (suppressed when no valid GNSS fix is available).
     6. While PARKED, queues an alive heartbeat every `heartbeat_hours`;
        gps_valid indicates whether the embedded location is a confirmed fix.
-    7. Saves state back to Notecard flash and puts the host to sleep.
+    7. Sleeps the Swan in STOP2 until the Notecard raises ATTN.
 
   Transport: cellular-first (LTE-M / NB-IoT) with automatic Iridium LEO
   satellite fallback via `card.transport "method":"cell-ntn"`.  The Notecard
   auto-detects the Starnote for Iridium and uses it for NTN fallback.
 
-  Power: solar-trickle-charged LiPo; Swan host enters deep sleep between
-  checks via NotePayloadSaveAndSleep / card.attn ATTN interrupt.  Debug
-  serial logging is opt-in (see trailer_fleet_tracker_starnote_helpers.h) so
-  that the USB-ready wait is never compiled into deployment builds.
+  Power: solar-trickle-charged LiPo; between checks the Swan sleeps in STM32
+  STOP2 (a few µA, RAM retained) and is woken by the Notecard's ATTN pin
+  (card.attn "sleep"; see host_sleep.h).  Execution resumes in place, so
+  AppState simply lives in RAM — nothing is persisted to the Notecard.
+  Debug serial logging is opt-in (see trailer_fleet_tracker_starnote_helpers.h)
+  and goes to the UART on the Swan's STLINK debug connector.
+
+  Wiring for sleep: wire the Notecarrier XI's ATTN header pin to Swan D5
+  (HOST_ATTN_PIN).  Do NOT use the XI's EN pin — it is the Notecard's own
+  enable and pulling it low turns the Notecard off.
+
+  Build: Tools > USB support (if available) > None (usb=none).  With the USB
+  CDC stack enabled and no USB host attached the Swan cannot stay in STOP2.
 
   Configuration and helper functions are in
   trailer_fleet_tracker_starnote_helpers.h/.cpp.
@@ -45,6 +54,7 @@
 ***************************************************************************/
 
 #include "trailer_fleet_tracker_starnote_helpers.h"
+#include "host_sleep.h"
 
 // Retry interval (seconds) used when Notecard configuration or template
 // registration fails on a wake.  Normal event emission is suppressed until
@@ -52,8 +62,24 @@
 // retries configuration promptly rather than waiting a full parked-check cycle.
 #define CONFIG_RETRY_SECS   60U
 
+// Debug output: the UART on the Swan's STLINK debug connector, which an
+// ST-LINK exposes as a virtual COM port.  (USB CDC must be disabled for STOP2
+// to work; see host_sleep.h.)  Referenced through the usbSerial macro.
+#ifdef usbSerial
+Uart debugSerial(PIN_VCP_RX, PIN_VCP_TX);
+#endif
+
+// Application state.  Lives in RAM; STOP2 retains it across every sleep/wake
+// cycle, so it is initialized once in setup() and never serialized.
+static AppState state;
+
+// True for the first pass through loop() after power-up; anchors parked_since
+// (what the old first-boot path did).
+static bool first_wake = true;
+
 // ===========================================================================
-// setup() — all per-wake work happens here; loop() is never reached normally
+// setup() — runs once at power-up: serial, Notecard bring-up, state defaults,
+// and arming the ATTN wake.  Everything per-wake lives in loop().
 // ===========================================================================
 void setup()
 {
@@ -61,16 +87,14 @@ void setup()
     usbSerial.begin(115200);
 #endif
 
-    // Fail fast when PRODUCT_UID was not defined before flashing.
+    // Make a missing PRODUCT_UID obvious at boot.  notecardConfigure() also
+    // refuses to run with an empty UID, so the tracker will keep retrying
+    // configuration every CONFIG_RETRY_SECS (sleeping in between) and never
+    // emit events until it is set and the firmware reflashed.
     if (!PRODUCT_UID[0]) {
 #ifdef usbSerial
-        while (true) {
-            usbSerial.println("ERROR: PRODUCT_UID is not set. "
-                              "Define it in trailer_fleet_tracker_starnote_helpers.h.");
-            delay(5000);
-        }
-#else
-        while (true) { delay(60000); }   // halt; conserve battery
+        usbSerial.println("ERROR: PRODUCT_UID is not set. "
+                          "Define it in trailer_fleet_tracker_starnote_helpers.h.");
 #endif
     }
 
@@ -87,72 +111,44 @@ void setup()
         if (warmup) notecard.sendRequestWithRetry(warmup, 5);
     }
 
+    // ── Initialize application state ───────────────────────────────────────
+    memset(&state, 0, sizeof(state));
+    state.current_state     = STATE_PARKED;
+    state.parked_check_secs = DEFAULT_PARKED_CHECK_SECS;
+    state.moving_ping_secs  = DEFAULT_MOVING_PING_SECS;
+    state.heartbeat_secs    = DEFAULT_HEARTBEAT_SECS;
+
+    // Arm the ATTN wake: the Notecard raises ATTN (Swan D5) to end each sleep.
+    cxSleepBegin();
+}
+
+// ===========================================================================
+// loop() — one wake cycle, then STOP2 until the Notecard raises ATTN
+// ===========================================================================
+void loop()
+{
     // ── Fetch current time ──────────────────────────────────────────────────
     uint32_t now = 0;
     bool time_ok = getEpoch(now);
 
-    // ── Restore persisted state, or initialize on first boot ───────────────
-    NotePayloadDesc payload = {0, 0, 0};
-    bool restored = NotePayloadRetrieveAfterSleep(&payload);
-
-    AppState state;
-    memset(&state, 0, sizeof(state));
-
-    if (restored) {
-        if (!NotePayloadGetSegment(&payload, kStateSegId, &state, sizeof(state))) {
-            restored = false;
-            memset(&state, 0, sizeof(state));
-        }
-        NotePayloadFree(&payload);
+    if (first_wake) {
+        first_wake = false;
+        if (time_ok && now > 0) state.parked_since = now;
     }
 
+    // ── Configure the Notecard until it sticks ─────────────────────────────
+    // config_version is set only when notecardConfigure() and
+    // defineTemplates() both succeed; a transient failure leaves it unset so
+    // the next (short) wake retries.
+    if (state.config_version != FIRMWARE_CONFIG_VERSION) {
+        if (notecardConfigure() && defineTemplates()) {
+            state.config_version = FIRMWARE_CONFIG_VERSION;
+            if (fetchEnvOverrides(state)) {
+                state.last_env_poll_at = (time_ok && now > 0) ? now : 1;
+            }
+        }
+    }
     bool config_complete = (state.config_version == FIRMWARE_CONFIG_VERSION);
-
-    if (!restored) {
-        state.current_state     = STATE_PARKED;
-        state.parked_check_secs = DEFAULT_PARKED_CHECK_SECS;
-        state.moving_ping_secs  = DEFAULT_MOVING_PING_SECS;
-        state.heartbeat_secs    = DEFAULT_HEARTBEAT_SECS;
-        if (time_ok && now > 0) state.parked_since = now;
-
-        config_complete = false;
-        if (notecardConfigure() && defineTemplates()) {
-            state.config_version = FIRMWARE_CONFIG_VERSION;
-            config_complete = true;
-        }
-        if (config_complete) {
-            if (fetchEnvOverrides(state)) {
-                state.last_env_poll_at = (time_ok && now > 0) ? now : 1;
-            }
-        }
-
-    } else if (state.config_version != FIRMWARE_CONFIG_VERSION) {
-        // A firmware update changed Notecard configuration, note templates,
-        // or the AppState struct layout.  Reset the entire state to defaults
-        // so that stale bytes from the prior layout are never misinterpreted.
-        // current_state is preserved when it holds a valid sentinel.
-        uint8_t saved_state =
-            (state.current_state == STATE_PARKED ||
-             state.current_state == STATE_MOVING)
-            ? state.current_state : STATE_PARKED;
-        memset(&state, 0, sizeof(state));
-        state.current_state     = saved_state;
-        state.parked_check_secs = DEFAULT_PARKED_CHECK_SECS;
-        state.moving_ping_secs  = DEFAULT_MOVING_PING_SECS;
-        state.heartbeat_secs    = DEFAULT_HEARTBEAT_SECS;
-        if (time_ok && now > 0) state.parked_since = now;
-
-        config_complete = false;
-        if (notecardConfigure() && defineTemplates()) {
-            state.config_version = FIRMWARE_CONFIG_VERSION;
-            config_complete = true;
-        }
-        if (config_complete) {
-            if (fetchEnvOverrides(state)) {
-                state.last_env_poll_at = (time_ok && now > 0) ? now : 1;
-            }
-        }
-    }
 
     // ── Gate all tracking on successful Notecard configuration ──────────────
     uint32_t sleep_secs;
@@ -354,29 +350,22 @@ void setup()
     usbSerial.println("s");
 #endif
 
-    // ── Persist state and put host to sleep ────────────────────────────────
-    // NotePayloadSaveAndSleep serializes AppState to Notecard flash, then
-    // issues card.attn to wake Swan from deep sleep after sleep_secs seconds.
-    // The next hardware wake re-enters setup() from cold; NotePayloadRetrieve-
-    // AfterSleep at the top of setup() rehydrates state.
-    NotePayloadDesc out = {0, 0, 0};
-    NotePayloadAddSegment(&out, kStateSegId, &state, sizeof(state));
-    NotePayloadSaveAndSleep(&out, sleep_secs, NULL);
-
-    // If sleep ever returns, the call freed the payload descriptor internally
-    // — calling it again with the same descriptor would be a no-op (state lost)
-    // or worse.  Reset the host so the next setup() rebuilds the descriptor
-    // and retries sleep cleanly with current state.
+    // ── Sleep in STOP2 until the Notecard raises ATTN ──────────────────────
+    // cxSleepUntilAttn() (host_sleep.h) asks the Notecard to hold ATTN low for
+    // sleep_secs seconds, waits for it to go low, and puts the Swan in STOP2.
+    // The ATTN rising edge on D5 wakes it and execution resumes right here,
+    // with `state` intact in RAM.
 #ifdef usbSerial
-    usbSerial.println("[sleep] NotePayloadSaveAndSleep returned unexpectedly; forcing host reset");
-    delay(100);
+    Stream *log = &usbSerial;
+#else
+    Stream *log = NULL;
 #endif
-    NVIC_SystemReset();
-}
-
-void loop()
-{
-    // All application logic lives in setup().  Force a reset if execution
-    // ever reaches here so the tracker resumes normal operation.
-    NVIC_SystemReset();
+    if (!cxSleepUntilAttn(notecard, sleep_secs, NULL, log)) {
+        // Notecard not ready, or ATTN never went low (check the XI ATTN ->
+        // Swan D5 wire).  Keep the cadence and try again next cycle.
+#ifdef usbSerial
+        usbSerial.println("[sleep] ATTN sleep failed — waiting out the interval awake");
+#endif
+        delay(sleep_secs * 1000UL);
+    }
 }

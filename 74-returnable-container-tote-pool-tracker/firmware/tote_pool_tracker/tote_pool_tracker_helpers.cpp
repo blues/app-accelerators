@@ -6,6 +6,7 @@
 // in tote_pool_tracker.ino and declared extern in the header.
 
 #include "tote_pool_tracker_helpers.h"
+#include "cx_sleep.h"
 
 // ===========================================================================
 // Internal send helpers — not part of the public API
@@ -49,9 +50,9 @@ static bool doSendMotionNote() {
         }
     }
 #ifdef DEBUG
-    Serial.print(F("[WARN] note.add failed after 3 attempts ("));
-    Serial.print(FILE_EVENTS);
-    Serial.println(F(") — will retry on short wake"));
+    debugSerial.print(F("[WARN] note.add failed after 3 attempts ("));
+    debugSerial.print(FILE_EVENTS);
+    debugSerial.println(F(") — will retry on short wake"));
 #endif
     return false;
 }
@@ -90,9 +91,9 @@ static bool doSendHeartbeatNote() {
         }
     }
 #ifdef DEBUG
-    Serial.print(F("[WARN] note.add failed after 3 attempts ("));
-    Serial.print(FILE_HEARTBEAT);
-    Serial.println(F(") — will retry on short wake"));
+    debugSerial.print(F("[WARN] note.add failed after 3 attempts ("));
+    debugSerial.print(FILE_HEARTBEAT);
+    debugSerial.println(F(") — will retry on short wake"));
 #endif
     return false;
 }
@@ -103,15 +104,14 @@ static bool doSendHeartbeatNote() {
 // the .ino so this translation unit never needs to resolve the PRODUCT_UID
 // macro directly. Each setting updates the corresponding g_state.*_confirmed /
 // g_state.last_applied_* flag only after a verified success, so a transient
-// cold-boot I²C race leaves flags false and the reapply block in setup()
+// cold-boot I²C race leaves flags false and the reapply block in loop()
 // retries them on every subsequent wake until confirmed.
 // ===========================================================================
 void notecardConfigure(const char *product_uid) {
     // Seed the desired-env cache with compile-time defaults. fetchEnvOverrides()
-    // will overwrite these on the first successful env.get; if env.get ever
-    // fails on a later wake, the persisted desired_* values (not the
-    // compile-time literals) are restored to the g_* globals so fleet tuning
-    // is preserved across the outage.
+    // overwrites these on each successful env.get; on failure the g_* globals
+    // and desired_* values are left untouched, so fleet tuning is preserved
+    // across the outage.
     g_state.desired_heartbeat_hours   = DEFAULT_HEARTBEAT_HOURS;
     g_state.desired_low_battery_mv    = (float)DEFAULT_LOW_BATTERY_MV;
     g_state.desired_motion_threshold  = DEFAULT_MOTION_THRESHOLD;
@@ -133,7 +133,7 @@ void notecardConfigure(const char *product_uid) {
     // card.voltage — set LiPo thresholds so the Notecard's voltage state
     // machine (usb/high/normal/low/dead) maps correctly to a 3.7 V LiPo
     // discharge curve. voltage_mode_confirmed is set only on a verified
-    // non-error response; the retry block in setup() re-applies on each
+    // non-error response; the retry block in loop() re-applies on each
     // subsequent wake until confirmed.
     req = notecard.newRequest("card.voltage");
     JAddStringToObject(req, "mode", "lipo");
@@ -149,7 +149,7 @@ void notecardConfigure(const char *product_uid) {
     // environments (warehouses, distribution centers) from km-scale to tens
     // of meters; falls back to cell-only where no APs are visible.
     // triangulate_confirmed is set only on verified success; the retry block
-    // in setup() re-applies on each wake until confirmed.
+    // in loop() re-applies on each wake until confirmed.
     req = notecard.newRequest("card.triangulate");
     JAddStringToObject(req, "mode", "wifi,cell");
     JAddBoolToObject(req, "on",  true);
@@ -216,10 +216,9 @@ void defineTemplates() {
 // Called every wake.
 //
 // On failure (NULL response or Notecard error) the function returns silently;
-// g_* and g_state.desired_* are not modified, so the values already restored
-// from the previous wake's persisted state remain in effect. A connectivity
-// outage or Notecard-busy transient therefore cannot revert fleet tuning back
-// to compile-time defaults.
+// g_* and g_state.desired_* are not modified, so the values from the previous
+// wake remain in effect. A connectivity outage or Notecard-busy transient
+// therefore cannot revert fleet tuning back to compile-time defaults.
 //
 // On each successful env.get all four tunable values are seeded from
 // compile-time defaults first, then keys actually present in the response
@@ -229,10 +228,10 @@ void defineTemplates() {
 // the old override indefinitely.
 //
 // All resolved values are committed to both the corresponding g_* global AND
-// g_state.desired_*, which is saved across sleep via NotePayloadSaveAndSleep.
+// g_state.desired_*.
 //
 // Whether hub.set or card.motion.mode need to be reissued is determined in
-// setup() by comparing the freshly committed desired values against
+// loop() by comparing the freshly committed desired values against
 // g_state.last_applied_*. Seeding from defaults on every successful env.get
 // ensures that an env-var removal produces a desired value that differs from
 // the persisted last_applied, triggering a Notecard reapply on the same wake.
@@ -375,7 +374,7 @@ bool readMotionMoving() {
     // All attempts failed — increment diagnostic counter and return the
     // previous state so no spurious motion event is generated.
 #ifdef DEBUG
-    Serial.println(F("[WARN] card.motion failed after 3 attempts — keeping previous state"));
+    debugSerial.println(F("[WARN] card.motion failed after 3 attempts — keeping previous state"));
 #endif
     if (g_state.motion_read_err_count < 0xFF) {
         g_state.motion_read_err_count++;
@@ -466,18 +465,20 @@ bool resendPendingNote() {
 }
 
 // ===========================================================================
-// enterSleep
-// Serialize device state into the Notecard and cut host power via ATTN.
+// Sleep the host in STOP2 until the Notecard raises ATTN.
 //
-// NotePayloadSaveAndSleep issues card.attn with mode "sleep,arm,motionchange":
-//   "sleep"        → ATTN pin goes low, Cygnet power is cut by the
-//                    Notecarrier CX; payload is held in Notecard memory.
+// cxSleepUntilAttn() (cx_sleep.h) issues card.attn with mode
+// "sleep,arm,motionchange":
+//   "sleep"        → ATTN pin goes low for sleep_sec seconds.
 //   "arm"          → required to enable early-wake sources like motionchange
 //                    while ATTN is held low (per the Blues asset-tracking
 //                    guide). Without arm, motionchange is listed in the mode
 //                    string but is not actually armed and will not fire ATTN.
 //   "motionchange" → ATTN fires early if the accelerometer-based motion
 //                    status transitions (moving↔stopped) before the timer.
+// It then puts the STM32 host into STOP2; the ATTN rising edge on D5 wakes it
+// and execution resumes in loop(). RAM is retained, so g_state needs no
+// serialization.
 //
 // sleep_sec is derived from the absolute next_heartbeat_epoch so that motion
 // wakes re-arm only the *remaining* time to the deadline, not a full new
@@ -489,9 +490,6 @@ bool resendPendingNote() {
 // (15 minutes) so a pending note is retried promptly.
 // ===========================================================================
 void enterSleep(uint32_t now_epoch) {
-    NotePayloadDesc payload = {0, 0, 0};
-    NotePayloadAddSegment(&payload, STATE_SEG_ID, &g_state, sizeof(g_state));
-
     // Derive sleep duration from the remaining time to the absolute deadline.
     uint32_t sleep_sec = g_heartbeat_hours * 3600UL;
     if (now_epoch > 0 && g_state.next_heartbeat_epoch > now_epoch) {
@@ -504,14 +502,19 @@ void enterSleep(uint32_t now_epoch) {
         sleep_sec = RETRY_WAKE_SEC;
     }
 
-    // "arm,motionchange" is passed as the additional-modes argument; note-c
-    // prepends "sleep," producing the final mode "sleep,arm,motionchange".
-    // The "arm" keyword is required for motionchange to actually fire ATTN
-    // during the sleep window — see the Blues asset-tracking guide.
-    NotePayloadSaveAndSleep(&payload, sleep_sec, "arm,motionchange");
-
-    // Execution should not reach here under normal operation: the Notecard
-    // holds the ATTN pin low, cutting Cygnet power. This delay provides a
-    // safe fallback for bench testing where ATTN power-gating is not wired.
-    delay(30000);
+#ifdef DEBUG
+    Stream *log = &debugSerial;
+#else
+    Stream *log = NULL;
+#endif
+    if (!cxSleepUntilAttn(notecard, sleep_sec, "arm,motionchange", log)) {
+        // The Notecard didn't take the sleep request, or ATTN never went low
+        // (check the ATTN -> D5 jumper). Stay awake for at most one retry
+        // interval so motion is still polled, then run the cycle again.
+#ifdef DEBUG
+        debugSerial.println(F("[WARN] ATTN sleep failed — waiting awake, then retrying"));
+#endif
+        uint32_t wait_sec = sleep_sec < RETRY_WAKE_SEC ? sleep_sec : RETRY_WAKE_SEC;
+        delay(wait_sec * 1000UL);
+    }
 }

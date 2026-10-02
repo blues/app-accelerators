@@ -20,8 +20,13 @@
 #pragma message "PRODUCT_UID is not defined — set to your Notehub ProductUID"
 #endif
 
+// Debug output: the LPUART on the Notecarrier CX debug jack (ST-LINK virtual
+// COM port).  Defined in equipment_hours_tracker.ino; USB CDC is disabled so
+// the host can sleep in STOP2, so Serial is not available.
+extern Uart debugSerial;
+
 // ── Timing ────────────────────────────────────────────────────────────────────
-#define SAMPLE_INTERVAL_SEC    30    // host wakes every 30 s via card.attn
+#define SAMPLE_INTERVAL_SEC    30    // host wakes every 30 s when the Notecard raises ATTN
 #define SUMMARY_INTERVAL_MIN   1440  // default: once daily (24 h)
 
 // ── Vibration classifier defaults (env-var tunable) ───────────────────────────
@@ -75,8 +80,10 @@ struct PendingEvent {
     float    run_h_total;      // run_h_total snapshot captured at transition time
 };
 
-// ── Persisted state (Notecard flash, survives power-gate sleep) ───────────────
-struct PersistState {
+// ── Application state ─────────────────────────────────────────────────────────
+// Lives in RAM.  STOP2 retains SRAM, so this survives every sleep/wake cycle;
+// it is reset only by a power cycle or reset, which also re-runs setup().
+struct AppState {
     bool       configured;
     EquipState prev_state;
     float      run_h_today;
@@ -96,7 +103,7 @@ struct PersistState {
     // Last-good env reads — seeded into the runtime globals on every wake so a
     // transient env.get miss leaves previously-applied tuning and fence parameters
     // intact rather than reverting to compile-time defaults.  Updated only when
-    // env.get returns a valid, in-range value; zero-initialised on cold boot.
+    // env.get returns a valid, in-range value; zero-initialised at power-up.
     float      applied_vib_run_mg;           // 0 = never set, use compile-time default
     float      applied_vib_cv_max;           // 0 = never set, use compile-time default
     uint32_t   applied_summary_interval_min; // 0 = never set, use compile-time default
@@ -118,9 +125,8 @@ struct PersistState {
 extern Notecard          notecard;
 extern Adafruit_LSM6DSOX sox;
 
-// ── Persisted state and payload segment ID ────────────────────────────────────
-extern PersistState g_s;
-extern const char   SEG_ID[];
+// ── Application state ─────────────────────────────────────────────────────────
+extern AppState g_s;
 
 // ── Runtime env overrides — re-seeded from applied_* fields on every wake ─────
 extern float    g_vib_run_mg;
@@ -146,4 +152,3 @@ bool       sendNextPendingEvent(void);
 bool       sendSummary(void);
 uint32_t   getEpoch(void);
 float      getBatteryVoltage(void);
-void       goToSleep(void);

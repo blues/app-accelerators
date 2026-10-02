@@ -11,6 +11,10 @@
 #include <Adafruit_INA228.h>
 #include <stdint.h>
 
+// Debug output: LPUART on the Notecarrier CX debug jack (ST-LINK V3 virtual COM
+// port).  USB CDC is disabled so the host can sleep in STOP2; see cx_sleep.h.
+extern Uart dbgSerial;   // defined in lift_battery_monitor.ino
+
 // ─── Build-configuration toggles ─────────────────────────────────────────────
 // ENABLE_CAN_BMS, ENABLE_ACS758, and BENCH_ONLY are defined in
 // lift_battery_monitor_config.h — the single authoritative location.
@@ -40,8 +44,11 @@
 #include <mcp2515.h>
 #endif
 
-// ─── Persistent state (serialized to Notecard flash across sleep cycles) ─────
-struct PersistState {
+// ─── Application state ───────────────────────────────────────────────────────
+// Lives in RAM.  The host sleeps in STM32 STOP2 between samples, which retains
+// SRAM, so this struct survives every sleep/wake cycle without being serialized
+// anywhere.  It is seeded in setup() and reset only by a power cycle or reset.
+struct AppState {
     float    soc_pct;               // current state of charge (0–100 %)
     float    soh_pct;               // rolling state of health (0–100 %)
     float    throughput_ah;          // |Ah| throughput (bidirectional) accumulated in current cycle (for reporting)
@@ -53,8 +60,8 @@ struct PersistState {
     uint32_t alert_epoch_temp_lo;   // unix epoch of last temp_low alert
     uint32_t alert_epoch_imb;       // unix epoch of last cell_imbalance alert
     uint32_t alert_epoch_soh;       // unix epoch of last soh_low alert
-    uint32_t can_err_epoch;         // unix epoch of last can_error note (persisted so
-                                    // the once-per-hour rate limit survives sleep resets)
+    uint32_t can_err_epoch;         // unix epoch of last can_error note (kept so the
+                                    // once-per-hour rate limit survives sleep cycles)
     float    summ_v_sum;            // running sum of pack voltages (V)
     float    summ_i_sum;            // running sum of pack currents (A)
     float    summ_t_sum;            // running sum of valid temperatures (°C)
@@ -63,7 +70,7 @@ struct PersistState {
     uint16_t wakes_since_summ;      // wakes since last summary (epoch-less fallback)
     uint32_t last_summ_epoch;       // epoch when last summary was sent
     uint32_t last_applied_report_m; // report_interval_m value last written to hub.set
-                                    // (0 on cold boot → forces hub.set on first cycle)
+                                    // (0 at power-up → forces hub.set on first wake)
     uint8_t  summ_fail_count;       // consecutive note.add failures for the current
                                     // summary window; reset to 0 on success; window is
                                     // discarded after MAX_SUMM_RETRIES to prevent
@@ -112,21 +119,21 @@ enum SummaryResult {
 // ─── Function prototypes ──────────────────────────────────────────────────────
 bool          notecardConfigure(const char *productUID);
 bool          defineTemplates(void);
-void          fetchEnvOverrides(PersistState &s);
+void          fetchEnvOverrides(AppState &s);
 
 bool  readPackVI(float &packV, float &curA);
 float readPackTempC(void);
 
 float voltageToSoC(float voltage, bool isLithium);
-void  updateThroughput(PersistState &s, float curA);
-void  updateSoH(PersistState &s, float socPct);
+void  updateThroughput(AppState &s, float curA);
+void  updateSoH(AppState &s, float socPct);
 
 void          sendAlert(const char *alert, float packV, float socPct, float tempC,
                         float extraV);
-void          checkAlerts(PersistState &s, float packV, float socPct,
+void          checkAlerts(AppState &s, float packV, float socPct,
                           float tempC, uint32_t now);
-SummaryResult sendSummary(PersistState &s, uint32_t now);
+SummaryResult sendSummary(AppState &s, uint32_t now);
 
 #if ENABLE_CAN_BMS
-void  pollCanBms(PersistState &s, uint32_t now);
+void  pollCanBms(AppState &s, uint32_t now);
 #endif

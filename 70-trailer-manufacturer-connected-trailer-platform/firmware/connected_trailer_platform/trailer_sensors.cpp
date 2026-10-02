@@ -6,12 +6,12 @@
   All functions operate on globals declared extern in trailer_sensors.h and
   defined in connected_trailer_platform.ino.
 
-  Power model: the host is powered off between sample cycles via the Notecard's
-  ATTN signal. drainReeferUart() and drainTpmsUart() are called during the
-  WAKE_UART_DRAIN_MS window at the start of each wakeup and between blocking
-  Notecard I2C calls within the sample cycle. Bytes that arrive while the host
-  is off are lost; the drain window and inter-call drains capture bytes arriving
-  during the host-on period.
+  Power model: the host sleeps in STOP2 between sample cycles and is woken by
+  the Notecard's ATTN pin. drainReeferUart() and drainTpmsUart() are called
+  during the WAKE_UART_DRAIN_MS window at the start of each wake and between
+  blocking Notecard I2C calls within the sample cycle. Bytes that arrive while
+  the host is asleep are lost; the drain window and inter-call drains capture
+  bytes arriving during the host-awake period.
 
   J2497 state:
     drainReeferUart() sets g_ps.j2497Commissioned = true on the first accepted
@@ -20,9 +20,9 @@
 
   TPMS pressure persistence:
     drainTpmsUart() updates both g_sensors.tpmsPsi[] and g_ps.tpmsPsiLast[].
-    setup() restores tpmsPsiLast[] into g_sensors.tpmsPsi[] on each wakeup so
-    sendSummary() can report the correct last-known pressure for positions that
-    did not transmit during the current drain window.
+    Both stay in RAM through STOP2, so sendSummary() can report the correct
+    last-known pressure for positions that did not transmit during the current
+    drain window.
 *******************************************************************************/
 #include "trailer_sensors.h"
 #include <math.h>   // logf
@@ -31,7 +31,9 @@
 // Door-edge interrupt state
 // =========================================================================
 
-// Volatile flags written by doorISR() (interrupt context) and read in setup().
+// Volatile flags written by doorISR() (interrupt context) and read in loop().
+// The CHANGE interrupt on PIN_DOOR is an EXTI line and also wakes the host
+// from STOP2, so a door edge starts a sample cycle early.
 // g_doorIsrFired is set on any CHANGE edge on PIN_DOOR; g_doorIsrState captures
 // the pin level at interrupt time so setup() can resolve rapid toggles to the
 // final state without another digitalRead() race.
@@ -81,9 +83,9 @@ void drainReeferUart() {
 
         g_sensors.reeferSetF    = (int16_t)((uint16_t)(p[0] << 8) | p[1]) / 10.0f;
         g_sensors.reeferActualF = (int16_t)((uint16_t)(p[2] << 8) | p[3]) / 10.0f;
-        // Persist frame-received state so a frame arriving late in a wake
+        // Record frame-received state so a frame arriving late in a wake
         // (after updateReeferMissCount() has already run) is not lost across
-        // the host-off sleep — updateReeferMissCount() on the next wake reads
+        // the sleep interval — updateReeferMissCount() on the next wake reads
         // this flag and correctly resets g_ps.reeferMissCount.
         g_ps.reeferFrameSeen   = true;
         // Arm the reefer_sensor_loss alert path. Until this flag is set the
@@ -117,10 +119,9 @@ void drainTpmsUart() {
         if (((uint8_t)(pos ^ ph ^ pl)) != ck) continue;  // bad checksum
         if (pos >= NUM_TPMS_POS) continue;                 // out-of-range position
         g_sensors.tpmsPsi[pos]       = (uint16_t)((ph << 8) | pl) / 10.0f;
-        // Persist the pressure alongside the live sensor value so it survives
-        // the next host-off sleep interval. setup() restores tpmsPsiLast[] into
-        // g_sensors.tpmsPsi[] on wakeup for positions that do not report a fresh
-        // frame in the drain window.
+        // Mirror the pressure alongside the live sensor value so sendSummary()
+        // has the last-known reading for positions that do not report a fresh
+        // frame in a later wake's drain window.
         g_ps.tpmsPsiLast[pos]        = g_sensors.tpmsPsi[pos];
         g_ps.tpmsStaleCounts[pos]    = 0;     // keep at 0 for alert freshness check
         g_ps.tpmsSeenThisWindow[pos] = true;  // mark seen for per-window age accounting

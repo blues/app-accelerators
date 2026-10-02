@@ -1,6 +1,6 @@
 // plug_load_monitor.ino
 //
-// Host:     Blues Notecarrier CX (onboard STM32L433 Cygnet host MCU)
+// Host:     Blues Notecarrier CX (onboard STM32L433 host MCU)
 // Notecard: Blues Notecard Cell+WiFi (MBGLW / NBGLW)
 // Sensors:  Up to 4x SCT-013-030 split-core CT clamps (0–30 A → 0–1 V AC)
 //           connected to analog inputs A0–A3 on the Notecarrier CX headers.
@@ -18,6 +18,18 @@
 //
 //   The Notecard transmits queued notes on the hub.set outbound cadence.
 //
+// Power strategy:
+//   Between samples the host sleeps in STM32 STOP2 and is woken by the
+//   Notecard's ATTN pin (card.attn "sleep"; see cx_sleep.h).  RAM is retained,
+//   so application state simply lives in memory.
+//   Wiring: jumper the Notecarrier CX ATTN pin to D5 (same 16-pin header).
+//   Leave EN unconnected — on the CX it enables the shared 3.3 V VIO rail,
+//   so ATTN -> EN would brown out the whole board.
+//   Build:  Tools > USB support (if available) > None (usb=none).  With the
+//   USB CDC stack enabled the USB wakeup interrupt exits STOP2 immediately.
+//   Debug output (PLUG_LOAD_DEBUG) goes to the LPUART on the CX debug jack,
+//   which an ST-LINK V3 exposes as a virtual COM port.
+//
 // Cadence defaults (all overridable via Notehub environment variables):
 //   - Sample every 60 s  (sample_interval_sec)
 //   - Summary every 60 min  (report_interval_min)
@@ -34,9 +46,11 @@
 //   plug_load_monitor.ino          — this file (setup / loop)
 //   plug_load_monitor_helpers.h    — shared declarations, feature flags
 //   plug_load_monitor_helpers.cpp  — helper implementations
+//   cx_sleep.h                     — host STOP2 sleep / ATTN wake
 
 #include <Notecard.h>
 #include "plug_load_monitor_helpers.h"
+#include "cx_sleep.h"
 // PRODUCT_UID is defined in plug_load_monitor_helpers.h so it is visible to
 // both this file and helpers.cpp.  Edit the define there, not here.
 
@@ -54,39 +68,39 @@ int8_t   CFG_TZ_OFFSET_HRS        = 0;     // hours offset from UTC
 uint32_t CFG_ALERT_COOLDOWN_SEC   = 3600;  // PLUG_LOAD_ALERTS: min seconds between repeat alerts
 float    CFG_CT_FULL_SCALE_AMPS   = CT_FULL_SCALE_DEFAULT;
 
-// ── State preserved across sleep cycles via NotePayloadSaveAndSleep ──────────
-const char STATE_SEG_ID[] = "PLUG";
+// ── Application state — lives in RAM across STOP2 sleep cycles ───────────────
 AppState   state;
 
-// Template-application confirmation for the current boot only.
+// Template-application confirmation.
 // note.template is re-issued unconditionally on every wake (idempotent on an
 // intact Notecard; auto-recovers after a factory reset or card replacement).
 // Tracked per Notefile so a transient failure registering one template does
-// not gate emission on the other.  Not persisted — a host-side boolean cannot
-// reliably reflect Notecard state across a card reset or swap.
+// not gate emission on the other.  A host-side boolean cannot reliably reflect
+// Notecard state across a card reset or swap, hence the per-wake re-issue.
 bool g_summary_template_applied = false;
 #ifdef PLUG_LOAD_ALERTS
 bool g_alert_template_applied   = false;
 #endif
 
 Notecard notecard;
+#ifdef PLUG_LOAD_DEBUG
+Uart     dbgSerial(PIN_VCP_RX, PIN_VCP_TX);
+#endif
 
 // ── Arduino entry points ──────────────────────────────────────────────────────
 //
-// This sketch uses the "host-is-off-when-idle" pattern. On the Notecarrier CX
-// the ATTN pin is wired to the host power gate: when the Notecard asserts ATTN
-// after CFG_SAMPLE_INTERVAL_SEC seconds, the host rail comes up, setup() runs,
-// does one sample cycle, and loop() immediately calls NotePayloadSaveAndSleep
-// to serialize state into Notecard flash and cut the host rail again.
+// setup() runs once at power-up: it configures the Notecard and arms the ATTN
+// wake.  loop() performs one sample cycle and then asks the Notecard to hold
+// ATTN low for CFG_SAMPLE_INTERVAL_SEC seconds while the host sleeps in STOP2.
+// The ATTN rising edge on D5 wakes the host and execution resumes in place, so
+// per-wake work (env.get, template re-issue, hub.set re-apply) lives in loop().
 // The Notecard itself idles at ~8–18 µA between cellular sessions.
 
 void setup() {
 #ifdef PLUG_LOAD_DEBUG
-    // Serial init is gated entirely on PLUG_LOAD_DEBUG.  In production builds
-    // this block is compiled out entirely — the host never spends a single
-    // millisecond waiting for a CDC connection before sampling and sleeping.
+    // Debug output is gated entirely on PLUG_LOAD_DEBUG.  In production builds
+    // this block is compiled out entirely.
     dbgSerial.begin(115200);
-    for (uint32_t t0 = millis(); !dbgSerial && (millis() - t0) < 3000; ) {}
 #endif
 
     analogReadResolution(12);  // STM32L4: enable 12-bit ADC (default is 10-bit)
@@ -95,78 +109,61 @@ void setup() {
     notecard.setDebugOutputStream(dbgSerial);
 #endif
 
-    // ── First call on every wake: retry-protected I2C warm-up ─────────────────
+    // ── First call after power-up: retry-protected I2C warm-up ───────────────
     // The Notecard's I2C peripheral can take a few hundred milliseconds after a
     // power-on before it ACKs requests.  Sending the first request via
-    // sendRequestWithRetry() absorbs that race on every wake — including the
-    // first boot — without a hard delay.  card.version is read-only and
-    // idempotent, so it is safe to issue unconditionally each wake.
+    // sendRequestWithRetry() absorbs that race without a hard delay.
+    // card.version is read-only and idempotent, so it is safe to issue here.
     {
         J *req = notecard.newRequest("card.version");
         notecard.sendRequestWithRetry(req, 10);
     }
 
-    // Attempt to restore state from the payload saved before the last sleep.
-    NotePayloadDesc payload;
-    bool restored = NotePayloadRetrieveAfterSleep(&payload);
-    if (restored) {
-        restored &= NotePayloadGetSegment(&payload, STATE_SEG_ID,
-                                          &state, sizeof(state));
-        NotePayloadFree(&payload);
-    }
-    if (!restored) {
-        // First boot (or payload corrupt): zero-initialise so accumulators,
-        // timestamps, and last_applied_outbound_min all start from known values.
-        memset(&state, 0, sizeof(state));
+    // Zero-initialise so accumulators, timestamps, and
+    // last_applied_outbound_min all start from known values.
+    memset(&state, 0, sizeof(state));
+
+    // ── First-boot sequencing ─────────────────────────────────────────────────
+    // Configure the Notecard before fetching env vars.  On a cold boot the
+    // Notecard's local env cache is empty: it cannot receive pre-provisioned
+    // Notehub values until after the first cellular sync.  Calling
+    // hubConfigure() first establishes the product UID and inbound cadence
+    // so the Notecard can begin that first sync promptly; fetchEnvOverrides()
+    // on the first pass through loop() will typically return an empty body
+    // (cache not yet populated), but that is safe because all CFG_* globals
+    // start at their compile-time defaults (e.g. CFG_CIRCUIT_COUNT = 4) and
+    // the firmware samples all configured channels immediately.
+    hubConfigure();
+
+    // Quiesce the onboard accelerometer so its interrupt activity doesn't add
+    // noise to a Mojo power trace during bench validation (see README §8).
+    {
+        J *req = notecard.newRequest("card.motion.mode");
+        JAddBoolToObject(req, "stop", true);
+        notecard.sendRequest(req);
     }
 
-    if (!restored) {
-        // ── First-boot sequencing ─────────────────────────────────────────────
-        // Configure the Notecard before fetching env vars.  On a cold boot the
-        // Notecard's local env cache is empty: it cannot receive pre-provisioned
-        // Notehub values until after the first cellular sync.  Calling
-        // hubConfigure() first establishes the product UID and inbound cadence
-        // so the Notecard can begin that first sync promptly; fetchEnvOverrides()
-        // on this same wake will return an empty body (cache not yet populated),
-        // but that is safe because all CFG_* globals start at their compile-time
-        // defaults (e.g. CFG_CIRCUIT_COUNT = 4) and the firmware samples all
-        // configured channels immediately.
+    // Wake from STOP2 on the ATTN rising edge.
+    cxSleepBegin();
+}
+
+void loop() {
+    // ── Per-wake sequencing ───────────────────────────────────────────────────
+    // Re-read env vars on every wake so operator changes take effect within
+    // one inbound cycle.  The CFG_* globals keep their last values in RAM, so
+    // a transient I²C error leaves the previous configuration active; only
+    // replace saved_cfg on confirmed success.
+    if (fetchEnvOverrides()) {
+        captureCfg(state.saved_cfg);
+        state.cfg_valid = true;
+    }
+    if (CFG_REPORT_INTERVAL_MIN != state.last_applied_outbound_min) {
+        // Env var delivered a different cadence; re-apply hub.set so the
+        // Notecard's outbound period matches the operator value.
         hubConfigure();
-        if (fetchEnvOverrides()) {
-            // On a cold boot env.get typically returns an empty body (the
-            // Notecard's local cache is empty until the first cellular sync).
-            // Snapshot whatever was parsed so subsequent wakes do not fall back
-            // to compile-time defaults on a transient I²C error.
-            captureCfg(state.saved_cfg);
-            state.cfg_valid = true;
-        }
-        if (CFG_REPORT_INTERVAL_MIN != state.last_applied_outbound_min) {
-            // Env var delivered a different cadence; re-apply hub.set immediately
-            // so the Notecard's outbound period matches the operator value from
-            // the very first session.
-            hubConfigure();
-        }
-    } else {
-        // ── Normal-wake sequencing ────────────────────────────────────────────
-        // Restore the last successfully fetched config before calling
-        // fetchEnvOverrides() so that a transient I²C error does not silently
-        // revert to compile-time defaults for this wake cycle.
-        if (state.cfg_valid) {
-            applyCfg(state.saved_cfg);
-        }
-        // Re-read env vars on every wake so operator changes take effect within
-        // one inbound cycle.  Only replace saved_cfg on confirmed success so a
-        // transient failure does not discard a previously valid configuration.
-        if (fetchEnvOverrides()) {
-            captureCfg(state.saved_cfg);
-            state.cfg_valid = true;
-        }
-        if (CFG_REPORT_INTERVAL_MIN != state.last_applied_outbound_min) {
-            hubConfigure();
-        }
     }
 
-    // ── Template application (unconditional, every boot) ─────────────────────
+    // ── Template application (unconditional, every wake) ─────────────────────
     // note.template is idempotent: re-issuing it on an intact Notecard is a
     // no-op, and re-issuing after a Notecard factory reset or card replacement
     // restores the fixed-schema binary encoding before any note.add calls reach
@@ -175,64 +172,21 @@ void setup() {
     // failure on one template does not suppress the other Notefile.
     defineTemplates();
 
-    if (!restored) {
-        // First boot only: quiesce the onboard accelerometer so its interrupt
-        // activity doesn't add noise to a Mojo power trace during bench
-        // validation (see README §8).
-        J *req = notecard.newRequest("card.motion.mode");
-        JAddBoolToObject(req, "stop", true);
-        notecard.sendRequest(req);
-    }
-
     runSampleCycle();
     state.cycles++;
-}
 
-void loop() {
-    // Serialize state to Notecard flash and sleep the host for the next
-    // sample interval.  NotePayloadSaveAndSleep issues card.attn internally
-    // and the Notecard cuts the host power rail.
-    NotePayloadDesc payload = {0, 0, 0};
-    NotePayloadAddSegment(&payload, STATE_SEG_ID, &state, sizeof(state));
-    NotePayloadSaveAndSleep(&payload, CFG_SAMPLE_INTERVAL_SEC, NULL);
-
-    // ── No-ATTN fallback path ─────────────────────────────────────────────────
-    // NotePayloadSaveAndSleep returned instead of cutting the host rail, which
-    // means ATTN is not gating host power (typical on USB-only bench setups
-    // without the full Notecarrier CX power path active).  Drive the sample
-    // cadence here so the device keeps accumulating and emitting data even
-    // without the power gate.  loop() is re-entered by the Arduino runtime
-    // after each iteration, re-attempting NotePayloadSaveAndSleep with the
-    // freshly updated state.
-    delay(CFG_SAMPLE_INTERVAL_SEC * 1000UL);
-
-    // Re-read env vars each iteration, mirroring the per-wake behaviour on
-    // real hardware.  Only replace saved_cfg on confirmed success.
-    if (fetchEnvOverrides()) {
-        captureCfg(state.saved_cfg);
-        state.cfg_valid = true;
-    }
-    // Mirror the post-env-fetch outbound-cadence check from setup(): if
-    // report_interval_min changed, re-apply hub.set so summary cadence and
-    // sync cadence stay in sync on the bench path as well as the sleep/wake path.
-    if (CFG_REPORT_INTERVAL_MIN != state.last_applied_outbound_min) {
-        hubConfigure();
-    }
-
-    // On the bench path, note.template is only issued once during setup().
-    // If a previous attempt failed (a template flag is still false), retry
-    // here so a transient I²C failure at boot does not suppress emission for
-    // the entire bench session.  defineTemplates() rewrites both flags from
-    // the fresh send-request results, so calling it unconditionally when any
-    // Notefile is unconfirmed is safe — note.template is idempotent.
-    if (!g_summary_template_applied
-#ifdef PLUG_LOAD_ALERTS
-        || !g_alert_template_applied
+    // ── Sleep until the Notecard raises ATTN ─────────────────────────────────
+#ifdef PLUG_LOAD_DEBUG
+    Stream *log = &dbgSerial;
+#else
+    Stream *log = NULL;
 #endif
-       ) {
-        defineTemplates();
+    if (!cxSleepUntilAttn(notecard, CFG_SAMPLE_INTERVAL_SEC, NULL, log)) {
+        // The Notecard didn't take the sleep request, or ATTN never went low
+        // (check the ATTN -> D5 jumper).  Keep the sample cadence and try again.
+#ifdef PLUG_LOAD_DEBUG
+        dbgSerial.println("[sleep] ATTN sleep failed; waiting out the interval awake");
+#endif
+        delay(CFG_SAMPLE_INTERVAL_SEC * 1000UL);
     }
-
-    runSampleCycle();
-    state.cycles++;
 }

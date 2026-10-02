@@ -23,12 +23,13 @@
 
 // ── Debug output ──────────────────────────────────────────────────────────────
 // Defined here (not in the .ino) so both translation units see the same flag.
-// Uncomment to enable USB-serial tracing and Notecard wire-level output.
-// Leave commented for production: no serial code is emitted and the host
-// never waits for a CDC connection before sampling and sleeping.
+// Uncomment to enable tracing and Notecard wire-level output on dbgSerial, the
+// LPUART on the Notecarrier CX debug jack (ST-LINK virtual COM port).  USB CDC
+// is disabled (usb=none) so the host can stay in STOP2, so Serial is not USB.
+// Leave commented for production: no serial code is emitted.
 // #define PLUG_LOAD_DEBUG
 #ifdef PLUG_LOAD_DEBUG
-#  define dbgSerial Serial
+extern Uart dbgSerial;   // defined in plug_load_monitor.ino
 #endif
 
 // ── Optional real-time after-hours alert extension ────────────────────────────
@@ -69,12 +70,11 @@ static const uint8_t CT_PINS[MAX_CHANNELS] = { A0, A1, A2, A3 };
 // not as a zero-amp or zero-minute reading.
 static const float INVALID_SENTINEL = -9999.0f;
 
-// ── Persisted configuration snapshot ─────────────────────────────────────────
-// Snapshot of the active CFG_* globals, stored inside AppState so the last
-// successfully fetched configuration survives a transient I²C failure at wake.
-// Alert-related fields are retained in the struct regardless of PLUG_LOAD_ALERTS
-// so the persisted payload layout is stable whether or not the extension is
-// compiled in.
+// ── Last-known-good configuration snapshot ───────────────────────────────────
+// Snapshot of the active CFG_* globals, stored inside AppState as the last
+// successfully fetched configuration.  Alert-related fields are retained in
+// the struct regardless of PLUG_LOAD_ALERTS so the layout is stable whether or
+// not the extension is compiled in.
 struct AppCfg {
     uint32_t sample_interval_sec;
     uint32_t report_interval_min;
@@ -88,7 +88,9 @@ struct AppCfg {
     float    ct_full_scale_amps;
 };
 
-// ── State preserved across sleep cycles via NotePayloadSaveAndSleep ──────────
+// ── Application state ─────────────────────────────────────────────────────────
+// Lives in RAM.  STOP2 retains SRAM, so this survives every sleep/wake cycle
+// and is reset only by a power cycle or reset (which re-runs setup()).
 struct AppState {
     uint32_t cycles;
     AppCfg   saved_cfg;     // last successfully fetched env-var configuration
@@ -107,7 +109,7 @@ struct AppState {
 
     // Epoch of last alert per channel — used only when PLUG_LOAD_ALERTS is defined.
     // Retained in the struct so the payload layout is consistent across builds.
-    // Persisted so the per-channel cooldown spans sleep boundaries correctly.
+    // Held in RAM so the per-channel cooldown spans sleep boundaries correctly.
     uint32_t alert_last_unix[MAX_CHANNELS];
 
     // Outbound interval last successfully applied via hub.set.
@@ -126,7 +128,6 @@ extern int8_t   CFG_TZ_OFFSET_HRS;
 extern uint32_t CFG_ALERT_COOLDOWN_SEC;     // used only when PLUG_LOAD_ALERTS is defined
 extern float    CFG_CT_FULL_SCALE_AMPS;
 
-extern const char STATE_SEG_ID[];
 extern AppState   state;
 // Per-Notefile template-application flags.  Tracked independently so a failure
 // to register one template does not gate emission on the other Notefile.
@@ -141,14 +142,14 @@ extern Notecard   notecard;
 // Internal helpers used only within plug_load_monitor_helpers.cpp are static
 // and not declared in this header.
 
-// Config helpers (called from setup() on every wake)
+// Config helpers (called from loop() on every wake)
 void applyCfg(const AppCfg &c);
 void captureCfg(AppCfg &c);
 
-// Notecard setup (called from setup() and loop())
+// Notecard setup (called from setup() once and from loop() on every wake)
 bool hubConfigure();
 bool defineTemplates();
 bool fetchEnvOverrides();
 
-// Main sample cycle (called from setup() and loop())
+// Main sample cycle (called from loop() on every wake)
 void runSampleCycle();

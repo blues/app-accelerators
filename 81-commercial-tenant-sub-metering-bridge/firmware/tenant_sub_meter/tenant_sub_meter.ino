@@ -1,7 +1,7 @@
 /*
  * tenant_sub_meter.ino — Commercial Tenant Energy Monitoring Bridge
  *
- * Blues Notecard + Notecarrier CX (Cygnet STM32L433 host)
+ * Blues Notecard + Notecarrier CX (onboard STM32L433 host)
  *
  * Up to four Rogowski coil sensors (A0–A3, each through an active Miller
  * integrator) sample each tenant's single-phase branch-circuit current.
@@ -29,9 +29,24 @@
  * Cellular is the only viable data channel: landlord energy telemetry must
  * not traverse tenant-owned WiFi or any building network the tenants can reach.
  *
+ * Host sleep:
+ *   Between samples the host sleeps in STM32 STOP2 (~1-2 µA, RAM retained)
+ *   and is woken by the Notecard's ATTN pin: loop() asks the Notecard to hold
+ *   ATTN low for sample_interval_sec (card.attn "sleep"), enters STOP2, and
+ *   resumes in place on the ATTN rising edge.  Jumper the Notecarrier CX ATTN
+ *   pin to D5 (both on the same 16-pin header).  Leave EN unconnected — on the
+ *   CX it enables the shared 3.3 V VIO rail, so driving it from ATTN browns
+ *   out the whole board instead of sleeping the host.  See cx_sleep.h.
+ *
+ * Build: Tools > USB support (if available) > None (usb=none).  With the USB
+ *   CDC stack enabled and no USB host attached, the host cannot stay in STOP2.
+ *   Debug output goes to the LPUART on the CX debug jack, which an ST-LINK V3
+ *   exposes as a virtual COM port (dbgSerial below).
+ *
  * Hardware:
- *   • Blues Notecarrier CX (Cygnet STM32L433 host)
+ *   • Blues Notecarrier CX (onboard STM32L433 host)
  *   • Blues Notecard Cell+WiFi MBGLW in M.2 slot
+ *   • Jumper: Notecarrier CX ATTN → D5 (host wake from STOP2)
  *   • 4× Rogowski coil sensor (e.g. Magnelab RCT-1800-000 or equivalent) on A0–A3
  *     Each channel through an active Miller integrator:
  *       – R_in  10 kΩ (input series resistor)
@@ -68,33 +83,32 @@
  */
 
 #include "tenant_sub_meter_helpers.h"
-
-// ─── Persist-state segment ID ─────────────────────────────────────────────────
-// "SMT5": bumped from "SMT4" to force a clean zero-initialised state when
-// upgrading from the previous sketch (PersistState shed all on-device monthly
-// energy tracking fields — monthly_mwh[], unanchored_mwh[], monthly_start_epoch,
-// pending_bill_valid, pending_bill_from_epoch, pending_bill_to_epoch, _pad2, and
-// pending_bill_mwh[] — significantly reducing sizeof(PersistState); monthly
-// aggregation is now handled purely Notehub-side; see PersistState ABI note in
-// tenant_sub_meter_helpers.h).
-static const char STATE_SEG_ID[] = "SMT5";
+#include "cx_sleep.h"
 
 // ─── Current-sensor pin assignments (voltage pin is in helpers.h) ─────────────
 static const uint8_t CURRENT_PINS[4] = {A0, A1, A2, A3};
 
 // ─── Globals ──────────────────────────────────────────────────────────────────
 Notecard      notecard;
-PersistState  state;
+AppState      state;
 RuntimeConfig cfg;
+
+// Debug output: LPUART1 on the CX debug jack (ST-LINK V3 virtual COM port).
+// USB CDC is disabled in this build, so Serial is not available; see cx_sleep.h.
+Uart dbgSerial(PIN_VCP_RX, PIN_VCP_TX);
 
 // ─── Forward declaration ──────────────────────────────────────────────────────
 static void runCycle(void);
 
 // =============================================================================
+// setup() runs once at power-up.  The host resumes in place after each STOP2
+// sleep, so one-time Notecard configuration lives here and every per-wake step
+// lives in loop().
+// =============================================================================
 void setup() {
-    // Serial is useful during bench bring-up; remove the begin() call for
+    // dbgSerial is useful during bench bring-up; remove the begin() call for
     // production builds to save a few milliseconds of wake time.
-    Serial.begin(115200);
+    dbgSerial.begin(115200);
 
     Wire.begin();
     notecard.begin();
@@ -104,52 +118,52 @@ void setup() {
     // ADC_FULL_SCALE = 4095 assumption in measureChannel() is always correct.
     analogReadResolution(12);
 
-    runCycle();
-}
+    // Zero the application state.  It lives in RAM from here on; STOP2 retains
+    // SRAM, so it survives every sleep/wake cycle.
+    memset(&state, 0, sizeof(state));
 
-// loop() is entered only when card.attn does NOT cut host power (e.g. bench
-// rigs where the ATTN→EN path is not wired).  On a production Notecarrier CX,
-// NotePayloadSaveAndSleep() in runCycle() cuts Cygnet power before loop() is
-// ever reached; the next wake is a cold reset back into setup().  Calling
-// runCycle() from loop() ensures the no-ATTN path executes the full
-// sample → report → sleep cycle on every interval, not just on first boot.
-void loop() {
-    runCycle();
-}
-
-// =============================================================================
-// Main cycle: recover state → sample → report → persist → sleep.
-// Called from setup() on every power-on wake.  On no-ATTN bench rigs, loop()
-// calls it again after the fallback delay at the end of each cycle.
-// =============================================================================
-static void runCycle(void) {
     // ── Notecard cold-boot readiness handshake — must be the first I2C transaction
-    // sendRequestWithRetry (inside notecardReady) MUST be the first Notecard
-    // transaction on every cold boot.  It blocks up to NOTECARD_READY_TIMEOUT_SEC
-    // to resolve the I2C race where the STM32L433 host comes up before the
-    // Notecard is ready.  On warm wakes it returns almost immediately.
-    //
-    // This call must precede NotePayloadRetrieveAfterSleep and every other
-    // Notecard transaction.  If the Notecard is unresponsive, do not attempt any
-    // further I2C access — including NotePayloadSaveAndSleep — and fall back to a
-    // plain delay so loop() retries on bench rigs where the ATTN→EN path is not
-    // wired.  On a production Notecarrier CX the Notecard will restore host power
-    // when it recovers.  cfg is not yet populated at this point, so fall back to
-    // DEFAULT_SAMPLE_INTERVAL_SEC rather than cfg.sample_interval_sec.
+    // sendRequestWithRetry (inside notecardReady) blocks up to
+    // NOTECARD_READY_TIMEOUT_SEC to resolve the I2C race where the STM32L433
+    // host comes up before the Notecard is ready.  If it times out, carry on:
+    // hub.set and template registration are retried on every wake until they
+    // succeed (state.notecard_configured), so nothing is lost.
     if (!notecardReady(NOTECARD_READY_TIMEOUT_SEC)) {
-        Serial.println("[notecard] readiness timed out — aborting cycle");
-        delay(DEFAULT_SAMPLE_INTERVAL_SEC * 1000UL);
-        return;
+        dbgSerial.println("[notecard] readiness timed out — will retry configuration on first wake");
     }
 
-    // ── Recover state saved before the previous sleep ──────────────────────────
-    // Notecard is ready: retrieve the persisted state payload.  On first boot
-    // (no saved payload present) NotePayloadGetSegment zero-initialises the
-    // struct — the correct initial state for all accumulators and flags.
-    NotePayloadDesc payload = {0};
-    NotePayloadRetrieveAfterSleep(&payload);
-    NotePayloadGetSegment(&payload, STATE_SEG_ID, &state, sizeof(state));
+    // Disable the onboard accelerometer — unnecessary for this application
+    // and its background sampling adds avoidable quiescent current draw.
+    J *req = notecard.newRequest("card.motion.mode");
+    if (req) {
+        JAddBoolToObject(req, "stop", true);
+        notecard.sendRequest(req);
+    }
 
+    // Arm the ATTN wake: the Notecard raises ATTN (D5) to end each sleep.
+    cxSleepBegin();
+}
+
+// =============================================================================
+// loop() runs one sample/report cycle, then sleeps the host in STOP2 until the
+// Notecard raises ATTN cfg.sample_interval_sec later.
+// =============================================================================
+void loop() {
+    runCycle();
+
+    if (!cxSleepUntilAttn(notecard, cfg.sample_interval_sec, NULL, &dbgSerial)) {
+        // The Notecard didn't take the sleep request, or ATTN never went low
+        // (check the ATTN -> D5 jumper).  Keep the sample cadence and try again.
+        dbgSerial.println("[sleep] ATTN sleep failed — waiting out the interval awake");
+        delay(cfg.sample_interval_sec * 1000UL);
+    }
+}
+
+// =============================================================================
+// Main cycle: fetch config → sample → report.
+// Called from loop() on every wake.  State is carried in RAM across sleeps.
+// =============================================================================
+static void runCycle(void) {
     // ── Pull environment variable overrides from Notehub ────────────────────────
     // cfg.summary_interval_min is valid after this call and is used both by
     // hub.set (outbound cadence) and the hourly-summary trigger below.
@@ -172,20 +186,12 @@ static void runCycle(void) {
     }
     state.prev_num_tenants = active;
 
-    // ── First-boot: configure Notecard and register note templates ─────────────
+    // ── First wake: configure Notecard and register note templates ─────────────
     // initNotecard() uses cfg.summary_interval_min (populated above) as the
     // hub.set outbound cadence, so syncs match the configured report frequency.
     if (!state.notecard_configured) {
-        Serial.println("[notecard] first-boot: hub.set + template registration");
+        dbgSerial.println("[notecard] first wake: hub.set + template registration");
         bool hub_ok = initNotecard();
-
-        // Disable the onboard accelerometer — unnecessary for this application
-        // and its background sampling adds avoidable quiescent current draw.
-        J *req = notecard.newRequest("card.motion.mode");
-        if (req) {
-            JAddBoolToObject(req, "stop", true);
-            notecard.sendRequest(req);
-        }
 
         // Both hub.set and template registration must succeed before latching
         // notecard_configured.  If either fails the flag stays clear and the
@@ -195,7 +201,7 @@ static void runCycle(void) {
             state.notecard_configured = 1;
             state.last_outbound_min   = cfg.summary_interval_min;
         } else {
-            Serial.println("[notecard] init incomplete — will retry next wake");
+            dbgSerial.println("[notecard] init incomplete — will retry next wake");
         }
     } else if (cfg.summary_interval_min != state.last_outbound_min) {
         // ── Re-issue hub.set when the summary cadence changes ────────────────────
@@ -211,7 +217,7 @@ static void runCycle(void) {
 
     // ── Elapsed seconds since the last completed sample ─────────────────────────
     // Used in demand-window accumulation below.  When time is not yet valid
-    // (now == 0) or this is the first boot (last_sample_epoch == 0), fall back to
+    // (now == 0) or this is the first wake (last_sample_epoch == 0), fall back to
     // cfg.sample_interval_sec so the window still advances predictably.
     uint32_t elapsed = (now > 0 && state.last_sample_epoch > 0
                         && now > state.last_sample_epoch)
@@ -241,14 +247,14 @@ static void runCycle(void) {
     for (uint8_t t = 0; t < active; t++) {
         ChannelMeasurement m = measureChannel(CURRENT_PINS[t]);
 
-        Serial.print("[sample] T"); Serial.print(t + 1);
-        Serial.print(": ");         Serial.print(m.rms_amps, 2);
-        Serial.print(" A  ");       Serial.print(m.watts, 1);
-        Serial.print(" W");
+        dbgSerial.print("[sample] T"); dbgSerial.print(t + 1);
+        dbgSerial.print(": ");         dbgSerial.print(m.rms_amps, 2);
+        dbgSerial.print(" A  ");       dbgSerial.print(m.watts, 1);
+        dbgSerial.print(" W");
         if (m.fault) {
-            Serial.print("  fault=0x"); Serial.print(m.fault, HEX);
+            dbgSerial.print("  fault=0x"); dbgSerial.print(m.fault, HEX);
         }
-        Serial.println();
+        dbgSerial.println();
 
         // Accumulate per-channel fault flags across the summary period so any
         // hardware anomaly detected on any wake is visible in fault_mask.
@@ -296,7 +302,7 @@ static void runCycle(void) {
     }
 
     // ── Hourly summary emission ─────────────────────────────────────────────────
-    // Emit on first boot or once the configured interval has elapsed.
+    // Emit on the first wake or once the configured interval has elapsed.
     bool first_boot = (state.last_summary_epoch == 0) && !state.first_summary_sent;
     uint32_t since  = (now > 0 && state.last_summary_epoch > 0)
                       ? (now - state.last_summary_epoch) : 0;
@@ -317,7 +323,7 @@ static void runCycle(void) {
                 state.last_summary_epoch = now;
             }
         } else {
-            Serial.println("[summary] note.add failed — accumulators preserved for retry");
+            dbgSerial.println("[summary] note.add failed — accumulators preserved for retry");
         }
     }
 
@@ -327,15 +333,4 @@ static void runCycle(void) {
     if (now > 0) {
         state.last_sample_epoch = now;
     }
-
-    // ── Persist state and cut host power until next sample ──────────────────────
-    NotePayloadDesc out = {0};
-    NotePayloadAddSegment(&out, STATE_SEG_ID, &state, sizeof(state));
-    NotePayloadSaveAndSleep(&out, cfg.sample_interval_sec, NULL);
-
-    // card.attn cuts Cygnet power on the Notecarrier CX.  This fallback fires
-    // only on bench rigs where the ATTN→EN path is not wired.  After this delay,
-    // loop() calls runCycle() again, executing the full sample/report/sleep cycle
-    // rather than spinning in a sleep-only loop.
-    delay(cfg.sample_interval_sec * 1000UL);
 }

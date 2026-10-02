@@ -212,8 +212,9 @@ float readPumpAmps(void) {
 // turned on just before sampling and off immediately after. This eliminates
 // the quiescent divider draw from the 12V bus during sleep and prevents the
 // A2 pin from being back-driven through its input-protection diode when the
-// host MCU is unpowered (MCU off → PIN_BATT_EN floating → NPN off →
-// 100 kΩ pullup holds PMOS gate at 12V → PMOS off → A2 at GND through 10kΩ).
+// host MCU is unpowered (PIN_BATT_EN floating or LOW → NPN off → 100 kΩ pullup
+// holds PMOS gate at 12V → PMOS off → A2 at GND through 10kΩ). In STOP2 the
+// pin stays LOW, so the divider is off while the host sleeps.
 //
 // Returns -1.0 if the computed voltage falls outside the plausible range for
 // a 12V solar system. An open divider or shorted R1 is caught here; the

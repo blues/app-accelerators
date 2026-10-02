@@ -12,7 +12,7 @@
 // ── Notecard configuration ─────────────────────────────────────────────────
 
 // Sends hub.set to associate the Notecard with the project and set the default
-// outbound/inbound cadence.  Called on cold start and on every warm wake until
+// outbound/inbound cadence.  Called at power-up and on every wake until
 // it returns true, so a transient I²C failure on first boot can never leave
 // the device permanently unassociated and silently queueing Notes.
 //
@@ -202,8 +202,8 @@ static float clampF(double v, float minv, float maxv, float fallback) {
 // returns false on any Notecard communication failure.  Callers should only
 // re-apply hub.set (applyHubSetIfChanged) when this returns true so a
 // transient sync failure cannot revert the Notecard's outbound cadence to the
-// compile-time default.  On success, the validated cfg globals are persisted
-// into s so future wakes can restore them even if the next env.get fails.
+// compile-time default.  On success, the validated cfg globals are mirrored
+// into s as the last-known-good configuration.
 bool fetchEnvOverrides(AppState &s) {
     J *req = notecard.newRequest("env.get");
     if (!req) { DBG_PRINTLN("[env] newRequest failed"); return false; }

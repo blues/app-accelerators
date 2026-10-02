@@ -2,14 +2,13 @@
   apiary_hive_monitor_helpers.h — Shared declarations for the Remote Apiary
   Hive Health Monitor.
 
-  Defines the HiveState struct that is serialised into Notecard flash on
-  every sleep cycle (via NotePayloadSaveAndSleep) and rehydrated on the
-  next wake.  Also declares extern references to the Notecard, HX711, and
+  Defines the HiveState struct that holds the application state in RAM
+  across the host's STOP2 sleep/wake cycles.  Also declares extern references to the Notecard, HX711, and
   SHT31 objects owned by the .ino, and prototypes for every helper function
   implemented in apiary_hive_monitor_helpers.cpp.
 
   Hardware context:
-    - Notecarrier CX (onboard Cygnet STM32L433 host MCU)
+    - Notecarrier CX (onboard STM32L433 host MCU)
     - Notecard for Skylo (NOTE-NBGLWX) in M.2 slot — cellular + WiFi +
       Skylo satellite (NTN) on one board
     - SparkFun HX711 (SEN-13879) + Zemic H8C single-ended shear-beam load cell
@@ -24,16 +23,24 @@
 #include <Adafruit_SHT31.h>
 
 // ---------------------------------------------------------------------------
-// Debug output — uncomment to enable Serial.print statements during bench
-// testing; leave commented for deployed hardware to avoid the ~0.5 mA UART
-// idle draw and unnecessary wake-time overhead on a solar-powered device.
+// Debug output — uncomment to enable debugSerial.print statements during
+// bench testing; leave commented for deployed hardware to avoid the ~0.5 mA
+// UART idle draw and unnecessary wake-time overhead on a solar-powered device.
+// Output goes to debugSerial, the LPUART on the Notecarrier CX debug jack
+// (ST-LINK virtual COM port) — USB CDC is disabled so the host can sleep.
 // Defined here (shared header) so that both the .ino and helpers.cpp see the
 // same flag without requiring a separate build-system -D flag.
 // ---------------------------------------------------------------------------
 // #define DEBUG_SERIAL
 
+#ifdef DEBUG_SERIAL
+extern Uart debugSerial;   // defined in apiary_hive_monitor.ino
+#endif
+
 // ---------------------------------------------------------------------------
-// Persisted state shared between .ino and helpers
+// Application state shared between .ino and helpers. Lives in RAM; STOP2
+// retains SRAM, so it survives every sleep/wake cycle and is reset only by a
+// power cycle (which re-runs setup()).
 // ---------------------------------------------------------------------------
 struct HiveState {
     float    weight_sum_kg;
@@ -55,7 +62,7 @@ struct HiveState {
 
     uint32_t last_report_epoch;  // epoch of last daily summary
 
-    bool     first_boot;
+    bool     first_boot;         // true until notecardConfigure() + defineTemplates() both succeed
 
     // Audio is captured once per summary window (brief daily snippet).
     // These fields track whether the snapshot has already been taken this window.
@@ -82,7 +89,8 @@ extern Adafruit_SHT31 sht31;
 // Function declarations
 // ---------------------------------------------------------------------------
 
-// Notecard setup (called once on first boot; productUID passed from .ino
+// Notecard setup (called at power-up, retried each wake until it succeeds;
+// productUID passed from .ino
 // because #define macros in .ino are not visible to compiled .cpp files).
 // Returns true on success; false if a critical step fails (retry next wake).
 bool notecardConfigure(bool freshBoot, const char *productUID);

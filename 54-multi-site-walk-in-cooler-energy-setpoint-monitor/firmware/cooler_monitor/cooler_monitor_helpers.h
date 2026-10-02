@@ -18,18 +18,19 @@
 #pragma message "PRODUCT_UID not set — paste your Notehub ProductUID here before flashing."
 #endif
 
-// Compile-time debug output — uncomment to enable Serial tracing during bench
-// work.  Leave commented out in production: the USB-CDC enumeration wait
-// blocks awake time on every single wake.
+// Compile-time debug output — uncomment to enable tracing during bench work.
+// Output goes to debugSerial, the LPUART on the Notecarrier CX debug jack
+// (ST-LINK virtual COM port); USB CDC is disabled (usb=none) so the host can
+// stay in STOP2.  Leave commented out in production: serializing every
+// Notecard transaction over UART adds awake time on every wake.
 // #define DEBUG_SERIAL
 
 #ifdef DEBUG_SERIAL
-#  define DBG_BEGIN(baud)  do { Serial.begin(baud); \
-                                for (uint32_t _t = millis(); !Serial && millis() - _t < 2000; ) {} \
-                           } while (0)
-#  define DBG_SET_STREAM() notecard.setDebugOutputStream(Serial)
-#  define DBG_PRINT(...)   Serial.print(__VA_ARGS__)
-#  define DBG_PRINTLN(...) Serial.println(__VA_ARGS__)
+extern Uart debugSerial;   // defined in cooler_monitor.ino
+#  define DBG_BEGIN(baud)  debugSerial.begin(baud)
+#  define DBG_SET_STREAM() notecard.setDebugOutputStream(debugSerial)
+#  define DBG_PRINT(...)   debugSerial.print(__VA_ARGS__)
+#  define DBG_PRINTLN(...) debugSerial.println(__VA_ARGS__)
 #else
 #  define DBG_BEGIN(baud)  do {} while (0)
 #  define DBG_SET_STREAM() do {} while (0)
@@ -41,6 +42,8 @@
 #define PIN_DS18B20  5    // D5 — OneWire data line; needs 4.7 kΩ pull-up to 3V3
 #define PIN_CT       A0   // A0 — CT bias-circuit output (SCT-013-030 + 2×10 kΩ + 10 µF)
 #define PIN_DOOR     6    // D6 — Reed switch, INPUT_PULLUP; LOW = closed, HIGH = open
+// D9 — Notecard ATTN wake input (jumpered from the ATTN header pin); D5 is
+// taken by the DS18B20, so CX_ATTN_PIN is overridden in cooler_monitor.ino.
 
 // Current-transformer scaling (SCT-013-030 with built-in burden resistor)
 // 150 ms ≈ 9 complete 60 Hz mains cycles (one cycle ≈ 16.7 ms).
@@ -65,21 +68,9 @@
 #define FILE_SUMMARY  "cooler_summary.qo"
 #define FILE_ALERT    "cooler_alert.qo"
 
-// Payload segment ID for NotePayload helpers.
-// IMPORTANT: bump the trailing digit whenever AppState's binary layout or
-// the cooler_summary.qo template body changes.  A mismatched SEG_STATE causes
-// NotePayloadGetSegment to return false, which the setup() cold-boot branch
-// treats as a first-boot and re-runs hubConfigure() + defineTemplates().
-// This prevents a firmware upgrade from rehydrating stale binary state into
-// a new layout or skipping re-registration of an updated template.
-// CS4: added hubSetConfirmed field; corrected note.template 4-byte-int hint
-//      (22 → 14) which changes the on-wire binary layout of both Notefiles.
-#define SEG_STATE  "CS4"
-
-// ── Persisted application state ────────────────────────────────────────────
-// Stored in Notecard flash between host-sleep cycles via NotePayloadSaveAndSleep.
-// Field ordering is intentional: natural alignment avoids hidden padding bytes
-// that could silently change the persisted struct size between compiler versions.
+// ── Application state ──────────────────────────────────────────────────────
+// Lives in RAM.  STOP2 retains SRAM, so this survives every sleep/wake cycle
+// and is reset only by a power cycle or reset (which re-runs setup()).
 
 struct AppState {
     // Summary cadence: sum of scheduled sample intervals (prevSampleSec ticks)
@@ -129,11 +120,10 @@ struct AppState {
     // device running with untemplated Notes indefinitely.
     uint8_t  templatesRegistered;
 
-    // Last-known-good configuration, persisted across host power cycles.
-    // Loaded into cfg globals before env.get on every wake; overwritten only
-    // when env.get returns a valid response.  This prevents a transient
-    // inbound-sync failure from silently reverting operator-tuned values to
-    // compile-time defaults.
+    // Last-known-good configuration, mirrored from the cfg globals whenever
+    // env.get returns a valid response.  The cfg globals themselves stay in
+    // RAM across sleeps, so a transient inbound-sync failure cannot silently
+    // revert operator-tuned values to compile-time defaults.
     uint32_t persistedSampleSec;
     uint32_t persistedSummaryMin;
     float    persistedTempSetpointF;
@@ -144,8 +134,8 @@ struct AppState {
     uint8_t  configPersisted;    // non-zero once a successful env.get has run
 
     // Set to 1 the first time hubConfigure() returns true (hub.set
-    // acknowledged by the Notecard).  While this is 0, every warm wake
-    // retries hubConfigure() unconditionally in setup() — independent of
+    // acknowledged by the Notecard).  While this is 0, every wake
+    // retries hubConfigure() unconditionally in loop() — independent of
     // env.get success — so a transient cold-boot I²C failure can never leave
     // the device permanently unassociated and silently queueing Notes.
     // Once set, the device falls back to the cadence-only re-application path

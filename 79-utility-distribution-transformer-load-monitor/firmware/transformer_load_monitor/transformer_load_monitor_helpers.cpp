@@ -11,7 +11,7 @@
 #include "transformer_load_monitor_helpers.h"
 
 // ---------------------------------------------------------------------------
-// Notecard hub configuration — called on cold boot and on any subsequent
+// Notecard hub configuration — called at power-up and on any subsequent
 // wake where a previous attempt was not confirmed.  Returns true when hub.set
 // is acknowledged by the Notecard.
 // ---------------------------------------------------------------------------
@@ -22,7 +22,7 @@ bool hubConfigure(const char *product_uid) {
     // error and refuse to proceed so the operator sees a clear serial message
     // rather than a silently misconfigured deployment.
     if (!product_uid || product_uid[0] == '\0') {
-        Serial.println("[init] ERROR: PRODUCT_UID is empty — hub.set skipped. "
+        debugSerial.println("[init] ERROR: PRODUCT_UID is empty — hub.set skipped. "
                        "Set PRODUCT_UID in the sketch and reflash before deploying.");
         return false;
     }
@@ -36,14 +36,14 @@ bool hubConfigure(const char *product_uid) {
     JAddNumberToObject(req, "inbound",  120);
     bool ok = notecard.sendRequestWithRetry(req, 5);
     if (!ok) {
-        Serial.println("[init] hub.set failed; will retry on next wake");
+        debugSerial.println("[init] hub.set failed; will retry on next wake");
     }
     return ok;
 }
 
 // ---------------------------------------------------------------------------
 // Note templates — fixed-schema records save ~3–5× on-wire bytes versus
-// free-form JSON.  Called on cold boot and on any subsequent wake where
+// free-form JSON.  Called at power-up and on any subsequent wake where
 // template registration was not previously confirmed.  Returns true on success.
 // ---------------------------------------------------------------------------
 bool defineTemplates() {
@@ -63,7 +63,7 @@ bool defineTemplates() {
     JAddNumberToObject(body, "total_wakes",   12);    // All host wakes in window
     bool ok = notecard.sendRequest(req);
     if (!ok) {
-        Serial.println("[template] note.template (summary) failed; will retry on next wake");
+        debugSerial.println("[template] note.template (summary) failed; will retry on next wake");
     }
     return ok;
 }
@@ -71,7 +71,7 @@ bool defineTemplates() {
 // ---------------------------------------------------------------------------
 // Environment variable overrides — fetches all config keys in one batch
 // env.get request so the env.modified timestamp is only committed to
-// persistent state after a complete, successful read.
+// state after a complete, successful read.
 //
 // cache_valid sentinel: sample_interval_sec == 0 is impossible after a
 // successful parse (the clamp in Step 4 raises it to at least 30), so it
@@ -92,8 +92,8 @@ bool defineTemplates() {
 void fetchEnvOverrides(EnvConfig &c) {
     // Determine whether a prior successful fetch produced a usable cache.
     // sample_interval_sec == 0 is the sentinel for "never fetched" because
-    // Step 4 clamps the minimum to 30; zero can only occur on a cold-boot
-    // PersistState that has never been written.
+    // Step 4 clamps the minimum to 30; zero can only occur on a freshly
+    // zeroed AppState that has never been written.
     const bool cache_valid = (state.cached_cfg.sample_interval_sec != 0);
 
     // Seed c up-front so that every early-return failure path below
@@ -120,7 +120,7 @@ void fetchEnvOverrides(EnvConfig &c) {
     // values and skip the batch request entirely to reduce I²C traffic.
     // c is already set to state.cached_cfg above, so just return.
     if (new_ts && new_ts == state.last_env_modified && cache_valid) {
-        Serial.println("[config] env vars unchanged; using cached config");
+        debugSerial.println("[config] env vars unchanged; using cached config");
         return;
     }
 
@@ -142,18 +142,18 @@ void fetchEnvOverrides(EnvConfig &c) {
         // compile-time defaults on first boot); leave state.last_env_modified
         // untouched so the next wake retries the full fetch.
         if (cache_valid) {
-            Serial.println("[config] env.get failed; retaining cached config");
+            debugSerial.println("[config] env.get failed; retaining cached config");
         } else {
-            Serial.println("[config] env.get failed; no cache available — using compile-time defaults");
+            debugSerial.println("[config] env.get failed; no cache available — using compile-time defaults");
         }
         return;
     }
     if (notecard.responseError(rsp)) {
         notecard.deleteResponse(rsp);
         if (cache_valid) {
-            Serial.println("[config] env.get error; retaining cached config");
+            debugSerial.println("[config] env.get error; retaining cached config");
         } else {
-            Serial.println("[config] env.get error; no cache available — using compile-time defaults");
+            debugSerial.println("[config] env.get error; no cache available — using compile-time defaults");
         }
         return;
     }
@@ -224,8 +224,8 @@ void fetchEnvOverrides(EnvConfig &c) {
     // hub.set (which includes the product association) has already been confirmed.
     // Skipping when hub_configured is false prevents a product-less hub.set from
     // making the device look partly configured while it is still unassociated.
-    // Persisting lastAppliedSummaryMin in PersistState (rather than a
-    // function-static) means this check survives card.attn power cycles correctly.
+    // lastAppliedSummaryMin lives in AppState so a reverted env var is still
+    // detected against the value actually applied to the Notecard.
     if (state.hub_configured && nc.summary_interval_min != state.lastAppliedSummaryMin) {
         J *hreq = notecard.newRequest("hub.set");
         JAddStringToObject(hreq, "mode",     "periodic");
@@ -234,7 +234,7 @@ void fetchEnvOverrides(EnvConfig &c) {
         if (notecard.sendRequest(hreq)) {
             state.lastAppliedSummaryMin = nc.summary_interval_min;
         } else {
-            Serial.println("[config] hub.set cadence update failed; will retry next wake");
+            debugSerial.println("[config] hub.set cadence update failed; will retry next wake");
         }
     }
 }
@@ -246,7 +246,7 @@ void fetchEnvOverrides(EnvConfig &c) {
 //
 // Both passes pace samples to CT_SAMPLE_PERIOD_US (225 µs ≈ 4.44 kHz) so the
 // 1480-sample RMS window spans ~333 ms regardless of analogRead() throughput
-// on the Cygnet ADC.  Without this pacing the burst would finish in <20 ms —
+// on the STM32L433 ADC.  Without this pacing the burst would finish in <20 ms —
 // less than one full 60 Hz cycle — and the RMS value would depend on which
 // fragment of the waveform the loop happened to capture.
 // ---------------------------------------------------------------------------
@@ -289,7 +289,7 @@ float readCtRms(uint8_t pin) {
 // ---------------------------------------------------------------------------
 float readTemperatureC() {
     if (!mcp9808.begin(0x18)) {
-        Serial.println("[temp] MCP9808 not found at 0x18");
+        debugSerial.println("[temp] MCP9808 not found at 0x18");
         return -999.0f;
     }
     mcp9808.setResolution(3);   // 0.0625 °C, ~250 ms conversion
@@ -406,17 +406,17 @@ void sendAlert(uint8_t slot, const char *type, float i_a, float i_b,
             notecard.deleteResponse(rsp);
         }
         if (!queued && attempt == 0) {
-            Serial.print("[alert] note.add attempt 1 failed for: ");
-            Serial.println(type);
+            debugSerial.print("[alert] note.add attempt 1 failed for: ");
+            debugSerial.println(type);
         }
     }
 
     if (queued) {
         pa.active = false;
-        Serial.print("[alert] queued: "); Serial.println(type);
+        debugSerial.print("[alert] queued: "); debugSerial.println(type);
     } else {
-        Serial.print("[alert] note.add failed (will retry next wake): ");
-        Serial.println(type);
+        debugSerial.print("[alert] note.add failed (will retry next wake): ");
+        debugSerial.println(type);
     }
 }
 
@@ -471,13 +471,13 @@ bool sendSummary() {
 
     bool ok = notecard.sendRequest(req);
     if (ok) {
-        Serial.print("[summary] queued (");
-        Serial.print(state.valid_samples);
-        Serial.print(" loaded / ");
-        Serial.print(state.total_cycles);
-        Serial.println(" total wakes)");
+        debugSerial.print("[summary] queued (");
+        debugSerial.print(state.valid_samples);
+        debugSerial.print(" loaded / ");
+        debugSerial.print(state.total_cycles);
+        debugSerial.println(" total wakes)");
     } else {
-        Serial.println("[summary] note.add failed; accumulators retained for next wake");
+        debugSerial.println("[summary] note.add failed; accumulators retained for next wake");
     }
     return ok;
 }
