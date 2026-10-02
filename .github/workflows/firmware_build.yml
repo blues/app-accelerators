@@ -67,6 +67,8 @@ jobs:
           arduino-cli lib update-index
           arduino-cli lib install \
             "Blues Wireless Notecard" \
+            "STM32duino Low Power" \
+            "STM32duino RTC" \
             "OneWire" \
             "DallasTemperature" \
             "ModbusMaster" \
