@@ -3,7 +3,7 @@
   for Off-Grid Solar Battery Site Controller
 
   Encapsulates all Notecard I/O (hub.set, note.template, env.get,
-  note.add), the PersistState layout, and every configuration constant
+  note.add), the AppState layout, and every configuration constant
   so the main sketch can focus purely on orchestration.
 
   The globals notecard, state, desired_outbound_min, and desired_inbound_min
@@ -13,6 +13,10 @@
 
 #pragma once
 #include <Notecard.h>
+
+// Debug output: LPUART on the Notecarrier CX debug jack (ST-LINK V3 virtual COM
+// port).  USB CDC is disabled so the host can sleep in STOP2; see cx_sleep.h.
+extern Uart dbgSerial;   // defined in solar_battery_controller.ino
 
 // ---------------------------------------------------------------------------
 // Default thresholds (all overridable via Notehub environment variables)
@@ -35,7 +39,7 @@
 
 // Per-alert repeat cooldown — number of sample wakes between re-fires while
 // a fault persists.  At the default 15-min sample interval, 2 wakes ≈ 30 min.
-// Persisted in PersistState so the cooldown survives sleep cycles.
+// Held in AppState so the cooldown survives sleep cycles.
 #define ALERT_COOLDOWN_SAMPLES  2U
 
 // Summary sentinel values — emitted for every template field even when no
@@ -57,23 +61,14 @@
 #define SUMMARY_SENTINEL_TTG  -9999
 #define SUMMARY_SENTINEL_CS      -1
 
-// PersistState layout guard — bump STATE_VERSION whenever the struct changes
-// so stale flash content from a prior layout is detected and discarded cleanly.
-#define STATE_MAGIC    0x534F4C52UL  // ASCII "SOLR"
-#define STATE_VERSION  5
-
-// NotePayload state segment ID (must be exactly 4 characters)
-#define STATE_SEG_ID  "SOLR"
-
 // ---------------------------------------------------------------------------
-// PersistState — binary-serialised to Notecard flash across sleep cycles
+// AppState — lives in RAM.  The host sleeps in STM32 STOP2 between samples,
+// which retains SRAM, so this struct survives every sleep/wake cycle without
+// being serialised anywhere.  It is zeroed in setup() and reset only by a
+// power cycle or reset (which re-runs setup()).
 // ---------------------------------------------------------------------------
-struct PersistState {
-    // Layout guard — validated after restore; mismatch forces a clean init.
-    uint32_t magic;
-    uint8_t  version;
-
-    uint32_t boot_count;
+struct AppState {
+    uint32_t wake_count;
     uint16_t samples_until_summary;   // countdown to next summary note
 
     // Accumulators for the current summary window
@@ -96,7 +91,7 @@ struct PersistState {
     //   _cd     — wakes remaining before the alert may re-fire while the fault persists;
     //             loaded with ALERT_COOLDOWN_SAMPLES after each successful send.
     // Active flags are only set after note.add is confirmed queued so a transient
-    // failure cannot arm suppression.  Both fields survive sleep cycles in flash.
+    // failure cannot arm suppression.  Both fields survive sleep cycles in RAM.
     bool     soc_alert_active;    uint16_t soc_alert_cd;
     bool     temp_alert_active;   uint16_t temp_alert_cd;
     bool     load_alert_active;   uint16_t load_alert_cd;
@@ -108,7 +103,7 @@ struct PersistState {
     uint16_t no_charge_window_count;  // consecutive summary windows without a full-charge state
     uint16_t harvest_cd;              // cooldown (windows) before harvest_deficit re-fires
 
-    // Cached environment variables — refreshed every boot from Notehub
+    // Cached environment variables — refreshed every wake from Notehub
     float    soc_alert_pct;
     float    bat_temp_max_c;
     float    load_alert_w;
@@ -117,13 +112,13 @@ struct PersistState {
     float    harvest_deficit_days;    // 0 = disabled; N = alert after N days without a full-charge state
 
     // Last sync cadence successfully applied to the Notecard via hub.set.
-    // Initialised to 0 so applyHubSetIfChanged() always fires on first boot.
+    // Initialised to 0 so applyHubSetIfChanged() always fires at power-up.
     uint32_t last_outbound_min;
     uint32_t last_inbound_min;
 
     // Indicates that note.template for solar_summary.qo was confirmed registered
-    // by the Notecard.  Cleared on a clean init (magic/version mismatch) so that
-    // a firmware update that bumps STATE_VERSION re-registers on the next boot.
+    // by the Notecard.  False after power-up; loop() retries defineTemplates()
+    // on every wake until it is set.
     bool     templates_confirmed;
 };
 
@@ -131,17 +126,17 @@ struct PersistState {
 // Function declarations
 // ---------------------------------------------------------------------------
 
-// One-time hardware init on a clean (non-restored) boot: disables the onboard
+// One-time hardware init at power-up (from setup()): disables the onboard
 // accelerometer to reduce idle draw.
 void notecardFirstBoot();
 
 // Register fixed-width Note templates to minimise on-wire payload size over
 // the lifetime of the deployment.  Returns true when the template is confirmed
-// registered; callers should persist templates_confirmed and retry on the next
-// boot if this returns false.
+// registered; callers should record templates_confirmed and retry on the next
+// wake if this returns false.
 bool defineTemplates();
 
-// Issue hub.set on every boot when PRODUCT_UID is configured so that a
+// Issue hub.set on every wake when PRODUCT_UID is configured so that a
 // firmware reflash with a different UID immediately corrects the Notecard's
 // Notehub association.  When PRODUCT_UID is empty, only re-issues hub.set if
 // the cadence changed.  product_uid is passed in so this module stays

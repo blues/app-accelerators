@@ -28,22 +28,41 @@
  * Alert (charger_alert.qo, sync:true):
  *   alert: "mains_absent"  — mains voltage absent for > alert_offline_min
  *
+ * Host sleep: between polls the Notecarrier CX's STM32L433 host sleeps in
+ * STOP2 (~1–2 µA, RAM retained) and is woken by the Notecard's ATTN pin at
+ * the end of a card.attn "sleep" (see cx_sleep.h).  Execution resumes in
+ * place, so all session and window state simply lives in the State struct in
+ * RAM — nothing is persisted to the Notecard.
+ *
+ * Wiring for sleep: jumper the Notecarrier CX ATTN pin to D5 (both on the
+ * same 16-pin header).  Leave EN unconnected — on the CX it enables the shared
+ * 3.3 V VIO rail, so ATTN→EN browns out the board instead of sleeping the host.
+ *
+ * Build: Tools > USB support (if available) > None (usb=none).  With the USB
+ * CDC stack enabled and no USB host attached, the USB wakeup interrupt exits
+ * STOP2 immediately.  Debug output goes to the LPUART on the CX debug jack,
+ * which an ST-LINK V3 exposes as a virtual COM port (debugSerial below);
+ * Serial1 on D0/D1 remains dedicated to the RS-485 link.
+ *
  * Hardware:
- *   - Blues Notecarrier CX (onboard Cygnet STM32L4 host MCU)
+ *   - Blues Notecarrier CX (onboard STM32L433 host MCU)
  *   - Blues Notecard Cell+WiFi (MBGLW) in M.2 slot
  *   - EASTRON SDM120-Modbus DIN-rail energy meter on EVSE feed
  *   - SparkFun BOB-10124 (SP3485) RS-485 transceiver: Serial1 D0/D1, RTS→D2
+ *   - ATTN → D5 jumper on the Notecarrier CX header (host sleep/wake)
  *   - Blues Mojo (bench validation only; not required for production)
  *
  * See README.md §3–§4 for full BOM and wiring, §5 for Notehub setup.
  *
  * Helper functions (Modbus polling, session state machine, Note emission,
- * env-var handling, state persistence) live in the companion source files:
+ * env-var handling, host sleep) live in the companion source files:
  *   ev_charger_session_monitor_helpers.h / .cpp
+ *   cx_sleep.h — STOP2 entry + ATTN wake for the Notecarrier CX
  */
 
 #include <Notecard.h>
 #include "ev_charger_session_monitor_helpers.h"
+#include "cx_sleep.h"
 
 // ── Product identifier ────────────────────────────────────────────────────────
 // ▶ Set PRODUCT_UID to your Notehub ProductUID before flashing
@@ -64,58 +83,56 @@
 // ── Global instances ──────────────────────────────────────────────────────────
 Notecard notecard;
 State    state;
+// Debug output: LPUART1 on the CX debug jack (ST-LINK virtual COM port).
+// USB CDC is disabled for STOP2, so Serial is not available.
+Uart     debugSerial(PIN_VCP_RX, PIN_VCP_TX);
 
 // ═════════════════════════════════════════════════════════════════════════════
+// setup() — runs once at power-up.  The host resumes in place after each
+// STOP2 sleep, so one-time initialisation lives here and every per-wake step
+// lives in loop().
+// ═════════════════════════════════════════════════════════════════════════════
 void setup() {
-    Serial.begin(115200);
-    delay(250); // allow USB serial to enumerate before debug output begins
+    debugSerial.begin(115200);
 
     notecard.begin();
-    notecard.setDebugOutputStream(Serial);
+    notecard.setDebugOutputStream(debugSerial);
 
-    // ── Restore or initialise persistent state ───────────────────────────────
-    // Zero-initialise first so that a partial or failed restore always leaves
-    // state in a known clean condition rather than containing undefined garbage.
+    // ── Initialise state ─────────────────────────────────────────────────────
+    // Zero everything, then seed the runtime config with firmware defaults.
+    // STOP2 retains RAM, so from here on the session, window, and config state
+    // carries across every wake until the next power cycle.
     memset(&state, 0, sizeof(state));
-    NotePayloadDesc payload;
-    bool restored  = NotePayloadRetrieveAfterSleep(&payload);
-    bool cold_boot = true;
+    state.notecard_configured = false;
+    state.template_defined    = false;
+    state.sample_interval_sec = DEFAULT_SAMPLE_SEC;
+    state.report_interval_min = DEFAULT_REPORT_MIN;
+    state.session_threshold_w = DEFAULT_SESSION_W;
+    state.session_end_count   = DEFAULT_SESSION_END_COUNT;
+    state.voltage_present_v   = DEFAULT_VOLTAGE_PRESENT_V;
+    state.alert_offline_min   = DEFAULT_ALERT_OFFLINE_MIN;
+    state.modbus_slave_id     = MODBUS_DEFAULT_ID;
+    state.modbus_baud         = MODBUS_DEFAULT_BAUD;
+    debugSerial.println("[app] power-up — will configure Notecard");
 
-    if (restored) {
-        bool seg_ok = NotePayloadGetSegment(&payload, STATE_SEG_ID, &state, sizeof(state));
-        NotePayloadFree(&payload);
-        if (seg_ok && state.magic == STATE_MAGIC) {
-            cold_boot = false;
-            Serial.println("[app] state restored after sleep");
-        } else {
-            memset(&state, 0, sizeof(state));
-            Serial.println("[app] payload invalid — forcing cold boot");
-        }
-    }
-
-    if (cold_boot) {
-        state.magic               = STATE_MAGIC;
-        state.notecard_configured = false;
-        state.template_defined    = false;
-        state.sample_interval_sec = DEFAULT_SAMPLE_SEC;
-        state.report_interval_min = DEFAULT_REPORT_MIN;
-        state.session_threshold_w = DEFAULT_SESSION_W;
-        state.session_end_count   = DEFAULT_SESSION_END_COUNT;
-        state.voltage_present_v   = DEFAULT_VOLTAGE_PRESENT_V;
-        state.alert_offline_min   = DEFAULT_ALERT_OFFLINE_MIN;
-        state.modbus_slave_id     = MODBUS_DEFAULT_ID;
-        state.modbus_baud         = MODBUS_DEFAULT_BAUD;
-
-        Serial.println("[app] cold boot — will configure Notecard");
-    }
-
-    // ── Modbus initialisation (always, every wake) ───────────────────────────
-    // The STM32L4 UART peripheral registers are not retained through the
-    // Notecarrier CX ATTN power-gate, so Serial1 and the ModbusMaster node
-    // must be reinitialised on every wake.  initModbus() is fast (register
-    // writes only) and safe to call unconditionally.
+    // ── Modbus initialisation ────────────────────────────────────────────────
+    // STOP2 retains the UART peripheral registers, so Serial1 and the
+    // ModbusMaster node only need to be set up once here.  fetchEnvOverrides()
+    // calls initModbus() again if the baud rate or slave ID changes.
     initModbus();
 
+    // ── Notecard configuration (retried in loop() until confirmed) ───────────
+    state.notecard_configured = initNotecard(PRODUCT_UID);
+    state.template_defined    = defineTemplates();
+
+    // Arm the ATTN wake: the Notecard raises ATTN (D5) to end each sleep.
+    cxSleepBegin();
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// loop() — one poll/wake cycle, then sleep until the Notecard raises ATTN.
+// ═════════════════════════════════════════════════════════════════════════════
+void loop() {
     // ── Notecard configuration (idempotent, retried until confirmed) ─────────
     if (!state.notecard_configured) {
         state.notecard_configured = initNotecard(PRODUCT_UID);
@@ -126,7 +143,7 @@ void setup() {
     if (state.hub_cadence_dirty) {
         if (applyHubCadence()) {
             state.hub_cadence_dirty = false;
-            Serial.println("[app] hub cadence re-sync recovered");
+            debugSerial.println("[app] hub cadence re-sync recovered");
         }
     }
 
@@ -138,9 +155,9 @@ void setup() {
     bool meter_ok = pollMeter(&meter);
 
     if (meter_ok) {
-        Serial.print("[app] V=");   Serial.print(meter.voltage_v, 1);
-        Serial.print(" V  P=");     Serial.print(meter.power_w, 0);
-        Serial.print(" W  kWh=");   Serial.println(meter.import_kwh, 3);
+        debugSerial.print("[app] V=");   debugSerial.print(meter.voltage_v, 1);
+        debugSerial.print(" V  P=");     debugSerial.print(meter.power_w, 0);
+        debugSerial.print(" W  kWh=");   debugSerial.println(meter.import_kwh, 3);
         // Record the last-valid closing baseline for emitSummaryNote().
         // Doing this here — after every successful poll — ensures that a failed
         // meter read on the wake where the hourly summary fires does not force
@@ -148,7 +165,7 @@ void setup() {
         // that would inflate the following window's total.
         state.last_valid_import_kwh = meter.import_kwh;
     } else {
-        Serial.println("[app] WARN: meter poll failed this wake");
+        debugSerial.println("[app] WARN: meter poll failed this wake");
     }
 
     uint32_t now = getEpoch();
@@ -170,7 +187,7 @@ void setup() {
     // lazily below — see comment block.
     if (state.window_start_epoch == 0 && now > 0) {
         state.window_start_epoch = now;
-        Serial.println("[app] reporting window opened");
+        debugSerial.println("[app] reporting window opened");
     }
 
     // ── Anchor window kWh baseline on first valid meter read after open ──────
@@ -183,7 +200,7 @@ void setup() {
     if (state.window_start_epoch > 0 && !state.window_kwh_baseline_set && meter.valid) {
         state.window_start_kwh         = meter.import_kwh;
         state.window_kwh_baseline_set  = true;
-        Serial.println("[app] window kWh baseline anchored");
+        debugSerial.println("[app] window kWh baseline anchored");
     }
 
     // ── Session state machine ────────────────────────────────────────────────
@@ -218,13 +235,8 @@ void setup() {
     }
 
     // ── Sleep until next sample interval ─────────────────────────────────────
+    // The host enters STOP2 with `state` intact in RAM; the Notecard raises
+    // ATTN sample_interval_sec from now and execution resumes at the top of
+    // loop().
     sleepHost();
-}
-
-void loop() {
-    // NotePayloadSaveAndSleep() cuts host power via card.attn; this line is
-    // only reached if the Notecarrier CX ATTN power-gating is unavailable
-    // (e.g., bare breakout on a bench). Spin to prevent re-entering setup()
-    // and double-counting session data.
-    delay(15000);
 }

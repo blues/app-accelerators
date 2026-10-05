@@ -22,18 +22,28 @@
  *   See NOTEFILE_* defines in reefer_cold_chain_monitor_helpers.h for detail.
  *
  * Hardware:
- *   Blues Notecarrier CX (Cygnet STM32 host MCU)
+ *   Blues Notecarrier CX (onboard STM32L433 host MCU)
  *   Notecard for Skylo  (NOTE-NBGLWX)
  *   Adafruit DS18B20 waterproof probe ×2  (#381)  on A0 (1-Wire)
  *   Adafruit magnetic reed switch        (#375)   on A1 (NO, INPUT_PULLUP)
  *   Pololu D24V22F5 5 V step-down regulator (#2858) from 12 V trailer supply
  *
  * Sleep pattern:
- *   setup() runs on every host wake from card.attn, runs one sample cycle,
- *   then returns to loop().  loop() persists state to Notecard flash via
- *   NotePayloadSaveAndSleep and cuts host power via card.attn.  On bench
- *   setups without ATTN power-gating wired, loop() falls back to delay() and
- *   calls runWakePreamble() + runSampleCycle() directly.
+ *   setup() runs once at power-up and arms the ATTN wake.  loop() runs one
+ *   sample cycle, then sleeps the host in STM32 STOP2 (~1-2 µA, RAM retained)
+ *   until the Notecard raises ATTN g_sampleIntervalSec later (card.attn
+ *   "sleep"; see cx_sleep.h).  Execution resumes in place, so AppState simply
+ *   lives in RAM — nothing is persisted to the Notecard.
+ *
+ * Wiring for sleep: jumper the Notecarrier CX ATTN pin to D5 (both on the
+ * same 16-pin header).  Leave EN unconnected: on the CX it enables the shared
+ * 3.3 V VIO rail, so driving it from ATTN browns out the whole board instead
+ * of sleeping the host.
+ *
+ * Build: Tools > USB support (if available) > None (usb=none).  With the USB
+ * CDC stack enabled and no USB host attached the host cannot stay in STOP2.
+ * Debug output (DEBUG_MODE) goes to the ST-LINK virtual COM port on the CX
+ * debug jack.
  *
  * Blues documentation: https://dev.blues.io
  */
@@ -44,10 +54,10 @@
 #include <DallasTemperature.h>
 
 // ── Debug build flag ──────────────────────────────────────────────────────────
-// Define DEBUG_MODE to enable USB serial output and Notecard debug forwarding.
-// In production (deployed trailer), leave it undefined: the 3-second Serial
-// wait and always-on Notecard debug stream materially raise average current on
-// a design whose core claim is deep sleep between 60-second samples.
+// Define DEBUG_MODE to enable debug serial output and Notecard debug forwarding.
+// In production (deployed trailer), leave it undefined: the always-on Notecard
+// debug stream materially raises average current on a design whose core claim
+// is deep sleep between 60-second samples.
 //
 // To enable during development, add -DDEBUG_MODE to your build flags, or
 // uncomment the line below:
@@ -57,12 +67,18 @@
 // Must be included AFTER the optional #define DEBUG_MODE line above so the
 // DEBUG_PRINT / DEBUG_PRINTLN macros in the header see the correct setting.
 #include "reefer_cold_chain_monitor_helpers.h"
+#include "cx_sleep.h"
 
 // ── Global objects ────────────────────────────────────────────────────────────
 AppState          g_state;
 Notecard          notecard;
 OneWire           oneWire(ONE_WIRE_PIN);
 DallasTemperature probes(&oneWire);
+#ifdef DEBUG_MODE
+// LPUART1 on the CX debug jack, which an ST-LINK exposes as a virtual COM
+// port.  (USB CDC must be disabled for STOP2 to work; see cx_sleep.h.)
+Uart              debugSerial(PIN_VCP_RX, PIN_VCP_TX);
+#endif
 
 // ── Runtime-configurable parameters (fetched from Notehub env vars each wake) ─
 float    g_tempMaxC           = DEFAULT_TEMP_MAX_C;
@@ -76,123 +92,100 @@ uint32_t g_alertCooldownSec   = DEFAULT_ALERT_COOLDOWN_SEC;
 static void runSampleCycle(void);
 
 // =============================================================================
-// runWakePreamble() — per-cycle preamble shared by cold-wake and bench paths
+// configureOnce() — first-boot Notecard configuration, retried until it sticks
 //
-// Called from setup() on every true hardware wake and from the loop() bench
-// fallback on every simulated wake.  Keeping these steps in one place ensures
-// environment-variable updates, outbound-cadence changes, and sensor re-init
-// happen consistently regardless of whether the host is power-gated by ATTN
-// or is running continuously on a bench supply.
+// hub.set, card.transport, card.location.mode and the three Note templates.
+// Accumulator bounds are initialised in setup(), outside this block, so a
+// configuration failure never leaves t1_min_c / t1_max_c at their memset-zero
+// defaults on a later successful retry.
 // =============================================================================
-static void runWakePreamble(void) {
-    fetchEnvOverrides();
-    applyHubSetIfChanged(g_state);
-    probes.begin();
-    probes.setResolution(12);        // 12-bit: 0.0625 °C steps, ~750 ms conversion
-    pinMode(DOOR_PIN, INPUT_PULLUP);
+static void configureOnce(void) {
+    if (hubConfigure() && defineTemplates()) {
+        g_state.configured           = true;
+        g_state.summary_interval_min = DEFAULT_SUMMARY_INTERVAL_MIN;
+        DEBUG_PRINTLN(F("[boot] First-boot configuration complete"));
+    } else {
+        DEBUG_PRINTLN(F("[boot] First-boot configuration failed — will retry next wake"));
+    }
 }
 
 // =============================================================================
-// setup() — runs on every host wake from card.attn sleep
+// setup() — runs once at power-up
+//
+// Serial, Notecard bring-up, state init, first configuration attempt, sensor
+// init, and the one-time ATTN wake arming.  Everything that must run on every
+// wake (env overrides, cadence changes, the sample cycle) lives in loop().
 // =============================================================================
 void setup() {
     // ── Serial / debug output ─────────────────────────────────────────────────
-    // Gated by DEBUG_MODE at compile time.  In production skip both the
-    // blocking wait and the Notecard debug stream to keep the per-wake
-    // current budget well under 100 ms of idle draw.
+    // Gated by DEBUG_MODE at compile time.  In production skip the Notecard
+    // debug stream to keep the per-wake current budget tight.
 #ifdef DEBUG_MODE
-    Serial.begin(115200);
-    const uint32_t dbgEnd = millis() + 3000;
-    while (!Serial && millis() < dbgEnd) {}
+    debugSerial.begin(115200);
 #endif
 
     notecard.begin();
 #ifdef DEBUG_MODE
-    notecard.setDebugOutputStream(Serial);
+    notecard.setDebugOutputStream(debugSerial);
 #endif
 
-    // ── Restore state from Notecard flash ────────────────────────────────────
+    // ── Initialise application state ──────────────────────────────────────────
     memset(&g_state, 0, sizeof(g_state));
-    NotePayloadDesc payload = {};
-    bool wokeFromSleep = NotePayloadRetrieveAfterSleep(&payload);
-    if (wokeFromSleep) {
-        NotePayloadGetSegment(&payload, STATE_SEG_ID, &g_state, sizeof(g_state));
-        NotePayloadFree(&payload);
-    }
+    g_state.t1_min_c =  999.0f;  g_state.t1_max_c = -999.0f;
+    g_state.t2_min_c =  999.0f;  g_state.t2_max_c = -999.0f;
 
-    // ── First-boot initialisation ─────────────────────────────────────────────
-    // Accumulator bounds are initialised here, outside the config-success
-    // block, so a first-boot configuration failure never leaves t1_min_c /
-    // t1_max_c at their memset-zero defaults on a later successful retry.
-    if (!g_state.configured) {
-        g_state.t1_min_c =  999.0f;  g_state.t1_max_c = -999.0f;
-        g_state.t2_min_c =  999.0f;  g_state.t2_max_c = -999.0f;
+    // ── First-boot configuration (retried from loop() if it fails) ────────────
+    configureOnce();
 
-        if (hubConfigure() && defineTemplates()) {
-            g_state.configured           = true;
-            g_state.summary_interval_min = DEFAULT_SUMMARY_INTERVAL_MIN;
-            DEBUG_PRINTLN(F("[boot] First-boot configuration complete"));
-        } else {
-            DEBUG_PRINTLN(F("[boot] First-boot configuration failed — will retry"));
-        }
-    }
+    // ── Sensor init ───────────────────────────────────────────────────────────
+    // Pin modes and the probes' resolution setting survive STOP2 (the sensors
+    // stay powered from the 3.3 V rail), so this runs once.
+    probes.begin();
+    probes.setResolution(12);        // 12-bit: 0.0625 °C steps, ~750 ms conversion
+    pinMode(DOOR_PIN, INPUT_PULLUP);
 
-    // ── Per-wake preamble (env overrides, sensor re-init) ─────────────────────
-    runWakePreamble();
-
-    // ── Configuration guard ───────────────────────────────────────────────────
-    // If hub.set and the three Note templates have not been successfully
-    // registered, skip the sample cycle entirely.  Without them the Notecard
-    // cannot correctly route notes (missing templates break compact encoding;
-    // missing hub.set leaves the device unregistered with Notehub).
-    // NotePayloadSaveAndSleep in loop() will sleep for g_sampleIntervalSec
-    // and wake setup() again to retry configuration.
-    if (!g_state.configured) {
-        DEBUG_PRINTLN(F("[boot] Skipping sample cycle — awaiting configuration"));
-        return;
-    }
-
-    runSampleCycle();
+    // ── Arm the ATTN wake: the Notecard raises ATTN (D5) to end each sleep ────
+    cxSleepBegin();
 }
 
 // =============================================================================
-// loop() — persists state and sleeps until the next sample interval
-//
-// On hardware with ATTN power-gating wired (normal deployment),
-// NotePayloadSaveAndSleep cuts host power and this function never returns.
-// On bench setups without the CX power path it falls back to delay() and
-// calls runWakePreamble() + runSampleCycle() so monitoring continues without
-// a hardware reset and env-var changes are applied on each simulated wake.
+// loop() — one sample cycle, then STOP2 until the Notecard raises ATTN
 // =============================================================================
 void loop() {
-    NotePayloadDesc out = {};
-    NotePayloadAddSegment(&out, STATE_SEG_ID, &g_state, sizeof(g_state));
-    NotePayloadSaveAndSleep(&out, (int)g_sampleIntervalSec, NULL);
-
-    // Reached only when ATTN power-gating is not wired (bench / development).
-    DEBUG_PRINTLN(F("[warn] ATTN power-gate not firing — bench fallback active"));
-    delay(g_sampleIntervalSec * 1000UL);
-    runWakePreamble();   // apply env-var changes and re-init sensors, same as
-                         // a true cold wake would do in setup()
-
-    // ── Configuration guard (bench path) ─────────────────────────────────────
-    // Mirror the setup() guard: if first-boot hub.set / template registration
-    // has not yet succeeded, attempt it now before allowing any note.add
-    // activity.  Without this check a failed setup() returns early and
-    // NotePayloadSaveAndSleep (which does not cut power in bench mode) falls
-    // through here, bypassing the Notecard configuration entirely.
+    // ── Configuration retry ───────────────────────────────────────────────────
+    // If hub.set and the three Note templates have not been successfully
+    // registered, retry now.  Without them the Notecard cannot correctly route
+    // notes (missing templates break compact encoding; missing hub.set leaves
+    // the device unregistered with Notehub).
     if (!g_state.configured) {
-        if (hubConfigure() && defineTemplates()) {
-            g_state.configured           = true;
-            g_state.summary_interval_min = DEFAULT_SUMMARY_INTERVAL_MIN;
-            DEBUG_PRINTLN(F("[boot] First-boot configuration complete (bench retry)"));
-        } else {
-            DEBUG_PRINTLN(F("[boot] Configuration retry failed — skipping sample cycle"));
-            return;   // loop() is called again immediately; retries after next delay
-        }
+        configureOnce();
     }
 
-    runSampleCycle();
+    // ── Per-wake preamble (env overrides, outbound-cadence changes) ───────────
+    fetchEnvOverrides();
+    applyHubSetIfChanged(g_state);
+
+    // ── Configuration guard ───────────────────────────────────────────────────
+    // Skip the sample cycle until configuration has succeeded; the sleep below
+    // still runs so the retry happens g_sampleIntervalSec later.
+    if (g_state.configured) {
+        runSampleCycle();
+    } else {
+        DEBUG_PRINTLN(F("[boot] Skipping sample cycle — awaiting configuration"));
+    }
+
+    // ── Sleep until the next sample interval ──────────────────────────────────
+#ifdef DEBUG_MODE
+    Stream *log = &debugSerial;
+#else
+    Stream *log = NULL;
+#endif
+    if (!cxSleepUntilAttn(notecard, g_sampleIntervalSec, NULL, log)) {
+        // Notecard not ready, or ATTN never went low (check the ATTN -> D5
+        // jumper).  Keep the sample cadence and try again next cycle.
+        DEBUG_PRINTLN(F("[warn] ATTN sleep failed — waiting out the interval awake"));
+        delay(g_sampleIntervalSec * 1000UL);
+    }
 }
 
 // =============================================================================

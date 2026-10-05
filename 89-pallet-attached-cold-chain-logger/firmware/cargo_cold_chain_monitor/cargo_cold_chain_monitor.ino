@@ -2,7 +2,7 @@
   cargo_cold_chain_monitor.ino
 
   Shipper-Owned Cargo-Level Cold Chain Monitor
-  Blues Notecarrier CX (Cygnet host) + Notecard for Skylo (NOTE-NBGLWX)
+  Blues Notecarrier CX (onboard STM32L433 host) + Notecard for Skylo (NOTE-NBGLWX)
 
   Condition monitor for pallet-attached cold chain logging with NIST-
   traceable temperature measurement, a tamper-evident per-sample record,
@@ -26,10 +26,10 @@
       interval (summary_interval_min, extended by dwell_batch_factor during
       confirmed warehouse dwell) for hourly or coarsened condition records.
       When a summary interval elapses the completed window is frozen into a
-      persistent snapshot and the live accumulator resets immediately; new
-      samples continue collecting while the snapshot is retried.  A stale
-      snapshot that cannot be delivered before the next window closes is
-      discarded; fixed-window boundaries are never stretched by a failed send.
+      snapshot and the live accumulator resets immediately; new samples
+      continue collecting while the snapshot is retried.  A stale snapshot
+      that cannot be delivered before the next window closes is discarded;
+      fixed-window boundaries are never stretched by a failed send.
     - Appends one compact-templated cargo_log.qo entry per sample cycle for
       a tamper-evident per-sample log.  Each entry carries a monotonic
       sequence number (seq), a rolling integrity chain hash (chain_crc)
@@ -47,15 +47,16 @@
       reducing both summary volume and outbound satellite session frequency
       during long warehouse stays.  applyDynamicOutbound() re-issues hub.set
       on every DWELL entry/exit transition.
-    - Gates the host fully off between samples via NotePayloadSaveAndSleep /
-      card.attn — requires Notecarrier CX host power gating.
-    - Re-issues hub.set on every warm boot so a reflash with a new
-      PRODUCT_UID takes effect immediately.  card.motion.mode and both
-      note.template registrations each set a persistent flag in
-      ColdChainState on success and are only reapplied when the flag is
-      false — a transient I2C race on cold boot leaves no step permanently
-      missed.  All three steps are reapplied unconditionally when
-      CONFIG_VERSION changes.
+    - Sleeps the host in STM32 STOP2 between samples and wakes it on the
+      Notecard's ATTN pin (card.attn "sleep"; see cx_sleep.h).  Execution
+      resumes in place with RAM intact, so ColdChainState needs no
+      serialization.
+    - Issues hub.set, card.transport, and card.motion.mode at power-up and
+      registers both note.template schemas; each step sets a flag in
+      ColdChainState on success and is reapplied on later wakes only while
+      the flag is false — a transient I2C race on cold boot leaves no step
+      permanently missed.  A reflash resets the host and re-runs setup(), so
+      a new PRODUCT_UID or template schema takes effect immediately.
     - Alert-cooldown timestamps advance only when the corresponding note.add
       is confirmed by the Notecard; a failed transmission does not consume
       the cooldown window.
@@ -81,10 +82,22 @@
     tilt_detected   — orientation changed from baseline set at activation
 
   Power strategy
-    Host is fully cut between samples via NotePayloadSaveAndSleep / card.attn.
-    Requires Notecarrier CX host power gating for correct operation.
-    Notecard idles at ~8-18 uA between radio sessions (see NOTE-NBGLWX datasheet).
+    Between samples the host sleeps in STOP2 (~1-2 uA, RAM retained) until
+    the Notecard raises ATTN.  Notecard idles at ~8-18 uA between radio
+    sessions (see NOTE-NBGLWX datasheet).
     Full-system estimate: ~2.6-3.5 mAh/hour at default cadence (cellular-dominant).
+
+  Wiring for sleep
+    Jumper the Notecarrier CX ATTN pin to D5 (both on the same 16-pin
+    header).  Leave EN unconnected: on the CX it enables the shared 3.3 V
+    VIO rail, so driving it from ATTN browns out the whole board instead of
+    sleeping the host.
+
+  Build
+    Tools > USB support (if available) > None (usb=none).  With the USB CDC
+    stack enabled and no USB host attached the host cannot stay in STOP2.
+    Debug output goes to the ST-LINK virtual COM port on the CX debug jack
+    (debugSerial below).
 
   See README.md for full wiring, Notehub setup, and validation details.
 ***************************************************************************/
@@ -96,6 +109,7 @@
 #include <Adafruit_SHT4x.h>
 #include <Adafruit_VEML7700.h>
 #include "cargo_cold_chain_monitor_helpers.h"
+#include "cx_sleep.h"
 
 // ---------------------------------------------------------------------------
 // Object instances — declared here, accessed from helpers.cpp via extern
@@ -105,8 +119,13 @@ Adafruit_MAX31865 rtd(MAX31865_CS_PIN);   // PT100 RTD amplifier, hardware SPI, 
 Adafruit_SHT4x    sht4x;                  // humidity sensor (I2C, used for RH only)
 Adafruit_VEML7700 veml7700;               // interior cargo-bay light sensor (I2C)
 
+// Debug output: LPUART1 on the CX debug jack, which an ST-LINK exposes as a
+// virtual COM port.  (USB CDC must be disabled for STOP2 to work; see
+// cx_sleep.h.)
+Uart              debugSerial(PIN_VCP_RX, PIN_VCP_TX);
+
 // ---------------------------------------------------------------------------
-// Persistent state — serialized to Notecard flash across sleep cycles
+// Application state — lives in RAM; STOP2 retains it across sleep cycles
 // ---------------------------------------------------------------------------
 ColdChainState gState;
 
@@ -126,66 +145,56 @@ uint32_t gTransitConfirm   = DEFAULT_TRANSIT_CONFIRM;
 uint32_t gDwellBatchFactor = DEFAULT_DWELL_BATCH_FACTOR;
 
 // ===========================================================================
-// setup() — re-entered on every wake from NotePayloadSaveAndSleep
+// setup() — runs once at power-up (cold boot)
+//
+// Serial, Notecard bring-up, state initialization, boot-segment increment,
+// one-time Notecard configuration, and arming the ATTN wake.  Everything
+// that must run on every sample lives in loop().
 // ===========================================================================
 void setup() {
-    Serial.begin(115200);
-    delay(250);   // Brief wait for Serial on cold boot; safe to miss after sleep
+    debugSerial.begin(115200);
 
     Wire.begin();
     notecard.begin();  // I2C at default 100 kHz
 
-    // ── Restore or initialize persistent state ──────────────────────────────
-    NotePayloadDesc payload;
-    bool warmBoot = NotePayloadRetrieveAfterSleep(&payload);
-    bool stateOk  = false;
+    // ── Initialize application state ─────────────────────────────────────────
+    debugSerial.println("[cargo] cold boot — initializing");
+    memset(&gState, 0, sizeof(gState));
+    // Seed min/max sentinels so the first real reading always wins
+    gState.temp_min = 999.0f;  gState.temp_max = -999.0f;
+    gState.rh_min   = 999.0f;  gState.rh_max   = -999.0f;
+    gState.lux_max  = 0.0f;
+    gState.config_version = CONFIG_VERSION;
+    gState.shipment_state = SHIP_STATE_UNKNOWN;
+    gState.seq            = 0;
+    gState.chain_crc      = 0;
+    // Increment and persist the boot-segment counter in Notecard local flash
+    // (chain_boot.dbx) so every cold boot produces a distinct, traceable
+    // chain-segment boundary in cargo_log.qo.  Must run after
+    // notecard.begin() and before the first sendLogEntry().
+    loadOrIncrementBootSeg();
+    notecardConfigure();
+    defineTemplates();
 
-    if (warmBoot) {
-        stateOk = NotePayloadGetSegment(&payload, STATE_SEG,
-                                        &gState, sizeof(gState));
-        NotePayloadFree(&payload);
-        if (stateOk) {
-            Serial.println("[cargo] warm boot — state restored");
-        } else {
-            Serial.println("[cargo] warm boot — state segment missing, re-initializing");
-        }
-    }
+    // ── Arm the ATTN wake: the Notecard raises ATTN (D5) to end each sleep ────
+    cxSleepBegin();
+}
 
-    if (!warmBoot || !stateOk) {
-        Serial.println("[cargo] cold boot — initializing");
-        memset(&gState, 0, sizeof(gState));
-        // Seed min/max sentinels so the first real reading always wins
-        gState.temp_min = 999.0f;  gState.temp_max = -999.0f;
-        gState.rh_min   = 999.0f;  gState.rh_max   = -999.0f;
-        gState.lux_max  = 0.0f;
-        gState.config_version = CONFIG_VERSION;
-        gState.shipment_state = SHIP_STATE_UNKNOWN;
-        gState.seq            = 0;
-        gState.chain_crc      = 0;
-        // Increment and persist the boot-segment counter in Notecard local flash
-        // (chain_boot.dbx) so every uncontrolled cold boot produces a distinct,
-        // traceable chain-segment boundary in cargo_log.qo.  Must run after
-        // notecard.begin() and before the first sendLogEntry().
-        loadOrIncrementBootSeg();
+// ===========================================================================
+// loop() — one sample cycle, then STOP2 until the Notecard raises ATTN
+// ===========================================================================
+void loop() {
+    // ── Retry any Notecard configuration not confirmed on a prior wake ───────
+    // Each step is flag-gated inside notecardConfigure()/defineTemplates(), so
+    // on a healthy device these are no-ops after the first pass.
+    if (!gState.hub_configured || !gState.transport_configured ||
+            !gState.motion_configured) {
+        debugSerial.println("[cargo] retrying incomplete Notecard configuration");
         notecardConfigure();
+    }
+    if (!gState.templates_registered) {
+        debugSerial.println("[cargo] retrying incomplete template registration");
         defineTemplates();
-    }
-
-    // ── On warm boot, check for config version mismatch ─────────────────────
-    if (warmBoot && stateOk) {
-        if (gState.config_version != CONFIG_VERSION) {
-            Serial.println("[cargo] config version mismatch — forcing Notecard reconfiguration");
-            gState.hub_configured       = false;
-            gState.transport_configured = false;
-            gState.motion_configured    = false;
-            gState.templates_registered = false;
-            gState.config_version       = CONFIG_VERSION;
-        }
-        notecardConfigure();
-        if (!gState.templates_registered) {
-            Serial.println("[cargo] retrying incomplete template registration");
-            defineTemplates();
-        }
     }
 
     // ── Fetch env-var overrides (every wake) ─────────────────────────────────
@@ -197,7 +206,7 @@ void setup() {
     float    temp_c = INVALID_F, rh_pct = INVALID_F, lux = INVALID_F;
     bool     sensorsOk = readSensors(&temp_c, &rh_pct, &lux);
     if (!sensorsOk) {
-        Serial.println("[cargo] one or more sensor reads failed this cycle");
+        debugSerial.println("[cargo] one or more sensor reads failed this cycle");
     }
 
     char     currentOrientation[ORIENT_MAX] = {0};
@@ -205,7 +214,7 @@ void setup() {
     bool     motionOk = readMotionCount(&motion, currentOrientation,
                                         sizeof(currentOrientation));
     if (!motionOk) {
-        Serial.println("[cargo] card.motion unavailable — shock evaluation skipped");
+        debugSerial.println("[cargo] card.motion unavailable — shock evaluation skipped");
     }
 
     // ── One-time epoch read ──────────────────────────────────────────────────
@@ -215,7 +224,7 @@ void setup() {
     bool cadenceChanged = (gSampleSec != prevSampleSec ||
                            gSummaryMin != prevSummaryMin);
     if (cadenceChanged) {
-        Serial.println("[cargo] cadence changed — resetting summary window");
+        debugSerial.println("[cargo] cadence changed — resetting summary window");
         resetAccumulators();
         if (now > 0) gState.last_summary_epoch = now;
     }
@@ -226,7 +235,7 @@ void setup() {
         gState.last_summary_epoch = now;
         anchorJustSet = true;
         resetAccumulators();
-        Serial.println("[cargo] summary window anchored — pre-anchor samples cleared");
+        debugSerial.println("[cargo] summary window anchored — pre-anchor samples cleared");
     }
 
     bool skipThisCycle = anchorJustSet || cadenceChanged;
@@ -236,16 +245,16 @@ void setup() {
     // restored baseline_orientation from chain_boot.dbx (if previously saved),
     // so this block only fires on true first activation or when chain_boot.dbx
     // was unreachable.  persistBaselineOrientation() saves the new baseline to
-    // chain_boot.dbx so subsequent uncontrolled cold boots can restore it,
-    // preventing a post-reboot orientation from silently replacing the
-    // activation-time baseline and suppressing a real tilt event.
+    // chain_boot.dbx so subsequent cold boots can restore it, preventing a
+    // post-reboot orientation from silently replacing the activation-time
+    // baseline and suppressing a real tilt event.
     if (currentOrientation[0] && gState.baseline_orientation[0] == '\0') {
         strncpy(gState.baseline_orientation, currentOrientation,
                 sizeof(gState.baseline_orientation) - 1);
         gState.baseline_orientation[sizeof(gState.baseline_orientation) - 1] = '\0';
         persistBaselineOrientation();
-        Serial.print("[cargo] orientation baseline set: ");
-        Serial.println(gState.baseline_orientation);
+        debugSerial.print("[cargo] orientation baseline set: ");
+        debugSerial.println(gState.baseline_orientation);
     }
 
     // ── Retry pending state-change note from a prior failed send ─────────────
@@ -258,7 +267,7 @@ void setup() {
                             gState.pending_state_epoch)) {
             gState.pending_state_change = false;
         } else {
-            Serial.println("[cargo] state-change note retry failed — will retry next wake");
+            debugSerial.println("[cargo] state-change note retry failed — will retry next wake");
         }
     }
 
@@ -330,8 +339,8 @@ void setup() {
             ((now - gState.last_summary_epoch) >= effectiveSummaryMin * 60UL);
         if (intervalElapsed) {
             if (gState.pending_epoch > 0) {
-                Serial.println("[cargo] WARNING: stale pending summary discarded — "
-                               "Notecard unreachable for full summary window");
+                debugSerial.println("[cargo] WARNING: stale pending summary discarded — "
+                                    "Notecard unreachable for full summary window");
                 gState.pending_epoch = 0;
             }
             snapshotSummary(now);
@@ -343,17 +352,11 @@ void setup() {
         }
     }
 
-    // ── Persist state and cut host power until next sample ───────────────────
-    NotePayloadDesc save = {0, 0, 0};
-    NotePayloadAddSegment(&save, STATE_SEG, &gState, sizeof(gState));
-    NotePayloadSaveAndSleep(&save, gSampleSec, NULL);
-
-    // Reached only if card.attn did not cut host power.  State has already
-    // been persisted.  Reset so setup() re-enters as a warm boot.
-    Serial.println("[cargo] card.attn did not cut host power — issuing software reset");
-    delay(100);
-    NVIC_SystemReset();
+    // ── Sleep in STOP2 until the Notecard raises ATTN gSampleSec from now ────
+    if (!cxSleepUntilAttn(notecard, gSampleSec, NULL, &debugSerial)) {
+        // Notecard not ready, or ATTN never went low (check the ATTN -> D5
+        // jumper).  Keep the sample cadence and try again next cycle.
+        debugSerial.println("[cargo] ATTN sleep failed — waiting out the interval awake");
+        delay(gSampleSec * 1000UL);
+    }
 }
-
-// loop() is intentionally empty — all logic runs in setup() on each wake.
-void loop() {}

@@ -9,9 +9,10 @@
 *******************************************************************************/
 
 #include "construction_env_monitor_helpers.h"
+#include "cx_sleep.h"
 
-// ── Notecard initialisation (runs once on first boot only) ───────────────────
-// Sends hub.set with the product UID to handle the cold-boot I²C race via
+// ── Notecard initialisation (runs once at power-up, from setup()) ────────────
+// Sends hub.set with the product UID to handle the power-up I²C race via
 // sendRequestWithRetry.  applyCardConfig() is called immediately after and
 // re-sends hub.set with requestAndResponse (because lastReportMin is
 // initialised to 0), so the outbound cadence is confirmed even if this
@@ -33,7 +34,7 @@ void notecardConfigure(void) {
     J *req = notecard.newRequest("hub.set");
     if (!req) {
 #ifdef DEBUG_SERIAL
-        DEBUG_SERIAL.println("[cfg] hub.set request allocation failed on first boot.");
+        DEBUG_SERIAL.println("[cfg] hub.set request allocation failed at power-up.");
 #endif
         return;
     }
@@ -41,15 +42,15 @@ void notecardConfigure(void) {
     JAddStringToObject(req, "mode",     "periodic");
     JAddNumberToObject(req, "outbound", (int)cfgReportMin);
     JAddNumberToObject(req, "inbound",  120);   // poll for env-var updates every 2 h
-    // sendRequestWithRetry handles the cold-boot I²C race condition.
+    // sendRequestWithRetry handles the power-up I²C race condition.
     // card.location.mode and note.template are NOT issued here — both are
     // handled by applyCardConfig() and defineTemplates(), which are called on
-    // every wake, so a transient failure on first boot is retried automatically.
+    // every wake, so a transient failure at power-up is retried automatically.
     notecard.sendRequestWithRetry(req, 5);
 }
 
 // ── Re-apply hub outbound cadence and GPS mode if env vars changed ────────────
-// Called from both setup() and the loop() fallback path so that Notehub
+// Called from loop() on every wake so that Notehub
 // operator changes to report_interval_min or gps_interval_sec take effect
 // without re-flashing.  State fields are advanced only after a confirmed
 // successful requestAndResponse so a transient failure retries on the next wake.
@@ -574,16 +575,14 @@ void runOneSampleCycle(void) {
     }
 
     // ── Read sound level FIRST ────────────────────────────────────────────
-    // The SEN0232 is always powered from V+ (not gated by the ATTN sleep
-    // path) and can be sampled immediately after the GPS update.  Sampling
-    // sound before calling begin_I2C() and the PM warm-up delay bounds the
-    // PM fan's acoustic contribution to at most the host boot + setup() time
-    // (~5–15 s); this minimises but does not eliminate contamination.
-    // Whether the PMSA003I's Qwiic 3V3 rail is cut during ATTN sleep is
-    // carrier-implementation-specific: if it is not cut, the fan runs
-    // continuously and the audio channel is contaminated throughout.
-    // Complete elimination requires an explicit GPIO-controlled load switch
-    // to gate PMSA003I power — see README §9.
+    // The SEN0232 is always powered from V+ and can be sampled immediately
+    // after the GPS update.  Sampling sound before calling begin_I2C() and
+    // the PM warm-up delay keeps the PM sensor's warm-up phase out of the
+    // dB(A) window.  Note that the host sleeping in STOP2 does not switch the
+    // Qwiic 3V3 rail, so the PMSA003I stays powered (fan running) between
+    // wakes and the audio channel carries its noise floor throughout.
+    // Eliminating that requires an explicit GPIO-controlled load switch to
+    // gate PMSA003I power — see README §9.
     float dbA = readSoundLevelDb();
 
     // ── Initialise PM sensor over I²C ────────────────────────────────────
@@ -602,10 +601,10 @@ void runOneSampleCycle(void) {
     float pm25 = -1.0f, pm10 = -1.0f;
     if (pmReady) {
         // Always allow the PMSA003I fan and laser to stabilise before reading.
-        // Whether the ATTN sleep path cuts the Qwiic 3V3 rail between wakes is
-        // carrier-implementation-specific; applying PM_WARMUP_MS unconditionally
-        // guarantees valid readings regardless of whether the sensor cold-started
-        // or was already running.
+        // The Qwiic 3V3 rail stays on while the host sleeps, so the sensor is
+        // normally already running; applying PM_WARMUP_MS unconditionally
+        // guarantees valid readings whether it cold-started (power-up, or a
+        // load switch per README §9) or was already running.
         delay(PM_WARMUP_MS);
         readPmSensor(pm25, pm10);
     }
@@ -649,7 +648,7 @@ void runOneSampleCycle(void) {
     // ── Send summary if report window has elapsed ─────────────────────────
     // reportCountdown is either fired (reset to cfgReportMin * 60) or
     // decremented by cfgSampleSec — never both in the same cycle — so no
-    // separate aging pass is needed here.  saveStateAndSleep() trims the
+    // separate aging pass is needed here.  loop() trims the
     // sleep duration by g_lastActiveSec, making the total cycle time (active
     // + sleep) equal cfgSampleSec, so decrementing by cfgSampleSec tracks
     // elapsed wall time correctly.  Advancing the countdown only after a
@@ -664,17 +663,29 @@ void runOneSampleCycle(void) {
     }
 }
 
-// ── Serialise state to Notecard flash and cut host power via card.attn ────────
+// ── Sleep the host in STOP2 until the Notecard raises ATTN ───────────────────
+// cxSleepUntilAttn() (cx_sleep.h) issues card.attn "sleep" so the Notecard
+// holds ATTN low for sleepSec seconds, then puts the STM32 host into STOP2.
+// The ATTN rising edge on D5 wakes it and execution resumes in loop().  RAM is
+// retained, so AppState needs no serialisation.
+//
 // sleepSec is the configured sample interval minus the seconds spent awake
 // this cycle, so the Notecard wakes the host at the intended cadence rather
 // than (cfgSampleSec + activeSec) seconds after the cycle started.
-void saveStateAndSleep(uint32_t sleepSec) {
-    NotePayloadDesc payload = {0, 0, 0};
-    NotePayloadAddSegment(&payload, STATE_SEG_ID, &state, sizeof(state));
-    // Persists state to Notecard flash; card.attn cuts the host power rail for
-    // sleepSec seconds.  Next wake restores state via NotePayloadRetrieveAfterSleep.
-    NotePayloadSaveAndSleep(&payload, sleepSec, NULL);
-    // Returns here only if the ATTN path is absent or the power rail was not cut.
+void sleepUntilAttn(uint32_t sleepSec) {
+#ifdef DEBUG_SERIAL
+    Stream *log = &DEBUG_SERIAL;
+#else
+    Stream *log = NULL;
+#endif
+    if (!cxSleepUntilAttn(notecard, sleepSec, NULL, log)) {
+        // The Notecard didn't take the sleep request, or ATTN never went low
+        // (check the ATTN -> D5 jumper).  Keep the sample cadence and try again.
+#ifdef DEBUG_SERIAL
+        DEBUG_SERIAL.println("[sleep] ATTN sleep failed; waiting out the interval awake.");
+#endif
+        delay(sleepSec * 1000UL);
+    }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

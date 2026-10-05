@@ -23,9 +23,17 @@
 #include <Adafruit_VEML7700.h>
 #include <Wire.h>
 
-// Set to 1 for bench bring-up; 0 for deployment (Serial off, no Notecard debug stream).
+// Set to 1 for bench bring-up; 0 for deployment (debug UART off, no Notecard
+// debug stream). The firmware is built with USB CDC disabled (usb=none) so
+// the host can sleep in STOP2, so debug output goes to debugSerial — the
+// LPUART on the Notecarrier CX debug jack, which an ST-LINK V3 exposes as a
+// virtual COM port — not to USB.
 #ifndef ENABLE_DEBUG
 #define ENABLE_DEBUG 0
+#endif
+
+#if ENABLE_DEBUG
+extern Uart debugSerial;   // defined in cold_storage_audit_monitor.ino
 #endif
 
 // Notefile names
@@ -35,6 +43,13 @@
 // Reed switch: Normally Open, terminal A → D5, terminal B → GND; INPUT_PULLUP.
 // LOW = door closed (magnet closes contacts); HIGH = door open.
 #define DOOR_SWITCH_PIN D5
+
+// Notecard ATTN → host wake pin (jumper on the Notecarrier CX header). D5 is
+// taken by the door switch and D10 by the MAX31865 chip-select, so the ATTN
+// jumper lands on D6, the next free digital pin. Defined here, before
+// cx_sleep.h is included by either translation unit, so both see the same pin.
+// Leave the Notecarrier CX EN pin unconnected (see cx_sleep.h).
+#define CX_ATTN_PIN D6
 
 // MAX31865 SPI chip-select pin on the Notecarrier CX dual 16-pin header.
 // Uses hardware SPI (SCK/MOSI/MISO on the header); only CS is software-selectable.
@@ -48,31 +63,17 @@
 #define SENTINEL_NO_DATA -9999.0f
 #define SENTINEL_LUX_NO_DATA -1.0f
 
-// Notecard NotePayload segment identifier
-#define STATE_SEG_ID "STOR"
-
 // Capacity (including '\0') of the pending alert-type string.
 // "sensor_disagreement" is the longest type (19 chars); 24 provides headroom.
 #define PENDING_ALERT_TYPE_LEN 24
 
-// State magic + version guard. The high 16 bits (0xC5A0) are a fixed sentinel
-// (Cold Storage Audit); the low 16 bits are the schema version counter.
-// Increment the low 16 bits whenever any of the following change:
-//   • AppState field layout
-//   • PRODUCT_UID compile-time constant
-//   • OUTBOUND_INTERVAL_MIN
-//   • note.template schema (fields or types)
-// A mismatch on restore forces full re-initialisation, clearing
-// notecard_configured and templates_defined so the updated config is applied.
-#define STATE_MAGIC_VERSION 0xC5A00003UL
-
-// Capacity of the persisted pending-note ring buffers (readings and alerts).
+// Capacity of the pending-note ring buffers (readings and alerts).
 // 4 slots covers four consecutive Notecard-unreachable wakes before the oldest
 // unsent entry is overwritten. This is a deliberate design trade-off: the
 // dropped_readings / dropped_alerts counters embedded in every successfully
 // sent reading Note make any lost entries observable in Notehub. Increase
 // PENDING_RING_CAP if the deployment environment expects longer connectivity
-// gaps; the AppState struct (and therefore flash usage) grows proportionally.
+// gaps; the AppState struct (and therefore RAM usage) grows proportionally.
 #define PENDING_RING_CAP 4
 
 // Bitmask flags for tracking which alert types have an undelivered entry in the
@@ -113,16 +114,12 @@ struct PendingAlert
 };
 
 // ---------------------------------------------------------------------------
-// Application state — serialised into Notecard flash across sleep cycles via
-// NotePayloadSaveAndSleep / NotePayloadRetrieveAfterSleep.
+// Application state. Lives in RAM; STOP2 retains SRAM, so it survives every
+// sleep/wake cycle and is reset only by a power cycle or reset (which re-runs
+// setup()).
 // ---------------------------------------------------------------------------
 struct AppState
 {
-    // Must be first: validated immediately on restore. A mismatch (firmware
-    // update, PRODUCT_UID change, schema change) triggers full re-init so
-    // notecard_configured and templates_defined are reapplied.
-    uint32_t magic_version;
-
     // Door open timing. 0 means closed or pre-time-sync (see runSampleCycle).
     uint32_t door_open_since;
 
@@ -144,8 +141,7 @@ struct AppState
     float lux_threshold;
 
     // Configuration flags — retried each wake until the Notecard confirms
-    // each step without error. Both are cleared on magic_version mismatch so
-    // config/schema updates are always applied after a firmware change.
+    // each step without error.
     bool notecard_configured;
     bool templates_defined;
 

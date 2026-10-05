@@ -5,8 +5,8 @@
  * cellular medication adherence pillbox firmware.
  *
  * To disable debug output for production/battery builds, comment out the
- * #define usbSerial line below. All Serial.print calls in the helpers and in
- * the main sketch are guarded by #ifdef usbSerial, so a single edit here
+ * #define usbSerial line below. All usbSerial.print calls in the helpers and
+ * in the main sketch are guarded by #ifdef usbSerial, so a single edit here
  * silences both translation units.
  */
 #pragma once
@@ -17,29 +17,16 @@
 // ── Debug output ─────────────────────────────────────────────────────────────
 // Comment out this line for production/battery builds. When undefined every
 // usbSerial.print call is compiled out, keeping each 30-second wake tight.
-#define usbSerial Serial
+//
+// The macro name is historical: USB CDC must be disabled for the host to
+// sleep (see cx_sleep.h), so debug output goes to dbgSerial, the LPUART on
+// the Notecarrier CX debug jack, which an ST-LINK exposes as a virtual COM
+// port. dbgSerial is defined in the .ino.
+#define usbSerial dbgSerial
 
-// ── Bench mode ───────────────────────────────────────────────────────────────
-// Define PILLBOX_BENCH_MODE when testing on a bench setup where the Notecard
-// ATTN pin is NOT connected to the host EN rail.
-//
-// NotePayloadSaveAndSleep() always returns to the host once it has dispatched
-// the card.attn sleep command — it is the Notecard's subsequent ATTN
-// de-assertion that actually cuts host power on a correctly wired carrier.
-//
-// Bench mode: if ATTN->EN is not wired, the host stays alive after the call
-// returns. sleepHost() falls back to delay() + NVIC_SystemReset(), allowing
-// bring-up without full power-gating hardware in place.
-//
-// Production (PILLBOX_BENCH_MODE undefined): on a correctly wired Notecarrier
-// CX the host loses power within milliseconds of NotePayloadSaveAndSleep()
-// returning. If it doesn't (an ATTN->EN wiring fault) sleepHost() logs the
-// condition over USB serial if available and halts the host. Halting rather
-// than busy-waiting prevents silent LiPo drain and makes the fault visible
-// in Notehub as a missing _session.qo cadence.
-//
-// Comment out this line before deploying to a battery-powered Notecarrier CX.
-// #define PILLBOX_BENCH_MODE
+#ifdef usbSerial
+extern Uart dbgSerial;   // defined in cellular_medication_adherence_pillbox.ino
+#endif
 
 // ── Tunable defaults (all overridable via Notehub environment variables) ─────
 #define DEFAULT_POLL_SEC      30    // seconds between host wakes
@@ -54,13 +41,6 @@
 #define NOTEFILE_OPEN    "pill_open.qo"    // immediate open event, sync:true
 #define NOTEFILE_SUMMARY "pill_summary.qo" // daily adherence summary, templated
 #define NOTEFILE_DIAG    "pill_diag.qo"    // pending-event queue overflow diagnostic
-
-// ── Persistent state ─────────────────────────────────────────────────────────
-// Segment IDs in note-c are 4-character identifiers (NP_SEGTYPE_LEN == 4).
-// Use a full 4-character ID per the documented contract; Blues sample code
-// follows the same convention ("GLOB", "TEMP", "VOLT", etc.).
-#define STATE_SEG_ID          "PILL"
-#define PILLBOX_STATE_VERSION   5   // increment whenever PillboxState layout changes
 
 // Maximum number of failed pill_open.qo events buffered across wakes. When
 // the queue is full the oldest entry is evicted and pending_overflow is
@@ -80,11 +60,10 @@ struct PendingOpenEvent {
     uint8_t poll_mask;    // opened_this_poll bitmask from that specific wake
 };
 
-// State persisted across sleep cycles via NotePayloadSaveAndSleep. The
-// Notecard stores this struct in its own flash and returns it on the next
-// wake via NotePayloadRetrieveAfterSleep — no external memory needed.
+// Application state. Lives in RAM: the host sleeps in STM32 STOP2 between
+// polls, which retains SRAM, so this struct survives every sleep/wake cycle
+// and is reset only by a power cycle or reset (which re-runs setup()).
 struct PillboxState {
-    uint8_t  version;            // must equal PILLBOX_STATE_VERSION; mismatch reinits
     uint8_t  prev_pin_mask;      // pin bitmask from previous wake (0=closed, 1=open)
     uint8_t  daily_opens;        // compartments opened today (bitmask; feeds summary)
     uint8_t  prev_day_opens;     // opens_mask from previous day, awaiting summary emit

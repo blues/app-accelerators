@@ -109,7 +109,7 @@ bool defineTemplates() {
     g_summary_template_applied = notecard.sendRequest(req);
 #ifdef PLUG_LOAD_DEBUG
     if (!g_summary_template_applied) {
-        dbgSerial.println("[init] circuit_summary.qo template definition failed; will retry next boot");
+        dbgSerial.println("[init] circuit_summary.qo template definition failed; will retry next wake");
     }
 #endif
 
@@ -132,7 +132,7 @@ bool defineTemplates() {
     g_alert_template_applied = notecard.sendRequest(req);
 #ifdef PLUG_LOAD_DEBUG
     if (!g_alert_template_applied) {
-        dbgSerial.println("[init] circuit_alert.qo template definition failed; will retry next boot");
+        dbgSerial.println("[init] circuit_alert.qo template definition failed; will retry next wake");
     }
 #endif
 
@@ -169,7 +169,7 @@ static J* buildEnvGetReq() {
 // returns false on I²C failure or a Notecard error response, leaving all
 // CFG_* variables at their current values (either compile-time defaults on
 // first boot, or the last known-good snapshot restored from AppState.saved_cfg
-// on subsequent wakes — see setup()).
+// on subsequent wakes — see loop()).
 // One retry with a 250 ms gap absorbs transient Notecard I²C hiccups at wake
 // without holding the host up for a full sendRequestWithRetry timeout.
 bool fetchEnvOverrides() {

@@ -11,6 +11,7 @@
   on each call — no dataReady() poll is required.
 */
 #include "cold_storage_audit_monitor_helpers.h"
+#include "cx_sleep.h"
 
 // ===========================================================================
 // fetchEnvOverrides — pull threshold and cadence overrides from Notehub
@@ -115,14 +116,14 @@ float readTemperatureC() {
     if (fault) {
         rtdAmp.clearFault();
 #if ENABLE_DEBUG
-        Serial.print("[WARN] MAX31865 fault: 0x");
-        Serial.println(fault, HEX);
+        debugSerial.print("[WARN] MAX31865 fault: 0x");
+        debugSerial.println(fault, HEX);
 #endif
         return NAN;
     }
     if (isnan(temp) || temp < -60.0f || temp > 120.0f) {
 #if ENABLE_DEBUG
-        Serial.println("[WARN] MAX31865 out-of-range");
+        debugSerial.println("[WARN] MAX31865 out-of-range");
 #endif
         return NAN;
     }
@@ -137,7 +138,7 @@ float readLightLux() {
     float lux = lightSensor.readLux();
     if (lux < 0.0f) {
 #if ENABLE_DEBUG
-        Serial.println("[WARN] VEML7700 invalid");
+        debugSerial.println("[WARN] VEML7700 invalid");
 #endif
         return NAN;
     }
@@ -170,7 +171,7 @@ uint32_t getEpochTime() {
         // had_error: transient fault, loop will retry
     }
 #if ENABLE_DEBUG
-    Serial.println("[WARN] getEpochTime: card.time unavailable this cycle");
+    debugSerial.println("[WARN] getEpochTime: card.time unavailable this cycle");
 #endif
     return 0;
 }
@@ -216,14 +217,14 @@ bool sendReading(float temp_c, float lux, bool door_open,
         J *rsp = notecard.requestAndResponse(req);
         if (rsp == NULL) {
 #if ENABLE_DEBUG
-            Serial.print("[WARN] sendReading: no response (attempt ");
-            Serial.print(attempt + 1); Serial.println(")");
+            debugSerial.print("[WARN] sendReading: no response (attempt ");
+            debugSerial.print(attempt + 1); debugSerial.println(")");
 #endif
             continue;
         }
         if (notecard.responseError(rsp)) {
 #if ENABLE_DEBUG
-            Serial.print("[WARN] sendReading: "); Serial.println(JGetString(rsp, "err"));
+            debugSerial.print("[WARN] sendReading: "); debugSerial.println(JGetString(rsp, "err"));
 #endif
             notecard.deleteResponse(rsp);
             continue;
@@ -235,7 +236,7 @@ bool sendReading(float temp_c, float lux, bool door_open,
         return true;
     }
 #if ENABLE_DEBUG
-    Serial.println("[ERR] sendReading: all retries failed");
+    debugSerial.println("[ERR] sendReading: all retries failed");
 #endif
     return false;
 }
@@ -282,14 +283,14 @@ bool sendAlert(const char *alert_type, float temp_c, float lux,
         J *rsp = notecard.requestAndResponse(req);
         if (rsp == NULL) {
 #if ENABLE_DEBUG
-            Serial.print("[WARN] sendAlert: no response (attempt ");
-            Serial.print(attempt + 1); Serial.println(")");
+            debugSerial.print("[WARN] sendAlert: no response (attempt ");
+            debugSerial.print(attempt + 1); debugSerial.println(")");
 #endif
             continue;
         }
         if (notecard.responseError(rsp)) {
 #if ENABLE_DEBUG
-            Serial.print("[WARN] sendAlert: "); Serial.println(JGetString(rsp, "err"));
+            debugSerial.print("[WARN] sendAlert: "); debugSerial.println(JGetString(rsp, "err"));
 #endif
             notecard.deleteResponse(rsp);
             continue;
@@ -298,23 +299,31 @@ bool sendAlert(const char *alert_type, float temp_c, float lux,
         return true;
     }
 #if ENABLE_DEBUG
-    Serial.println("[ERR] sendAlert: all retries failed");
+    debugSerial.println("[ERR] sendAlert: all retries failed");
 #endif
     return false;
 }
 
 // ===========================================================================
-// goToSleep — serialise AppState to Notecard flash and cut Cygnet power
+// goToSleep — put the STM32 host into STOP2 until the Notecard raises ATTN
 // ===========================================================================
-// NotePayloadSaveAndSleep writes AppState into the Notecard's flash-backed
-// segment store and issues card.attn sleep. The ATTN pin drives the
-// Notecarrier CX enable gate, cutting power to the Cygnet for
-// sample_interval_sec seconds. On the next wake, setup() calls
-// NotePayloadRetrieveAfterSleep to restore the struct.
+// cxSleepUntilAttn() (cx_sleep.h) issues card.attn "sleep" so the Notecard
+// holds ATTN low for sample_interval_sec seconds, then puts the host into
+// STOP2. The ATTN rising edge on the jumpered host pin (D6 on this build —
+// D5 is the door switch) wakes it and execution resumes in loop(). RAM is
+// retained, so AppState needs no serialisation.
 void goToSleep() {
-    NotePayloadDesc payload = {0, 0, 0};
-    NotePayloadAddSegment(&payload, STATE_SEG_ID, &state, sizeof(state));
-    NotePayloadSaveAndSleep(&payload, state.sample_interval_sec, NULL);
-    // If execution reaches here, ATTN-based power control is not wired.
-    // The delay in loop() provides a fallback bench polling cadence.
+#if ENABLE_DEBUG
+    Stream *log = &debugSerial;
+#else
+    Stream *log = NULL;
+#endif
+    if (!cxSleepUntilAttn(notecard, state.sample_interval_sec, NULL, log)) {
+        // The Notecard didn't take the sleep request, or ATTN never went low
+        // (check the ATTN -> D6 jumper). Keep the sample cadence and try again.
+#if ENABLE_DEBUG
+        debugSerial.println("[WARN] ATTN sleep failed — waiting out the interval awake");
+#endif
+        delay((unsigned long)state.sample_interval_sec * 1000UL);
+    }
 }

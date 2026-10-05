@@ -3,7 +3,7 @@
   Condition & Interchange Tracker
 
   Encapsulates all Notecard interactions, sensor reads, and alert/summary
-  note emission. Called from setup() in rail_car_tracker.ino.
+  note emission. Called from setup() and loop() in rail_car_tracker.ino.
 
   THIS FILE SHOULD BE EDITED AFTER GENERATION.
   IT IS PROVIDED AS A STARTING POINT FOR THE USER TO EDIT AND EXTEND.
@@ -12,7 +12,7 @@
 #include "rail_car_tracker_helpers.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
-// notecardReady — per-boot I²C readiness ping with retry
+// notecardReady — power-up I²C readiness ping with retry
 //
 // The host MCU can power up before the Notecard's I²C stack is ready. A
 // lightweight card.version with sendRequestWithRetry idles for up to 10 s
@@ -32,7 +32,7 @@ bool notecardReady() {
 // ─────────────────────────────────────────────────────────────────────────────
 // configureNotecard — hub.set + voltage-variable sync policy
 //
-// Called at every boot (idempotent) so that a PRODUCT_UID change in the
+// Called at power-up (idempotent) so that a PRODUCT_UID change in the
 // firmware sketch takes effect on the very next wake without requiring
 // CONFIG_VERSION to be bumped. Returns false if the request fails; the caller
 // logs the error but continues — the Notecard retains its previous hub.set
@@ -196,7 +196,7 @@ bool defineTemplates() {
 //
 // card.location.mode is set to periodic WITHOUT a motion threshold so that a
 // newly installed tracker on a stationary rail car can acquire an initial GPS
-// fix in a yard or at an interchange. Once setup() confirms a valid fix via
+// fix in a yard or at an interchange. Once loop() confirms a valid fix via
 // card.location (state.locationAcquired), it calls applyGPSMotionGate() to
 // add threshold:1, keeping the GNSS radio off during yard dwell and protecting
 // the solar power budget. The motion gate is restored after every firmware
@@ -232,7 +232,7 @@ bool configureMotionAndGPS() {
     }
 
     // Periodic GPS: attempt a fix every 5 minutes. threshold is intentionally
-    // omitted so the GNSS radio runs unconditionally until setup() confirms the
+    // omitted so the GNSS radio runs unconditionally until loop() confirms the
     // first fix. applyGPSMotionGate() then adds threshold:1 to gate the radio
     // on motion, saving solar energy during long stationary yard dwell periods.
     {
@@ -264,7 +264,7 @@ bool configureMotionAndGPS() {
 //
 // Re-issues card.location.mode with threshold:1 so the GNSS radio only wakes
 // when the Notecard internal accelerometer detects at least one motion event.
-// Called from setup() once a valid GPS fix has been confirmed in card.location,
+// Called from loop() once a valid GPS fix has been confirmed in card.location,
 // replacing the no-threshold "initial acquisition" mode set by
 // configureMotionAndGPS(). The Notecard retains this configuration across
 // host power cycles until it is overwritten.

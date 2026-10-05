@@ -17,9 +17,15 @@
 // DEBUG_MODE is defined by the user in the .ino (or via -DDEBUG_MODE build
 // flag) *before* this header is included.  The macros below expand to no-ops
 // in production builds, so there is zero overhead on the deployed trailer.
+//
+// Output goes to debugSerial, the LPUART on the Notecarrier CX debug jack
+// (an ST-LINK exposes it as a virtual COM port).  USB CDC must stay disabled
+// for the host to sleep in STOP2, so Serial is not used.  debugSerial is
+// defined in the .ino.
 #ifdef DEBUG_MODE
-#  define DEBUG_PRINT(x)   Serial.print(x)
-#  define DEBUG_PRINTLN(x) Serial.println(x)
+extern Uart debugSerial;   // defined in reefer_cold_chain_monitor.ino
+#  define DEBUG_PRINT(x)   debugSerial.print(x)
+#  define DEBUG_PRINTLN(x) debugSerial.println(x)
 #else
 #  define DEBUG_PRINT(x)
 #  define DEBUG_PRINTLN(x)
@@ -98,10 +104,6 @@
 // The summary notefile is non-NTN and has no port.
 #define TEMPLATE_PORT_ALERT  51
 
-// ── State segment ID for NotePayloadSaveAndSleep ──────────────────────────────
-// 4-char tag per note-c NP_SEGTYPE_LEN; identifies the AppState blob in payload.
-#define STATE_SEG_ID  "STAT"
-
 // ── Sentinel for a disconnected or failed DS18B20 probe ──────────────────────
 // DallasTemperature returns DEVICE_DISCONNECTED_C (-127.0) on failure.
 #define TEMP_INVALID  -127.0f
@@ -122,7 +124,10 @@
 #define TEMP_PENDING_WARM  1u   // temp_excursion (above g_tempMaxC)
 #define TEMP_PENDING_COLD  2u   // temp_cold      (below g_tempMinC)
 
-// ── Application state (persisted to Notecard flash across sleep cycles) ───────
+// ── Application state ─────────────────────────────────────────────────────────
+// Lives in RAM.  The host sleeps in STM32 STOP2 between samples, which retains
+// SRAM, so this struct survives every sleep/wake cycle and is reset only by a
+// power cycle or reset (which re-runs setup()).
 typedef struct {
     bool     configured;            // true after first-boot hub.set / templates
     uint32_t summary_interval_min;  // last-applied hub.set outbound cadence

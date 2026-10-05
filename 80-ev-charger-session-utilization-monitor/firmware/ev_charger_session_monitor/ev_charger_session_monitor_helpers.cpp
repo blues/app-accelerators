@@ -10,6 +10,7 @@
  */
 
 #include "ev_charger_session_monitor_helpers.h"
+#include "cx_sleep.h"
 #include <ModbusMaster.h>
 
 // ── Modbus (file-scope) ───────────────────────────────────────────────────────
@@ -35,10 +36,10 @@ static float regsToFloat(uint16_t hi, uint16_t lo) {
 // initModbus — configure the RS-485 transceiver pin and initialise the
 // ModbusMaster instance against Serial1.
 //
-// Must be called every wake because the STM32L4 UART peripheral registers
-// are not retained through full host power-off (the Notecarrier CX ATTN
-// power-gate cuts the MCU's supply entirely between samples).  Re-calling
-// Serial1.begin() and node.begin() is safe and fast.
+// Called once from setup() — STOP2 retains the UART peripheral registers, so
+// Serial1 survives each sleep/wake cycle — and again from fetchEnvOverrides()
+// whenever the baud rate or slave ID changes.  Re-calling Serial1.begin() and
+// node.begin() is safe and fast.
 // ─────────────────────────────────────────────────────────────────────────────
 void initModbus() {
     pinMode(PIN_RS485_DE, OUTPUT);
@@ -90,10 +91,10 @@ bool pollMeter(MeterReading *out) {
         // ── Voltage ──────────────────────────────────────────────────────────
         rc = node.readInputRegisters(SDM_REG_VOLTAGE, 2);
         if (rc != ModbusMaster::ku8MBSuccess) {
-            Serial.print("[app] WARN: Modbus voltage read error 0x");
-            Serial.print(rc, HEX);
-            if (attempt < kMaxAttempts) { Serial.println(" — retrying"); continue; }
-            Serial.println();
+            debugSerial.print("[app] WARN: Modbus voltage read error 0x");
+            debugSerial.print(rc, HEX);
+            if (attempt < kMaxAttempts) { debugSerial.println(" — retrying"); continue; }
+            debugSerial.println();
             return false;
         }
         float voltage_v = regsToFloat(node.getResponseBuffer(0), node.getResponseBuffer(1));
@@ -102,10 +103,10 @@ bool pollMeter(MeterReading *out) {
         // ── Active power ─────────────────────────────────────────────────────
         rc = node.readInputRegisters(SDM_REG_POWER, 2);
         if (rc != ModbusMaster::ku8MBSuccess) {
-            Serial.print("[app] WARN: Modbus power read error 0x");
-            Serial.print(rc, HEX);
-            if (attempt < kMaxAttempts) { Serial.println(" — retrying"); continue; }
-            Serial.println();
+            debugSerial.print("[app] WARN: Modbus power read error 0x");
+            debugSerial.print(rc, HEX);
+            if (attempt < kMaxAttempts) { debugSerial.println(" — retrying"); continue; }
+            debugSerial.println();
             return false;
         }
         float pw = regsToFloat(node.getResponseBuffer(0), node.getResponseBuffer(1));
@@ -114,10 +115,10 @@ bool pollMeter(MeterReading *out) {
         // ── Cumulative import energy ──────────────────────────────────────────
         rc = node.readInputRegisters(SDM_REG_IMPORT_KWH, 2);
         if (rc != ModbusMaster::ku8MBSuccess) {
-            Serial.print("[app] WARN: Modbus kWh read error 0x");
-            Serial.print(rc, HEX);
-            if (attempt < kMaxAttempts) { Serial.println(" — retrying"); continue; }
-            Serial.println();
+            debugSerial.print("[app] WARN: Modbus kWh read error 0x");
+            debugSerial.print(rc, HEX);
+            if (attempt < kMaxAttempts) { debugSerial.println(" — retrying"); continue; }
+            debugSerial.println();
             return false;
         }
 
@@ -132,11 +133,11 @@ bool pollMeter(MeterReading *out) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // initNotecard — configure hub sync and quiet the accelerometer.  Returns true
-// when hub.set succeeds; the caller persists this result in
+// when hub.set succeeds; the caller stores this result in
 // state.notecard_configured so a failed attempt is retried on the next wake.
 //
 // sendRequestWithRetry on the very first I²C call addresses the documented
-// race condition where the Cygnet comes up faster than the Notecard.
+// race condition where the host comes up faster than the Notecard.
 // ─────────────────────────────────────────────────────────────────────────────
 bool initNotecard(const char *product_uid) {
     J *req = notecard.newRequest("hub.set");
@@ -145,13 +146,13 @@ bool initNotecard(const char *product_uid) {
     JAddNumberToObject(req, "outbound", (int)state.report_interval_min);
     JAddNumberToObject(req, "inbound",  120);
     bool ok = notecard.sendRequestWithRetry(req, 5);
-    if (!ok) Serial.println("[app] WARN: hub.set failed — will retry on next wake");
+    if (!ok) debugSerial.println("[app] WARN: hub.set failed — will retry on next wake");
 
     // Disable the on-board accelerometer to eliminate interrupt-driven current
     // blips on a Mojo power trace during bench validation.  Best-effort.
     req = notecard.newRequest("card.motion.mode");
     JAddBoolToObject(req, "stop", true);
-    if (!notecard.sendRequest(req)) Serial.println("[app] WARN: card.motion.mode failed");
+    if (!notecard.sendRequest(req)) debugSerial.println("[app] WARN: card.motion.mode failed");
 
     return ok;
 }
@@ -188,8 +189,8 @@ bool defineTemplates() {
     JAddNumberToObject(body, "availability_pct",     14.1);  // available_min / elapsed_min × 100
     JAddNumberToObject(body, "sample_coverage_pct",  14.1);  // total_min / elapsed_min × 100
     bool ok = notecard.sendRequest(req);
-    if (!ok) Serial.println("[app] WARN: note.template failed — will retry on next wake");
-    else     Serial.println("[app] Notefile template registered for " FILE_SUMMARY);
+    if (!ok) debugSerial.println("[app] WARN: note.template failed — will retry on next wake");
+    else     debugSerial.println("[app] Notefile template registered for " FILE_SUMMARY);
     return ok;
 }
 
@@ -215,7 +216,7 @@ bool applyHubCadence() {
     JAddNumberToObject(h, "outbound", (int)state.report_interval_min);
     JAddNumberToObject(h, "inbound",  120);
     bool ok = notecard.sendRequest(h);
-    if (!ok) Serial.println("[app] WARN: hub.set cadence re-sync failed — will retry on next wake");
+    if (!ok) debugSerial.println("[app] WARN: hub.set cadence re-sync failed — will retry on next wake");
     return ok;
 }
 
@@ -232,13 +233,13 @@ void fetchEnvOverrides() {
     J *req = notecard.newRequest("env.get");
     JAddNumberToObject(req, "time", (double)state.env_last_modified);
     J *rsp = notecard.requestAndResponse(req);
-    if (!rsp) { Serial.println("[app] WARN: env.get returned NULL"); return; }
+    if (!rsp) { debugSerial.println("[app] WARN: env.get returned NULL"); return; }
 
     const char *err = JGetString(rsp, "err");
     if (err && err[0]) {
         if (!strstr(err, "nothing to return")) {
-            Serial.print("[app] WARN: env.get error: ");
-            Serial.println(err);
+            debugSerial.print("[app] WARN: env.get error: ");
+            debugSerial.println(err);
         }
         notecard.deleteResponse(rsp);
         return;
@@ -262,7 +263,7 @@ void fetchEnvOverrides() {
             state.hub_cadence_dirty = true;
             if (applyHubCadence()) {
                 state.hub_cadence_dirty = false;
-                Serial.println("[app] hub outbound cadence updated");
+                debugSerial.println("[app] hub outbound cadence updated");
             }
         }
 
@@ -302,7 +303,7 @@ void fetchEnvOverrides() {
         }
     }
     notecard.deleteResponse(rsp);
-    Serial.println("[app] env vars refreshed from Notehub");
+    debugSerial.println("[app] env vars refreshed from Notehub");
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -391,7 +392,7 @@ void runSessionStateMachine(const MeterReading &meter, uint32_t now) {
                 state.window_completed_session_kwh += state.pending_session_kwh;
             }
             state.pending_session_note = false;
-            Serial.println("[app] pending session Note queued (retry succeeded)");
+            debugSerial.println("[app] pending session Note queued (retry succeeded)");
         }
         // Fall through regardless so live power is always monitored.
     }
@@ -410,7 +411,7 @@ void runSessionStateMachine(const MeterReading &meter, uint32_t now) {
             state.session_start_kwh     = meter.import_kwh;
             state.session_peak_w        = meter.power_w;
             state.below_threshold_count = 0;
-            Serial.println("[app] session STARTED");
+            debugSerial.println("[app] session STARTED");
             if (window_open) {
                 if (meter.power_w > state.window_peak_w) state.window_peak_w = meter.power_w;
                 state.charging_sec += state.sample_interval_sec;
@@ -445,7 +446,7 @@ void runSessionStateMachine(const MeterReading &meter, uint32_t now) {
                     // Copy payload into the pending-note slot.  If another session's
                     // Note is still unconfirmed, warn and overwrite — see README §9.
                     if (state.pending_session_note) {
-                        Serial.println("[app] WARN: overwriting unconfirmed pending session Note");
+                        debugSerial.println("[app] WARN: overwriting unconfirmed pending session Note");
                     }
                     state.pending_session_kwh         = session_kwh;
                     state.pending_session_peak_w      = state.session_peak_w;
@@ -456,7 +457,7 @@ void runSessionStateMachine(const MeterReading &meter, uint32_t now) {
                     state.session_active        = false;
                     state.session_peak_w        = 0.0f;
                     state.below_threshold_count = 0;
-                    Serial.println("[app] session end condition met — attempting close");
+                    debugSerial.println("[app] session end condition met — attempting close");
 
                     if (emitSessionNote(state.pending_session_kwh,
                                         state.pending_session_peak_w,
@@ -468,7 +469,7 @@ void runSessionStateMachine(const MeterReading &meter, uint32_t now) {
                         }
                         state.pending_session_note = false;
                         if (window_open) state.idle_sec += state.sample_interval_sec;
-                        Serial.println("[app] session ENDED — charger_session.qo queued");
+                        debugSerial.println("[app] session ENDED — charger_session.qo queued");
                     } else {
                         // Note not queued; pending fields remain set for retry next wake.
                         if (window_open) state.idle_sec += state.sample_interval_sec;
@@ -517,14 +518,14 @@ bool emitSessionNote(float kwh, float peak_w,
 
     J *rsp = notecard.requestAndResponse(req);
     if (!rsp) {
-        Serial.println("[app] WARN: charger_session.qo note.add returned NULL");
+        debugSerial.println("[app] WARN: charger_session.qo note.add returned NULL");
         return false;
     }
     const char *err = JGetString(rsp, "err");
     bool ok = (!err || !err[0]);
     if (!ok) {
-        Serial.print("[app] WARN: charger_session.qo error: ");
-        Serial.println(err);
+        debugSerial.print("[app] WARN: charger_session.qo error: ");
+        debugSerial.println(err);
     }
     notecard.deleteResponse(rsp);
     return ok;
@@ -606,14 +607,14 @@ bool emitSummaryNote(uint32_t now) {
 
     J *rsp = notecard.requestAndResponse(req);
     if (!rsp) {
-        Serial.println("[app] WARN: charger_summary.qo note.add returned NULL");
+        debugSerial.println("[app] WARN: charger_summary.qo note.add returned NULL");
         return false;
     }
     const char *err = JGetString(rsp, "err");
     bool ok = (!err || !err[0]);
     if (!ok) {
-        Serial.print("[app] WARN: charger_summary.qo error: ");
-        Serial.println(err);
+        debugSerial.print("[app] WARN: charger_summary.qo error: ");
+        debugSerial.println(err);
     }
     notecard.deleteResponse(rsp);
 
@@ -638,7 +639,7 @@ bool emitSummaryNote(uint32_t now) {
         } else {
             state.window_start_kwh = 0.0f;
         }
-        Serial.println("[app] summary Note emitted — window reset");
+        debugSerial.println("[app] summary Note emitted — window reset");
     }
     return ok;
 }
@@ -674,29 +675,30 @@ bool emitOfflineAlert(uint32_t now) {
 
     J *rsp = notecard.requestAndResponse(req);
     if (!rsp) {
-        Serial.println("[app] WARN: charger_alert.qo note.add returned NULL");
+        debugSerial.println("[app] WARN: charger_alert.qo note.add returned NULL");
         return false;
     }
     const char *err = JGetString(rsp, "err");
     bool ok = (!err || !err[0]);
-    if (ok)  Serial.println("[app] mains_absent alert emitted");
-    else   { Serial.print("[app] WARN: charger_alert.qo error: "); Serial.println(err); }
+    if (ok)  debugSerial.println("[app] mains_absent alert emitted");
+    else   { debugSerial.print("[app] WARN: charger_alert.qo error: "); debugSerial.println(err); }
     notecard.deleteResponse(rsp);
     return ok;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// sleepHost — serialise state to Notecard flash, then cut host power.
+// sleepHost — sleep the host in STOP2 until the Notecard raises ATTN.
 //
-// NotePayloadSaveAndSleep() issues a card.attn "sleep" request that pulls
-// the ATTN pin LOW for sample_interval_sec seconds, which the Notecarrier CX
-// uses to cut the host MCU's +VBAT rail entirely. On wake, the host enters
-// setup() from cold and NotePayloadRetrieveAfterSleep() rehydrates the struct.
+// cxSleepUntilAttn() (cx_sleep.h) issues a card.attn "sleep" request that
+// pulls the ATTN pin LOW for sample_interval_sec seconds, waits for the pin to
+// go low on D5, and enters STOP2.  When the Notecard raises ATTN the host
+// resumes on the next line with `state` intact, and loop() runs again.
 // ─────────────────────────────────────────────────────────────────────────────
 void sleepHost() {
-    NotePayloadDesc payload = {0, 0, 0};
-    NotePayloadAddSegment(&payload, STATE_SEG_ID, &state, sizeof(state));
-    NotePayloadSaveAndSleep(&payload, state.sample_interval_sec, NULL);
-    // Should not reach here — ATTN is expected to cut host power.
-    // If it does (e.g., bare breakout bench test), loop() handles the spin.
+    uint32_t sleep_sec = state.sample_interval_sec;
+    if (!cxSleepUntilAttn(notecard, sleep_sec, NULL, &debugSerial)) {
+        // The Notecard didn't take the sleep request, or ATTN never went low
+        // (check the ATTN -> D5 jumper).  Keep the sample cadence and retry.
+        debugSerial.println("[app] WARN: ATTN sleep failed — waiting out the interval awake");
+        delay(sleep_sec * 1000UL);
+    }
 }

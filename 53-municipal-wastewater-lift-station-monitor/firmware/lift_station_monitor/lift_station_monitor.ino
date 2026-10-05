@@ -12,11 +12,12 @@
   Hourly aggregates → templated lift_summary.qo note (batched cellular sync).
 
   All thresholds are tunable via Notehub environment variables without a
-  firmware reflash. State is persisted across deep-sleep cycles via
-  NotePayloadSaveAndSleep so no data is lost between 60-second samples.
+  firmware reflash. Between 60-second samples the host sleeps in STM32 STOP2
+  and is woken by the Notecard's ATTN pin (card.attn "sleep"); RAM is
+  retained, so application state simply lives in memory (see cx_sleep.h).
 
   Hardware:
-    - Notecarrier CX (Cygnet STM32L433 host)
+    - Notecarrier CX (onboard STM32L433 host)
     - Notecard for Skylo NOTE-NBGLWX (M.2 slot) — cellular + WiFi + Skylo
       satellite (NTN) on one board; card.transport selects cellular-primary
       with automatic satellite fallback (see notecardConfigure()).
@@ -24,22 +25,29 @@
     - SCT-013-030 split-core CT, pump 1     → A1 (bias circuit)
     - SCT-013-030 split-core CT, pump 2     → A2 (bias circuit)
     - SPST float switch (N.O., active-low)  → D2 (INPUT_PULLUP)
+    - Jumper: Notecarrier CX ATTN → D5 (same 16-pin header). Leave EN
+      unconnected — on the CX it enables the shared 3.3 V VIO rail.
+
+  Build: Tools > USB support (if available) > None (usb=none). With the USB
+  CDC stack enabled the USB wakeup interrupt exits STOP2 immediately. Debug
+  output goes to the LPUART on the CX debug jack (ST-LINK virtual COM port).
 ***************************************************************************/
 
 #include <Notecard.h>
 #include "lift_station_monitor_helpers.h"
+#include "cx_sleep.h"
 
 // ---------------------------------------------------------------------------
 // Global variable definitions — externed in lift_station_monitor_helpers.h
 // ---------------------------------------------------------------------------
-static const char STATE_SEG_ID[] = "LSM4"; // bump when AppState layout changes
-
 AppState  g_state;
 Notecard  notecard;
+Uart      debugSerial(PIN_VCP_RX, PIN_VCP_TX);
 
 // Env-var overridable thresholds (defaults match Notehub env var defaults).
-// Restored from g_state.cfg_* on warm boot so a failed env.get retains the
-// last operator-configured value rather than reverting to compile-time defaults.
+// Mirrored in g_state.cfg_* as last-known-good values so a failed env.get
+// retains the last operator-configured value rather than reverting to
+// compile-time defaults.
 float    g_pump_on_amps         =  3.0f;  // A below which pump is "off"
 float    g_high_level_pct       = 85.0f;  // % full → fail-to-start check
 float    g_rising_rate_pct      =  2.0f;  // % per cycle = "rising"
@@ -59,10 +67,12 @@ bool sendAlert(const char *type, float level_pct,
 bool sendSummary(float level_pct, float p1_a, float p2_a, bool float_sw);
 
 // ---------------------------------------------------------------------------
-// setup() — executes on every power-on, including wakes from card.attn sleep
+// setup() — runs once at power-up. The host resumes in place after each
+// STOP2 sleep, so one-time Notecard configuration lives here and every
+// per-wake step lives in loop().
 // ---------------------------------------------------------------------------
 void setup() {
-    Serial.begin(115200);
+    debugSerial.begin(115200);
 
     // Use 12-bit ADC resolution for maximum level-sensor precision
     analogReadResolution(12);
@@ -70,46 +80,38 @@ void setup() {
     // Float switch: pull-up, active-low (switch closing pulls pin to GND)
     pinMode(PIN_FLOAT_SWITCH, INPUT_PULLUP);
 
-    // Try to restore state from the Notecard's payload store. On a true cold
-    // boot the store is empty and recovered = false, so we zero-init state.
-    NotePayloadDesc payload;
-    bool recovered = NotePayloadRetrieveAfterSleep(&payload);
-    if (recovered) {
-        recovered &= NotePayloadGetSegment(&payload, STATE_SEG_ID,
-                                            &g_state, sizeof(g_state));
-        NotePayloadFree(&payload);
-    }
-
-    bool cold_boot;
-    if (!recovered) {
-        memset(&g_state, 0, sizeof(g_state));
-        // Seed persisted config with compile-time defaults so the first wake
-        // after a failed env.get uses sane values rather than zeroed garbage.
-        g_state.cfg_pump_on_amps         = g_pump_on_amps;
-        g_state.cfg_high_level_pct       = g_high_level_pct;
-        g_state.cfg_rising_rate_pct      = g_rising_rate_pct;
-        g_state.cfg_summary_interval_min = g_summary_interval_min;
-        g_state.cfg_inbound_interval_min = g_inbound_interval_min;
-        cold_boot = true;
-    } else {
-        // Restore last-known-good operator settings before fetchEnvOverrides()
-        // runs. If env.get fails this wake, the restored values remain active
-        // rather than reverting to compile-time defaults.
-        g_pump_on_amps         = g_state.cfg_pump_on_amps;
-        g_high_level_pct       = g_state.cfg_high_level_pct;
-        g_rising_rate_pct      = g_state.cfg_rising_rate_pct;
-        g_summary_interval_min = g_state.cfg_summary_interval_min;
-        g_inbound_interval_min = g_state.cfg_inbound_interval_min;
-        cold_boot = false;
-    }
+    // Zero state and seed the last-known-good config with compile-time
+    // defaults so the first wake after a failed env.get uses sane values
+    // rather than zeroed garbage.
+    memset(&g_state, 0, sizeof(g_state));
+    g_state.cfg_pump_on_amps         = g_pump_on_amps;
+    g_state.cfg_high_level_pct       = g_high_level_pct;
+    g_state.cfg_rising_rate_pct      = g_rising_rate_pct;
+    g_state.cfg_summary_interval_min = g_summary_interval_min;
+    g_state.cfg_inbound_interval_min = g_inbound_interval_min;
 
     // Initialize I²C channel to Notecard
     notecard.begin();
 
-    if (cold_boot) {
-        notecardConfigure();
-    }
+    // One-time Notecard configuration (hub.set, card.transport, accelerometer).
+    notecardConfigure();
 
+    // Arm the ATTN wake: the Notecard raises ATTN (D5) to end each sleep.
+    cxSleepBegin();
+}
+
+// ---------------------------------------------------------------------------
+// loop() — one wake cycle, then sleep in STOP2 until the Notecard raises ATTN.
+//
+// Each pass retries template registration until it succeeds, pulls env-var
+// changes from Notehub, re-applies hub.set if a cadence changed, runs a full
+// sample cycle, and then asks the Notecard to hold ATTN low for
+// SAMPLE_INTERVAL_SEC. Execution resumes on the line after the sleep call
+// with g_state intact, so env-var edits made during a bench run (e.g. setting
+// high_level_pct = 1.0 to trigger pump_fail_to_start) take effect on the next
+// cycle without a power-cycle.
+// ---------------------------------------------------------------------------
+void loop() {
     // Attempt template registration on every wake until both templates succeed.
     if (!g_state.templates_registered) {
         if (defineTemplates()) {
@@ -122,54 +124,25 @@ void setup() {
     fetchEnvOverrides();
 
     // Re-apply hub.set whenever summary_interval_min or inbound_interval_min
-    // changes, or on cold boot when applied_* are still 0. Includes
+    // changes, or on the first wake when applied_* are still 0. Includes
     // PRODUCT_UID so any successful hub.set fully binds the device.
     applyHubSetIfChanged();
 
     // Run one complete sensor-read and evaluation cycle.
     runSampleCycle();
-}
 
-// ---------------------------------------------------------------------------
-// loop() — saves state into the Notecard and cuts host power via card.attn.
-// NotePayloadSaveAndSleep should power off the host before this returns.
-//
-// The code below is only reached when ATTN is not wired to the host power
-// rail (bench / bring-up mode). In that case we delay to mimic the sleep
-// interval and then re-run the same wake-time housekeeping setup() does —
-// retry template registration, pull env-var changes from Notehub, re-apply
-// hub.set if cadences changed, and run a full sample cycle — before looping
-// back to save state again. Without this, env-var edits made during a bench
-// run (e.g. setting high_level_pct = 1.0 to trigger pump_fail_to_start)
-// would not take effect until the host was power-cycled, breaking the
-// bench-test procedures documented in Section 8 of the README.
-// ---------------------------------------------------------------------------
-void loop() {
-    NotePayloadDesc save_payload = {0, 0, 0};
-    NotePayloadAddSegment(&save_payload, STATE_SEG_ID, &g_state, sizeof(g_state));
-    NotePayloadSaveAndSleep(&save_payload, SAMPLE_INTERVAL_SEC, NULL);
-
-    // Reached only if ATTN is not cutting host power (bench / bring-up mode).
-    // Delay to simulate the sleep window, then mirror the wake-time housekeeping
-    // sequence from setup() so env-var, template, and hub.set state all refresh
-    // on the bench without requiring a manual power-cycle.
-    Serial.println("[SLEEP] NotePayloadSaveAndSleep returned — ATTN may not be wired; bench mode active.");
-    delay(SAMPLE_INTERVAL_SEC * 1000UL);
-
-    if (!g_state.templates_registered) {
-        if (defineTemplates()) {
-            g_state.templates_registered = true;
-        }
+    // Sleep until the Notecard raises ATTN SAMPLE_INTERVAL_SEC from now.
+    if (!cxSleepUntilAttn(notecard, SAMPLE_INTERVAL_SEC, NULL, &debugSerial)) {
+        // The Notecard didn't take the sleep request, or ATTN never went low
+        // (check the ATTN -> D5 jumper). Keep the sample cadence and try again.
+        debugSerial.println("[SLEEP] ATTN sleep failed — waiting out the interval awake.");
+        delay(SAMPLE_INTERVAL_SEC * 1000UL);
     }
-    fetchEnvOverrides();
-    applyHubSetIfChanged();
-    runSampleCycle();
 }
 
 // ---------------------------------------------------------------------------
 // runSampleCycle — one complete sensor-read, accumulation, and evaluation pass.
-// Called once per wake from setup(). Extracted so loop() is a clean save-and-
-// sleep path with no risk of accidentally re-entering setup().
+// Called once per wake from loop(), before the host goes back to sleep.
 // ---------------------------------------------------------------------------
 void runSampleCycle(void) {
     // ---- Read all sensors ------------------------------------------------
@@ -185,20 +158,20 @@ void runSampleCycle(void) {
     // Remove before flashing to a deployed station (see lift_station_monitor_helpers.h).
     level_pct   = (float)(BENCH_FORCE_LEVEL_PCT);
     level_valid = true;
-    Serial.print("[BENCH] level overridden to "); Serial.print(level_pct); Serial.println("%");
+    debugSerial.print("[BENCH] level overridden to "); debugSerial.print(level_pct); debugSerial.println("%");
 #endif
 
     if (!level_valid) {
-        Serial.print("[SENSOR] level=FAULT (ADC out of range) ");
+        debugSerial.print("[SENSOR] level=FAULT (ADC out of range) ");
         g_state.level_fault_count++;
     } else {
-        Serial.print("[SENSOR] level="); Serial.print(level_pct); Serial.print("% ");
+        debugSerial.print("[SENSOR] level="); debugSerial.print(level_pct); debugSerial.print("% ");
     }
-    if (!ct1_valid) { Serial.print("p1=FAULT "); g_state.ct1_fault_count++; }
-    else            { Serial.print("p1="); Serial.print(p1_amps); Serial.print("A "); }
-    if (!ct2_valid) { Serial.print("p2=FAULT "); g_state.ct2_fault_count++; }
-    else            { Serial.print("p2="); Serial.print(p2_amps); Serial.print("A "); }
-    Serial.print("float="); Serial.println(float_sw ? "ALARM" : "OK");
+    if (!ct1_valid) { debugSerial.print("p1=FAULT "); g_state.ct1_fault_count++; }
+    else            { debugSerial.print("p1="); debugSerial.print(p1_amps); debugSerial.print("A "); }
+    if (!ct2_valid) { debugSerial.print("p2=FAULT "); g_state.ct2_fault_count++; }
+    else            { debugSerial.print("p2="); debugSerial.print(p2_amps); debugSerial.print("A "); }
+    debugSerial.print("float="); debugSerial.println(float_sw ? "ALARM" : "OK");
 
     // ---- Accumulate for hourly summary -----------------------------------
     // Only valid readings are added to their respective sums so window averages
@@ -362,7 +335,7 @@ void runDetectionCycle(float level_pct, bool level_valid,
         // fires when a CT reads above pump_on_amps for two consecutive cycles.
         // Remove before flashing to a deployed station.
         float delta = (float)(BENCH_CLOG_DELTA);
-        Serial.print("[BENCH] clog delta overridden to "); Serial.println(delta);
+        debugSerial.print("[BENCH] clog delta overridden to "); debugSerial.println(delta);
 #else
         float delta = level_pct - g_state.prev_level_pct;
 #endif
@@ -401,9 +374,9 @@ bool sendAlert(const char *type, float level_pct,
     // does not silently drop a fault notification.
     bool ok = notecard.sendRequestWithRetry(req, 5);
     if (!ok) {
-        Serial.print("[ALERT] note.add failed for: "); Serial.println(type);
+        debugSerial.print("[ALERT] note.add failed for: "); debugSerial.println(type);
     } else {
-        Serial.print("[ALERT] "); Serial.println(type);
+        debugSerial.print("[ALERT] "); debugSerial.println(type);
     }
     return ok;
 }
@@ -465,9 +438,9 @@ bool sendSummary(float level_pct, float p1_a, float p2_a, bool float_sw) {
     JAddNumberToObject(body, "ct2_faults",     (int)g_state.ct2_fault_count);
     bool ok = notecard.sendRequest(req);
     if (!ok) {
-        Serial.println("[SUMMARY] note.add failed; accumulators preserved for retry.");
+        debugSerial.println("[SUMMARY] note.add failed; accumulators preserved for retry.");
     } else {
-        Serial.println("[SUMMARY] Hourly summary queued.");
+        debugSerial.println("[SUMMARY] Hourly summary queued.");
     }
     return ok;
 }

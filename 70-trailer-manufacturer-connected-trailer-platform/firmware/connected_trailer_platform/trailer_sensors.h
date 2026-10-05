@@ -6,13 +6,13 @@
   Keeping constants, structs, and enums here eliminates duplication and lets
   the Arduino build system compile the two translation units independently.
 
-  Power model: the host (Cygnet STM32L433 on Notecarrier CX) is powered off
-  between sample cycles via the Notecard's card.attn ATTN signal. setup() runs
-  on every wakeup; loop() serialises PersistState via NotePayloadSaveAndSleep()
-  and hands control back to the Notecard until the next scheduled wake.
-  PersistState carries all inter-sample context (accumulators, alert cooldowns,
-  door state, TPMS last-known pressures, summary window epoch) across the
-  host-off sleep interval.
+  Power model: the host (STM32L433 on the Notecarrier CX) sleeps in STOP2
+  between sample cycles and is woken by the Notecard's ATTN pin (card.attn
+  "sleep", see cx_sleep.h). setup() runs once at power-up; loop() runs one
+  sample cycle per wake and then sleeps. PersistState lives in RAM — STOP2
+  retains SRAM — and carries all inter-sample context (accumulators, alert
+  cooldowns, door state, TPMS last-known pressures, summary window epoch)
+  across the sleep interval.
 *******************************************************************************/
 #pragma once
 #include <Arduino.h>
@@ -24,15 +24,9 @@
 #pragma message "PRODUCT_UID is not defined. Set it to your Notehub project UID."
 #endif
 
-// ---- Sleep state segment identifier ------------------------------------
-// Identifies the PersistState segment inside the NotePayload stored by the
-// Notecard between wakes. Must be unique within this firmware image. Four
-// ASCII characters, matching the pattern used by other Blues reference apps.
-#define STATE_SEG_ID "TRLR"
-
 // ---- Post-wakeup UART drain window (ms) --------------------------------
-// After hardware re-initialisation each wake, both UART channels are drained
-// for this many milliseconds before the sample cycle begins. At 9600 baud an
+// At the start of each wake, both UART channels are drained for this many
+// milliseconds before the sample cycle begins. At 9600 baud an
 // 8-byte J2497 frame takes ~8 ms; 250 ms accommodates ~3 complete frames and
 // several TPMS packets if a gateway is transmitting near the wake boundary.
 #define WAKE_UART_DRAIN_MS  250u
@@ -43,6 +37,8 @@
 #define PIN_DOOR      D9   // N.C. reed switch; INPUT_PULLUP — LOW = door open
 #define PIN_TPMS_RX   D6   // SoftwareSerial RX ← TPMS receiver TX
 #define PIN_TPMS_TX   D5   // SoftwareSerial TX → TPMS receiver RX
+// D10 carries the Notecard ATTN jumper (CX_ATTN_PIN, defined in the .ino
+// before cx_sleep.h is included) — the host's STOP2 wake source.
 
 // ---- Thermistor parameters ---------------------------------------------
 #define THERM_SERIES_OHM  10000.0f  // divider series resistor (Ω)
@@ -57,8 +53,8 @@
 //
 // drainReeferUart() is called during the WAKE_UART_DRAIN_MS window after each
 // wakeup and between blocking Notecard I2C calls within the sample cycle. In
-// the sleep architecture the host is powered off between samples; frames that
-// arrive while the host is off are lost (the UART peripheral has no power).
+// the sleep architecture the host is in STOP2 between samples; frames that
+// arrive while the host is asleep are lost (the UART clock is stopped).
 // At wakeup the drain window catches frames arriving in the first 250 ms;
 // subsequent drains within the sample cycle recover any bytes arriving during
 // Notecard I2C transactions.
@@ -85,13 +81,13 @@
 //
 // drainTpmsUart() is called during the WAKE_UART_DRAIN_MS window and between
 // Notecard I2C calls within each sample cycle. SoftwareSerial requires the CPU
-// to be active (bit-banging); it cannot receive while the host is powered off
+// to be active (bit-banging); it cannot receive while the host is in STOP2
 // during the sleep interval. Frames arriving between wakes are lost. The drain
 // window catches frames that happen to arrive within the first 250 ms after
 // wakeup; subsequent drains within the sample cycle capture any late arrivals.
 //
 // The most recent valid pressure per position is latched in g_sensors.tpmsPsi[]
-// AND persisted in g_ps.tpmsPsiLast[] so the correct last-known value is
+// AND mirrored in g_ps.tpmsPsiLast[] so the correct last-known value is
 // available at sendSummary() time even if no frame arrived in the current wake.
 // Positions that stop reporting are aged out to −9999 after TPMS_STALE_COUNT
 // consecutive summary windows without data.
@@ -204,7 +200,9 @@ struct TempAccum {
 // doorOpenTransitStartEpoch (epoch-based fields in PersistState).
 //
 // Initialisation: setup() calls memset then explicitly resets non-zero
-// fields (TempAccum instances, reeferSetLast).
+// fields (TempAccum instances, reeferSetLast). The struct lives in RAM;
+// STOP2 retains SRAM, so it survives every sleep/wake cycle and is reset
+// only by a power cycle or reset.
 // =========================================================================
 struct PersistState {
     // ---- Trailer state machine -----------------------------------------
@@ -271,34 +269,32 @@ struct PersistState {
     // Set to true the first time drainReeferUart() accepts a valid frame. Until
     // true, reefer_sensor_loss is suppressed so a bench build with no J2497
     // modem connected does not produce a continuous stream of loss alerts.
-    // Persisted across wakes so the gate survives the sleep interval.
+    // Held in RAM across wakes so the gate survives the sleep interval.
     bool         j2497Commissioned;
 
-    // ---- Reefer frame freshness flag (persisted across host-off sleep) ------
+    // ---- Reefer frame freshness flag (retained across STOP2 sleep) ----------
     // Set by drainReeferUart() whenever a valid J2497 frame is accepted during
     // any drain call in the current wake — including drains that occur after
     // updateReeferMissCount() has already run (e.g., inside evaluateAlerts()
     // or the final loop() drain). Because this flag lives in PersistState it
-    // survives the host-off sleep interval, so a frame received late in one
+    // survives the sleep interval, so a frame received late in one
     // wake is correctly credited when updateReeferMissCount() runs on the next
     // wake. updateReeferMissCount() consumes (clears) the flag after evaluation;
     // it may be re-set by a subsequent drain within the same wake.
     bool         reeferFrameSeen;
 
     // ---- Epoch-based summary window ----------------------------------------
-    // Epoch (seconds) when the current summary window opened. Persisted across
-    // wakes so the window boundary survives host-off sleep intervals. Seeded on
+    // Epoch (seconds) when the current summary window opened. Retained across
+    // wakes so the window boundary survives sleep intervals. Seeded on
     // the first wake that returns a valid Notecard epoch; summary fires when
     // nowEpoch - summaryWindowStartEpoch >= summaryIntervalMin * 60. A
     // sample-count fallback is used when epoch is unavailable (pre-time-sync).
     uint32_t     summaryWindowStartEpoch;
 
-    // ---- Persisted TPMS last-known pressures -------------------------------
-    // g_sensors.tpmsPsi[] is freshly initialised to −9999 on each wakeup (the
-    // global is re-constructed after host power-on). tpmsPsiLast[] carries the
-    // most recent valid pressure per position across the sleep interval so that
-    // sendSummary() can report the correct value for positions that did not send
-    // a fresh frame in the current wake's drain window.
+    // ---- TPMS last-known pressures -----------------------------------------
+    // Mirror of g_sensors.tpmsPsi[] kept alongside the rest of the window state
+    // so sendSummary() can report the last valid pressure per position even
+    // when no fresh frame arrived in the current wake's drain window.
     // Updated by drainTpmsUart() in parallel with g_sensors.tpmsPsi[].
     float        tpmsPsiLast[NUM_TPMS_POS];
 };
@@ -311,7 +307,7 @@ extern Sensors        g_sensors;
 extern PersistState   g_ps;
 extern SoftwareSerial tpmsSerial;
 // g_reeferFrameReceived removed: reefer frame freshness is now tracked by
-// the persisted g_ps.reeferFrameSeen field (see PersistState above).
+// the g_ps.reeferFrameSeen field (see PersistState above).
 
 // Door-edge ISR state (defined in trailer_sensors.cpp)
 // g_doorIsrFired: set in the ISR on any PIN_DOOR edge; cleared after each read.

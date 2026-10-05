@@ -11,6 +11,11 @@
 
 #include <Notecard.h>
 
+// Debug output: LPUART1 on the Notecarrier CX debug jack, which an ST-LINK V3
+// exposes as a virtual COM port. USB CDC is disabled (usb=none) so the host
+// can stay in STOP2, so Serial is not USB here. Defined in lift_station_monitor.ino.
+extern Uart debugSerial;
+
 // ---------------------------------------------------------------------------
 // Configuration — edit PRODUCT_UID before flashing
 //
@@ -36,7 +41,7 @@
 // Host sleep / sample interval
 #define SAMPLE_INTERVAL_SEC     60   // wake every 60 s to sample sensors
 
-// ADC pins (Notecarrier CX / Cygnet STM32L433)
+// ADC pins (Notecarrier CX / STM32L433 host)
 #define PIN_LEVEL_SENSOR   A0        // 4-20 mA level transducer → 150 Ω shunt
 #define PIN_PUMP1_CT       A1        // SCT-013-030 CT, pump 1
 #define PIN_PUMP2_CT       A2        // SCT-013-030 CT, pump 2
@@ -130,7 +135,8 @@
 #define TTYPE_BOOL    true
 
 // ---------------------------------------------------------------------------
-// Persistent application state — serialized into Notecard between sleeps
+// Application state. Lives in RAM; STOP2 retains SRAM, so it survives every
+// sleep/wake cycle and is reset only by a power cycle (which re-runs setup()).
 // ---------------------------------------------------------------------------
 struct AppState {
     float    prev_level_pct;          // last valid sample's level (trend detection)
@@ -175,7 +181,7 @@ struct AppState {
     bool     templates_registered;
 
     // Last-known-good env-var overrides. Initialized from compile-time defaults
-    // on cold boot and updated only when a freshly-parsed value passes both
+    // at power-up and updated only when a freshly-parsed value passes both
     // string-validity and range checks, ensuring a failed env.get retains
     // the last operator-configured value rather than reverting to defaults.
     float    cfg_pump_on_amps;

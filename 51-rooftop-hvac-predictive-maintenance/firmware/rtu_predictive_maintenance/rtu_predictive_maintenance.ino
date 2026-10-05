@@ -1,6 +1,6 @@
 // Rooftop HVAC Unit Predictive Maintenance
 //
-// Host:       Blues Notecarrier CX (onboard STM32 Cygnet host)
+// Host:       Blues Notecarrier CX (onboard STM32L433 host)
 // Notecard:   Blues Notecard Cell+WiFi (MBGLW / NBGLW)
 // Sensors:    2x NTC 10k thermistors (supply/return duct air)
 //             1x SCT-013-030 CT on the compressor hot leg (0-30A / 0-1V AC)
@@ -12,20 +12,32 @@
 //   3. Clogged filter      -> rising filter differential pressure
 //
 // Runtime cadence:
-//   - Host wakes every SAMPLE_INTERVAL_SEC via card.attn.
+//   - Host sleeps in STM32 STOP2 between samples and is woken every
+//     SAMPLE_INTERVAL_SEC by the Notecard's ATTN pin (card.attn "sleep").
 //   - Each wake: sample sensors, evaluate thresholds, queue any alert note.
 //   - When SUMMARY_INTERVAL_MIN has elapsed, queue one rtu_summary.qo note.
 //   - The Notecard transmits queued notes per the hub.set outbound cadence.
+//
+// Wiring for sleep: jumper the Notecarrier CX ATTN pin to D5 (both on the
+// same 16-pin header). Leave EN unconnected. See cx_sleep.h.
+//
+// Build: Tools > USB support (if available) > None. Debug output goes to the
+// ST-LINK virtual COM port on the CX debug jack (see dbgSerial below).
 
 #include <Notecard.h>
 #include <Wire.h>
+#include "cx_sleep.h"
 
 #ifndef PRODUCT_UID
 #define PRODUCT_UID "" // "com.my-company.my-name:rtu-pdm"
 #pragma message "PRODUCT_UID not set. Claim one in Notehub, then define it here."
 #endif
 
-#define usbSerial Serial
+// Debug output: LPUART1 on the CX debug jack, which an ST-LINK V3 exposes as
+// a virtual COM port. (USB CDC must be disabled for STOP2 to work; see
+// cx_sleep.h.) Comment out to silence logging.
+Uart dbgSerial(PIN_VCP_RX, PIN_VCP_TX);
+#define usbSerial dbgSerial
 
 // -------- Pin assignments (Notecarrier CX headers) --------
 static const uint8_t PIN_THERM_SUPPLY = A0;
@@ -70,8 +82,10 @@ static uint32_t SAMPLE_INTERVAL_SEC   = 60;
 static uint32_t SUMMARY_INTERVAL_MIN  = 60;
 static uint32_t ALERT_COOLDOWN_SEC    = 1800;
 
-// -------- State preserved across sleeps --------
-struct PersistState {
+// -------- Application state --------
+// Lives in RAM. STOP2 retains SRAM, so this survives every sleep/wake cycle;
+// it is reset only by a power cycle or reset, which also re-runs setup().
+struct AppState {
   uint32_t  cycles;
 
   // Per-metric running sums and *valid* sample counts for the current
@@ -101,8 +115,7 @@ struct PersistState {
   // Notecard's outbound cadence tracks the local summary cadence.
   uint32_t  last_applied_outbound_min;
 };
-static const char STATE_SEG_ID[] = "RTUS";
-static PersistState state;
+static AppState state;
 
 Notecard notecard;
 
@@ -376,15 +389,14 @@ static void runSampleCycle() {
 
 // ---------- Setup / loop ----------
 //
-// This sketch uses the "host-is-off-when-idle" pattern. The Notecard powers
-// the host back on every SAMPLE_INTERVAL_SEC via ATTN (see card.attn in loop()),
-// so setup() runs on every wake, does one sample cycle, and loop() issues the
-// next sleep command. State survives the power cut via NotePayloadSaveAndSleep.
+// setup() runs once: it configures the Notecard and the sensors and arms the
+// ATTN wake. loop() performs one sample cycle and then sleeps the host in
+// STOP2 until the Notecard raises ATTN SAMPLE_INTERVAL_SEC later. Because the
+// host resumes in place, all state simply lives in RAM.
 
 void setup() {
 #ifdef usbSerial
   usbSerial.begin(115200);
-  for (uint32_t t0 = millis(); !usbSerial && (millis() - t0) < 3000; ) {}
 #endif
 
   analogReadResolution(12);
@@ -394,25 +406,22 @@ void setup() {
   notecard.setDebugOutputStream(usbSerial);
 #endif
 
-  NotePayloadDesc payload;
-  bool restored = NotePayloadRetrieveAfterSleep(&payload);
-  if (restored) {
-    restored &= NotePayloadGetSegment(&payload, STATE_SEG_ID, &state, sizeof(state));
-    NotePayloadFree(&payload);
-  }
-  if (!restored) {
-    memset(&state, 0, sizeof(state));
-    hubConfigure();
-    defineTemplates();
-    // Quiet the accelerometer so Mojo traces aren't polluted by ISR wakes
-    // during bench power-consumption validation (see README §8).
-    J *req = notecard.newRequest("card.motion.mode");
-    JAddBoolToObject(req, "stop", true);
-    notecard.sendRequest(req);
-  }
+  memset(&state, 0, sizeof(state));
+  hubConfigure();
+  defineTemplates();
+  // Quiet the accelerometer so Mojo traces aren't polluted by ISR wakes
+  // during bench power-consumption validation (see README §8).
+  J *req = notecard.newRequest("card.motion.mode");
+  JAddBoolToObject(req, "stop", true);
+  notecard.sendRequest(req);
 
   startSdp810Continuous();
 
+  // Wake from STOP2 on the ATTN rising edge.
+  cxSleepBegin();
+}
+
+void loop() {
   // Re-read env on every wake; may re-apply hub.set if summary_interval_min
   // changed, keeping the Notecard's outbound cadence in sync with local summary
   // cadence.
@@ -423,13 +432,18 @@ void setup() {
 
   runSampleCycle();
   state.cycles++;
-}
 
-void loop() {
-  NotePayloadDesc payload = {0, 0, 0};
-  NotePayloadAddSegment(&payload, STATE_SEG_ID, &state, sizeof(state));
-  NotePayloadSaveAndSleep(&payload, SAMPLE_INTERVAL_SEC, NULL);
-
-  // Reached only if the Notecarrier isn't gating host power via ATTN.
-  delay(SAMPLE_INTERVAL_SEC * 1000UL);
+  // Sleep until the Notecard raises ATTN SAMPLE_INTERVAL_SEC from now.
+#ifdef usbSerial
+  if (!cxSleepUntilAttn(notecard, SAMPLE_INTERVAL_SEC, NULL, &usbSerial)) {
+#else
+  if (!cxSleepUntilAttn(notecard, SAMPLE_INTERVAL_SEC)) {
+#endif
+    // The Notecard didn't take the sleep request, or ATTN never went low
+    // (check the ATTN -> D5 jumper). Keep the sample cadence and try again.
+#ifdef usbSerial
+    usbSerial.println("[sleep] ATTN sleep failed — waiting out the interval awake");
+#endif
+    delay(SAMPLE_INTERVAL_SEC * 1000UL);
+  }
 }

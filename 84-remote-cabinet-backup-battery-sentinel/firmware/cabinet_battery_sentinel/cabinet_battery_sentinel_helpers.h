@@ -14,6 +14,10 @@
 #include <math.h>
 #include <string.h>   // memset()
 
+// Debug output: LPUART on the Notecarrier CX debug jack (ST-LINK V3 virtual COM
+// port).  USB CDC is disabled so the host can sleep in STOP2; see cx_sleep.h.
+extern Uart dbgSerial;   // defined in cabinet_battery_sentinel.ino
+
 // ─── Product UID ─────────────────────────────────────────────────────────────
 #ifndef PRODUCT_UID
 #define PRODUCT_UID ""  // ← Paste your Notehub ProductUID here, then flash.
@@ -73,12 +77,11 @@
 #define NTC_BETA       3950.0f  // K — characteristic temperature coefficient
 #define NTC_T0_K        298.15f // K — reference temperature (25 °C)
 #define NTC_VCC           3.3f  // V — supply rail
-#define ADC_FULL          4095  // 12-bit ADC on Cygnet (set via analogReadResolution)
+#define ADC_FULL          4095  // 12-bit ADC on the STM32L433 host (set via analogReadResolution)
 
 // ─── Notefiles ───────────────────────────────────────────────────────────────
 #define NOTEFILE_SUMMARY  "battery_summary.qo"
 #define NOTEFILE_ALERT    "battery_alert.qo"
-#define STATE_SEG_ID      "BSNT"
 
 // ─── Sentinel and window-extreme initializers ─────────────────────────────────
 // SUMMARY_INVALID_SENTINEL replaces NAN in Note bodies (NAN is not valid JSON).
@@ -89,7 +92,11 @@
 #define CURR_MIN_INIT    0.0f   // 0 so the first real discharge pulls it negative
 #define TEMP_MAX_INIT  -99.0f
 
-// ─── Persistent state (serialised into Notecard flash across sleep cycles) ───
+// ─── Application state ───────────────────────────────────────────────────────
+// Lives in RAM.  The host sleeps in STM32 STOP2 between samples, which retains
+// SRAM, so this struct survives every sleep/wake cycle without being serialised
+// anywhere.  It is initialised by doFirstBoot() in setup() and reset only by a
+// power cycle or reset.
 struct SentinelState {
     // Per-metric sums, valid-sample counts, and window extremes.
     // Tracked independently so a failed sensor never suppresses accumulation
@@ -139,7 +146,7 @@ struct SentinelState {
     uint32_t lastSummaryMin;
     uint32_t lastSampleSec;
 
-    // Configuration-success flags.  Cleared by first-boot memset; set only
+    // Configuration-success flags.  Cleared by the power-up memset; set only
     // after confirmed delivery.
     bool hubConfigured;
     bool templateDefined;
@@ -177,4 +184,3 @@ bool  sendSummary(void);
 // transient I2C or Notecard fault at alert time does not silently suppress
 // the alert for the full cooldown window.
 bool  sendAlert(const char *alertType, float volt, float curr, float temp);
-void  sleepHost(void);

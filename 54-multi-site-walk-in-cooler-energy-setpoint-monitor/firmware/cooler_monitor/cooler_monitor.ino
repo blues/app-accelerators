@@ -1,12 +1,15 @@
 // cooler_monitor.ino — Multi-site walk-in cooler energy & setpoint monitor
 //
 // Hardware:
-//   Blues Notecarrier CX (Cygnet STM32 host, onboard)
+//   Blues Notecarrier CX (onboard STM32L433 host)
 //   Blues Notecard Cell+WiFi (MBGLW) in M.2 slot
 //   Blues Mojo (coulomb counter, bench validation only)
 //   Adafruit waterproof DS18B20 probe — box air temperature (D5, OneWire)
 //   SCT-013-030 split-core CT — compressor current (A0, ADC via bias circuit)
 //   Magnetic reed switch — door open/close (D6, INPUT_PULLUP)
+//   Jumper: Notecarrier CX ATTN → D9 (same 16-pin header; D5 is taken by the
+//   DS18B20). Leave EN unconnected — on the CX it enables the shared 3.3 V
+//   VIO rail, so ATTN → EN would brown out the whole board.
 //
 // Notefiles:
 //   cooler_summary.qo  — window-based template-backed summary; queued for outbound sync
@@ -23,7 +26,9 @@
 //   volts_nominal         120.0   Nominal line voltage for apparent-power kWh estimate
 //
 // Power strategy:
-//   The Cygnet host sleeps between samples via NotePayloadSaveAndSleep / card.attn.
+//   The host sleeps in STM32 STOP2 between samples and is woken by the
+//   Notecard's ATTN pin (card.attn "sleep"; see cx_sleep.h). RAM is retained,
+//   so application state simply lives in memory.
 //   The Notecard idles at ~8–18 µA between outbound sync sessions.
 //   Summary notes queue locally and flush in one cellular session per hour.
 //   Alert notes carry sync:true and flush within one session-establishment window.
@@ -32,8 +37,15 @@
 // applyHubSetIfChanged, sensor reads, sendAlert, sendSummary) live in
 // cooler_monitor_helpers.cpp; shared types and constants are in
 // cooler_monitor_helpers.h.
+//
+// Build: Tools > USB support (if available) > None (usb=none). With the USB
+// CDC stack enabled the USB wakeup interrupt exits STOP2 immediately. Debug
+// output (DEBUG_SERIAL in cooler_monitor_helpers.h) goes to the LPUART on the
+// CX debug jack, which an ST-LINK V3 exposes as a virtual COM port.
 
 #include "cooler_monitor_helpers.h"
+#define CX_ATTN_PIN D9   // D5 is the DS18B20 data line; wake on D9 instead
+#include "cx_sleep.h"
 
 // ── Runtime objects ────────────────────────────────────────────────────────
 
@@ -41,8 +53,12 @@ Notecard notecard;
 OneWire  oneWire(PIN_DS18B20);
 DallasTemperature probe(&oneWire);
 
-// Persisted state — global so loop() can reach it for NotePayloadSaveAndSleep.
+// Application state — lives in RAM across STOP2 sleep cycles.
 static AppState state;
+
+#ifdef DEBUG_SERIAL
+Uart debugSerial(PIN_VCP_RX, PIN_VCP_TX);
+#endif
 
 // Live config (re-populated from Notehub env vars on every wake)
 uint32_t cfgSampleSec        = DEFAULT_SAMPLE_INTERVAL_SEC;
@@ -57,14 +73,16 @@ float    cfgVoltsNominal     = DEFAULT_VOLTS_NOMINAL;
 
 static void runSampleCycle(AppState &s);
 
-// ── setup() — runs on every host power-on, including wake from card.attn ──
+// ── setup() — runs once at power-up ────────────────────────────────────────
+// The host resumes in place after each STOP2 sleep, so one-time Notecard
+// configuration lives here and every per-wake step lives in loop().
 
 void setup() {
     DBG_BEGIN(115200);
 
     pinMode(PIN_DOOR, INPUT_PULLUP);
 
-    // Set ADC resolution explicitly to 12 bits.  The Cygnet STM32L433 supports
+    // Set ADC resolution explicitly to 12 bits.  The STM32L433 supports
     // 12-bit ADC natively, but the Arduino core default is not guaranteed to
     // match.  ADC_BITS and the CT scaling math in readCompressorAmps() both
     // depend on this being 12 bits; omitting the call would silently mis-scale
@@ -80,57 +98,33 @@ void setup() {
     notecard.begin();
     DBG_SET_STREAM();
 
-    // Attempt to restore persisted state from Notecard flash.
-    // NotePayloadGetSegment returns false when the stored segment ID does not
-    // match SEG_STATE (e.g. after a firmware upgrade that bumps the ID), so
-    // restored is set false and the cold-boot branch below runs, ensuring
-    // hubConfigure() and defineTemplates() are called with the new build.
-    NotePayloadDesc payload;
-    bool restored = NotePayloadRetrieveAfterSleep(&payload);
     memset(&state, 0, sizeof(state));
-    if (restored) {
-        restored = NotePayloadGetSegment(&payload, SEG_STATE, &state, sizeof(state));
-        NotePayloadFree(&payload);
-    }
-    if (!restored) {
-        // First boot (or segment ID mismatch after firmware upgrade): attempt
-        // hub.set and record whether it succeeded.  If the call fails here
-        // (transient I²C race between STM32 start-up and Notecard readiness),
-        // the else-if branch below retries on every subsequent warm wake until
-        // the Notecard acknowledges, ensuring the device cannot remain
-        // permanently unassociated.
-        if (hubConfigure()) {
-            state.hubSetConfirmed = 1u;
-        }
-        // Seed prevDoorOpen from the current physical state so the very first
-        // runSampleCycle() call does not register a spurious doorOpenCount
-        // increment when the door is already open at boot.
-        state.prevDoorOpen = readDoorOpen() ? 1u : 0u;
-    } else if (!state.hubSetConfirmed) {
-        // Warm wake, but hub.set was never confirmed (transient first-boot
-        // failure).  Retry unconditionally on every wake, independent of
-        // env.get success, until the Notecard acknowledges.  Without this
-        // path the device would silently queue Notes forever while remaining
-        // unassociated with the Notehub project.
-        if (hubConfigure()) {
-            state.hubSetConfirmed = 1u;
-        }
-    }
 
-    // Load last-known-good config from persisted state before attempting env.get.
-    // fetchEnvOverrides() will overwrite these when env.get succeeds; on a
-    // transient failure the device runs with the last operator-tuned values
-    // rather than silently reverting to compile-time defaults.
-    if (restored && state.configPersisted) {
-        cfgSampleSec        = state.persistedSampleSec;
-        cfgSummaryMin       = state.persistedSummaryMin;
-        cfgTempSetpointF    = state.persistedTempSetpointF;
-        cfgTempAlertF       = state.persistedTempAlertF;
-        cfgDoorAlertSec     = state.persistedDoorAlertSec;
-        cfgCompressorOnAmps = state.persistedCompressorOnAmps;
-        cfgVoltsNominal     = state.persistedVoltsNominal;
+    // First boot: attempt hub.set and record whether it succeeded.  If the
+    // call fails here (transient I²C race between STM32 start-up and Notecard
+    // readiness), loop() retries on every subsequent wake until the Notecard
+    // acknowledges, ensuring the device cannot remain permanently unassociated.
+    if (hubConfigure()) {
+        state.hubSetConfirmed = 1u;
     }
+    // Seed prevDoorOpen from the current physical state so the very first
+    // runSampleCycle() call does not register a spurious doorOpenCount
+    // increment when the door is already open at boot.
+    state.prevDoorOpen = readDoorOpen() ? 1u : 0u;
 
+    // Arm the ATTN wake: the Notecard raises ATTN (D9) to end each sleep.
+    cxSleepBegin();
+}
+
+// ── loop() — one wake cycle, then sleep until the Notecard raises ATTN ─────
+// Each pass mirrors the wake-time housekeeping: retry template registration,
+// retry hub.set if not yet confirmed, refresh env-var overrides, re-apply
+// hub.set when the cadence has changed, then run a sample cycle.  Because the
+// host resumes here after STOP2 with state intact, env-var edits made during
+// a bench run (e.g. lowering temp_alert_f to fire a temp_high alert) take
+// effect on the next cycle without a power-cycle.
+
+void loop() {
     // Retry template registration on every wake until both templates succeed.
     // note.template is idempotent, so re-sending after a transient I²C failure
     // is harmless and guarantees the device never runs long-term with
@@ -141,55 +135,41 @@ void setup() {
         }
     }
 
-    // Refresh config from Notehub env vars.  Re-apply hub.set only when hub
-    // is already confirmed and the cadence has changed — a transient env.get
-    // failure must not revert the Notecard's outbound timer, and hub.set
-    // cadence updates are meaningless until the initial association succeeds.
-    if (fetchEnvOverrides(state)) {
-        if (state.hubSetConfirmed) {
-            applyHubSetIfChanged(state);
-        }
-    }
-
-    runSampleCycle(state);
-}
-
-// loop() persists state and puts the host to sleep until the next sample
-// interval via card.attn (Notecarrier CX).  On a Notecarrier CX the ATTN
-// line cuts host power, so execution beyond NotePayloadSaveAndSleep is not
-// expected in normal operation.
-void loop() {
-    NotePayloadDesc outPayload = {0, 0, 0};
-    NotePayloadAddSegment(&outPayload, SEG_STATE, &state, sizeof(state));
-    NotePayloadSaveAndSleep(&outPayload, cfgSampleSec, NULL);
-
-    // Reached only if ATTN-based host power cut is unavailable (bench / bring-
-    // up mode, not expected on a Notecarrier CX in deployment).  Delay one
-    // sample interval, then mirror the wake-time housekeeping setup() does:
-    // retry template registration, retry hub.set if not yet confirmed, refresh
-    // env-var overrides, and re-apply hub.set when the cadence has changed.
-    // Without this path, env-var edits made during a bench run (e.g. lowering
-    // temp_alert_f to fire a temp_high alert) would not take effect until the
-    // host was power-cycled, breaking the threshold tests documented in
-    // Section 8 of the README.
-    delay(cfgSampleSec * 1000UL);
-
-    if (!state.templatesRegistered) {
-        if (defineTemplates()) {
-            state.templatesRegistered = 1u;
-        }
-    }
+    // hub.set was never confirmed (transient first-boot failure).  Retry
+    // unconditionally on every wake, independent of env.get success, until
+    // the Notecard acknowledges.  Without this path the device would silently
+    // queue Notes forever while remaining unassociated with the Notehub project.
     if (!state.hubSetConfirmed) {
         if (hubConfigure()) {
             state.hubSetConfirmed = 1u;
         }
     }
+
+    // Refresh config from Notehub env vars.  Re-apply hub.set only when hub
+    // is already confirmed and the cadence has changed — a transient env.get
+    // failure must not revert the Notecard's outbound timer (the cfg globals
+    // keep their last operator-tuned values in RAM), and hub.set cadence
+    // updates are meaningless until the initial association succeeds.
     if (fetchEnvOverrides(state)) {
         if (state.hubSetConfirmed) {
             applyHubSetIfChanged(state);
         }
     }
+
     runSampleCycle(state);
+
+    // Sleep until the Notecard raises ATTN cfgSampleSec from now.
+#ifdef DEBUG_SERIAL
+    Stream *log = &debugSerial;
+#else
+    Stream *log = NULL;
+#endif
+    if (!cxSleepUntilAttn(notecard, cfgSampleSec, NULL, log)) {
+        // The Notecard didn't take the sleep request, or ATTN never went low
+        // (check the ATTN -> D9 jumper). Keep the sample cadence and try again.
+        DBG_PRINTLN("[sleep] ATTN sleep failed — waiting out the interval awake");
+        delay(cfgSampleSec * 1000UL);
+    }
 }
 
 // ── Main sample cycle ──────────────────────────────────────────────────────
@@ -201,7 +181,7 @@ static void runSampleCycle(AppState &s) {
     const bool  compressorOn = (amps >= cfgCompressorOnAmps);
 
     // elapsed is the scheduled (requested) sleep duration of the interval that
-    // just ended — the value passed to NotePayloadSaveAndSleep on the previous
+    // just ended — the value passed to cxSleepUntilAttn on the previous
     // wake.  Awake time spent sampling is not included, so accumulated
     // elapsedSecSinceSummary tracks scheduled sleep time rather than true
     // wall-clock elapsed time.  Using s.prevSampleSec rather than the

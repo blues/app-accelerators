@@ -53,7 +53,7 @@ static const int SOC_LEAD_ACID_ROWS =
     (int)(sizeof(SOC_TABLE_LEAD_ACID) / sizeof(SOC_TABLE_LEAD_ACID[0]));
 
 // ─────────────────────────────────────────────────────────────────────────────
-// notecardConfigure — hub.set + suppress accelerometer; runs on cold boot and
+// notecardConfigure — hub.set + suppress accelerometer; runs on the first wake and
 // whenever report_interval_m changes.  Returns true on success; the caller
 // must treat false as a commissioning fault and avoid silently continuing.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -67,7 +67,7 @@ bool notecardConfigure(const char *productUID) {
     // to become ready after power-on.
     bool ok = notecard.sendRequestWithRetry(req, 10);
     if (!ok) {
-        Serial.println("[error] hub.set failed — verify PRODUCT_UID and Notecard "
+        dbgSerial.println("[error] hub.set failed — verify PRODUCT_UID and Notecard "
                        "readiness; device is NOT commissioned");
     }
 
@@ -109,7 +109,7 @@ bool defineTemplates(void) {
     JAddNumberToObject(body, "throughput_ah", 14.1);
     JAddBoolToObject(body,   "can_ok",  true);
     if (!notecard.sendRequestWithRetry(req, 5)) {
-        Serial.println("[error] note.template battery_status.qo failed");
+        dbgSerial.println("[error] note.template battery_status.qo failed");
         ok = false;
     }
 
@@ -130,12 +130,12 @@ bool defineTemplates(void) {
     JAddNumberToObject(body, "temp_c",  14.1);
     JAddNumberToObject(body, "extra_v", 14.1);
     if (!notecard.sendRequestWithRetry(req, 5)) {
-        Serial.println("[error] note.template battery_alert.qo failed");
+        dbgSerial.println("[error] note.template battery_alert.qo failed");
         ok = false;
     }
 
     if (!ok) {
-        Serial.println("[error] template definition incomplete — "
+        dbgSerial.println("[error] template definition incomplete — "
                        "will retry on next wake");
     }
     return ok;
@@ -145,12 +145,12 @@ bool defineTemplates(void) {
 // fetchEnvOverrides — pull overrides from Notehub fleet/device environment.
 // All variables are optional; firmware defaults are used if not set.
 // ─────────────────────────────────────────────────────────────────────────────
-void fetchEnvOverrides(PersistState &s) {
+void fetchEnvOverrides(AppState &s) {
     (void)s;  // reserved for future per-wake state fixup if env changes
 
-    // Retry env.get so this — the very first Notecard transaction on both cold
-    // and warm boots — survives the I²C cold-boot race where the Notecard can
-    // take up to ~10 s to become ready after power-on.
+    // Retry env.get so this — the very first Notecard transaction on every
+    // wake — survives the I²C cold-boot race on the first wake after power-on,
+    // where the Notecard can take up to ~10 s to become ready.
     J *rsp = nullptr;
     for (int attempt = 0; attempt < 5 && !rsp; attempt++) {
         if (attempt) delay(2000);
@@ -169,9 +169,9 @@ void fetchEnvOverrides(PersistState &s) {
         } else {
             // Unknown value — keep the existing setting to avoid silently
             // selecting the wrong OCV table due to a typo or casing mismatch.
-            Serial.print("[cfg] unknown chemistry '");
-            Serial.print(chem);
-            Serial.println("' — accepted values: lithium, lead_acid");
+            dbgSerial.print("[cfg] unknown chemistry '");
+            dbgSerial.print(chem);
+            dbgSerial.println("' — accepted values: lithium, lead_acid");
         }
     }
 
@@ -332,7 +332,7 @@ float voltageToSoC(float voltage, bool isLithium) {
 // Note: current transients that begin and end within a single sample interval
 // are not captured — this is a coarse heuristic accumulator, not a continuous
 // coulomb counter.
-void updateThroughput(PersistState &s, float curA) {
+void updateThroughput(AppState &s, float curA) {
     const float dt_h = (float)cfg.sample_interval_s / 3600.0f;
     if (fabsf(curA) > 0.5f) s.throughput_ah      += fabsf(curA) * dt_h;
     if (curA         > 0.5f) s.cycle_discharge_ah += curA        * dt_h;
@@ -343,7 +343,7 @@ void updateThroughput(PersistState &s, float curA) {
 // Only the discharge portion of the cycle (cycle_discharge_ah) is used as the
 // measured pack capacity; counting regenerated charge Ah would overstate
 // capacity and inflate SoH.  EWMA α = 0.3 smooths over noisy partial cycles.
-void updateSoH(PersistState &s, float socPct) {
+void updateSoH(AppState &s, float socPct) {
     if (socPct < 30.0f && !s.soh_cycle_started) s.soh_cycle_started = true;
     if (!s.soh_cycle_started || socPct < 90.0f) return;
 
@@ -361,8 +361,8 @@ void updateSoH(PersistState &s, float socPct) {
         : 0.7f * s.measured_cap_ah + 0.3f * measuredAh;
     float newSoH = (s.measured_cap_ah / cfg.rated_cap_ah) * 100.0f;
     s.soh_pct    = (newSoH > 100.0f) ? 100.0f : newSoH;
-    Serial.print("[soh] cycle complete, discharge="); Serial.print(measuredAh, 1);
-    Serial.print(" Ah, soh="); Serial.println(s.soh_pct, 1);
+    dbgSerial.print("[soh] cycle complete, discharge="); dbgSerial.print(measuredAh, 1);
+    dbgSerial.print(" Ah, soh="); dbgSerial.println(s.soh_pct, 1);
     s.throughput_ah = s.cycle_discharge_ah = 0.0f;
 }
 
@@ -390,9 +390,9 @@ void sendAlert(const char *alert, float packV, float socPct, float tempC,
     JAddNumberToObject(body, "temp_c",  isnan(tempC) ? -9999.0f : tempC);
     JAddNumberToObject(body, "extra_v", extraV);
     if (!notecard.sendRequestWithRetry(req, 10)) {
-        Serial.print("[warn] alert note failed: "); Serial.println(alert);
+        dbgSerial.print("[warn] alert note failed: "); dbgSerial.println(alert);
     } else {
-        Serial.print("[alert] "); Serial.println(alert);
+        dbgSerial.print("[alert] "); dbgSerial.println(alert);
     }
 }
 
@@ -408,7 +408,7 @@ void sendAlert(const char *alert, float packV, float socPct, float tempC,
 // This ensures critical pre-sync alerts (e.g. a dead-flat battery on first
 // power-on) reach the fleet rather than being silently dropped.
 // ─────────────────────────────────────────────────────────────────────────────
-void checkAlerts(PersistState &s, float packV, float socPct,
+void checkAlerts(AppState &s, float packV, float socPct,
                  float tempC, uint32_t now) {
     // ALERT_DUE: returns true when an alert is eligible to fire.
     //   now > 0: eligible if never fired (ep == 0) OR the cooldown has elapsed
@@ -463,7 +463,7 @@ void checkAlerts(PersistState &s, float packV, float socPct,
 //   SUMM_DISCARDED — retry ceiling reached; window discarded; caller may
 //                    zero wakes_since_summ to open a fresh window.
 // ─────────────────────────────────────────────────────────────────────────────
-SummaryResult sendSummary(PersistState &s, uint32_t now) {
+SummaryResult sendSummary(AppState &s, uint32_t now) {
     if (s.summ_count == 0) {
         // No valid samples accumulated in this window (all wakes aborted due to
         // sensor fault or out-of-range reads).  Advance last_summ_epoch to open
@@ -501,20 +501,20 @@ SummaryResult sendSummary(PersistState &s, uint32_t now) {
     if (!sent) {
         s.summ_fail_count++;
         if (s.summ_fail_count < MAX_SUMM_RETRIES) {
-            Serial.print("[warn] summary note failed — retaining window for retry (attempt ");
-            Serial.print(s.summ_fail_count);
-            Serial.println(")");
+            dbgSerial.print("[warn] summary note failed — retaining window for retry (attempt ");
+            dbgSerial.print(s.summ_fail_count);
+            dbgSerial.println(")");
             return SUMM_RETAINED;  // leave last_summ_epoch unchanged; window retries next wake
         }
-        Serial.print("[warn] summary note failed ");
-        Serial.print(s.summ_fail_count);
-        Serial.println("x — discarding stale window to prevent accumulator overflow");
+        dbgSerial.print("[warn] summary note failed ");
+        dbgSerial.print(s.summ_fail_count);
+        dbgSerial.println("x — discarding stale window to prevent accumulator overflow");
     } else {
         s.summ_fail_count = 0;
-        Serial.print("[summary] soc="); Serial.print(s.soc_pct, 0);
-        Serial.print("% soh="); Serial.print(s.soh_pct, 0);
-        Serial.print("% thr="); Serial.print(s.throughput_ah, 1);
-        Serial.print("Ah v="); Serial.println(avgV, 1);
+        dbgSerial.print("[summary] soc="); dbgSerial.print(s.soc_pct, 0);
+        dbgSerial.print("% soh="); dbgSerial.print(s.soh_pct, 0);
+        dbgSerial.print("% thr="); dbgSerial.print(s.throughput_ah, 1);
+        dbgSerial.print("Ah v="); dbgSerial.println(avgV, 1);
     }
 
     // Clear accumulators: reached here on success (→ QUEUED) or after hitting
@@ -552,9 +552,9 @@ static int parseCellGroupFrame(const struct can_frame &f) {
     return count;
 }
 
-void pollCanBms(PersistState &s, uint32_t now) {
-    // s.can_err_epoch (PersistState field) is used instead of a static local so
-    // the once-per-hour rate limit survives the sleep/hard-reset cycle.
+void pollCanBms(AppState &s, uint32_t now) {
+    // s.can_err_epoch (AppState field) is used instead of a static local so
+    // the once-per-hour rate limit survives the sleep/wake cycle.
     struct can_frame frame;
     gCanOk = false;
     int parsedCells = 0;
@@ -595,7 +595,7 @@ void pollCanBms(PersistState &s, uint32_t now) {
         JAddNumberToObject(body, "temp_c",  -9999.0f);
         JAddNumberToObject(body, "extra_v", 0.0f);
         if (!notecard.sendRequestWithRetry(req, 5)) {
-            Serial.println("[warn] can_error note failed");
+            dbgSerial.println("[warn] can_error note failed");
         }
     }
 
@@ -629,9 +629,9 @@ void pollCanBms(PersistState &s, uint32_t now) {
         JAddNumberToObject(body, "temp_c",  -9999.0f);
         JAddNumberToObject(body, "extra_v", delta);
         if (!notecard.sendRequestWithRetry(req, 10)) {
-            Serial.println("[warn] cell_imbalance note failed");
+            dbgSerial.println("[warn] cell_imbalance note failed");
         } else {
-            Serial.print("[alert] cell_imbalance delta="); Serial.println(delta, 0);
+            dbgSerial.print("[alert] cell_imbalance delta="); dbgSerial.println(delta, 0);
         }
     }
 }

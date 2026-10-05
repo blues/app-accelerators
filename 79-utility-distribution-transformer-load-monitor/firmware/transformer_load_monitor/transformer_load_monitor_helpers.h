@@ -32,7 +32,7 @@
 // CT_SAMPLE_PERIOD_US so the 1480-sample window spans a deterministic ~333 ms
 // (≈20 mains cycles at 60 Hz / ≈16.7 cycles at 50 Hz) regardless of the host
 // ADC's native throughput.  Without explicit pacing, analogRead() on the
-// Cygnet (STM32L4) runs in single-digit µs and the whole burst would complete
+// STM32L433 host runs in single-digit µs and the whole burst would complete
 // in well under one mains cycle, producing nonsense RMS values that drift
 // with whatever phase of the wave the loop happens to start on.
 #define CT_DC_SAMPLES         256
@@ -65,11 +65,10 @@
 #define DEFAULT_PHASE_COUNT             2
 
 // ---------------------------------------------------------------------------
-// Notefile names and sleep-payload segment identifier
+// Notefile names
 // ---------------------------------------------------------------------------
 #define NOTEFILE_SUMMARY  "xfmr_summary.qo"
 #define NOTEFILE_ALERT    "xfmr_alert.qo"
-#define SEG_ID            "XFMR"
 
 // ---------------------------------------------------------------------------
 // Per-type pending-alert slots — one slot per distinct alert type so an
@@ -96,8 +95,8 @@ struct EnvConfig {
 };
 
 // ---------------------------------------------------------------------------
-// Pending-alert record — one slot per alert type; persisted in the sleep
-// payload so a note.add failure on one wake is retried on the next.
+// Pending-alert record — one slot per alert type; held in RAM across STOP2
+// so a note.add failure on one wake is retried on the next.
 // ---------------------------------------------------------------------------
 struct PendingAlert {
     bool  active;
@@ -106,9 +105,11 @@ struct PendingAlert {
 };
 
 // ---------------------------------------------------------------------------
-// Persistent state (survives host power-down via Notecard sleep payload)
+// Application state.  Lives in RAM; STOP2 retains SRAM, so this survives every
+// sleep/wake cycle and is reset only by a power cycle or reset (which also
+// re-runs setup()).
 // ---------------------------------------------------------------------------
-struct PersistState {
+struct AppState {
     // Hourly summary accumulators
     float    sum_i_a;
     float    sum_i_b;
@@ -133,9 +134,8 @@ struct PersistState {
     // time reference (window sizing falls back to elapsed_sec)
     uint32_t last_summary_epoch;
 
-    // Last outbound cadence successfully sent to hub.set — persisted here so
-    // fetchEnvOverrides() can skip re-sending across card.attn wakes (a
-    // function-static would be zeroed on every wake when the host power-cycles).
+    // Last outbound cadence successfully sent to hub.set, so
+    // fetchEnvOverrides() can skip re-sending it on wakes where it is unchanged.
     uint32_t lastAppliedSummaryMin;
 
     // One-time configuration flags — retried every wake until confirmed.
@@ -159,9 +159,12 @@ struct PersistState {
 // ---------------------------------------------------------------------------
 extern Notecard         notecard;
 extern Adafruit_MCP9808 mcp9808;
-extern PersistState     state;
+extern AppState         state;
 extern EnvConfig        cfg;
-extern bool             coldBoot;
+// Debug output: the LPUART on the Notecarrier CX debug jack (ST-LINK virtual
+// COM port).  USB CDC is disabled so the host can sleep in STOP2, so Serial
+// is not available.
+extern Uart             debugSerial;
 
 // ---------------------------------------------------------------------------
 // Helper function declarations

@@ -14,11 +14,13 @@
 //   - Automatic WiFi → cellular → Skylo-satellite (NTN) failover, enabled at
 //     boot via card.transport "wifi-cell-ntn" so equipment stays reachable
 //     beyond terrestrial coverage (NTN is off by default and must be turned on)
-//   - Deep sleep via NotePayloadSaveAndSleep between wake cycles
+//   - Host sleeps in STM32 STOP2 between wake cycles, woken by the Notecard's
+//     ATTN pin (card.attn "sleep"; see cx_sleep.h)
 //
 // Hardware:
-//   Blues Notecarrier CX with onboard Cygnet STM32 host MCU
+//   Blues Notecarrier CX with onboard STM32L433 host MCU
 //   Blues Notecard for Skylo (NOTE-NBGLWX), seats in CX M.2 slot
+//   Jumper: Notecarrier CX ATTN -> D5 (host wake from STOP2); leave EN unconnected
 //   Blues Mojo, inline on +VBAT for bench power validation
 //   3.7V LiPo battery (JST-PH 2.0mm) + 6V solar panel + solar LiPo charger
 //   BSS138 logic-level N-channel MOSFET (relay coil driver; R_DS(on) ≤ 3.5 Ω at V_GS = 2.5 V)
@@ -30,14 +32,24 @@
 //   NOTE: bare voltage divider is POC-only; add TVS + RC filter for production
 //
 // Execution model:
-//   setup()    — one-time hardware initialization and state restore (runs on
-//                every power-on, which is every ATTN wake on Notecarrier CX).
-//   runCycle() — full sensing / transmit / sleep cycle.  In normal operation
-//                NotePayloadSaveAndSleep cuts MCU power via card.attn and
-//                loop() is never reached.  When ATTN sleep is unavailable
-//                (bench USB), runCycle() falls back to a blocking delay and
-//                returns so loop() can call it again with g_state intact.
-//   loop()     — calls runCycle() continuously (bench-mode fallback path).
+//   setup()    — runs once at power-up: hardware initialization, g_state
+//                defaults, fence restore from fence.db, ATTN wake arming.
+//   runCycle() — one full sensing / transmit cycle, then sleep: the host asks
+//                the Notecard to hold ATTN low for the adaptive interval and
+//                enters STOP2 (~1-2 µA, RAM retained).  The ATTN rising edge on
+//                D5 wakes it and execution resumes in place, so g_state (staged
+//                immobilize, alert cooldowns, fence) simply lives in RAM.  If
+//                the sleep request fails or ATTN never goes low (jumper
+//                missing), runCycle() waits out the same interval awake.
+//   loop()     — calls runCycle() on every pass (one wake cycle each).
+//
+// Wiring for sleep: jumper the Notecarrier CX ATTN pin to D5 (both on the same
+// 16-pin header).  Leave EN unconnected — on the CX it enables the shared 3.3 V
+// VIO rail, so driving it from ATTN would brown out the board.
+// Build: Tools > USB support (if available) > None (usb=none).  With the USB
+// CDC stack enabled and no USB host attached, the host cannot stay in STOP2.
+// Debug output (DEBUG_SERIAL) goes to the ST-LINK virtual COM port on the CX
+// debug jack.
 //
 // All Notecard interactions are encapsulated in construction_equipment_anti_theft_helpers.
 //
@@ -47,13 +59,14 @@
 
 // ─── Debug serial ─────────────────────────────────────────────────────────────
 // Uncomment the line below (or pass -DDEBUG_SERIAL=1 via build flags) to enable
-// serial debug output and Notecard debug streaming.  Leave commented for
-// production: Serial.begin() is skipped entirely, removing the USB-enumeration
-// wait from every wake and eliminating the associated current draw.
+// debug output and Notecard debug streaming on the ST-LINK virtual COM port
+// (LPUART on the CX debug jack).  Leave commented for production: the debug
+// UART is never started, eliminating its current draw.
 // #define DEBUG_SERIAL 1
 
 #include <Notecard.h>
 #include "construction_equipment_anti_theft_helpers.h"
+#include "cx_sleep.h"
 
 // ─── Product UID ──────────────────────────────────────────────────────────────
 #ifndef PRODUCT_UID
@@ -64,31 +77,33 @@
 // ─── Globals ─────────────────────────────────────────────────────────────────
 Notecard notecard;
 AppState g_state;
+#if DEBUG_SERIAL
+// LPUART1 on the CX debug jack, exposed by an ST-LINK V3 as a virtual COM port.
+// (USB CDC must be disabled for STOP2 to work; see cx_sleep.h.)
+Uart     debugSerial(PIN_VCP_RX, PIN_VCP_TX);
+#endif
 
 // Forward declaration
 static void runCycle();
 
 // ─── setup() ─────────────────────────────────────────────────────────────────
-// Runs once per power cycle — on cold boot AND on every card.attn ATTN wake
-// (Notecarrier CX cuts and restores Cygnet power on each wake, so setup() is
-// the true entry point for both paths).  Performs one-time hardware init and
-// restores (or cold-initializes) g_state before handing off to runCycle().
+// Runs once at power-up.  The host resumes in place after each STOP2 sleep, so
+// one-time hardware init and g_state initialization live here and every
+// per-wake step lives in runCycle().
 void setup()
 {
 #if DEBUG_SERIAL
-    Serial.begin(115200);
-    // No blocking wait: skipping the USB-enumeration loop keeps active-wake
-    // current low and eliminates a multi-second latency penalty on every wake.
+    debugSerial.begin(115200);
     // Attach the Notecard debug stream only in debug builds.
-    notecard.setDebugOutputStream(Serial);
+    notecard.setDebugOutputStream(debugSerial);
 #endif
 
-    // Fail fast when PRODUCT_UID is unset: the firmware cannot associate to a
+    // Flag an unset PRODUCT_UID loudly: the firmware cannot associate to a
     // Notehub project and would appear alive on serial while never syncing data.
+    // (The #pragma above also flags it at build time.)
     if (strlen(PRODUCT_UID) == 0) {
         LOGLN("[APP] ERROR: PRODUCT_UID is empty — set your Notehub "
               "project UID in the sketch and reflash before deploying.");
-        while (true) { delay(1000); }
     }
 
     // Configure GPIO before I2C so the relay stays de-energized during boot.
@@ -105,39 +120,28 @@ void setup()
 
     notecard.begin();  // I2C at default address
 
-    // ── Prime the I2C bus before the state-restore call ───────────────────────
-    // NotePayloadRetrieveAfterSleep() is the very first Notecard transaction and
-    // has no internal retry path.  On the Notecarrier CX, the Cygnet host is
-    // powered up and runs setup() on every ATTN wake — but the Notecard may not
-    // yet be ACKing on I2C (the known cold-boot race between host and Notecard).
-    // If the race fires, NotePayloadRetrieveAfterSleep() silently returns false,
-    // the firmware treats the wake as a cold boot, zeros g_state, and loses all
-    // staged immobilizer / alert-cooldown / fence state from the previous cycle.
-    // Issuing card.version via sendRequestWithRetry() first absorbs the race:
-    // it retries for up to 5 seconds until the Notecard ACKs, so the state-restore
-    // call that follows it only runs once I2C is confirmed live.
+    // ── Prime the I2C bus before the fence-restore call ──────────────────────
+    // loadFenceFromFlash() is the first security-relevant Notecard transaction.
+    // Right after power-up the Notecard may not yet be ACKing on I2C (the known
+    // race between host and Notecard).  Issuing card.version via
+    // sendRequestWithRetry() first absorbs the race: it retries for up to
+    // 5 seconds until the Notecard ACKs, so the fence read that follows only
+    // runs once I2C is confirmed live.
     {
         J *ver = notecard.newRequest("card.version");
         if (!notecard.sendRequestWithRetry(ver, 5)) {
             LOGLN("[APP] WARN: I2C priming request timed out — Notecard not "
-                  "ready; state restore may fail and this wake will be treated "
-                  "as a cold boot.");
+                  "ready; fence restore may report a transport error.");
         }
     }
 
-    // ── Restore persisted state, or initialize for cold boot ─────────────────
-    NotePayloadDesc payload;
-    bool restored = NotePayloadRetrieveAfterSleep(&payload);
-    if (restored) {
-        restored &= NotePayloadGetSegment(&payload, kStateSegID,
-                                          &g_state, sizeof(g_state));
-        NotePayloadFree(&payload);
-    }
-    if (!restored) {
-        // Cold boot: zero-initialize then apply compile-time defaults.
-        // All cfg_* and last_* flags start false (memset) — correct for cold boot:
-        //   cfg_* false  → ensureConfigured() will run all steps on this wake.
-        //   last_moving/last_afterhrs false → stationary/daytime is a safe default.
+    // ── Initialize application state ─────────────────────────────────────────
+    // g_state lives in RAM and survives every STOP2 sleep, so this runs only
+    // at power-up.  Zero-initialize then apply compile-time defaults.
+    // All cfg_* and last_* flags start false (memset) — correct for power-up:
+    //   cfg_* false  → ensureConfigured() will run all steps on the first wake.
+    //   last_moving/last_afterhrs false → stationary/daytime is a safe default.
+    {
         memset(&g_state, 0, sizeof(g_state));
         g_state.fence_radius_m          = DEFAULT_FENCE_RADIUS_M;
         g_state.after_hours_start       = AFTER_HOURS_START_H;
@@ -154,8 +158,8 @@ void setup()
         // thief's current location.
         // fence_io_error distinguishes "confirmed no record" from "transport fault".
         // Auto-anchor (fence_confirmed_absent) is only permitted in the former case;
-        // a read error leaves fence_confirmed_absent false so subsequent ATTN wakes
-        // also block auto-anchor until a cold boot can cleanly re-read fence.db.
+        // a read error leaves fence_confirmed_absent false so subsequent wakes
+        // also block auto-anchor until a power cycle can cleanly re-read fence.db.
         bool fence_io_error = false;
         if (!loadFenceFromFlash(notecard, g_state, fence_io_error)) {
             if (fence_io_error) {
@@ -163,41 +167,44 @@ void setup()
                       "auto-anchor suppressed to prevent geofence re-homing.");
                 g_state.fence_confirmed_absent = false;
             } else {
-                LOGLN("[APP] Cold boot — no persisted fence; "
+                LOGLN("[APP] Power-up — no persisted fence; "
                       "will auto-anchor at first GPS fix.");
                 g_state.fence_confirmed_absent = true;
             }
         } else {
-            LOGLN("[APP] Cold boot — fence restored from flash.");
+            LOGLN("[APP] Power-up — fence restored from flash.");
             g_state.fence_confirmed_absent = false;
         }
     }
+
+    // Arm the ATTN wake: the Notecard raises ATTN (D5) to end each sleep.
+    cxSleepBegin();
 }
 
 // ─── runCycle() ──────────────────────────────────────────────────────────────
 // Full sensing / transmit / sleep cycle.  Called from loop() on every iteration.
-// In normal field operation (ATTN power cut available) this function ends with
-// NotePayloadSaveAndSleep cutting Cygnet power; the MCU never returns from it.
-// In bench/fallback mode (ATTN unavailable) it delays, then returns — loop()
-// calls it again with g_state intact so all staged state (immobilize, fence,
-// alert cooldowns) survives across bench-mode iterations without reinitializing.
+// Ends by putting the host into STOP2 until the Notecard raises ATTN; execution
+// then resumes here and returns to loop(), which calls runCycle() again with
+// g_state intact — all staged state (immobilize, fence, alert cooldowns) simply
+// stays in RAM.  If the sleep request fails the function waits out the same
+// interval awake instead, so the cadence is preserved either way.
 static void runCycle()
 {
-    // ── Use persisted context as proxy for current wake-state ─────────────────
+    // ── Use previous-wake context as proxy for current wake-state ─────────────
     // ctx_moving / ctx_afterhrs reflect the state from the previous wake cycle.
     // Used as the best available estimate of the current context before fresh
     // sensor reads (getIsMoving, getEpochTime) are performed below.
-    // On cold boot these default false (stationary/daytime) — a safe conservative
-    // starting point.
+    // On the first wake these default false (stationary/daytime) — a safe
+    // conservative starting point.
     bool ctx_moving   = g_state.last_moving;
     bool ctx_afterhrs = g_state.last_afterhrs;
 
     // ── Ensure Notecard is fully configured on every wake ─────────────────────
     // ensureConfigured() is idempotent: it skips any step already confirmed and
     // retries only those whose cfg_* flag is still false.  This makes setup
-    // self-healing: a hub.set or template failure on cold boot (or after an
+    // self-healing: a hub.set or template failure at power-up (or after an
     // independent Notecard reset) does not leave the device permanently
-    // misconfigured — it recovers on subsequent ATTN wakes without a power cycle.
+    // misconfigured — it recovers on subsequent wakes without a power cycle.
     if (!ensureConfigured(notecard, PRODUCT_UID, g_state)) {
         LOGLN("[APP] WARN: Notecard config incomplete — "
               "retrying failed steps next wake.");
@@ -206,10 +213,10 @@ static void runCycle()
     // ── Pull updated env vars on every wake (delta-only via env.get `time`) ──
     // When Notehub has new values, also reissue hub.set so the Notecard's
     // internal outbound/inbound session windows reflect the updated cadence.
-    // Persist any operator-updated fence coordinates immediately so they survive
-    // the next power cycle.
+    // Persist any operator-updated fence coordinates to fence.db immediately so
+    // they survive the next power cycle.
     if (fetchEnvOverrides(notecard, g_state)) {
-        // Use the persisted context proxy (last_moving/last_afterhrs) as the best
+        // Use the previous-wake context proxy (last_moving/last_afterhrs) as the best
         // available context before fresh sensor reads complete.  applyHubCadence()
         // will be called again at the state-transition block below (after sensor
         // reads) if the context has actually changed since the previous wake.
@@ -241,11 +248,11 @@ static void runCycle()
     bool just_released = ((was_pending || was_immobilized) &&
                           !g_state.immobilize_pending && !g_state.immobilized);
 
-    // Re-energize the relay only after commands are drained so a just-received
+    // Re-assert the relay only after commands are drained so a just-received
     // release command prevents the unnecessary immobilize pulse entirely.
-    // The coil briefly de-energizes during the sleep window (Cygnet power off);
-    // re-asserting here minimizes the gap. See Limitations in the README for
-    // the latching-relay production upgrade path.
+    // STOP2 retains GPIO state, so the coil stays energized through the sleep
+    // window; re-asserting here is a belt-and-braces guard. See Limitations in
+    // the README for the latching-relay production upgrade path.
     if (g_state.immobilized) {
         assertRelay();
     }
@@ -320,7 +327,7 @@ static void runCycle()
 
     // Stage → fire: assert relay only on an OFF→ON ignition edge so the relay is
     // never immediately asserted against a key that was already ON when the command
-    // arrived.  g_state.last_ignition_on persists the state from the previous wake
+    // arrived.  g_state.last_ignition_on carries the state from the previous wake
     // so the transition is detectable across sleep cycles.
     bool ignition_edge = (!g_state.last_ignition_on && ignition_on);
     if (g_state.immobilize_pending && ignition_edge && !g_state.immobilized) {
@@ -361,11 +368,11 @@ static void runCycle()
         }
     }
 
-    // Auto-anchor geofence at first valid GPS fix, but only when the cold-boot
+    // Auto-anchor geofence at first valid GPS fix, but only when the power-up
     // fence-load positively confirmed no persisted record exists.
     // fence_confirmed_absent stays false when loadFenceFromFlash hit a transport
-    // error, blocking auto-anchor across all subsequent ATTN wakes until a clean
-    // cold-boot re-read succeeds — this prevents a transient I2C failure from
+    // error, blocking auto-anchor across all subsequent wakes until a clean
+    // power-up re-read succeeds — this prevents a transient I2C failure from
     // silently re-homing the fence to a thief's current location.
     if (!g_state.fence_set && g_state.fence_confirmed_absent && got_fix) {
         g_state.fence_lat = cur_lat;
@@ -463,9 +470,9 @@ static void runCycle()
         }
     }
 
-    g_state.last_ignition_on = ignition_on;  // persist for OFF→ON edge detection next wake
-    g_state.last_moving      = moving;        // persist wake-state proxy for next wake
-    g_state.last_afterhrs    = afterhrs;      // persist wake-state proxy for next wake
+    g_state.last_ignition_on = ignition_on;  // keep for OFF→ON edge detection next wake
+    g_state.last_moving      = moving;        // wake-state proxy for next wake
+    g_state.last_afterhrs    = afterhrs;      // wake-state proxy for next wake
 
     // ── Adaptive sleep: shorter during high-risk after-hours window ───────────
     uint32_t sleep_sec = afterhrs
@@ -477,53 +484,33 @@ static void runCycle()
     LOG(sleep_sec);
     LOGLN(" s.");
 
-    // Serialize state to Notecard flash, then cut Cygnet power via card.attn.
-    // NotePayloadSaveAndSleep arms the ATTN pin for the sleep duration;
-    // on expiry the Notecarrier CX restores Cygnet power and setup() runs fresh.
-    NotePayloadDesc save = {0, 0, 0};
-    if (!NotePayloadAddSegment(&save, kStateSegID, &g_state, sizeof(g_state))) {
-        LOGLN("[APP] ERROR: NotePayloadAddSegment failed — "
-              "state will not persist across sleep.");
-    }
-    // Retry NotePayloadSaveAndSleep once on transient Notecard-side failure before
-    // falling through to the bench-mode delay below.
-    bool slept = false;
-    for (int attempt = 0; attempt < 2 && !slept; attempt++) {
-        if (NotePayloadSaveAndSleep(&save, sleep_sec, NULL)) {
-            slept = true;
-        } else {
-            LOG("[APP] WARN: NotePayloadSaveAndSleep attempt ");
-            LOG(attempt + 1);
-            LOGLN(" failed.");
-            if (attempt == 0) delay(100);
-        }
-    }
-    if (!slept) {
-        // ATTN-based power cut unavailable (bench USB-only power or unsupported
-        // hardware).  Cap the blocking delay so a field device that loses ATTN
-        // sleep does not stay fully awake for hours (sleep_sec can be up to 4 h)
-        // and drain the solar/LiPo budget in the exact scenario where low-power
-        // behavior matters most.  60 s is short enough to be recoverable and
-        // long enough to avoid a pathological retry storm.  After the delay,
-        // runCycle() returns and loop() calls it again with g_state intact —
-        // staged immobilize, alert cooldowns, heartbeat timing, and fence state
-        // are all preserved across bench-mode iterations.
-        const uint32_t kSleepFallbackCapS = 60UL;
-        uint32_t fallback_sec = (sleep_sec < kSleepFallbackCapS) ? sleep_sec
-                                                                   : kSleepFallbackCapS;
-        LOG("[APP] WARN: sleep failed — bench-mode fallback, capped at ");
-        LOG(fallback_sec);
+    // Sleep in STOP2 until the Notecard raises ATTN sleep_sec seconds from now.
+    // cxSleepUntilAttn() sends card.attn "sleep" (checked, with retries, since
+    // the host stays alive to see the response), waits for ATTN to go low, and
+    // enters STOP2.  Execution resumes on the next line; g_state stays in RAM.
+#if DEBUG_SERIAL
+    Stream *log = &debugSerial;
+#else
+    Stream *log = NULL;
+#endif
+    if (!cxSleepUntilAttn(notecard, sleep_sec, NULL, log)) {
+        // The Notecard didn't take the sleep request, or ATTN never went low
+        // (check the ATTN -> D5 jumper).  Wait out the same adaptive interval
+        // awake so the sensing cadence — and the after-hours scan rate — is
+        // preserved, then return to loop(), which calls runCycle() again with
+        // g_state intact (staged immobilize, alert cooldowns, heartbeat timing,
+        // and fence state are all still in RAM).
+        LOG("[APP] WARN: ATTN sleep failed — waiting awake for ");
+        LOG(sleep_sec);
         LOGLN(" s.");
-        delay(fallback_sec * 1000UL);
-        // Return to loop(), which will call runCycle() again.
+        delay(sleep_sec * 1000UL);
     }
 }
 
 // ─── loop() ──────────────────────────────────────────────────────────────────
-// On Notecarrier CX, NotePayloadSaveAndSleep cuts host power via card.attn and
-// the MCU never reaches loop(). On bench USB (no ATTN power cut), loop() calls
-// runCycle() repeatedly after each blocking fallback delay, keeping the full
-// sensing and transmit cycle running without reinitializing g_state.
+// Each pass is one wake cycle: runCycle() senses, transmits, and sleeps the
+// host in STOP2 until the Notecard raises ATTN, then returns here with g_state
+// intact so the next pass continues where the last one left off.
 void loop()
 {
     runCycle();

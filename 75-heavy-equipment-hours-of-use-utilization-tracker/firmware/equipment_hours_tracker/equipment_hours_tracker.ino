@@ -1,78 +1,123 @@
 /*******************************************************************************
  * equipment_hours_tracker.ino — Heavy Equipment Hours-of-Use & Utilization Tracker
  *
- * Hardware: Blues Notecarrier CX (Cygnet STM32L4) + Notecard for Skylo
+ * Hardware: Blues Notecarrier CX (onboard STM32L433 host) + Notecard for Skylo
  *           (NOTE-NBGLWX) + Adafruit LSM6DSOX accelerometer (I2C, #4517)
  *           Connectivity uses automatic WiFi→cellular→Skylo-satellite (NTN)
  *           fallback so assets stay reportable beyond terrestrial coverage
  *           (enabled in notecardConfigure() via card.transport "wifi-cell-ntn").
  *
- * On each 30-second wake the host: restores persisted state, fetches env vars,
- * samples accelerometer for 2 s at 104 Hz, classifies vibration as IDLE /
- * RUNNING / TRANSPORT using RMS + coefficient-of-variation (CV = σ/μ),
- * updates the engine-hour meter, emits state-change events immediately and
- * daily summaries on schedule, then sleeps via card.attn host power gating.
+ * On each 30-second wake the host: fetches env vars, samples the accelerometer
+ * for 2 s at 104 Hz, classifies vibration as IDLE / RUNNING / TRANSPORT using
+ * RMS + coefficient-of-variation (CV = σ/μ), updates the engine-hour meter,
+ * emits state-change events immediately and daily summaries on schedule, then
+ * sleeps in STM32 STOP2 until the Notecard's ATTN pin wakes it (cx_sleep.h).
+ * Execution resumes in place with RAM intact, so application state simply
+ * lives in the AppState struct — nothing is persisted to the Notecard.
  *
  * Classifier rationale: diesel idle at 700 RPM → ~11.7 Hz periodic vibration
  * (low CV, ~0.10–0.25).  Road/transport shock → irregular spikes (high CV,
  * ~0.50–1.0+).  RMS gates on activity level; CV discriminates engine vs transport.
  *
+ * Wiring for sleep: jumper the Notecarrier CX ATTN pin to D5 (both on the same
+ * 16-pin header).  Leave EN unconnected — on the CX it enables the shared 3.3 V
+ * VIO rail, so ATTN→EN browns out the board instead of sleeping the host.
+ *
+ * Build: Tools > USB support (if available) > None (usb=none).  With the USB
+ * CDC stack enabled and no USB host attached, the USB wakeup interrupt exits
+ * STOP2 immediately.  Debug output goes to the LPUART on the CX debug jack,
+ * which an ST-LINK V3 exposes as a virtual COM port (debugSerial below).
+ *
  * Source layout:
  *   equipment_hours_tracker.ino      — setup / loop / orchestration (this file)
  *   equipment_hours_tracker_helpers.h — types, constants, externs, prototypes
  *   equipment_hours_tracker_helpers.cpp — global definitions + helper implementations
+ *   cx_sleep.h                        — STOP2 entry + ATTN wake for the Notecarrier CX
  *
  * Dependencies (install via Arduino Library Manager):
  *   Blues Wireless Notecard (note-arduino) — pin current stable release
  *   Adafruit LSM6DS + Adafruit Unified Sensor
+ *   STM32duino Low Power (+ its dependency STM32duino RTC)
  *
- * Board: Generic STM32L4 → Cygnet
+ * Board: Blues boards → Cygnet (pnum=CYGNET), USB support None
  ******************************************************************************/
 
 #include "equipment_hours_tracker_helpers.h"
+#include "cx_sleep.h"
+
+// Debug output: LPUART1 on the CX debug jack (ST-LINK virtual COM port).
+// USB CDC is disabled for STOP2, so Serial is not available.
+Uart debugSerial(PIN_VCP_RX, PIN_VCP_TX);
+
+// True until the LSM6DSOX has been initialised; retried on each wake so a
+// probe that is plugged in late still comes up without a power cycle.
+static bool g_imu_ok = false;
+
+// Bring up the LSM6DSOX.  Returns false when the IMU does not answer on I²C.
+static bool initImu(void) {
+    if (!sox.begin_I2C()) {
+        debugSerial.println("[IMU] Not found — check SDA/SCL/VCC wiring");
+        return false;
+    }
+    sox.setAccelRange(LSM6DS_ACCEL_RANGE_2_G);   // ±2g best for chassis vibration
+    sox.setAccelDataRate(LSM6DS_RATE_104_HZ);     // 104 Hz captures engine harmonics
+    sox.setGyroDataRate(LSM6DS_RATE_SHUTDOWN);    // gyro unused; shut down to save ~0.5 mA
+    return true;
+}
 
 // ═════════════════════════════════════════════════════════════════════════════
+// setup() — runs once at power-up.  The host resumes in place after each STOP2
+// sleep, so one-time Notecard and sensor configuration lives here and every
+// per-wake step lives in loop().
+// ═════════════════════════════════════════════════════════════════════════════
 void setup() {
-    Serial.begin(115200);
-    const uint32_t kTout = 2500;
-    for (const uint32_t t0 = millis(); !Serial && (millis() - t0 < kTout); ) {}
+    debugSerial.begin(115200);
 
     Wire.begin();
     notecard.begin();
 #ifndef NDEBUG
-    notecard.setDebugOutputStream(Serial);
+    notecard.setDebugOutputStream(debugSerial);
 #endif
 
-    // Restore persisted state; false on cold boot or first flash.
-    // Zero-initialise the descriptor so NotePayloadFree is never called on
-    // an uninitialised struct when the retrieve fails.
-    NotePayloadDesc payload = {};
-    bool restored = false;
-    // Guard against the cold-boot I²C race described in the build spec: the
-    // Notecard may not be ready to accept commands immediately after host
-    // power-up.  A single immediate attempt that fails looks identical to a
-    // genuine cold boot, which would zero g_s and permanently lose all
-    // persisted hour totals and pending events.  Retry with increasing backoff
-    // before concluding that no payload exists.
-    for (int attempt = 0; attempt < 5 && !restored; attempt++) {
-        if (attempt > 0) delay(250 * attempt);  // 250, 500, 750, 1000 ms
-        restored = NotePayloadRetrieveAfterSleep(&payload);
-    }
-    if (restored) {
-        restored &= NotePayloadGetSegment(&payload, SEG_ID, &g_s, sizeof(g_s));
-        NotePayloadFree(&payload);  // release whether or not the segment parse succeeded
+    memset(&g_s, 0, sizeof(g_s));
+
+    // Only mark configured after every required request is confirmed by the
+    // Notecard — a transient cold-boot I²C miss must not leave the device
+    // permanently misconfigured; loop() retries until it succeeds.
+    if (notecardConfigure() && defineTemplates()) {
+        g_s.configured = true;
+        debugSerial.println("[BOOT] Notecard configured");
+    } else {
+        debugSerial.println("[BOOT] Configuration failed — will retry on next wake");
     }
 
-    if (!restored || !g_s.configured) {
-        memset(&g_s, 0, sizeof(g_s));
-        // Only mark configured after every required request is confirmed by
-        // the Notecard — a transient cold-boot I²C miss must not leave the
-        // device permanently misconfigured on subsequent wakes.
+    g_imu_ok = initImu();
+
+    // Arm the ATTN wake: the Notecard raises ATTN (D5) to end each sleep.
+    cxSleepBegin();
+}
+
+// Sleep in STOP2 until the Notecard raises ATTN SAMPLE_INTERVAL_SEC from now.
+static void goToSleep(void) {
+    if (!cxSleepUntilAttn(notecard, SAMPLE_INTERVAL_SEC, NULL, &debugSerial)) {
+        // The Notecard didn't take the sleep request, or ATTN never went low
+        // (check the ATTN -> D5 jumper).  Keep the sample cadence and retry.
+        debugSerial.println("[SLEEP] ATTN sleep failed — waiting out the interval awake");
+        delay(SAMPLE_INTERVAL_SEC * 1000UL);
+    }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// loop() — one sample/wake cycle, then sleep until the Notecard raises ATTN.
+// ═════════════════════════════════════════════════════════════════════════════
+void loop() {
+    // Retry one-time configuration if it did not complete at power-up.
+    if (!g_s.configured) {
         if (notecardConfigure() && defineTemplates()) {
             g_s.configured = true;
-            Serial.println("[BOOT] Cold boot: Notecard configured");
+            debugSerial.println("[BOOT] Notecard configured");
         } else {
-            Serial.println("[BOOT] Configuration failed — will retry on next wake");
+            debugSerial.println("[BOOT] Configuration failed — will retry on next wake");
             goToSleep();
             return;
         }
@@ -83,14 +128,13 @@ void setup() {
     fetchEnvOverrides();
     applyGeofenceIfChanged();
 
-    if (!sox.begin_I2C()) {
-        Serial.println("[IMU] Not found — check SDA/SCL/VCC wiring");
-        goToSleep();
-        return;
+    if (!g_imu_ok) {
+        g_imu_ok = initImu();
+        if (!g_imu_ok) {
+            goToSleep();
+            return;
+        }
     }
-    sox.setAccelRange(LSM6DS_ACCEL_RANGE_2_G);   // ±2g best for chassis vibration
-    sox.setAccelDataRate(LSM6DS_RATE_104_HZ);     // 104 Hz captures engine harmonics
-    sox.setGyroDataRate(LSM6DS_RATE_SHUTDOWN);    // gyro unused; shut down to save ~0.5 mA
 
     // Fetch the epoch before classification so that updateHourAccumulator() can
     // compute the actual elapsed wall time between wakes instead of crediting a
@@ -106,7 +150,7 @@ void setup() {
     // added later in this wake are enqueued after existing entries, preserving
     // FIFO ordering across retries.
     if (g_s.evq_count > 0) {
-        Serial.print("[EVENT] retrying "); Serial.println(g_s.evq[g_s.evq_head].tag);
+        debugSerial.print("[EVENT] retrying "); debugSerial.println(g_s.evq[g_s.evq_head].tag);
         sendNextPendingEvent();
     }
 
@@ -175,10 +219,4 @@ void setup() {
     }
 
     goToSleep();
-}
-
-// If ATTN is not gating host power, loop() is the fallback
-void loop() {
-    delay(SAMPLE_INTERVAL_SEC * 1000UL);
-    setup();
 }

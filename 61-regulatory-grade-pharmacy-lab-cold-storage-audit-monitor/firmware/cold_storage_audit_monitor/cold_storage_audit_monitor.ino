@@ -31,18 +31,34 @@
   All thresholds are controlled via Notehub environment variables so
   operators can adjust limits from the cloud without reflashing firmware.
 
+  Host sleep: between samples the host sleeps in STM32 STOP2 (~1-2 µA, RAM
+  retained) and is woken by the Notecard's ATTN pin after sample_interval_sec
+  seconds (card.attn "sleep"). Execution resumes in place, so AppState simply
+  lives in RAM. Wiring: jumper the Notecarrier CX ATTN pin to D6 (same 16-pin
+  header; D5 is taken by the door switch, so CX_ATTN_PIN is set to D6 in
+  cold_storage_audit_monitor_helpers.h). Leave EN unconnected — on the CX it
+  enables the shared 3.3 V VIO rail, so driving it from ATTN would brown out
+  the board rather than sleep the host. See cx_sleep.h.
+
+  Build: Tools > USB support (if available) > None (usb=none). With the USB
+  CDC stack enabled and no USB host attached, the host cannot stay in STOP2.
+  Debug output (ENABLE_DEBUG) goes to the ST-LINK virtual COM port on the CX
+  debug jack.
+
   Hardware (production build):
-    Blues Notecarrier CX (Cygnet STM32 host MCU, onboard)
+    Blues Notecarrier CX (STM32L433 host MCU, onboard)
     Blues Notecard Cell+WiFi MBGLW (M.2 slot)
     Adafruit MAX31865 PT1000 Amplifier (Product 3648) -- SPI, CS on D10
     Adafruit Platinum RTD Sensor PT1000 3-Wire 1 m (Product 3984) -- probe tip
       routes into refrigerated compartment; submit for NIST calibration before
       regulatory deployment
     Adafruit VEML7700 Lux Sensor, STEMMA QT / Qwiic (Product 4162)
-    SparkFun Magnetic Contact Switch (COM-13247)
+    SparkFun Magnetic Contact Switch (COM-13247) -- D5
+    Jumper: Notecarrier CX ATTN -> D6 (host wake from STOP2)
 */
 
 #include "cold_storage_audit_monitor_helpers.h"
+#include "cx_sleep.h"
 
 // ---------------------------------------------------------------------------
 // Product UID — paste the ProductUID from your Notehub project here.
@@ -80,6 +96,12 @@ Adafruit_VEML7700 lightSensor;
 AppState          state;
 bool              tempSensorOk  = false;
 bool              lightSensorOk = false;
+#if ENABLE_DEBUG
+// Debug output: LPUART1 on the CX debug jack, which an ST-LINK V3 exposes as
+// a virtual COM port. (USB CDC must be disabled for STOP2 to work; see
+// cx_sleep.h.)
+Uart              debugSerial(PIN_VCP_RX, PIN_VCP_TX);
+#endif
 
 // ---------------------------------------------------------------------------
 // Forward declarations for functions defined in this file
@@ -94,63 +116,46 @@ static uint8_t alertTypeToBit(const char *type);
 static uint8_t recomputeAlertTypeMask();
 
 // ===========================================================================
-// setup() — runs fresh on every wake from Notecard-controlled sleep
+// setup() — runs once at power-up. The host resumes in place after each
+// STOP2 sleep, so one-time initialisation lives here and every per-wake
+// step lives in loop().
 // ===========================================================================
 void setup() {
-    // I2C bus must be up before notecard.begin() and any NotePayload calls.
+    // I2C bus must be up before notecard.begin().
     // SPI is initialised internally by Adafruit_MAX31865::begin().
     Wire.begin();
 
 #if ENABLE_DEBUG
-    Serial.begin(115200);
-    notecard.setDebugOutputStream(Serial);
+    debugSerial.begin(115200);
+    notecard.setDebugOutputStream(debugSerial);
 #endif
 
-    // Halt immediately when PRODUCT_UID was not set before flashing. An empty
-    // UID means the Notecard will never connect to Notehub; letting the device
-    // continue silently makes the fault look like a cellular problem.
-    if (strlen(PRODUCT_UID) == 0) {
+    // An empty PRODUCT_UID means the Notecard will never associate with a
+    // Notehub project, which makes the fault look like a cellular problem.
+    // Flag it loudly on the debug UART; the #pragma above flags it at build time.
 #if ENABLE_DEBUG
-        Serial.println("[FATAL] PRODUCT_UID is empty — set it before deploying.");
-#endif
-        while (true) { delay(1000); }
+    if (strlen(PRODUCT_UID) == 0) {
+        debugSerial.println("[ERR] PRODUCT_UID is empty — set it before deploying.");
     }
+#endif
 
     notecard.begin();
 
-    // Rehydrate persisted state from Notecard flash. On cold boot (no valid
-    // payload) or when STATE_MAGIC_VERSION does not match (firmware update,
-    // PRODUCT_UID change, outbound-cadence change, or schema change),
-    // zero-initialise and apply compile-time defaults. Clearing
-    // notecard_configured and templates_defined on a version mismatch ensures
-    // hub.set and note.template are re-applied with the current configuration
-    // before the first sample cycle after the update.
-    NotePayloadDesc payload;
-    bool restored = NotePayloadRetrieveAfterSleep(&payload);
-    if (restored) {
-        restored &= NotePayloadGetSegment(&payload, STATE_SEG_ID,
-                                          &state, sizeof(state));
-        NotePayloadFree(&payload);
-    }
-    if (!restored || state.magic_version != STATE_MAGIC_VERSION) {
-        memset(&state, 0, sizeof(state));
-        state.magic_version       = STATE_MAGIC_VERSION;
-        state.temp_high_c         = TEMP_HIGH_ALERT_C_DEFAULT;
-        state.temp_low_c          = TEMP_LOW_ALERT_C_DEFAULT;
-        state.door_alert_min      = DOOR_OPEN_ALERT_MIN_DEFAULT;
-        state.alert_cooldown_sec  = (uint32_t)ALERT_COOLDOWN_MIN_DEFAULT * 60;
-        state.sample_interval_sec = SAMPLE_INTERVAL_SEC_DEFAULT;
-        state.lux_threshold       = DOOR_LUX_THRESHOLD;
-    }
+    // Zero-initialise state and apply compile-time defaults. fetchEnvOverrides()
+    // (called from loop() on every wake) overwrites these from Notehub.
+    memset(&state, 0, sizeof(state));
+    state.temp_high_c         = TEMP_HIGH_ALERT_C_DEFAULT;
+    state.temp_low_c          = TEMP_LOW_ALERT_C_DEFAULT;
+    state.door_alert_min      = DOOR_OPEN_ALERT_MIN_DEFAULT;
+    state.alert_cooldown_sec  = (uint32_t)ALERT_COOLDOWN_MIN_DEFAULT * 60;
+    state.sample_interval_sec = SAMPLE_INTERVAL_SEC_DEFAULT;
+    state.lux_threshold       = DOOR_LUX_THRESHOLD;
 
-    // Retry hub.set and note.template on every wake until each step is
-    // confirmed without error. Success flags are persisted so only the failing
-    // step is retried — not both steps on every boot once one succeeds.
-    if (!state.notecard_configured) state.notecard_configured = notecardConfigure();
-    if (!state.templates_defined)   state.templates_defined   = defineTemplates();
-
-    // Pull any updated environment variables from Notehub on every wake.
-    fetchEnvOverrides();
+    // One-time Notecard configuration. Each step's success flag is only set
+    // when the Notecard confirms it without error; loop() retries any step
+    // still unconfirmed on later wakes.
+    state.notecard_configured = notecardConfigure();
+    state.templates_defined   = defineTemplates();
 
     // Initialise the MAX31865 RTD amplifier for 3-wire PT1000 mode.
     // begin() configures the MAX31865 register, starts continuous conversion,
@@ -159,7 +164,7 @@ void setup() {
     // readTemperatureC() catch faults that develop after init.
     tempSensorOk = rtdAmp.begin(MAX31865_3WIRE);
 #if ENABLE_DEBUG
-    if (!tempSensorOk) Serial.println("[ERR] MAX31865 init failed — check SPI wiring and probe connection");
+    if (!tempSensorOk) debugSerial.println("[ERR] MAX31865 init failed — check SPI wiring and probe connection");
 #endif
 
     lightSensorOk = lightSensor.begin();
@@ -170,21 +175,32 @@ void setup() {
         lightSensor.setIntegrationTime(VEML7700_IT_100MS);
     }
 #if ENABLE_DEBUG
-    else { Serial.println("[ERR] VEML7700 not found — check Qwiic connection"); }
+    else { debugSerial.println("[ERR] VEML7700 not found — check Qwiic connection"); }
 #endif
 
     // Reed switch: Normally Open; one terminal to D5, other to GND.
     pinMode(DOOR_SWITCH_PIN, INPUT_PULLUP);
+
+    // Arm the ATTN wake: the Notecard raises ATTN (jumpered to D6) to end
+    // each sleep.
+    cxSleepBegin();
 }
 
 // ===========================================================================
-// loop() — runs one sample cycle then sleeps via card.attn / ATTN gate
+// loop() — one sample cycle, then sleep in STOP2 until the Notecard raises
+// ATTN sample_interval_sec later.
 // ===========================================================================
 void loop() {
+    // Retry hub.set and note.template on every wake until each step is
+    // confirmed without error. Only the failing step is retried.
+    if (!state.notecard_configured) state.notecard_configured = notecardConfigure();
+    if (!state.templates_defined)   state.templates_defined   = defineTemplates();
+
+    // Pull any updated environment variables from Notehub on every wake.
+    fetchEnvOverrides();
+
     runSampleCycle();
     goToSleep();
-    // Reached only when ATTN-based power control is not wired (bench use).
-    delay((unsigned long)state.sample_interval_sec * 1000UL);
 }
 
 // ===========================================================================
@@ -193,7 +209,7 @@ void loop() {
 // ===========================================================================
 bool notecardConfigure() {
     // Retry loop: allows up to ~10 s for the Notecard I²C interface to become
-    // ready on cold boot and for hub.set to be acknowledged without a semantic
+    // ready at power-up and for hub.set to be acknowledged without a semantic
     // error in the response. Both transport failures (NULL response) and
     // Notecard-reported errors are retried so that a transient startup fault
     // cannot leave the device permanently misconfigured. Only a clean
@@ -212,15 +228,15 @@ bool notecardConfigure() {
         J *rsp = notecard.requestAndResponse(req);
         if (rsp == NULL) {
 #if ENABLE_DEBUG
-            Serial.print("[WARN] notecardConfigure: no response (attempt ");
-            Serial.print(attempt + 1); Serial.println(")");
+            debugSerial.print("[WARN] notecardConfigure: no response (attempt ");
+            debugSerial.print(attempt + 1); debugSerial.println(")");
 #endif
             continue;
         }
         if (notecard.responseError(rsp)) {
 #if ENABLE_DEBUG
-            Serial.print("[WARN] notecardConfigure: ");
-            Serial.println(JGetString(rsp, "err"));
+            debugSerial.print("[WARN] notecardConfigure: ");
+            debugSerial.println(JGetString(rsp, "err"));
 #endif
             notecard.deleteResponse(rsp);
             continue;
@@ -236,7 +252,7 @@ bool notecardConfigure() {
         return true;
     }
 #if ENABLE_DEBUG
-    Serial.println("[ERR] notecardConfigure: hub.set failed after all retries");
+    debugSerial.println("[ERR] notecardConfigure: hub.set failed after all retries");
 #endif
     return false;
 }
@@ -251,7 +267,7 @@ bool notecardConfigure() {
 // Field type tokens: 14.1 = 4-byte float, 24 = 4-byte uint, true = boolean.
 bool defineTemplates() {
     // Retry loop mirrors notecardConfigure(): a transient I²C failure on the
-    // first boot wake would otherwise silently suppress all reading Notes
+    // first wake would otherwise silently suppress all reading Notes
     // until the next wake, causing an undetectable gap in the audit trail.
     for (int attempt = 0; attempt < 5; attempt++) {
         if (attempt > 0) delay(2000);
@@ -276,15 +292,15 @@ bool defineTemplates() {
         J *rsp = notecard.requestAndResponse(req);
         if (rsp == NULL) {
 #if ENABLE_DEBUG
-            Serial.print("[WARN] defineTemplates: no response (attempt ");
-            Serial.print(attempt + 1); Serial.println(")");
+            debugSerial.print("[WARN] defineTemplates: no response (attempt ");
+            debugSerial.print(attempt + 1); debugSerial.println(")");
 #endif
             continue;
         }
         if (notecard.responseError(rsp)) {
 #if ENABLE_DEBUG
-            Serial.print("[WARN] defineTemplates: ");
-            Serial.println(JGetString(rsp, "err"));
+            debugSerial.print("[WARN] defineTemplates: ");
+            debugSerial.println(JGetString(rsp, "err"));
 #endif
             notecard.deleteResponse(rsp);
             continue;
@@ -293,7 +309,7 @@ bool defineTemplates() {
         return true;
     }
 #if ENABLE_DEBUG
-    Serial.println("[ERR] defineTemplates: note.template failed after all retries");
+    debugSerial.println("[ERR] defineTemplates: note.template failed after all retries");
 #endif
     return false;
 }

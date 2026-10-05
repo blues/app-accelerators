@@ -9,27 +9,45 @@
  * Notehub, and sends immediate alerts for low SoC, high battery temperature,
  * and excessive load draw.
  *
- * Board:    Blues Notecarrier CX (onboard Cygnet STM32L433 host)
+ * Board:    Blues Notecarrier CX (onboard STM32L433 host)
  * Notecard: NOTE-MBGLW (cellular) or NOTE-NBGLWX (Skylo NTN satellite) in M.2 slot
  * Library:  Blues Wireless Notecard (note-arduino)
  *
  * Dependencies (install via Arduino Library Manager):
  *   - "Blues Wireless Notecard"  (note-arduino)
- *   - STMicroelectronics STM32 core (stm32duino) with Cygnet board support
+ *   - "STM32duino Low Power" (and its dependency "STM32duino RTC")
+ *   - STMicroelectronics STM32 core (stm32duino) with Blues board support
  *
- * Source is split across three modules:
+ * Source is split across four modules:
  *   solar_battery_controller.ino            — orchestration (this file)
  *   solar_battery_controller_helpers.*      — VE.Direct UART frame parser
- *   solar_battery_controller_notecard_helpers.* — Notecard I/O, PersistState,
+ *   solar_battery_controller_notecard_helpers.* — Notecard I/O, AppState,
  *                                                  all configuration constants
+ *   cx_sleep.h                              — STOP2 host sleep, ATTN wake
  *
  * VE.Direct TX is 5V logic; use a 10kΩ/20kΩ resistor divider on each RX
  * line to bring it down to 3.3V for the STM32L433.  See README §4.
  *
+ * Sleep / wake:
+ *   setup() runs once.  loop() runs one sample cycle, then asks the Notecard
+ *   to hold ATTN low for sample_interval_sec (card.attn "sleep") and puts the
+ *   host in STM32 STOP2 (~1-2 µA, RAM retained).  The ATTN rising edge wakes
+ *   the host and execution resumes in place, so AppState simply lives in RAM.
+ *   Jumper the Notecarrier CX ATTN pin to D5 (same 16-pin header).  Leave EN
+ *   unconnected — on the CX it enables the shared 3.3 V VIO rail, so driving
+ *   it from ATTN browns out the whole board instead of sleeping the host.
+ *   See cx_sleep.h.
+ *
+ * Build:
+ *   Tools > USB support (if available) > None (usb=none).  With the USB CDC
+ *   stack enabled and no USB host attached, the host cannot stay in STOP2.
+ *   Debug output goes to the LPUART on the CX debug jack, which an ST-LINK V3
+ *   exposes as a virtual COM port (dbgSerial below).
+ *
  * Sync profile (runtime-configurable via Notehub environment variables):
  *   Default: outbound cadence equals report_interval_min (240 min = 4 h);
  *   inbound is 2× outbound (480 min = 8 h).  Both are re-derived on every
- *   boot so changing report_interval_min via env var also adjusts the
+ *   wake so changing report_interval_min via env var also adjusts the
  *   Notecard's sync cadence automatically.  For Skylo NTN satellite
  *   deployments set report_interval_min=1440 in the Fleet Environment to
  *   limit satellite sessions to once per day.  Use sync_outbound_min and
@@ -42,18 +60,15 @@
  *   while the fault persists.  The cooldown prevents a persistent condition
  *   from generating a sync:true session on every wake — important on Skylo
  *   NTN deployments where each session consumes satellite data budget.
- *   Active flags and cooldown counters are persisted in PersistState across
+ *   Active flags and cooldown counters are held in AppState across
  *   sleep cycles.
- *
- * Debug:
- *   Add  -DBLUES_DEBUG  to build flags to enable the 500 ms serial-attach
- *   delay on every wake.
  */
 
 #include <Notecard.h>
 #include <SoftwareSerial.h>
 #include "solar_battery_controller_helpers.h"
 #include "solar_battery_controller_notecard_helpers.h"
+#include "cx_sleep.h"
 
 // ---------------------------------------------------------------------------
 // Configuration — set PRODUCT_UID to your Notehub project before flashing
@@ -67,7 +82,7 @@
 // Serial1 (RX = CX header RX pin, TX unused) → SmartShunt
 // D9 / SoftwareSerial → SmartSolar MPPT
 //
-// NOTE: SoftwareSerial is used here because the Cygnet's second hardware UART
+// NOTE: SoftwareSerial is used here because the host's second hardware UART
 // is not exposed at a convenient position on the standard CX header for the
 // MPPT path.  For production deployments with heavy interrupt activity (e.g.
 // if additional interrupt-driven sensors are added), prefer a hardware UART
@@ -84,15 +99,19 @@
 // Notecard I2C (no explicit address needed for default I2C)
 Notecard notecard;
 
+// Debug output: LPUART1 on the CX debug jack (ST-LINK V3 virtual COM port).
+// USB CDC is disabled in this build, so Serial is not available; see cx_sleep.h.
+Uart dbgSerial(PIN_VCP_RX, PIN_VCP_TX);
+
 // Second VE.Direct UART (SmartSolar MPPT)
 SoftwareSerial mpptSerial(MPPT_RX_PIN, MPPT_TX_PIN);
 
-// PersistState serialised to Notecard flash — layout defined in
+// Application state, held in RAM across STOP2 sleeps — layout defined in
 // solar_battery_controller_notecard_helpers.h
-PersistState state;
+AppState state;
 
 // Desired Notecard sync cadence — re-derived from report_interval_min (or
-// explicit sync_outbound/inbound_min env vars) on every boot by
+// explicit sync_outbound/inbound_min env vars) on every wake by
 // fetchEnvOverrides().  Initialised to 0; fetchEnvOverrides() always writes
 // valid values before applyHubSetIfChanged() reads them.  Declared without
 // static so the notecard helpers translation unit can access them via extern.
@@ -109,77 +128,59 @@ static void  checkHarvestDeficit();
 static void  resetAccumulators();
 
 // ---------------------------------------------------------------------------
-// setup() — entry point after every wake (cold boot or ATTN-triggered)
+// setup() — runs once at power-up.  The host resumes in place after each
+// STOP2 sleep, so one-time initialisation lives here and every per-wake step
+// lives in loop().
 // ---------------------------------------------------------------------------
 void setup() {
-    Serial.begin(115200);
-#ifdef BLUES_DEBUG
-    delay(500);   // Allow serial monitor to attach on bench
-#endif
+    dbgSerial.begin(115200);
 
-    // notecard.begin() must come before NotePayloadRetrieveAfterSleep so the
-    // I2C bus is ready for any Notecard communication during restore.
     notecard.begin();
 
-    // Attempt to restore persisted state from Notecard flash.
-    NotePayloadDesc payload;
-    bool restored = NotePayloadRetrieveAfterSleep(&payload);
-    if (restored) {
-        restored &= NotePayloadGetSegment(&payload, STATE_SEG_ID,
-                                          &state, sizeof(state));
-        NotePayloadFree(&payload);
-    }
+    // Clean application state.  It lives in RAM from here on; STOP2 retains
+    // SRAM, so it survives every sleep/wake cycle.
+    memset(&state, 0, sizeof(state));
+    state.soc_alert_pct        = DEFAULT_SOC_ALERT_PCT;
+    state.bat_temp_max_c       = DEFAULT_BAT_TEMP_MAX_C;
+    state.load_alert_w         = DEFAULT_LOAD_ALERT_W;
+    state.sample_interval_sec  = DEFAULT_SAMPLE_INTERVAL_SEC;
+    state.report_interval_min  = DEFAULT_REPORT_INTERVAL_MIN;
+    state.harvest_deficit_days = 0.0f;
+    state.ttg_min              = -1;
+    // last_outbound_min / last_inbound_min default to 0, so the
+    // applyHubSetIfChanged() call below and the call after fetchEnvOverrides()
+    // on the first wake will both issue hub.set at power-up.
+    // templates_confirmed defaults to false via memset; defineTemplates()
+    // is retried from loop() until it succeeds.
+    state.samples_until_summary =
+        samplesPerWindow(state.report_interval_min, state.sample_interval_sec);
 
-    // Validate the layout guard.  A magic or version mismatch means the struct
-    // changed since the last flash — discard stale content and start clean
-    // rather than deserialising garbage into the new layout.
-    if (restored &&
-        (state.magic != STATE_MAGIC || state.version != STATE_VERSION)) {
-        Serial.println(F("[info] PersistState layout changed; starting fresh."));
-        restored = false;
-    }
+    notecardFirstBoot();
 
-    if (!restored) {
-        memset(&state, 0, sizeof(state));
-        state.magic   = STATE_MAGIC;
-        state.version = STATE_VERSION;
-        state.soc_alert_pct        = DEFAULT_SOC_ALERT_PCT;
-        state.bat_temp_max_c       = DEFAULT_BAT_TEMP_MAX_C;
-        state.load_alert_w         = DEFAULT_LOAD_ALERT_W;
-        state.sample_interval_sec  = DEFAULT_SAMPLE_INTERVAL_SEC;
-        state.report_interval_min  = DEFAULT_REPORT_INTERVAL_MIN;
-        state.harvest_deficit_days = 0.0f;
-        state.ttg_min              = -1;
-        // last_outbound_min / last_inbound_min default to 0, so the
-        // applyHubSetIfChanged() call later in this block and the call after
-        // fetchEnvOverrides() will both issue hub.set on first boot.
-        // templates_confirmed defaults to false via memset; defineTemplates()
-        // is called unconditionally below so the first-boot and restored paths
-        // share the same retry logic.
-        state.samples_until_summary =
-            samplesPerWindow(state.report_interval_min, state.sample_interval_sec);
+    // Associate with Notehub immediately at power-up, using default cadence,
+    // so fetchEnvOverrides() on the first wake can reach Notehub and pull any
+    // pre-configured Fleet environment variables (e.g. Skylo daily cadence set
+    // before commissioning) on that same wake cycle rather than deferring them
+    // to the second.  On later wakes the Notecard is already associated; the
+    // applyHubSetIfChanged() call after fetchEnvOverrides() handles any
+    // env-var-driven cadence drift.
+    desired_outbound_min = state.report_interval_min;
+    desired_inbound_min  = state.report_interval_min * 2UL;
+    applyHubSetIfChanged(PRODUCT_UID);
 
-        notecardFirstBoot();
+    // Arm the ATTN wake: the Notecard raises ATTN (D5) to end each sleep.
+    cxSleepBegin();
+}
 
-        // Associate with Notehub immediately on first boot, using default
-        // cadence, so fetchEnvOverrides() below can reach Notehub and pull
-        // any pre-configured Fleet environment variables (e.g. Skylo daily
-        // cadence set before commissioning) on this same wake cycle rather
-        // than deferring them to the second boot.  On subsequent boots the
-        // Notecard is already associated; the applyHubSetIfChanged() call
-        // after fetchEnvOverrides() handles any env-var-driven cadence drift.
-        desired_outbound_min = state.report_interval_min;
-        desired_inbound_min  = state.report_interval_min * 2UL;
-        applyHubSetIfChanged(PRODUCT_UID);
-    }
-
-    // Register the solar_summary.qo template on every boot until confirmed.
+// ---------------------------------------------------------------------------
+// loop() — one sample cycle, then STOP2 until the Notecard raises ATTN
+// sample_interval_sec later.
+// ---------------------------------------------------------------------------
+void loop() {
+    // Register the solar_summary.qo template on every wake until confirmed.
     // note.template is idempotent on the Notecard, so re-registering an already-
-    // active template is harmless.  Retrying on every boot until success ensures
-    // that a transient I2C failure at first boot is recovered automatically, and
-    // that a future firmware revision that changes the template shape (which bumps
-    // STATE_VERSION, clears templates_confirmed via memset, and triggers a clean
-    // init above) re-registers on the very next wake without operator intervention.
+    // active template is harmless.  Retrying on every wake until success ensures
+    // that a transient I2C failure at power-up is recovered automatically.
     if (!state.templates_confirmed) {
         state.templates_confirmed = defineTemplates();
     }
@@ -202,12 +203,11 @@ void setup() {
             samplesPerWindow(state.report_interval_min, state.sample_interval_sec);
     }
 
-    // Apply hub.set on every boot — ensures outbound/inbound cadence is
-    // authoritative for the current firmware and env-var settings, even after
-    // a new binary is flashed or stale persisted config is recovered.  On
-    // first boot this is the second call: the one inside the !restored block
-    // above seeded default cadence so Notehub was reachable for fetchEnvOverrides;
-    // this call applies any env-var-driven cadence override that just arrived.
+    // Apply hub.set on every wake — ensures outbound/inbound cadence is
+    // authoritative for the current firmware and env-var settings.  On the
+    // first wake this is the second call: the one in setup() seeded default
+    // cadence so Notehub was reachable for fetchEnvOverrides; this call
+    // applies any env-var-driven cadence override that just arrived.
     applyHubSetIfChanged(PRODUCT_UID);
 
     // -------------------------------------------------------------------------
@@ -230,7 +230,10 @@ void setup() {
     }
 
     // -------------------------------------------------------------------------
-    // Read VE.Direct data from both devices
+    // Read VE.Direct data from both devices.
+    // The UARTs are opened only for the read: SoftwareSerial listens with a
+    // pin-change interrupt on D9, and the MPPT broadcasts a frame every ~1 s,
+    // so leaving it listening would wake the host from STOP2 continuously.
     // -------------------------------------------------------------------------
     Serial1.begin(VED_BAUD);
     mpptSerial.begin(VED_BAUD);
@@ -240,8 +243,11 @@ void setup() {
     bool shunt_ok = readVEDirectFrame(Serial1,    shunt, 3000);
     bool mppt_ok  = readVEDirectFrame(mpptSerial, mppt,  3000);
 
-    if (!shunt_ok) Serial.println(F("[warn] No VE.Direct frame from SmartShunt"));
-    if (!mppt_ok)  Serial.println(F("[warn] No VE.Direct frame from SmartSolar MPPT"));
+    mpptSerial.end();
+    Serial1.end();
+
+    if (!shunt_ok) dbgSerial.println(F("[warn] No VE.Direct frame from SmartShunt"));
+    if (!mppt_ok)  dbgSerial.println(F("[warn] No VE.Direct frame from SmartSolar MPPT"));
 
     // -------------------------------------------------------------------------
     // Accumulate and evaluate alerts.
@@ -274,28 +280,17 @@ void setup() {
         }
     }
 
-    state.boot_count++;
+    state.wake_count++;
 
     // -------------------------------------------------------------------------
-    // Serialise state to Notecard flash and sleep until next sample interval
+    // Sleep in STOP2 until the Notecard raises ATTN at the next sample interval
     // -------------------------------------------------------------------------
-    NotePayloadDesc desc = {0, 0, 0};
-    NotePayloadAddSegment(&desc, STATE_SEG_ID, &state, sizeof(state));
-    NotePayloadSaveAndSleep(&desc, state.sample_interval_sec, NULL);
-
-    // NotePayloadSaveAndSleep() returned — ATTN host power-cycling is not
-    // working (e.g. ATTN pin not connected on this carrier).  Wait out the
-    // sample interval and then force a software reset so the next cycle runs
-    // from a clean setup() rather than falling into an empty loop().
-    Serial.println(F("[fatal] NotePayloadSaveAndSleep returned; "
-                     "ATTN power-cycling unavailable. Resetting after delay."));
-    Serial.flush();
-    delay(state.sample_interval_sec * 1000UL);
-    NVIC_SystemReset();
-}
-
-void loop() {
-    // All logic runs in setup(); the Notecard restarts the host each cycle.
+    if (!cxSleepUntilAttn(notecard, state.sample_interval_sec, NULL, &dbgSerial)) {
+        // The Notecard didn't take the sleep request, or ATTN never went low
+        // (check the ATTN -> D5 jumper).  Keep the sample cadence and try again.
+        dbgSerial.println(F("[sleep] ATTN sleep failed — waiting out the interval awake"));
+        delay(state.sample_interval_sec * 1000UL);
+    }
 }
 
 // ---------------------------------------------------------------------------

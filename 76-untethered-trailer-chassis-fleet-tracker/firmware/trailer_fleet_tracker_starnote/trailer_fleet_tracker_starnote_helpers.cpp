@@ -13,7 +13,6 @@
 // Global definitions
 // ---------------------------------------------------------------------------
 Notecard   notecard;
-const char kStateSegId[] = "TRST";
 
 // ===========================================================================
 // sendAndCheck — send a pre-built request and confirm acceptance.
@@ -56,8 +55,8 @@ bool sendAndCheck(J *req, const char *tag)
 // ===========================================================================
 // notecardConfigure — one-time Notecard configuration.
 //
-// Called on first boot and after any firmware update that bumps
-// FIRMWARE_CONFIG_VERSION.  Returns true only when every Notecard request
+// Called on the first wake after power-up and retried on later wakes until
+// it succeeds.  Returns true only when every Notecard request
 // is confirmed so that config_version is never committed on a partial
 // failure; a transient I²C error causes a retry on the next wake instead of
 // leaving Notecard-side settings permanently out of sync.

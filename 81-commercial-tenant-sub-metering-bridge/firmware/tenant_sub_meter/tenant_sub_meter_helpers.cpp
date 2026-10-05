@@ -35,7 +35,7 @@
 //   • Current-channel saturation       → FAULT_SATURATED
 //   • Shared voltage-reference path    → FAULT_VOLTAGE_REF
 //     (bias, saturation, and line-voltage plausibility)
-// Low RMS current (< MIN_SIGNAL_AMPS) is logged to Serial as a commissioning
+// Low RMS current (< MIN_SIGNAL_AMPS) is logged to dbgSerial as a commissioning
 // diagnostic but is NOT placed in m.fault: a legitimately unloaded tenant
 // circuit is indistinguishable from a disconnected Rogowski coil by current alone.
 // =============================================================================
@@ -145,9 +145,9 @@ ChannelMeasurement measureChannel(uint8_t current_pin) {
     // coil or disconnected integrator, but is indistinguishable from a
     // legitimately unloaded tenant circuit.  NOT propagated to m.fault to
     // prevent valid zero-usage intervals from being quarantined by downstream
-    // billing.  Visible on Serial for commissioning and bench validation only.
+    // billing.  Visible on dbgSerial for commissioning and bench validation only.
     if (m.rms_amps < MIN_SIGNAL_AMPS) {
-        Serial.println("[diag] low-current channel — unloaded tenant or disconnected sensor?");
+        dbgSerial.println("[diag] low-current channel — unloaded tenant or disconnected sensor?");
     }
 
     return m;
@@ -156,10 +156,11 @@ ChannelMeasurement measureChannel(uint8_t current_pin) {
 // =============================================================================
 // Notecard cold-boot readiness handshake
 // =============================================================================
-// sendRequestWithRetry MUST be the first Notecard transaction on every cold
-// boot.  It handles the I2C race condition where the STM32L433 host comes up
-// several hundred milliseconds before the Notecard is ready to accept requests.
-// On warm wakes the function returns almost immediately.
+// sendRequestWithRetry MUST be the first Notecard transaction after a cold
+// boot (called once from setup()).  It handles the I2C race condition where
+// the STM32L433 host comes up several hundred milliseconds before the Notecard
+// is ready to accept requests.  Wakes from STOP2 resume in place and do not
+// need it.
 //
 // sendRequestWithRetry returns bool (true = acknowledged, false = timeout).
 // It does NOT return a J* response pointer.  card.version is used here because
@@ -171,7 +172,7 @@ bool notecardReady(uint32_t timeout_sec) {
     J *req = notecard.newRequest("card.version");
     if (!req) return false;
     bool ok = notecard.sendRequestWithRetry(req, timeout_sec);
-    if (!ok) Serial.println("[notecard] readiness check timed out");
+    if (!ok) dbgSerial.println("[notecard] readiness check timed out");
     return ok;
 }
 
@@ -183,8 +184,8 @@ bool notecardReady(uint32_t timeout_sec) {
 // Upper and lower bounds clamp values to safe operating ranges so a typo or
 // hostile env var cannot brick the device.
 //
-// notecardReady() must be called before this function so that the I2C cold-
-// boot race has already been resolved.
+// notecardReady() is called in setup() so that the I2C cold-boot race has
+// already been resolved before this function first runs.
 // =============================================================================
 void fetchEnvOverrides(void) {
     cfg.sample_interval_sec    = DEFAULT_SAMPLE_INTERVAL_SEC;
@@ -229,7 +230,7 @@ void fetchEnvOverrides(void) {
 // Hub configuration (shared by initNotecard and reissueHubSet)
 // =============================================================================
 // Issues hub.set using sendRequestWithRetry to handle the cold-boot I2C race
-// where the Cygnet host comes up before the Notecard is ready.  The outbound
+// where the STM32L433 host comes up before the Notecard is ready.  The outbound
 // cadence is set to cfg.summary_interval_min so the Notecard flushes queued
 // notes roughly as often as new summaries are created.
 //
@@ -247,7 +248,7 @@ static bool configureHub(void) {
     JAddNumberToObject(req, "outbound", (double)cfg.summary_interval_min);
     JAddNumberToObject(req, "inbound",  (double)INBOUND_MINUTES);
     bool ok = notecard.sendRequestWithRetry(req, 10);
-    if (!ok) Serial.println("[notecard] hub.set failed");
+    if (!ok) dbgSerial.println("[notecard] hub.set failed");
     return ok;
 }
 
@@ -294,7 +295,7 @@ bool defineTemplates(void) {
     JAddNumberToObject(body, "fault_mask", 14.1);
     J *rsp = notecard.requestAndResponse(req);
     bool ok = rsp && !notecard.responseError(rsp);
-    if (!ok) Serial.println("[init] note.template for meter_summary.qo failed — will retry");
+    if (!ok) dbgSerial.println("[init] note.template for meter_summary.qo failed — will retry");
     notecard.deleteResponse(rsp);
     return ok;
 }
@@ -313,7 +314,7 @@ bool defineTemplates(void) {
 // remains consistent and downstream systems never see stale channel data.
 // =============================================================================
 bool sendSummary(void) {
-    Serial.println("[summary] queuing meter_summary.qo");
+    dbgSerial.println("[summary] queuing meter_summary.qo");
     J *req = notecard.newRequest("note.add");
     if (!req) return false;
 

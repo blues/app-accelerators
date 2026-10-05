@@ -19,12 +19,12 @@
 bool ncSend(J *req) {
     J *rsp = notecard.requestAndResponse(req);
     if (!rsp) {
-        Serial.println("[cargo] Notecard request returned NULL");
+        debugSerial.println("[cargo] Notecard request returned NULL");
         return false;
     }
     if (notecard.responseError(rsp)) {
-        Serial.print("[cargo] Notecard error: ");
-        Serial.println(JGetString(rsp, "err"));
+        debugSerial.print("[cargo] Notecard error: ");
+        debugSerial.println(JGetString(rsp, "err"));
         notecard.deleteResponse(rsp);
         return false;
     }
@@ -35,12 +35,12 @@ bool ncSend(J *req) {
 J *ncQuery(J *req) {
     J *rsp = notecard.requestAndResponse(req);
     if (!rsp) {
-        Serial.println("[cargo] Notecard request returned NULL");
+        debugSerial.println("[cargo] Notecard request returned NULL");
         return NULL;
     }
     if (notecard.responseError(rsp)) {
-        Serial.print("[cargo] Notecard error: ");
-        Serial.println(JGetString(rsp, "err"));
+        debugSerial.print("[cargo] Notecard error: ");
+        debugSerial.println(JGetString(rsp, "err"));
         notecard.deleteResponse(rsp);
         return NULL;
     }
@@ -83,9 +83,9 @@ void notecardConfigure() {
         if (gState.last_outbound_min == 0) {
             gState.last_outbound_min = OUTBOUND_INTERVAL_MIN;
         }
-        Serial.println("[cargo] hub.set configured");
+        debugSerial.println("[cargo] hub.set configured");
     } else {
-        Serial.println("[cargo] hub.set failed — will retry on next wake");
+        debugSerial.println("[cargo] hub.set failed — will retry on next wake");
     }
     if (rsp) notecard.deleteResponse(rsp);
 
@@ -110,9 +110,9 @@ void notecardConfigure() {
         JAddStringToObject(req, "method", "wifi-cell-ntn");
         if (ncSend(req)) {
             gState.transport_configured = true;
-            Serial.println("[cargo] card.transport configured (wifi-cell-ntn)");
+            debugSerial.println("[cargo] card.transport configured (wifi-cell-ntn)");
         } else {
-            Serial.println("[cargo] card.transport failed — will retry on next wake");
+            debugSerial.println("[cargo] card.transport failed — will retry on next wake");
         }
     }
 
@@ -122,9 +122,9 @@ void notecardConfigure() {
         JAddNumberToObject(req, "sensitivity", 2);
         if (ncSend(req)) {
             gState.motion_configured = true;
-            Serial.println("[cargo] card.motion.mode configured");
+            debugSerial.println("[cargo] card.motion.mode configured");
         } else {
-            Serial.println("[cargo] card.motion.mode failed — will retry on next wake");
+            debugSerial.println("[cargo] card.motion.mode failed — will retry on next wake");
         }
     }
 }
@@ -157,10 +157,10 @@ void applyDynamicOutbound() {
     J *rsp = notecard.requestAndResponseWithRetry(req, 3);
     if (rsp && !notecard.responseError(rsp)) {
         gState.last_outbound_min = desired;
-        Serial.print("[cargo] outbound cadence -> ");
-        Serial.print(desired); Serial.println(" min");
+        debugSerial.print("[cargo] outbound cadence -> ");
+        debugSerial.print(desired); debugSerial.println(" min");
     } else {
-        Serial.println("[cargo] hub.set (dynamic outbound) failed — will retry next wake");
+        debugSerial.println("[cargo] hub.set (dynamic outbound) failed — will retry next wake");
     }
     if (rsp) notecard.deleteResponse(rsp);
 }
@@ -168,19 +168,20 @@ void applyDynamicOutbound() {
 // loadOrIncrementBootSeg: read the boot-segment counter and the tilt-baseline
 // orientation from the Notecard local notefile chain_boot.dbx, increment the
 // counter, write both back, and store the new boot_seg in gState.boot_seg.
-// Called once on every cold boot (not on warm boot — the sleep payload
-// preserves both fields across planned sleep/wake cycles).
+// Called once from setup() on every cold boot (the host sleeps in STOP2
+// between samples with RAM retained, so both fields survive planned
+// sleep/wake cycles without any help).
 //
 // chain_boot.dbx is a local-only (.dbx) DB Notefile stored in Notecard flash.
 // It is NOT synced to Notehub.  This provides cold-boot-resilient persistence
-// independent of the NotePayloadSaveAndSleep mechanism:
-//   - Planned sleep/wake: boot_seg and baseline_orientation are preserved in
-//     the sleep payload (the warm-boot path; this function is not called).
-//   - Uncontrolled cold boot (power loss, brown-out): the sleep payload is
-//     absent, but chain_boot.dbx retains both values so the boot counter
-//     increments correctly and the tilt baseline is restored from the
-//     orientation captured at logger activation rather than being re-seeded
-//     from the post-boot orientation.
+// independent of the host's RAM:
+//   - Planned sleep/wake: boot_seg and baseline_orientation stay in
+//     ColdChainState in RAM (this function is not called).
+//   - Cold boot (power loss, brown-out, reset): RAM state is gone, but
+//     chain_boot.dbx retains both values so the boot counter increments
+//     correctly and the tilt baseline is restored from the orientation
+//     captured at logger activation rather than being re-seeded from the
+//     post-boot orientation.
 //
 // If the Notecard is unreachable on cold boot, boot_seg defaults to 1 for the
 // first boot and increments from the stored value when the Notecard recovers.
@@ -229,8 +230,8 @@ uint16_t loadOrIncrementBootSeg() {
                     strncpy(gState.baseline_orientation, orient,
                             sizeof(gState.baseline_orientation) - 1);
                     gState.baseline_orientation[sizeof(gState.baseline_orientation) - 1] = '\0';
-                    Serial.print("[cargo] cold boot — orientation baseline restored: ");
-                    Serial.println(gState.baseline_orientation);
+                    debugSerial.print("[cargo] cold boot — orientation baseline restored: ");
+                    debugSerial.println(gState.baseline_orientation);
                 }
             }
         }
@@ -244,11 +245,11 @@ uint16_t loadOrIncrementBootSeg() {
     // Also carry forward the baseline_orientation if it was already stored so
     // a subsequent cold boot can restore it again.
     if (!writeChainBootNote()) {
-        Serial.println("[cargo] chain_boot.dbx write failed — boot_seg and orientation "
+        debugSerial.println("[cargo] chain_boot.dbx write failed — boot_seg and orientation "
                        "baseline may not survive the next uncontrolled cold boot");
     }
 
-    Serial.print("[cargo] cold boot — boot_seg="); Serial.println(newSeg);
+    debugSerial.print("[cargo] cold boot — boot_seg="); debugSerial.println(newSeg);
     return newSeg;
 }
 
@@ -262,7 +263,7 @@ uint16_t loadOrIncrementBootSeg() {
 void persistBaselineOrientation() {
     if (!gState.baseline_orientation[0]) return;
     if (!writeChainBootNote()) {
-        Serial.println("[cargo] chain_boot.dbx: failed to persist orientation baseline — "
+        debugSerial.println("[cargo] chain_boot.dbx: failed to persist orientation baseline — "
                        "baseline may re-seed from current orientation on next "
                        "uncontrolled cold boot");
     }
@@ -300,7 +301,7 @@ void defineTemplates() {
     JAddNumberToObject(body, "motion_valid", TUINT16);
     JAddNumberToObject(body, "samples",      TUINT16);
     if (!ncSend(req)) {
-        Serial.println("[cargo] cargo_data.qo template failed — will retry on next wake");
+        debugSerial.println("[cargo] cargo_data.qo template failed — will retry on next wake");
         allOk = false;
     }
 
@@ -337,13 +338,13 @@ void defineTemplates() {
     JAddNumberToObject(body, "boot_seg",     TUINT16);   // boot-segment counter
     JAddNumberToObject(body, "chain_crc",    TUINT32);   // rolling integrity hash
     if (!ncSend(req)) {
-        Serial.println("[cargo] cargo_log.qo template failed — will retry on next wake");
+        debugSerial.println("[cargo] cargo_log.qo template failed — will retry on next wake");
         allOk = false;
     }
 
     if (allOk) {
         gState.templates_registered = true;
-        Serial.println("[cargo] templates registered");
+        debugSerial.println("[cargo] templates registered");
     }
 }
 
@@ -377,7 +378,7 @@ void fetchEnvOverrides() {
             gTempMinC = tmin;
             gTempMaxC = tmax;
         } else {
-            Serial.println("[cargo] temp_min_c >= temp_max_c — ignoring");
+            debugSerial.println("[cargo] temp_min_c >= temp_max_c — ignoring");
         }
 
         gHumidityMax = constrain(
@@ -390,7 +391,7 @@ void fetchEnvOverrides() {
         if (sc >= 1.0f && sc <= 1000.0f) {
             gShockCount = (uint32_t)sc;
         } else {
-            Serial.println("[cargo] shock_events out of range [1,1000] — ignoring");
+            debugSerial.println("[cargo] shock_events out of range [1,1000] — ignoring");
         }
 
         // Sample interval: clamped to whole minutes for exact motion-bucket alignment
@@ -399,20 +400,20 @@ void fetchEnvOverrides() {
             uint32_t aligned = ((uint32_t)ss / 60U) * 60U;
             if (aligned < 60U) aligned = 60U;
             if (aligned != (uint32_t)ss) {
-                Serial.print("[cargo] sample_interval_sec rounded to ");
-                Serial.print(aligned);
-                Serial.println(" s (whole-minute boundary)");
+                debugSerial.print("[cargo] sample_interval_sec rounded to ");
+                debugSerial.print(aligned);
+                debugSerial.println(" s (whole-minute boundary)");
             }
             gSampleSec = aligned;
         } else {
-            Serial.println("[cargo] sample_interval_sec out of range [60,3600] — ignoring");
+            debugSerial.println("[cargo] sample_interval_sec out of range [60,3600] — ignoring");
         }
 
         float sm = envFloat(b, "summary_interval_min", (float)gSummaryMin);
         if (sm >= 1.0f && sm <= 1440.0f) {
             gSummaryMin = (uint32_t)sm;
         } else {
-            Serial.println("[cargo] summary_interval_min out of range [1,1440] — ignoring");
+            debugSerial.println("[cargo] summary_interval_min out of range [1,1440] — ignoring");
         }
 
         // ── Shipment-state model thresholds ──────────────────────────────────
@@ -420,28 +421,28 @@ void fetchEnvOverrides() {
         if (tm >= 1.0f && tm <= 100.0f) {
             gTransitMotion = (uint32_t)tm;
         } else {
-            Serial.println("[cargo] transit_motion_min out of range [1,100] — ignoring");
+            debugSerial.println("[cargo] transit_motion_min out of range [1,100] — ignoring");
         }
 
         float dc = envFloat(b, "dwell_confirm_samples", (float)gDwellConfirm);
         if (dc >= 1.0f && dc <= 20.0f) {
             gDwellConfirm = (uint32_t)dc;
         } else {
-            Serial.println("[cargo] dwell_confirm_samples out of range [1,20] — ignoring");
+            debugSerial.println("[cargo] dwell_confirm_samples out of range [1,20] — ignoring");
         }
 
         float tc = envFloat(b, "transit_confirm_samples", (float)gTransitConfirm);
         if (tc >= 1.0f && tc <= 20.0f) {
             gTransitConfirm = (uint32_t)tc;
         } else {
-            Serial.println("[cargo] transit_confirm_samples out of range [1,20] — ignoring");
+            debugSerial.println("[cargo] transit_confirm_samples out of range [1,20] — ignoring");
         }
 
         float dbf = envFloat(b, "dwell_batch_factor", (float)gDwellBatchFactor);
         if (dbf >= 1.0f && dbf <= 10.0f) {
             gDwellBatchFactor = (uint32_t)dbf;
         } else {
-            Serial.println("[cargo] dwell_batch_factor out of range [1,10] — ignoring");
+            debugSerial.println("[cargo] dwell_batch_factor out of range [1,10] — ignoring");
         }
     }
     notecard.deleteResponse(rsp);
@@ -459,8 +460,8 @@ bool readSensors(float *temp_c, float *rh_pct, float *lux) {
     bool ok = true;
 
     // ── MAX31865: NIST-traceable PT100 temperature ────────────────────────────
-    // begin() re-initializes the MAX31865 on every wake because the SPI device
-    // is re-powered with the host.  MAX31865_4WIRE matches the specified
+    // begin() re-initializes the MAX31865 on every wake so a transient SPI or
+    // sensor fault never persists across samples.  MAX31865_4WIRE matches the specified
     // Omega PR-21C 4-wire PT100 probe; the Adafruit #3328 breakout jumper must
     // be set to the 4-wire position (desolder the 2/3-wire default bridge and
     // close the 4-wire pads — see the Adafruit product guide).
@@ -471,17 +472,17 @@ bool readSensors(float *temp_c, float *rh_pct, float *lux) {
     if (fault) {
         // Common faults: RTDINLOW = open-circuit probe; REFINLOW/REFINHIGH =
         // reference resistor issue; HIGHTHRESH/LOWTHRESH = out-of-range RTD.
-        Serial.print("[cargo] MAX31865 fault 0x"); Serial.println(fault, HEX);
+        debugSerial.print("[cargo] MAX31865 fault 0x"); debugSerial.println(fault, HEX);
         *temp_c = INVALID_F;
         ok = false;
     } else if (isnan(t) || t < -200.0f || t > 200.0f) {
-        Serial.println("[cargo] MAX31865 temperature out of valid range");
+        debugSerial.println("[cargo] MAX31865 temperature out of valid range");
         *temp_c = INVALID_F;
         ok = false;
     } else {
         *temp_c = t;
-        Serial.print("[cargo] T="); Serial.print(*temp_c, 2);
-        Serial.println(" C (PT100)");
+        debugSerial.print("[cargo] T="); debugSerial.print(*temp_c, 2);
+        debugSerial.println(" C (PT100)");
     }
 
     // ── SHT41: relative humidity (humidity channel only) ──────────────────────
@@ -489,21 +490,21 @@ bool readSensors(float *temp_c, float *rh_pct, float *lux) {
     // exclusively for relative humidity.  The integrated heater prevents
     // condensation-induced RH drift in cold, humid refrigerated environments.
     if (!sht4x.begin(&Wire)) {
-        Serial.println("[cargo] SHT41 not found on I2C bus");
+        debugSerial.println("[cargo] SHT41 not found on I2C bus");
         *rh_pct = INVALID_F;
         ok = false;
     } else {
         sht4x.setPrecision(SHT4X_HIGH_PRECISION);
         sensors_event_t hum, temp_unused;
         if (!sht4x.getEvent(&hum, &temp_unused)) {
-            Serial.println("[cargo] SHT41 measurement failed");
+            debugSerial.println("[cargo] SHT41 measurement failed");
             *rh_pct = INVALID_F;
             ok = false;
         } else {
             *rh_pct = isnan(hum.relative_humidity) ? INVALID_F
                                                     : hum.relative_humidity;
-            Serial.print("[cargo] RH="); Serial.print(*rh_pct, 1);
-            Serial.println(" %");
+            debugSerial.print("[cargo] RH="); debugSerial.print(*rh_pct, 1);
+            debugSerial.println(" %");
         }
     }
 
@@ -516,18 +517,18 @@ bool readSensors(float *temp_c, float *rh_pct, float *lux) {
     // A missing VEML7700 returns INVALID_F (not 0.0) so a sensor fault is
     // distinguishable from genuine darkness.
     if (!veml7700.begin(&Wire)) {
-        Serial.println("[cargo] VEML7700 not found on I2C bus");
+        debugSerial.println("[cargo] VEML7700 not found on I2C bus");
         *lux = INVALID_F;
     } else {
         veml7700.setGain(VEML7700_GAIN_2);
         veml7700.setIntegrationTime(VEML7700_IT_100MS);
         float raw = veml7700.readLux();
         if (isnan(raw) || raw < 0.0f) {
-            Serial.println("[cargo] VEML7700 readLux invalid");
+            debugSerial.println("[cargo] VEML7700 readLux invalid");
             *lux = INVALID_F;
         } else {
             *lux = raw;
-            Serial.print("[cargo] lux="); Serial.println(*lux, 1);
+            debugSerial.print("[cargo] lux="); debugSerial.println(*lux, 1);
         }
     }
 
@@ -546,7 +547,7 @@ bool readMotionCount(uint32_t *count_out, char *orient_out, size_t orient_max) {
 
     J *rsp = ncQuery(req);
     if (!rsp) {
-        Serial.println("[cargo] card.motion unavailable — motion data skipped this cycle");
+        debugSerial.println("[cargo] card.motion unavailable — motion data skipped this cycle");
         return false;
     }
 
@@ -574,7 +575,7 @@ bool readMotionCount(uint32_t *count_out, char *orient_out, size_t orient_max) {
         }
     }
 
-    Serial.print("[cargo] motion="); Serial.println(count);
+    debugSerial.print("[cargo] motion="); debugSerial.println(count);
     notecard.deleteResponse(rsp);
     *count_out = count;
     return true;
@@ -666,7 +667,7 @@ void evaluateAlerts(float temp_c, float rh_pct, float lux,
 
 bool sendAlert(const char *type, float temp_c, float rh_pct,
                float lux, uint32_t motion) {
-    Serial.print("[cargo] ALERT -> "); Serial.println(type);
+    debugSerial.print("[cargo] ALERT -> "); debugSerial.println(type);
 
     J *req = notecard.newRequest("note.add");
     JAddStringToObject(req, "file", NOTE_ALERT);
@@ -682,9 +683,9 @@ bool sendAlert(const char *type, float temp_c, float rh_pct,
 
 bool sendTiltAlert(const char *prev_orient, const char *cur_orient,
                    float temp_c, float rh_pct, float lux, uint32_t motion) {
-    Serial.print("[cargo] ALERT -> tilt_detected (");
-    Serial.print(prev_orient); Serial.print(" -> ");
-    Serial.print(cur_orient);  Serial.println(")");
+    debugSerial.print("[cargo] ALERT -> tilt_detected (");
+    debugSerial.print(prev_orient); debugSerial.print(" -> ");
+    debugSerial.print(cur_orient);  debugSerial.println(")");
 
     J *req = notecard.newRequest("note.add");
     JAddStringToObject(req, "file", NOTE_ALERT);
@@ -772,10 +773,10 @@ bool sendPendingSummary() {
 
     bool ok = ncSend(req);
     if (ok) {
-        Serial.print("[cargo] summary sent — samples=");
-        Serial.println(gState.pending_samples);
+        debugSerial.print("[cargo] summary sent — samples=");
+        debugSerial.println(gState.pending_samples);
     } else {
-        Serial.println("[cargo] summary note.add failed — will retry next wake");
+        debugSerial.println("[cargo] summary note.add failed — will retry next wake");
     }
     return ok;
 }
@@ -875,8 +876,8 @@ bool sendLogEntry(uint32_t now, float temp_c, float rh_pct,
 
     bool ok = ncSend(req);
     if (!ok) {
-        Serial.print("[cargo] log entry seq="); Serial.print(gState.seq);
-        Serial.println(" note.add failed — seq gap will appear in remote log");
+        debugSerial.print("[cargo] log entry seq="); debugSerial.print(gState.seq);
+        debugSerial.println(" note.add failed — seq gap will appear in remote log");
     }
     return ok;
 }
@@ -951,8 +952,8 @@ bool sendStateChange(uint8_t prev_state, uint8_t new_state, uint32_t now) {
     const char *from = (prev_state <= 3) ? stateNames[prev_state] : "unknown";
     const char *to   = (new_state  <= 3) ? stateNames[new_state]  : "unknown";
 
-    Serial.print("[cargo] STATE "); Serial.print(from);
-    Serial.print(" -> "); Serial.println(to);
+    debugSerial.print("[cargo] STATE "); debugSerial.print(from);
+    debugSerial.print(" -> "); debugSerial.println(to);
 
     J *req = notecard.newRequest("note.add");
     JAddStringToObject(req, "file", NOTE_STATE);

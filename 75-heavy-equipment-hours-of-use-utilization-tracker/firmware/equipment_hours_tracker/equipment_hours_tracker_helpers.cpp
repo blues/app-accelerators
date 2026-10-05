@@ -12,8 +12,7 @@
 Notecard notecard;
 Adafruit_LSM6DSOX sox;
 
-PersistState g_s;
-const char SEG_ID[] = "EQHRS";
+AppState g_s;
 
 // Runtime env overrides — static initialisers provide the compile-time defaults,
 // but fetchEnvOverrides() seeds these from g_s.applied_* on every wake before
@@ -87,8 +86,8 @@ bool checkedRequest(J *req)
     bool ok = (!err || *err == '\0');
     if (!ok)
     {
-        Serial.print("[ERR] ");
-        Serial.println(err);
+        debugSerial.print("[ERR] ");
+        debugSerial.println(err);
     }
     notecard.deleteResponse(rsp);
     return ok;
@@ -110,7 +109,7 @@ uint32_t clampU32(long v, uint32_t minv, uint32_t maxv, uint32_t fallback)
     return (uint32_t)v;
 }
 
-// ── One-time Notecard configuration (cold boot only) ─────────────────────────
+// ── One-time Notecard configuration (power-up; retried until confirmed) ──────
 // Returns true only after every request is confirmed by the Notecard so that
 // g_s.configured is not set when a transient I²C failure leaves configuration
 // incomplete.
@@ -120,7 +119,7 @@ bool notecardConfigure(void)
     // A compile-time #pragma message is easy to miss; a loud serial error is not.
     if (*PRODUCT_UID == '\0')
     {
-        Serial.println("[CFG] PRODUCT_UID is empty — set it to your Notehub ProductUID before flashing");
+        debugSerial.println("[CFG] PRODUCT_UID is empty — set it to your Notehub ProductUID before flashing");
         return false;
     }
 
@@ -135,7 +134,7 @@ bool notecardConfigure(void)
     JAddNumberToObject(req, "inbound", 480);                   // 8-hour env-var pull
     if (!notecard.sendRequestWithRetry(req, 10))
     {
-        Serial.println("[CFG] hub.set failed");
+        debugSerial.println("[CFG] hub.set failed");
         return false;
     }
 
@@ -147,8 +146,8 @@ bool notecardConfigure(void)
     // WiFi, fall back to cellular, then to Skylo NTN, with no firmware branching.
     // Note: Skylo requires at least one non-NTN (cellular/WiFi) sync first to
     // associate with Notehub and register templates before NTN can be used; the
-    // cold-boot hub.set above triggers that initial terrestrial sync.  The setting
-    // persists in the Notecard's own flash, so issuing it once at cold boot suffices.
+    // power-up hub.set above triggers that initial terrestrial sync.  The setting
+    // persists in the Notecard's own flash, so issuing it once at power-up suffices.
     req = notecard.newRequest("card.transport");
     JAddStringToObject(req, "method", "wifi-cell-ntn");
     if (!checkedRequest(req))
@@ -236,12 +235,11 @@ bool defineTemplates(void)
 
 // ── Env-var overrides — refetched on every wake ───────────────────────────────
 //
-// Step 1 — Seed runtime globals from the last-good env reads persisted in
+// Step 1 — Seed runtime globals from the last-good env reads kept in
 // g_s.applied_*.  This ensures that a transient env.get miss on any wake
 // leaves previously-applied tuning and fence parameters intact instead of
 // reverting to compile-time defaults.  Seeded values are range-checked so
-// that stale PersistState bytes from a firmware upgrade cannot produce
-// out-of-range behaviour.
+// that an out-of-range stored value can never produce out-of-range behaviour.
 //
 // Step 2 — Issue env.get for each tunable.  A successful read with a valid
 // value overwrites the seed AND updates g_s.applied_* so the next wake
@@ -350,9 +348,9 @@ void fetchEnvOverrides(void)
         // activating the maximum-size fence on what was an invalid operator input.
         if (val < 0.0)
         {
-            Serial.print("[ENV] geofence_radius_m=");
-            Serial.print(val, 1);
-            Serial.println(" is negative — ignored");
+            debugSerial.print("[ENV] geofence_radius_m=");
+            debugSerial.print(val, 1);
+            debugSerial.println(" is negative — ignored");
         }
         else
         {
@@ -365,18 +363,18 @@ void fetchEnvOverrides(void)
             {
                 if (r < GEOFENCE_RADIUS_MIN_M)
                 {
-                    Serial.print("[ENV] geofence_radius_m=");
-                    Serial.print(r);
-                    Serial.print(" below minimum — clamped to ");
-                    Serial.println(GEOFENCE_RADIUS_MIN_M);
+                    debugSerial.print("[ENV] geofence_radius_m=");
+                    debugSerial.print(r);
+                    debugSerial.print(" below minimum — clamped to ");
+                    debugSerial.println(GEOFENCE_RADIUS_MIN_M);
                     r = GEOFENCE_RADIUS_MIN_M;
                 }
                 else if (r > GEOFENCE_RADIUS_MAX_M)
                 {
-                    Serial.print("[ENV] geofence_radius_m=");
-                    Serial.print(r);
-                    Serial.print(" above maximum — clamped to ");
-                    Serial.println(GEOFENCE_RADIUS_MAX_M);
+                    debugSerial.print("[ENV] geofence_radius_m=");
+                    debugSerial.print(r);
+                    debugSerial.print(" above maximum — clamped to ");
+                    debugSerial.println(GEOFENCE_RADIUS_MAX_M);
                     r = GEOFENCE_RADIUS_MAX_M;
                 }
             }
@@ -405,8 +403,8 @@ void fetchEnvOverrides(void)
             {
                 g_summary_interval_min = new_interval;
                 g_s.applied_summary_interval_min = new_interval;
-                Serial.print("[ENV] summary_interval_min updated to ");
-                Serial.println(new_interval);
+                debugSerial.print("[ENV] summary_interval_min updated to ");
+                debugSerial.println(new_interval);
             }
         }
     }
@@ -422,7 +420,7 @@ void fetchEnvOverrides(void)
             {
                 g_summary_interval_min = SUMMARY_INTERVAL_MIN;
                 g_s.applied_summary_interval_min = 0; // 0 = "never set; use default"
-                Serial.println("[ENV] summary_interval_min reverted to compile-time default");
+                debugSerial.println("[ENV] summary_interval_min reverted to compile-time default");
             }
         }
     }
@@ -433,7 +431,7 @@ void fetchEnvOverrides(void)
 // geofence_radius_m.  Leaving lat/lon at the default 0,0 while setting a
 // non-zero radius is treated as misconfigured and the fence is not applied.
 //
-// The fence centre (lat/lon) AND radius are persisted in PersistState so that
+// The fence centre (lat/lon) AND radius are cached in AppState so that
 // a radius-only change is detected and re-applied on the next wake.
 //
 // When geofence_radius_m is set to 0 after a fence was active, this function
@@ -461,7 +459,7 @@ void applyGeofenceIfChanged(void)
                 g_s.fence_lat = 0.0f;
                 g_s.fence_lon = 0.0f;
                 g_s.fence_radius_m = 0;
-                Serial.println("[GEO] Fence cleared");
+                debugSerial.println("[GEO] Fence cleared");
             }
         }
         return;
@@ -476,7 +474,7 @@ void applyGeofenceIfChanged(void)
                   (g_fence_lon >= -180.0f) && (g_fence_lon <= 180.0f);
     if (!lat_ok || !lon_ok)
     {
-        Serial.println("[GEO] Skipped: set geofence_lat, geofence_lon, and geofence_radius_m together");
+        debugSerial.println("[GEO] Skipped: set geofence_lat, geofence_lon, and geofence_radius_m together");
         return;
     }
 
@@ -499,12 +497,12 @@ void applyGeofenceIfChanged(void)
         g_s.fence_lon = g_fence_lon;
         g_s.fence_radius_m = g_fence_radius_m;
         g_s.fence_was_active = true;
-        Serial.print("[GEO] Fence: lat=");
-        Serial.print(g_fence_lat, 5);
-        Serial.print(" lon=");
-        Serial.print(g_fence_lon, 5);
-        Serial.print(" r=");
-        Serial.println(g_fence_radius_m);
+        debugSerial.print("[GEO] Fence: lat=");
+        debugSerial.print(g_fence_lat, 5);
+        debugSerial.print(" lon=");
+        debugSerial.print(g_fence_lon, 5);
+        debugSerial.print(" r=");
+        debugSerial.println(g_fence_radius_m);
     }
 }
 
@@ -541,12 +539,12 @@ EquipState classifyVibration(void)
     const char *label = (rms < g_vib_run_mg)  ? "IDLE"
                         : (cv < g_vib_cv_max) ? "RUNNING"
                                               : "TRANSPORT";
-    Serial.print("[VIB] rms=");
-    Serial.print(rms, 1);
-    Serial.print("mg cv=");
-    Serial.print(cv, 3);
-    Serial.print(" → ");
-    Serial.println(label);
+    debugSerial.print("[VIB] rms=");
+    debugSerial.print(rms, 1);
+    debugSerial.print("mg cv=");
+    debugSerial.print(cv, 3);
+    debugSerial.print(" → ");
+    debugSerial.println(label);
 
     if (rms < g_vib_run_mg)
         return ST_IDLE;
@@ -563,7 +561,7 @@ EquipState classifyVibration(void)
 //
 // Fall-back to SAMPLE_INTERVAL_SEC when:
 //   • clock is unavailable (now == 0, i.e. no cellular/GPS sync yet)
-//   • no previous sample epoch is recorded (first wake after cold boot)
+//   • no previous sample epoch is recorded (first wake after power-up)
 //   • the computed delta is implausibly large (time-sync jump or stale epoch
 //     after a reboot) — capped at 3× nominal to protect against runaway credits
 void updateHourAccumulator(uint32_t now)
@@ -601,8 +599,8 @@ bool enqueueEvent(const char *tag, uint32_t epoch,
 {
     if (g_s.evq_count >= PENDING_QUEUE_DEPTH)
     {
-        Serial.print("[EVENT] queue full — dropping ");
-        Serial.println(tag);
+        debugSerial.print("[EVENT] queue full — dropping ");
+        debugSerial.println(tag);
         return false;
     }
     uint8_t tail = (g_s.evq_head + g_s.evq_count) % PENDING_QUEUE_DEPTH;
@@ -654,23 +652,23 @@ bool sendNextPendingEvent(void)
         J *rsp = notecard.requestAndResponse(req);
         if (!rsp)
         {
-            Serial.print("[EVENT] no response (attempt ");
-            Serial.print(attempt + 1);
-            Serial.println(")");
+            debugSerial.print("[EVENT] no response (attempt ");
+            debugSerial.print(attempt + 1);
+            debugSerial.println(")");
             continue;
         }
         const char *err = JGetString(rsp, "err");
         bool ok = (!err || *err == '\0');
         if (!ok)
         {
-            Serial.print("[EVENT] err: ");
-            Serial.println(err);
+            debugSerial.print("[EVENT] err: ");
+            debugSerial.println(err);
         }
         notecard.deleteResponse(rsp);
         if (ok)
         {
-            Serial.print("[EVENT] ");
-            Serial.println(e.tag);
+            debugSerial.print("[EVENT] ");
+            debugSerial.println(e.tag);
             g_s.evq_head = (g_s.evq_head + 1) % PENDING_QUEUE_DEPTH;
             g_s.evq_count--;
             // Request prompt delivery as a separate fire-and-forget call so
@@ -684,8 +682,8 @@ bool sendNextPendingEvent(void)
             return true;
         }
     }
-    Serial.print("[EVENT] failed to queue ");
-    Serial.println(e.tag);
+    debugSerial.print("[EVENT] failed to queue ");
+    debugSerial.println(e.tag);
     return false;
 }
 
@@ -709,31 +707,31 @@ bool sendSummary(void)
         J *rsp = notecard.requestAndResponse(req);
         if (!rsp)
         {
-            Serial.print("[SUMMARY] no response (attempt ");
-            Serial.print(attempt + 1);
-            Serial.println(")");
+            debugSerial.print("[SUMMARY] no response (attempt ");
+            debugSerial.print(attempt + 1);
+            debugSerial.println(")");
             continue;
         }
         const char *err = JGetString(rsp, "err");
         bool ok = (!err || *err == '\0');
         if (!ok)
         {
-            Serial.print("[SUMMARY] err: ");
-            Serial.println(err);
+            debugSerial.print("[SUMMARY] err: ");
+            debugSerial.println(err);
         }
         notecard.deleteResponse(rsp);
         if (ok)
         {
-            Serial.print("[SUMMARY] run_h=");
-            Serial.print(g_s.run_h_today, 2);
-            Serial.print(" total=");
-            Serial.print(g_s.run_h_total, 1);
-            Serial.print(" bat_v=");
-            Serial.println(bat_v, 2);
+            debugSerial.print("[SUMMARY] run_h=");
+            debugSerial.print(g_s.run_h_today, 2);
+            debugSerial.print(" total=");
+            debugSerial.print(g_s.run_h_total, 1);
+            debugSerial.print(" bat_v=");
+            debugSerial.println(bat_v, 2);
             return true;
         }
     }
-    Serial.println("[SUMMARY] failed to queue summary");
+    debugSerial.println("[SUMMARY] failed to queue summary");
     return false;
 }
 
@@ -764,20 +762,4 @@ float getBatteryVoltage(void)
         notecard.deleteResponse(rsp);
     }
     return v;
-}
-
-// ── Sleep — persist state and cut host power via ATTN ─────────────────────────
-// NotePayloadSaveAndSleep serialises g_s into Notecard flash, then issues
-// card.attn mode:sleep.  On Notecarrier CX, ATTN and EN are separate
-// header pins; an external jumper wire from ATTN to EN must be installed for
-// the Notecard to gate the Cygnet's 3.3V host rail (see README §4).  With the
-// jumper in place, SAMPLE_INTERVAL_SEC later the Cygnet powers up and re-enters
-// setup().  Without the jumper the host stays powered and loop() takes over as
-// the (higher-power) fallback path.
-void goToSleep(void)
-{
-    NotePayloadDesc payload = {0, 0, 0};
-    NotePayloadAddSegment(&payload, SEG_ID, &g_s, sizeof(g_s));
-    NotePayloadSaveAndSleep(&payload, SAMPLE_INTERVAL_SEC, NULL);
-    delay(15000); // should not return; loop() retries setup() as fallback
 }

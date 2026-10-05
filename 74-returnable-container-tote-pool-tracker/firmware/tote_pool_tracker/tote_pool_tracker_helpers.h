@@ -12,12 +12,13 @@
 #pragma once
 
 // ---------------------------------------------------------------------------
-// Debug output switch — uncomment to enable Serial logging and Notecard trace
+// Debug output switch — uncomment to enable logging and Notecard trace
 // output (I²C traffic, request/response JSON, etc.) in both the .ino and the
-// helper .cpp translation units. Disabled by default because serializing every
-// Notecard transaction over UART adds ~1 mA to the wake-time average on the
-// Cygnet — a meaningful penalty on a battery-powered build that wakes
-// infrequently.
+// helper .cpp translation units. Output goes to debugSerial, the LPUART on the
+// Notecarrier CX debug jack (ST-LINK virtual COM port). Disabled by default
+// because serializing every Notecard transaction over UART adds ~1 mA to the
+// wake-time average — a meaningful penalty on a battery-powered build that
+// wakes infrequently.
 //
 // Defined here (in the shared header) rather than in the .ino so that both
 // translation units — tote_pool_tracker.ino and tote_pool_tracker_helpers.cpp
@@ -27,6 +28,10 @@
 // #define DEBUG
 
 #include <Notecard.h>
+
+#ifdef DEBUG
+extern Uart debugSerial;   // defined in tote_pool_tracker.ino
+#endif
 
 // ---------------------------------------------------------------------------
 // Notefile names
@@ -60,11 +65,9 @@
 // time to the heartbeat deadline so the device never sleeps past it.
 #define RETRY_WAKE_SEC  (15UL * 60UL)
 
-// Notecard payload segment identifier
-#define STATE_SEG_ID "TOTE"
-
 // ---------------------------------------------------------------------------
-// State persisted across sleep cycles via NotePayloadSaveAndSleep
+// Application state. Lives in RAM; STOP2 retains SRAM, so it survives every
+// sleep/wake cycle and is reset only by a power cycle (which re-runs setup()).
 // ---------------------------------------------------------------------------
 struct ToteState {
     bool     was_moving;   // motion state on the previous wake cycle
@@ -97,12 +100,9 @@ struct ToteState {
     uint32_t last_applied_motion_threshold;
     uint32_t last_applied_motion_bucket_sec;
 
-    // Last-known desired env values — persisted across sleep cycles so a
-    // transient env.get failure on any wake cannot silently revert fleet
-    // tuning back to compile-time defaults. Initialised to compile-time
-    // defaults by notecardConfigure() on first boot; overwritten only when
-    // env.get succeeds. Restored to the g_* globals at the top of setup()
-    // before fetchEnvOverrides() is called each wake.
+    // Last-known desired env values. Initialised to compile-time defaults by
+    // notecardConfigure() at power-up; overwritten only when env.get succeeds,
+    // so a transient env.get failure cannot revert fleet tuning to defaults.
     uint32_t desired_heartbeat_hours;
     float    desired_low_battery_mv;
     uint32_t desired_motion_threshold;

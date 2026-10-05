@@ -14,8 +14,6 @@
 #include "construction_equipment_anti_theft_helpers.h"
 #include <math.h>
 
-const char kStateSegID[] = "APP";
-
 // ─── Internal helper: checked request/response ────────────────────────────────
 // Sends a request via requestAndResponse() and validates both the I/O result
 // and the Notecard-level err field.  Returns true only when the response is
