@@ -257,7 +257,6 @@ bool saveFenceToFlash(Notecard &nc, const AppState &s);
 //                      GPS auto-anchor is safe.
 //   io_error == true:  Transport or API failure; fence presence is unknown.
 //                      Caller must NOT allow GPS auto-anchor — see AppState::fence_confirmed_absent.
-// Retries up to 3 times on transport failures before returning with io_error == true.
 bool loadFenceFromFlash(Notecard &nc, AppState &s, bool &io_error);
 
 // Sensor reads (all return safe defaults on Notecard error)

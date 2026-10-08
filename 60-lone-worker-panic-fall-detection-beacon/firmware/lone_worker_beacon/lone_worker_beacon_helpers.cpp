@@ -74,13 +74,11 @@ bool notecardConfigure()
     // associate with Notehub and register templates before NTN can be used.
     // Commission each beacon where it has terrestrial coverage even if it will
     // routinely operate over satellite (see defineTemplates first-light note).
-    {
-        J *req = notecard.newRequest("card.transport");
-        if (req) {
-            JAddStringToObject(req, "method", "wifi-cell-ntn");
-            if (!notecard.sendRequest(req)) {
-                DEBUG_PRINTLN("[CFG] card.transport (wifi-cell-ntn) failed; will retry on next cold boot.");
-            }
+    req = notecard.newRequest("card.transport");
+    if (req) {
+        JAddStringToObject(req, "method", "wifi-cell-ntn");
+        if (!notecard.sendRequest(req)) {
+            DEBUG_PRINTLN("[CFG] card.transport (wifi-cell-ntn) failed; will retry on next cold boot.");
         }
     }
     return true;
@@ -103,8 +101,8 @@ bool notecardConfigure()
 // the join key. event_id is device-local and resets on power cycle; it is
 // not unique across devices on its own.
 //
-// Each template is retried up to 3 times. Returns false if any template fails
-// all attempts — the caller latches g_setupFault.
+// Returns false if any template registration fails — the caller latches
+// g_setupFault.
 bool defineTemplates()
 {
     bool allOk = true;
@@ -112,9 +110,8 @@ bool defineTemplates()
     // ── beacon_alert.qo ──────────────────────────────────────────────────
     {
         bool ok = false;
-        for (uint8_t attempt = 0; attempt < 3 && !ok; attempt++) {
-            J *req = notecard.newRequest("note.template");
-            if (!req) { delay(500); continue; }
+        J *req = notecard.newRequest("note.template");
+        if (req) {
             JAddStringToObject(req, "file",   "beacon_alert.qo");
             JAddNumberToObject(req, "port",   50);
             JAddStringToObject(req, "format", "compact");
@@ -129,7 +126,6 @@ bool defineTemplates()
             J *rsp = notecard.requestAndResponse(req);
             ok = (rsp != NULL && !notecard.responseError(rsp));
             if (rsp) notecard.deleteResponse(rsp);
-            if (!ok) delay(500);
         }
         if (!ok) {
             DEBUG_PRINTLN("[FAULT] beacon_alert.qo template registration failed.");
@@ -144,9 +140,8 @@ bool defineTemplates()
     // beacon_alert.qo so downstream systems can join the two notes.
     {
         bool ok = false;
-        for (uint8_t attempt = 0; attempt < 3 && !ok; attempt++) {
-            J *req = notecard.newRequest("note.template");
-            if (!req) { delay(500); continue; }
+        J *req = notecard.newRequest("note.template");
+        if (req) {
             JAddStringToObject(req, "file",   "beacon_location.qo");
             JAddNumberToObject(req, "port",   52);
             JAddStringToObject(req, "format", "compact");
@@ -159,7 +154,6 @@ bool defineTemplates()
             J *rsp = notecard.requestAndResponse(req);
             ok = (rsp != NULL && !notecard.responseError(rsp));
             if (rsp) notecard.deleteResponse(rsp);
-            if (!ok) delay(500);
         }
         if (!ok) {
             DEBUG_PRINTLN("[FAULT] beacon_location.qo template registration failed.");

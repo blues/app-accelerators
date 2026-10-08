@@ -170,27 +170,17 @@ static J* buildEnvGetReq() {
 // CFG_* variables at their current values (either compile-time defaults on
 // first boot, or the last known-good snapshot restored from AppState.saved_cfg
 // on subsequent wakes — see loop()).
-// One retry with a 250 ms gap absorbs transient Notecard I²C hiccups at wake.
 bool fetchEnvOverrides() {
     J *rsp = notecard.requestAndResponse(buildEnvGetReq());
-    if (!rsp || notecard.responseError(rsp)) {
-        if (rsp) { notecard.deleteResponse(rsp); rsp = NULL; }
-#ifdef PLUG_LOAD_DEBUG
-        dbgSerial.println("[env] env.get failed; retrying once");
-#endif
-        delay(250);
-        rsp = notecard.requestAndResponse(buildEnvGetReq());
-    }
-
     if (!rsp) {
 #ifdef PLUG_LOAD_DEBUG
-        dbgSerial.println("[env] env.get failed after retry; retaining prior config");
+        dbgSerial.println("[env] env.get failed; retaining prior config");
 #endif
         return false;
     }
     if (notecard.responseError(rsp)) {
 #ifdef PLUG_LOAD_DEBUG
-        dbgSerial.println("[env] env.get error after retry; retaining prior config");
+        dbgSerial.println("[env] env.get error; retaining prior config");
 #endif
         notecard.deleteResponse(rsp);
         return false;

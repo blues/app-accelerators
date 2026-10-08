@@ -148,7 +148,7 @@ void setup()
         bool fence_io_error = false;
         if (!loadFenceFromFlash(notecard, g_state, fence_io_error)) {
             if (fence_io_error) {
-                LOGLN("[APP] ERROR: fence.db read failed after retries — "
+                LOGLN("[APP] ERROR: fence.db read failed — "
                       "auto-anchor suppressed to prevent geofence re-homing.");
                 g_state.fence_confirmed_absent = false;
             } else {

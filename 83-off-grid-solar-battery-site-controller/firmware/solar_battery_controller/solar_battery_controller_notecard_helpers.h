@@ -150,11 +150,9 @@ void applyHubSetIfChanged(const char *product_uid);
 bool fetchEnvOverrides();
 
 // Emit an immediate, sync:true Note for operator notification.  Uses
-// requestAndResponse to inspect the Notecard response err field.  Retries
-// up to 5 times with 1 s backoff so a transient I2C or Notecard-readiness
-// hiccup does not silently drop a time-sensitive event.  Returns true only
-// after the Note is confirmed queued; callers must not arm suppression state
-// (active flags, cooldowns) on a false return.
+// requestAndResponse to inspect the Notecard response err field.  Returns
+// true only after the Note is confirmed queued; callers must not arm
+// suppression state (active flags, cooldowns) on a false return.
 bool sendAlert(const char *alert, float v1, float v2, float v3);
 
 // Compute window averages and push a solar_summary.qo Note.  Every template

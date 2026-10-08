@@ -7,9 +7,7 @@
 
   Both note.add paths use requestAndResponse() so the Notecard response
   err field is inspected before callers may update alert state or reset
-  accumulators.  sendAlert() additionally retries up to 5 times with 1 s
-  backoff so a transient I2C or Notecard-readiness hiccup does not silently
-  drop a time-sensitive event.
+  accumulators.
 
   The globals notecard, state, desired_outbound_min, and desired_inbound_min
   are defined in solar_battery_controller.ino; this file references them
@@ -256,20 +254,13 @@ bool fetchEnvOverrides() {
 // a card-side rejection (schema mismatch, out-of-memory, etc.) is detected
 // rather than silently treated as success.
 //
-// Retries up to 5 times with 1 s backoff so a transient I2C glitch or
-// Notecard-readiness delay does not drop a time-sensitive event.  The request
-// JSON is rebuilt on each attempt because requestAndResponse always frees it.
-//
 // Returns true only after the Note is confirmed queued.  Callers must not
 // arm suppression state (active flags, cooldowns) on a false return.
 // v1/v2/v3 carry alert-type-specific context values (see README §7).
 // ---------------------------------------------------------------------------
 bool sendAlert(const char *alert, float v1, float v2, float v3) {
-    for (int attempt = 0; attempt < 5; attempt++) {
-        if (attempt > 0) delay(1000);
-
-        J *req = notecard.newRequest("note.add");
-        if (!req) continue;
+    J *req = notecard.newRequest("note.add");
+    if (req) {
         JAddStringToObject(req, "file",  "solar_alert.qo");
         JAddBoolToObject(req,   "sync",  true);
         J *body = JAddObjectToObject(req, "body");
@@ -280,23 +271,19 @@ bool sendAlert(const char *alert, float v1, float v2, float v3) {
 
         J *rsp = notecard.requestAndResponse(req);
         if (!rsp) {
-            dbgSerial.print(F("[warn] note.add alert attempt "));
-            dbgSerial.print(attempt + 1);
-            dbgSerial.println(F(": no response"));
-            continue;
-        }
-        const char *err = JGetString(rsp, "err");
-        bool ok = (!err || !*err);
-        if (!ok) {
-            dbgSerial.print(F("[warn] note.add alert attempt "));
-            dbgSerial.print(attempt + 1);
-            dbgSerial.print(F(" error: "));
-            dbgSerial.println(err);  // log before deleteResponse
-        }
-        notecard.deleteResponse(rsp);
-        if (ok) {
-            dbgSerial.print(F("[alert] ")); dbgSerial.println(alert);
-            return true;
+            dbgSerial.println(F("[warn] note.add alert: no response"));
+        } else {
+            const char *err = JGetString(rsp, "err");
+            bool ok = (!err || !*err);
+            if (!ok) {
+                dbgSerial.print(F("[warn] note.add alert error: "));
+                dbgSerial.println(err);  // log before deleteResponse
+            }
+            notecard.deleteResponse(rsp);
+            if (ok) {
+                dbgSerial.print(F("[alert] ")); dbgSerial.println(alert);
+                return true;
+            }
         }
     }
     dbgSerial.print(F("[error] note.add failed for alert: ")); dbgSerial.println(alert);
