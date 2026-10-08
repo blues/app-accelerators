@@ -119,18 +119,6 @@ void setup() {
     // accumulators, cooldowns, and pending alerts carry across every wake.
     memset(&state, 0, sizeof(state));
 
-    // Confirm the Notecard is ready before the one-time configuration.  The
-    // host can come up before the Notecard's I²C stack after a cold power-up;
-    // the configuration flags below are retried on every wake until confirmed,
-    // so a failed ping here only defers them.
-    {
-        J *ping = notecard.newRequest("card.version");
-        if (!notecard.sendRequestWithRetry(ping, 5)) {
-            debugSerial.println("[init] Notecard not responding after 5-second retry "
-                                "window — configuration deferred to the next wake");
-        }
-    }
-
     // One-time Notecard configuration.  Each flag is set only when the
     // Notecard confirms the request; loop() retries anything still false.
     state.hub_configured      = hubConfigure(PRODUCT_UID);
@@ -156,9 +144,8 @@ void setup() {
 // ---------------------------------------------------------------------------
 void loop() {
     // Retry one-time Notecard configuration on any wake where a previous
-    // attempt was not confirmed (transient cold-boot failure).  This prevents
-    // a single hiccup from becoming a permanent misconfiguration for the rest
-    // of the deployment.
+    // attempt was not confirmed.  This prevents a single hiccup from becoming
+    // a permanent misconfiguration for the rest of the deployment.
     if (!state.hub_configured) {
         state.hub_configured = hubConfigure(PRODUCT_UID);
     }

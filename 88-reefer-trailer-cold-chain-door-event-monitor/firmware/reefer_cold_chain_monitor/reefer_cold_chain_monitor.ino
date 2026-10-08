@@ -181,8 +181,8 @@ void loop() {
     Stream *log = NULL;
 #endif
     if (!cxSleepUntilAttn(notecard, g_sampleIntervalSec, NULL, log)) {
-        // Notecard not ready, or ATTN never went low (check the ATTN -> D5
-        // jumper).  Keep the sample cadence and try again next cycle.
+        // The Notecard didn't take the sleep request, or ATTN never went low
+        // (check the ATTN -> D5 jumper). Keep the sample cadence and try again.
         DEBUG_PRINTLN(F("[warn] ATTN sleep failed — waiting out the interval awake"));
         delay(g_sampleIntervalSec * 1000UL);
     }

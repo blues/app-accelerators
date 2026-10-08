@@ -230,8 +230,6 @@ static void runCycle(void) {
         // path: last_applied_report_m is written to a non-zero value only
         // after BOTH notecardConfigure and defineTemplates succeed, so a
         // failed first wake re-enters this branch on the next wake.
-        // sendRequestWithRetry inside notecardConfigure handles the I²C cold-
-        // boot race where the Notecard takes up to 10 s to become ready.
         if (first_wake) {
             dbgSerial.println("[boot] first wake — configuring Notecard");
         } else {
@@ -277,18 +275,11 @@ static void runCycle(void) {
 
     // ── Get current epoch from Notecard ──────────────────────────────────────
     // now == 0 means the Notecard clock is not yet set (no cellular fix).
-    // Retry up to 3 times so a transient I²C stall does not silently drop the
-    // epoch and push the device into the no-epoch path.
     uint32_t now = 0;
     {
-        J *rsp = nullptr;
-        for (int attempt = 0; attempt < 3 && !rsp; attempt++) {
-            if (attempt) delay(1000);
-            rsp = notecard.requestAndResponse(
-                      notecard.newRequest("card.time"));
-        }
+        J *rsp = notecard.requestAndResponse(notecard.newRequest("card.time"));
         if (rsp) {
-            if (!JGetString(rsp, "err")) {
+            if (!notecard.responseError(rsp)) {
                 now = (uint32_t)JGetInt(rsp, "time");
             }
             notecard.deleteResponse(rsp);

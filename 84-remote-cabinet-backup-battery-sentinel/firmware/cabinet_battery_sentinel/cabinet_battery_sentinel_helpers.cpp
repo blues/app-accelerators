@@ -38,9 +38,7 @@ void notecardConfigure(void) {
     JAddStringToObject(req, "mode",     "periodic");
     JAddNumberToObject(req, "outbound", (int)g_summaryMin);
     JAddNumberToObject(req, "inbound",  120);   // check env-var updates every 2 h
-    // sendRequestWithRetry covers the cold-boot I2C race where the host comes
-    // up before the Notecard has finished its own initialisation sequence.
-    if (notecard.sendRequestWithRetry(req, 5)) {
+    if (notecard.sendRequest(req)) {
         state.hubConfigured = true;
     } else {
         notecard.logDebug("hub.set failed during notecardConfigure\n");

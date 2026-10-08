@@ -57,7 +57,6 @@
 #define CRT_SAFE_TEMP_C 25
 
 #define DEFAULT_SAMPLE_INTERVAL_S 1800
-#define RETRY_S 5
 
 M2M_LM75A lm75a;
 Notecard notecard;
@@ -206,7 +205,7 @@ void configureNotecard(void)
         JAddStringToObject(req, "mode", "periodic");
         JAddStringToObject(req, "vinbound", "usb:5;high:120;normal:240;low:480;dead:0");
         JAddStringToObject(req, "voutbound", "usb:5;high:60;normal:120;low:240;dead:0");
-        notecard.sendRequestWithRetry(req, RETRY_S);
+        notecard.sendRequest(req);
     }
 
     // Optimize voltage variable behaviors for LiPo battery
@@ -335,7 +334,7 @@ bool inHysteresis(void)
             JAddItemToArray(usage, JCreateString(""));             // Aux 2
             JAddItemToArray(usage, JCreateString(""));             // Aux 3
             JAddItemToArray(usage, JCreateString(""));             // Aux 4
-            rsp = notecard.requestAndResponseWithRetry(req, RETRY_S);
+            rsp = notecard.requestAndResponse(req);
         }
         else
         {

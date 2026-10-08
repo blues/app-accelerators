@@ -63,9 +63,7 @@ bool notecardConfigure(const char *productUID) {
     JAddStringToObject(req, "mode", "periodic");
     JAddNumberToObject(req, "outbound", (int)cfg.report_interval_m);
     JAddNumberToObject(req, "inbound", 120);   // pull env var updates every 2 h
-    // retry handles the cold-boot I²C race where the Notecard can take ~10 s
-    // to become ready after power-on.
-    bool ok = notecard.sendRequestWithRetry(req, 10);
+    bool ok = notecard.sendRequest(req);
     if (!ok) {
         dbgSerial.println("[error] hub.set failed — verify PRODUCT_UID and Notecard "
                        "readiness; device is NOT commissioned");
@@ -108,7 +106,7 @@ bool defineTemplates(void) {
     JAddNumberToObject(body, "soh_pct", 21);
     JAddNumberToObject(body, "throughput_ah", 14.1);
     JAddBoolToObject(body,   "can_ok",  true);
-    if (!notecard.sendRequestWithRetry(req, 5)) {
+    if (!notecard.sendRequest(req)) {
         dbgSerial.println("[error] note.template battery_status.qo failed");
         ok = false;
     }
@@ -129,7 +127,7 @@ bool defineTemplates(void) {
     JAddNumberToObject(body, "soc_pct", 21);
     JAddNumberToObject(body, "temp_c",  14.1);
     JAddNumberToObject(body, "extra_v", 14.1);
-    if (!notecard.sendRequestWithRetry(req, 5)) {
+    if (!notecard.sendRequest(req)) {
         dbgSerial.println("[error] note.template battery_alert.qo failed");
         ok = false;
     }
@@ -148,14 +146,7 @@ bool defineTemplates(void) {
 void fetchEnvOverrides(AppState &s) {
     (void)s;  // reserved for future per-wake state fixup if env changes
 
-    // Retry env.get so this — the very first Notecard transaction on every
-    // wake — survives the I²C cold-boot race on the first wake after power-on,
-    // where the Notecard can take up to ~10 s to become ready.
-    J *rsp = nullptr;
-    for (int attempt = 0; attempt < 5 && !rsp; attempt++) {
-        if (attempt) delay(2000);
-        rsp = notecard.requestAndResponse(notecard.newRequest("env.get"));
-    }
+    J *rsp = notecard.requestAndResponse(notecard.newRequest("env.get"));
     if (!rsp) return;
     J *body = JGetObject(rsp, "body");
     if (!body) { notecard.deleteResponse(rsp); return; }
@@ -389,7 +380,7 @@ void sendAlert(const char *alert, float packV, float socPct, float tempC,
     // absent thermistor reading — unambiguously distinct from a real 0°C pack.
     JAddNumberToObject(body, "temp_c",  isnan(tempC) ? -9999.0f : tempC);
     JAddNumberToObject(body, "extra_v", extraV);
-    if (!notecard.sendRequestWithRetry(req, 10)) {
+    if (!notecard.sendRequest(req)) {
         dbgSerial.print("[warn] alert note failed: "); dbgSerial.println(alert);
     } else {
         dbgSerial.print("[alert] "); dbgSerial.println(alert);
@@ -497,7 +488,7 @@ SummaryResult sendSummary(AppState &s, uint32_t now) {
     JAddNumberToObject(body, "throughput_ah", s.throughput_ah);
     JAddBoolToObject(body,   "can_ok",  canOk);
 
-    bool sent = notecard.sendRequestWithRetry(req, 5);
+    bool sent = notecard.sendRequest(req);
     if (!sent) {
         s.summ_fail_count++;
         if (s.summ_fail_count < MAX_SUMM_RETRIES) {
@@ -594,7 +585,7 @@ void pollCanBms(AppState &s, uint32_t now) {
         // -9999.0: thermistor is not read inside CAN poll — use missing-data sentinel.
         JAddNumberToObject(body, "temp_c",  -9999.0f);
         JAddNumberToObject(body, "extra_v", 0.0f);
-        if (!notecard.sendRequestWithRetry(req, 5)) {
+        if (!notecard.sendRequest(req)) {
             dbgSerial.println("[warn] can_error note failed");
         }
     }
@@ -628,7 +619,7 @@ void pollCanBms(AppState &s, uint32_t now) {
         // -9999.0: thermistor is not read inside CAN poll — use missing-data sentinel.
         JAddNumberToObject(body, "temp_c",  -9999.0f);
         JAddNumberToObject(body, "extra_v", delta);
-        if (!notecard.sendRequestWithRetry(req, 10)) {
+        if (!notecard.sendRequest(req)) {
             dbgSerial.println("[warn] cell_imbalance note failed");
         } else {
             dbgSerial.print("[alert] cell_imbalance delta="); dbgSerial.println(delta, 0);

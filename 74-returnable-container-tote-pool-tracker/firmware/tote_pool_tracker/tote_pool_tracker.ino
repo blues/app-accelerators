@@ -115,8 +115,8 @@ void loop() {
 
     // -----------------------------------------------------------------------
     // Retry any one-time Notecard configuration not confirmed on a previous
-    // wake (cold-boot I²C race or Notecard-side error). On a successful first
-    // boot each flag is already true; these blocks are no-ops.
+    // wake. On a successful first boot each flag is already true; these
+    // blocks are no-ops.
     // -----------------------------------------------------------------------
     if (!g_state.voltage_mode_confirmed) {
         J *req = notecard.newRequest("card.voltage");
@@ -154,7 +154,7 @@ void loop() {
         JAddBoolToObject(req, "start", true);
         JAddNumberToObject(req, "motion",  (int)g_motion_threshold);
         JAddNumberToObject(req, "seconds", (int)g_motion_bucket_sec);
-        if (notecard.sendRequestWithRetry(req, 5)) {
+        if (notecard.sendRequest(req)) {
             g_state.last_applied_motion_threshold  = g_motion_threshold;
             g_state.last_applied_motion_bucket_sec = g_motion_bucket_sec;
         }
@@ -173,7 +173,7 @@ void loop() {
         JAddStringToObject(req, "mode",     "periodic");
         JAddNumberToObject(req, "outbound", (int)(g_heartbeat_hours * 60));
         JAddNumberToObject(req, "inbound",  (int)(g_heartbeat_hours * 60));
-        if (notecard.sendRequestWithRetry(req, 5)) {
+        if (notecard.sendRequest(req)) {
             g_state.last_applied_heartbeat_hours = g_heartbeat_hours;
             // Reanchor the local heartbeat deadline immediately so the device
             // starts sleeping toward the new interval in this same wake cycle

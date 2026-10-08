@@ -73,26 +73,21 @@ static constexpr float AUDIO_RMS_MIN           = 0.002f;// normalized RMS floor
 bool notecardConfigure(bool freshBoot, const char *productUID) {
     if (!freshBoot) return true;
 
-    // Retry loop handles the cold-boot I2C race on the Notecarrier CX.
     // requestAndResponse() lets us inspect the Notecard-side response so that a
     // rejected hub.set (err field present) is treated as a real failure rather
     // than as transport-level success; first_boot must only clear when the
     // Notecard confirms the configuration was accepted without error.
     bool hubSetOk = false;
-    J *req = NULL;
-    for (int attempt = 0; attempt < 5 && !hubSetOk; attempt++) {
-        if (attempt > 0) delay(1000);
-        req = notecard.newRequest("hub.set");
-        JAddStringToObject(req, "product",  productUID);
-        JAddStringToObject(req, "mode",     "periodic");
-        JAddNumberToObject(req, "outbound", 1440);   // daily sync (minutes)
-        JAddNumberToObject(req, "inbound",  10080);  // weekly inbound (satellite budget)
-        J *rsp = notecard.requestAndResponse(req);
-        if (rsp != NULL) {
-            const char *err = JGetString(rsp, "err");
-            hubSetOk = (!err || !*err);
-            notecard.deleteResponse(rsp);
-        }
+    J *req = notecard.newRequest("hub.set");
+    JAddStringToObject(req, "product",  productUID);
+    JAddStringToObject(req, "mode",     "periodic");
+    JAddNumberToObject(req, "outbound", 1440);   // daily sync (minutes)
+    JAddNumberToObject(req, "inbound",  10080);  // weekly inbound (satellite budget)
+    J *rsp = notecard.requestAndResponse(req);
+    if (rsp != NULL) {
+        const char *err = JGetString(rsp, "err");
+        hubSetOk = (!err || !*err);
+        notecard.deleteResponse(rsp);
     }
     if (!hubSetOk) {
         // hub.set was rejected or timed out — leave first_boot dirty so the sketch retries.

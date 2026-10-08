@@ -120,21 +120,6 @@ void setup()
 
     notecard.begin();  // I2C at default address
 
-    // ── Prime the I2C bus before the fence-restore call ──────────────────────
-    // loadFenceFromFlash() is the first security-relevant Notecard transaction.
-    // Right after power-up the Notecard may not yet be ACKing on I2C (the known
-    // race between host and Notecard).  Issuing card.version via
-    // sendRequestWithRetry() first absorbs the race: it retries for up to
-    // 5 seconds until the Notecard ACKs, so the fence read that follows only
-    // runs once I2C is confirmed live.
-    {
-        J *ver = notecard.newRequest("card.version");
-        if (!notecard.sendRequestWithRetry(ver, 5)) {
-            LOGLN("[APP] WARN: I2C priming request timed out — Notecard not "
-                  "ready; fence restore may report a transport error.");
-        }
-    }
-
     // ── Initialize application state ─────────────────────────────────────────
     // g_state lives in RAM and survives every STOP2 sleep, so this runs only
     // at power-up.  Zero-initialize then apply compile-time defaults.
@@ -163,7 +148,7 @@ void setup()
         bool fence_io_error = false;
         if (!loadFenceFromFlash(notecard, g_state, fence_io_error)) {
             if (fence_io_error) {
-                LOGLN("[APP] ERROR: fence.db read failed after retries — "
+                LOGLN("[APP] ERROR: fence.db read failed — "
                       "auto-anchor suppressed to prevent geofence re-homing.");
                 g_state.fence_confirmed_absent = false;
             } else {
@@ -485,9 +470,9 @@ static void runCycle()
     LOGLN(" s.");
 
     // Sleep in STOP2 until the Notecard raises ATTN sleep_sec seconds from now.
-    // cxSleepUntilAttn() sends card.attn "sleep" (checked, with retries, since
-    // the host stays alive to see the response), waits for ATTN to go low, and
-    // enters STOP2.  Execution resumes on the next line; g_state stays in RAM.
+    // cxSleepUntilAttn() sends card.attn "sleep" (checked, since the host stays
+    // alive to see the response), waits for ATTN to go low, and enters STOP2.
+    // Execution resumes on the next line; g_state stays in RAM.
 #if DEBUG_SERIAL
     Stream *log = &debugSerial;
 #else

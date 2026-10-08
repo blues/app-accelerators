@@ -80,9 +80,7 @@ void notecardConfigure(void) {
     JAddStringToObject(req, "mode",     "periodic");
     JAddNumberToObject(req, "outbound", OUTBOUND_INTERVAL_MIN);
     JAddNumberToObject(req, "inbound",  INBOUND_INTERVAL_MIN);
-    // sendRequestWithRetry handles the cold-boot race where the host comes up
-    // before the Notecard's I²C listener is fully initialized.
-    if (!notecard.sendRequestWithRetry(req, 10)) {
+    if (!notecard.sendRequest(req)) {
         debugSerial.println("[CONFIG] hub.set (cold boot) failed; applyHubSetIfChanged() will retry.");
     }
 
@@ -103,7 +101,7 @@ void notecardConfigure(void) {
     // coverage even if it will routinely operate over satellite.
     req = notecard.newRequest("card.transport");
     JAddStringToObject(req, "method", "wifi-cell-ntn");
-    if (!notecard.sendRequestWithRetry(req, 10)) {
+    if (!notecard.sendRequest(req)) {
         debugSerial.println("[CONFIG] card.transport (wifi-cell-ntn) failed; will retry on next cold boot.");
     }
 
@@ -118,7 +116,7 @@ void notecardConfigure(void) {
 // defineTemplates — fixed-width Notefile schemas to minimize cellular data.
 // Returns true only when both note.template requests succeed. Called on every
 // wake while g_state.templates_registered is false so a transient I²C failure
-// on cold boot is retried rather than silently accepted.
+// is retried rather than silently accepted.
 // ---------------------------------------------------------------------------
 bool defineTemplates(void) {
     bool ok = true;
@@ -139,7 +137,7 @@ bool defineTemplates(void) {
     JAddNumberToObject(body, "pump1_amps", TTYPE_FLOAT);
     JAddNumberToObject(body, "pump2_amps", TTYPE_FLOAT);
     JAddBoolToObject(body,   "float_sw",   TTYPE_BOOL);
-    if (!notecard.sendRequestWithRetry(req, 10)) {
+    if (!notecard.sendRequest(req)) {
         debugSerial.println("[CONFIG] note.template (alert) failed");
         ok = false;
     }
@@ -170,7 +168,7 @@ bool defineTemplates(void) {
     JAddNumberToObject(body, "level_faults",   TTYPE_INT16);
     JAddNumberToObject(body, "ct1_faults",     TTYPE_INT16);
     JAddNumberToObject(body, "ct2_faults",     TTYPE_INT16);
-    if (!notecard.sendRequestWithRetry(req, 10)) {
+    if (!notecard.sendRequest(req)) {
         debugSerial.println("[CONFIG] note.template (summary) failed");
         ok = false;
     }

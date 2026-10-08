@@ -77,7 +77,7 @@ void notecardConfigure() {
                                                   : OUTBOUND_INTERVAL_MIN;
     JAddNumberToObject(req, "outbound", (double)ob);
     JAddNumberToObject(req, "inbound",  INBOUND_INTERVAL_MIN);
-    J *rsp = notecard.requestAndResponseWithRetry(req, 5);
+    J *rsp = notecard.requestAndResponse(req);
     if (rsp && !notecard.responseError(rsp)) {
         gState.hub_configured = true;
         if (gState.last_outbound_min == 0) {
@@ -154,7 +154,7 @@ void applyDynamicOutbound() {
     JAddStringToObject(req, "mode",     "periodic");
     JAddNumberToObject(req, "outbound", (double)desired);
     JAddNumberToObject(req, "inbound",  INBOUND_INTERVAL_MIN);
-    J *rsp = notecard.requestAndResponseWithRetry(req, 3);
+    J *rsp = notecard.requestAndResponse(req);
     if (rsp && !notecard.responseError(rsp)) {
         gState.last_outbound_min = desired;
         debugSerial.print("[cargo] outbound cadence -> ");

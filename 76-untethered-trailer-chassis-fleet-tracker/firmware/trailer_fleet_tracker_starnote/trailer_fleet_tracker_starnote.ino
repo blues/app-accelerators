@@ -103,14 +103,6 @@ void setup()
     notecard.setDebugOutputStream(usbSerial);
 #endif
 
-    // Cold-boot I²C warm-up: the host may come up before the Notecard
-    // completes its power-on sequence.  A retry-protected transaction here
-    // ensures the very first real calls do not race the bus.
-    {
-        J *warmup = notecard.newRequest("card.version");
-        if (warmup) notecard.sendRequestWithRetry(warmup, 5);
-    }
-
     // ── Initialize application state ───────────────────────────────────────
     memset(&state, 0, sizeof(state));
     state.current_state     = STATE_PARKED;
@@ -361,8 +353,8 @@ void loop()
     Stream *log = NULL;
 #endif
     if (!cxSleepUntilAttn(notecard, sleep_secs, NULL, log)) {
-        // Notecard not ready, or ATTN never went low (check the XI ATTN ->
-        // Swan D5 wire).  Keep the cadence and try again next cycle.
+        // The Notecard didn't take the sleep request, or ATTN never went low
+        // (check the XI ATTN -> Swan D5 wire).  Keep the cadence and retry.
 #ifdef usbSerial
         usbSerial.println("[sleep] ATTN sleep failed — waiting out the interval awake");
 #endif

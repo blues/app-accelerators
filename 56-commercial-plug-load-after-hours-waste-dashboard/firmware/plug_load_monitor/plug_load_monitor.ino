@@ -109,16 +109,6 @@ void setup() {
     notecard.setDebugOutputStream(dbgSerial);
 #endif
 
-    // ── First call after power-up: retry-protected I2C warm-up ───────────────
-    // The Notecard's I2C peripheral can take a few hundred milliseconds after a
-    // power-on before it ACKs requests.  Sending the first request via
-    // sendRequestWithRetry() absorbs that race without a hard delay.
-    // card.version is read-only and idempotent, so it is safe to issue here.
-    {
-        J *req = notecard.newRequest("card.version");
-        notecard.sendRequestWithRetry(req, 10);
-    }
-
     // Zero-initialise so accumulators, timestamps, and
     // last_applied_outbound_min all start from known values.
     memset(&state, 0, sizeof(state));

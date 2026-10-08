@@ -7,9 +7,7 @@
 
   Both note.add paths use requestAndResponse() so the Notecard response
   err field is inspected before callers may update alert state or reset
-  accumulators.  sendAlert() additionally retries up to 5 times with 1 s
-  backoff so a transient I2C or Notecard-readiness hiccup does not silently
-  drop a time-sensitive event.
+  accumulators.
 
   The globals notecard, state, desired_outbound_min, and desired_inbound_min
   are defined in solar_battery_controller.ino; this file references them
@@ -54,9 +52,6 @@ static float envF32(J *body, const char *key, float lo, float hi, float cur) {
 // notecardFirstBoot — one-time hardware init at power-up (from setup()):
 // disables the onboard accelerometer to reduce idle draw.
 //
-// Uses sendRequestWithRetry to survive the cold-boot I2C readiness race that
-// can cause the first transaction after notecard.begin() to be dropped.
-//
 // hub.set is NOT called here.  It is handled by applyHubSetIfChanged() on
 // every wake so that cadence is authoritative for the current firmware and
 // env-var settings even after a firmware update.
@@ -64,28 +59,24 @@ static float envF32(J *body, const char *key, float lo, float hi, float cur) {
 void notecardFirstBoot() {
     J *req = notecard.newRequest("card.motion.mode");
     if (req) JAddBoolToObject(req, "stop", true);
-    if (!notecard.sendRequestWithRetry(req, 5)) {
-        dbgSerial.println(F("[warn] card.motion.mode failed after retries"));
+    if (!notecard.sendRequest(req)) {
+        dbgSerial.println(F("[warn] card.motion.mode failed"));
     }
 }
 
 // ---------------------------------------------------------------------------
 // defineTemplates — registers fixed-width Note templates to minimise
 // on-wire payload size over the lifetime of the deployment.
-// Retries up to 5 times to survive a transient I2C or Notecard-ready hiccup
-// at cold boot.
 //
 // Returns true when the template is confirmed registered.  The caller should
 // store the result in state.templates_confirmed and call this function again
-// on the next wake until it returns true, so a transient failure at power-up
-// is always recovered automatically.
+// on the next wake until it returns true, so a transient failure is always
+// recovered automatically.
 // ---------------------------------------------------------------------------
 bool defineTemplates() {
     bool registered = false;
-    for (int attempt = 0; attempt < 5 && !registered; attempt++) {
-        if (attempt > 0) delay(2000);
-        J *req = notecard.newRequest("note.template");
-        if (!req) continue;
+    J *req = notecard.newRequest("note.template");
+    if (req) {
         JAddStringToObject(req, "file", "solar_summary.qo");
         JAddNumberToObject(req, "port", 50);
         J *body = JAddObjectToObject(req, "body");
@@ -108,7 +99,7 @@ bool defineTemplates() {
         }
     }
     if (!registered) {
-        dbgSerial.println(F("[warn] note.template solar_summary.qo failed after retries"));
+        dbgSerial.println(F("[warn] note.template solar_summary.qo failed"));
     }
     return registered;
 }
@@ -125,7 +116,7 @@ bool defineTemplates() {
 //
 // Uses requestAndResponse to inspect the err field; state.last_* fields are
 // only updated on confirmed success so a transient failure will be retried on
-// the next wake.  Retries up to 5 times to handle the cold-boot I2C race.
+// the next wake.
 // ---------------------------------------------------------------------------
 void applyHubSetIfChanged(const char *product_uid) {
     bool uid_set = (product_uid && product_uid[0]);
@@ -135,11 +126,8 @@ void applyHubSetIfChanged(const char *product_uid) {
         return;
     }
 
-    for (int attempt = 0; attempt < 5; attempt++) {
-        if (attempt > 0) delay(1000);
-
-        J *req = notecard.newRequest("hub.set");
-        if (!req) continue;
+    J *req = notecard.newRequest("hub.set");
+    if (req) {
         if (product_uid && product_uid[0])
             JAddStringToObject(req, "product", product_uid);
         JAddStringToObject(req, "mode",     "periodic");
@@ -148,28 +136,23 @@ void applyHubSetIfChanged(const char *product_uid) {
 
         J *rsp = notecard.requestAndResponse(req);
         if (!rsp) {
-            dbgSerial.print(F("[warn] hub.set attempt "));
-            dbgSerial.print(attempt + 1);
-            dbgSerial.println(F(": no response"));
-            continue;
-        }
-        const char *err = JGetString(rsp, "err");
-        bool ok = (!err || !*err);
-        if (!ok) {
-            dbgSerial.print(F("[warn] hub.set attempt "));
-            dbgSerial.print(attempt + 1);
-            dbgSerial.print(F(" error: "));
-            dbgSerial.println(err);  // log before deleteResponse
-        }
-        notecard.deleteResponse(rsp);
-        if (ok) {
-            state.last_outbound_min = desired_outbound_min;
-            state.last_inbound_min  = desired_inbound_min;
-            return;
+            dbgSerial.println(F("[warn] hub.set: no response"));
+        } else {
+            const char *err = JGetString(rsp, "err");
+            bool ok = (!err || !*err);
+            if (!ok) {
+                dbgSerial.print(F("[warn] hub.set error: "));
+                dbgSerial.println(err);  // log before deleteResponse
+            }
+            notecard.deleteResponse(rsp);
+            if (ok) {
+                state.last_outbound_min = desired_outbound_min;
+                state.last_inbound_min  = desired_inbound_min;
+                return;
+            }
         }
     }
-    dbgSerial.println(F("[error] hub.set failed after 5 attempts — "
-                     "sync cadence may be incorrect"));
+    dbgSerial.println(F("[error] hub.set failed — sync cadence may be incorrect"));
 }
 
 // ---------------------------------------------------------------------------
@@ -188,35 +171,28 @@ void applyHubSetIfChanged(const char *product_uid) {
 // ---------------------------------------------------------------------------
 bool fetchEnvOverrides() {
     // Pre-load sync cadence defaults from report_interval_min so the values are
-    // valid even when env.get cannot reach the Notecard (e.g. all retries fail).
+    // valid even when env.get cannot reach the Notecard.
     // fetchEnvOverrides() is called after state is initialised so
     // state.report_interval_min is always >= DEFAULT_REPORT_INTERVAL_MIN here.
     desired_outbound_min = state.report_interval_min;
     desired_inbound_min  = state.report_interval_min * 2;
 
-    // Retry env.get up to 5 times to survive the cold-boot I2C readiness race.
-    // note-arduino frees req on every requestAndResponse call (success or failure)
-    // so a fresh J* must be built on each attempt.
-    J *rsp = NULL;
-    for (int attempt = 0; attempt < 5 && !rsp; attempt++) {
-        if (attempt > 0) delay(2000);
-        J *req = notecard.newRequest("env.get");
-        if (!req) continue;
-        J *names = JCreateArray();
-        JAddItemToArray(names, JCreateString("soc_alert_pct"));
-        JAddItemToArray(names, JCreateString("bat_temp_max_c"));
-        JAddItemToArray(names, JCreateString("load_alert_w"));
-        JAddItemToArray(names, JCreateString("sample_interval_sec"));
-        JAddItemToArray(names, JCreateString("report_interval_min"));
-        JAddItemToArray(names, JCreateString("harvest_deficit_days"));
-        JAddItemToArray(names, JCreateString("sync_outbound_min"));
-        JAddItemToArray(names, JCreateString("sync_inbound_min"));
-        JAddItemToObject(req, "names", names);
-        rsp = notecard.requestAndResponse(req);
-        if (rsp && JGetString(rsp, "err")) {
-            notecard.deleteResponse(rsp);
-            rsp = NULL;
-        }
+    J *req = notecard.newRequest("env.get");
+    if (!req) return false;
+    J *names = JCreateArray();
+    JAddItemToArray(names, JCreateString("soc_alert_pct"));
+    JAddItemToArray(names, JCreateString("bat_temp_max_c"));
+    JAddItemToArray(names, JCreateString("load_alert_w"));
+    JAddItemToArray(names, JCreateString("sample_interval_sec"));
+    JAddItemToArray(names, JCreateString("report_interval_min"));
+    JAddItemToArray(names, JCreateString("harvest_deficit_days"));
+    JAddItemToArray(names, JCreateString("sync_outbound_min"));
+    JAddItemToArray(names, JCreateString("sync_inbound_min"));
+    JAddItemToObject(req, "names", names);
+    J *rsp = notecard.requestAndResponse(req);
+    if (rsp && notecard.responseError(rsp)) {
+        notecard.deleteResponse(rsp);
+        rsp = NULL;
     }
     if (!rsp) return false;
 
@@ -278,20 +254,13 @@ bool fetchEnvOverrides() {
 // a card-side rejection (schema mismatch, out-of-memory, etc.) is detected
 // rather than silently treated as success.
 //
-// Retries up to 5 times with 1 s backoff so a transient I2C glitch or
-// Notecard-readiness delay does not drop a time-sensitive event.  The request
-// JSON is rebuilt on each attempt because requestAndResponse always frees it.
-//
 // Returns true only after the Note is confirmed queued.  Callers must not
 // arm suppression state (active flags, cooldowns) on a false return.
 // v1/v2/v3 carry alert-type-specific context values (see README §7).
 // ---------------------------------------------------------------------------
 bool sendAlert(const char *alert, float v1, float v2, float v3) {
-    for (int attempt = 0; attempt < 5; attempt++) {
-        if (attempt > 0) delay(1000);
-
-        J *req = notecard.newRequest("note.add");
-        if (!req) continue;
+    J *req = notecard.newRequest("note.add");
+    if (req) {
         JAddStringToObject(req, "file",  "solar_alert.qo");
         JAddBoolToObject(req,   "sync",  true);
         J *body = JAddObjectToObject(req, "body");
@@ -302,23 +271,19 @@ bool sendAlert(const char *alert, float v1, float v2, float v3) {
 
         J *rsp = notecard.requestAndResponse(req);
         if (!rsp) {
-            dbgSerial.print(F("[warn] note.add alert attempt "));
-            dbgSerial.print(attempt + 1);
-            dbgSerial.println(F(": no response"));
-            continue;
-        }
-        const char *err = JGetString(rsp, "err");
-        bool ok = (!err || !*err);
-        if (!ok) {
-            dbgSerial.print(F("[warn] note.add alert attempt "));
-            dbgSerial.print(attempt + 1);
-            dbgSerial.print(F(" error: "));
-            dbgSerial.println(err);  // log before deleteResponse
-        }
-        notecard.deleteResponse(rsp);
-        if (ok) {
-            dbgSerial.print(F("[alert] ")); dbgSerial.println(alert);
-            return true;
+            dbgSerial.println(F("[warn] note.add alert: no response"));
+        } else {
+            const char *err = JGetString(rsp, "err");
+            bool ok = (!err || !*err);
+            if (!ok) {
+                dbgSerial.print(F("[warn] note.add alert error: "));
+                dbgSerial.println(err);  // log before deleteResponse
+            }
+            notecard.deleteResponse(rsp);
+            if (ok) {
+                dbgSerial.print(F("[alert] ")); dbgSerial.println(alert);
+                return true;
+            }
         }
     }
     dbgSerial.print(F("[error] note.add failed for alert: ")); dbgSerial.println(alert);

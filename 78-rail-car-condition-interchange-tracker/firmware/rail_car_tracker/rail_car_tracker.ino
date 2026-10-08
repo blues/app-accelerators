@@ -143,22 +143,14 @@ void setup() {
         debugSerial.println("[error] PRODUCT_UID is empty — set it in the sketch before flashing.");
     }
 
-    // ── Power-up Notecard readiness ping ──────────────────────────────────────
-    // Retries card.version for up to 10 s to let the Notecard I²C stack
-    // settle before any real request. On failure the one-time configuration
-    // below is skipped; loop() retries it on the next wake.
-    if (notecardReady()) {
-        // hub.set is idempotent; applying it at power-up ensures a PRODUCT_UID
-        // change in the firmware sketch takes effect immediately without
-        // requiring CONFIG_VERSION to be bumped. Failure is non-fatal — the
-        // Notecard retains its previous hub.set configuration so notes
-        // continue to queue and sync — and it is retried on the next wake.
-        g_hubSetOk = configureNotecard();
-        if (!g_hubSetOk) {
-            debugSerial.println("[warn] hub.set failed — Notecard retains previous configuration");
-        }
-    } else {
-        debugSerial.println("[error] Notecard not ready — configuration deferred to next wake");
+    // hub.set is idempotent; applying it at power-up ensures a PRODUCT_UID
+    // change in the firmware sketch takes effect immediately without
+    // requiring CONFIG_VERSION to be bumped. Failure is non-fatal — the
+    // Notecard retains its previous hub.set configuration so notes
+    // continue to queue and sync — and it is retried on the next wake.
+    g_hubSetOk = configureNotecard();
+    if (!g_hubSetOk) {
+        debugSerial.println("[warn] hub.set failed — Notecard retains previous configuration");
     }
 
     initSensors();

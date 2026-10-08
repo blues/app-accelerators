@@ -271,8 +271,6 @@ void loop() {
 // Configure the Notecard for this project — called once from setup().
 static void notecardConfigure(void) {
     // periodic mode: outbound and inbound cadences match the summary interval.
-    // sendRequestWithRetry absorbs the cold-boot I²C race: the host can come
-    // up before the Notecard is ready to accept transactions.
     J *req = notecard.newRequest("hub.set");
     if (req) {
         JAddStringToObject(req, "product",  PRODUCT_UID);
@@ -280,7 +278,7 @@ static void notecardConfigure(void) {
         JAddNumberToObject(req, "outbound", (int)g_summaryIntervalMin);
         JAddNumberToObject(req, "inbound",  (int)g_summaryIntervalMin);
         // Record the applied interval only after a confirmed successful transaction.
-        if (notecard.sendRequestWithRetry(req, 10)) {
+        if (notecard.sendRequest(req)) {
             g.appliedSummaryIntervalMin = g_summaryIntervalMin;
         }
     }
@@ -298,7 +296,7 @@ static void notecardConfigure(void) {
     req = notecard.newRequest("card.transport");
     if (req) {
         JAddStringToObject(req, "method", "wifi-cell-ntn");
-        notecard.sendRequestWithRetry(req, 10);
+        notecard.sendRequest(req);
     }
 
     // Disable the onboard accelerometer to eliminate interrupt noise on bench
@@ -314,8 +312,6 @@ static void notecardConfigure(void) {
 // Re-issue hub.set with the currently active summary interval — called when a
 // Notehub env-var change updates g_summaryIntervalMin so that the Notecard's
 // outbound cellular cadence stays aligned with the local summary schedule.
-// Uses plain sendRequest (no retry) because this is called on a post-sleep wake
-// where the Notecard is already up and the I²C cold-boot race is not a concern.
 // Returns true on a confirmed successful transaction so the caller can safely
 // discard accumulated samples; returns false on allocation or send failure so
 // the caller keeps existing samples and retries on the next wake.

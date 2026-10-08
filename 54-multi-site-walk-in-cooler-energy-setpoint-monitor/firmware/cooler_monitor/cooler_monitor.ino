@@ -101,9 +101,9 @@ void setup() {
     memset(&state, 0, sizeof(state));
 
     // First boot: attempt hub.set and record whether it succeeded.  If the
-    // call fails here (transient I²C race between STM32 start-up and Notecard
-    // readiness), loop() retries on every subsequent wake until the Notecard
-    // acknowledges, ensuring the device cannot remain permanently unassociated.
+    // call fails here, loop() retries on every subsequent wake until the
+    // Notecard acknowledges, ensuring the device cannot remain permanently
+    // unassociated.
     if (hubConfigure()) {
         state.hubSetConfirmed = 1u;
     }

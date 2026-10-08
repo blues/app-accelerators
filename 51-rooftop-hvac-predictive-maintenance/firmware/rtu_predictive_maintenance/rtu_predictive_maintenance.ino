@@ -127,7 +127,7 @@ static void hubConfigure() {
   JAddStringToObject(req, "mode", "periodic");
   JAddNumberToObject(req, "outbound", SUMMARY_INTERVAL_MIN);
   JAddNumberToObject(req, "inbound", 360);
-  notecard.sendRequestWithRetry(req, 10);
+  notecard.sendRequest(req);
   state.last_applied_outbound_min = SUMMARY_INTERVAL_MIN;
 }
 

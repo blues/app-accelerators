@@ -34,7 +34,7 @@ bool hubConfigure(const char *product_uid) {
     JAddStringToObject(req, "mode",     "periodic");
     JAddNumberToObject(req, "outbound", DEFAULT_SUMMARY_INTERVAL_MIN);
     JAddNumberToObject(req, "inbound",  120);
-    bool ok = notecard.sendRequestWithRetry(req, 5);
+    bool ok = notecard.sendRequest(req);
     if (!ok) {
         debugSerial.println("[init] hub.set failed; will retry on next wake");
     }

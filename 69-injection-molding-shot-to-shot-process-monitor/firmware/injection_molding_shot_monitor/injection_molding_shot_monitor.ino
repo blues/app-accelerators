@@ -261,41 +261,34 @@ void loop() {
 }
 
 // -- configureNotecard() ------------------------------------------------------
-// Runs once at cold boot. hub.set is retried for up to 5 seconds to ride out
-// the cold-boot I2C race where the Notecard MCU may not be ready immediately
-// after power-on. requestAndResponse() is used (rather than sendRequestWithRetry)
-// so the response err field can be inspected — a semantic failure such as an
-// unrecognized PRODUCT_UID format is not mistaken for a transport success.
-// Returns false if hub.set cannot be confirmed within the retry window.
+// Runs once at cold boot. requestAndResponse() is used so the response err
+// field can be inspected — a semantic failure such as an unrecognized
+// PRODUCT_UID format is not mistaken for a transport success.
+// Returns false if hub.set cannot be confirmed.
 bool configureNotecard() {
     bool hub_ok = false;
-    const uint32_t t0 = millis();
-    while ((millis() - t0) < 5000UL) {
-        J *req = notecard.newRequest("hub.set");
-        JAddStringToObject(req, "product", PRODUCT_UID);
-        JAddStringToObject(req, "mode",    "periodic");
-        JAddNumberToObject(req, "outbound", g_outbound_min);
-        JAddNumberToObject(req, "inbound",  120);  // Pull env var updates every 2 h
-        J *rsp = notecard.requestAndResponse(req);
-        if (rsp) {
-            hub_ok = !notecard.responseError(rsp);
-            if (!hub_ok) {
-                Serial.print("[APP] hub.set rejected: ");
-                Serial.println(JGetString(rsp, "err"));
-            }
-            notecard.deleteResponse(rsp);
+    J *req = notecard.newRequest("hub.set");
+    JAddStringToObject(req, "product", PRODUCT_UID);
+    JAddStringToObject(req, "mode",    "periodic");
+    JAddNumberToObject(req, "outbound", g_outbound_min);
+    JAddNumberToObject(req, "inbound",  120);  // Pull env var updates every 2 h
+    J *rsp = notecard.requestAndResponse(req);
+    if (rsp) {
+        hub_ok = !notecard.responseError(rsp);
+        if (!hub_ok) {
+            Serial.print("[APP] hub.set rejected: ");
+            Serial.println(JGetString(rsp, "err"));
         }
-        if (hub_ok) break;
-        delay(500);
+        notecard.deleteResponse(rsp);
     }
     if (!hub_ok) {
-        Serial.println("[APP] hub.set failed after 5 s — Notecard may not be ready or PRODUCT_UID is invalid.");
+        Serial.println("[APP] hub.set failed — Notecard not responding or PRODUCT_UID is invalid.");
         return false;
     }
 
     // Disable the onboard accelerometer — not needed here, and suppressing it
     // reduces idle noise on the power rail during Mojo bench validation.
-    J *req = notecard.newRequest("card.motion.mode");
+    req = notecard.newRequest("card.motion.mode");
     JAddBoolToObject(req, "stop", true);
     if (!notecard.sendRequest(req)) {
         Serial.println("[APP] card.motion.mode failed — accelerometer may remain active.");

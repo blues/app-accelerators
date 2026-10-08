@@ -171,11 +171,10 @@ static void hubConfigure() {
   if (inbound_min  > 10080u) inbound_min  = 10080u;
   JAddNumberToObject(req, "outbound", (int)outbound_min);
   JAddNumberToObject(req, "inbound",  (int)inbound_min);
-  // sendRequestWithRetry handles the cold-boot I2C race noted in note-arduino.
   // Only cache the new cadence after confirmed success — if hub.set fails we keep
   // the old last_applied_outbound_hr so the mismatch is detected and retried on
   // the next wake, preventing the Notecard from staying on a stale schedule.
-  if (notecard.sendRequestWithRetry(req, 10)) {
+  if (notecard.sendRequest(req)) {
     state.last_applied_outbound_hr = REPORT_INTERVAL_HR;
   } else {
 #ifdef usbSerial
@@ -200,7 +199,7 @@ static void hubConfigure() {
   // coverage even if it will routinely operate over satellite.
   J *t = notecard.newRequest("card.transport");
   JAddStringToObject(t, "method", "wifi-cell-ntn");
-  if (!notecard.sendRequestWithRetry(t, 10)) {
+  if (!notecard.sendRequest(t)) {
 #ifdef usbSerial
     usbSerial.println("[card.transport] wifi-cell-ntn failed — will retry on next cold boot");
 #endif

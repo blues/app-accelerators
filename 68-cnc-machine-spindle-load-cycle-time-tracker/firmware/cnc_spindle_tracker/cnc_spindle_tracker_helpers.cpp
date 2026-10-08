@@ -55,9 +55,7 @@ void notecardConfigure(const char *productUid) {
         JAddStringToObject(req, "mode", "periodic");
         JAddNumberToObject(req, "outbound", DEFAULT_REPORT_MINUTES);   // minutes
         JAddNumberToObject(req, "inbound",  DEFAULT_REPORT_MINUTES * 2);
-        // sendRequestWithRetry handles the cold-boot I²C race where the host
-        // MCU comes up before the Notecard is ready.
-        if (notecard.sendRequestWithRetry(req, 5)) {
+        if (notecard.sendRequest(req)) {
             usbSerial.println("[NOTECARD] hub.set OK.");
             return;
         }

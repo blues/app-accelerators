@@ -34,34 +34,30 @@ static uint32_t clampU32(const char *name, double v, uint32_t lo, uint32_t hi,
 }
 
 // ─── Notecard Configuration ───────────────────────────────────────────────
-// Retries hub.set up to 5 times to handle the cold-boot I²C race, then issues
-// a one-time card.transport selection so the Notecard for Skylo enables Skylo
-// satellite (NTN) fallback. Returns true only when hub.set acknowledges without
-// error. Failure latches g_setupFault in the caller.
+// Sends hub.set, then issues a one-time card.transport selection so the
+// Notecard for Skylo enables Skylo satellite (NTN) fallback. Returns true only
+// when hub.set acknowledges without error. Failure latches g_setupFault in the
+// caller.
 //
 // mode: "periodic" with outbound: 1440 (daily flush) and inbound: 120 (2-hour
 // env-var refresh). All emergency notes use sync:true, which bypasses the
 // outbound interval and triggers an immediate cellular or satellite session.
 bool notecardConfigure()
 {
-    for (uint8_t attempt = 0; attempt < 5; attempt++) {
-        J *req = notecard.newRequest("hub.set");
-        if (!req) { delay(500); continue; }
+    bool ok = false;
+    J *req = notecard.newRequest("hub.set");
+    if (req) {
         JAddStringToObject(req, "product",  PRODUCT_UID);
         JAddStringToObject(req, "mode",     "periodic");
         JAddNumberToObject(req, "outbound", 1440);   // daily; alerts use sync:true
         JAddNumberToObject(req, "inbound",  120);    // 2-hour env-var refresh
         J *rsp = notecard.requestAndResponse(req);
-        bool ok = (rsp != NULL && !notecard.responseError(rsp));
+        ok = (rsp != NULL && !notecard.responseError(rsp));
         if (rsp) notecard.deleteResponse(rsp);
-        if (ok) break;
-        DEBUG_PRINT("[CFG] hub.set attempt "); DEBUG_PRINT(attempt + 1);
-        DEBUG_PRINTLN(" failed — retrying.");
-        delay(500);
-        if (attempt == 4) {
-            DEBUG_PRINTLN("[FAULT] hub.set failed after 5 attempts.");
-            return false;
-        }
+    }
+    if (!ok) {
+        DEBUG_PRINTLN("[FAULT] hub.set failed.");
+        return false;
     }
 
     // Transport selection for the Notecard for Skylo (NOTE-NBGLWX).
@@ -78,13 +74,11 @@ bool notecardConfigure()
     // associate with Notehub and register templates before NTN can be used.
     // Commission each beacon where it has terrestrial coverage even if it will
     // routinely operate over satellite (see defineTemplates first-light note).
-    {
-        J *req = notecard.newRequest("card.transport");
-        if (req) {
-            JAddStringToObject(req, "method", "wifi-cell-ntn");
-            if (!notecard.sendRequestWithRetry(req, 10)) {
-                DEBUG_PRINTLN("[CFG] card.transport (wifi-cell-ntn) failed; will retry on next cold boot.");
-            }
+    req = notecard.newRequest("card.transport");
+    if (req) {
+        JAddStringToObject(req, "method", "wifi-cell-ntn");
+        if (!notecard.sendRequest(req)) {
+            DEBUG_PRINTLN("[CFG] card.transport (wifi-cell-ntn) failed; will retry on next cold boot.");
         }
     }
     return true;
@@ -107,8 +101,8 @@ bool notecardConfigure()
 // the join key. event_id is device-local and resets on power cycle; it is
 // not unique across devices on its own.
 //
-// Each template is retried up to 3 times. Returns false if any template fails
-// all attempts — the caller latches g_setupFault.
+// Returns false if any template registration fails — the caller latches
+// g_setupFault.
 bool defineTemplates()
 {
     bool allOk = true;
@@ -116,9 +110,8 @@ bool defineTemplates()
     // ── beacon_alert.qo ──────────────────────────────────────────────────
     {
         bool ok = false;
-        for (uint8_t attempt = 0; attempt < 3 && !ok; attempt++) {
-            J *req = notecard.newRequest("note.template");
-            if (!req) { delay(500); continue; }
+        J *req = notecard.newRequest("note.template");
+        if (req) {
             JAddStringToObject(req, "file",   "beacon_alert.qo");
             JAddNumberToObject(req, "port",   50);
             JAddStringToObject(req, "format", "compact");
@@ -133,7 +126,6 @@ bool defineTemplates()
             J *rsp = notecard.requestAndResponse(req);
             ok = (rsp != NULL && !notecard.responseError(rsp));
             if (rsp) notecard.deleteResponse(rsp);
-            if (!ok) delay(500);
         }
         if (!ok) {
             DEBUG_PRINTLN("[FAULT] beacon_alert.qo template registration failed.");
@@ -148,9 +140,8 @@ bool defineTemplates()
     // beacon_alert.qo so downstream systems can join the two notes.
     {
         bool ok = false;
-        for (uint8_t attempt = 0; attempt < 3 && !ok; attempt++) {
-            J *req = notecard.newRequest("note.template");
-            if (!req) { delay(500); continue; }
+        J *req = notecard.newRequest("note.template");
+        if (req) {
             JAddStringToObject(req, "file",   "beacon_location.qo");
             JAddNumberToObject(req, "port",   52);
             JAddStringToObject(req, "format", "compact");
@@ -163,7 +154,6 @@ bool defineTemplates()
             J *rsp = notecard.requestAndResponse(req);
             ok = (rsp != NULL && !notecard.responseError(rsp));
             if (rsp) notecard.deleteResponse(rsp);
-            if (!ok) delay(500);
         }
         if (!ok) {
             DEBUG_PRINTLN("[FAULT] beacon_location.qo template registration failed.");

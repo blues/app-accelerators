@@ -264,8 +264,7 @@ static void notecardConfigure() {
         JAddStringToObject(req, "mode", "periodic");
         JAddNumberToObject(req, "outbound", g_report_minutes);
         JAddNumberToObject(req, "inbound", g_report_minutes * 2);
-        // sendRequestWithRetry on first contact dodges the cold-boot I2C race.
-        notecard.sendRequestWithRetry(req, 5);
+        notecard.sendRequest(req);
         g_last_hubset_outbound = g_report_minutes;
     }
 }

@@ -73,7 +73,7 @@ void notecardConfigure(const char *product_uid) {
     // Record the applied cadence only on success. A failure leaves
     // s_last_report_minutes at its sentinel (0) so applyHubSetIfChanged()
     // retries hub.set from the main loop until it succeeds.
-    if (notecard.sendRequestWithRetry(req, 5)) {
+    if (notecard.sendRequest(req)) {
         s_last_report_minutes = g_report_minutes;
     } else {
         usbSerial.println("[notecard] hub.set initial config failed; will retry from main loop");

@@ -217,13 +217,12 @@ void setup() {
     JAddStringToObject(req, "mode",    "periodic");
     JAddNumberToObject(req, "outbound", (int)g_report_interval_min);
     JAddNumberToObject(req, "inbound",  120);
-    // sendRequestWithRetry addresses the cold-boot I2C readiness race
-    // (retries for up to 5 s before giving up).  Check the bool return:
-    // only record the outbound cadence when the Notecard confirms success.
+    // Check the bool return: only record the outbound cadence when the
+    // Notecard confirms success.
     // On failure, last_hub_outbound stays at 0, so the post-fetchEnvVars
     // hub.set block in loop() sees a mismatch on the very first wake and
     // re-attempts provisioning — no device is silently left unconfigured.
-    if (!notecard.sendRequestWithRetry(req, 5)) {
+    if (!notecard.sendRequest(req)) {
         debugSerial.println(F("[app] hub.set (power-up) failed; will retry on next wake"));
         // g_state.last_hub_outbound remains 0 — triggers retry path in loop()
     } else {

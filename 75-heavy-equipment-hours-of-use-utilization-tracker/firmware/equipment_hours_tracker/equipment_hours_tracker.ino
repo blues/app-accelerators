@@ -82,8 +82,7 @@ void setup() {
     memset(&g_s, 0, sizeof(g_s));
 
     // Only mark configured after every required request is confirmed by the
-    // Notecard — a transient cold-boot I²C miss must not leave the device
-    // permanently misconfigured; loop() retries until it succeeds.
+    // Notecard; loop() retries until it succeeds.
     if (notecardConfigure() && defineTemplates()) {
         g_s.configured = true;
         debugSerial.println("[BOOT] Notecard configured");

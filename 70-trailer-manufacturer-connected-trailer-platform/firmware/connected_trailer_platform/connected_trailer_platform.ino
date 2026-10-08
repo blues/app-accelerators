@@ -61,11 +61,10 @@
 
     Fallback (ATTN not reaching the host):
       If the ATTN -> D10 jumper is missing, or the Notecard does not accept
-      the card.attn request (e.g. still booting after a cold start),
-      cxSleepUntilAttn() returns false and loop() falls through to a delay()
-      that keeps the sample cadence. The host draws continuous active
-      current in this mode (~5–15 mA); it is not suitable for extended
-      DC-dwell operation.
+      the card.attn request, cxSleepUntilAttn() returns false and loop()
+      falls through to a delay() that keeps the sample cadence. The host
+      draws continuous active current in this mode (~5–15 mA); it is not
+      suitable for extended DC-dwell operation.
 
   J2497 and TPMS packet formats are simplified POC representations.
   Production deployments need a full J2497 protocol stack, reefer-OEM message
@@ -220,47 +219,27 @@ static bool applyLocationMode() {
     return ok;
 }
 
-// Build the initial hub.set request from compile-time defaults.
-// Called by sendRequestWithRetry() on every attempt; a new J* is required for
-// each attempt because requestAndResponse() always frees the object it receives.
-static J *buildInitHubSetReq() {
-    J *req = notecard.newRequest("hub.set");
-    if (!req) return nullptr;
-    if (PRODUCT_UID[0]) JAddStringToObject(req, "product", PRODUCT_UID);
-    JAddStringToObject(req, "mode",     "periodic");
-    JAddNumberToObject(req, "outbound", (int)g_cfg.outboundParkedMin);
-    JAddNumberToObject(req, "inbound",  (int)g_cfg.outboundParkedMin * 2);
-    return req;
-}
-
-// Issue a Notecard request with up to maxAttempts tries (500 ms back-off
-// between each). Returns true when the Notecard confirms the request.
-static bool sendRequestWithRetry(J *(*factory)(), int maxAttempts) {
-    for (int attempt = 0; attempt < maxAttempts; attempt++) {
-        J *req = factory();
-        if (!req) { delay(500); continue; }
-        J *rsp = notecard.requestAndResponse(req);
-        if (!rsp) { delay(500); continue; }
-        bool ok = !notecard.responseError(rsp);
-        notecard.deleteResponse(rsp);
-        if (ok) return true;
-        delay(500);
-    }
-    return false;
-}
-
-// One-time Notecard configuration. Called once from setup(). hub.set is issued with up to 10 retries to survive the cold-boot
-// I2C-readiness race on Notecarrier CX. note.template and card.location.mode
-// are attempted once; if they fail they will succeed on a subsequent power
-// cycle once the Notecard I2C bus is stable.
+// One-time Notecard configuration. Called once from setup(). note.template and
+// card.location.mode are attempted once; if they fail they will succeed on a
+// subsequent power cycle.
 static void notecardInit() {
-    bool hubOk = sendRequestWithRetry(buildInitHubSetReq, 10);
+    bool hubOk = false;
+    J *req = notecard.newRequest("hub.set");
+    if (req) {
+        if (PRODUCT_UID[0]) JAddStringToObject(req, "product", PRODUCT_UID);
+        JAddStringToObject(req, "mode",     "periodic");
+        JAddNumberToObject(req, "outbound", (int)g_cfg.outboundParkedMin);
+        JAddNumberToObject(req, "inbound",  (int)g_cfg.outboundParkedMin * 2);
+        J *rsp = notecard.requestAndResponse(req);
+        hubOk = rsp && !notecard.responseError(rsp);
+        notecard.deleteResponse(rsp);
+    }
     if (hubOk) {
         g_ps.currentOutboundMin = g_cfg.outboundParkedMin;
     }
 #ifdef usbSerial
     else {
-        usbSerial.println("[init] hub.set failed after 10 attempts — check I2C/power");
+        usbSerial.println("[init] hub.set failed — check I2C/power");
     }
 #endif
     applyLocationMode();

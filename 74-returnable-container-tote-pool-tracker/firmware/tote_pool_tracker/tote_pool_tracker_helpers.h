@@ -110,8 +110,7 @@ struct ToteState {
 
     // One-time Notecard configuration confirmation flags. False on first boot;
     // set only after a verified successful response. Any flag still false on a
-    // later wake triggers a retry, so a cold-boot I²C race never permanently
-    // misconfigures the device.
+    // later wake triggers a retry.
     bool     triangulate_confirmed;
     bool     voltage_mode_confirmed;
     bool     template_confirmed;

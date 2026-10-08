@@ -154,38 +154,12 @@ ChannelMeasurement measureChannel(uint8_t current_pin) {
 }
 
 // =============================================================================
-// Notecard cold-boot readiness handshake
-// =============================================================================
-// sendRequestWithRetry MUST be the first Notecard transaction after a cold
-// boot (called once from setup()).  It handles the I2C race condition where
-// the STM32L433 host comes up several hundred milliseconds before the Notecard
-// is ready to accept requests.  Wakes from STOP2 resume in place and do not
-// need it.
-//
-// sendRequestWithRetry returns bool (true = acknowledged, false = timeout).
-// It does NOT return a J* response pointer.  card.version is used here because
-// it is lightweight and read-only; the response is discarded — the sole purpose
-// of this call is to establish that the I2C bus is responsive before any other
-// transaction is attempted.
-// =============================================================================
-bool notecardReady(uint32_t timeout_sec) {
-    J *req = notecard.newRequest("card.version");
-    if (!req) return false;
-    bool ok = notecard.sendRequestWithRetry(req, timeout_sec);
-    if (!ok) dbgSerial.println("[notecard] readiness check timed out");
-    return ok;
-}
-
-// =============================================================================
 // Environment variable fetch
 // =============================================================================
 // Called on every wake cycle.  Firmware defaults are applied first; Notehub
 // values overwrite only the variables that have been explicitly set.
 // Upper and lower bounds clamp values to safe operating ranges so a typo or
 // hostile env var cannot brick the device.
-//
-// notecardReady() is called in setup() so that the I2C cold-boot race has
-// already been resolved before this function first runs.
 // =============================================================================
 void fetchEnvOverrides(void) {
     cfg.sample_interval_sec    = DEFAULT_SAMPLE_INTERVAL_SEC;
@@ -229,14 +203,12 @@ void fetchEnvOverrides(void) {
 // =============================================================================
 // Hub configuration (shared by initNotecard and reissueHubSet)
 // =============================================================================
-// Issues hub.set using sendRequestWithRetry to handle the cold-boot I2C race
-// where the STM32L433 host comes up before the Notecard is ready.  The outbound
-// cadence is set to cfg.summary_interval_min so the Notecard flushes queued
-// notes roughly as often as new summaries are created.
+// Issues hub.set.  The outbound cadence is set to cfg.summary_interval_min so
+// the Notecard flushes queued notes roughly as often as new summaries are
+// created.
 //
-// sendRequestWithRetry returns bool (true = acknowledged without error).
-// hub.set has no meaningful response body, so the bool return is sufficient;
-// there is no response-returning retry variant needed here.
+// sendRequest returns bool (true = acknowledged without error).  hub.set has
+// no meaningful response body, so the bool return is sufficient.
 //
 // Returns true only when the Notecard acknowledges the request without error.
 // =============================================================================
@@ -247,7 +219,7 @@ static bool configureHub(void) {
     JAddStringToObject(req, "mode",     "periodic");
     JAddNumberToObject(req, "outbound", (double)cfg.summary_interval_min);
     JAddNumberToObject(req, "inbound",  (double)INBOUND_MINUTES);
-    bool ok = notecard.sendRequestWithRetry(req, 10);
+    bool ok = notecard.sendRequest(req);
     if (!ok) dbgSerial.println("[notecard] hub.set failed");
     return ok;
 }

@@ -370,9 +370,7 @@ bool sendAlert(const char *type, float level_pct,
     JAddNumberToObject(body, "pump1_amps", p1_a);
     JAddNumberToObject(body, "pump2_amps", p2_a);
     JAddBoolToObject(body,   "float_sw",   float_sw);
-    // Alerts are safety-critical; retry briefly so a transient I²C hiccup
-    // does not silently drop a fault notification.
-    bool ok = notecard.sendRequestWithRetry(req, 5);
+    bool ok = notecard.sendRequest(req);
     if (!ok) {
         debugSerial.print("[ALERT] note.add failed for: "); debugSerial.println(type);
     } else {

@@ -93,7 +93,7 @@ bool notecardConfigure()
     JAddStringToObject(req, "mode",      "periodic");
     JAddStringToObject(req, "voutbound", VOUTBOUND_PROFILE);
     JAddStringToObject(req, "vinbound",  VINBOUND_PROFILE);
-    if (!notecard.sendRequestWithRetry(req, 5)) {
+    if (!notecard.sendRequest(req)) {
 #ifdef usbSerial
         usbSerial.println("[config] hub.set failed");
 #endif

@@ -135,9 +135,6 @@ bool pollMeter(MeterReading *out) {
 // initNotecard — configure hub sync and quiet the accelerometer.  Returns true
 // when hub.set succeeds; the caller stores this result in
 // state.notecard_configured so a failed attempt is retried on the next wake.
-//
-// sendRequestWithRetry on the very first I²C call addresses the documented
-// race condition where the host comes up faster than the Notecard.
 // ─────────────────────────────────────────────────────────────────────────────
 bool initNotecard(const char *product_uid) {
     J *req = notecard.newRequest("hub.set");
@@ -145,7 +142,7 @@ bool initNotecard(const char *product_uid) {
     JAddStringToObject(req, "mode",     "periodic");
     JAddNumberToObject(req, "outbound", (int)state.report_interval_min);
     JAddNumberToObject(req, "inbound",  120);
-    bool ok = notecard.sendRequestWithRetry(req, 5);
+    bool ok = notecard.sendRequest(req);
     if (!ok) debugSerial.println("[app] WARN: hub.set failed — will retry on next wake");
 
     // Disable the on-board accelerometer to eliminate interrupt-driven current

@@ -17,10 +17,6 @@
 #pragma message "PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://bit.ly/product-uid"
 #endif
 
-#ifndef HUB_SET_TIMEOUT_SECONDS
-#define HUB_SET_TIMEOUT_SECONDS 5
-#endif
-
 Notecard notecard;
 volatile bool attnTriggered;
 
@@ -590,9 +586,7 @@ void setup()
     }
     JAddStringToObject(req, "mode", "continuous");
     JAddBoolToObject(req, "sync", true);
-    // The hub.set request may fail if it's sent shortly after power up. We use
-    // sendRequestWithRetry to give it a chance to succeed.
-    if (!notecard.sendRequestWithRetry(req, HUB_SET_TIMEOUT_SECONDS)) {
+    if (!notecard.sendRequest(req)) {
         Serial.println("hub.set failed");
     }
 

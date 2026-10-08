@@ -123,16 +123,15 @@ bool notecardConfigure(void)
         return false;
     }
 
-    // hub.set: sendRequestWithRetry handles the cold-boot I²C race condition
-    // where the Notecard may not yet be ready to accept commands.  The return
-    // value is checked so that a failed hub.set causes a retry on the next wake
-    // rather than leaving the device with an invalid project association.
+    // hub.set: the return value is checked so that a failed hub.set causes a
+    // retry on the next wake rather than leaving the device with an invalid
+    // project association.
     J *req = notecard.newRequest("hub.set");
     JAddStringToObject(req, "product", PRODUCT_UID);
     JAddStringToObject(req, "mode", "periodic");
     JAddNumberToObject(req, "outbound", SUMMARY_INTERVAL_MIN); // daily outbound
     JAddNumberToObject(req, "inbound", 480);                   // 8-hour env-var pull
-    if (!notecard.sendRequestWithRetry(req, 10))
+    if (!notecard.sendRequest(req))
     {
         debugSerial.println("[CFG] hub.set failed");
         return false;

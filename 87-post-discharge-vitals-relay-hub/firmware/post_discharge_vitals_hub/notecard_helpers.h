@@ -32,7 +32,7 @@ extern uint32_t g_last_hr_low_alert_ms;
 // Returns true on success; always consumes the J* whether it succeeds or fails.
 bool sendChecked(J *req);
 
-// Configure Notecard hub connection with cold-boot retry and response validation.
+// Configure Notecard hub connection with response validation.
 void notecardConfigure();
 
 // Register fixed-width binary templates for each reading Notefile.

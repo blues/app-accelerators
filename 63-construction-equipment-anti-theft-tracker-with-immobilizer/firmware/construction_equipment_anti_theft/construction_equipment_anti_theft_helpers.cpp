@@ -20,7 +20,7 @@
 // non-null and carries no 'err' key.  Logs any Notecard API error string to
 // serial so failures surface in debug output rather than being silently ignored.
 // Use this for all security-sensitive writes: note.add, note.template, hub.set,
-// and card.location.mode. Keep sendRequestWithRetry() for the cold-boot race.
+// and card.location.mode.
 static bool sendRequestChecked(Notecard &nc, J *req)
 {
     J *rsp = nc.requestAndResponse(req);
@@ -68,15 +68,12 @@ bool ensureConfigured(Notecard &nc, const char *product_uid, AppState &s)
         // hub.set: periodic mode.
         // Switch to "continuous" during development for real-time JSON debugging;
         // use "periodic" for field deployment to minimise cellular sessions.
-        // sendRequestWithRetry handles the cold-boot I2C race where the Notecard
-        // may not be ready immediately after the host powers up, and also
-        // re-establishes the Notehub association after an independent Notecard reset.
         J *req = nc.newRequest("hub.set");
         JAddStringToObject(req, "product",  product_uid);
         JAddStringToObject(req, "mode",     "periodic");
         JAddNumberToObject(req, "outbound", s.outbound_s / 60);
         JAddNumberToObject(req, "inbound",  inbound_min);
-        if (nc.sendRequestWithRetry(req, 5)) {
+        if (nc.sendRequest(req)) {
             s.cfg_hub_ok = true;
             LOGLN("[APP] hub.set confirmed.");
 
@@ -702,96 +699,76 @@ bool saveFenceToFlash(Notecard &nc, const AppState &s)
 //
 // Returns false in two distinct cases, disambiguated by io_error:
 //   io_error == false: record positively confirmed absent (safe to auto-anchor)
-//   io_error == true:  transport / API failure after all retries; fence presence
-//                      is unknown — the caller must NOT auto-anchor.
-//
-// Retries up to kMaxAttempts on NULL response or non-"not-found" API errors so
-// a single transient I2C hiccup on boot cannot silently allow re-homing.
+//   io_error == true:  transport / API failure or malformed record; fence
+//                      presence is unknown — the caller must NOT auto-anchor.
 bool loadFenceFromFlash(Notecard &nc, AppState &s, bool &io_error)
 {
     io_error = false;
-    const int kMaxAttempts = 3;
 
-    for (int attempt = 0; attempt < kMaxAttempts; attempt++) {
-        J *req = nc.newRequest("note.get");
-        JAddStringToObject(req, "file", FENCE_NOTEFILE);
-        JAddStringToObject(req, "note", "home");
-        J *rsp = nc.requestAndResponse(req);
+    J *req = nc.newRequest("note.get");
+    JAddStringToObject(req, "file", FENCE_NOTEFILE);
+    JAddStringToObject(req, "note", "home");
+    J *rsp = nc.requestAndResponse(req);
 
-        if (rsp == NULL) {
-            // I2C / transport failure — cannot confirm absence; mark and retry.
-            io_error = true;
-            LOG("[APP] WARN: loadFenceFromFlash I/O failure on attempt ");
-            LOGLN(attempt + 1);
-            if (attempt < kMaxAttempts - 1) delay(200);
-            continue;
-        }
-
-        J *errObj = JGetObjectItem(rsp, "err");
-        if (errObj != NULL) {
-            const char *err_str = JGetString(rsp, "err");
-            // Distinguish "note does not exist" from all other API/transport errors.
-            // Only clear io_error (permit auto-anchor) when the Notecard positively
-            // confirms there is no persisted record in the file.
-            bool not_found = (err_str != NULL &&
-                              (strstr(err_str, "does not exist") != NULL ||
-                               strstr(err_str, "not found")      != NULL));
-            nc.deleteResponse(rsp);
-            if (not_found) {
-                io_error = false;   // confirmed absent — auto-anchor is safe
-                return false;
-            }
-            // Other API error — could be transient; retry.
-            io_error = true;
-            LOG("[APP] WARN: loadFenceFromFlash API err (attempt ");
-            LOG(attempt + 1);
-            LOG("): ");
-            if (err_str) LOGLN(err_str);
-            if (attempt < kMaxAttempts - 1) delay(200);
-            continue;
-        }
-
-        // Successful response — parse the body.
-        J *body = JGetObjectItem(rsp, "body");
-        if (body == NULL) {
-            // Response arrived but body is absent — record is malformed.
-            // Treat as an error (not confirmed-absent) so auto-anchor is suppressed
-            // rather than silently permitted on a corrupt or schema-mismatched note.
-            nc.deleteResponse(rsp);
-            io_error = true;
-            LOG("[APP] WARN: loadFenceFromFlash body missing (attempt ");
-            LOG(attempt + 1);
-            LOGLN(") — treating as I/O error; auto-anchor suppressed.");
-            if (attempt < kMaxAttempts - 1) { delay(200); continue; }
-            return false;
-        }
-        double lat = JGetNumber(body, "lat");
-        double lon = JGetNumber(body, "lon");
-        // lat/lon of exactly 0,0 is a corrupt or uninitialized record — no
-        // legitimate job-site fence would be anchored at null island.  Treat as a
-        // malformed record (io_error = true) so auto-anchor is suppressed and the
-        // operator must explicitly re-commission the fence to recover.
-        if (lat == 0.0 && lon == 0.0) {
-            nc.deleteResponse(rsp);
-            io_error = true;
-            LOGLN("[APP] ERROR: loadFenceFromFlash lat/lon are 0,0 — "
-                  "record is corrupt or uninitialized. Auto-anchor "
-                  "suppressed; re-commission the geofence to recover.");
-            return false;   // no retry — record is present but bad; looping won't help
-        }
-        s.fence_lat = lat;
-        s.fence_lon = lon;
-        float r = (float)JGetNumber(body, "radius");
-        if (r > 0.0f) s.fence_radius_m = r;
-        s.fence_set = true;
-        nc.deleteResponse(rsp);
-        io_error = false;
-        return true;
+    if (rsp == NULL) {
+        // I2C / transport failure — cannot confirm absence.
+        io_error = true;
+        LOGLN("[APP] WARN: loadFenceFromFlash I/O failure");
+        return false;
     }
 
-    // All attempts exhausted with transport errors — suppress auto-anchor.
-    // io_error remains true.
-    return false;
+    J *errObj = JGetObjectItem(rsp, "err");
+    if (errObj != NULL) {
+        const char *err_str = JGetString(rsp, "err");
+        // Distinguish "note does not exist" from all other API/transport errors.
+        // Only clear io_error (permit auto-anchor) when the Notecard positively
+        // confirms there is no persisted record in the file.
+        bool not_found = (strstr(err_str, "does not exist") != NULL ||
+                          strstr(err_str, "not found")      != NULL);
+        if (not_found) {
+            nc.deleteResponse(rsp);
+            io_error = false;   // confirmed absent — auto-anchor is safe
+            return false;
+        }
+        io_error = true;
+        LOG("[APP] WARN: loadFenceFromFlash API err: ");
+        LOGLN(err_str);
+        nc.deleteResponse(rsp);
+        return false;
+    }
+
+    J *body = JGetObjectItem(rsp, "body");
+    if (body == NULL) {
+        // Response arrived but body is absent — record is malformed.
+        // Treat as an error (not confirmed-absent) so auto-anchor is suppressed
+        // rather than silently permitted on a corrupt or schema-mismatched note.
+        nc.deleteResponse(rsp);
+        io_error = true;
+        LOGLN("[APP] WARN: loadFenceFromFlash body missing — treating as I/O "
+              "error; auto-anchor suppressed.");
+        return false;
+    }
+    double lat = JGetNumber(body, "lat");
+    double lon = JGetNumber(body, "lon");
+    // lat/lon of exactly 0,0 is a corrupt or uninitialized record — no
+    // legitimate job-site fence would be anchored at null island.  Treat as a
+    // malformed record (io_error = true) so auto-anchor is suppressed and the
+    // operator must explicitly re-commission the fence to recover.
+    if (lat == 0.0 && lon == 0.0) {
+        nc.deleteResponse(rsp);
+        io_error = true;
+        LOGLN("[APP] ERROR: loadFenceFromFlash lat/lon are 0,0 — "
+              "record is corrupt or uninitialized. Auto-anchor "
+              "suppressed; re-commission the geofence to recover.");
+        return false;
+    }
+    s.fence_lat = lat;
+    s.fence_lon = lon;
+    float r = (float)JGetNumber(body, "radius");
+    if (r > 0.0f) s.fence_radius_m = r;
+    s.fence_set = true;
+    nc.deleteResponse(rsp);
+    return true;
 }
 
 // ─── Periodic heartbeat ───────────────────────────────────────────────────────

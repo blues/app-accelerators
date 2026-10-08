@@ -142,7 +142,7 @@ int configureNotecard(void)
         JAddIntToObject(req, "inbound", 5);
         JAddStringToObject(req, "mode", "continuous");
         JAddStringToObject(req, "sn", "Smart CO2 Sensor");
-        notecard.sendRequestWithRetry(req, 5); // 5 seconds
+        notecard.sendRequest(req);
     }
 
     return 0;

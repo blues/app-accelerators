@@ -171,7 +171,6 @@ extern DallasTemperature tankTempSensor;
 extern AppState        state;
 
 // ── Function prototypes ───────────────────────────────────────────────────────
-bool  notecardReady();
 bool  configureNotecard();
 bool  defineTemplates();
 bool  configureMotionAndGPS();

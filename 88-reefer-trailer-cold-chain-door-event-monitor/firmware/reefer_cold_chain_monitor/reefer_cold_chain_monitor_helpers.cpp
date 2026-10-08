@@ -20,8 +20,6 @@
 // failure; the caller will retry on subsequent wakes until all succeed.
 // =============================================================================
 bool hubConfigure(void) {
-    // hub.set — sendRequestWithRetry guards the cold-boot I²C race where the
-    // host MCU starts before the Notecard firmware is ready.
     {
         J *req = notecard.newRequest("hub.set");
         if (req == NULL) return false;
@@ -29,7 +27,7 @@ bool hubConfigure(void) {
         JAddStringToObject(req, "mode",     "periodic");
         JAddNumberToObject(req, "outbound", (int)DEFAULT_SUMMARY_INTERVAL_MIN);
         JAddNumberToObject(req, "inbound",  120);
-        if (!notecard.sendRequestWithRetry(req, 10)) {
+        if (!notecard.sendRequest(req)) {
             DEBUG_PRINTLN(F("[cfg] hub.set failed"));
             return false;
         }
