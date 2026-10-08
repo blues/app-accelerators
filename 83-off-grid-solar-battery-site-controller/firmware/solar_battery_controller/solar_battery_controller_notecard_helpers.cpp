@@ -192,7 +192,7 @@ bool fetchEnvOverrides() {
     JAddItemToArray(names, JCreateString("sync_inbound_min"));
     JAddItemToObject(req, "names", names);
     J *rsp = notecard.requestAndResponse(req);
-    if (rsp && JGetString(rsp, "err")) {
+    if (rsp && notecard.responseError(rsp)) {
         notecard.deleteResponse(rsp);
         rsp = NULL;
     }

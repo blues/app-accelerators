@@ -275,18 +275,11 @@ static void runCycle(void) {
 
     // ── Get current epoch from Notecard ──────────────────────────────────────
     // now == 0 means the Notecard clock is not yet set (no cellular fix).
-    // Retry up to 3 times so a transient I²C stall does not silently drop the
-    // epoch and push the device into the no-epoch path.
     uint32_t now = 0;
     {
-        J *rsp = nullptr;
-        for (int attempt = 0; attempt < 3 && !rsp; attempt++) {
-            if (attempt) delay(1000);
-            rsp = notecard.requestAndResponse(
-                      notecard.newRequest("card.time"));
-        }
+        J *rsp = notecard.requestAndResponse(notecard.newRequest("card.time"));
         if (rsp) {
-            if (!JGetString(rsp, "err")) {
+            if (!notecard.responseError(rsp)) {
                 now = (uint32_t)JGetInt(rsp, "time");
             }
             notecard.deleteResponse(rsp);
