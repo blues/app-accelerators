@@ -230,8 +230,6 @@ static void runCycle(void) {
         // path: last_applied_report_m is written to a non-zero value only
         // after BOTH notecardConfigure and defineTemplates succeed, so a
         // failed first wake re-enters this branch on the next wake.
-        // sendRequestWithRetry inside notecardConfigure handles the I²C cold-
-        // boot race where the Notecard takes up to 10 s to become ready.
         if (first_wake) {
             dbgSerial.println("[boot] first wake — configuring Notecard");
         } else {

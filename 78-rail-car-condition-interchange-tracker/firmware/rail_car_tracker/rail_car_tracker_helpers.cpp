@@ -12,24 +12,6 @@
 #include "rail_car_tracker_helpers.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
-// notecardReady — power-up I²C readiness ping with retry
-//
-// The host MCU can power up before the Notecard's I²C stack is ready. A
-// lightweight card.version with sendRequestWithRetry idles for up to 10 s
-// to let the bus settle before any real request. Returns true when the
-// Notecard acknowledges; false if every retry times out. Callers must abort
-// the cycle on false — no further Notecard interactions should be attempted.
-// ─────────────────────────────────────────────────────────────────────────────
-bool notecardReady() {
-    J *req = notecard.newRequest("card.version");
-    bool ok = notecard.sendRequestWithRetry(req, 10);
-    if (!ok) {
-        debugSerial.println("[error] Notecard did not respond to card.version within 10 s");
-    }
-    return ok;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // configureNotecard — hub.set + voltage-variable sync policy
 //
 // Called at power-up (idempotent) so that a PRODUCT_UID change in the
@@ -50,7 +32,7 @@ bool configureNotecard() {
                        "usb:60;high:120;normal:240;low:480;dead:0");
     JAddStringToObject(req, "vinbound",
                        "usb:120;high:240;normal:480;low:720;dead:0");
-    bool ok = notecard.sendRequestWithRetry(req, 10);
+    bool ok = notecard.sendRequest(req);
     if (!ok) debugSerial.println("[warn] hub.set failed");
     return ok;
 }

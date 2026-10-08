@@ -103,9 +103,9 @@ static bool doSendHeartbeatNote() {
 // One-time Notecard setup called on cold boot. product_uid is passed in from
 // the .ino so this translation unit never needs to resolve the PRODUCT_UID
 // macro directly. Each setting updates the corresponding g_state.*_confirmed /
-// g_state.last_applied_* flag only after a verified success, so a transient
-// cold-boot I²C race leaves flags false and the reapply block in loop()
-// retries them on every subsequent wake until confirmed.
+// g_state.last_applied_* flag only after a verified success, so a failure
+// leaves flags false and the reapply block in loop() retries them on every
+// subsequent wake until confirmed.
 // ===========================================================================
 void notecardConfigure(const char *product_uid) {
     // Seed the desired-env cache with compile-time defaults. fetchEnvOverrides()
@@ -119,14 +119,12 @@ void notecardConfigure(const char *product_uid) {
 
     // hub.set — periodic mode; outbound/inbound cadence matches the default
     // heartbeat interval. Motion events bypass this via sync:true.
-    // sendRequestWithRetry papers over the cold-boot I²C race where the host
-    // MCU comes up before the Notecard is fully ready.
     J *req = notecard.newRequest("hub.set");
     if (product_uid && product_uid[0]) JAddStringToObject(req, "product", product_uid);
     JAddStringToObject(req, "mode",     "periodic");
     JAddNumberToObject(req, "outbound", (int)(DEFAULT_HEARTBEAT_HOURS * 60));
     JAddNumberToObject(req, "inbound",  (int)(DEFAULT_HEARTBEAT_HOURS * 60));
-    if (notecard.sendRequestWithRetry(req, 10)) {
+    if (notecard.sendRequest(req)) {
         g_state.last_applied_heartbeat_hours = DEFAULT_HEARTBEAT_HOURS;
     }
 
@@ -170,7 +168,7 @@ void notecardConfigure(const char *product_uid) {
     JAddBoolToObject(req, "start", true);
     JAddNumberToObject(req, "motion",  (int)DEFAULT_MOTION_THRESHOLD);
     JAddNumberToObject(req, "seconds", (int)DEFAULT_MOTION_BUCKET_SEC);
-    if (notecard.sendRequestWithRetry(req, 5)) {
+    if (notecard.sendRequest(req)) {
         g_state.last_applied_motion_threshold  = DEFAULT_MOTION_THRESHOLD;
         g_state.last_applied_motion_bucket_sec = DEFAULT_MOTION_BUCKET_SEC;
     }

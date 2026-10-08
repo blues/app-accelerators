@@ -53,10 +53,6 @@ static const uint32_t INBOUND_MINUTES = 120;  // pull env var changes every 2 hr
 // tariff by editing this constant (no env-var override needed; re-flash required).
 static const uint32_t DEMAND_INTERVAL_SEC = 900;  // 15-minute demand window
 
-// ─── Cold-boot readiness timeout ─────────────────────────────────────────────
-// Passed to notecardReady() in setup(); limits the I2C handshake on power-on.
-static const uint32_t NOTECARD_READY_TIMEOUT_SEC = 10;
-
 // ─── Notefile names ──────────────────────────────────────────────────────────
 #define SUMMARY_NOTEFILE  "meter_summary.qo"
 
@@ -192,7 +188,6 @@ extern RuntimeConfig cfg;
 
 // ─── Helper function declarations ────────────────────────────────────────────
 ChannelMeasurement measureChannel(uint8_t current_pin);
-bool     notecardReady(uint32_t timeout_sec); // cold-boot I2C handshake (sendRequestWithRetry)
 void     fetchEnvOverrides(void);
 bool     initNotecard(void);     // first-boot hub.set; returns true on acknowledged success
 bool     reissueHubSet(void);    // re-sends hub.set when outbound cadence changes

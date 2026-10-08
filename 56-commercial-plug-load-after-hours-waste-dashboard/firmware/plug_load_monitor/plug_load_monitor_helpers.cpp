@@ -70,7 +70,7 @@ bool hubConfigure() {
     JAddStringToObject(req, "mode",     "periodic");
     JAddNumberToObject(req, "outbound", (int)CFG_REPORT_INTERVAL_MIN);
     JAddNumberToObject(req, "inbound",  360);  // check for env var updates every 6 h
-    bool ok = notecard.sendRequestWithRetry(req, 10); // retry absorbs any transient I2C hiccup
+    bool ok = notecard.sendRequest(req);
     if (ok) state.last_applied_outbound_min = CFG_REPORT_INTERVAL_MIN;
     return ok;
 }
@@ -170,8 +170,7 @@ static J* buildEnvGetReq() {
 // CFG_* variables at their current values (either compile-time defaults on
 // first boot, or the last known-good snapshot restored from AppState.saved_cfg
 // on subsequent wakes — see loop()).
-// One retry with a 250 ms gap absorbs transient Notecard I²C hiccups at wake
-// without holding the host up for a full sendRequestWithRetry timeout.
+// One retry with a 250 ms gap absorbs transient Notecard I²C hiccups at wake.
 bool fetchEnvOverrides() {
     J *rsp = notecard.requestAndResponse(buildEnvGetReq());
     if (!rsp || notecard.responseError(rsp)) {

@@ -54,8 +54,8 @@
     - Issues hub.set, card.transport, and card.motion.mode at power-up and
       registers both note.template schemas; each step sets a flag in
       ColdChainState on success and is reapplied on later wakes only while
-      the flag is false — a transient I2C race on cold boot leaves no step
-      permanently missed.  A reflash resets the host and re-runs setup(), so
+      the flag is false, so a transient failure leaves no step permanently
+      missed.  A reflash resets the host and re-runs setup(), so
       a new PRODUCT_UID or template schema takes effect immediately.
     - Alert-cooldown timestamps advance only when the corresponding note.add
       is confirmed by the Notecard; a failed transmission does not consume
@@ -354,8 +354,8 @@ void loop() {
 
     // ── Sleep in STOP2 until the Notecard raises ATTN gSampleSec from now ────
     if (!cxSleepUntilAttn(notecard, gSampleSec, NULL, &debugSerial)) {
-        // Notecard not ready, or ATTN never went low (check the ATTN -> D5
-        // jumper).  Keep the sample cadence and try again next cycle.
+        // The Notecard didn't take the sleep request, or ATTN never went low
+        // (check the ATTN -> D5 jumper). Keep the sample cadence and try again.
         debugSerial.println("[cargo] ATTN sleep failed — waiting out the interval awake");
         delay(gSampleSec * 1000UL);
     }

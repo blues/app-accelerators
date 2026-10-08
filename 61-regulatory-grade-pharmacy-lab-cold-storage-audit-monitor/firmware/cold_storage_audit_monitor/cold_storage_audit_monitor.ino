@@ -208,53 +208,38 @@ void loop() {
 // Returns true only when hub.set is confirmed by the Notecard without error.
 // ===========================================================================
 bool notecardConfigure() {
-    // Retry loop: allows up to ~10 s for the Notecard I²C interface to become
-    // ready at power-up and for hub.set to be acknowledged without a semantic
-    // error in the response. Both transport failures (NULL response) and
-    // Notecard-reported errors are retried so that a transient startup fault
-    // cannot leave the device permanently misconfigured. Only a clean
-    // Notecard acknowledgement advances notecard_configured to true.
-    for (int attempt = 0; attempt < 5; attempt++) {
-        if (attempt > 0) delay(2000);
+    // inbound < outbound so env-var updates arrive more frequently than
+    // the reading flush; with outbound = 60 min, inbound = 30 min.
+    J *req = notecard.newRequest("hub.set");
+    JAddStringToObject(req, "product", PRODUCT_UID);
+    JAddStringToObject(req, "mode", "periodic");
+    JAddNumberToObject(req, "outbound", OUTBOUND_INTERVAL_MIN);
+    JAddNumberToObject(req, "inbound",  OUTBOUND_INTERVAL_MIN / 2);
 
-        // inbound < outbound so env-var updates arrive more frequently than
-        // the reading flush; with outbound = 60 min, inbound = 30 min.
-        J *req = notecard.newRequest("hub.set");
-        JAddStringToObject(req, "product", PRODUCT_UID);
-        JAddStringToObject(req, "mode", "periodic");
-        JAddNumberToObject(req, "outbound", OUTBOUND_INTERVAL_MIN);
-        JAddNumberToObject(req, "inbound",  OUTBOUND_INTERVAL_MIN / 2);
-
-        J *rsp = notecard.requestAndResponse(req);
-        if (rsp == NULL) {
+    J *rsp = notecard.requestAndResponse(req);
+    if (rsp == NULL) {
 #if ENABLE_DEBUG
-            debugSerial.print("[WARN] notecardConfigure: no response (attempt ");
-            debugSerial.print(attempt + 1); debugSerial.println(")");
+        debugSerial.println("[WARN] notecardConfigure: no response");
 #endif
-            continue;
-        }
-        if (notecard.responseError(rsp)) {
-#if ENABLE_DEBUG
-            debugSerial.print("[WARN] notecardConfigure: ");
-            debugSerial.println(JGetString(rsp, "err"));
-#endif
-            notecard.deleteResponse(rsp);
-            continue;
-        }
-        notecard.deleteResponse(rsp);
-
-        // hub.set confirmed without error. Best-effort: stop the onboard
-        // accelerometer to avoid interrupt blips during idle. Failure here
-        // does not gate the configuration flag.
-        J *mv = notecard.newRequest("card.motion.mode");
-        JAddBoolToObject(mv, "stop", true);
-        notecard.sendRequest(mv);
-        return true;
+        return false;
     }
+    if (notecard.responseError(rsp)) {
 #if ENABLE_DEBUG
-    debugSerial.println("[ERR] notecardConfigure: hub.set failed after all retries");
+        debugSerial.print("[WARN] notecardConfigure: ");
+        debugSerial.println(JGetString(rsp, "err"));
 #endif
-    return false;
+        notecard.deleteResponse(rsp);
+        return false;
+    }
+    notecard.deleteResponse(rsp);
+
+    // hub.set confirmed without error. Best-effort: stop the onboard
+    // accelerometer to avoid interrupt blips during idle. Failure here
+    // does not gate the configuration flag.
+    J *mv = notecard.newRequest("card.motion.mode");
+    JAddBoolToObject(mv, "stop", true);
+    notecard.sendRequest(mv);
+    return true;
 }
 
 // ===========================================================================
@@ -266,52 +251,40 @@ bool notecardConfigure() {
 // JSON — important for a device that may run for years on a fixed data plan.
 // Field type tokens: 14.1 = 4-byte float, 24 = 4-byte uint, true = boolean.
 bool defineTemplates() {
-    // Retry loop mirrors notecardConfigure(): a transient I²C failure on the
-    // first wake would otherwise silently suppress all reading Notes
-    // until the next wake, causing an undetectable gap in the audit trail.
-    for (int attempt = 0; attempt < 5; attempt++) {
-        if (attempt > 0) delay(2000);
+    J *req = notecard.newRequest("note.template");
+    JAddStringToObject(req, "file", NOTEFILE_READING);
+    JAddNumberToObject(req, "port", 50);
+    J *body = JAddObjectToObject(req, "body");
+    JAddNumberToObject(body, "temp_c",           14.1);
+    JAddNumberToObject(body, "lux",              14.1);
+    JAddNumberToObject(body, "door_open_sec",    24);
+    JAddBoolToObject(body,   "door_open",        true);
+    // UTC epoch at sample time — preserved across retries for audit lineage.
+    // 0 when time was not yet synced; pair with time_valid:false.
+    JAddNumberToObject(body, "sample_epoch",     24);
+    // false on samples taken before the Notecard RTC has synced with Notehub
+    JAddBoolToObject(body,   "time_valid",       true);
+    // Cumulative drop counters — observable in Notehub without a separate channel
+    JAddNumberToObject(body, "dropped_readings", 24);
+    JAddNumberToObject(body, "dropped_alerts",   24);
 
-        J *req = notecard.newRequest("note.template");
-        JAddStringToObject(req, "file", NOTEFILE_READING);
-        JAddNumberToObject(req, "port", 50);
-        J *body = JAddObjectToObject(req, "body");
-        JAddNumberToObject(body, "temp_c",           14.1);
-        JAddNumberToObject(body, "lux",              14.1);
-        JAddNumberToObject(body, "door_open_sec",    24);
-        JAddBoolToObject(body,   "door_open",        true);
-        // UTC epoch at sample time — preserved across retries for audit lineage.
-        // 0 when time was not yet synced; pair with time_valid:false.
-        JAddNumberToObject(body, "sample_epoch",     24);
-        // false on samples taken before the Notecard RTC has synced with Notehub
-        JAddBoolToObject(body,   "time_valid",       true);
-        // Cumulative drop counters — observable in Notehub without a separate channel
-        JAddNumberToObject(body, "dropped_readings", 24);
-        JAddNumberToObject(body, "dropped_alerts",   24);
-
-        J *rsp = notecard.requestAndResponse(req);
-        if (rsp == NULL) {
+    J *rsp = notecard.requestAndResponse(req);
+    if (rsp == NULL) {
 #if ENABLE_DEBUG
-            debugSerial.print("[WARN] defineTemplates: no response (attempt ");
-            debugSerial.print(attempt + 1); debugSerial.println(")");
+        debugSerial.println("[WARN] defineTemplates: no response");
 #endif
-            continue;
-        }
-        if (notecard.responseError(rsp)) {
-#if ENABLE_DEBUG
-            debugSerial.print("[WARN] defineTemplates: ");
-            debugSerial.println(JGetString(rsp, "err"));
-#endif
-            notecard.deleteResponse(rsp);
-            continue;
-        }
-        notecard.deleteResponse(rsp);
-        return true;
+        return false;
     }
+    if (notecard.responseError(rsp)) {
 #if ENABLE_DEBUG
-    debugSerial.println("[ERR] defineTemplates: note.template failed after all retries");
+        debugSerial.print("[WARN] defineTemplates: ");
+        debugSerial.println(JGetString(rsp, "err"));
 #endif
-    return false;
+        notecard.deleteResponse(rsp);
+        return false;
+    }
+    notecard.deleteResponse(rsp);
+    return true;
 }
 
 // ===========================================================================

@@ -20,7 +20,7 @@
 // non-null and carries no 'err' key.  Logs any Notecard API error string to
 // serial so failures surface in debug output rather than being silently ignored.
 // Use this for all security-sensitive writes: note.add, note.template, hub.set,
-// and card.location.mode. Keep sendRequestWithRetry() for the cold-boot race.
+// and card.location.mode.
 static bool sendRequestChecked(Notecard &nc, J *req)
 {
     J *rsp = nc.requestAndResponse(req);
@@ -68,15 +68,12 @@ bool ensureConfigured(Notecard &nc, const char *product_uid, AppState &s)
         // hub.set: periodic mode.
         // Switch to "continuous" during development for real-time JSON debugging;
         // use "periodic" for field deployment to minimise cellular sessions.
-        // sendRequestWithRetry handles the cold-boot I2C race where the Notecard
-        // may not be ready immediately after the host powers up, and also
-        // re-establishes the Notehub association after an independent Notecard reset.
         J *req = nc.newRequest("hub.set");
         JAddStringToObject(req, "product",  product_uid);
         JAddStringToObject(req, "mode",     "periodic");
         JAddNumberToObject(req, "outbound", s.outbound_s / 60);
         JAddNumberToObject(req, "inbound",  inbound_min);
-        if (nc.sendRequestWithRetry(req, 5)) {
+        if (nc.sendRequest(req)) {
             s.cfg_hub_ok = true;
             LOGLN("[APP] hub.set confirmed.");
 

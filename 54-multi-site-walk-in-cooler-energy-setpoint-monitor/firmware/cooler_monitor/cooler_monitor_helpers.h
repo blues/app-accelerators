@@ -116,8 +116,8 @@ struct AppState {
     uint16_t ampsCount;
 
     // Set to 1 after both note.template calls succeed; retried on every wake
-    // until confirmed so a transient first-boot I²C failure never leaves the
-    // device running with untemplated Notes indefinitely.
+    // until confirmed so a transient I²C failure never leaves the device
+    // running with untemplated Notes indefinitely.
     uint8_t  templatesRegistered;
 
     // Last-known-good configuration, mirrored from the cfg globals whenever
@@ -136,8 +136,8 @@ struct AppState {
     // Set to 1 the first time hubConfigure() returns true (hub.set
     // acknowledged by the Notecard).  While this is 0, every wake
     // retries hubConfigure() unconditionally in loop() — independent of
-    // env.get success — so a transient cold-boot I²C failure can never leave
-    // the device permanently unassociated and silently queueing Notes.
+    // env.get success — so a transient I²C failure can never leave the
+    // device permanently unassociated and silently queueing Notes.
     // Once set, the device falls back to the cadence-only re-application path
     // (applyHubSetIfChanged).
     uint8_t  hubSetConfirmed;    // non-zero once hub.set has been acknowledged

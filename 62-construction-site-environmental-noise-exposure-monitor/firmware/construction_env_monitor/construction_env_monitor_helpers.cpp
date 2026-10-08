@@ -12,11 +12,10 @@
 #include "cx_sleep.h"
 
 // ── Notecard initialisation (runs once at power-up, from setup()) ────────────
-// Sends hub.set with the product UID to handle the power-up I²C race via
-// sendRequestWithRetry.  applyCardConfig() is called immediately after and
-// re-sends hub.set with requestAndResponse (because lastReportMin is
-// initialised to 0), so the outbound cadence is confirmed even if this
-// first-boot attempt fails.
+// Sends hub.set with the product UID.  applyCardConfig() is called
+// immediately after and re-sends hub.set with requestAndResponse (because
+// lastReportMin is initialised to 0), so the outbound cadence is confirmed
+// even if this first-boot attempt fails.
 void notecardConfigure(void) {
     // Runtime guard: a blank PRODUCT_UID means the sketch was never
     // customised.  Attempting hub.set with an empty product string silently
@@ -42,11 +41,10 @@ void notecardConfigure(void) {
     JAddStringToObject(req, "mode",     "periodic");
     JAddNumberToObject(req, "outbound", (int)cfgReportMin);
     JAddNumberToObject(req, "inbound",  120);   // poll for env-var updates every 2 h
-    // sendRequestWithRetry handles the power-up I²C race condition.
     // card.location.mode and note.template are NOT issued here — both are
     // handled by applyCardConfig() and defineTemplates(), which are called on
     // every wake, so a transient failure at power-up is retried automatically.
-    notecard.sendRequestWithRetry(req, 5);
+    notecard.sendRequest(req);
 }
 
 // ── Re-apply hub outbound cadence and GPS mode if env vars changed ────────────

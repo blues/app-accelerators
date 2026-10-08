@@ -74,9 +74,9 @@
  *     ≈ 0.1 V RMS; default is 120 ÷ 0.1 = 1200.  Trim per module and burden,
  *     or per the production transducer's rated output.
  *
- * Helper functions (measureChannel, notecardReady, fetchEnvOverrides,
- * initNotecard, reissueHubSet, defineTemplates, sendSummary, getEpochSec) are
- * in tenant_sub_meter_helpers.cpp.  Shared types, constants, and extern
+ * Helper functions (measureChannel, fetchEnvOverrides, initNotecard,
+ * reissueHubSet, defineTemplates, sendSummary, getEpochSec) are in
+ * tenant_sub_meter_helpers.cpp.  Shared types, constants, and extern
  * declarations live in tenant_sub_meter_helpers.h.
  *
  * SPDX-License-Identifier: MIT
@@ -121,16 +121,6 @@ void setup() {
     // Zero the application state.  It lives in RAM from here on; STOP2 retains
     // SRAM, so it survives every sleep/wake cycle.
     memset(&state, 0, sizeof(state));
-
-    // ── Notecard cold-boot readiness handshake — must be the first I2C transaction
-    // sendRequestWithRetry (inside notecardReady) blocks up to
-    // NOTECARD_READY_TIMEOUT_SEC to resolve the I2C race where the STM32L433
-    // host comes up before the Notecard is ready.  If it times out, carry on:
-    // hub.set and template registration are retried on every wake until they
-    // succeed (state.notecard_configured), so nothing is lost.
-    if (!notecardReady(NOTECARD_READY_TIMEOUT_SEC)) {
-        dbgSerial.println("[notecard] readiness timed out — will retry configuration on first wake");
-    }
 
     // Disable the onboard accelerometer — unnecessary for this application
     // and its background sampling adds avoidable quiescent current draw.

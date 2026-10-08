@@ -159,17 +159,17 @@ static void runCycle(void) {
 
     // ── Retry hub configuration if the power-up attempt failed ───────────
     // hub.set is retried with the full parameter set (including ProductUID) on
-    // every wake until confirmed delivered, so a transient I2C or Notecard-
-    // readiness fault at power-up cannot leave the device permanently
-    // unassociated.  Once the device is configured, only re-send hub.set when
-    // the operator changes summary_interval_min from Notehub.
+    // every wake until confirmed delivered, so a failure at power-up cannot
+    // leave the device permanently unassociated.  Once the device is
+    // configured, only re-send hub.set when the operator changes
+    // summary_interval_min from Notehub.
     if (!state.hubConfigured) {
         J *req = notecard.newRequest("hub.set");
         JAddStringToObject(req, "product",  PRODUCT_UID);
         JAddStringToObject(req, "mode",     "periodic");
         JAddNumberToObject(req, "outbound", (int)g_summaryMin);
         JAddNumberToObject(req, "inbound",  120);
-        if (notecard.sendRequestWithRetry(req, 5)) {
+        if (notecard.sendRequest(req)) {
             state.hubConfigured  = true;
             state.lastSummaryMin = g_summaryMin;
         } else {

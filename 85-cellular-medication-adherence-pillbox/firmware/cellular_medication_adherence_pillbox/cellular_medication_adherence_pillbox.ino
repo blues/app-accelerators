@@ -111,23 +111,6 @@ void setup() {
 #endif
     }
 
-    // ── Notecard readiness probe ──────────────────────────────────────────
-    // On a cold power-on the host MCU may come up before the Notecard has
-    // finished its own startup sequence. sendRequestWithRetry() polls with
-    // back-off until the Notecard acknowledges a benign card.version request,
-    // establishing that the I²C bus is live before the configuration calls
-    // in loop(). If it still fails, loop() retries hub.set/templates on every
-    // wake anyway, so this is informational.
-    {
-        J *req = notecard.newRequest("card.version");
-        bool ready = req && notecard.sendRequestWithRetry(req, 5);
-        if (!ready) {
-#ifdef usbSerial
-            usbSerial.println("[init] card.version probe failed — continuing; config retried each wake");
-#endif
-        }
-    }
-
     // ── Initialize application state ──────────────────────────────────────
     memset(&state, 0, sizeof(state));
     state.poll_sec     = DEFAULT_POLL_SEC;

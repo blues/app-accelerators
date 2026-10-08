@@ -180,7 +180,7 @@ void loop() {
     // Register the solar_summary.qo template on every wake until confirmed.
     // note.template is idempotent on the Notecard, so re-registering an already-
     // active template is harmless.  Retrying on every wake until success ensures
-    // that a transient I2C failure at power-up is recovered automatically.
+    // that a transient failure is recovered automatically.
     if (!state.templates_confirmed) {
         state.templates_confirmed = defineTemplates();
     }

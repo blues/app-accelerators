@@ -42,8 +42,6 @@ void setupPins() {
 // Called on every wake so a transient failure on any prior wake cannot leave
 // the device permanently unassociated with Notehub or on a stale sync cadence.
 // hub.set is idempotent: re-applying identical parameters has no side-effect.
-// sendRequestWithRetry() papers over the cold-boot I2C race where the host
-// MCU comes up before the Notecard is ready.
 // ════════════════════════════════════════════════════════════════════════════
 void initNotecard(const char *product_uid, uint16_t outbound_min,
                   uint16_t inbound_min) {
@@ -55,7 +53,7 @@ void initNotecard(const char *product_uid, uint16_t outbound_min,
     JAddStringToObject(req, "mode",     "periodic");
     JAddNumberToObject(req, "outbound", (int)outbound_min);
     JAddNumberToObject(req, "inbound",  (int)inbound_min);
-    if (!notecard.sendRequestWithRetry(req, 5)) {
+    if (!notecard.sendRequest(req)) {
 #ifdef usbSerial
         usbSerial.println("[init] hub.set failed — will retry next wake");
 #endif
@@ -474,10 +472,9 @@ uint32_t utcDayAndHour(uint32_t *hour_out) {
 // execution resumes in loop(). SRAM is retained, so PillboxState needs no
 // serialization to the Notecard.
 //
-// If the Notecard does not accept the request (e.g. still booting after a
-// cold start) or ATTN never goes low (jumper missing), the host waits out
-// one poll interval awake so the polling cadence is preserved, and tries
-// again on the next loop() pass.
+// If the Notecard does not accept the request or ATTN never goes low (jumper
+// missing), the host waits out one poll interval awake so the polling cadence
+// is preserved, and tries again on the next loop() pass.
 // ════════════════════════════════════════════════════════════════════════════
 void sleepHost(PillboxState &s) {
 #ifdef usbSerial
@@ -486,8 +483,8 @@ void sleepHost(PillboxState &s) {
     Stream *log = NULL;
 #endif
     if (!cxSleepUntilAttn(notecard, s.poll_sec, NULL, log)) {
-        // Notecard not ready, or ATTN never went low (check the ATTN -> A0
-        // jumper). Keep the poll cadence and try again next cycle.
+        // The Notecard didn't take the sleep request, or ATTN never went low
+        // (check the ATTN -> A0 jumper). Keep the poll cadence and try again.
 #ifdef usbSerial
         usbSerial.println("[sleep] ATTN sleep failed — waiting out the poll interval awake");
 #endif

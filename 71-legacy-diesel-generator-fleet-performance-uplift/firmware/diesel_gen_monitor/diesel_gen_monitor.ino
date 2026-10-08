@@ -173,13 +173,11 @@ static void notecardConfigure() {
         JAddStringToObject(req, "mode",     "periodic");
         JAddNumberToObject(req, "outbound", g_report_minutes);
         JAddNumberToObject(req, "inbound",  g_report_minutes * 2);
-        // sendRequestWithRetry handles the cold-boot I2C race where the host MCU
-        // comes up before the Notecard is ready to receive its first transaction.
         // Both flags are updated only on confirmed success. If this call fails,
         // g_hub_provisioned stays false and applyHubSetIfChanged() will retry the
         // full hub.set (including product + mode) at the next report boundary,
         // ensuring a factory-fresh Notecard eventually enters periodic mode.
-        if (notecard.sendRequestWithRetry(req, 5)) {
+        if (notecard.sendRequest(req)) {
             g_hub_provisioned      = true;
             g_last_hubset_outbound = g_report_minutes;
         }
@@ -192,16 +190,11 @@ static void defineTemplates() {
     // accumulates ~435,000 notes per year — template compression keeps that well inside
     // the included 500 MB prepaid data allowance.
     //
-    // Each template is retried up to MAX_TRIES times using sendRequestWithRetry(), which
-    // internally handles the cold-boot I2C race where the MCU comes up before the
-    // Notecard's I2C stack is ready. If the template definition still fails after all
-    // retries, note.add calls will be silently dropped by the Notecard until setup()
-    // is re-run (power cycle / watchdog reset). The Serial log records the failure.
-    const uint8_t MAX_TRIES = 5;
-
-    for (uint8_t attempt = 0; attempt < MAX_TRIES; attempt++) {
-        J *req = notecard.newRequest("note.template");
-        if (!req) { delay(500); continue; }
+    // If a template definition fails, note.add calls will be silently dropped by the
+    // Notecard until setup() is re-run (power cycle / watchdog reset). The Serial log
+    // records the failure.
+    J *req = notecard.newRequest("note.template");
+    if (req) {
         JAddStringToObject(req, "file", "gen_summary.qo");
         JAddNumberToObject(req, "port", 50);
         J *body = JAddObjectToObject(req, "body");
@@ -228,14 +221,13 @@ static void defineTemplates() {
         JAddNumberToObject(body, "data_ok",        21);    // uint8: 1 = at least one valid sample this window,
                                                            //   0 = complete telemetry blackout; consumers should
                                                            //   treat all measurement fields as undefined when 0
-        if (notecard.sendRequestWithRetry(req, 5)) break;
-        Serial.println("[notecard] note.template gen_summary.qo failed; retrying");
-        delay(1000);
+        if (!notecard.sendRequest(req)) {
+            Serial.println("[notecard] note.template gen_summary.qo failed");
+        }
     }
 
-    for (uint8_t attempt = 0; attempt < MAX_TRIES; attempt++) {
-        J *req = notecard.newRequest("note.template");
-        if (!req) { delay(500); continue; }
+    req = notecard.newRequest("note.template");
+    if (req) {
         JAddStringToObject(req, "file", "gen_event.qo");
         JAddNumberToObject(req, "port", 51);
         J *body = JAddObjectToObject(req, "body");
@@ -253,9 +245,9 @@ static void defineTemplates() {
         // both fields are -1.0 — the sample fields already explain why the alert fired.
         JAddNumberToObject(body, "trigger_val",       14.1);  // float: triggering aggregate/peak; -1.0 for per-poll alerts
         JAddNumberToObject(body, "trigger_threshold", 14.1);  // float: configured threshold; -1.0 for per-poll alerts
-        if (notecard.sendRequestWithRetry(req, 5)) break;
-        Serial.println("[notecard] note.template gen_event.qo failed; retrying");
-        delay(1000);
+        if (!notecard.sendRequest(req)) {
+            Serial.println("[notecard] note.template gen_event.qo failed");
+        }
     }
 }
 

@@ -109,28 +109,22 @@ static bool sendVitalNoteChecked(const char *file, J *body, bool addSync) {
 // Configure Notecard hub connection.  An empty PRODUCT_UID is caught at
 // compile time by the guard in vitals_config.h; the runtime check below is a
 // belt-and-suspenders safety net for the ALLOW_EMPTY_PRODUCT_UID development
-// path.  Retries up to 5 s to paper over the cold-boot I2C race where the
-// nRF52840 comes up before the Notecard firmware has finished initializing,
-// and inspects the response err field so a rejected configuration is logged
-// rather than silently swallowed.
+// path.  Inspects the response err field so a rejected configuration is
+// logged rather than silently swallowed.
 void notecardConfigure() {
     if (PRODUCT_UID[0] == '\0') {
         DBG_PRINTLN("[CFG] PRODUCT_UID is empty — hub will not associate with a Notehub project");
         return;
     }
     bool ok = false;
-    const uint32_t kDeadlineMs = 5000UL;
-    const uint32_t t0 = millis();
-    do {
-        J *req = notecard.newRequest("hub.set");
-        if (!req) break;
+    J *req = notecard.newRequest("hub.set");
+    if (req) {
         JAddStringToObject(req, "product",  PRODUCT_UID);
         JAddStringToObject(req, "mode",     "periodic");
         JAddNumberToObject(req, "outbound", OUTBOUND_INTERVAL_MIN);
         JAddNumberToObject(req, "inbound",  INBOUND_INTERVAL_MIN);
         ok = sendChecked(req);
-        if (!ok && (millis() - t0) < kDeadlineMs) delay(500);
-    } while (!ok && (millis() - t0) < kDeadlineMs);
+    }
 
     if (!ok) {
         DBG_PRINTLN("[CFG] hub.set failed — check Notecard connection and PRODUCT_UID value");

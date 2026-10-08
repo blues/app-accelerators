@@ -13,8 +13,8 @@
 
 // Sends hub.set to associate the Notecard with the project and set the default
 // outbound/inbound cadence.  Called at power-up and on every wake until
-// it returns true, so a transient I²C failure on first boot can never leave
-// the device permanently unassociated and silently queueing Notes.
+// it returns true, so a transient I²C failure can never leave the device
+// permanently unassociated and silently queueing Notes.
 //
 // Returns true when the Notecard acknowledges hub.set; false on any transient
 // failure.  The caller persists the result in state.hubSetConfirmed and retries
@@ -32,9 +32,7 @@ bool hubConfigure() {
     JAddStringToObject(req, "mode",    "periodic");
     JAddNumberToObject(req, "outbound", (int)DEFAULT_SUMMARY_INTERVAL_MIN);
     JAddNumberToObject(req, "inbound",  (int)(DEFAULT_SUMMARY_INTERVAL_MIN * 2));
-    // sendRequestWithRetry handles the cold-boot race where the host MCU
-    // starts before the Notecard is ready on I²C.
-    if (!notecard.sendRequestWithRetry(req, 10)) {
+    if (!notecard.sendRequest(req)) {
         DBG_PRINTLN("[hub] hub.set failed — will retry on next wake");
         return false;
     }

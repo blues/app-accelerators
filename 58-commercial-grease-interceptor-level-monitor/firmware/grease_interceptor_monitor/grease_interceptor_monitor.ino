@@ -133,9 +133,8 @@ void setup() {
         DEFAULT_REPORT_INTERVAL_MIN
     };
 
-    // One-time Notecard configuration. On a transient power-up I2C failure
-    // the flags stay false and loop() retries on the next wake rather than
-    // silently skipping.
+    // One-time Notecard configuration. On failure the flags stay false and
+    // loop() retries on the next wake rather than silently skipping.
     if (notecardConfigure()) {
         state.notecard_configured  = true;
         // Only record the applied cadence after hub.set is confirmed so
@@ -325,14 +324,12 @@ void loop() {
 // non-critical (accelerometer stays active; device still functions normally).
 // ===========================================================================
 static bool notecardConfigure(void) {
-    // sendRequestWithRetry on the first transaction to handle the power-up
-    // race condition where the host comes up before the Notecard is ready.
     J *req = notecard.newRequest("hub.set");
     JAddStringToObject(req, "product",  PRODUCT_UID);
     JAddStringToObject(req, "mode",     "periodic");
     JAddNumberToObject(req, "outbound", HUB_OUTBOUND_MIN);
     JAddNumberToObject(req, "inbound",  HUB_INBOUND_MIN);
-    bool hub_ok = notecard.sendRequestWithRetry(req, 5);  // retry for up to 5 s
+    bool hub_ok = notecard.sendRequest(req);
 #ifdef usbSerial
     if (!hub_ok) {
         usbSerial.println("[WRN] hub.set failed; will retry on next wake");
