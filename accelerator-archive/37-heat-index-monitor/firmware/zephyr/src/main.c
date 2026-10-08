@@ -39,6 +39,10 @@ static bool notecardLocked = false;
 // Heat index in Fahrenheit.
 #define HEAT_INDEX_MAX 95
 
+#ifndef HUB_SET_TIMEOUT_SECONDS
+#define HUB_SET_TIMEOUT_SECONDS 5
+#endif
+
 // Set this value higher to conserve power.
 #ifndef OUTBOUND_SYNC_MINS
 #define OUTBOUND_SYNC_MINS 1
@@ -77,7 +81,9 @@ void main(void)
     // Sync outbound data every OUTBOUND_SYNC_MINS minutes. Alarm notes will
     // still be synced immediately.
     JAddNumberToObject(req, "outbound", OUTBOUND_SYNC_MINS);
-    if (!NoteRequest(req)) {
+    // The hub.set request may fail if it's sent shortly after power up. We use
+    // NoteRequestWithRetry to give it a chance to succeed.
+    if (!NoteRequestWithRetry(req, HUB_SET_TIMEOUT_SECONDS)) {
         printk("hub.set failed, aborting.\n");
         return;
     }
