@@ -42,11 +42,6 @@
 #define APP_NAME "nf9"
 #endif
 
-// Timeout after HUB_SET_TIMEOUT seconds of retrying hub.set.
-#ifndef HUB_SET_TIMEOUT
-#define HUB_SET_TIMEOUT 5
-#endif
-
 struct AppState {
     uint32_t lastEnvVarPollMs;
     uint32_t monitorIntervalMs;
@@ -366,9 +361,7 @@ void setup()
     }
     JAddStringToObject(req, "mode", "continuous");
     JAddBoolToObject(req, "sync", true);
-    // The hub.set request may fail if it's sent shortly after power up. We use
-    // sendRequestWithRetry to give it a chance to succeed.
-    notecard.sendRequestWithRetry(req, HUB_SET_TIMEOUT);
+    notecard.sendRequest(req);
 
     // Disarm ATTN to clear any previous state before re-arming.
     req = notecard.newRequest("card.attn");

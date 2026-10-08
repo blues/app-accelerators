@@ -11,10 +11,6 @@
 
 #include <math.h>
 
-#ifndef NOTECARD_TIMEOUT
-#define NOTECARD_TIMEOUT (1000*60)
-#endif
-
 // When set to false, only alerts are synced immediately.
 #ifndef SYNC_MONITORING_NOTES
 #define SYNC_MONITORING_NOTES        (false)
@@ -95,10 +91,6 @@
 static uint8_t COLUMN_PINS[] = { D5, D6, D9, D10, D11, D12, D13 };
 static_assert(sizeof(COLUMN_PINS)==COLUMN_COUNT_MAX, "There should be 7 columns max");
 
-#ifndef NOTECARD_SEND_EVENT_TIMEOUT
-#define NOTECARD_SEND_EVENT_TIMEOUT 5
-#endif
-
  // forward declarations
 struct SodaStack;
 class DispensingColumn;
@@ -120,7 +112,7 @@ bool sendNotecardEvent(J* body, const char* file, bool sync) {
     if (sync) {
         JAddBoolToObject(req, "sync", true);
     }
-    return notecard.sendRequestWithRetry(req, NOTECARD_SEND_EVENT_TIMEOUT);
+    return notecard.sendRequest(req);
 }
 
 /**
@@ -955,7 +947,7 @@ void environmentUpdated(J* env) {
         J* req = notecard.newRequest("card.attn");
         JAddNumberToObject(req, "seconds", max(int(watchdogPeriod * 2 / 1000), 60));
         JAddStringToObject(req, "mode", "watchdog");
-        if (!notecard.sendRequestWithRetry(req, NOTECARD_TIMEOUT)) {
+        if (!notecard.sendRequest(req)) {
             debug.println("Unable to set watchdog");
         }
     }
@@ -1052,7 +1044,7 @@ void setup()
     JAddBoolToObject(req, "usb", true);
     JAddBoolToObject(req, "alert", true);   // add a note to health.qo
     JAddStringToObject(req, "mode", "lipo");
-    notecard.sendRequestWithRetry(req, NOTECARD_TIMEOUT);
+    notecard.sendRequest(req);
 
     req = notecard.newRequest("hub.set");
     JAddStringToObject(req, "product", PRODUCT_UID);
@@ -1060,7 +1052,7 @@ void setup()
     JAddStringToObject(req, "voutbound", "usb:1;high:15;normal:30;low:60;dead:0");
     JAddStringToObject(req, "vinbound", "usb:1;high:15;normal:30;low:60;dead:0");
     JAddBoolToObject(req, "sync", true);
-    notecard.sendRequestWithRetry(req, NOTECARD_TIMEOUT);
+    notecard.sendRequest(req);
 
     auxSerialStream.begin(auxSerial.baudRate);
 

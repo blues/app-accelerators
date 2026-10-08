@@ -20,10 +20,6 @@
 
 #define MAX_CAN_DATA_BYTES 8
 
-#ifndef HUB_SET_TIMEOUT
-#define HUB_SET_TIMEOUT 5
-#endif
-
 Notecard notecard;
 CanIdManager canIdManager = CanIdManager(notecard, ENV_VAR_POLL_MS);
 
@@ -138,9 +134,7 @@ void setup() {
     }
     JAddStringToObject(req, "mode", "continuous");
     JAddBoolToObject(req, "sync", true);
-    // The hub.set request may fail if it's sent shortly after power up. We use
-    // sendRequestWithRetry to give it a chance to succeed.
-    if (!notecard.sendRequestWithRetry(req, HUB_SET_TIMEOUT)) {
+    if (!notecard.sendRequest(req)) {
         notecard.logDebug("hub.set failed");
     }
 

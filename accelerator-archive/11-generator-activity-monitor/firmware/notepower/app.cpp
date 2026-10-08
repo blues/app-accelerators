@@ -47,11 +47,6 @@ pindef ioPin[] = {
 #define DATA_FIELD_VIBRATION_RAW "vibration_raw"
 #define DATA_FIELD_EVENT_COUNTER "counter"
 
-// Timeout after HUB_SET_TIMEOUT seconds of retrying hub.set.
-#ifndef HUB_SET_TIMEOUT
-#define HUB_SET_TIMEOUT 5
-#endif
-
 // Cached copies of environment variables
 uint32_t envHeartbeatMins = 0;
 float envVoltageUnder = 0;
@@ -166,9 +161,7 @@ bool appSetup(void)
     JAddStringToObject(req, "mode", "periodic");
     JAddNumberToObject(req, "inbound", 60*24);
     JAddNumberToObject(req, "outbound", 60);
-    // The hub.set request may fail if it's sent shortly after power up. We use
-    // sendRequestWithRetry to give it a chance to succeed.
-    if (!notecard.sendRequestWithRetry(req, HUB_SET_TIMEOUT)) {
+    if (!notecard.sendRequest(req)) {
         debug.printf("notecard not responding\n");
         return false;
     }

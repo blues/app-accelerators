@@ -62,10 +62,6 @@
 #define ENV_VAR_CHECK_INTERVAL 60
 #endif
 
-#ifndef HUB_SET_TIMEOUT
-#define HUB_SET_TIMEOUT 5
-#endif
-
 #ifndef OUTBOUND_SYNC_INTERVAL
 #define OUTBOUND_SYNC_INTERVAL 5
 #endif
@@ -110,9 +106,7 @@ void main(void)
     // Sync outbound data every OUTBOUND_SYNC_INTERVAL minutes. Alarm notes will
     // still be synced immediately.
     JAddNumberToObject(req, "outbound", OUTBOUND_SYNC_INTERVAL);
-    // The hub.set request may fail if it's sent shortly after power up. We use
-    // NoteRequestWithRetry to give it a chance to succeed.
-    if (!NoteRequestWithRetry(req, HUB_SET_TIMEOUT)) {
+    if (!NoteRequest(req)) {
         printk("hub.set failed, aborting.\n");
         return;
     }

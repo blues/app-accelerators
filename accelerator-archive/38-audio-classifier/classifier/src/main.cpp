@@ -14,11 +14,6 @@
 #pragma message "PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://bit.ly/product-uid"
 #endif
 
-// If the hub.set request during setup fails, retry it for up to 5 seconds.
-#ifndef HUB_SET_TIMEOUT_SECS
-#define HUB_SET_TIMEOUT_SECS 5
-#endif
-
 // Sync inbound data from Notehub every 3 minutes.
 #ifndef INBOUND_SYNC_MINS
 #define INBOUND_SYNC_MINS 3
@@ -186,7 +181,7 @@ void setup()
     }
     JAddStringToObject(req, "mode", "periodic");
     JAddNumberToObject(req, "inbound", INBOUND_SYNC_MINS);
-    if (!notecard.sendRequestWithRetry(req, HUB_SET_TIMEOUT_SECS)) {
+    if (!notecard.sendRequest(req)) {
         Serial.println("Failed to send hub.set request to Notecard.");
     }
 

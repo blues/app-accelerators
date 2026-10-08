@@ -20,7 +20,7 @@ class NotecardSleep {
         J* req = notecard.newCommand("card.attn");
         JAddStringToObject(req, "mode", "sleep,usb");
         JAddNumberToObject(req, "seconds", duration);
-        notecard.sendRequestWithRetry(req, 10);
+        notecard.sendRequest(req);
         // the Host will enter low-power mode once the request is received IF
         // there is no other source of power to the host.
         // Otherwise if there is an alternative source of power, such as a USB serial connection,

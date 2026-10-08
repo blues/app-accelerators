@@ -41,11 +41,6 @@
 // leak warnings.
 #define LEAK_THRESHOLD 6
 
-// Timeout after HUB_SET_TIMEOUT seconds of retrying hub.set.
-#ifndef HUB_SET_TIMEOUT
-#define HUB_SET_TIMEOUT 5
-#endif
-
 // Uncomment the define below and replace com.your-company:your-product-name
 // with your ProductUID.
 // #define PRODUCT_UID "com.your-company:your-product-name"
@@ -622,7 +617,7 @@ void main(void)
     }
     JAddStringToObject(req, "mode", "continuous");
     JAddBoolToObject(req, "sync", true);
-    if (NoteRequestWithRetry(req, HUB_SET_TIMEOUT)) {
+    if (NoteRequest(req)) {
         printk("Notecard hub.set successful.\n");
     }
     else {
