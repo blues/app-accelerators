@@ -59,7 +59,7 @@ static inline void cxSleepBegin() {
 static inline bool cxSleepUntilAttn(Notecard &notecard, uint32_t seconds,
                                     const char *modes = NULL, Stream *log = NULL) {
   // The host stays alive, so use a request (not a command) and check the
-  // result. Right after a cold boot the Notecard may not be ready yet.
+  // result.
   J *req = notecard.newRequest("card.attn");
   char modestr[64];
   strlcpy(modestr, "sleep", sizeof(modestr));
@@ -69,7 +69,7 @@ static inline bool cxSleepUntilAttn(Notecard &notecard, uint32_t seconds,
   }
   JAddStringToObject(req, "mode", modestr);
   JAddNumberToObject(req, "seconds", seconds);
-  if (!notecard.sendRequestWithRetry(req, 5)) {
+  if (!notecard.sendRequest(req)) {
     return false;
   }
 
