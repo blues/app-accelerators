@@ -23,7 +23,7 @@ static ModbusTCPClient _modbusTCPClient(_ethClient);
 // Static IP of the CNC Modbus TCP server on the private point-to-point subnet.
 // Adjust to match the CNC controller's network configuration before flashing.
 // The default (192.168.250.1) pairs with the OPTA local IP (192.168.250.10)
-// defined in the .ino. See README §4 for network-configuration guidance.
+// defined in the .ino. See §5 of the dev.blues.io page for network setup.
 static const IPAddress _DEFAULT_CNC_IP(192, 168, 250, 1);
 
 // ---------------------------------------------------------------------------
@@ -69,8 +69,8 @@ void notecardConfigure(const char *productUid) {
 // ---------------------------------------------------------------------------
 // Register fixed-length templates for all three Notefiles.
 // Type hints: 14.1 = 4-byte float; 14 = 4-byte signed int; 12 = 2-byte signed int;
-// string fields: the exemplar string's character count sets the allocated record
-// width (the Notecard truncates notes.add values to that length). Max 255 chars.
+// string fields: a non-numeric exemplar declares a variable-length string (a
+// numeric string "N" would reserve a fixed N bytes instead).
 void defineTemplates(void) {
     // cnc_summary.qo — hourly OEE-component roll-up
     {
@@ -84,7 +84,7 @@ void defineTemplates(void) {
             JAddNumberToObject(body, "spindle_pct_mean",       14.1);
             JAddNumberToObject(body, "spindle_pct_peak",       14.1);
             // feed-rate override mean (0–150 % of programmed rate), not
-            // engineering-unit feed rate — see README §9 for explanation.
+            // engineering-unit feed rate — see §12 of the dev.blues.io page.
             JAddNumberToObject(body, "feed_override_pct_mean", 14.1);
             JAddNumberToObject(body, "run_min",          12);
             JAddNumberToObject(body, "idle_min",         12);
@@ -115,10 +115,8 @@ void defineTemplates(void) {
             JAddStringToObject(req, "file", "cnc_alarm.qo");
             JAddNumberToObject(req, "port", 51);
             J *body = JAddObjectToObject(req, "body");
-            // 32-character exemplar string: the Notecard allocates storage equal
-            // to the exemplar's character count. "32" is only 2 chars and would
-            // truncate all alert_type values beyond 2 characters. The longest
-            // alert type ("modbus_unreachable") is 18 characters; 32 gives headroom.
+            // A non-numeric exemplar declares a variable-length string, so every
+            // alert type fits; the longest ("modbus_unreachable") is 18 characters.
             JAddStringToObject(body, "alert_type",  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
             // 14 = 4-byte signed int; safely represents alarm codes and operator IDs
             // in the full uint16 range (0–65535) without overflow above 32767.
@@ -346,7 +344,7 @@ void fetchEnvOverrides(void) {
     // (hub.set) succeeded. If hubSetFailed is true, g_envLastModTime stays on
     // the previous value so the next incremental env.get re-delivers this
     // change set and retries the failed hub.set — matching the retry behavior
-    // described in the README and code comments above.
+    // described in the code comments above.
     if (!hubSetFailed) {
         g_envLastModTime = newModTime;
         usbSerial.println("[ENV] Env vars applied.");
@@ -433,7 +431,7 @@ bool pollCnc(Sample &s) {
     // Register N+1 is the feed-rate override (0–150 % of the programmed feed
     // rate), NOT actual feed rate in engineering units (mm/min or in/min).
     // Engineering-unit feed rate is not routinely available over Modbus TCP on
-    // most CNC controllers; see README §9 for the full explanation.
+    // most CNC controllers; see §12 Limitations on the dev.blues.io page.
     int16_t rawFeedOverride = (int16_t)_modbusTCPClient.read();
     s.alarmCode  = (uint16_t)_modbusTCPClient.read();
     s.cycleState = (uint8_t)(_modbusTCPClient.read() & 0x00FF);

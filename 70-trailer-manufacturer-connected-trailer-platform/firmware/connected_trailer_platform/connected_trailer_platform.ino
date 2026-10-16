@@ -6,7 +6,7 @@
   thermistors (A0/A1), rear-door state via a reed switch (D9), and GPS asset
   tracking via the Notecard's built-in GNSS. Two additional channels are wired
   into the data pipeline as integration-point stubs pending the vendor
-  engineering described in README §9: J2497 reefer telemetry (Serial1) and
+  engineering in the docs page's §10: J2497 reefer telemetry (Serial1) and
   TPMS tire pressure (SoftwareSerial D5/D6) — each parses a simplified POC
   frame format that no production hardware produces. The trailer state machine
   drives the Notehub sync cadence.
@@ -68,7 +68,7 @@
 
   J2497 and TPMS packet formats are simplified POC representations.
   Production deployments need a full J2497 protocol stack, reefer-OEM message
-  mapping, and vendor-specific TPMS decode logic. See README §9.
+  mapping, and vendor-specific TPMS decode logic. See §10 of the docs page.
 
   Door metrics (door_open_min, door_event_count) are accumulated at sample-
   cycle granularity: only transitions observed across consecutive wake
@@ -160,12 +160,15 @@ static uint32_t notecardEpoch() {
 // Notecard configuration helpers
 // =========================================================================
 
-// Define the binary summary note template. Returns true on success.
+// Define the binary summary and alert note templates. Returns true on success.
+// Both are compact with a port, which Skylo NTN requires. Compact drops the
+// Note's time and location metadata, so _time/_lat/_lon add them back.
 static bool defineTemplate() {
     J *req = notecard.newRequest("note.template");
     if (!req) return false;
     JAddStringToObject(req, "file", NOTE_SUMMARY);
     JAddNumberToObject(req, "port", TEMPLATE_PORT);
+    JAddStringToObject(req, "format", "compact");
     J *body = JAddObjectToObject(req, "body");
     JAddNumberToObject(body, "reefer_set_f",     14.1);
     JAddNumberToObject(body, "reefer_min_f",     14.1);
@@ -189,6 +192,9 @@ static bool defineTemplate() {
     JAddNumberToObject(body, "tpms_3_age",       12);
     JAddNumberToObject(body, "trailer_state",    12);
     JAddNumberToObject(body, "sample_count",     12);
+    JAddNumberToObject(body, "_time",            14);
+    JAddNumberToObject(body, "_lat",             14.1);
+    JAddNumberToObject(body, "_lon",             14.1);
     J *rsp = notecard.requestAndResponse(req);
     if (!rsp) return false;
     bool ok = !notecard.responseError(rsp);
@@ -196,7 +202,34 @@ static bool defineTemplate() {
     if (!ok) usbSerial.println("[init] note.template rejected — will retry next boot");
 #endif
     notecard.deleteResponse(rsp);
-    return ok;
+
+    req = notecard.newRequest("note.template");
+    if (!req) return false;
+    JAddStringToObject(req, "file", NOTE_ALERT);
+    JAddNumberToObject(req, "port", ALERT_TEMPLATE_PORT);
+    JAddStringToObject(req, "format", "compact");
+    body = JAddObjectToObject(req, "body");
+    JAddStringToObject(body, "alert",           TSTRING(18));  // longest: "reefer_sensor_loss"
+    JAddNumberToObject(body, "reefer_actual_f", 14.1);
+    JAddNumberToObject(body, "reefer_set_f",    14.1);
+    JAddNumberToObject(body, "air_t1_f",        14.1);
+    JAddNumberToObject(body, "air_t2_f",        14.1);
+    JAddBoolToObject(body,   "door_open",       true);
+    JAddNumberToObject(body, "tpms_0_psi",      14.1);
+    JAddNumberToObject(body, "tpms_1_psi",      14.1);
+    JAddNumberToObject(body, "tpms_2_psi",      14.1);
+    JAddNumberToObject(body, "tpms_3_psi",      14.1);
+    JAddNumberToObject(body, "_time",           14);
+    JAddNumberToObject(body, "_lat",            14.1);
+    JAddNumberToObject(body, "_lon",            14.1);
+    rsp = notecard.requestAndResponse(req);
+    if (!rsp) return false;
+    bool alertOk = !notecard.responseError(rsp);
+#ifdef usbSerial
+    if (!alertOk) usbSerial.println("[init] alert note.template rejected — will retry next boot");
+#endif
+    notecard.deleteResponse(rsp);
+    return ok && alertOk;
 }
 
 // Apply card.location.mode — motion-gated GPS keeps GNSS off during DC dwells
@@ -219,9 +252,9 @@ static bool applyLocationMode() {
     return ok;
 }
 
-// One-time Notecard configuration. Called once from setup(). note.template and
-// card.location.mode are attempted once; if they fail they will succeed on a
-// subsequent power cycle.
+// One-time Notecard configuration. Called once from setup(). card.transport,
+// env.template, note.template, and card.location.mode are attempted once; if
+// they fail they will succeed on a subsequent power cycle.
 static void notecardInit() {
     bool hubOk = false;
     J *req = notecard.newRequest("hub.set");
@@ -242,6 +275,44 @@ static void notecardInit() {
         usbSerial.println("[init] hub.set failed — check I2C/power");
     }
 #endif
+
+    // Notecard for Skylo ships set to wifi-cell, which never uses the
+    // satellite radio. cell-ntn prefers cellular and falls back to Skylo NTN.
+    req = notecard.newRequest("card.transport");
+    if (req) {
+        JAddStringToObject(req, "method", "cell-ntn");
+        J *rsp = notecard.requestAndResponse(req);
+#ifdef usbSerial
+        if (!rsp || notecard.responseError(rsp))
+            usbSerial.println("[init] card.transport failed — will retry next boot");
+#endif
+        notecard.deleteResponse(rsp);
+    }
+
+    // Over NTN, Notehub only delivers environment variables named in an
+    // env.template. String hints keep env.get values as strings, which is how
+    // fetchEnvOverrides() parses them on every transport.
+    req = notecard.newRequest("env.template");
+    if (req) {
+        J *body = JAddObjectToObject(req, "body");
+        JAddStringToObject(body, "reefer_max_f",          "-");
+        JAddStringToObject(body, "reefer_min_f",          "-");
+        JAddStringToObject(body, "tpms_min_psi",          "-");
+        JAddStringToObject(body, "tpms_max_psi",          "-");
+        JAddStringToObject(body, "door_open_transit_sec", "-");
+        JAddStringToObject(body, "sample_interval_sec",   "-");
+        JAddStringToObject(body, "summary_interval_min",  "-");
+        JAddStringToObject(body, "outbound_transit_min",  "-");
+        JAddStringToObject(body, "outbound_parked_min",   "-");
+        JAddStringToObject(body, "alert_cooldown_sec",    "-");
+        J *rsp = notecard.requestAndResponse(req);
+#ifdef usbSerial
+        if (!rsp || notecard.responseError(rsp))
+            usbSerial.println("[init] env.template failed — will retry next boot");
+#endif
+        notecard.deleteResponse(rsp);
+    }
+
     applyLocationMode();
     defineTemplate();
 }
@@ -264,19 +335,19 @@ static bool applyHubSetIfChanged(uint32_t newOutboundMin) {
     return ok;
 }
 
-// Fetch env vars and apply them. g_cfg is reset to compiled defaults first
-// so env vars deleted from Notehub revert to their compiled defaults on the
-// same cycle that receives the inbound sync. Cadence changes are applied
+// Fetch env vars and apply them. Once env.get succeeds, g_cfg is reset to
+// compiled defaults so env vars deleted from Notehub revert to their compiled
+// defaults on the same cycle that receives the inbound sync. A failed env.get
+// leaves the previous values in place. Cadence changes are applied
 // immediately via applyHubSetIfChanged().
 static void fetchEnvOverrides() {
-    g_cfg = Config();  // reset to compiled defaults before applying overrides
-
     J *req = notecard.newRequest("env.get");
     if (!req) return;
     J *rsp = notecard.requestAndResponse(req);
     if (!rsp) return;
     if (notecard.responseError(rsp)) { notecard.deleteResponse(rsp); return; }
 
+    g_cfg = Config();  // reset to compiled defaults before applying overrides
     J *body = JGetObject(rsp, "body");
     if (!body) { notecard.deleteResponse(rsp); return; }
 
@@ -372,6 +443,7 @@ static void sendAlert(uint8_t idx, uint32_t nowEpoch) {
     if (!req) return;
     JAddStringToObject(req, "file", NOTE_ALERT);
     JAddBoolToObject(req,   "sync", true);
+    JAddBoolToObject(req,   "full", true);  // keep door_open:false and 0 values
     J *body = JAddObjectToObject(req, "body");
     JAddStringToObject(body, "alert",           kAlertNames[idx]);
     JAddNumberToObject(body, "reefer_actual_f", g_sensors.reeferActualF);
@@ -403,7 +475,7 @@ static void evaluateAlerts(uint32_t nowEpoch) {
     // after at least one valid J2497 frame has been accepted by drainReeferUart().
     // A bench build with no J2497 modem connected never sets this flag, so it
     // never fires reefer_sensor_loss regardless of how many wake cycles pass
-    // with no frames. This matches the documented §8 expected baseline behavior.
+    // with no frames, matching the expected baseline in §9 of the docs page.
     if (g_ps.j2497Commissioned && g_ps.reeferMissCount >= REEFER_MISS_MAX)
         sendAlert(A_REEFER_LOSS, nowEpoch);
 
@@ -479,6 +551,9 @@ static void sendSummary(uint32_t nowEpoch) {
     J *req = notecard.newRequest("note.add");
     if (!req) return;
     JAddStringToObject(req, "file", NOTE_SUMMARY);
+    // Templated Notes drop 0 values in Notehub unless full is set, and 0 is
+    // meaningful here (trailer_state 0 = parked, door_event_count 0).
+    JAddBoolToObject(req,   "full", true);
     J *body = JAddObjectToObject(req, "body");
     JAddNumberToObject(body, "reefer_set_f",     g_ps.reeferSetLast);
     JAddNumberToObject(body, "reefer_min_f",     g_ps.reeferAccum.winMin());

@@ -36,7 +36,7 @@ Notecard notecard;
 // last octet (0x68) to avoid duplicate-address collisions.
 static byte            MAC_OPTA[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0x68 };
 // OPTA static IP on the private CNC subnet. Adjust to match the installation;
-// see README §4 for network-configuration guidance.
+// see §5 of the dev.blues.io page for network-configuration guidance.
 static const IPAddress LOCAL_IP(192, 168, 250, 10);
 
 // ---------------------------------------------------------------------------

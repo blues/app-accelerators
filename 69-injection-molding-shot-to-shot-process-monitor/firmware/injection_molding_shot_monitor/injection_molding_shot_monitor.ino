@@ -8,8 +8,8 @@
 // Transmits to Blues Notehub via a Notecard Cell+WiFi (MBGLW) on a Notecarrier CX.
 //
 // Scope: this project deliberately targets hydraulic manifold pressure rather
-// than in-cavity pressure — no mold modification required. See README §1 for
-// the full rationale and the trade-offs relative to piezoelectric cavity sensors.
+// than in-cavity pressure — no mold modification required. See §11 of the
+// dev.blues.io page for the rationale and trade-offs vs. cavity sensors.
 //
 // Hardware:
 //   Blues Notecarrier CX (Cygnet STM32L433 host, 64 KB SRAM)
@@ -328,9 +328,8 @@ void defineTemplates() {
     JAddStringToObject(req, "file", "shot_alert.qo");
     JAddNumberToObject(req, "port", 51);
     body = JAddObjectToObject(req, "body");
-    // The exemplar string for a string field sets the maximum field width.
-    // Use the longest alert type name ("peak_pressure_high", 18 chars) so all
-    // five alert values fit without truncation.
+    // A non-numeric exemplar string declares a variable-length string field,
+    // so all five alert type names fit without truncation.
     JAddStringToObject(body, "alert",      "peak_pressure_high");
     JAddNumberToObject(body, "cycle",      14);
     JAddNumberToObject(body, "peak_psi",   14.1);
