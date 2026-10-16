@@ -74,7 +74,6 @@ bool ensureConfigured(Notecard &nc, const char *product_uid, AppState &s)
         JAddNumberToObject(req, "outbound", s.outbound_s / 60);
         JAddNumberToObject(req, "inbound",  inbound_min);
         if (nc.sendRequest(req)) {
-            s.cfg_hub_ok = true;
             LOGLN("[APP] hub.set confirmed.");
 
             // ── Transport selection for the Notecard for Skylo (NOTE-NBGLWX) ──
@@ -84,8 +83,9 @@ bool ensureConfigured(Notecard &nc, const char *product_uid, AppState &s)
             // Notecard prefer WiFi, fall back to cellular, and finally fall back to
             // Skylo satellite when no terrestrial coverage exists — automatic
             // failover with no firmware branching. The Notecard persists this in
-            // its own flash, so issuing it once (gated here by cfg_hub_ok, set only
-            // after a successful hub.set) is sufficient.
+            // its own flash, so issuing it once is sufficient.  cfg_hub_ok is set
+            // only after both hub.set and card.transport succeed, so a failure
+            // here retries both on the next wake instead of leaving NTN off.
             //
             // Note: Skylo requires at least one non-NTN (cellular or WiFi) sync to
             // associate with Notehub and register templates before NTN can be used.
@@ -93,9 +93,12 @@ bool ensureConfigured(Notecard &nc, const char *product_uid, AppState &s)
             // routinely operate over satellite, so that first sync can complete.
             J *tr = nc.newRequest("card.transport");
             JAddStringToObject(tr, "method", "wifi-cell-ntn");
-            if (!sendRequestChecked(nc, tr)) {
+            if (sendRequestChecked(nc, tr)) {
+                s.cfg_hub_ok = true;
+            } else {
                 LOGLN("[APP] WARN: card.transport (wifi-cell-ntn) failed — "
-                      "satellite fallback may be unavailable until reapplied.");
+                      "will retry next wake.");
+                all_ok = false;
             }
         } else {
             LOGLN("[APP] ERROR: hub.set failed — will retry next wake. "
@@ -513,19 +516,24 @@ bool checkAndHandleCommand(Notecard &nc, AppState &s)
             return false;
         }
 
-        // note.get returns "file.note.quiet" when the queue is empty — normal
-        // exit.  Any other error string indicates a real command-path fault;
-        // return false so the caller can emit a diagnostic alert and operators
-        // can distinguish "no command queued" from "path unhealthy".
+        // note.get tags an empty queue {note-noexist}, and immobilize.qi itself
+        // may not exist ({notefile-noexist}) until the first command arrives —
+        // both are the normal exit.  Any other error string indicates a real
+        // command-path fault; return false so the caller can emit a diagnostic
+        // alert and operators can distinguish "no command queued" from "path
+        // unhealthy".  err_str points into rsp, so free rsp only after using it.
         if (JGetObjectItem(rsp, "err")) {
             const char *err_str = JGetString(rsp, "err");
-            nc.deleteResponse(rsp);
-            if (err_str != NULL && strstr(err_str, "quiet") != NULL) {
+            if (err_str != NULL &&
+                (strstr(err_str, "{note-noexist}") != NULL ||
+                 strstr(err_str, "{notefile-noexist}") != NULL)) {
+                nc.deleteResponse(rsp);
                 break;  // Confirmed empty queue — healthy exit.
             }
-            // Non-quiet error: real command-path fault.
+            // Any other error: real command-path fault.
             LOG("[APP] ERROR: note.get returned unexpected error: ");
             LOGLN(err_str ? err_str : "(null)");
+            nc.deleteResponse(rsp);
             return false;
         }
 
