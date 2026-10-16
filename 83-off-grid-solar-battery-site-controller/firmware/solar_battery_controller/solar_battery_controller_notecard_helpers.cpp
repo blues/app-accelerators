@@ -50,7 +50,8 @@ static float envF32(J *body, const char *key, float lo, float hi, float cur) {
 
 // ---------------------------------------------------------------------------
 // notecardFirstBoot — one-time hardware init at power-up (from setup()):
-// disables the onboard accelerometer to reduce idle draw.
+// disables the onboard accelerometer to reduce idle draw and, in SKYLO_BUILD
+// builds, turns on the Skylo satellite fallback.
 //
 // hub.set is NOT called here.  It is handled by applyHubSetIfChanged() on
 // every wake so that cadence is authoritative for the current firmware and
@@ -62,25 +63,57 @@ void notecardFirstBoot() {
     if (!notecard.sendRequest(req)) {
         dbgSerial.println(F("[warn] card.motion.mode failed"));
     }
+
+#ifdef SKYLO_BUILD
+    // Notecard for Skylo defaults to wifi-cell, so the satellite fallback stays
+    // off until card.transport turns it on.  cell-ntn: cellular first, Skylo
+    // NTN when no cellular network is reachable.  Not sent on the NOTE-MBGLW,
+    // which has no satellite radio.
+    req = notecard.newRequest("card.transport");
+    if (req) JAddStringToObject(req, "method", "cell-ntn");
+    if (!notecard.sendRequest(req)) {
+        dbgSerial.println(F("[warn] card.transport failed — satellite fallback stays off"));
+    }
+#endif
+}
+
+// sendTemplate — send one note.template request; true only when the Notecard
+// response has no err field.
+static bool sendTemplate(J *req, const char *file) {
+    bool registered = false;
+    if (req) {
+        J *rsp = notecard.requestAndResponse(req);
+        if (rsp) {
+            const char *err = JGetString(rsp, "err");
+            registered = (!err || !*err);
+            notecard.deleteResponse(rsp);
+        }
+    }
+    if (!registered) {
+        dbgSerial.print(F("[warn] note.template failed: ")); dbgSerial.println(file);
+    }
+    return registered;
 }
 
 // ---------------------------------------------------------------------------
-// defineTemplates — registers fixed-width Note templates to minimise
-// on-wire payload size over the lifetime of the deployment.
+// defineTemplates — registers compact Note templates for solar_summary.qo and
+// solar_alert.qo.  format:"compact" plus a port (1–100) is what lets a
+// Notefile sync over Skylo NTN; neither sets delete, so the same Notes go out
+// over cellular or satellite, whichever link is up.
 //
-// Returns true when the template is confirmed registered.  The caller should
+// Returns true when both templates are confirmed registered.  The caller should
 // store the result in state.templates_confirmed and call this function again
 // on the next wake until it returns true, so a transient failure is always
 // recovered automatically.
 // ---------------------------------------------------------------------------
 bool defineTemplates() {
-    bool registered = false;
     J *req = notecard.newRequest("note.template");
     if (req) {
         JAddStringToObject(req, "file", "solar_summary.qo");
         JAddNumberToObject(req, "port", 50);
+        JAddStringToObject(req, "format", "compact");
         J *body = JAddObjectToObject(req, "body");
-        JAddNumberToObject(body, "bat_v",      14.1);  // 4-byte float, 1 decimal
+        JAddNumberToObject(body, "bat_v",      14.1);  // 4-byte float
         JAddNumberToObject(body, "bat_a",      14.1);
         JAddNumberToObject(body, "bat_w",      14.1);
         JAddNumberToObject(body, "soc_pct",    14.1);
@@ -91,17 +124,22 @@ bool defineTemplates() {
         JAddNumberToObject(body, "load_w",     14.1);
         JAddNumberToObject(body, "ttg_min",    14);    // 4-byte int
         JAddNumberToObject(body, "cs",         12);    // 2-byte int
-        J *rsp = notecard.requestAndResponse(req);
-        if (rsp) {
-            const char *err = JGetString(rsp, "err");
-            registered = (!err || !*err);
-            notecard.deleteResponse(rsp);
-        }
     }
-    if (!registered) {
-        dbgSerial.println(F("[warn] note.template solar_summary.qo failed"));
+    bool ok = sendTemplate(req, "solar_summary.qo");
+
+    req = notecard.newRequest("note.template");
+    if (req) {
+        JAddStringToObject(req, "file", "solar_alert.qo");
+        JAddNumberToObject(req, "port", 51);
+        JAddStringToObject(req, "format", "compact");
+        J *body = JAddObjectToObject(req, "body");
+        JAddStringToObject(body, "alert", "-");        // variable-length string
+        JAddNumberToObject(body, "v1",    14.1);
+        JAddNumberToObject(body, "v2",    14.1);
+        JAddNumberToObject(body, "v3",    14.1);
     }
-    return registered;
+    ok = sendTemplate(req, "solar_alert.qo") && ok;
+    return ok;
 }
 
 // ---------------------------------------------------------------------------
@@ -256,7 +294,8 @@ bool fetchEnvOverrides() {
 //
 // Returns true only after the Note is confirmed queued.  Callers must not
 // arm suppression state (active flags, cooldowns) on a false return.
-// v1/v2/v3 carry alert-type-specific context values (see README §7).
+// v1/v2/v3 carry alert-type-specific context values (see the alert table in
+// §7.4 of the dev.blues.io page).
 // ---------------------------------------------------------------------------
 bool sendAlert(const char *alert, float v1, float v2, float v3) {
     J *req = notecard.newRequest("note.add");

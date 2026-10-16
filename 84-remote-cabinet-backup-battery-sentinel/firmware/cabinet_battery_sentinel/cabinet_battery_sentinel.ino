@@ -13,7 +13,8 @@
 // charge balance, state-of-charge estimate, and surface temperature over
 // cellular — independently of the site equipment it protects.
 // Pack-level sensing only: per-cell voltage monitoring and cell-imbalance
-// detection are outside the scope of this design; see §9 of the README.
+// detection are outside the scope of this design; see §11 of the
+// dev.blues.io page.
 // SoC is tracked via coulomb counting; commission usable_capacity_ah and
 // soc_pct_init via Notehub environment variables before relying on soc_pct.
 //
