@@ -30,7 +30,7 @@
 // Default firmware values; every one of these can be overridden by an environment
 // variable on Notehub. Defaults are illustrative for a fictional contiguous map.
 // Real VFDs differ in register addresses, scaling, signedness, and word counts —
-// see the README's "VFD register-map gotchas" callout before deploying.
+// see the "VFD register-map gotchas" callout on the accelerator page first.
 static uint32_t g_sample_minutes              = 1;
 static uint32_t g_report_minutes              = 60;
 static uint8_t  g_modbus_slave_id             = 1;
@@ -95,7 +95,7 @@ static RollingStats stats;
 // hour and double-counted.
 static uint16_t g_current_fault_code = 0;
 
-// Frequency-binned current baselines. The README's load-anomaly rule is
+// Frequency-binned current baselines. The documented load-anomaly rule is
 // "rising current at *comparable* output frequency" — but current at 30 Hz and
 // current at 60 Hz aren't comparable on the same pump. Each 5 Hz bin keeps its
 // own EWMA-tracked baseline. Bin index = clamp(floor(hz/5), 0, FREQ_BINS-1).
