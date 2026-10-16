@@ -52,7 +52,7 @@
  *   - ATTN → D5 jumper on the Notecarrier CX header (host sleep/wake)
  *   - Blues Mojo (bench validation only; not required for production)
  *
- * See README.md §3–§4 for full BOM and wiring, §5 for Notehub setup.
+ * See docs §4–§5 for full BOM and wiring, §6 for Notehub setup.
  *
  * Helper functions (Modbus polling, session state machine, Note emission,
  * env-var handling, host sleep) live in the companion source files:

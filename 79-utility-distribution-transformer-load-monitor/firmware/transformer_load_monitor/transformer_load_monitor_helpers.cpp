@@ -118,8 +118,11 @@ void fetchEnvOverrides(EnvConfig &c) {
 
     // If the timestamp is unchanged and the cache is valid, reuse cached
     // values and skip the batch request entirely to reduce I²C traffic.
-    // c is already set to state.cached_cfg above, so just return.
-    if (new_ts && new_ts == state.last_env_modified && cache_valid) {
+    // c is already set to state.cached_cfg above, so just return.  A cadence
+    // that hasn't reached hub.set yet falls through to the re-apply below.
+    const bool cadence_pending = state.hub_configured &&
+                                 c.summary_interval_min != state.lastAppliedSummaryMin;
+    if (new_ts && new_ts == state.last_env_modified && cache_valid && !cadence_pending) {
         debugSerial.println("[config] env vars unchanged; using cached config");
         return;
     }

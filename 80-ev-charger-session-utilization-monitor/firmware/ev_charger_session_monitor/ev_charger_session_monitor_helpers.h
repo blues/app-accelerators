@@ -83,7 +83,7 @@ struct State {
     // detection from Note-queue retries.  Retried at the top of
     // runSessionStateMachine() every wake, then falls through to normal state-
     // machine processing so a back-to-back session during a Notecard fault is
-    // never silently missed.  Single slot; see README §9 for the ring-buffer
+    // never silently missed.  Single slot; see docs §10 for the ring-buffer
     // extension if extended fault conditions are a concern.
     bool     pending_session_note;
     float    pending_session_kwh;

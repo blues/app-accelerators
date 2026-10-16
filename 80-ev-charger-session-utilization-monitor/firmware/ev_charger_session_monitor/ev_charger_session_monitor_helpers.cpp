@@ -70,7 +70,7 @@ void initModbus() {
 // turnaround-timing faults that most commonly occur at power-on or after a
 // brief conductor disturbance.  If all attempts fail, the caller suppresses
 // session-state transitions and window accumulation for this wake — see
-// runSessionStateMachine() and README §6.3.
+// runSessionStateMachine() and docs §7.3.
 //
 // Negative active power (export, e.g. from a solar inverter on the same feed)
 // is clamped to zero — an EV charging circuit should never export, and a
@@ -162,8 +162,8 @@ bool initNotecard(const char *product_uid) {
 //   14.1 = 4-byte IEEE-754 float
 //   12   = 2-byte signed integer
 //
-// Templated Notes are stored as fixed-length binary records (~50 bytes each)
-// rather than free-form JSON (~250 bytes), meaningful across a large fleet
+// Templated Notes are stored as fixed-length binary records (~40 bytes each)
+// rather than free-form JSON (~200 bytes), meaningful across a large fleet
 // over a multi-year deployment.
 //
 // charger_session.qo and charger_alert.qo are intentionally untemplated:
@@ -205,7 +205,7 @@ float clampF(float v, float lo, float hi) {
 // applyHubCadence — issue a hub.set that (re-)applies state.report_interval_min
 // as the Notecard's outbound sync cadence.  Called from fetchEnvOverrides()
 // when the interval changes and from the hub_cadence_dirty retry path in
-// setup().  Returns true on success; the caller clears hub_cadence_dirty.
+// loop().  Returns true on success; the caller clears hub_cadence_dirty.
 // ─────────────────────────────────────────────────────────────────────────────
 bool applyHubCadence() {
     J *h = notecard.newRequest("hub.set");
@@ -215,6 +215,14 @@ bool applyHubCadence() {
     bool ok = notecard.sendRequest(h);
     if (!ok) debugSerial.println("[app] WARN: hub.set cadence re-sync failed — will retry on next wake");
     return ok;
+}
+
+// Environment variable values always arrive as strings, so JGetNumber() would
+// return 0 for every one of them.  Returns `fallback` when unset or empty.
+static double envNumber(J *body, const char *name, double fallback) {
+    const char *s = JGetString(body, name);
+    if (!s || !*s) return fallback;
+    return strtod(s, nullptr);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -234,7 +242,7 @@ void fetchEnvOverrides() {
 
     const char *err = JGetString(rsp, "err");
     if (err && err[0]) {
-        if (!strstr(err, "nothing to return")) {
+        if (!strstr(err, "{env-not-modified}")) {
             debugSerial.print("[app] WARN: env.get error: ");
             debugSerial.println(err);
         }
@@ -250,10 +258,10 @@ void fetchEnvOverrides() {
     if (b) {
         double v;
 
-        if ((v = JGetNumber(b, "sample_interval_sec")) > 0)
+        if ((v = envNumber(b, "sample_interval_sec", 0)) > 0)
             state.sample_interval_sec = clampU32((uint32_t)v, 5, 3600);
 
-        if ((v = JGetNumber(b, "report_interval_min")) > 0) {
+        if ((v = envNumber(b, "report_interval_min", 0)) > 0) {
             state.report_interval_min = clampU32((uint32_t)v, 5, 1440);
             // Set the dirty flag before the attempt so that a transient failure
             // cannot leave the Notecard permanently on the old outbound cadence.
@@ -268,30 +276,32 @@ void fetchEnvOverrides() {
         // Level 2 EVSE minimum pilot signalling draws ~1250 W (208 V, 6 A);
         // 500 W default sits safely below any real session while above charger
         // standby draw.  Allow values from 10 W (bench-test range) to 20 kW.
-        if ((v = JGetNumber(b, "session_threshold_w")) > 0)
+        if ((v = envNumber(b, "session_threshold_w", 0)) > 0)
             state.session_threshold_w = clampF((float)v, 10.0f, 20000.0f);
 
-        if ((v = JGetNumber(b, "session_end_count")) > 0)
+        if ((v = envNumber(b, "session_end_count", 0)) > 0)
             state.session_end_count = (uint8_t)clampU32((uint32_t)v, 1, 20);
 
         // voltage_present_v: V_rms floor for mains-present classification.
         // 85 V is below the sag floor for both 120 V and 208/240 V feeds,
         // ensuring the flag is not triggered by normal voltage variation.
-        if ((v = JGetNumber(b, "voltage_present_v")) > 0)
+        if ((v = envNumber(b, "voltage_present_v", 0)) > 0)
             state.voltage_present_v = clampF((float)v, 10.0f, 300.0f);
 
-        // alert_offline_min accepts 0 (disable) or any positive value.
-        // Check for key presence so an absent key does not zero-out the default.
-        if (JGetObjectItem(b, "alert_offline_min")) {
-            v = JGetNumber(b, "alert_offline_min");
-            if (v >= 0)
-                state.alert_offline_min = clampU32((uint32_t)v, 0, 10080); // max 7 days
+        // alert_offline_min accepts 0 (disable) or any positive value.  The -1
+        // fallback keeps an absent or empty key from zeroing out the default.
+        if ((v = envNumber(b, "alert_offline_min", -1)) >= 0)
+            state.alert_offline_min = clampU32((uint32_t)v, 0, 10080); // max 7 days
+
+        if ((v = envNumber(b, "modbus_slave_id", 0)) > 0) {
+            uint8_t new_id = (uint8_t)clampU32((uint32_t)v, 1, 247);
+            if (new_id != state.modbus_slave_id) {
+                state.modbus_slave_id = new_id;
+                initModbus(); // re-bind ModbusMaster to the new slave ID
+            }
         }
 
-        if ((v = JGetNumber(b, "modbus_slave_id")) > 0)
-            state.modbus_slave_id = (uint8_t)clampU32((uint32_t)v, 1, 247);
-
-        if ((v = JGetNumber(b, "modbus_baud")) > 0) {
+        if ((v = envNumber(b, "modbus_baud", 0)) > 0) {
             uint32_t new_baud = clampU32((uint32_t)v, 2400, 115200);
             if (new_baud != state.modbus_baud) {
                 state.modbus_baud = new_baud;
@@ -338,7 +348,7 @@ uint32_t getEpoch() {
 //   - below_threshold_count is NOT incremented
 //   - neither charging_sec nor idle_sec is accumulated
 // The session is held open until valid below-threshold readings arrive.
-// The mains-absent offline timer advances independently in setup() — fault
+// The mains-absent offline timer advances independently in loop() — fault
 // wakes still count toward the mains-absence duration.
 //
 // All window accumulators are gated on window_start_epoch > 0 so no data
@@ -378,7 +388,7 @@ void runSessionStateMachine(const MeterReading &meter, uint32_t now) {
     // Window-attribution note: window accumulators are incremented only on a
     // confirmed success.  If emitSummaryNote() resets accumulators between
     // when the session ended and when this retry finally succeeds, the session
-    // count and kWh are attributed to the newer window — see README §6.6 / §9.
+    // count and kWh are attributed to the newer window — see docs §7.6 / §10.
     if (state.pending_session_note) {
         if (emitSessionNote(state.pending_session_kwh,
                             state.pending_session_peak_w,
@@ -399,7 +409,7 @@ void runSessionStateMachine(const MeterReading &meter, uint32_t now) {
         if (!above) {
             // Only count idle time when the meter returned a valid reading.
             // A Modbus fault this wake must not be attributed as idle time —
-            // see README §6.3 / §6.6.
+            // see docs §7.3 / §7.6.
             if (window_open && meter.valid) state.idle_sec += state.sample_interval_sec;
         } else {
             // ── IDLE → CHARGING transition ─────────────────────────────────
@@ -427,7 +437,7 @@ void runSessionStateMachine(const MeterReading &meter, uint32_t now) {
             if (!meter.valid) {
                 // Modbus fault this wake — do not increment below_threshold_count
                 // and do not attribute window time.  The session stays open until
-                // valid below-threshold readings arrive.  See README §6.3 / §6.6.
+                // valid below-threshold readings arrive.  See docs §7.3 / §7.6.
             } else {
                 state.below_threshold_count++;
                 if (state.below_threshold_count >= state.session_end_count) {
@@ -441,7 +451,7 @@ void runSessionStateMachine(const MeterReading &meter, uint32_t now) {
                     }
 
                     // Copy payload into the pending-note slot.  If another session's
-                    // Note is still unconfirmed, warn and overwrite — see README §9.
+                    // Note is still unconfirmed, warn and overwrite — see docs §10.
                     if (state.pending_session_note) {
                         debugSerial.println("[app] WARN: overwriting unconfirmed pending session Note");
                     }

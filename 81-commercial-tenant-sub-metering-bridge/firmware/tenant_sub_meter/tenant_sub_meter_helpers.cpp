@@ -23,7 +23,7 @@
 // ~50 µs later.  At 60 Hz, 50 µs corresponds to δ = 2π × 60 × 50 µs ≈ 1.08°.
 // The relative active-power error is approximately tan(φ)·sin(δ) ≈ tan(φ) × 0.019,
 // where φ = arccos(PF) is the load power-factor angle — about 1 % at PF 0.9
-// and about 2 % at PF 0.7.  See README §6.3 for the full derivation.
+// and about 2 % at PF 0.7.  See docs §7.3 for the full derivation.
 //
 // Each call produces one ~200 ms active-power snapshot.  The caller accumulates
 // these snapshots into TenantState.demand_window_mwh / demand_window_sec; peak
