@@ -217,9 +217,9 @@ bool pollGenerator(GenSample &out) {
             out.engine_rpm = rpm;
             out.fuel_pct   = (float)fuel;         // 0–100% (whole units assumed)
             out.load_pct   = (float)load;         // 0–100% (whole units assumed)
-            out.oil_kpa    = (float)oil;          // kPa (whole units; see §9 for scaled variants)
+            out.oil_kpa    = (float)oil;          // kPa (whole units; see §11 for scaled variants)
             out.coolant_c  = (int16_t)cool;       // signed °C
-            out.run_hours  = hours;               // see §9: often 32-bit on real controllers
+            out.run_hours  = hours;               // see §11: often 32-bit on real controllers
             out.alarm_word = alarm;
             out.valid      = true;
             return true;

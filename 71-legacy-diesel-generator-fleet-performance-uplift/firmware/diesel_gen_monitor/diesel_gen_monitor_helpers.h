@@ -25,7 +25,7 @@ struct GenSample {
     float    load_pct;
     float    oil_kpa;
     int16_t  coolant_c;
-    uint16_t run_hours;    // 16-bit demo register; see §9 for 32-bit two-register production path
+    uint16_t run_hours;    // 16-bit demo register; see §11 for 32-bit two-register production path
     uint16_t alarm_word;
 };
 
