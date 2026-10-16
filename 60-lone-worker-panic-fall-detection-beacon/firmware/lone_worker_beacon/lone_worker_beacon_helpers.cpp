@@ -6,6 +6,7 @@
  * defined in lone_worker_beacon.ino.
  */
 #include "lone_worker_beacon_helpers.h"
+#include <ctype.h>
 
 // ─── Range-clamping helpers ───────────────────────────────────────────────
 // Return the raw value only when it falls within [lo, hi]; otherwise log and
@@ -31,6 +32,24 @@ static uint32_t clampU32(const char *name, double v, uint32_t lo, uint32_t hi,
         return fallback;
     }
     return (uint32_t)v;
+}
+
+// Parse an env var string as a number. The whole value must be numeric (and,
+// for integer settings, whole), so a typo like "300oops" or "2,5" is rejected
+// rather than applying its leading digits.
+static bool parseEnvNumber(const char *name, const char *s, bool integer, double *out)
+{
+    char *end;
+    double v = strtod(s, &end);
+    while (end != s && isspace((unsigned char)*end)) end++;
+    if (end == s || *end != '\0' || !isfinite(v) || (integer && v != floor(v))) {
+        DEBUG_PRINT("[CFG] "); DEBUG_PRINT(name);
+        DEBUG_PRINT(" is not a valid number (\""); DEBUG_PRINT(s);
+        DEBUG_PRINTLN("\") — keeping current value");
+        return false;
+    }
+    *out = v;
+    return true;
 }
 
 // ─── Notecard Configuration ───────────────────────────────────────────────
@@ -195,8 +214,9 @@ bool defineTemplates()
 // and then every ENV_FETCH_INTERVAL_MS (2 h) from loop().
 //
 // Notehub delivers environment variables as strings, so each threshold is
-// read with JGetString() and converted with strtof() / strtoul() before
-// clamping. An absent or empty key leaves the current value unchanged.
+// read with JGetString() and converted by parseEnvNumber() before clamping.
+// An absent or empty key, or a value that isn't entirely a number, leaves the
+// current value unchanged.
 void fetchEnvVars()
 {
     J *rsp = notecard.requestAndResponse(notecard.newRequest("env.get"));
@@ -215,31 +235,32 @@ void fetchEnvVars()
         }
 
         const char *s;
+        double v;
         s = JGetString(body, "freefall_g");
-        if (s && s[0] != '\0')
-            g_freefallG = clampF("freefall_g", strtof(s, NULL),
+        if (s && s[0] != '\0' && parseEnvNumber("freefall_g", s, false, &v))
+            g_freefallG = clampF("freefall_g", v,
                                  ENV_FREEFALL_G_MIN, ENV_FREEFALL_G_MAX, g_freefallG);
 
         s = JGetString(body, "impact_g");
-        if (s && s[0] != '\0')
-            g_impactG = clampF("impact_g", strtof(s, NULL),
+        if (s && s[0] != '\0' && parseEnvNumber("impact_g", s, false, &v))
+            g_impactG = clampF("impact_g", v,
                                ENV_IMPACT_G_MIN, ENV_IMPACT_G_MAX, g_impactG);
 
         s = JGetString(body, "fall_window_ms");
-        if (s && s[0] != '\0')
-            g_fallWindowMs = clampU32("fall_window_ms", strtoul(s, NULL, 10),
+        if (s && s[0] != '\0' && parseEnvNumber("fall_window_ms", s, true, &v))
+            g_fallWindowMs = clampU32("fall_window_ms", v,
                                       ENV_FALL_WINDOW_MIN, ENV_FALL_WINDOW_MAX,
                                       g_fallWindowMs);
 
         s = JGetString(body, "freefall_min_ms");
-        if (s && s[0] != '\0')
-            g_freefallMinMs = clampU32("freefall_min_ms", strtoul(s, NULL, 10),
+        if (s && s[0] != '\0' && parseEnvNumber("freefall_min_ms", s, true, &v))
+            g_freefallMinMs = clampU32("freefall_min_ms", v,
                                        ENV_FF_MIN_MS_MIN, ENV_FF_MIN_MS_MAX,
                                        g_freefallMinMs);
 
         s = JGetString(body, "panic_hold_ms");
-        if (s && s[0] != '\0')
-            g_panicHoldMs = clampU32("panic_hold_ms", strtoul(s, NULL, 10),
+        if (s && s[0] != '\0' && parseEnvNumber("panic_hold_ms", s, true, &v))
+            g_panicHoldMs = clampU32("panic_hold_ms", v,
                                      ENV_PANIC_HOLD_MIN, ENV_PANIC_HOLD_MAX,
                                      g_panicHoldMs);
     }
