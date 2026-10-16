@@ -234,8 +234,11 @@ void loop() {
     // Polling at a much shorter interval than the inbound sync window means
     // threshold changes pushed from Notehub are applied within 2 minutes of
     // the next inbound session rather than waiting up to a full additional hour.
+    // A pending dropped-note report is retried on the same cadence until the
+    // Notecard accepts it.
     if (millis() - s_last_env_ms >= ENV_POLL_MS) {
         fetchEnvVars();
+        reportDroppedNotes();
         s_last_env_ms = millis();
     }
 

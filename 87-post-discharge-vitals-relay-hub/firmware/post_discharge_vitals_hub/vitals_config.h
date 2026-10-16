@@ -169,7 +169,8 @@ static const EnrolledDevice ENROLLED_DEVICES[ENROLLED_DEVICE_COUNT] = {
 #define MEASUREMENT_TIMEOUT_MS  (30UL * 1000UL)   // 30 seconds
 
 // ─── Alert note retry ────────────────────────────────────────────────────────
-// Number of times to retry a failed vitals_alert.qo enqueue before giving up.
+// Number of enqueue attempts for each reading and vitals_alert.qo note before
+// giving up.
 #define ALERT_ENQUEUE_RETRIES  3
 
 // ─── Debug logging macros ─────────────────────────────────────────────────────

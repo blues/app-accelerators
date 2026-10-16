@@ -79,7 +79,8 @@ struct PillboxState {
     // own per-event context so duplicates and multi-wake failures remain
     // individually identifiable on replay. Overflow is explicit (not silent):
     // pending_overflow increments whenever the oldest entry is evicted to make
-    // room. The counter is cleared once the queue fully drains.
+    // room. The counter is cleared once the queue fully drains and the
+    // Notecard accepts the pending_overflow_cleared report.
     PendingOpenEvent pending_queue[PENDING_QUEUE_CAPACITY];
     uint8_t          pending_count;    // occupied slots (0..PENDING_QUEUE_CAPACITY)
     uint8_t          pending_overflow; // events dropped due to full queue

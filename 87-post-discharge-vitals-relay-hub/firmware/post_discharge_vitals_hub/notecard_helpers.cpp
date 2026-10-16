@@ -25,11 +25,17 @@ bool sendChecked(J *req) {
     return ok;
 }
 
+// Reading and alert notes that failed every enqueue attempt.  DBG output is
+// compiled out of release builds, so reportDroppedNotes() sends these counts
+// to vitals_fault.qo instead.
+static uint32_t s_dropped_readings = 0;
+static uint32_t s_dropped_alerts   = 0;
+
 // Enqueue a vitals_alert.qo note with checked delivery and retry.
 // Takes ownership of `body` (always freed on return).  Retries up to
 // ALERT_ENQUEUE_RETRIES times on I2C failure; each attempt re-wraps body in
-// a fresh note.add request.  Logs clearly on final failure so the fault is
-// visible in the serial monitor rather than being silently swallowed.
+// a fresh note.add request.  A final failure is counted for
+// reportDroppedNotes() and, in debug builds, logged to the serial monitor.
 static bool sendAlertNote(J *body) {
     bool ok = false;
     for (uint8_t attempt = 1; attempt <= ALERT_ENQUEUE_RETRIES; ++attempt) {
@@ -59,7 +65,10 @@ static bool sendAlertNote(J *body) {
         if (attempt < ALERT_ENQUEUE_RETRIES) delay(100);
     }
     JDelete(body);
-    if (!ok) DBG_PRINTLN("[NOTE] vitals_alert.qo enqueue failed after all retries — alert may be lost");
+    if (!ok) {
+        s_dropped_alerts++;
+        DBG_PRINTLN("[NOTE] vitals_alert.qo enqueue failed after all retries — alert may be lost");
+    }
     return ok;
 }
 
@@ -98,8 +107,31 @@ static bool sendVitalNoteChecked(const char *file, J *body, bool addSync) {
         if (attempt < ALERT_ENQUEUE_RETRIES) delay(100);
     }
     JDelete(body);
-    if (!ok) DBG_PRINT("[NOTE] %s enqueue failed after all retries\n", file);
+    if (!ok) {
+        s_dropped_readings++;
+        DBG_PRINT("[NOTE] %s enqueue failed after all retries\n", file);
+    }
     return ok;
+}
+
+// Send a vitals_fault.qo note with the number of reading and alert notes
+// that failed every enqueue attempt since the last report.  Called from
+// loop() every ENV_POLL_MS.  The counts are cleared only once the Notecard
+// accepts the report, so drops during a Notecard fault are still reported
+// after it recovers.
+void reportDroppedNotes() {
+    if (s_dropped_readings == 0 && s_dropped_alerts == 0) return;
+    J *req = notecard.newRequest("note.add");
+    if (!req) return;
+    JAddStringToObject(req, "file", "vitals_fault.qo");
+    JAddBoolToObject  (req, "sync", true);
+    J *body = JAddObjectToObject(req, "body");
+    JAddNumberToObject(body, "dropped_readings", s_dropped_readings);
+    JAddNumberToObject(body, "dropped_alerts",   s_dropped_alerts);
+    if (sendChecked(req)) {
+        s_dropped_readings = 0;
+        s_dropped_alerts   = 0;
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -279,6 +311,8 @@ void fetchEnvVars() {
 // in the same cellular session.  The alert cooldown timestamp advances only
 // after sendAlertNote() confirms successful enqueue, ensuring a transient I²C
 // failure never silently suppresses future alerts for the same vital type.
+// The alert is attempted whether or not the measurement note was accepted,
+// so a failed measurement note cannot also suppress the care-team alert.
 
 void submitWeight(float kg, float prev_kg) {
     float delta             = (prev_kg > 0.0f) ? (kg - prev_kg) : 0.0f;
@@ -292,9 +326,9 @@ void submitWeight(float kg, float prev_kg) {
         J *mbody = JCreateObject();
         JAddNumberToObject(mbody, "weight_kg", kg);
         JAddNumberToObject(mbody, "prev_kg",   prev_kg);
-        bool note_ok = sendVitalNoteChecked("weight.qo", mbody, /*addSync=*/true);
+        sendVitalNoteChecked("weight.qo", mbody, /*addSync=*/true);
 
-        if (note_ok && alert) {
+        if (alert) {
             J *ab = JCreateObject();
             JAddStringToObject(ab, "alert",     "weight_gain");
             JAddNumberToObject(ab, "weight_kg", (double)kg);
@@ -322,9 +356,9 @@ void submitBp(int16_t systolic, int16_t diastolic, int16_t pulse) {
         JAddNumberToObject(mbody, "systolic_mmhg",  systolic);
         JAddNumberToObject(mbody, "diastolic_mmhg", diastolic);
         JAddNumberToObject(mbody, "pulse_bpm",      pulse);
-        bool note_ok = sendVitalNoteChecked("bp.qo", mbody, /*addSync=*/true);
+        sendVitalNoteChecked("bp.qo", mbody, /*addSync=*/true);
 
-        if (note_ok && alert) {
+        if (alert) {
             J *ab = JCreateObject();
             JAddStringToObject(ab, "alert",          "bp_high");
             JAddNumberToObject(ab, "systolic_mmhg",  systolic);
@@ -350,9 +384,9 @@ void submitSpO2(int16_t spo2_pct, int16_t pulse) {
         J *mbody = JCreateObject();
         JAddNumberToObject(mbody, "spo2_pct",  spo2_pct);
         JAddNumberToObject(mbody, "pulse_bpm", pulse);
-        bool note_ok = sendVitalNoteChecked("spo2.qo", mbody, /*addSync=*/true);
+        sendVitalNoteChecked("spo2.qo", mbody, /*addSync=*/true);
 
-        if (note_ok && alert) {
+        if (alert) {
             J *ab = JCreateObject();
             JAddStringToObject(ab, "alert",    "spo2_low");
             JAddNumberToObject(ab, "spo2_pct", spo2_pct);
@@ -381,26 +415,24 @@ void submitActivity(uint16_t hr_bpm) {
     if (threshold_tripped) {
         J *mbody = JCreateObject();
         JAddNumberToObject(mbody, "heart_rate_bpm", hr_bpm);
-        bool note_ok = sendVitalNoteChecked("activity.qo", mbody, /*addSync=*/true);
+        sendVitalNoteChecked("activity.qo", mbody, /*addSync=*/true);
 
-        if (note_ok) {
-            if (hr_high_alert) {
-                J *ab = JCreateObject();
-                JAddStringToObject(ab, "alert",          "hr_high");
-                JAddNumberToObject(ab, "heart_rate_bpm", hr_bpm);
-                if (sendAlertNote(ab)) { g_last_hr_high_alert_ms = now; }
-                DBG_PRINT("[ALERT] Heart rate %d bpm — hr_high\n", hr_bpm);
-            }
-            if (hr_low_alert) {
-                J *ab = JCreateObject();
-                JAddStringToObject(ab, "alert",          "hr_low");
-                JAddNumberToObject(ab, "heart_rate_bpm", hr_bpm);
-                if (sendAlertNote(ab)) { g_last_hr_low_alert_ms = now; }
-                DBG_PRINT("[ALERT] Heart rate %d bpm — hr_low\n", hr_bpm);
-            }
-            // No hub.sync needed: sync:true on the measurement note above
-            // already triggers an outbound session for care-team visibility.
+        if (hr_high_alert) {
+            J *ab = JCreateObject();
+            JAddStringToObject(ab, "alert",          "hr_high");
+            JAddNumberToObject(ab, "heart_rate_bpm", hr_bpm);
+            if (sendAlertNote(ab)) { g_last_hr_high_alert_ms = now; }
+            DBG_PRINT("[ALERT] Heart rate %d bpm — hr_high\n", hr_bpm);
         }
+        if (hr_low_alert) {
+            J *ab = JCreateObject();
+            JAddStringToObject(ab, "alert",          "hr_low");
+            JAddNumberToObject(ab, "heart_rate_bpm", hr_bpm);
+            if (sendAlertNote(ab)) { g_last_hr_low_alert_ms = now; }
+            DBG_PRINT("[ALERT] Heart rate %d bpm — hr_low\n", hr_bpm);
+        }
+        // No hub.sync needed: sync:true on the measurement and alert notes
+        // already triggers an outbound session for care-team visibility.
     } else {
         J *mbody = JCreateObject();
         JAddNumberToObject(mbody, "heart_rate_bpm", hr_bpm);
