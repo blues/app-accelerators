@@ -13,8 +13,8 @@
 //            Sensors M6300-LP + R6315-12) → 120 Ω shunt → A0
 //            DS18B20 waterproof temperature probe (OneWire) → D2
 //
-// Sensor model — float-transmitter variant (see README §1 variant note and
-// §6 "Sensor selection rationale"):
+// Sensor model — float-transmitter variant (see "Sensor selection rationale"
+// in the documentation linked from README.md):
 //
 //   The original project specification called for a low-power ultrasonic or
 //   pressure level sensor with the DS18B20 temperature probe used for
@@ -22,7 +22,7 @@
 //   implements the 4–20 mA float-transmitter variant, which intentionally
 //   departs from that specification. It should be treated as one concrete
 //   implementation path, not a complete delivery of the original brief.
-//   See README §6 for the full rationale; brief summary:
+//   See that section for the full rationale; brief summary:
 //
 //   Ultrasonic: requires a dedicated top-of-tank port (extra tank penetration)
 //     and temperature-compensated speed-of-sound correction whose accuracy
@@ -128,7 +128,7 @@ struct AppState {
 
   uint32_t cycles;
 
-  bool    templates_defined;        // true once both note.template calls succeed
+  bool    templates_defined;        // true once the note.template and env.template calls succeed
   uint8_t high_consumption_streak;  // consecutive wakes with gpd > CONSUMPTION_ALERT_GPD
 
   // Fix [1]: Last-applied calibration values. When any of these differ from the
@@ -193,10 +193,10 @@ static void hubConfigure() {
   // it once on cold boot is sufficient.
   //
   // Note: Skylo requires at least one initial non-NTN (cellular or WiFi) sync
-  // to associate with Notehub and register Notefile templates before NTN can be
-  // used. In "periodic" mode the cold-boot hub.set above triggers that first
-  // sync over cellular/WiFi, so commission each unit where it has terrestrial
-  // coverage even if it will routinely operate over satellite.
+  // to associate with Notehub and register the Notefile and env var templates
+  // before NTN can be used. In "periodic" mode the cold-boot hub.set above
+  // triggers that first sync over cellular/WiFi, so commission each unit where
+  // it has terrestrial coverage even if it will routinely operate over satellite.
   J *t = notecard.newRequest("card.transport");
   JAddStringToObject(t, "method", "wifi-cell-ntn");
   if (!notecard.sendRequest(t)) {
@@ -206,13 +206,19 @@ static void hubConfigure() {
   }
 }
 
-// Returns true only when both note.template requests succeed. Callers should
-// store the return value and retry on the next wake if false — a one-time
-// failure at cold-start would otherwise leave notes untemplatized indefinitely.
-// note.template is idempotent on the Notecard, so repeating it is safe.
+// Returns true only when all three template requests (two note.template, one
+// env.template) succeed. Callers should store the return value and retry on
+// the next wake if false — a one-time failure at cold-start would otherwise
+// leave notes untemplatized indefinitely. Template requests are idempotent on
+// the Notecard, so repeating them is safe.
+//
+// Both Notefiles use format:"compact" plus a port, which makes them
+// NTN-compatible: they sync over Skylo satellite as well as cellular and
+// WiFi. Without "compact" the Notecard never sends them over satellite.
 static bool defineTemplates() {
   bool ok_status = false;
   bool ok_alert  = false;
+  bool ok_env    = false;
 
   // tank_status.qo: daily fill summary. Templates compress notes to fixed-
   // length records (~3-5x smaller than free-form JSON on the wire) — material
@@ -221,7 +227,9 @@ static bool defineTemplates() {
     J *req = notecard.newRequest("note.template");
     JAddStringToObject(req, "file", "tank_status.qo");
     JAddNumberToObject(req, "port", 50);
+    JAddStringToObject(req, "format", "compact");
     J *body = JAddObjectToObject(req, "body");
+    JAddNumberToObject(body, "_time",            14);    // Note creation time, which compact format otherwise drops
     JAddNumberToObject(body, "fill_pct",         14.1);  // 4-byte float; current fill at time of note
     JAddNumberToObject(body, "fill_gal",         14.1);  // current fill gallons
     JAddNumberToObject(body, "min_fill_pct",     14.1);  // lowest fill seen in this reporting window
@@ -244,7 +252,9 @@ static bool defineTemplates() {
     J *req = notecard.newRequest("note.template");
     JAddStringToObject(req, "file", "tank_alert.qo");
     JAddNumberToObject(req, "port", 51);
+    JAddStringToObject(req, "format", "compact");
     J *body = JAddObjectToObject(req, "body");
+    JAddNumberToObject(body, "_time",            14);
     JAddStringToObject(body, "alert", "high_consumption");  // longest real value → Notecard reserves 16 bytes
     JAddNumberToObject(body, "fill_pct",         14.1);
     JAddNumberToObject(body, "fill_gal",         14.1);
@@ -257,7 +267,32 @@ static bool defineTemplates() {
 #endif
     }
   }
-  return ok_status && ok_alert;
+  // Environment variable template. Notecard for Skylo needs one before env.get
+  // works in NTN mode, and over satellite Notehub delivers only the variables
+  // named here. env.get still returns every value as a string, so
+  // fetchEnvOverrides parses them unchanged; the hints size the NTN encoding.
+  {
+    J *req = notecard.newRequest("env.template");
+    J *body = JAddObjectToObject(req, "body");
+    JAddNumberToObject(body, "tank_capacity_gal",             14.1);
+    JAddNumberToObject(body, "sensor_empty_ma",               14.1);
+    JAddNumberToObject(body, "sensor_full_ma",                14.1);
+    JAddNumberToObject(body, "fill_alert_pct",                14.1);
+    JAddNumberToObject(body, "consumption_alert_gal_per_day", 14.1);
+    JAddNumberToObject(body, "sample_interval_min",           22);   // 2-byte unsigned int (1–1440)
+    JAddNumberToObject(body, "report_interval_hr",            21);   // 1-byte unsigned int (1–168)
+    JAddNumberToObject(body, "alert_cooldown_hr",             21);
+    JAddNumberToObject(body, "consumption_alert_streak",      21);
+    JAddStringToObject(body, "wifi_ssid",                     TSTRINGV);  // variable-length string
+    JAddStringToObject(body, "wifi_password",                 TSTRINGV);
+    ok_env = notecard.sendRequest(req);
+    if (!ok_env) {
+#ifdef usbSerial
+      usbSerial.println("[env.template] failed — will retry on next wake");
+#endif
+    }
+  }
+  return ok_status && ok_alert && ok_env;
 }
 
 // Returns the current Unix epoch from the Notecard, or 0 if:
@@ -440,8 +475,8 @@ static bool fetchEnvOverrides() {
     // non-empty, provision WiFi on the Notecard via card.wifi. This is the
     // recommended provisioning path for deployed Notecarrier CX hardware where
     // the Notecard is not directly accessible via USB. The Notecard stores
-    // credentials internally and connects over WiFi when it provides adequate
-    // coverage; cellular remains the primary transport. card.wifi is idempotent
+    // credentials internally, and because card.transport is wifi-cell-ntn it
+    // uses WiFi first whenever that network is in range. card.wifi is idempotent
     // — the Notecard ignores the call if the credentials are already stored and
     // unchanged, so calling on every wake when both vars are set is harmless.
     {
@@ -604,8 +639,8 @@ static void runSampleCycle() {
   float xmtr_ma  = readTransmitterMA(PIN_TRANSMITTER);
   // Temperature is read every cycle for inclusion in daily summary notes. It does
   // not affect the fill calculation: the float-type transmitter tracks liquid level
-  // directly, independent of liquid density or temperature. See README §6 and the
-  // top-of-file sensor model note for the full design rationale.
+  // directly, independent of liquid density or temperature. See the top-of-file
+  // sensor model note for the full design rationale.
   float temp_c   = readTemperatureC(tempSensor);
   float fill_pct = computeFillPct(xmtr_ma, SENSOR_EMPTY_MA, SENSOR_FULL_MA);
   float fill_gal = computeFillGal(fill_pct, TANK_CAPACITY_GAL);
@@ -781,10 +816,10 @@ void setup() {
 // template/hub.set calls, and seeds the summary-window anchor once time is
 // available.
 static void perWakeConfigure() {
-  // Define note templates on every wake until both succeed. note.template is
-  // idempotent on the Notecard, so repeating it is safe. Without this retry
-  // a one-time failure at cold-start would leave the device running
-  // untemplatized indefinitely.
+  // Define the Note and env var templates on every wake until all succeed.
+  // Template requests are idempotent on the Notecard, so repeating them is
+  // safe. Without this retry a one-time failure at cold-start would leave the
+  // device running untemplatized indefinitely.
   if (!state.templates_defined) {
     state.templates_defined = defineTemplates();
   }
