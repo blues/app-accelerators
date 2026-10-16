@@ -29,8 +29,9 @@
       applying the full warm-up delay keeps readings valid whether the sensor
       was already running or cold-started.  For definitive PM sensor
       power-gating (and acoustic isolation during the sound window), add a
-      GPIO-controlled load switch to the PMSA003I power line — see README §9.
-      Verify actual system draw with a Mojo current trace (see README §8).
+      GPIO-controlled load switch to the PMSA003I power line — see Section 10
+      (Limitations) of the accelerator page.  Verify actual system draw with a
+      Mojo current trace (see Section 9, Validation and Testing).
     - The SEN0232 is powered from V+ (raw LiPo voltage), which stays on while
       the host sleeps.  The sensor's op-amp draws a small quiescent current
       (~3-5 mA estimated) continuously; account for this in system power budgets.
@@ -141,7 +142,8 @@ void loop() {
     // runOneSampleCycle() applies PM_WARMUP_MS after every successful
     // begin_I2C() call — the Qwiic rail stays on while the host sleeps, so
     // the warm-up guarantees valid readings whether the sensor was already
-    // running or cold-started (see README §9 for explicit power-gating).
+    // running or cold-started (see the accelerator page's Section 10 for
+    // explicit power-gating).
     const uint32_t t0 = millis();
     runOneSampleCycle();
     // Measure how many seconds the host spent awake this cycle and trim the

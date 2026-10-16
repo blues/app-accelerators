@@ -12,7 +12,7 @@
 // return fallback, keeping the current runtime value unchanged.
 static float clampF(const char *name, double v, float lo, float hi, float fallback)
 {
-    if ((float)v < lo || (float)v > hi) {
+    if (!((float)v >= lo && (float)v <= hi)) {   // also rejects NaN ("nan")
         DEBUG_PRINT("[CFG] "); DEBUG_PRINT(name);
         DEBUG_PRINT(" out of range ("); DEBUG_PRINT(v);
         DEBUG_PRINT(") — keeping "); DEBUG_PRINTLN(fallback);
@@ -101,8 +101,10 @@ bool notecardConfigure()
 // the join key. event_id is device-local and resets on power cycle; it is
 // not unique across devices on its own.
 //
-// Returns false if any template registration fails — the caller latches
-// g_setupFault.
+// An env.template is also registered so env vars can arrive over NTN.
+//
+// Returns false if either Notefile template registration fails — the caller
+// latches g_setupFault. An env.template failure is logged but not fatal.
 bool defineTemplates()
 {
     bool allOk = true;
@@ -161,6 +163,28 @@ bool defineTemplates()
         }
     }
 
+    // ── Environment-variable template ───────────────────────────────────
+    // Notecard for Skylo only receives env vars over NTN when they are
+    // templated, and only the variables named here are delivered. Every value
+    // is templated as a string because fetchEnvVars() parses and range-checks
+    // the text itself. Not fatal: alerts don't depend on it, and cellular/WiFi
+    // syncs deliver env vars without a template.
+    {
+        J *req = notecard.newRequest("env.template");
+        if (req) {
+            J *body = JAddObjectToObject(req, "body");
+            JAddStringToObject(body, "worker_id",       "24");  // up to WORKER_ID_MAX chars
+            JAddStringToObject(body, "freefall_g",      "8");
+            JAddStringToObject(body, "impact_g",        "8");
+            JAddStringToObject(body, "fall_window_ms",  "8");
+            JAddStringToObject(body, "freefall_min_ms", "8");
+            JAddStringToObject(body, "panic_hold_ms",   "8");
+            if (!notecard.sendRequest(req)) {
+                DEBUG_PRINTLN("[CFG] env.template failed; env vars will only arrive over cellular/WiFi.");
+            }
+        }
+    }
+
     return allOk;
 }
 
@@ -169,6 +193,10 @@ bool defineTemplates()
 // explicit range validation. Values outside the safe ranges are rejected and
 // the current runtime value is kept, with a debug log. Called once at boot
 // and then every ENV_FETCH_INTERVAL_MS (2 h) from loop().
+//
+// Notehub delivers environment variables as strings, so each threshold is
+// read with JGetString() and converted with strtof() / strtoul() before
+// clamping. An absent or empty key leaves the current value unchanged.
 void fetchEnvVars()
 {
     J *rsp = notecard.requestAndResponse(notecard.newRequest("env.get"));
@@ -186,32 +214,32 @@ void fetchEnvVars()
             g_workerId[WORKER_ID_MAX] = '\0';
         }
 
-        double v;
-        v = JGetNumber(body, "freefall_g");
-        if (v != 0.0)
-            g_freefallG = clampF("freefall_g", v,
+        const char *s;
+        s = JGetString(body, "freefall_g");
+        if (s && s[0] != '\0')
+            g_freefallG = clampF("freefall_g", strtof(s, NULL),
                                  ENV_FREEFALL_G_MIN, ENV_FREEFALL_G_MAX, g_freefallG);
 
-        v = JGetNumber(body, "impact_g");
-        if (v != 0.0)
-            g_impactG = clampF("impact_g", v,
+        s = JGetString(body, "impact_g");
+        if (s && s[0] != '\0')
+            g_impactG = clampF("impact_g", strtof(s, NULL),
                                ENV_IMPACT_G_MIN, ENV_IMPACT_G_MAX, g_impactG);
 
-        v = JGetNumber(body, "fall_window_ms");
-        if (v != 0.0)
-            g_fallWindowMs = clampU32("fall_window_ms", v,
+        s = JGetString(body, "fall_window_ms");
+        if (s && s[0] != '\0')
+            g_fallWindowMs = clampU32("fall_window_ms", strtoul(s, NULL, 10),
                                       ENV_FALL_WINDOW_MIN, ENV_FALL_WINDOW_MAX,
                                       g_fallWindowMs);
 
-        v = JGetNumber(body, "freefall_min_ms");
-        if (v != 0.0)
-            g_freefallMinMs = clampU32("freefall_min_ms", v,
+        s = JGetString(body, "freefall_min_ms");
+        if (s && s[0] != '\0')
+            g_freefallMinMs = clampU32("freefall_min_ms", strtoul(s, NULL, 10),
                                        ENV_FF_MIN_MS_MIN, ENV_FF_MIN_MS_MAX,
                                        g_freefallMinMs);
 
-        v = JGetNumber(body, "panic_hold_ms");
-        if (v != 0.0)
-            g_panicHoldMs = clampU32("panic_hold_ms", v,
+        s = JGetString(body, "panic_hold_ms");
+        if (s && s[0] != '\0')
+            g_panicHoldMs = clampU32("panic_hold_ms", strtoul(s, NULL, 10),
                                      ENV_PANIC_HOLD_MIN, ENV_PANIC_HOLD_MAX,
                                      g_panicHoldMs);
     }
@@ -224,8 +252,8 @@ bool initAccel()
     // Adafruit_LIS3DH::begin() probes WHO_AM_I (returns false if the part does
     // not answer on ACCEL_I2C_ADDR), enables all three axes, and leaves the
     // device in high-resolution 12-bit mode with BDU set so multi-byte reads
-    // are coherent. It does NOT default to the rate or range this project
-    // needs — 400 Hz and ±2 g — so both are set explicitly below.
+    // are coherent. Its defaults (400 Hz, ±2 g) are NOT the rate or range
+    // this project needs, so both are set explicitly below.
     if (!accel.begin(ACCEL_I2C_ADDR)) return false;
 
     accel.setRange(LIS3DH_RANGE_4_G);           // ±4 g; headroom for impacts

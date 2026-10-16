@@ -22,7 +22,7 @@
  *       Only one GPS enrichment window is active at a time; a second alert
  *       that fires during an ongoing search receives its cached location only
  *       — no beacon_location.qo follow-up is queued for it.
- * See README Section 6 (GPS Design) for the full flow description.
+ * See the accelerator page's Section 7 (Firmware Design) for the full flow.
  *
  * ── Power note ───────────────────────────────────────────────────────────
  * This POC keeps the host MCU awake continuously. Fall detection is sampled
@@ -30,7 +30,7 @@
  * to reliably catch free-fall phases as short as DEFAULT_FREEFALL_MIN_MS
  * (80 ms). Notecard I/O and state checks run at the outer ~10 Hz cadence.
  * A production build should use STM32L433 STOP2 mode with LIS3DH INT1 and
- * button GPIO wakeup. See README Section 9 (Limitations).
+ * button GPIO wakeup. See the accelerator page's Section 11 (Limitations).
  *
  * ── File layout ──────────────────────────────────────────────────────────
  * lone_worker_beacon.ino        — constants, globals, setup(), loop()
@@ -300,7 +300,8 @@ void loop()
 
         // Both fall and panic are gated by the 60-second cooldown window.
         // In-cooldown events are silently suppressed — no note, no GPS search —
-        // matching the documented on-wire contract (README §7 "Alert triggers").
+        // matching the documented on-wire contract (the accelerator page's
+        // Section 8 "Alert triggers").
         // If both fire on the same loop pass, panic takes precedence as the
         // explicit worker signal.
         if (cooldownExpired) {

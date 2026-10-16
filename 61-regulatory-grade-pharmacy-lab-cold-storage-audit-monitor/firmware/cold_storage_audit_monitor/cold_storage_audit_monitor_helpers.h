@@ -53,7 +53,8 @@ extern Uart debugSerial;   // defined in cold_storage_audit_monitor.ino
 
 // MAX31865 SPI chip-select pin on the Notecarrier CX dual 16-pin header.
 // Uses hardware SPI (SCK/MOSI/MISO on the header); only CS is software-selectable.
-// See §4 Wiring for the MOSI/MISO label-swap note specific to Notecarrier CX.
+// See Section 5 (Wiring and Assembly) of the accelerator page for the
+// MOSI/MISO label-swap note specific to Notecarrier CX.
 #define MAX31865_CS_PIN D10
 
 // Float-field sentinels written when the corresponding sensor has no valid data.
