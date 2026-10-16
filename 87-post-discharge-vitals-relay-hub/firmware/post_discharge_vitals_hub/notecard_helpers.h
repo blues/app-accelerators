@@ -41,8 +41,8 @@ void defineTemplates();
 // Fetch alert threshold env vars from Notehub and update threshold globals.
 void fetchEnvVars();
 
-// Report reading/alert notes that failed every enqueue attempt to
-// vitals_fault.qo.  No-op when nothing was dropped.
+// Report reading/alert notes that went unconfirmed on every enqueue attempt
+// (possibly lost) to vitals_fault.qo.  No-op when every note was confirmed.
 void reportDroppedNotes();
 
 // Enqueue a reading note and, if the reading trips a threshold, also enqueue a

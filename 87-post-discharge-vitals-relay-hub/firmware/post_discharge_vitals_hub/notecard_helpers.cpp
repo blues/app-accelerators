@@ -25,17 +25,19 @@ bool sendChecked(J *req) {
     return ok;
 }
 
-// Reading and alert notes that failed every enqueue attempt.  DBG output is
-// compiled out of release builds, so reportDroppedNotes() sends these counts
-// to vitals_fault.qo instead.
+// Reading and alert notes with no confirmed enqueue: every attempt was
+// rejected or got no response.  A missing response doesn't prove the Notecard
+// didn't store the note (the I2C reply may be what was lost), so these count
+// possible losses, not confirmed ones.  DBG output is compiled out of release
+// builds, so reportDroppedNotes() sends these counts to vitals_fault.qo instead.
 static uint32_t s_dropped_readings = 0;
 static uint32_t s_dropped_alerts   = 0;
 
 // Enqueue a vitals_alert.qo note with checked delivery and retry.
 // Takes ownership of `body` (always freed on return).  Retries up to
 // ALERT_ENQUEUE_RETRIES times on I2C failure; each attempt re-wraps body in
-// a fresh note.add request.  A final failure is counted for
-// reportDroppedNotes() and, in debug builds, logged to the serial monitor.
+// a fresh note.add request.  If no attempt is confirmed, the note is counted
+// for reportDroppedNotes() and, in debug builds, logged to the serial monitor.
 static bool sendAlertNote(J *body) {
     bool ok = false;
     for (uint8_t attempt = 1; attempt <= ALERT_ENQUEUE_RETRIES; ++attempt) {
@@ -115,7 +117,7 @@ static bool sendVitalNoteChecked(const char *file, J *body, bool addSync) {
 }
 
 // Send a vitals_fault.qo note with the number of reading and alert notes
-// that failed every enqueue attempt since the last report.  Called from
+// that went unconfirmed on every enqueue attempt since the last report.  Called from
 // loop() every ENV_POLL_MS.  The counts are cleared only once the Notecard
 // accepts the report, so drops during a Notecard fault are still reported
 // after it recovers.
