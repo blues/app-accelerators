@@ -52,7 +52,7 @@
       resumes in place with RAM intact, so ColdChainState needs no
       serialization.
     - Issues hub.set, card.transport, and card.motion.mode at power-up and
-      registers both note.template schemas; each step sets a flag in
+      registers all four note.template schemas; each step sets a flag in
       ColdChainState on success and is reapplied on later wakes only while
       the flag is false, so a transient failure leaves no step permanently
       missed.  A reflash resets the host and re-runs setup(), so
@@ -69,9 +69,9 @@
 
   Notefiles
     cargo_data.qo   — compact-templated summary (adaptive interval)
-    cargo_alert.qo  — immediate sync on any threshold trip
+    cargo_alert.qo  — compact-templated, immediate sync on any threshold trip
     cargo_log.qo    — compact-templated per-sample tamper-evident log
-    cargo_state.qo  — immediate sync on shipment-state transitions
+    cargo_state.qo  — compact-templated, immediate sync on shipment-state transitions
 
   Alert types
     temp_low        — below temp_min_c

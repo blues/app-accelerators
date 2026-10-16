@@ -12,12 +12,12 @@
 #include "rail_car_tracker_helpers.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
-// configureNotecard — hub.set + voltage-variable sync policy
+// configureNotecard — hub.set + voltage-variable sync policy + card.transport
 //
 // Called at power-up (idempotent) so that a PRODUCT_UID change in the
 // firmware sketch takes effect on the very next wake without requiring
-// CONFIG_VERSION to be bumped. Returns false if the request fails; the caller
-// logs the error but continues — the Notecard retains its previous hub.set
+// CONFIG_VERSION to be bumped. Returns false if either request fails; the
+// caller logs the error but continues — the Notecard retains its previous
 // configuration so queued notes are not lost. Voltage-variable
 // outbound/inbound schedules conserve battery and satellite airtime when
 // solar input drops.
@@ -34,6 +34,15 @@ bool configureNotecard() {
                        "usb:120;high:240;normal:480;low:720;dead:0");
     bool ok = notecard.sendRequest(req);
     if (!ok) debugSerial.println("[warn] hub.set failed");
+
+    // Notecard for Skylo ships set to wifi-cell, which never uses the
+    // satellite radio. cell-ntn prefers cellular and falls back to Skylo NTN.
+    req = notecard.newRequest("card.transport");
+    JAddStringToObject(req, "method", "cell-ntn");
+    if (!notecard.sendRequest(req)) {
+        debugSerial.println("[warn] card.transport failed");
+        ok = false;
+    }
     return ok;
 }
 

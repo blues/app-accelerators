@@ -36,6 +36,8 @@
 #endif
 
 // ── Product UID ───────────────────────────────────────────────────────────────
+// Uncomment the next line and set it to your Notehub ProductUID.
+// #define PRODUCT_UID "com.your-company.your-name:rail-tracker"
 #ifndef PRODUCT_UID
 #define PRODUCT_UID ""
 #pragma message "PRODUCT_UID is not defined. Set it to your Notehub ProductUID."

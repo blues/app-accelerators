@@ -60,9 +60,10 @@ AppState        state;
 // interval for the card.attn sleep.
 static uint32_t g_sampleMin = SAMPLE_INTERVAL_MIN_DEFAULT;
 
-// True for the first pass through loop() after power-up. Edge-triggered
-// alerts (coupler, pressure drop, motion change) have no previous reading to
-// compare against on that pass, and the commissioning summary is sent then.
+// True until the first pass through loop() after power-up that gets past
+// configuration. Edge-triggered alerts (coupler, pressure drop, motion
+// change) have no previous reading to compare against on that pass, and the
+// commissioning summary is sent then.
 static bool     g_firstWake = true;
 
 // One-time configuration / sensor-init results. Anything that failed at
@@ -143,14 +144,14 @@ void setup() {
         debugSerial.println("[error] PRODUCT_UID is empty — set it in the sketch before flashing.");
     }
 
-    // hub.set is idempotent; applying it at power-up ensures a PRODUCT_UID
-    // change in the firmware sketch takes effect immediately without
-    // requiring CONFIG_VERSION to be bumped. Failure is non-fatal — the
-    // Notecard retains its previous hub.set configuration so notes
+    // hub.set and card.transport are idempotent; applying them at power-up
+    // ensures a PRODUCT_UID change in the firmware sketch takes effect
+    // immediately without requiring CONFIG_VERSION to be bumped. Failure is
+    // non-fatal — the Notecard retains its previous configuration so notes
     // continue to queue and sync — and it is retried on the next wake.
     g_hubSetOk = configureNotecard();
     if (!g_hubSetOk) {
-        debugSerial.println("[warn] hub.set failed — Notecard retains previous configuration");
+        debugSerial.println("[warn] hub.set/card.transport failed — Notecard retains previous configuration");
     }
 
     initSensors();
@@ -163,9 +164,6 @@ void setup() {
 // loop() — one sample cycle, then sleep until the Notecard raises ATTN.
 // ─────────────────────────────────────────────────────────────────────────────
 void loop() {
-    bool firstWake = g_firstWake;
-    g_firstWake = false;
-
     if (PRODUCT_UID[0] == '\0') {
         debugSerial.println("[error] PRODUCT_UID is empty — sleeping; set it in the sketch before flashing.");
         goToSleep();
@@ -176,7 +174,7 @@ void loop() {
     if (!g_hubSetOk) {
         g_hubSetOk = configureNotecard();
         if (!g_hubSetOk) {
-            debugSerial.println("[warn] hub.set failed — Notecard retains previous configuration");
+            debugSerial.println("[warn] hub.set/card.transport failed — Notecard retains previous configuration");
         }
     }
 
@@ -201,6 +199,11 @@ void loop() {
             return;
         }
     }
+
+    // Cleared only after configuration succeeds, so a wake that bails out
+    // above doesn't use up the first-wake summary and latch refresh.
+    bool firstWake = g_firstWake;
+    g_firstWake = false;
 
     // ── Initial GPS fix acquisition ───────────────────────────────────────────
     // configureMotionAndGPS() deliberately omits the GPS motion threshold so

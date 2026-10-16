@@ -282,8 +282,10 @@ void defineTemplates() {
     //
     // Field type codes from note-c (<Notecard.h>):
     //   TUINT32  = 24   — 4-byte unsigned integer (epoch, motion count)
-    //   TFLOAT32 = 14.1 — 4-byte IEEE-754 float, 1 decimal place
+    //   TFLOAT32 = 14.1 — 4-byte IEEE-754 float
     //   TUINT16  = 22   — 2-byte unsigned integer (small counters)
+    //   TINT32   = 14   — 4-byte signed integer
+    //   TSTRING(N)      — fixed-length string of at most N bytes
     J *req = notecard.newRequest("note.template");
     JAddStringToObject(req, "file",   NOTE_SUMMARY);
     JAddNumberToObject(req, "port",   50);
@@ -339,6 +341,47 @@ void defineTemplates() {
     JAddNumberToObject(body, "chain_crc",    TUINT32);   // rolling integrity hash
     if (!ncSend(req)) {
         debugSerial.println("[cargo] cargo_log.qo template failed — will retry on next wake");
+        allOk = false;
+    }
+
+    // ── cargo_alert.qo — compact threshold alerts (port 52) ──────────────────
+    // Without a compact template and port, the Notecard rejects note.add on
+    // this Notefile while it is connected over NTN, so an alert raised during
+    // a satellite-only stretch would never go out.  A field sendAlert() leaves
+    // out for an unavailable sensor arrives as 0, and omitempty drops it, along
+    // with any reading that is exactly 0.  Only sendTiltAlert() sets the two
+    // orientation fields.
+    req = notecard.newRequest("note.template");
+    JAddStringToObject(req, "file",   NOTE_ALERT);
+    JAddNumberToObject(req, "port",   52);
+    JAddStringToObject(req, "format", "compact");
+    body = JAddObjectToObject(req, "body");
+    JAddNumberToObject(body, "_time",            TINT32);       // Note creation time, filled in by the Notecard
+    JAddStringToObject(body, "alert",            TSTRING(14));  // longest: "shock_detected", "light_exposure"
+    JAddStringToObject(body, "orientation_from", TSTRING(15));  // longest: "landscape-right"
+    JAddStringToObject(body, "orientation_to",   TSTRING(15));
+    JAddNumberToObject(body, "temp_c",           TFLOAT32);
+    JAddNumberToObject(body, "rh_pct",           TFLOAT32);
+    JAddNumberToObject(body, "lux",              TFLOAT32);
+    JAddNumberToObject(body, "motion",           TUINT32);
+    if (!ncSend(req)) {
+        debugSerial.println("[cargo] cargo_alert.qo template failed — will retry on next wake");
+        allOk = false;
+    }
+
+    // ── cargo_state.qo — compact shipment-state transitions (port 53) ────────
+    // Templated for the same reason as cargo_alert.qo.  sendStateChange() sets
+    // _time when it has a valid epoch; otherwise the Notecard fills it in.
+    req = notecard.newRequest("note.template");
+    JAddStringToObject(req, "file",   NOTE_STATE);
+    JAddNumberToObject(req, "port",   53);
+    JAddStringToObject(req, "format", "compact");
+    body = JAddObjectToObject(req, "body");
+    JAddNumberToObject(body, "_time",      TINT32);       // transition epoch
+    JAddStringToObject(body, "state_from", TSTRING(10));  // longest: "in_transit"
+    JAddStringToObject(body, "state_to",   TSTRING(10));
+    if (!ncSend(req)) {
+        debugSerial.println("[cargo] cargo_state.qo template failed — will retry on next wake");
         allOk = false;
     }
 
@@ -551,25 +594,23 @@ bool readMotionCount(uint32_t *count_out, char *orient_out, size_t orient_max) {
         return false;
     }
 
-    // Parse comma-separated bucket counts with strtoul to handle multi-digit
-    // values (e.g., "10" must not be read as 1).
+    // movements holds one base-36 character per bucket: 0-9, A-Z for 10-35,
+    // and '*' for more than 35 (counted as 36).
     uint32_t count = 0;
     const char *mv = JGetString(rsp, "movements");
     if (mv) {
-        const char *p = mv;
-        while (*p) {
-            char *end;
-            unsigned long val = strtoul(p, &end, 10);
-            if (end == p) break;
-            count += (uint32_t)val;
-            if (*end == ',') { p = end + 1; }
-            else break;
+        for (const char *p = mv; *p; p++) {
+            if (*p >= '0' && *p <= '9')      count += (uint32_t)(*p - '0');
+            else if (*p >= 'A' && *p <= 'Z') count += (uint32_t)(*p - 'A' + 10);
+            else if (*p == '*')              count += 36U;
         }
     }
 
+    // card.motion reports orientation in "status"; "unavailable" means the
+    // accelerometer is off, which must not become a tilt baseline.
     if (orient_out && orient_max > 0) {
-        const char *orient = JGetString(rsp, "orientation");
-        if (orient && orient[0]) {
+        const char *orient = JGetString(rsp, "status");
+        if (orient && orient[0] && strcmp(orient, "unavailable") != 0) {
             strncpy(orient_out, orient, orient_max - 1);
             orient_out[orient_max - 1] = '\0';
         }
