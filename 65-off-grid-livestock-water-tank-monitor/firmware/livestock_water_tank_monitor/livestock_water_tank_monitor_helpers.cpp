@@ -305,14 +305,13 @@ void evaluateAlerts(float levelPct, float pumpAmps,
 // Emit an immediate alert Note with sync:true to bypass the outbound interval.
 // Uses the compact template registered for tank_alert.qo (port 51, "compact"
 // format) so the Note is satellite-safe on the NOTE-NBGLWX Skylo NTN path.
-// alertCode is an integer (ALERT_CODE_*) stored in the "alert_code" field;
-// fixed-length binary encoding means pump_amps = 0.0 (pump off at alert time)
-// is transmitted faithfully — compact encoding has no omitempty-style drop
-// for zero-valued numeric fields.
-// Guards on g.templatesInstalled: sending a free-form note.add to a templated
-// Notefile would corrupt the binary-encoded Notefile. setup() retries
-// defineTemplates() on every wake until both templates are confirmed, so an
-// alert arriving before templates are confirmed is held until the next wake.
+// alertCode is an integer (ALERT_CODE_*) stored in the "alert_code" field.
+// "full":true keeps zero-valued fields (alert_code 0 = level_low, pump_amps =
+// 0.0 with the pump off) that templated Notes would otherwise omit.
+// Guards on g.templatesInstalled: a Note queued before the template exists is
+// free-form and never syncs over NTN. loop() retries defineTemplates() on
+// every wake until both templates are confirmed, so an alert arriving before
+// templates are confirmed is held until the next wake.
 // Returns true if the Note was successfully queued; callers must not update
 // cooldown state or counters unless true is returned.
 bool sendAlert(int alertCode, float levelPct,
@@ -322,6 +321,7 @@ bool sendAlert(int alertCode, float levelPct,
     if (!req) return false;
     JAddStringToObject(req, "file", NOTEFILE_ALERT);
     JAddBoolToObject(req,   "sync", true);
+    JAddBoolToObject(req,   "full", true);
     J *body = JAddObjectToObject(req, "body");
     if (!body) { JDelete(req); return false; }
     JAddNumberToObject(body, "alert_code", alertCode);
@@ -337,10 +337,12 @@ bool sendAlert(int alertCode, float levelPct,
 // scheduled outbound sync; no immediate radio wake is required.
 // pump_on is derived from the window-average current: true when pumpAmps
 // (the mean of all valid samples in the window) is at or above g_pumpOnAmps.
+// "full":true keeps zero-valued fields (level_pct 0 for an empty tank,
+// pump_on false, alerts 0) that templated Notes would otherwise omit.
 // Returns false (without queuing anything) when template registration has not
-// yet succeeded — sending a free-form note.add to a templated Notefile would
-// defeat the binary-encoding that keeps wire size small for satellite links,
-// and setup() already retries defineTemplates() on every wake until it sticks.
+// yet succeeded — a free-form note.add would defeat the binary encoding that
+// keeps wire size small and would never sync over satellite, and loop()
+// already retries defineTemplates() on every wake until it sticks.
 // Returns true if the Note was successfully queued; callers must not reset
 // accumulators unless true is returned.
 bool sendSummary(float levelPct, float distMm,
@@ -349,6 +351,7 @@ bool sendSummary(float levelPct, float distMm,
     J *req = notecard.newRequest("note.add");
     if (!req) return false;
     JAddStringToObject(req, "file", NOTEFILE_SUMMARY);
+    JAddBoolToObject(req,   "full", true);
     J *body = JAddObjectToObject(req, "body");
     if (!body) { JDelete(req); return false; }
     JAddNumberToObject(body, "level_pct",   levelPct);

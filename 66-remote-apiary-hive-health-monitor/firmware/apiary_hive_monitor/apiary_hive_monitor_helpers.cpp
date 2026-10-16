@@ -5,8 +5,9 @@
   Contains:
     notecardConfigure() — hub.set (daily outbound / weekly inbound),
                           card.transport (wifi-cell-ntn) for automatic
-                          cellular→Skylo satellite failover, accelerometer
-                          disable; called at power-up (retried until it succeeds).
+                          cellular→Skylo satellite failover, env.template
+                          for env vars over NTN, accelerometer disable;
+                          called at power-up (retried until it succeeds).
     defineTemplates()   — registers compact Note templates for
                           hive_summary.qo (port 10) and hive_alert.qo
                           (port 11); required for Skylo NTN operation.
@@ -114,6 +115,22 @@ bool notecardConfigure(bool freshBoot, const char *productUID) {
     JAddStringToObject(req, "method", "wifi-cell-ntn");
     notecard.sendRequest(req);
 
+    // Over NTN, Notehub only delivers environment variables named in an
+    // env.template. String hints keep env.get values as strings, which is how
+    // fetchEnvOverrides() parses them on every transport.
+    req = notecard.newRequest("env.template");
+    J *envBody = JAddObjectToObject(req, "body");
+    JAddStringToObject(envBody, "sample_interval_min",  "-");
+    JAddStringToObject(envBody, "report_interval_hr",   "-");
+    JAddStringToObject(envBody, "weight_alert_kg_drop", "-");
+    JAddStringToObject(envBody, "temp_low_c",           "-");
+    JAddStringToObject(envBody, "temp_high_c",          "-");
+    JAddStringToObject(envBody, "audio_zcr_alert",      "-");
+    JAddStringToObject(envBody, "hx711_calibration",    "-");
+    JAddStringToObject(envBody, "hx711_zero_offset_kg", "-");
+    JAddStringToObject(envBody, "reset_state",          "-");
+    notecard.sendRequest(req);
+
     // Disable accelerometer — reduces idle interrupt noise on Mojo power trace.
     // Non-critical; failure does not prevent Notecard from operating normally.
     req = notecard.newRequest("card.motion.mode");
@@ -161,7 +178,7 @@ bool defineTemplates(void) {
     JAddNumberToObject(req, "port",   11);
     JAddStringToObject(req, "format", "compact");
     body = JAddObjectToObject(req, "body");
-    JAddStringToObject(body, "alert",   "audio_anomaly");  // longest name sets max field width
+    JAddStringToObject(body, "alert",   "audio_anomaly");  // any non-empty string = variable-length string
     JAddNumberToObject(body, "value1",  14.1);
     JAddNumberToObject(body, "value2",  14.1);
     JAddNumberToObject(body, "batt_mv", 12);

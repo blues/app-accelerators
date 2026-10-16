@@ -22,7 +22,7 @@
  * Hardware:
  *   Blues Notecarrier CX (STM32L433 host MCU)
  *   Blues Notecard for Skylo (NOTE-NBGLWX) in M.2 slot — cellular-first, satellite fallback
- *   MaxBotix HRXL-MaxSonar-WRL (MB7389) — tank level, analog output on A0
+ *   MaxBotix HRXL-MaxSonar-WRMT (MB7389) — tank level, analog output on A0
  *   SCT-013-030 CT + 2×10kΩ bias divider + 10µF cap — pump current on A1
  *   BSS84 PMOS + MMBT3904 NPN + 47kΩ/10kΩ switched divider — battery voltage on A2 (enable: A3)
  *   ATTN → D5 jumper — Notecard wakes the host from STOP2
@@ -299,6 +299,26 @@ static void notecardConfigure(void) {
         notecard.sendRequest(req);
     }
 
+    // Over NTN, Notehub only delivers environment variables named in an
+    // env.template. String hints keep env.get values as strings, which is how
+    // fetchEnvOverrides() parses them on every transport.
+    req = notecard.newRequest("env.template");
+    if (req) {
+        J *body = JAddObjectToObject(req, "body");
+        if (body) {
+            JAddStringToObject(body, "tank_depth_mm",        "-");
+            JAddStringToObject(body, "sensor_min_mm",        "-");
+            JAddStringToObject(body, "level_alert_pct",      "-");
+            JAddStringToObject(body, "level_critical_pct",   "-");
+            JAddStringToObject(body, "pump_on_amps",         "-");
+            JAddStringToObject(body, "battery_alert_v",      "-");
+            JAddStringToObject(body, "sample_interval_sec",  "-");
+            JAddStringToObject(body, "summary_interval_min", "-");
+            JAddStringToObject(body, "alert_cooldown_sec",   "-");
+        }
+        notecard.sendRequest(req);
+    }
+
     // Disable the onboard accelerometer to eliminate interrupt noise on bench
     // power-trace measurements. Non-critical if this fails; idempotent.
     req = notecard.newRequest("card.motion.mode");
@@ -345,9 +365,9 @@ static bool reapplyHubSet(void) {
 // 0=level_low / 1=level_critical / 2=battery_low fit well within the range.
 // alerts in tank_status.qo also uses type 12; the worst-case window count
 // (4 320 alerts) fits within the +32 767 ceiling. Both mappings are defined
-// by ALERT_CODE_* in the header. Fixed-length binary encoding means
-// pump_amps = 0.0 (pump off) is always transmitted faithfully — no omitempty
-// drop for zero-valued fields.
+// by ALERT_CODE_* in the header. Templated Notes drop zero-valued fields
+// (omitempty) unless note.add sets "full":true, which sendSummary() and
+// sendAlert() both do.
 //
 // Sets g.templatesInstalled only after BOTH templates are confirmed registered;
 // stays false so loop() retries on subsequent wakes if either call fails.
