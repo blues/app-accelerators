@@ -59,7 +59,7 @@ void applyModbusIfChanged() {
 }
 
 // -------- Device polling ----------------------------------------------------
-// Each device allows up to three retries per poll cycle; all three failing
+// Each device gets up to three attempts per poll cycle; all three failing
 // leaves `valid` false. The -9999 sentinel appears in the telemetry note if
 // the poll that immediately preceded the report boundary failed.
 

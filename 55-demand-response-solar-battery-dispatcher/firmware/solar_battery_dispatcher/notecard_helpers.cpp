@@ -188,10 +188,8 @@ void applyHubSetIfChanged(const char *product_uid) {
     JAddStringToObject(req, "mode",     "periodic");
     JAddNumberToObject(req, "outbound", (int)g_report_minutes);
     JAddNumberToObject(req, "inbound",  5);   // fixed dispatch-check cadence
-    // Use requestAndResponse so a Notecard-side error is surfaced before we
-    // record the applied cadence. sendRequest treats transport success as full
-    // success and would update s_last_report_minutes even if the Notecard
-    // rejected the request (e.g., bad product UID or transient internal error).
+    // Use requestAndResponse so the Notecard's err text can be logged; the
+    // applied cadence is recorded only when the Notecard accepts the request.
     J *rsp = notecard.requestAndResponse(req);
     if (rsp) {
         if (!notecard.responseError(rsp)) {
@@ -210,12 +208,12 @@ void applyHubSetIfChanged(const char *product_uid) {
 }
 
 // -------- Inbound dispatch --------------------------------------------------
-// Returns true when a note.get error is the normal empty-queue response.
-// Matches the documented leading phrase "note not found" precisely rather than
-// the broader "not found" to avoid suppressing unrelated Notecard faults such
-// as "notefile not found" (a distinct misconfiguration error).
+// Returns true when a note.get error just means nothing is queued: the
+// Notecard tags an empty queue {note-noexist}, and dispatch.qi itself may not
+// exist ({notefile-noexist}) until the first dispatch Note arrives.
 bool isQueueEmpty(const char *err) {
-    return err != nullptr && strstr(err, "note not found") != nullptr;
+    return err != nullptr && (strstr(err, "{note-noexist}") != nullptr ||
+                              strstr(err, "{notefile-noexist}") != nullptr);
 }
 
 void checkDispatch() {

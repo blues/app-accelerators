@@ -18,7 +18,7 @@
 //
 // Returns true when the Notecard acknowledges hub.set; false on any transient
 // failure.  The caller persists the result in state.hubSetConfirmed and retries
-// on the next wake while the flag is 0.  Once confirmed, setup() falls back to
+// on the next wake while the flag is 0.  Once confirmed, loop() falls back to
 // the cadence-change-only path (applyHubSetIfChanged).
 bool hubConfigure() {
     J *req = notecard.newRequest("hub.set");
@@ -52,8 +52,8 @@ bool hubConfigure() {
 
 // Re-applies hub.set only when summary_interval_min changes via env var so
 // the Notecard's outbound cellular cadence tracks the local summary cadence.
-// PRODUCT_UID is included on every call so the device stays associated with
-// Notehub even if the first-boot hub.set was never confirmed successful.
+// loop() calls this only after hubConfigure() is confirmed; PRODUCT_UID is
+// still included so every hub.set the device sends names its project.
 void applyHubSetIfChanged(AppState &s) {
     if (cfgSummaryMin == s.appliedSummaryMin) return;
 
@@ -76,7 +76,7 @@ void applyHubSetIfChanged(AppState &s) {
 // Registers fixed-width binary templates for both Notefiles.  Templates
 // reduce on-wire payload size by roughly 3–5× versus free-form JSON.
 // Returns true only when both templates are confirmed registered; returns
-// false on any transient failure so setup() retries on the next wake.
+// false on any transient failure so loop() retries on the next wake.
 // note.template is idempotent, so re-sending after a failure is harmless.
 bool defineTemplates() {
     bool ok = true;
