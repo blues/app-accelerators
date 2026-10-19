@@ -10,14 +10,14 @@
   the MAX31865 board mounts inside the weatherproof electronics enclosure.
   Before regulatory deployment the probe assembly must be submitted to an
   accredited calibration laboratory for a NIST-traceable calibration
-  certificate — see README §3 and §9.
+  certificate — see Sections 3 and 11 of the accelerator page.
 
   Bench substitute: SparkFun TMP117 Qwiic breakout (SEN-15805). Replacing the
   MAX31865 path with TMP117 requires swapping the Adafruit_MAX31865 include and
   global (below) for a TMP117 object and updating readTemperatureC() in
   cold_storage_audit_monitor_helpers.cpp. The TMP117 bench build does not
   measure compartment interior temperature and is not a deployable compliance
-  instrument — see README §3.
+  instrument — see Section 4 (Hardware Requirements) of the accelerator page.
 
   Wakes every 5 minutes, reads the PT1000 temperature probe via MAX31865,
   VEML7700 lux sensor (direct Qwiic connection, no TMP117 intermediate),

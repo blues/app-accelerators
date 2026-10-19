@@ -16,21 +16,21 @@
 #pragma once
 
 // ─── CAN BMS toggle ───────────────────────────────────────────────────────────
-// Set to 1 if a compact MCP2515 SPI CAN module is installed (see README §3 and
-// §4 for the breakout + TXB0104 level-shifter wiring).
+// Set to 1 if a compact MCP2515 SPI CAN module is installed (see §4 and §5 of
+// the dev.blues.io page for the breakout + TXB0104 level-shifter wiring).
 // 0 = CAN feature disabled (default); 1 = CAN feature compiled in.
 #define ENABLE_CAN_BMS  0
 
 // ─── Current-sensor toggle ────────────────────────────────────────────────────
 // 0 (default) = primary field build: INA228 readCurrent() through an external
-//   precision shunt wired to VIN+/VIN− per README §4.  Update
+//   precision shunt wired to VIN+/VIN− per §5 of the dev.blues.io page.  Update
 //   DEFAULT_SHUNT_MOHM and DEFAULT_SHUNT_MAX_A in lift_battery_monitor.ino to
 //   match the installed shunt before building.  BENCH_ONLY must be 0.
 // 1 = alternative field build: ACS758LCB-200B-PFF-T Hall-effect sensor on A1
-//   per README §4.  Use when breaking and re-terminating the traction conductor
-//   for an inline shunt is impractical and an isolated Hall-effect sensor is
-//   preferred instead.  Handles traction currents up to 200 A.  BENCH_ONLY
-//   must be 0.
+//   per §5 of the dev.blues.io page.  Use when breaking and re-terminating
+//   the traction conductor for an inline shunt is impractical and an isolated
+//   Hall-effect sensor is preferred instead.  Handles traction currents up to
+//   200 A.  BENCH_ONLY must be 0.
 #define ENABLE_ACS758   0
 
 // ─── Bench-mode opt-in ───────────────────────────────────────────────────────
@@ -50,7 +50,7 @@
 // (inside pollCanBms / parseCellGroupFrame).  They live here so both
 // translation units see identical values.
 #if ENABLE_CAN_BMS
-#define PIN_CAN_CS          5            // SPI CS for MCP2515 — Notecarrier CX D5 (see README §4).
+#define PIN_CAN_CS          5            // SPI CS for MCP2515 — Notecarrier CX D5 (dev.blues.io page §5).
                                          // D5 is taken by this CS, so the ATTN wake jumper uses D6
                                          // (CX_ATTN_PIN in lift_battery_monitor.ino).
 #define BMS_CELL_COUNT      8            // array capacity for decoded cell-group voltages;

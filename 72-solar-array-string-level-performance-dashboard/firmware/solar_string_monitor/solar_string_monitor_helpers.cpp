@@ -224,7 +224,7 @@ void fetchEnvVars() {
 // readIrradiance — 8-sample average of the Apogee SP-110-SS on A0.
 // Sensitivity: 0.2 mV per W/m². At STC (1000 W/m²) output ≈ 200 mV.
 // Resolution at 12-bit / 3.3V ref: ~0.8 mV/count → ~4 W/m² per count.
-// Adequate for threshold comparisons; see README for amplification option.
+// Adequate for threshold comparisons; see the accelerator page §11 for an amplification option.
 // ---------------------------------------------------------------------------
 float readIrradiance() {
     long sum = 0;
@@ -308,7 +308,7 @@ float readModuleTemp(float irr_wm2) {
 // SunSpec Model 160 (Multiple MPPT) or equivalent per-string V+I Modbus sources.
 // Combiner boxes that report only per-string current against a shared bus
 // voltage do not supply per-string voltage and therefore do not match this
-// layout; see README §9 for root-cause classification implications.
+// layout; see the accelerator page §11 for root-cause classification implications.
 //
 // Retries 3× on error. On full failure emits a bus-level alert note and returns false.
 // ---------------------------------------------------------------------------
@@ -404,10 +404,10 @@ void accumulateWindow(float v[], float a[], float irr, float mod_temp) {
 // independent operating voltage register per string — the signal model
 // provided by multi-MPPT inverters via SunSpec Model 160 (Multiple MPPT) or
 // equivalent per-string V+I sources.  Sources that expose only per-string
-// current with a shared bus voltage cannot supply the per-string Vop required
-// for the shading hypothesis; on such hardware the "shading" reason will never
-// fire and fault resolution is limited to current-magnitude anomalies
-// (soiling / string_fault / degraded).
+// current with a shared bus voltage cannot supply the per-string Vop that the
+// shading and string_fault hypotheses need (every vr is 1.0); on such hardware
+// neither reason can fire and fault resolution is limited to current-magnitude
+// anomalies (soiling / degraded).
 //
 //   low Vop, normal Iop  → "shading"      (shadow reduces operating voltage;
 //                                           bypass diodes limit current loss)

@@ -121,7 +121,7 @@ struct TenantState {
                                   // Derived from periodic ~200 ms active-power snapshots ×
                                   // sample_interval_sec; not a continuous integral.  Accurate
                                   // for constant or slowly-varying loads; may over- or under-
-                                  // state energy on bursting or cycling loads.  See README §6.3.
+                                  // state energy on bursting or cycling loads.  See docs §7.3.
                                   // uint64_t supports >50 years of continuous 200 A / 120 V load.
     uint64_t demand_window_mwh;   // milli-Wh accumulated in the current demand interval window.
                                   // Paired with demand_window_sec.  NOT reset on summary emit —

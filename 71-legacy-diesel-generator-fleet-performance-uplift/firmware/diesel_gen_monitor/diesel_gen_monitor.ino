@@ -49,7 +49,7 @@ const char *g_product_uid = PRODUCT_UID;
 
 // -------- Default env-var values --------------------------------------------------------
 // Every value below is overridable via a Notehub environment variable of the same name.
-// Register-address defaults are illustrative; see README §5 and §9 for the production
+// Register-address defaults are illustrative; see the accelerator page §6 and §11 for the production
 // path with real controller Modbus maps.
 
 uint32_t g_sample_minutes         = 1;   // minutes between Modbus polls; adopted at window close
@@ -67,7 +67,7 @@ uint16_t g_reg_fuel_pct      = 769;  // Fuel level 0–100%
 uint16_t g_reg_load_pct      = 770;  // Generator load 0–100%
 uint16_t g_reg_oil_kpa       = 771;  // Oil pressure in kPa
 uint16_t g_reg_coolant_c     = 772;  // Coolant temperature in °C (signed)
-uint16_t g_reg_run_hours     = 773;  // Cumulative engine hours (16-bit demo; see §9 for 32-bit)
+uint16_t g_reg_run_hours     = 773;  // Cumulative engine hours (16-bit demo; see §11 for 32-bit)
 uint16_t g_reg_alarm_word    = 774;  // Active alarm bitmask (0 = no alarms)
 
 // Alert thresholds — all tunable via Notehub env vars without reflashing.
@@ -148,7 +148,7 @@ static bool     g_first_sample_seen  = false;
 //
 // This is firmware-observed history — the record of every alarm event the firmware
 // has detected since the last flush. It is distinct from the controller's own internal
-// latched alarm log (a vendor-specific multi-register operation; see README §9), which
+// latched alarm log (a vendor-specific multi-register operation; see the accelerator page §11), which
 // can contain events that pre-date the monitor's installation.
 #define ALARM_HISTORY_DEPTH 8
 struct AlarmHistoryEntry {
@@ -190,9 +190,9 @@ static void defineTemplates() {
     // accumulates ~435,000 notes per year — template compression keeps that well inside
     // the included 500 MB prepaid data allowance.
     //
-    // If a template definition fails, note.add calls will be silently dropped by the
-    // Notecard until setup() is re-run (power cycle / watchdog reset). The Serial log
-    // records the failure.
+    // If a template definition fails, note.add still succeeds but the Notecard stores
+    // those Notes as regular (larger) JSON until setup() is re-run (power cycle /
+    // watchdog reset). The Serial log records the failure.
     J *req = notecard.newRequest("note.template");
     if (req) {
         JAddStringToObject(req, "file", "gen_summary.qo");

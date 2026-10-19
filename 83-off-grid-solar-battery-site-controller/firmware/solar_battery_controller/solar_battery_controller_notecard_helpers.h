@@ -31,6 +31,7 @@ extern Uart dbgSerial;   // defined in solar_battery_controller.ino
 // so the very first wake, before any Notehub inbound sync delivers Fleet env
 // vars, does not burn satellite data budget at the 4-hour cellular rate.
 // Fleet environment variables still tune cadence after the first inbound sync.
+// SKYLO_BUILD also turns on the satellite fallback (see notecardFirstBoot()).
 #ifdef SKYLO_BUILD
 #  define DEFAULT_REPORT_INTERVAL_MIN  1440UL  // Skylo NTN: once per day (satellite-safe default)
 #else
@@ -116,9 +117,9 @@ struct AppState {
     uint32_t last_outbound_min;
     uint32_t last_inbound_min;
 
-    // Indicates that note.template for solar_summary.qo was confirmed registered
-    // by the Notecard.  False after power-up; loop() retries defineTemplates()
-    // on every wake until it is set.
+    // Indicates that note.template for solar_summary.qo and solar_alert.qo was
+    // confirmed registered by the Notecard.  False after power-up; loop()
+    // retries defineTemplates() on every wake until it is set.
     bool     templates_confirmed;
 };
 
@@ -127,13 +128,14 @@ struct AppState {
 // ---------------------------------------------------------------------------
 
 // One-time hardware init at power-up (from setup()): disables the onboard
-// accelerometer to reduce idle draw.
+// accelerometer to reduce idle draw and, in SKYLO_BUILD builds, turns on the
+// Skylo satellite fallback with card.transport.
 void notecardFirstBoot();
 
-// Register fixed-width Note templates to minimise on-wire payload size over
-// the lifetime of the deployment.  Returns true when the template is confirmed
-// registered; callers should record templates_confirmed and retry on the next
-// wake if this returns false.
+// Register the compact solar_summary.qo and solar_alert.qo templates so both
+// Notefiles can sync over cellular or Skylo NTN.  Returns true when both
+// templates are confirmed registered; callers should record templates_confirmed
+// and retry on the next wake if this returns false.
 bool defineTemplates();
 
 // Issue hub.set on every wake when PRODUCT_UID is configured so that a

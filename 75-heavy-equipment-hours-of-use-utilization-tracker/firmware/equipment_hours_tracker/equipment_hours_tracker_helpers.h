@@ -32,7 +32,7 @@ extern Uart debugSerial;
 // ── Vibration classifier defaults (env-var tunable) ───────────────────────────
 #define VIB_RUN_MG_DEFAULT     15.0f // RMS residual (milli-g) above this = activity
 #define VIB_CV_MAX_DEFAULT     0.40f // CV below this = engine (steady); above = transport (bursty)
-#define VIB_SAMPLE_COUNT       208   // 104 Hz × 2 s; ~26 diesel combustion cycles
+#define VIB_SAMPLE_COUNT       208   // 104 Hz × 2 s; ~23 diesel combustion cycles
 
 // ── GPS ───────────────────────────────────────────────────────────────────────
 #define GPS_PERIOD_SECONDS     900   // periodic GPS interval (15 min)

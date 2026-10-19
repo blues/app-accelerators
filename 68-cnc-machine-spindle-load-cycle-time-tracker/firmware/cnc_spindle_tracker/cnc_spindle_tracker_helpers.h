@@ -55,9 +55,9 @@ struct Sample {
     float    spindleLoadPct;
     // Feed-rate override percentage (0–150 % of the programmed feed rate) as
     // exposed by the CNC controller's Modbus holding register.  This is NOT
-    // the actual feed rate in engineering units (mm/min or in/min); see the
-    // Limitations section of the README for why engineering-unit feed rate is
-    // not collected in this reference design.
+    // the actual feed rate in engineering units (mm/min or in/min); see §12
+    // Limitations on the dev.blues.io page for why engineering-unit feed rate
+    // is not collected in this reference design.
     float    feedOverridePct;
     uint16_t alarmCode;
     uint8_t  cycleState;         // 0=idle, 1=running, 2=hold, 3=alarm
@@ -67,10 +67,10 @@ struct Sample {
 };
 
 // PendingAlarm: one slot in the alarm-retry FIFO. Stores the alert-type label
-// (matching the 32-character string template width for cnc_alarm.qo) alongside
-// the raw sample so the full Note payload can be reconstructed on retry.
+// (32 bytes covers the longest, 18-character alert type) alongside the raw
+// sample so the full Note payload can be reconstructed on retry.
 struct PendingAlarm {
-    char   alertType[32];   // matches cnc_alarm.qo 32-character string template field
+    char   alertType[32];   // longest alert type is "modbus_unreachable" (18 chars)
     Sample sample;
 };
 

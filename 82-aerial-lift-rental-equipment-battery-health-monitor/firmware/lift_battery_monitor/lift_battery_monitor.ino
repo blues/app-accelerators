@@ -71,7 +71,7 @@
 
 // ─── Firmware-default runtime configuration ───────────────────────────────────
 // All values are overridable at runtime via Notehub environment variables
-// without reflashing — see README §5 for the complete variable table.
+// without reflashing — see §6 of the dev.blues.io page for the variable table.
 #define DEFAULT_SOC_ALERT_PCT       20.0f  // fire soc_low alert below 20 % SoC
 #define DEFAULT_TEMP_HIGH_C         45.0f  // fire temp_high alert above 45 °C
 #define DEFAULT_TEMP_LOW_C           5.0f  // fire temp_low alert below 5 °C (charging risk)
@@ -84,7 +84,7 @@
 // discharge current at 50–75 mV full-scale (e.g., 0.5 mΩ at 100 A = 50 mV,
 // or 0.375 mΩ at 200 A = 75 mV).  Wire shunt IN+ to pack positive and IN− to
 // the load/charger positive bus; connect INA228 VIN+ to IN+ and VIN− to IN−.
-// setShunt() writes SHUNT_CAL so readCurrent() returns calibrated amperes.
+// setShunt() writes SHUNT_CAL so readCurrent() returns calibrated milliamps.
 #define DEFAULT_SHUNT_MOHM           0.5f  // shunt resistance in mΩ — MUST match installed shunt
 #define DEFAULT_SHUNT_MAX_A        200.0f  // full-scale current (A) — MUST match installed shunt
 
@@ -133,7 +133,7 @@ static bool initIna228(void) {
         return false;
     }
     // Calibrate the INA228 shunt path.  setShunt() writes SHUNT_CAL so
-    // readCurrent() returns calibrated amperes.
+    // readCurrent() returns calibrated milliamps (readPackVI() converts to A).
     //   BENCH_ONLY 1: onboard 15 mΩ shunt, ≤10 A (bench/dev only).
     //   BENCH_ONLY 0: external field shunt wired to VIN+/VIN−.
     //     Update DEFAULT_SHUNT_MOHM and DEFAULT_SHUNT_MAX_A above to match
@@ -221,7 +221,7 @@ static void runCycle(void) {
     fetchEnvOverrides(s);
 
     if (first_wake || cfg.report_interval_m != s.last_applied_report_m) {
-        // Register the hub connection and compact templates on the first wake,
+        // Register the hub connection and Note templates on the first wake,
         // and again whenever report_interval_m changes via a Notehub fleet/
         // device env var so the Notecard outbound cadence matches the updated
         // value without waiting for a reboot.  Compare against
@@ -258,9 +258,9 @@ static void runCycle(void) {
 
     // ── Safety gate: only sample when templates have been confirmed ───────────
     // Proceeding while last_applied_report_m is still 0 would cause note.add
-    // calls to fall back to uncompressed JSON on battery_status.qo and
-    // battery_alert.qo, breaking the compact/satellite data-budget strategy
-    // and the Skylo note-size contract.
+    // calls to fall back to untemplated JSON on battery_status.qo and
+    // battery_alert.qo, so alerts could not go over satellite and would break
+    // the Skylo note-size contract.
     if (s.last_applied_report_m == 0) {
         dbgSerial.println("[error] Notecard templates not yet confirmed — "
                           "skipping sample cycle until templates are defined");

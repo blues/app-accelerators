@@ -495,7 +495,8 @@ void enterSleep(uint32_t now_epoch) {
     }
 
     // Cap at the retry interval when a note.add failed this wake so the
-    // dropped note is retried promptly rather than waiting a full day.
+    // dropped note is retried promptly rather than waiting a full heartbeat
+    // interval.
     if (g_state.failed_send_count > 0 && RETRY_WAKE_SEC < sleep_sec) {
         sleep_sec = RETRY_WAKE_SEC;
     }

@@ -130,7 +130,7 @@ bool notecardConfigure()
     // motion-status-change detector.  When ≥5 motion events accumulate in a
     // 60-second bucket, card.motion returns "mode":"moving"; when the bucket
     // is quiet it returns "mode":"stopped".  sensitivity:2 selects 25 Hz /
-    // ±4G — enough to catch road vibration without triggering on wind buffeting
+    // ±8G — enough to catch road vibration without triggering on wind buffeting
     // of a parked trailer.
     req = notecard.newRequest("card.motion.mode");
     if (!req) return false;
@@ -436,7 +436,7 @@ void captureGnssState(float &out_lat, float &out_lon, uint8_t &out_gps_valid)
 //
 // All location and time fields are passed in from values captured at
 // transition detection time (the wake where the state change was observed),
-// via captureGnssState / getEpoch in setup().  No GPS state queries are made
+// via captureGnssState / getEpoch in loop().  No GPS state queries are made
 // inside this function so that retried events always carry the original
 // detection-time location and timestamp, not whatever the Notecard happens to
 // have cached at retry time.  Timestamp accuracy is bounded by
@@ -540,7 +540,7 @@ bool sendHeartbeatNote(float volt)
 // enqueuePendingEvent — push a transition event onto the FIFO ring buffer.
 //
 // All location/time fields must be supplied from values captured at
-// transition detection time (via captureGnssState and getEpoch in setup())
+// transition detection time (via captureGnssState and getEpoch in loop())
 // so that every delivery attempt carries the detection-time metadata rather
 // than whatever the Notecard's GPS state happens to be at retry time.
 //

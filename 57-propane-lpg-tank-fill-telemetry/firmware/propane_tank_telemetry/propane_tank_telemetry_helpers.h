@@ -57,7 +57,7 @@ static float readTransmitterMA(uint8_t pin) {
 // Design note: the initial project specification called for an ultrasonic or
 // pressure level sensor with temperature-based vapor-pressure compensation in
 // the fill measurement path. This implementation uses a float-type transmitter
-// instead; see the top-of-file sensor model comment and README §6 for the full
+// instead; see the sensor model comment at the top of the .ino for the full
 // rationale. Because the float tracks the physical liquid propane surface
 // directly, its 4–20 mA output is already proportional to fill level regardless
 // of liquid density or temperature. Temperature is therefore NOT passed to this

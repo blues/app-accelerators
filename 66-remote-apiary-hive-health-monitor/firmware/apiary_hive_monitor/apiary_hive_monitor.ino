@@ -277,7 +277,7 @@ void loop() {
     float weight_kg = readWeightKg(calibration);
 
     // Apply platform tare offset (set via hx711_zero_offset_kg env var;
-    // see §8 commissioning procedure in README.md for how to determine this value).
+    // see the §9 tare procedure on the dev.blues.io page for how to determine this value).
     // readWeightKg() returns -1.0f on timeout/error; any value >= 0.0f is a
     // valid measurement.  A true-zero reading (empty or removed hive platform)
     // is valid and must not be discarded.
@@ -460,7 +460,7 @@ void loop() {
     }
 
     // Rule 3: acoustic behavioral anomaly — ZCR exceeds baseline; specific cause
-    //          requires physical inspection (see §9 Limitations in README.md).
+    //          requires physical inspection (see §11 Limitations on the dev.blues.io page).
     //          Only evaluated on the one wake cycle per window when audio was sampled.
     if (now > 0 && audioValid && zcr_mean > (float)audioZcr &&
         now - st.alert_audio_ts > (uint32_t)(ALERT_COOLDOWN_MIN * 60u)) {

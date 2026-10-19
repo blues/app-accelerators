@@ -38,9 +38,9 @@
 // NOTE-NBGLWX Skylo NTN satellite path.  The "alert_code" template field
 // uses type hint 12, which encodes as a 2-byte signed integer (int16_t,
 // range −32 768 to +32 767); values 0–2 fit trivially within that range.
-// All fields are always present in compact binary encoding, so pump_amps = 0.0
-// (pump off at alert time) is transmitted faithfully with no omitempty-style
-// drop for zero-valued fields.
+// sendAlert() sets "full":true so zero-valued fields (alert_code 0, or
+// pump_amps = 0.0 with the pump off) survive the omitempty rule that templated
+// Notes otherwise follow.
 // Downstream Notehub routes and cloud functions decode the integer:
 //   0 → level_low  |  1 → level_critical  |  2 → battery_low
 #define ALERT_CODE_LEVEL_LOW    0

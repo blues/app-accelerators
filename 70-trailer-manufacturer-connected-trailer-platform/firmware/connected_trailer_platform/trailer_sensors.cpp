@@ -35,8 +35,8 @@
 // The CHANGE interrupt on PIN_DOOR is an EXTI line and also wakes the host
 // from STOP2, so a door edge starts a sample cycle early.
 // g_doorIsrFired is set on any CHANGE edge on PIN_DOOR; g_doorIsrState captures
-// the pin level at interrupt time so setup() can resolve rapid toggles to the
-// final state without another digitalRead() race.
+// the pin level at interrupt time so runSampleCycle() can resolve rapid
+// toggles to the final state without another digitalRead() race.
 volatile bool g_doorIsrFired = false;
 volatile bool g_doorIsrState = false;
 

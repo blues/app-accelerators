@@ -308,21 +308,20 @@ bool emitOpenEvent(uint8_t idx, uint8_t day_mask, uint8_t poll_mask) {
 //                  overflow episode; false when called at the moment the first
 //                  overflow in an episode occurs.
 //
-// Uses sendRequest (fire-and-forget) intentionally: this is called from an
-// error path where the Notecard may also be degraded. The Note will be
-// delivered once connectivity is restored; blocking on a response would delay
-// the already-faulted polling loop with no practical benefit.
+// Returns true once the Notecard accepts the Note (sendRequest waits for the
+// response and checks its err field). Once the Notecard has accepted it, the
+// Note is delivered when connectivity allows.
 // ════════════════════════════════════════════════════════════════════════════
-static void emitPendingOverflowDiag(uint8_t overflow_count, bool drained) {
+static bool emitPendingOverflowDiag(uint8_t overflow_count, bool drained) {
     J *req = notecard.newRequest("note.add");
-    if (!req) return;
+    if (!req) return false;
     JAddStringToObject(req, "file", NOTEFILE_DIAG);
     JAddBoolToObject(req, "sync", true);
     J *body = JAddObjectToObject(req, "body");
     JAddStringToObject(body, "error",
                        drained ? "pending_overflow_cleared" : "pending_overflow");
     JAddNumberToObject(body, "dropped", (int)overflow_count);
-    notecard.sendRequest(req);
+    return notecard.sendRequest(req);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -349,9 +348,9 @@ void enqueuePendingEvent(PillboxState &s, uint8_t idx,
         usbSerial.println(s.pending_overflow);
 #endif
         // Surface the data loss to Notehub on the first overflow in an
-        // episode. Best-effort: the Notecard may also be degraded, but the
-        // Note is queued in Notecard flash and will be delivered once
-        // connectivity is restored.
+        // episode. Best-effort and not retried: the Notecard is already
+        // failing note.add, so this may be lost too. The drain report in
+        // replayPendingOpenEvents() is retried until it succeeds.
         if (first_overflow) {
             emitPendingOverflowDiag(s.pending_overflow, false);
         }
@@ -369,10 +368,12 @@ void enqueuePendingEvent(PillboxState &s, uint8_t idx,
 // per-event context, so day_mask and poll_mask accurately reflect the wake
 // when the lid was actually detected. Successfully replayed records are
 // removed; still-failing records are compacted to the front of the queue.
-// pending_overflow is cleared once the queue fully drains.
+// pending_overflow is cleared once the queue fully drains and the Notecard
+// accepts the pending_overflow_cleared report; until then the report is
+// retried on every wake, even with an empty queue.
 // ════════════════════════════════════════════════════════════════════════════
 void replayPendingOpenEvents(PillboxState &s) {
-    if (s.pending_count == 0) return;
+    if (s.pending_count == 0 && s.pending_overflow == 0) return;
 #ifdef usbSerial
     usbSerial.print("[open] replaying ");
     usbSerial.print(s.pending_count);
@@ -394,14 +395,13 @@ void replayPendingOpenEvents(PillboxState &s) {
         }
     }
     s.pending_count = write_idx;
-    if (s.pending_count == 0) {
-        if (s.pending_overflow > 0) {
-            // Queue drained after an overflow episode — emit a cloud-visible
-            // summary Note so the total drop count is recorded in Notehub
-            // before the counter is cleared.
-            emitPendingOverflowDiag(s.pending_overflow, true);
+    if (s.pending_count == 0 && s.pending_overflow > 0) {
+        // Queue drained after an overflow episode — emit a cloud-visible
+        // summary Note so the total drop count is recorded in Notehub
+        // before the counter is cleared.
+        if (emitPendingOverflowDiag(s.pending_overflow, true)) {
+            s.pending_overflow = 0; // drained and reported; reset overflow counter
         }
-        s.pending_overflow = 0; // queue fully drained; reset overflow counter
     }
 }
 

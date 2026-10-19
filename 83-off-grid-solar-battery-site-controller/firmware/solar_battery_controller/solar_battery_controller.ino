@@ -26,7 +26,8 @@
  *   cx_sleep.h                              — STOP2 host sleep, ATTN wake
  *
  * VE.Direct TX is 5V logic; use a 10kΩ/20kΩ resistor divider on each RX
- * line to bring it down to 3.3V for the STM32L433.  See README §4.
+ * line to bring it down to 3.3V for the STM32L433.  See §5 of the
+ * dev.blues.io page.
  *
  * Sleep / wake:
  *   setup() runs once.  loop() runs one sample cycle, then asks the Notecard
@@ -52,7 +53,8 @@
  *   deployments set report_interval_min=1440 in the Fleet Environment to
  *   limit satellite sessions to once per day.  Use sync_outbound_min and
  *   sync_inbound_min env vars to override the derived cadence independently
- *   when needed.  The same binary runs on both SKUs.
+ *   when needed.  Build with -DSKYLO_BUILD for the NOTE-NBGLWX: it turns on
+ *   the Skylo satellite fallback and makes the daily cadence the default.
  *
  * Alert strategy:
  *   Each alert fires on the rising edge and then repeats every
@@ -86,8 +88,8 @@
 // is not exposed at a convenient position on the standard CX header for the
 // MPPT path.  For production deployments with heavy interrupt activity (e.g.
 // if additional interrupt-driven sensors are added), prefer a hardware UART
-// to avoid SoftwareSerial's interrupt-latency sensitivity.  See README §4
-// for wiring details and the trade-off discussion.
+// to avoid SoftwareSerial's interrupt-latency sensitivity.  See §5 of the
+// dev.blues.io page for wiring details and the trade-off discussion.
 #define MPPT_RX_PIN     D9    // SoftwareSerial RX for SmartSolar MPPT
 #define MPPT_TX_PIN     D10   // SoftwareSerial TX (not driven — leave NC)
 #define VED_BAUD        19200
@@ -177,7 +179,8 @@ void setup() {
 // sample_interval_sec later.
 // ---------------------------------------------------------------------------
 void loop() {
-    // Register the solar_summary.qo template on every wake until confirmed.
+    // Register the solar_summary.qo and solar_alert.qo templates on every wake
+    // until confirmed.
     // note.template is idempotent on the Notecard, so re-registering an already-
     // active template is harmless.  Retrying on every wake until success ensures
     // that a transient failure is recovered automatically.

@@ -3,7 +3,7 @@
                                        (Ocean-Capable — Notecard Cellular +
                                         Starnote for Iridium LEO)
 
-  Runs on a Blues Swan (STM32U5) wired by hand to a Notecarrier XI, with a
+  Runs on a Blues Swan (STM32L4R5) wired by hand to a Notecarrier XI, with a
   cellular Notecard (e.g., NOTE-WBEX) in the XI's M.2 slot and a Starnote for
   Iridium module in the Notecarrier XI Starnote connector.  The Notecard
   provides LTE-M/NB-IoT cellular connectivity and the built-in accelerometer;
@@ -16,7 +16,7 @@
   chassis on ocean segments and any asset that roams beyond geostationary
   satellite footprints.  For land-route-only deployments within Skylo's
   defined NTN footprint, a NOTE-NBGLWX on a Notecarrier CX is an alternative
-  hardware path — see README §9 for notes on that option.
+  hardware path — see the accelerator page's §11 for notes on that option.
 
   On every wake the sketch:
     1. Retries Notecard configuration if a prior attempt did not complete.
@@ -209,7 +209,7 @@ void loop()
                 // is currently "off" (parked), so card.location returns the
                 // Notecard's last cached fix — the best available position at
                 // departure time.  That fix may be stale after a long dwell;
-                // see §6.3 for the gps_valid flag semantics.
+                // gps_valid=1 only means a fix exists, not that it is fresh.
                 float   cap_lat = 0.0f, cap_lon = 0.0f;
                 uint8_t cap_gps_valid = 0;
                 captureGnssState(cap_lat, cap_lon, cap_gps_valid);

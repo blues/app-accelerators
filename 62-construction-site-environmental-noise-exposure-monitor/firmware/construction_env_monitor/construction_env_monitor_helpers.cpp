@@ -531,12 +531,13 @@ bool sendAlert(const char *type, float value, float threshold) {
 // level via ADC, (4) init and warm up PMSA003I, (5) read PM, (6) accumulate,
 // (7) alert checks, (8) send summary if due.  Sound is sampled BEFORE PM
 // sensor warm-up so the PMSA003I fan acoustic signature does not contaminate
-// the dB(A) window — see the readSoundLevelDb() block below and README §9.
+// the dB(A) window — see the readSoundLevelDb() block below and Section 10
+// (Limitations) of the accelerator page.
 //
 // PM_WARMUP_MS is applied on every cycle after a successful begin_I2C().
-// Whether the ATTN sleep path cuts the Qwiic/3V3 rail between wakes is
-// carrier-implementation-specific; always applying the full warm-up delay
-// ensures readings are valid regardless of the carrier's power topology.
+// The host sleeping in STOP2 doesn't switch the Qwiic/3V3 rail, so the sensor
+// is normally already running; always applying the full warm-up delay keeps
+// readings valid whether it was running or cold-started.
 //
 // All per-alert cooldowns and the GPS re-acquire countdown are aged (decremented)
 // at the START of each cycle, before any rule evaluation, so that a timer freshly
@@ -580,7 +581,7 @@ void runOneSampleCycle(void) {
     // Qwiic 3V3 rail, so the PMSA003I stays powered (fan running) between
     // wakes and the audio channel carries its noise floor throughout.
     // Eliminating that requires an explicit GPIO-controlled load switch to
-    // gate PMSA003I power — see README §9.
+    // gate PMSA003I power — see the accelerator page's Section 10.
     float dbA = readSoundLevelDb();
 
     // ── Initialise PM sensor over I²C ────────────────────────────────────
@@ -602,7 +603,8 @@ void runOneSampleCycle(void) {
         // The Qwiic 3V3 rail stays on while the host sleeps, so the sensor is
         // normally already running; applying PM_WARMUP_MS unconditionally
         // guarantees valid readings whether it cold-started (power-up, or a
-        // load switch per README §9) or was already running.
+        // load switch per the accelerator page's Section 10) or was already
+        // running.
         delay(PM_WARMUP_MS);
         readPmSensor(pm25, pm10);
     }
@@ -647,7 +649,7 @@ void runOneSampleCycle(void) {
     // reportCountdown is either fired (reset to cfgReportMin * 60) or
     // decremented by cfgSampleSec — never both in the same cycle — so no
     // separate aging pass is needed here.  loop() trims the
-    // sleep duration by g_lastActiveSec, making the total cycle time (active
+    // sleep duration by the measured active time, making the total cycle time (active
     // + sleep) equal cfgSampleSec, so decrementing by cfgSampleSec tracks
     // elapsed wall time correctly.  Advancing the countdown only after a
     // confirmed successful queue means a transient note.add failure retries

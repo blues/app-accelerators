@@ -6,7 +6,7 @@
 // the Notecard's own enable — pulling it to GND turns the Notecard OFF — so it
 // must never be used for host sleep. The pattern that works: wire the XI's
 // ATTN header pin to a Swan GPIO, ask the Notecard to hold ATTN low for N
-// seconds with card.attn "sleep", put the STM32U5 in STOP2 (a few uA, RAM
+// seconds with card.attn "sleep", put the STM32L4R5 in STOP2 (a few uA, RAM
 // retained), and wake on the ATTN rising edge. Execution resumes in place; no
 // cold boot, no state to persist.
 //
@@ -17,7 +17,7 @@
 //          enabled and no USB host attached (battery power), the USB wakeup
 //          interrupt exits STOP2 immediately.
 // Library: STM32duino Low Power (+ its dependency STM32duino RTC). On the
-//          STM32U5 LowPower.deepSleep() is STOP2, as on the L4.
+//          Swan's STM32L4R5 LowPower.deepSleep() is STOP2.
 //
 // Usage:
 //   #include "host_sleep.h"

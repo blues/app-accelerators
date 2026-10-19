@@ -56,9 +56,10 @@ void notecardConfigure(void) {
 
 // ─── Register Note template for battery_summary.qo ───────────────────────────
 // Templates encode the schema as fixed-length wire records rather than
-// free-form JSON, shrinking per-Note wire size ~3–5×.  The numeric placeholders
-// encode type and precision: 14.2 = 4-byte IEEE-754 float, 2 decimal places;
-// 12 = 2-byte signed integer.
+// free-form JSON, shrinking per-Note wire size ~3–5×.  The integer part of each
+// numeric placeholder sets the field width in bytes and a fractional part marks
+// a float: 14.1, 14.2 and 14.3 are all 4-byte IEEE-754 floats (the digit after
+// the point does not set decimal places); 12 = 2-byte signed integer.
 void defineTemplate(void) {
     J *req = notecard.newRequest("note.template");
     JAddStringToObject(req, "file", NOTEFILE_SUMMARY);
@@ -219,7 +220,7 @@ float readBatteryVoltage(void) {
 // chip reports a *positive* raw value when current flows battery→load
 // (discharge direction).  Negating here makes every downstream check use the
 // intuitive convention: positive = charger present, negative = outage event.
-// See §4 of the README for the wiring diagram.
+// See §5 of the dev.blues.io page for the wiring diagram.
 //
 // API note: readCurrent() is the primary virtual method in the Adafruit_INA2xx
 // base class; it returns milliamps (the implementation multiplies the raw

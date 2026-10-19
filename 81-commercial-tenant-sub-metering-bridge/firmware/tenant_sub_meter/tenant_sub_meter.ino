@@ -19,7 +19,7 @@
  * pairs) multiplied by the full sample_interval_sec.  Accurate for constant or
  * slowly-varying loads; may over- or under-state energy on bursting or cycling
  * loads.  For certified metering accuracy, replace the measurement front end
- * with a dedicated simultaneous-sampling energy-metering IC.  See README §6.3.
+ * with a dedicated simultaneous-sampling energy-metering IC.  See docs §7.3.
  *
  * The hourly meter_summary.qo notes stored in Notehub are the canonical
  * record.  A downstream billing system can sum t*_wh across any date range
@@ -52,13 +52,13 @@
  *       – R_in  10 kΩ (input series resistor)
  *       – C_f   10 nF (feedback integration capacitor)
  *       – R_f    1 MΩ (feedback DC-stabilisation resistor)
- *       – op-amp section of MCP6004 (single-supply quad, 2.5 V–5.5 V)
+ *       – op-amp section of MCP6004 (single-supply quad, 1.8 V–6.0 V)
  *     Followed by a half-rail bias divider: 2× 100 kΩ + 1× 10 µF → 1.65 V
  *   • Voltage reference on A4:
  *     – Bench/prototype: ZMPT101B module (VCC/GND/VOUT, 5 V supply) with
  *       half-rail bias: 2× 100 kΩ + 1× 10 µF → 1.65 V
  *     – Production: UL/IEC 61010-1 listed isolated AC voltage transducer with
- *       analog output (see README §3 and §4)
+ *       analog output (see docs §4 and §11)
  *   • Blues Mojo inline on +VBAT (commissioning and bench validation only)
  *
  * Calibration notes:
@@ -227,7 +227,7 @@ static void runCycle(void) {
     // V×I over 2000 pairs) multiplied by the full sample_interval_sec.  This is
     // estimated interval energy — accurate for constant or slowly-varying loads
     // but may under- or over-state energy on bursting or cycling loads.  See
-    // README §6.3.
+    // docs §7.3.
     //
     // RELIABILITY NOTE: accumulators are only reset after a confirmed successful
     // note.add.  If sendSummary() returns false the data is preserved intact; the

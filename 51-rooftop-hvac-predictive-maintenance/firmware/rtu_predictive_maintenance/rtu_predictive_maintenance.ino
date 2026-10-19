@@ -156,6 +156,27 @@ static uint32_t notecardEpoch() {
   return epoch;
 }
 
+// Env var values are strings. These return false when a variable is unset,
+// isn't a number, or falls outside [lo, hi], so a typo in Notehub leaves the
+// current setting alone instead of zeroing a threshold or the sample interval.
+static bool envFloat(J *body, const char *name, float lo, float hi, float *out) {
+  const char *v = JGetString(body, name);
+  char *end;
+  float f = strtof(v, &end);
+  if (end == v || *end != '\0' || !(f >= lo && f <= hi)) return false;
+  *out = f;
+  return true;
+}
+
+static bool envUint(J *body, const char *name, uint32_t lo, uint32_t hi, uint32_t *out) {
+  const char *v = JGetString(body, name);
+  char *end;
+  unsigned long u = strtoul(v, &end, 10);
+  if (end == v || *end != '\0' || u < lo || u > hi) return false;
+  *out = (uint32_t)u;
+  return true;
+}
+
 static void fetchEnvOverrides() {
   J *req = notecard.newRequest("env.get");
   J *names = JAddArrayToObject(req, "names");
@@ -171,19 +192,16 @@ static void fetchEnvOverrides() {
 
   J *body = JGetObjectItem(rsp, "body");
   if (body) {
-    const char *v;
-    v = JGetString(body, "delta_t_min_f");
-    if (v[0]) DELTA_T_MIN_F = atof(v);
-    v = JGetString(body, "short_cycle_starts_per_hour");
-    if (v[0]) SHORT_CYCLE_STARTS_HR = (uint8_t)atoi(v);
-    v = JGetString(body, "filter_dp_alert_pa");
-    if (v[0]) FILTER_DP_ALERT_PA = atof(v);
-    v = JGetString(body, "compressor_on_amps");
-    if (v[0]) COMPRESSOR_ON_AMPS = atof(v);
-    v = JGetString(body, "sample_interval_sec");
-    if (v[0]) SAMPLE_INTERVAL_SEC = (uint32_t)atol(v);
-    v = JGetString(body, "summary_interval_min");
-    if (v[0]) SUMMARY_INTERVAL_MIN = (uint32_t)atol(v);
+    uint32_t starts;
+    envFloat(body, "delta_t_min_f",      1.0f, 40.0f,  &DELTA_T_MIN_F);
+    // startsInLastHour() tops out at START_RING_SIZE, so a limit that high never fires.
+    if (envUint(body, "short_cycle_starts_per_hour", 1, START_RING_SIZE - 1, &starts)) {
+      SHORT_CYCLE_STARTS_HR = (uint8_t)starts;
+    }
+    envFloat(body, "filter_dp_alert_pa", 1.0f, 125.0f, &FILTER_DP_ALERT_PA);  // SDP810-125Pa full scale
+    envFloat(body, "compressor_on_amps", 0.5f, 30.0f,  &COMPRESSOR_ON_AMPS);  // SCT-013-030 full scale
+    envUint(body, "sample_interval_sec",  10, 3600, &SAMPLE_INTERVAL_SEC);
+    envUint(body, "summary_interval_min",  5, 1440, &SUMMARY_INTERVAL_MIN);
   }
   notecard.deleteResponse(rsp);
 
@@ -240,7 +258,7 @@ static float readFilterDpPa() {
   Wire.requestFrom((int)SDP810_ADDR, 3);
   if (Wire.available() < 3) return NAN;
   int16_t raw = (int16_t)((Wire.read() << 8) | Wire.read());
-  Wire.read(); // CRC byte, unchecked here (see README limitations)
+  Wire.read(); // CRC byte, unchecked here (see Limitations on the accelerator page)
   return (float)raw / SDP810_SCALE_FACTOR;
 }
 
@@ -283,11 +301,6 @@ static float safeAvg(float sum, uint32_t n) {
 }
 
 static void sendSummary(uint32_t now_epoch) {
-  // Emit a summary only if *some* data was collected this window.
-  bool any_valid = state.n_supply || state.n_return || state.n_delta
-                || state.n_amps   || state.n_dp;
-  if (!any_valid) return;
-
   float runtime_min = state.summary_runtime_sec / 60.0f;
 
   J *req = notecard.newRequest("note.add");
@@ -346,7 +359,7 @@ static void runSampleCycle() {
   // Rising-edge detection: timestamp this start into the sliding window.
   // Note: transitions occurring entirely between SAMPLE_INTERVAL_SEC sample
   // points won't be detected — this is a sampled approximation, not a true
-  // event-driven counter. See README §9 for the implications.
+  // event-driven counter. See Limitations on the accelerator page.
   if (compressor_on && !state.compressor_was_on) {
     recordCompressorStart(now_epoch);
   }
@@ -410,7 +423,7 @@ void setup() {
   hubConfigure();
   defineTemplates();
   // Quiet the accelerometer so Mojo traces aren't polluted by ISR wakes
-  // during bench power-consumption validation (see README §8).
+  // during bench power-consumption validation (see the accelerator page).
   J *req = notecard.newRequest("card.motion.mode");
   JAddBoolToObject(req, "stop", true);
   notecard.sendRequest(req);

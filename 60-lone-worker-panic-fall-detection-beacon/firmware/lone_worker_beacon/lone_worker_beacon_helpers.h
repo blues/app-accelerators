@@ -102,7 +102,7 @@ struct AlertQueueEntry {
 // Hard maximum for worker_id (chars, excluding null terminator). A fixed-size
 // char buffer prevents oversized identifiers from bloating Skylo NTN compact
 // packets. Values longer than WORKER_ID_MAX are silently truncated in
-// fetchEnvVars(). Document this limit in the Notehub env-var README section.
+// fetchEnvVars(). The accelerator page's env-var table documents this limit.
 #define WORKER_ID_MAX  24
 
 // ── Accelerometer sampling and runtime health ─────────────────────────────

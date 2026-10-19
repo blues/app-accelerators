@@ -18,8 +18,10 @@
 #include <Adafruit_VEML7700.h>
 
 // ---------------------------------------------------------------------------
-// Product UID — set this to your Notehub project's ProductUID
+// Product UID — uncomment the next line and set it to your Notehub project's
+// ProductUID
 // ---------------------------------------------------------------------------
+// #define PRODUCT_UID "com.your-company.your-name:cold-chain"
 #ifndef PRODUCT_UID
 #define PRODUCT_UID ""
 #pragma message "PRODUCT_UID is not defined. Set it before flashing."
@@ -69,11 +71,13 @@
 // Encoding: OUTBOUND * 100 000 + INBOUND * 100 + SCHEMA_VERSION.
 //
 // Schema history:
+//   6 — added compact templates for cargo_alert.qo (port 52) and
+//         cargo_state.qo (port 53) so alerts and state changes sync over NTN.
 //   5 — added motion_valid (TUINT16) to cargo_log.qo template so unavailable
 //         card.motion is distinguishable from genuine zero motion.
 //   4 — added boot_seg (TUINT16) to cargo_log.qo template.
 // ---------------------------------------------------------------------------
-#define SCHEMA_VERSION   5U
+#define SCHEMA_VERSION   6U
 #define CONFIG_VERSION   ((uint32_t)(OUTBOUND_INTERVAL_MIN) * 100000UL + \
                           (uint32_t)(INBOUND_INTERVAL_MIN)  * 100UL    + \
                           (uint32_t)(SCHEMA_VERSION))
@@ -116,9 +120,9 @@
 // Notefiles and sentinel values
 // ---------------------------------------------------------------------------
 #define NOTE_SUMMARY   "cargo_data.qo"    // compact-templated hourly summary
-#define NOTE_ALERT     "cargo_alert.qo"   // immediate-sync threshold alerts
+#define NOTE_ALERT     "cargo_alert.qo"   // compact-templated immediate-sync threshold alerts
 #define NOTE_LOG       "cargo_log.qo"     // compact-templated per-sample tamper-evident log
-#define NOTE_STATE     "cargo_state.qo"   // immediate-sync shipment-state transitions
+#define NOTE_STATE     "cargo_state.qo"   // compact-templated immediate-sync shipment-state transitions
 
 // INVALID_F is non-zero so it survives compact-template omitempty and signals
 // "no valid data for this metric" to downstream consumers.

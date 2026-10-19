@@ -17,7 +17,6 @@
 #define THERM_BETA       3950.0f
 #define ADC_COUNTS       4096.0f
 
-#define STATUS_PORT   50
 #define ALERT_PORT    51
 
 #define ALERT_COOLDOWN_SEC  (30 * 60)
@@ -30,7 +29,8 @@
 // ─── OCV→SoC lookup tables ────────────────────────────────────────────────────
 // Each row: [pack OCV in V, SoC in %], ordered high→low voltage.
 // Sized for a 48V pack. Scale voltage entries by (pack_nominal / 48) for other
-// pack voltages, or expose rated_voltage_v as an env var (see README §9).
+// pack voltages, or expose rated_voltage_v as an env var (see §10 of the
+// dev.blues.io page).
 
 static const float SOC_TABLE_LITHIUM[][2] = {
     // LiFePO4 16S × 3.65V full → 58.4V;  × 3.0V cutoff → 48.0V
@@ -53,9 +53,10 @@ static const int SOC_LEAD_ACID_ROWS =
     (int)(sizeof(SOC_TABLE_LEAD_ACID) / sizeof(SOC_TABLE_LEAD_ACID[0]));
 
 // ─────────────────────────────────────────────────────────────────────────────
-// notecardConfigure — hub.set + suppress accelerometer; runs on the first wake and
-// whenever report_interval_m changes.  Returns true on success; the caller
-// must treat false as a commissioning fault and avoid silently continuing.
+// notecardConfigure — hub.set + card.transport + suppress accelerometer; runs on
+// the first wake and whenever report_interval_m changes.  Returns true when
+// hub.set succeeds; the caller must treat false as a commissioning fault and
+// avoid silently continuing.
 // ─────────────────────────────────────────────────────────────────────────────
 bool notecardConfigure(const char *productUID) {
     J *req = notecard.newRequest("hub.set");
@@ -69,6 +70,16 @@ bool notecardConfigure(const char *productUID) {
                        "readiness; device is NOT commissioned");
     }
 
+    // Notecard for Skylo defaults to wifi-cell, so the Skylo satellite fallback
+    // stays off until card.transport turns it on.  cell-ntn: cellular first,
+    // Skylo NTN when no cellular network is reachable.
+    req = notecard.newRequest("card.transport");
+    JAddStringToObject(req, "method", "cell-ntn");
+    if (!notecard.sendRequest(req)) {
+        dbgSerial.println("[warn] card.transport failed — satellite fallback "
+                          "stays off until the next configuration pass");
+    }
+
     // Suppress built-in accelerometer — motion tracking is not needed here and
     // it adds a small steady-state current drain to the Notecard.
     req = notecard.newRequest("card.motion.mode");
@@ -79,11 +90,12 @@ bool notecardConfigure(const char *productUID) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// defineTemplates — compact templates required for satellite transmission.
-// port: each compact Notefile gets a unique integer (1–100) so the Notecard
-// can reference it by number over the NTN link rather than the full filename.
-// delete:true on battery_status.qo prevents queued hourly summaries from
-// being routed over the metered Skylo satellite link.
+// defineTemplates — templates for the two outbound Notefiles.
+// battery_alert.qo is compact with a port, which is what lets its Notes travel
+// over the Skylo NTN link.  port: each compact Notefile gets a unique integer
+// (1–100) so the Notecard can reference it by number over the NTN link rather
+// than the full filename.  battery_status.qo has no format or port, so it is
+// a non-NTN template and hourly summaries never use satellite data.
 //
 // Returns true only when BOTH note.template requests succeed.  The caller must
 // not persist last_applied_report_m unless this function returns true; leaving
@@ -92,12 +104,11 @@ bool notecardConfigure(const char *productUID) {
 bool defineTemplates(void) {
     bool ok = true;
 
-    // Hourly status summary — cellular-preferred, satellite-suppressed
+    // Hourly status summary — cellular-preferred, satellite-suppressed.  With no
+    // format or port, queued summaries wait for the next cellular session, and
+    // the Notecard refuses note.add to this Notefile while it is on NTN.
     J *req = notecard.newRequest("note.template");
     JAddStringToObject(req, "file", "battery_status.qo");
-    JAddNumberToObject(req, "port", STATUS_PORT);
-    JAddStringToObject(req, "format", "compact");
-    JAddBoolToObject(req, "delete", true);
     J *body = JAddObjectToObject(req, "body");
     JAddNumberToObject(body, "pack_v",  14.1);  // 4-byte float (TFLOAT32)
     JAddNumberToObject(body, "cur_a",   14.1);
@@ -118,10 +129,10 @@ bool defineTemplates(void) {
     JAddNumberToObject(req, "port", ALERT_PORT);
     JAddStringToObject(req, "format", "compact");
     body = JAddObjectToObject(req, "body");
-    // Compact string fields require a fixed-length placeholder string whose
-    // length equals the maximum field width to reserve.  The longest alert
-    // value is "cell_imbalance" (14 chars); 16 chars gives two spare bytes.
-    // Using a numeric string like "16" would encode a 2-char field — too short.
+    // A non-numeric placeholder declares a variable-length string field, which
+    // fits every alert name (the longest, "cell_imbalance", is 14 chars).  A
+    // numeric string such as "16" would instead reserve a fixed 16-byte field
+    // (note-c TSTRING(16)).
     JAddStringToObject(body, "alert",   "________________");  // 16-char placeholder
     JAddNumberToObject(body, "pack_v",  14.1);
     JAddNumberToObject(body, "soc_pct", 21);
@@ -269,7 +280,8 @@ bool readPackVI(float &packV, float &curA) {
     // Primary field path (BENCH_ONLY 0): INA228 readCurrent() through external shunt.
     // Bench path (BENCH_ONLY 1): INA228 onboard 15 mΩ shunt (≤ 10 A only).
     // setShunt() was called in setup() with the appropriate calibration values.
-    curA = ina228.readCurrent();
+    // readCurrent() returns milliamps; convert to amps.
+    curA = ina228.readCurrent() / 1000.0f;
 #endif
 
     // Reject out-of-range values that signal a wiring fault or ADC saturation.
@@ -298,8 +310,8 @@ float readPackTempC(void) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // voltageToSoC — linear interpolation between OCV lookup table entries.
-// OCV is only accurate when the pack is at rest; see README §9 for the
-// production path that blends OCV with Coulomb counting.
+// OCV is only accurate when the pack is at rest; see §10 of the dev.blues.io
+// page for the production path that blends OCV with Coulomb counting.
 // ─────────────────────────────────────────────────────────────────────────────
 float voltageToSoC(float voltage, bool isLithium) {
     const float (*tbl)[2] = isLithium ? SOC_TABLE_LITHIUM : SOC_TABLE_LEAD_ACID;
@@ -478,7 +490,6 @@ SummaryResult sendSummary(AppState &s, uint32_t now) {
 
     J *req = notecard.newRequest("note.add");
     JAddStringToObject(req, "file", "battery_status.qo");
-    // port is bound in note.template (STATUS_PORT); it is not a valid note.add field.
     J *body = JAddObjectToObject(req, "body");
     JAddNumberToObject(body, "pack_v",  avgV);
     JAddNumberToObject(body, "cur_a",   avgI);

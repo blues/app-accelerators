@@ -281,6 +281,8 @@ void fetchEnvOverrides(void)
     // ENV_ERROR → I²C / transport failure; leave the seeded value untouched.
     double val;
     EnvResult er;
+    const float seeded_run_mg = g_vib_run_mg;
+    const float seeded_cv_max = g_vib_cv_max;
 
     er = envReadDouble("vib_run_mg", val);
     if (er == ENV_OK)
@@ -308,6 +310,16 @@ void fetchEnvOverrides(void)
     {
         g_vib_cv_max = VIB_CV_MAX_DEFAULT;
         g_s.applied_vib_cv_max = 0.0f;
+    }
+
+    // Log classifier thresholds only when they change, so a Notehub tuning
+    // update can be confirmed on the serial monitor.
+    if (g_vib_run_mg != seeded_run_mg || g_vib_cv_max != seeded_cv_max)
+    {
+        debugSerial.print("[ENV] vib_run_mg=");
+        debugSerial.print(g_vib_run_mg, 1);
+        debugSerial.print(" vib_cv_max=");
+        debugSerial.println(g_vib_cv_max, 2);
     }
 
     // Geofence params: each env var is persisted independently on a successful

@@ -109,7 +109,7 @@ extern Uart debugSerial;   // defined in reefer_cold_chain_monitor.ino
 #define TEMP_INVALID  -127.0f
 
 // ── Door pending-alert types (stored in AppState.pending_door_alert) ─────────
-// An in-flight door alert is retried until sendAlert() confirms enqueue.
+// An in-flight door alert is retried until sendAlert() confirms enqueue and sync.
 // This prevents a transient note.add failure from permanently losing an event.
 #define DOOR_PENDING_NONE   0u
 #define DOOR_PENDING_OPEN   1u
@@ -119,7 +119,7 @@ extern Uart debugSerial;   // defined in reefer_cold_chain_monitor.ino
 // ── Temperature pending-alert types (stored in AppState.pending_temp_alert) ──
 // Mirrors the door pending-alert pattern.  A brief excursion that returns to
 // normal before the next wake is not lost: the alert is latched at detection
-// and retried until both notefiles are successfully enqueued.
+// and retried until the alert note is enqueued and hub.sync succeeds.
 #define TEMP_PENDING_NONE  0u
 #define TEMP_PENDING_WARM  1u   // temp_excursion (above g_tempMaxC)
 #define TEMP_PENDING_COLD  2u   // temp_cold      (below g_tempMinC)
@@ -166,9 +166,10 @@ typedef struct {
     float    pending_door_lon;       // GNSS longitude at event-detection time
 
     // Pending temperature-excursion alert (mirrors door pending-alert pattern).
-    // Latched at first detection; cleared only after the alert notefile is
-    // successfully enqueued.  Preserves a brief excursion that returns to
-    // normal before the next wake and whose initial sendAlert() failed.
+    // Latched at first detection; cleared only after sendAlert() confirms the
+    // alert note is enqueued and synced.  Preserves a brief excursion that
+    // returns to normal before the next wake and whose initial sendAlert()
+    // failed.
     // The sampled readings, door state, and location are stored so the retry
     // transmits the exact conditions captured at detection time, not the current
     // (possibly normal) readings or a different trailer position on a later wake.

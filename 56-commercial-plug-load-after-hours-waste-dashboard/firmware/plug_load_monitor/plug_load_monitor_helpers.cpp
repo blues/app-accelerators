@@ -28,7 +28,7 @@ static uint32_t clampU32(long v, uint32_t lo, uint32_t hi, uint32_t fallback) {
     return (uint32_t)v;
 }
 static float clampF(double v, float lo, float hi, float fallback) {
-    if ((float)v < lo || (float)v > hi) return fallback;
+    if (isnan(v) || (float)v < lo || (float)v > hi) return fallback;  // atof("nan") passes both comparisons
     return (float)v;
 }
 
@@ -80,7 +80,7 @@ bool hubConfigure() {
 // template attempted in this build succeeded; the per-Notefile flags carry
 // the granular state used to gate emission of each Notefile.
 //
-// Called unconditionally at every boot — note.template is idempotent, so
+// Called unconditionally on every wake — note.template is idempotent, so
 // re-issuing it on an intact Notecard is a no-op, and re-issuing after a
 // factory reset or card replacement restores the fixed-schema encoding before
 // any note.add calls reach the Notecard.
@@ -168,8 +168,7 @@ static J* buildEnvGetReq() {
 // Returns true when env.get completed successfully and the body was parsed;
 // returns false on I²C failure or a Notecard error response, leaving all
 // CFG_* variables at their current values (either compile-time defaults on
-// first boot, or the last known-good snapshot restored from AppState.saved_cfg
-// on subsequent wakes — see loop()).
+// first boot, or the last values fetched, which stay in RAM across STOP2).
 bool fetchEnvOverrides() {
     J *rsp = notecard.requestAndResponse(buildEnvGetReq());
     if (!rsp) {

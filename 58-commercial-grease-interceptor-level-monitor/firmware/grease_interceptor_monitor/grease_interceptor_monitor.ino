@@ -33,8 +33,9 @@
  * NOTE: This design is scoped to HGI / batch-collection geometries. On
  * conventional constant-level interceptors (fixed outlet weir), the liquid
  * surface height is nearly constant regardless of FOG accumulation; the fill
- * percentage will not track FOG buildup in that geometry. See the project
- * README §1 and §9 before deploying on a different interceptor type.
+ * percentage will not track FOG buildup in that geometry. See §1 and §10 of
+ * the documentation linked from README.md before deploying on a different
+ * interceptor type.
  *
  * NOTE: This file is provided as a starting point and SHOULD BE EDITED
  * before deployment (set PRODUCT_UID, verify serial port assignment,
@@ -180,8 +181,9 @@ void loop() {
 
     for (int i = 0; i < NUM_READINGS; i++) {
         float d = readDistanceMm();
-        // Accept only readings within a reasonable window above the configured
-        // depth — allow 10 % over to catch near-overflow conditions cleanly.
+        // Reject implausibly long readings. A longer distance means a lower
+        // surface, so allow 10 % past the configured 0 % fill depth for a surface
+        // sitting slightly below its pump-out level (it reads as 0 % fill).
         if (d > 0.0f && d <= cfg.interceptor_depth_mm * 1.1f) {
             readings[valid_count++] = d;
         }

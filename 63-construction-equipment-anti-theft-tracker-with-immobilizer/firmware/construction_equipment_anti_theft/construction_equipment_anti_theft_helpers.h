@@ -131,7 +131,7 @@ struct AppState {
     // retry exactly the steps that have not yet been confirmed on subsequent wakes.
     // All start false (power-up memset) and are set true when the corresponding
     // Notecard request succeeds.  ensureConfigured() skips already-confirmed steps.
-    bool    cfg_hub_ok;       // hub.set (product UID + mode) accepted
+    bool    cfg_hub_ok;       // hub.set (product UID + mode) and card.transport accepted
     bool    cfg_gps_ok;       // card.location.mode accepted
     bool    cfg_motion_ok;    // card.motion.mode accepted
     bool    cfg_templates_ok; // both compact note.templates registered

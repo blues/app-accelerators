@@ -99,7 +99,7 @@ Uart debugSerial(PIN_VCP_RX, PIN_VCP_TX);
 
 // ---------------------------------------------------------------------------
 // Compile-time defaults — all overridable via Notehub environment variables
-// (see README §5 for the full env-var reference table)
+// (see the accelerator page §6 for the full env-var reference table)
 // ---------------------------------------------------------------------------
 #define DEFAULT_SAMPLE_INTERVAL_SEC   300   // 5 min between samples
 #define DEFAULT_REPORT_INTERVAL_MIN    60   // 1 h between summary notes

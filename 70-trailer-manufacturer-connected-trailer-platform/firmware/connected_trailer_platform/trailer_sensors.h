@@ -27,7 +27,7 @@
 // ---- Post-wakeup UART drain window (ms) --------------------------------
 // At the start of each wake, both UART channels are drained for this many
 // milliseconds before the sample cycle begins. At 9600 baud an
-// 8-byte J2497 frame takes ~8 ms; 250 ms accommodates ~3 complete frames and
+// 8-byte J2497 frame takes ~8 ms; 250 ms accommodates ~30 complete frames and
 // several TPMS packets if a gateway is transmitting near the wake boundary.
 #define WAKE_UART_DRAIN_MS  250u
 
@@ -68,7 +68,7 @@
 // is credited correctly on the next wake's updateReeferMissCount() call.
 //
 // Production requires a full J2497 application-layer stack, reefer-OEM message
-// mapping, and field validation. See README §9 Limitations.
+// mapping, and field validation. See §10 Limitations on the dev.blues.io page.
 #define REEFER_BAUD      9600
 #define REEFER_HDR_A     0xAAu
 #define REEFER_HDR_B     0x55u
@@ -101,6 +101,7 @@
 #define NOTE_SUMMARY   "trailer_summary.qo"
 #define NOTE_ALERT     "trailer_alert.qo"
 #define TEMPLATE_PORT  50
+#define ALERT_TEMPLATE_PORT  51
 
 // ---- Compile-time defaults (all overridable via Notehub env vars) ------
 #define DEF_REEFER_MAX_F         40.0f
