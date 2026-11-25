@@ -594,15 +594,15 @@ bool readMotionCount(uint32_t *count_out, char *orient_out, size_t orient_max) {
         return false;
     }
 
-    // movements holds one base-36 character per bucket: 0-9, A-Z for 10-35,
-    // and '*' for more than 35 (counted as 36).
+    // movements holds one character per bucket: 0-9 for a count of 0-9,
+    // A-P for 10-25, and Z for 26 or more (counted as 26).
     uint32_t count = 0;
     const char *mv = JGetString(rsp, "movements");
     if (mv) {
         for (const char *p = mv; *p; p++) {
             if (*p >= '0' && *p <= '9')      count += (uint32_t)(*p - '0');
-            else if (*p >= 'A' && *p <= 'Z') count += (uint32_t)(*p - 'A' + 10);
-            else if (*p == '*')              count += 36U;
+            else if (*p >= 'A' && *p <= 'P') count += (uint32_t)(*p - 'A' + 10);
+            else if (*p == 'Z')              count += 26U;
         }
     }
 
